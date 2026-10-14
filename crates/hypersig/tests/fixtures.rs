@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, button, each, input, label, li, main, select, span, ul, when,
+    El, Event, Key, button, div, each, input, label, li, main, select, span, ul, when,
 };
 use hypersig::{Action, Expr, NodeRef, Signals, Stmt};
 use serde::{Deserialize, Serialize};
@@ -211,6 +211,78 @@ fn timers() -> (El<Timers>, Timers) {
     (el, signals)
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Tag {
+    label: String,
+    on: bool,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Row {
+    name: String,
+    tags: Vec<Tag>,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Nested {
+    rows: Vec<Row>,
+    hovered: String,
+    focused: bool,
+}
+
+fn nested() -> (El<Nested>, Nested) {
+    let hovered = Nested::hovered();
+    let el = main()
+        .child(ul().id("rows").child(each(Nested::rows(), |row| {
+            let tags = row.at(Row::tags());
+            li().key(row.at(Row::name()))
+                .on(Event::MouseEnter, hovered.set(row.at(Row::name())))
+                .on(Event::MouseLeave, hovered.set(""))
+                .child(span().class("name").bind_text(row.at(Row::name())))
+                .child(
+                    span()
+                        .class("count")
+                        .bind_text(tags.count(|tag| tag.at(Tag::on())).to_text()),
+                )
+                .child(ul().child(each(tags, |tag| {
+                    li().child(
+                        button()
+                            .class_when("on", tag.at(Tag::on()))
+                            .on_click(tag.at(Tag::on()).toggle())
+                            .bind_text(
+                                row.at(Row::name()).concat("/").concat(tag.at(Tag::label())),
+                            ),
+                    )
+                })))
+        })))
+        .child(
+            div()
+                .id("field")
+                .on(Event::Focus, Nested::focused().set(true))
+                .on_blur(Nested::focused().set(false))
+                .child(input()),
+        );
+    let tag = |label: &str, on: bool| Tag {
+        label: label.to_owned(),
+        on,
+    };
+    let signals = Nested {
+        rows: vec![
+            Row {
+                name: "a".to_owned(),
+                tags: vec![tag("x", true), tag("y", false)],
+            },
+            Row {
+                name: "b".to_owned(),
+                tags: vec![tag("z", false)],
+            },
+        ],
+        hovered: String::new(),
+        focused: false,
+    };
+    (el, signals)
+}
+
 fn check(name: &str, el: &El<impl Signals>, signals: &impl Serialize) {
     let fixture = json!({ "html": el.render(), "signals": signals });
     let text = format!(
@@ -240,4 +312,6 @@ fn fixtures_match_the_builder() {
     check("controls", &el, &signals);
     let (el, signals) = timers();
     check("timers", &el, &signals);
+    let (el, signals) = nested();
+    check("nested", &el, &signals);
 }

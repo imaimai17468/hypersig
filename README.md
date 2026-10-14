@@ -13,7 +13,7 @@ Rust 向けのサーバー駆動ハイパーメディアライブラリ。[Datas
 
 ## React でできることとの対応
 
-React で書く画面の部品を、hypersig では次のように書く。✅ は `examples/todomvc` と `examples/showcase` で実ブラウザ（headless Chrome）の操作テストを通したもの。
+React で書く画面の部品を、hypersig では次のように書く。✅ の行は、`examples/todomvc` と `examples/showcase` を headless Chrome で操作したテストか、`runtime/test/features.test.ts`（happy-dom）のどちらかで動作を確かめた。`bind_radio`、`bind_style`、マウスの出入り、`focus` イベントは happy-dom でだけ確かめている。
 
 | React | hypersig | |
 |---|---|---|
