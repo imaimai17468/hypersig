@@ -24,10 +24,14 @@ No hook runs these. Run them yourself before reporting a change complete:
 - `cargo fmt --all --check`
 - `cargo clippy --workspace --all-targets -- -D warnings`
 - `cargo test --workspace` (this includes the trybuild cases)
+- `cargo check -p hypersig --no-default-features`, because the axum integration is behind a feature
+- `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`, which fails on a broken intra-doc link
 - In `runtime/`: `pnpm check` and `pnpm test`, where the change touches `runtime/` or the wire format
 - In `runtime/`: `pnpm build`, then `git diff --exit-code crates/hypersig/assets`, so the committed bundle matches the source
 
 A trybuild `.stderr` file records the compiler's message. Regenerate it with `TRYBUILD=overwrite cargo test -p hypersig --test ui` only after reading the new message and confirming it still names the mistake the case exists for.
+
+CI pins the toolchain to the `rust-version` in `Cargo.toml`, because the trybuild `.stderr` files hold rustc's exact wording. Raising the pin is one commit that changes `rust-version`, the CI toolchain, and every regenerated `.stderr` together.
 
 Report a step you could not run as "not run", never as "passed".
 
