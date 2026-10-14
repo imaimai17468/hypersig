@@ -41,6 +41,12 @@ Report a step you could not run as "not run", never as "passed".
 
 Your training data goes stale. `syn` is at 3.x here and `axum` at 0.8.x, and both differ from the versions most examples on the web were written against. Before writing an import path or an API call from memory, read the pinned version's source under `~/.cargo/registry/src/` or its docs.rs page for that exact version. Where you cannot confirm a fact, write that into the sentence it limits.
 
+## Commits
+
+- One commit has one purpose. Stage explicit paths, never `git add -A` or `git add .`.
+- The first line starts with `feat` / `fix` / `refactor` / `test` / `docs` / `chore` and states what improves. The body is in Japanese, and a `fix` or `refactor` says why.
+- End with a `Co-Authored-By:` trailer crediting the current model.
+
 ## Code Practices
 
 **Make the wrong thing fail to compile.** Where you are about to write a comment, a runtime check, or a doc line so that a caller does not misuse an API, change the types first. A comment is the fallback when the type system genuinely cannot carry the rule, and then the comment says what the type system cannot check.
