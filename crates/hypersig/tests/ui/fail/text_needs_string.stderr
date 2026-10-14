@@ -1,0 +1,21 @@
+error[E0277]: `Sig<Counter, i32>` is not an expression of type `String` on the page whose signals are `Counter`
+  --> tests/ui/fail/text_needs_string.rs:19:41
+   |
+19 |     let _ = span::<Counter>().bind_text(Counter::count());
+   |                               --------- ^^^^^^^^^^^^^^^^ the trait `IntoExpr<Counter, String>` is not implemented for `Sig<Counter, i32>`
+   |                               |
+   |                               required by a bound introduced by this call
+   |
+   = note: an expression must have the type the attribute expects, and use signals of the same page
+help: the trait `IntoExpr<Counter, String>` is not implemented for `Sig<Counter, i32>`
+      but trait `IntoExpr<Counter, i32>` is implemented for it
+  --> src/expr.rs
+   |
+   | impl<S, T> IntoExpr<S, T> for Sig<S, T> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `i32`, found `String`
+note: required by a bound in `El::<S>::bind_text`
+  --> src/html.rs
+   |
+   |     pub fn bind_text(mut self, text: impl IntoExpr<S, String>) -> Self {
+   |                                           ^^^^^^^^^^^^^^^^^^^ required by this bound in `El::<S>::bind_text`

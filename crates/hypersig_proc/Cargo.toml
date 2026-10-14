@@ -1,0 +1,21 @@
+[package]
+name = "hypersig_proc"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Derive macro for hypersig. Use it through the hypersig crate"
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+hypersig_proc_impl.workspace = true
+
+[lints]
+workspace = true

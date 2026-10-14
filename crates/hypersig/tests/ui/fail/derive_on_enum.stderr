@@ -1,0 +1,5 @@
+error: `Signals` can only be derived for a struct
+ --> tests/ui/fail/derive_on_enum.rs:7:1
+  |
+7 | enum Mode {
+  | ^^^^

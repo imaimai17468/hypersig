@@ -1,0 +1,32 @@
+[package]
+name = "hypersig"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+
+[features]
+default = ["axum"]
+axum = ["dep:axum", "dep:futures"]
+
+[dependencies]
+axum = { workspace = true, optional = true }
+futures = { workspace = true, optional = true }
+hypersig_proc.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+http-body-util.workspace = true
+tokio.workspace = true
+tower.workspace = true
+trybuild.workspace = true
+
+[lints]
+workspace = true

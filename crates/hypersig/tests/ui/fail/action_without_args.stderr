@@ -1,0 +1,7 @@
+error[E0599]: no method named `call` found for struct `Action<Counter, Id>` in the current scope
+  --> tests/ui/fail/action_without_args.rs:24:20
+   |
+24 |     let _ = REMOVE.call();
+   |                    ^^^^ method not found in `Action<Counter, Id>`
+   |
+   = note: the method was found for `Action<S>`

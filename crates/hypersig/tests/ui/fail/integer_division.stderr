@@ -1,0 +1,13 @@
+error[E0369]: cannot divide `Sig<Counter, i32>` by `{integer}`
+  --> tests/ui/fail/integer_division.rs:19:51
+   |
+19 |     let _ = Counter::count().set(Counter::count() / 2);
+   |                                  ---------------- ^ - {integer}
+   |                                  |
+   |                                  Sig<Counter, i32>
+   |
+note: `Sig<Counter, i32>` does not implement `Div<{integer}>`
+  --> src/signal.rs
+   |
+   | pub struct Sig<S, T> {
+   | ^^^^^^^^^^^^^^^^^^^^ `Sig<Counter, i32>` is defined in another crate

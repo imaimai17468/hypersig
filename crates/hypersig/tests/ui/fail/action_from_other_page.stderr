@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/action_from_other_page.rs:21:42
+   |
+21 |     let _ = button::<Counter>().on_click(TOGGLE.call());
+   |                                 -------- ^^^^^^^^^^^^^ expected `Stmt<Counter>`, found `Stmt<Other>`
+   |                                 |
+   |                                 arguments to this method are incorrect
+   |
+   = note: expected struct `Stmt<Counter>`
+              found struct `Stmt<Other>`
+note: method defined here
+  --> src/html.rs
+   |
+   |     pub fn on_click(self, stmt: Stmt<S>) -> Self {
+   |            ^^^^^^^^

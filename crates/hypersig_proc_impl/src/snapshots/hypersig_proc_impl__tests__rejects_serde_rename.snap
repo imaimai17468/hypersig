@@ -1,0 +1,7 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand(quote! { struct R { #[serde(rename = \"n\")] name: String } })"
+---
+::core::compile_error! {
+    "`#[serde(...)]` is not supported on a `Signals` struct, because the signal path must equal the field name"
+}

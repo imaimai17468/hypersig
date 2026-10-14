@@ -1,0 +1,7 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand(quote! { struct T(i32); })"
+---
+::core::compile_error! {
+    "`Signals` needs a struct with named fields, because each field name becomes a signal path"
+}

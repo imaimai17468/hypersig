@@ -1,0 +1,14 @@
+error[E0599]: no associated function or constant named `cuont` found for struct `Counter` in the current scope
+  --> tests/ui/fail/misspelled_signal.rs:19:22
+   |
+ 8 | struct Counter {
+   | -------------- associated function or constant `cuont` not found for this struct
+...
+19 |     let _ = Counter::cuont();
+   |                      ^^^^^ associated function or constant not found in `Counter`
+   |
+help: there is an associated function `count` with a similar name
+   |
+19 -     let _ = Counter::cuont();
+19 +     let _ = Counter::count();
+   |

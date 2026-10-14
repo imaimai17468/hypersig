@@ -1,0 +1,30 @@
+error[E0080]: evaluation panicked: an action path starts with `/`
+  --> tests/ui/fail/action_path_without_slash.rs:18:30
+   |
+18 | const BAD: Action<Counter> = Action::post("reset");
+   |                              ^^^^^^^^^^^^^^^^^^^^^ evaluation of `BAD` failed inside this call
+   |
+note: inside `Action::<Counter>::post`
+  --> src/action.rs
+   |
+   |         Self::new(Method::Post, path)
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: inside `Action::<Counter>::new`
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: src/action.rs
+   |
+   | /         assert!(
+   | |             !path.is_empty() && path.as_bytes()[0] == b'/',
+   | |             "an action path starts with `/`"
+   | |         );
+   | |_________- in this macro invocation
+
+note: erroneous constant encountered
+  --> tests/ui/fail/action_path_without_slash.rs:21:13
+   |
+21 |     let _ = BAD.call();
+   |             ^^^

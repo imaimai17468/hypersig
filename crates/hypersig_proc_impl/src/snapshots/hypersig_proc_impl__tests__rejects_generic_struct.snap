@@ -1,0 +1,7 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand(quote! { struct G<T> { value: T } })"
+---
+::core::compile_error! {
+    "`Signals` cannot be derived for a generic struct"
+}

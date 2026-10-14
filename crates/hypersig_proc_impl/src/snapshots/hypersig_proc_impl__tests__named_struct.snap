@@ -1,0 +1,27 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand(quote!\n{ pub struct Counter { pub count: i32, label: String, pub r#type: bool, } })"
+---
+#[automatically_derived]
+impl ::hypersig::Signals for Counter {}
+#[automatically_derived]
+impl Counter {
+    ///Typed reference to the `count` signal.
+    #[must_use]
+    #[allow(dead_code, reason = "an accessor is generated for every field, used or not")]
+    pub fn count() -> ::hypersig::Sig<Self, i32> {
+        ::hypersig::_private::sig("count")
+    }
+    ///Typed reference to the `label` signal.
+    #[must_use]
+    #[allow(dead_code, reason = "an accessor is generated for every field, used or not")]
+    fn label() -> ::hypersig::Sig<Self, String> {
+        ::hypersig::_private::sig("label")
+    }
+    ///Typed reference to the `type` signal.
+    #[must_use]
+    #[allow(dead_code, reason = "an accessor is generated for every field, used or not")]
+    pub fn r#type() -> ::hypersig::Sig<Self, bool> {
+        ::hypersig::_private::sig("type")
+    }
+}

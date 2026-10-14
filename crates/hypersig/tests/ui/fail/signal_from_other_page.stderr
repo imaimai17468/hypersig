@@ -1,0 +1,21 @@
+error[E0277]: `Sig<Other, bool>` is not an expression of type `bool` on the page whose signals are `Counter`
+  --> tests/ui/fail/signal_from_other_page.rs:19:35
+   |
+19 |     let _ = div::<Counter>().show(Other::flag());
+   |                              ---- ^^^^^^^^^^^^^ the trait `IntoExpr<Counter, bool>` is not implemented for `Sig<Other, bool>`
+   |                              |
+   |                              required by a bound introduced by this call
+   |
+   = note: an expression must have the type the attribute expects, and use signals of the same page
+help: the trait `IntoExpr<Counter, bool>` is not implemented for `Sig<Other, bool>`
+      but trait `IntoExpr<Other, bool>` is implemented for it
+  --> src/expr.rs
+   |
+   | impl<S, T> IntoExpr<S, T> for Sig<S, T> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `Other`, found `Counter`
+note: required by a bound in `El::<S>::show`
+  --> src/html.rs
+   |
+   |     pub fn show(mut self, when: impl IntoExpr<S, bool>) -> Self {
+   |                                      ^^^^^^^^^^^^^^^^^ required by this bound in `El::<S>::show`

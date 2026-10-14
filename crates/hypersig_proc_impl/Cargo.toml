@@ -1,0 +1,24 @@
+[package]
+name = "hypersig_proc_impl"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Token transformation behind hypersig's derive macro"
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+
+[dependencies]
+proc-macro2.workspace = true
+quote.workspace = true
+syn.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+prettyplease.workspace = true
+
+[lints]
+workspace = true
