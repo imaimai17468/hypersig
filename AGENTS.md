@@ -31,7 +31,7 @@ No hook runs these. Run them yourself before reporting a change complete:
 
 A trybuild `.stderr` file records the compiler's message. Regenerate it with `TRYBUILD=overwrite cargo test -p hypersig --test ui` only after reading the new message and confirming it still names the mistake the case exists for.
 
-CI pins the toolchain to the `rust-version` in `Cargo.toml`, because the trybuild `.stderr` files hold rustc's exact wording. Raising the pin is one commit that changes `rust-version`, the CI toolchain, and every regenerated `.stderr` together.
+`rust-toolchain.toml` pins the compiler and installs `rust-src`, and CI uses the same version and components, because the trybuild `.stderr` files hold rustc's exact output and rustc quotes standard library source only where `rust-src` is present. Raising the pin is one commit that changes `rust-toolchain.toml`, `rust-version` in `Cargo.toml`, the CI toolchain, and every regenerated `.stderr` together.
 
 Report a step you could not run as "not run", never as "passed".
 
