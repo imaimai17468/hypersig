@@ -1,0 +1,79 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "examples/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+repository = "https://github.com/imaimai17468/hypersig"
+authors = ["Toshiki Imai"]
+description = "Server-driven hypermedia with typed signals, inspired by Datastar"
+keywords = ["hypermedia", "sse", "html", "signals", "axum"]
+categories = ["web-programming"]
+readme = "README.md"
+
+[workspace.dependencies]
+hypersig = { path = "crates/hypersig", version = "=0.1.0" }
+hypersig_proc = { path = "crates/hypersig_proc", version = "=0.1.0" }
+hypersig_proc_impl = { path = "crates/hypersig_proc_impl", version = "=0.1.0" }
+
+axum = "0.8.9"
+futures = "0.3.34"
+insta = "1.49.0"
+prettyplease = "0.2"
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+syn = { version = "3.0.9", features = ["full"] }
+tokio = { version = "1.53.3", features = ["macros", "rt-multi-thread", "net", "sync", "time"] }
+tokio-stream = "0.1.19"
+tower = { version = "0.5.3", features = ["util"] }
+http-body-util = "0.1.5"
+trybuild = "1.0.122"
+
+# Lint set from the Pragmatic Rust Guidelines, M-STATIC-VERIFICATION.
+[workspace.lints.rust]
+ambiguous_negative_literals = "warn"
+missing_debug_implementations = "warn"
+redundant_imports = "warn"
+redundant_lifetimes = "warn"
+trivial_numeric_casts = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_lifetimes = "warn"
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+cargo = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+allow_attributes_without_reason = "warn"
+as_pointer_underscore = "warn"
+assertions_on_result_states = "warn"
+clone_on_ref_ptr = "warn"
+deref_by_slicing = "warn"
+disallowed_script_idents = "warn"
+empty_drop = "warn"
+empty_enum_variants_with_brackets = "warn"
+empty_structs_with_brackets = "warn"
+fn_to_numeric_cast_any = "warn"
+if_then_some_else_none = "warn"
+map_err_ignore = "warn"
+redundant_type_annotations = "warn"
+renamed_function_params = "warn"
+semicolon_outside_block = "warn"
+undocumented_unsafe_blocks = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+unneeded_field_pattern = "warn"
+unused_result_ok = "warn"
+too_long_first_doc_paragraph = "warn"
+literal_string_with_formatting_args = "allow"
+# Transitive dependencies of axum and tokio pull several versions of the same crate.
+multiple_crate_versions = "allow"

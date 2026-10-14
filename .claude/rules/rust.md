@@ -1,0 +1,50 @@
+---
+description: The Pragmatic Rust Guidelines this codebase leans on, plus the lint and formatting gates. Applies to every Rust source file
+globs: "**/*.rs,**/Cargo.toml"
+alwaysApply: false
+paths: "**/*.rs, **/Cargo.toml"
+---
+
+# Rust
+
+The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, with examples, is in `.claude/skills/rust-guidelines/references/pragmatic-rust-guidelines.md`. Search it by ID when the summary here does not settle a case.
+
+## Gates
+
+**The lint set lives in `[workspace.lints]` and every crate opts in with `[lints] workspace = true`** (M-STATIC-VERIFICATION). Clippy's `pedantic` and `cargo` groups are on, so `cargo clippy --workspace --all-targets -- -D warnings` fails on what they flag.
+
+**Override a lint with `#[expect(..., reason = "...")]`, never a bare `#[allow]`** (M-LINT-OVERRIDE-EXPECT). `#[expect]` warns once the lint stops firing, so a stale override does not survive. Code a proc macro emits is the exception: it uses `#[allow]`, because whether the lint fires depends on the user's input.
+
+**No `unsafe`.** The workspace forbids it. A change that needs it is a change to `Cargo.toml` and goes to the user first, together with M-UNSAFE.
+
+## Types
+
+**Use the strongest type at the earliest point** (M-STRONG-TYPES). The library exists to replace strings with types, so a public function that takes `&str` for a signal path, an element id, or an expression has lost the point. Construct those values only from generated code or from types that already carry the guarantee.
+
+**Keep public types at one or two type parameters** (M-SIMPLE-ABSTRACTIONS). `El<S>`, `Sig<S, T>`, `Expr<S, T>`, and `Action<S, A>` are the ceiling. A third parameter needs a reason written into the pull request.
+
+**Every public type implements `Debug`** (M-PUBLIC-DEBUG). `missing_debug_implementations` is on.
+
+**Do not put `Arc`, `Box`, `Rc`, or `RefCell` in a public signature** (M-AVOID-WRAPPERS). Take `&T` or `T` and wrap inside.
+
+**Third-party types in the public API are limited to `serde`'s traits and, behind the `axum` feature, axum's `Router`** (M-DONT-LEAK-TYPES).
+
+## Errors and panics
+
+**The library's errors are structs with a `Display`, an `Error` impl, and a `source` where one exists** (M-ERRORS-CANONICAL-STRUCTS). The examples are applications and may use whatever is shortest (M-APP-ERROR).
+
+**A broken invariant panics, and bad input returns `Result`** (M-PANIC-ON-BUG). A request body that does not deserialize into the signal struct is input and gets a 400. A `Sig` whose path is empty is a bug in generated code and panics.
+
+## Macros
+
+**Write a macro only after the language runs out** (M-MACRO-LAST-RESORT). `#[derive(Signals)]` exists because a field name cannot become a value any other way. Actions, fragments, and patches are plain types and traits, and they stay that way.
+
+**A macro emits nothing the reader cannot predict from the input** (M-MACROS-DONT-LIE, M-PROC-IMPLIED-ITEMS). The derive adds one `impl Signals` and one associated function per field, named after the field. It defines no new type, public or private.
+
+**The logic lives in `hypersig_proc_impl` with snapshot tests, and `hypersig_proc` only forwards** (M-PROC-IMPL). Generated code names items through `::hypersig::_private` (M-MACRO-HELPERS, M-MACRO-MAIN-CRATE), and `hypersig` pins `hypersig_proc` with `=` (M-MACRO-VERSION-PIN).
+
+**A compile error the library promises has a trybuild case under `crates/hypersig/tests/ui/fail/`.** Add the case in the same commit as the type that produces the error.
+
+## Documentation
+
+**Every public item has a summary sentence under 15 words, then `# Examples`, `# Errors`, and `# Panics` where they apply** (M-CANONICAL-DOCS, M-FIRST-DOC-SENTENCE). Every module has a `//!` header saying what it holds (M-MODULE-DOCS).

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo fmt *)",
+      "Bash(cargo clippy *)",
+      "Bash(cargo test *)",
+      "Bash(cargo build *)",
+      "Bash(cargo check *)",
+      "Bash(cargo run *)",
+      "Bash(pnpm install)",
+      "Bash(pnpm check)",
+      "Bash(pnpm test)",
+      "Bash(pnpm build)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "WebSearch",
+      "WebFetch"
+    ]
+  }
+}
