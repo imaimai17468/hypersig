@@ -1,0 +1,7 @@
+error[E0599]: no method named `patch` found for struct `Sig<Todos, bool, Local>` in the current scope
+  --> tests/ui/fail/patch_on_item_field.rs:19:55
+   |
+19 |         let _: Patches<Todos> = todo.at(Todo::done()).patch(true).into();
+   |                                                       ^^^^^ method not found in `Sig<Todos, bool, Local>`
+   |
+   = note: the method was found for `Sig<S, T>`

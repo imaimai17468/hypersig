@@ -21,7 +21,7 @@ The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, wi
 
 **Use the strongest type at the earliest point** (M-STRONG-TYPES). The library exists to replace strings with types, so a public function that takes `&str` for a signal path, an element id, or an expression has lost the point. Construct those values only from generated code or from types that already carry the guarantee.
 
-**Keep public types at one or two type parameters** (M-SIMPLE-ABSTRACTIONS). `El<S>`, `Sig<S, T>`, `Expr<S, T>`, and `Action<S, A>` are the ceiling. A third parameter needs a reason written into the pull request.
+**Keep public types at one or two type parameters** (M-SIMPLE-ABSTRACTIONS). `El<S>`, `Sig<S, T>`, `Expr<S, T>`, and `Action<S, A>` are the ceiling. A third parameter needs a reason written into the pull request. `Sig<S, T, R = Root>` has one: `R` records whether the path starts at the page or at a list item, so that `patch` exists only on a page-rooted signal and an item field cannot be patched from the server. The default keeps it out of sight for page signals.
 
 **Every public type implements `Debug`** (M-PUBLIC-DEBUG). `missing_debug_implementations` is on.
 

@@ -36,7 +36,7 @@ describe("Runtime", () => {
   });
 
   it("binds an input in both directions", async () => {
-    const runtime = mount(`<input id="i" data-hs-bind="name">`, { name: "a" });
+    const runtime = mount(`<input id="i" data-hs-bind='["name","text"]'>`, { name: "a" });
     const input = document.getElementById("i") as HTMLInputElement;
     expect(input.value).toBe("a");
     input.value = "ab";
@@ -56,7 +56,7 @@ describe("Runtime", () => {
     );
     vi.stubGlobal("fetch", fetch);
     const runtime = mount(
-      `<form data-hs-on-submit='["call","POST","/add",{"id":3}]'><input data-hs-bind="draft"><button id="go">go</button></form><ul id="list"></ul>`,
+      `<form data-hs-on-submit='["call","POST","/add",["lit",{"id":3}],null,null]'><input data-hs-bind='["draft","text"]'><button id="go">go</button></form><ul id="list"></ul>`,
       { draft: "tea" },
     );
     document.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));

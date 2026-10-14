@@ -48,14 +48,14 @@ pub mod html;
 mod patch;
 mod signal;
 
-pub use action::{Action, Method};
+pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]
 pub use axum::{RequestError, RouterExt};
-pub use expr::{Comparable, Expr, IntoExpr, Number, Stmt, Textual};
+pub use expr::{Comparable, Expr, IntoExpr, IntoStmt, Number, Stmt, Textual, if_else};
 pub use html::Page;
 pub use hypersig_proc::Signals;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};
-pub use signal::{Sig, Signals};
+pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 
 /// The path [`Page`] loads the runtime from.
 pub const RUNTIME_PATH: &str = "/_hypersig/runtime.js";
@@ -65,11 +65,11 @@ pub const RUNTIME_JS: &str = include_str!("../assets/hypersig.js");
 
 #[doc(hidden)]
 pub mod _private {
-    use crate::signal::Sig;
+    use crate::signal::{Path, Sig};
 
     /// Called by `#[derive(Signals)]` with a field name of `S`.
     #[must_use]
-    pub fn sig<S, T>(path: &'static str) -> Sig<S, T> {
-        Sig::from_path(path)
+    pub fn sig<S, T>(field: &'static str) -> Sig<S, T> {
+        Sig::from_path(Path::field(field))
     }
 }

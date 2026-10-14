@@ -11,8 +11,8 @@ help: the trait `IntoExpr<Counter, String>` is not implemented for `Sig<Counter,
       but trait `IntoExpr<Counter, i32>` is implemented for it
   --> src/expr.rs
    |
-   | impl<S, T> IntoExpr<S, T> for Sig<S, T> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | impl<S, T, R> IntoExpr<S, T> for Sig<S, T, R> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: for that trait implementation, expected `i32`, found `String`
 note: required by a bound in `El::<S>::bind_text`
   --> src/html.rs

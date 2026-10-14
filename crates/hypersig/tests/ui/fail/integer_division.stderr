@@ -9,5 +9,5 @@ error[E0369]: cannot divide `Sig<Counter, i32>` by `{integer}`
 note: `Sig<Counter, i32>` does not implement `Div<{integer}>`
   --> src/signal.rs
    |
-   | pub struct Sig<S, T> {
-   | ^^^^^^^^^^^^^^^^^^^^ `Sig<Counter, i32>` is defined in another crate
+   | pub struct Sig<S, T, R = Root> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Sig<Counter, i32>` is defined in another crate

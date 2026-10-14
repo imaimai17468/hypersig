@@ -3,10 +3,10 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use serde::Serialize;
-use serde_json::Value;
+use serde_json::{Value, json};
 
-use crate::expr::Stmt;
+use crate::expr::{IntoExpr, IntoStmt, Stmt};
+use crate::signal::Sig;
 
 /// The HTTP method an [`Action`] is served on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -103,24 +103,21 @@ impl<S, A> Action<S, A> {
 }
 
 impl<S> Action<S, ()> {
-    /// A statement that calls this action with the page's current signals.
+    /// A call to this action with the page's current signals.
     #[must_use]
-    pub fn call(&self) -> Stmt<S> {
-        Stmt::call(self.method.as_str(), self.path, Value::Null)
+    pub fn call(&self) -> Call<S> {
+        Call::new(self.method, self.path, Value::Null)
     }
 }
 
-impl<S, A: Serialize> Action<S, A> {
-    /// A statement that calls this action with `args` and the current signals.
+impl<S, A> Action<S, A> {
+    /// A call to this action with `args` and the current signals.
     ///
-    /// # Panics
-    ///
-    /// Panics if `args` fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `args` is evaluated in the browser when the call runs, so it can be a
+    /// literal such as `&id` or an expression such as `item.at(Todo::id())`.
     #[must_use]
-    pub fn call_with(&self, args: &A) -> Stmt<S> {
-        let args = serde_json::to_value(args).expect("action arguments serialize to JSON");
-        Stmt::call(self.method.as_str(), self.path, args)
+    pub fn call_with(&self, args: impl IntoExpr<S, A>) -> Call<S> {
+        Call::new(self.method, self.path, args.into_expr().into_json())
     }
 }
 
@@ -138,5 +135,174 @@ impl<S, A> fmt::Debug for Action<S, A> {
             .field("method", &self.method)
             .field("path", &self.path)
             .finish()
+    }
+}
+
+/// A pending call to an [`Action`], usable wherever a [`Stmt`] is.
+///
+/// ```
+/// use hypersig::{Action, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Form {
+///     saving: bool,
+///     error: String,
+/// }
+///
+/// const SAVE: Action<Form> = Action::post("/save");
+/// let _click = SAVE.call().pending(Form::saving()).error(Form::error());
+/// ```
+pub struct Call<S> {
+    method: Method,
+    path: &'static str,
+    args: Value,
+    pending: Value,
+    error: Value,
+    marker: PhantomData<fn() -> S>,
+}
+
+impl<S> Call<S> {
+    fn new(method: Method, path: &'static str, args: Value) -> Self {
+        Self {
+            method,
+            path,
+            args,
+            pending: Value::Null,
+            error: Value::Null,
+            marker: PhantomData,
+        }
+    }
+
+    /// Sets `flag` to true while the request is in flight and to false after.
+    #[must_use]
+    pub fn pending(mut self, flag: Sig<S, bool>) -> Self {
+        self.pending = Value::from(flag.path());
+        self
+    }
+
+    /// Sets `message` to the error text when the call fails, and to `""` when it succeeds.
+    #[must_use]
+    pub fn error(mut self, message: Sig<S, String>) -> Self {
+        self.error = Value::from(message.path());
+        self
+    }
+
+    /// Runs this call, then `next`.
+    #[must_use]
+    pub fn then(self, next: impl IntoStmt<S>) -> Stmt<S> {
+        self.into_stmt().then(next)
+    }
+}
+
+impl<S> IntoStmt<S> for Call<S> {
+    fn into_stmt(self) -> Stmt<S> {
+        let call = self;
+        Stmt::new(json!([
+            "call",
+            call.method.as_str(),
+            call.path,
+            call.args,
+            call.pending,
+            call.error
+        ]))
+    }
+}
+
+impl<S> fmt::Debug for Call<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Call")
+            .field("method", &self.method)
+            .field("path", &self.path)
+            .finish_non_exhaustive()
+    }
+}
+
+/// A named element on a page whose signals are `S`, for imperative DOM calls.
+///
+/// Declare one as a `const`, attach it with
+/// [`El::node_ref`](crate::html::El::node_ref), and use its statements in
+/// handlers. Inside a list item the browser looks for the element in the same
+/// item first, so one `NodeRef` serves every item.
+///
+/// ```
+/// use hypersig::html::{button, div, input};
+/// use hypersig::{NodeRef, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Search {
+///     query: String,
+/// }
+///
+/// const FIELD: NodeRef<Search> = NodeRef::new("search");
+/// let _ = div()
+///     .child(input().node_ref(FIELD).bind(Search::query()))
+///     .child(button().on_click(FIELD.focus()).text("Search"));
+/// ```
+pub struct NodeRef<S> {
+    name: &'static str,
+    marker: PhantomData<fn() -> S>,
+}
+
+impl<S> NodeRef<S> {
+    /// A reference named `name`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` is empty. In a `const`, that is a compile error.
+    #[must_use]
+    pub const fn new(name: &'static str) -> Self {
+        assert!(!name.is_empty(), "a node ref name is never empty");
+        Self {
+            name,
+            marker: PhantomData,
+        }
+    }
+
+    pub(crate) fn name(self) -> &'static str {
+        self.name
+    }
+
+    fn dom(self, op: &str) -> Stmt<S> {
+        Stmt::new(json!(["dom", op, self.name]))
+    }
+
+    /// A statement that focuses the element after the next render.
+    #[must_use]
+    pub fn focus(self) -> Stmt<S> {
+        self.dom("focus")
+    }
+
+    /// A statement that removes focus from the element.
+    #[must_use]
+    pub fn blur(self) -> Stmt<S> {
+        self.dom("blur")
+    }
+
+    /// A statement that selects the element's text, for an `<input>`.
+    #[must_use]
+    pub fn select(self) -> Stmt<S> {
+        self.dom("select")
+    }
+
+    /// A statement that scrolls the element into view.
+    #[must_use]
+    pub fn scroll_into_view(self) -> Stmt<S> {
+        self.dom("scroll")
+    }
+}
+
+impl<S> Clone for NodeRef<S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for NodeRef<S> {}
+
+impl<S> fmt::Debug for NodeRef<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("NodeRef").field(&self.name).finish()
     }
 }

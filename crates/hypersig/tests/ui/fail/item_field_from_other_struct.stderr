@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/item_field_from_other_struct.rs:22:84
+   |
+22 |     let _ = ul::<Todos>().child(each(Todos::items(), |todo| li().bind_text(todo.at(User::name()))));
+   |                                                                                 -- ^^^^^^^^^^^^ expected `Sig<Todo, _>`, found `Sig<User, String>`
+   |                                                                                 |
+   |                                                                                 arguments to this method are incorrect
+   |
+   = note: expected struct `Sig<Todo, _>`
+              found struct `Sig<User, String>`
+note: method defined here
+  --> src/signal.rs
+   |
+   |     pub fn at<U>(self, field: Sig<T, U>) -> Sig<S, U, Local> {
+   |            ^^

@@ -1,15 +1,21 @@
-error[E0308]: mismatched types
+error[E0277]: `Call<Other>` is not a statement on the page whose signals are `Counter`
   --> tests/ui/fail/action_from_other_page.rs:21:42
    |
 21 |     let _ = button::<Counter>().on_click(TOGGLE.call());
-   |                                 -------- ^^^^^^^^^^^^^ expected `Stmt<Counter>`, found `Stmt<Other>`
+   |                                 -------- ^^^^^^^^^^^^^ the trait `IntoStmt<Counter>` is not implemented for `Call<Other>`
    |                                 |
-   |                                 arguments to this method are incorrect
+   |                                 required by a bound introduced by this call
    |
-   = note: expected struct `Stmt<Counter>`
-              found struct `Stmt<Other>`
-note: method defined here
+   = note: a handler runs statements built from the signals, actions, and node refs of its own page
+help: the trait `IntoStmt<Counter>` is not implemented for `Call<Other>`
+      but trait `IntoStmt<Other>` is implemented for it
+  --> src/action.rs
+   |
+   | impl<S> IntoStmt<S> for Call<S> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `Other`, found `Counter`
+note: required by a bound in `El::<S>::on_click`
   --> src/html.rs
    |
-   |     pub fn on_click(self, stmt: Stmt<S>) -> Self {
-   |            ^^^^^^^^
+   |     pub fn on_click(self, stmt: impl IntoStmt<S>) -> Self {
+   |                                      ^^^^^^^^^^^ required by this bound in `El::<S>::on_click`

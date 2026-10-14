@@ -1,0 +1,21 @@
+error[E0277]: `Stmt<Login>` is not a statement on the page whose signals are `Search`
+  --> tests/ui/fail/node_ref_from_other_page.rs:19:41
+   |
+19 |     let _ = button::<Search>().on_click(FIELD.focus());
+   |                                -------- ^^^^^^^^^^^^^ the trait `IntoStmt<Search>` is not implemented for `Stmt<Login>`
+   |                                |
+   |                                required by a bound introduced by this call
+   |
+   = note: a handler runs statements built from the signals, actions, and node refs of its own page
+help: the trait `IntoStmt<Search>` is not implemented for `Stmt<Login>`
+      but trait `IntoStmt<Login>` is implemented for it
+  --> src/expr.rs
+   |
+   | impl<S> IntoStmt<S> for Stmt<S> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `Login`, found `Search`
+note: required by a bound in `El::<S>::on_click`
+  --> src/html.rs
+   |
+   |     pub fn on_click(self, stmt: impl IntoStmt<S>) -> Self {
+   |                                      ^^^^^^^^^^^ required by this bound in `El::<S>::on_click`

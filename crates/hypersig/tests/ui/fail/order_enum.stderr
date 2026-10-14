@@ -1,0 +1,23 @@
+error[E0599]: the method `gt` exists for struct `Sig<Shop, Size>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/order_enum.rs:18:43
+   |
+ 7 | enum Size {
+   | --------- doesn't satisfy `Size: Comparable`
+...
+18 |     let _ = p::<Shop>().show(Shop::size().gt(&Size::Small));
+   |                                           ^^
+   |
+  ::: src/signal.rs
+   |
+   | pub struct Sig<S, T, R = Root> {
+   | ------------------------------ doesn't satisfy `Sig<Shop, Size>: Iterator`
+   |
+   = note: the following trait bounds were not satisfied:
+           `Size: Comparable`
+           `Sig<Shop, Size>: Iterator`
+           which is required by `&mut Sig<Shop, Size>: Iterator`
+note: the trait `Comparable` must be implemented
+  --> src/expr.rs
+   |
+   | pub trait Comparable: sealed::Sealed {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

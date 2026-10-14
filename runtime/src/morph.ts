@@ -1,10 +1,14 @@
 /**
  * Updates `from` in place until it matches `to`, keeping elements that are
  * already there so focus and scroll position survive. Children with an `id`
- * are matched by id, the rest by position.
+ * are matched by id, the rest by position. A `<template>` whose content
+ * changed is replaced whole, because its content is not among its children.
  */
 export function morph(from: Element, to: Element): Element {
-  if (from.tagName !== to.tagName) {
+  if (
+    from.tagName !== to.tagName ||
+    (from instanceof HTMLTemplateElement && from.innerHTML !== (to as HTMLTemplateElement).innerHTML)
+  ) {
     from.replaceWith(to);
     return to;
   }

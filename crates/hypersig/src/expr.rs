@@ -2,27 +2,44 @@
 //!
 //! An [`Expr`] or [`Stmt`] is serialized into an HTML attribute as a JSON
 //! array whose first element names the operation. The runtime in
-//! `runtime/src/eval.ts` interprets that array directly, with no `eval`:
+//! `runtime/src/eval.ts` interprets that array directly, with no `eval`.
 //!
 //! | Rust | JSON |
 //! |---|---|
-//! | `Counter::count()` | `["sig","count"]` |
-//! | literal `1` | `["lit",1]` |
-//! | `a + b` (numbers) | `["add",a,b]` |
-//! | `a + b` (strings) | `["concat",a,b]` |
-//! | `a - b`, `a * b`, `a / b` | `["sub",a,b]`, `["mul",a,b]`, `["div",a,b]` |
+//! | `Page::count()` | `["sig","count"]` |
+//! | `Page::panel().at(Panel::open())` | `["sig","panel.open"]` |
+//! | `item.at(Todo::done())` inside a list | `["item",depth,"done"]` |
+//! | `item.index()` | `["index",depth]` |
+//! | literal `1`, `&value` | `["lit",1]` |
+//! | `a + b`, `a - b`, `a * b`, `a / b`, `a % b` | `["add",a,b]`, `["sub",a,b]`, ... `["rem",a,b]` |
+//! | `a.min(b)`, `a.max(b)` | `["min",a,b]`, `["max",a,b]` |
 //! | `a.equals(b)`, `a.not_equals(b)` | `["eq",a,b]`, `["ne",a,b]` |
 //! | `a.gt(b)`, `ge`, `lt`, `le` | `["gt",a,b]`, ... |
 //! | `a.and(b)`, `a.or(b)`, `!a` | `["and",a,b]`, `["or",a,b]`, `["not",a]` |
-//! | `a.to_text()` | `["str",a]` |
-//! | `sig.set(e)` | `["set","path",e]` |
-//! | `action.call()` | `["call","POST","/path",args]` |
+//! | `if_else(c, a, b)` | `["if",c,a,b]` |
+//! | `a.to_text()`, `a.to_fixed(n)` | `["str",a]`, `["fixed",a,n]` |
+//! | `a.concat(b)`, `trim`, `to_lowercase`, `to_uppercase` | `["concat",a,b]`, `["trim",a]`, `["lower",a]`, `["upper",a]` |
+//! | `a.contains(b)`, `a.starts_with(b)`, `a.char_count()` | `["contains",a,b]`, `["starts",a,b]`, `["chars",a]` |
+//! | `list.len()` | `["len",a]` |
+//! | `list.count(\|item\| p)` | `["count",place,depth,p]` |
+//! | `opt.unwrap_or(d)`, `a.some()` | `["or_else",a,d]`, `a` |
+//! | `rec.at(field)`, `rec.with(field, v)` | `["get",a,"path"]`, `["with",a,"path",v]` |
+//! | `sig.set(e)` | `["set",place,e]` |
+//! | `list.push(e)`, `list.remove_at(i)` | `["push",place,e]`, `["remove",place,i]` |
+//! | `list.retain(\|item\| p)`, `list.set_all(f, e)` | `["retain",place,depth,p]`, `["set_all",place,"path",e]` |
+//! | `Stmt::when(c, s)`, `Stmt::if_else(c, s, t)` | `["if",c,s,t]` |
+//! | `action.call()` | `["call",method,path,args,pending,error]` |
+//! | `node_ref.focus()` | `["dom","focus",name]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |
+//!
+//! A place is `"dotted.path"` for a page signal and `["item",depth,"path"]`
+//! for a field of a list item.
 
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops;
 
+use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::signal::Sig;
@@ -34,23 +51,48 @@ pub struct Expr<S, T> {
 }
 
 impl<S, T> Expr<S, T> {
-    fn new(ast: Value) -> Self {
+    pub(crate) fn from_json(ast: Value) -> Self {
         Self {
             ast,
             marker: PhantomData,
         }
     }
 
-    pub(crate) fn sig(path: &'static str) -> Self {
-        Self::new(json!(["sig", path]))
+    /// A constant value, serialized to JSON once at render time.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `value` fails to serialize to JSON, which only happens for a
+    /// `Serialize` impl that returns an error.
+    #[must_use]
+    pub fn lit(value: &T) -> Self
+    where
+        T: Serialize,
+    {
+        let value = serde_json::to_value(value).expect("a literal serializes to JSON");
+        Self::from_json(json!(["lit", value]))
     }
 
     fn binary<U>(op: &str, lhs: Self, rhs: Self) -> Expr<S, U> {
-        Expr::new(Value::Array(vec![Value::from(op), lhs.ast, rhs.ast]))
+        Expr::from_json(Value::Array(vec![Value::from(op), lhs.ast, rhs.ast]))
     }
 
     fn unary<U>(op: &str, operand: Self) -> Expr<S, U> {
-        Expr::new(Value::Array(vec![Value::from(op), operand.ast]))
+        Expr::from_json(Value::Array(vec![Value::from(op), operand.ast]))
+    }
+
+    fn retype<U>(self) -> Expr<S, U> {
+        Expr::from_json(self.ast)
+    }
+
+    /// The field `field` of the struct this expression evaluates to.
+    #[must_use]
+    pub fn at<U>(self, field: Sig<T, U>) -> Expr<S, U> {
+        Expr::from_json(json!(["get", self.ast, field.raw_path().dotted()]))
+    }
+
+    pub(crate) fn into_json(self) -> Value {
+        self.ast
     }
 
     pub(crate) fn to_json(&self) -> String {
@@ -60,7 +102,7 @@ impl<S, T> Expr<S, T> {
 
 impl<S, T> Clone for Expr<S, T> {
     fn clone(&self) -> Self {
-        Self::new(self.ast.clone())
+        Self::from_json(self.ast.clone())
     }
 }
 
@@ -72,8 +114,9 @@ impl<S, T> fmt::Debug for Expr<S, T> {
 
 /// Conversion into an [`Expr`] over `S` of type `T`.
 ///
-/// Implemented for [`Expr`] itself, for [`Sig`], and for literals of the
-/// supported primitive types, so an operand can be any of them.
+/// Implemented for [`Expr`] itself, for [`Sig`] and [`Item`](crate::Item), for literals of
+/// `i32`, `f64`, `bool`, `String`, and `&str`, and for a reference to any
+/// `Serialize` value, so an operand can be any of them.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not an expression of type `{T}` on the page whose signals are `{S}`",
     note = "an expression must have the type the attribute expects, and use signals of the same page"
@@ -89,9 +132,15 @@ impl<S, T> IntoExpr<S, T> for Expr<S, T> {
     }
 }
 
-impl<S, T> IntoExpr<S, T> for Sig<S, T> {
+impl<S, T, R> IntoExpr<S, T> for Sig<S, T, R> {
     fn into_expr(self) -> Expr<S, T> {
         self.expr()
+    }
+}
+
+impl<S, T: Serialize> IntoExpr<S, T> for &T {
+    fn into_expr(self) -> Expr<S, T> {
+        Expr::lit(self)
     }
 }
 
@@ -99,13 +148,28 @@ macro_rules! literal {
     ($($ty:ty => $target:ty),* $(,)?) => {$(
         impl<S> IntoExpr<S, $target> for $ty {
             fn into_expr(self) -> Expr<S, $target> {
-                Expr::new(json!(["lit", self]))
+                Expr::from_json(json!(["lit", self]))
             }
         }
     )*};
 }
 
 literal!(i32 => i32, f64 => f64, bool => bool, String => String, &str => String);
+
+/// The expression `then` while `cond` is true, and `otherwise` while it is false.
+#[must_use]
+pub fn if_else<S, T>(
+    cond: impl IntoExpr<S, bool>,
+    then: impl IntoExpr<S, T>,
+    otherwise: impl IntoExpr<S, T>,
+) -> Expr<S, T> {
+    Expr::from_json(json!([
+        "if",
+        cond.into_expr().ast,
+        then.into_expr().ast,
+        otherwise.into_expr().ast
+    ]))
+}
 
 /// A type the runtime does arithmetic on with the same result Rust would get.
 ///
@@ -121,7 +185,7 @@ pub trait Number: sealed::Sealed {}
 impl Number for i32 {}
 impl Number for f64 {}
 
-/// A type the runtime can compare with `===`, `<`, and friends.
+/// A type the runtime can order with `<` and friends.
 pub trait Comparable: sealed::Sealed {}
 impl Comparable for i32 {}
 impl Comparable for f64 {}
@@ -141,46 +205,87 @@ mod sealed {
     impl Sealed for String {}
 }
 
-/// Defines the operator impls and comparison methods on both `Expr` and
-/// `Sig`, so a signal can be used as an operand without converting it first.
+/// Defines the operator impls and methods on both `Expr` and `Sig`, so a
+/// signal can be used as an operand without converting it first.
 macro_rules! operations {
-    ($ty:ident) => {
-        impl<S, T: Number, R: IntoExpr<S, T>> ops::Add<R> for $ty<S, T> {
+    ($ty:ident $(, $r:ident)?) => {
+        impl<S, T: Number, $($r,)? Rhs: IntoExpr<S, T>> ops::Add<Rhs> for $ty<S, T $(, $r)?> {
             type Output = Expr<S, T>;
-            fn add(self, rhs: R) -> Expr<S, T> {
+            fn add(self, rhs: Rhs) -> Expr<S, T> {
                 Expr::binary("add", self.into_expr(), rhs.into_expr())
             }
         }
 
-        impl<S, T: Number, R: IntoExpr<S, T>> ops::Sub<R> for $ty<S, T> {
+        impl<S, T: Number, $($r,)? Rhs: IntoExpr<S, T>> ops::Sub<Rhs> for $ty<S, T $(, $r)?> {
             type Output = Expr<S, T>;
-            fn sub(self, rhs: R) -> Expr<S, T> {
+            fn sub(self, rhs: Rhs) -> Expr<S, T> {
                 Expr::binary("sub", self.into_expr(), rhs.into_expr())
             }
         }
 
-        impl<S, T: Number, R: IntoExpr<S, T>> ops::Mul<R> for $ty<S, T> {
+        impl<S, T: Number, $($r,)? Rhs: IntoExpr<S, T>> ops::Mul<Rhs> for $ty<S, T $(, $r)?> {
             type Output = Expr<S, T>;
-            fn mul(self, rhs: R) -> Expr<S, T> {
+            fn mul(self, rhs: Rhs) -> Expr<S, T> {
                 Expr::binary("mul", self.into_expr(), rhs.into_expr())
             }
         }
 
-        impl<S, R: IntoExpr<S, f64>> ops::Div<R> for $ty<S, f64> {
+        // JavaScript's `%` truncates toward zero like Rust's.
+        impl<S, T: Number, $($r,)? Rhs: IntoExpr<S, T>> ops::Rem<Rhs> for $ty<S, T $(, $r)?> {
+            type Output = Expr<S, T>;
+            fn rem(self, rhs: Rhs) -> Expr<S, T> {
+                Expr::binary("rem", self.into_expr(), rhs.into_expr())
+            }
+        }
+
+        impl<S, $($r,)? Rhs: IntoExpr<S, f64>> ops::Div<Rhs> for $ty<S, f64 $(, $r)?> {
             type Output = Expr<S, f64>;
-            fn div(self, rhs: R) -> Expr<S, f64> {
+            fn div(self, rhs: Rhs) -> Expr<S, f64> {
                 Expr::binary("div", self.into_expr(), rhs.into_expr())
             }
         }
 
-        impl<S> ops::Not for $ty<S, bool> {
+        impl<S $(, $r)?> ops::Not for $ty<S, bool $(, $r)?> {
             type Output = Expr<S, bool>;
             fn not(self) -> Expr<S, bool> {
                 Expr::unary("not", self.into_expr())
             }
         }
 
-        impl<S> $ty<S, String> {
+        impl<S, T: Number $(, $r)?> $ty<S, T $(, $r)?> {
+            /// The smaller of this value and `rhs`.
+            #[must_use]
+            pub fn min(self, rhs: impl IntoExpr<S, T>) -> Expr<S, T> {
+                Expr::binary("min", self.into_expr(), rhs.into_expr())
+            }
+
+            /// The larger of this value and `rhs`.
+            #[must_use]
+            pub fn max(self, rhs: impl IntoExpr<S, T>) -> Expr<S, T> {
+                Expr::binary("max", self.into_expr(), rhs.into_expr())
+            }
+        }
+
+        impl<S $(, $r)?> $ty<S, i32 $(, $r)?> {
+            /// This integer as an `f64`, which holds every `i32` exactly.
+            #[must_use]
+            pub fn to_f64(self) -> Expr<S, f64> {
+                self.into_expr().retype()
+            }
+        }
+
+        impl<S $(, $r)?> $ty<S, f64 $(, $r)?> {
+            /// This number as text with `digits` digits after the point.
+            ///
+            /// The runtime uses `Number.prototype.toFixed`, which can round a
+            /// halfway value differently from Rust's `format!("{:.n}")`.
+            #[must_use]
+            pub fn to_fixed(self, digits: u8) -> Expr<S, String> {
+                Expr::from_json(json!(["fixed", self.into_expr().ast, digits]))
+            }
+        }
+
+        impl<S $(, $r)?> $ty<S, String $(, $r)?> {
             /// Appends `rhs` to this string.
             #[must_use]
             pub fn concat(self, rhs: impl IntoExpr<S, String>) -> Expr<S, String> {
@@ -192,9 +297,79 @@ macro_rules! operations {
             pub fn is_empty(self) -> Expr<S, bool> {
                 self.equals("")
             }
+
+            /// The number of Unicode scalar values, as Rust's `chars().count()`.
+            #[must_use]
+            pub fn char_count(self) -> Expr<S, i32> {
+                Expr::unary("chars", self.into_expr())
+            }
+
+            /// This string without leading and trailing whitespace.
+            #[must_use]
+            pub fn trim(self) -> Expr<S, String> {
+                Expr::unary("trim", self.into_expr())
+            }
+
+            /// This string in lowercase.
+            #[must_use]
+            pub fn to_lowercase(self) -> Expr<S, String> {
+                Expr::unary("lower", self.into_expr())
+            }
+
+            /// This string in uppercase.
+            #[must_use]
+            pub fn to_uppercase(self) -> Expr<S, String> {
+                Expr::unary("upper", self.into_expr())
+            }
+
+            /// Whether `needle` occurs in this string.
+            #[must_use]
+            pub fn contains(self, needle: impl IntoExpr<S, String>) -> Expr<S, bool> {
+                Expr::binary("contains", self.into_expr(), needle.into_expr())
+            }
+
+            /// Whether this string starts with `prefix`.
+            #[must_use]
+            pub fn starts_with(self, prefix: impl IntoExpr<S, String>) -> Expr<S, bool> {
+                Expr::binary("starts", self.into_expr(), prefix.into_expr())
+            }
         }
 
-        impl<S, T: Comparable> $ty<S, T> {
+        impl<S, T $(, $r)?> $ty<S, Vec<T> $(, $r)?> {
+            /// The number of items.
+            #[must_use]
+            pub fn len(self) -> Expr<S, i32> {
+                Expr::unary("len", self.into_expr())
+            }
+
+            /// Whether the list has no items.
+            #[must_use]
+            pub fn is_empty(self) -> Expr<S, bool> {
+                self.len().equals(0)
+            }
+        }
+
+        impl<S, T $(, $r)?> $ty<S, Option<T> $(, $r)?> {
+            /// Whether this option holds a value.
+            #[must_use]
+            pub fn is_some(self) -> Expr<S, bool> {
+                Expr::binary("ne", self.into_expr(), Expr::from_json(json!(["lit", null])))
+            }
+
+            /// Whether this option is `None`.
+            #[must_use]
+            pub fn is_none(self) -> Expr<S, bool> {
+                Expr::binary("eq", self.into_expr(), Expr::from_json(json!(["lit", null])))
+            }
+
+            /// The held value, or `default` for `None`.
+            #[must_use]
+            pub fn unwrap_or(self, default: impl IntoExpr<S, T>) -> Expr<S, T> {
+                Expr::from_json(json!(["or_else", self.into_expr().ast, default.into_expr().ast]))
+            }
+        }
+
+        impl<S, T: Comparable $(, $r)?> $ty<S, T $(, $r)?> {
             /// Whether this value is strictly greater than `rhs`.
             #[must_use]
             pub fn gt(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
@@ -220,21 +395,24 @@ macro_rules! operations {
             }
         }
 
-        impl<S, T: Comparable> $ty<S, T> {
+        impl<S, T: PartialEq $(, $r)?> $ty<S, T $(, $r)?> {
             /// Whether this value equals `rhs`.
+            ///
+            /// The runtime compares the JSON forms structurally, which agrees
+            /// with a derived `PartialEq` and may disagree with a hand-written one.
             #[must_use]
             pub fn equals(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
                 Expr::binary("eq", self.into_expr(), rhs.into_expr())
             }
 
-            /// Whether this value differs from `rhs`.
+            /// Whether this value differs from `rhs`, comparing JSON forms.
             #[must_use]
             pub fn not_equals(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
                 Expr::binary("ne", self.into_expr(), rhs.into_expr())
             }
         }
 
-        impl<S> $ty<S, bool> {
+        impl<S $(, $r)?> $ty<S, bool $(, $r)?> {
             /// Whether both this value and `rhs` are true.
             #[must_use]
             pub fn and(self, rhs: impl IntoExpr<S, bool>) -> Expr<S, bool> {
@@ -248,18 +426,37 @@ macro_rules! operations {
             }
         }
 
-        impl<S, T: Textual> $ty<S, T> {
+        impl<S, T: Textual $(, $r)?> $ty<S, T $(, $r)?> {
             /// This value as display text.
             #[must_use]
             pub fn to_text(self) -> Expr<S, String> {
                 Expr::unary("str", self.into_expr())
             }
         }
+
+        impl<S, T $(, $r)?> $ty<S, T $(, $r)?> {
+            /// This value wrapped in `Some`.
+            #[must_use]
+            pub fn some(self) -> Expr<S, Option<T>> {
+                self.into_expr().retype()
+            }
+
+            /// A copy of this struct with `field` replaced by `value`.
+            #[must_use]
+            pub fn with<U>(self, field: Sig<T, U>, value: impl IntoExpr<S, U>) -> Expr<S, T> {
+                Expr::from_json(json!([
+                    "with",
+                    self.into_expr().ast,
+                    field.raw_path().dotted(),
+                    value.into_expr().ast
+                ]))
+            }
+        }
     };
 }
 
 operations!(Expr);
-operations!(Sig);
+operations!(Sig, R);
 
 /// A statement over the signals of `S` that the browser runs on an event.
 pub struct Stmt<S> {
@@ -268,33 +465,51 @@ pub struct Stmt<S> {
 }
 
 impl<S> Stmt<S> {
-    fn new(ast: Value) -> Self {
+    pub(crate) fn new(ast: Value) -> Self {
         Self {
             ast,
             marker: PhantomData,
         }
     }
 
-    pub(crate) fn set<T>(path: &'static str, value: Expr<S, T>) -> Self {
-        Self::new(Value::Array(vec![
-            Value::from("set"),
-            Value::from(path),
-            value.ast,
-        ]))
+    pub(crate) fn set<T>(place: Value, value: Expr<S, T>) -> Self {
+        Self::new(Value::Array(vec![Value::from("set"), place, value.ast]))
     }
 
-    pub(crate) fn call(method: &str, path: &str, args: Value) -> Self {
-        Self::new(Value::Array(vec![
-            Value::from("call"),
-            Value::from(method),
-            Value::from(path),
-            args,
+    pub(crate) fn list(op: &str, place: Value, operand: Value) -> Self {
+        Self::new(Value::Array(vec![Value::from(op), place, operand]))
+    }
+
+    /// A statement that does nothing.
+    #[must_use]
+    pub fn none() -> Self {
+        Self::new(json!(["seq", []]))
+    }
+
+    /// Runs `then` only while `cond` is true.
+    #[must_use]
+    pub fn when(cond: impl IntoExpr<S, bool>, then: impl IntoStmt<S>) -> Self {
+        Self::if_else(cond, then, Self::none())
+    }
+
+    /// Runs `then` while `cond` is true and `otherwise` while it is false.
+    #[must_use]
+    pub fn if_else(
+        cond: impl IntoExpr<S, bool>,
+        then: impl IntoStmt<S>,
+        otherwise: impl IntoStmt<S>,
+    ) -> Self {
+        Self::new(json!([
+            "if",
+            cond.into_expr().ast,
+            then.into_stmt().ast,
+            otherwise.into_stmt().ast
         ]))
     }
 
     /// Runs `self`, then `next`.
     #[must_use]
-    pub fn then(self, next: Self) -> Self {
+    pub fn then(self, next: impl IntoStmt<S>) -> Self {
         let mut steps = match self.ast {
             Value::Array(mut items) if items.first() == Some(&json!("seq")) => match items.pop() {
                 Some(Value::Array(steps)) => steps,
@@ -302,12 +517,35 @@ impl<S> Stmt<S> {
             },
             single => vec![single],
         };
-        steps.push(next.ast);
+        steps.push(next.into_stmt().ast);
         Self::new(json!(["seq", steps]))
+    }
+
+    pub(crate) fn into_json(self) -> Value {
+        self.ast
     }
 
     pub(crate) fn to_json(&self) -> String {
         self.ast.to_string()
+    }
+}
+
+/// Conversion into a [`Stmt`] over `S`.
+///
+/// Implemented for [`Stmt`] and for [`Call`](crate::Call), so a handler can
+/// take either.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a statement on the page whose signals are `{S}`",
+    note = "a handler runs statements built from the signals, actions, and node refs of its own page"
+)]
+pub trait IntoStmt<S> {
+    /// Converts `self` into a statement.
+    fn into_stmt(self) -> Stmt<S>;
+}
+
+impl<S> IntoStmt<S> for Stmt<S> {
+    fn into_stmt(self) -> Stmt<S> {
+        self
     }
 }
 
@@ -325,10 +563,23 @@ impl<S> fmt::Debug for Stmt<S> {
 
 #[cfg(test)]
 mod tests {
+    use serde::{Deserialize, Serialize};
+
     use crate::_private::sig;
-    use crate::{Expr, IntoExpr, Sig};
+    use crate::{Expr, IntoExpr, Sig, Stmt, if_else};
 
     struct Page;
+
+    #[derive(Serialize, Deserialize, PartialEq)]
+    struct Todo {
+        title: String,
+        done: bool,
+    }
+
+    #[derive(Serialize, PartialEq)]
+    enum Filter {
+        Active,
+    }
 
     fn count() -> Sig<Page, i32> {
         sig("count")
@@ -336,6 +587,22 @@ mod tests {
 
     fn name() -> Sig<Page, String> {
         sig("name")
+    }
+
+    fn todos() -> Sig<Page, Vec<Todo>> {
+        sig("todos")
+    }
+
+    fn filter() -> Sig<Page, Filter> {
+        sig("filter")
+    }
+
+    fn done() -> Sig<Todo, bool> {
+        sig("done")
+    }
+
+    fn title() -> Sig<Todo, String> {
+        sig("title")
     }
 
     #[test]
@@ -374,6 +641,44 @@ mod tests {
         assert_eq!(
             e.to_json(),
             r#"["or",["not",["gt",["sig","count"],["lit",0]]],["eq",["sig","name"],["lit",""]]]"#
+        );
+    }
+
+    #[test]
+    fn enum_literal_and_ternary() {
+        let e = if_else(filter().equals(&Filter::Active), "active", "all");
+        assert_eq!(
+            e.to_json(),
+            r#"["if",["eq",["sig","filter"],["lit","Active"]],["lit","active"],["lit","all"]]"#
+        );
+    }
+
+    #[test]
+    fn list_predicates_bind_the_item_depth() {
+        let left = todos().count(|todo| !todo.at(done()));
+        assert_eq!(
+            left.to_json(),
+            r#"["count","todos",0,["not",["item",0,"done"]]]"#
+        );
+        let push = todos().push(
+            Expr::lit(&Todo {
+                title: String::new(),
+                done: false,
+            })
+            .with(title(), name().trim()),
+        );
+        assert_eq!(
+            push.to_json(),
+            r#"["push","todos",["with",["lit",{"done":false,"title":""}],"title",["trim",["sig","name"]]]]"#
+        );
+    }
+
+    #[test]
+    fn conditional_statement() {
+        let s: Stmt<Page> = Stmt::when(count().gt(9), count().set(0));
+        assert_eq!(
+            s.to_json(),
+            r#"["if",["gt",["sig","count"],["lit",9]],["set","count",["lit",0]],["seq",[]]]"#
         );
     }
 }

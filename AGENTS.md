@@ -12,10 +12,11 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `crates/hypersig_proc` | `#[derive(Signals)]` as a thin `proc-macro = true` shim |
 | `crates/hypersig_proc_impl` | The token transformation behind the derive, with its snapshot tests |
 | `crates/hypersig/tests/ui` | trybuild cases. Each `fail/*.rs` is a mistake that must not compile |
+| `crates/hypersig/tests/fixtures.rs` | Builds pages with the Rust builder and writes them to `runtime/test/fixtures/`, which the runtime tests load |
 | `runtime/` | The browser runtime in TypeScript. `pnpm build` writes `crates/hypersig/assets/hypersig.js`, which is committed so that `cargo build` needs no Node |
 | `examples/` | Runnable axum applications |
 
-The wire format between the two halves is defined twice, once in `crates/hypersig/src/expr.rs` and `patch.rs` and once in `runtime/src/`. A change to one is a change to both in the same commit.
+The wire format between the two halves is defined twice, once in `crates/hypersig/src/expr.rs`, `html.rs`, and `patch.rs` and once in `runtime/src/`. A change to one is a change to both in the same commit. `tests/fixtures.rs` fails when a committed fixture differs from what the builder writes now, and `runtime/test/features.test.ts` runs those fixtures, so a change on one side that the other side does not follow fails one of the two test suites. Regenerate the fixtures with `HYPERSIG_FIXTURES=overwrite cargo test -p hypersig --test fixtures`, then run `pnpm test`.
 
 ## Verification before completion
 

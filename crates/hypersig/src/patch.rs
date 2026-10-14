@@ -72,10 +72,10 @@ pub struct SignalPatch<S> {
 }
 
 impl<S> SignalPatch<S> {
-    pub(crate) fn single(path: &'static str, value: &impl Serialize) -> Self {
+    pub(crate) fn single(path: String, value: &impl Serialize) -> Self {
         let value = serde_json::to_value(value).expect("a signal value serializes to JSON");
         let mut values = Map::new();
-        values.insert(path.to_owned(), value);
+        values.insert(path, value);
         Self {
             values,
             marker: PhantomData,

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
 struct Counter {
-    count: i32,
+    count: u64,
     name: String,
 }
 

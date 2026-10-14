@@ -1,0 +1,11 @@
+{
+  "html": "<main><span id=\"clock\" data-hs-every=\"[100,[&quot;set&quot;,&quot;ticks&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;ticks&quot;],[&quot;lit&quot;,1]]]]\"></span><input id=\"query\" data-hs-bind=\"[&quot;query&quot;,&quot;text&quot;]\" data-hs-on-input=\"[&quot;debounce&quot;,50,[&quot;set&quot;,&quot;searched&quot;,[&quot;sig&quot;,&quot;query&quot;]]]\"><span id=\"effect\" data-hs-effect=\"[[[&quot;sig&quot;,&quot;query&quot;],[&quot;set&quot;,&quot;effects&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;effects&quot;],[&quot;lit&quot;,1]]]]]\"></span><button id=\"save\" data-hs-on-click=\"[&quot;call&quot;,&quot;POST&quot;,&quot;/search&quot;,null,&quot;saving&quot;,&quot;error&quot;]\"></button></main>",
+  "signals": {
+    "effects": 0,
+    "error": "",
+    "query": "",
+    "saving": false,
+    "searched": "",
+    "ticks": 0
+  }
+}
