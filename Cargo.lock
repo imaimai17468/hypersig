@@ -124,6 +124,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-showcase"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "hypersig",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "example-todo"
 version = "0.0.0"
 dependencies = [
@@ -133,6 +143,16 @@ dependencies = [
  "serde",
  "tokio",
  "tokio-stream",
+]
+
+[[package]]
+name = "example-todomvc"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "hypersig",
+ "serde",
+ "tokio",
 ]
 
 [[package]]
