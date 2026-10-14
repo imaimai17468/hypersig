@@ -1,0 +1,17 @@
+{
+  "name": "hypersig-runtime",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --format=esm --target=es2022 --minify --legal-comments=none --banner:js=\"// hypersig runtime. Built from runtime/src by pnpm build; do not edit.\" --outfile=../crates/hypersig/assets/hypersig.js",
+    "check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "happy-dom": "21.0.1",
+    "typescript": "7.0.2",
+    "vitest": "5.0.4"
+  }
+}
