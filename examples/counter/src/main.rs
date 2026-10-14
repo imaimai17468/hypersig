@@ -1,1 +1,121 @@
-fn main() {}
+//! A counter whose increments happen in the browser and whose saves go to the server.
+//!
+//! Run with `cargo run -p example-counter` and open <http://localhost:3000>.
+
+use std::sync::Arc;
+use std::sync::atomic::{AtomicI32, Ordering};
+
+use axum::Router;
+use axum::response::Html;
+use axum::routing::get;
+use hypersig::html::{button, div, h1, input, label, p, span};
+use hypersig::{Action, Page, Patches, RouterExt, Signals};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Counter {
+    count: i32,
+    note: String,
+    status: String,
+}
+
+const SAVE: Action<Counter> = Action::post("/save");
+const RESET: Action<Counter> = Action::post("/reset");
+
+#[derive(Clone, Default)]
+struct AppState {
+    saved: Arc<AtomicI32>,
+}
+
+const STYLE: &str = "
+body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; padding: 0 1rem; }
+.row { display: flex; gap: .5rem; align-items: center; }
+.count { font-size: 3rem; font-variant-numeric: tabular-nums; min-width: 4ch; text-align: center; }
+.big { color: crimson; }
+button { font-size: 1rem; padding: .4rem .9rem; }
+input { font-size: 1rem; padding: .3rem; flex: 1; }
+.status { color: #555; }
+";
+
+async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> Html<String> {
+    let count = Counter::count();
+    let note = Counter::note();
+    let initial = Counter {
+        count: state.saved.load(Ordering::Relaxed),
+        note: String::new(),
+        status: String::new(),
+    };
+    let page = Page::new("hypersig counter", initial).style(STYLE).child(
+        div()
+            .child(h1().text("Counter"))
+            .child(
+                div()
+                    .class("row")
+                    .child(button().on_click(count.set(count - 1)).text("-"))
+                    .child(
+                        span()
+                            .class("count")
+                            .class_when("big", count.ge(10))
+                            .bind_text(count.to_text()),
+                    )
+                    .child(button().on_click(count.set(count + 1)).text("+")),
+            )
+            .child(
+                div()
+                    .class("row")
+                    .child(label().text("Note"))
+                    .child(input().attr("placeholder", "why this number?").bind(note)),
+            )
+            .child(
+                p().show(!note.is_empty())
+                    .bind_text(note.concat(" → ").concat(count.to_text())),
+            )
+            .child(
+                div()
+                    .class("row")
+                    .child(button().on_click(SAVE.call()).text("Save to server"))
+                    .child(
+                        button()
+                            .show(count.not_equals(0))
+                            .on_click(RESET.call())
+                            .text("Reset"),
+                    ),
+            )
+            .child(p().class("status").bind_text(Counter::status())),
+    );
+    Html(page.render())
+}
+
+async fn save(state: AppState, signals: Counter, (): ()) -> Patches<Counter> {
+    state.saved.store(signals.count, Ordering::Relaxed);
+    let status = if signals.note.is_empty() {
+        format!("Saved {}.", signals.count)
+    } else {
+        format!("Saved {} ({}).", signals.count, signals.note)
+    };
+    Counter::status().patch(status).into()
+}
+
+async fn reset(state: AppState, _signals: Counter, (): ()) -> Patches<Counter> {
+    state.saved.store(0, Ordering::Relaxed);
+    Patches::new().signals(
+        Counter::count()
+            .patch(0)
+            .and(Counter::note().patch(String::new()))
+            .and(Counter::status().patch("Reset by the server.".to_owned())),
+    )
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let app = Router::new()
+        .route("/", get(index))
+        .hypersig_runtime()
+        .action(SAVE, save)
+        .action(RESET, reset)
+        .with_state(AppState::default());
+    let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_owned());
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    println!("listening on http://{addr}");
+    axum::serve(listener, app).await
+}
