@@ -1,0 +1,12 @@
+{
+  "name": "hypersig-bench-compare",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "parity": "node harness/parity.mjs",
+    "measure": "node harness/measure.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

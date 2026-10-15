@@ -4,3 +4,6 @@ node_modules/
 .DS_Store
 /e2e/test-results
 /e2e/playwright-report
+/bench/compare/*/target
+/bench/compare/next/.next
+/bench/compare/results/raw
