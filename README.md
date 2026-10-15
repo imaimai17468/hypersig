@@ -11,34 +11,32 @@ Rust 向けのサーバー駆動ハイパーメディアライブラリ。[Datas
 
 式は JSON の AST として属性に書き出され、ランタイムがそれを解釈する。`eval` も `new Function` も使わないので、CSP で `unsafe-eval` を許可する必要がない（`runtime/test/bundle.test.ts` がバンドルを検査している）。
 
-## React でできることとの対応
+## Datastar の属性との対応
 
-React で書く画面の部品を、hypersig では次のように書く。✅ の行は、`examples/todomvc` と `examples/showcase` を headless Chrome で操作したテストか、`runtime/test/features.test.ts`（happy-dom）のどちらかで動作を確かめた。`bind_radio`、`bind_style`、マウスの出入り、`focus` イベントは happy-dom でだけ確かめている。
+Datastar の属性ごとに、hypersig で同じことをする書き方を並べる。どれも引数が型で縛られ、別ページのシグナルや型の合わない式はコンパイルで止まる。
 
-| React | hypersig | |
-|---|---|---|
-| `useState` | シグナル構造体のフィールドと `sig.set(...)` | ✅ |
-| 部品ごとの状態（同じ部品を何度置いても別々の状態） | 入れ子の `Signals` 構造体を `Sig::at` でたどり、部品関数に `Sig<S, Disclosure>` を渡す | ✅ |
-| props、children | Rust の関数引数と `El::child` | ✅ |
-| `{cond && <X/>}` | `when(cond, el)` は DOM から外す。`.show(cond)` は隠すだけ | ✅ |
-| `items.map(item => <li key=...>)` | `each(list, \|item\| li().key(item.at(Todo::id())))`。キーで要素を保ったまま並べ替える | ✅ |
-| 配列の state 更新 | `push`、`remove_at`、`item.remove()`、`retain`、`set_all`、`count` | ✅ |
-| 派生値（`useMemo` を使わない計算） | `Expr`。三項演算は `if_else`、文字列・数値・`Option`・構造体の操作がある | ✅ |
-| `onClick` などのイベント | `on_click`、`on_double_click`、`on_key(Key::Enter, ...)`、`on_blur`、マウスの出入り | ✅ |
-| 制御されたフォーム部品 | `bind` で text・textarea・select・number・checkbox、`bind_radio`、enum を選ぶ `bind_select` | ✅ |
-| `className`、`style`、`disabled` の切り替え | `class_when`、`bind_style`、`bind_attr`、`attr_when` | ✅ |
-| `useEffect(fn, [deps])` | `.effect(deps, stmt)`。要素が DOM に入ったときと、`deps` の値が変わったときに動く | ✅ |
-| `setInterval` を張る effect | `.every(Duration, stmt)`。要素が DOM から外れると止まる | ✅ |
-| `useRef` と `focus()` | `const R: NodeRef<S> = NodeRef::new(...)`、`R.focus()`。リストの中では同じ項目の要素を先に探す | ✅ |
-| データ取得と読み込み中の表示（`useTransition` の `isPending`） | `ACTION.call().pending(flag).error(message)` | ✅ |
-| 入力のデバウンス（React では別ライブラリ） | `on_debounced(Event::Input, Duration, stmt)` | ✅ |
-| Context | ページのシグナル構造体はどの部品からも届く | ✅ |
-| カスタムフック | `Expr` や `Stmt` を返す Rust の関数 | ✅ |
-| SSR | サーバーが HTML を返すが、`each`、`when`、`bind_text` の中身は JS が動いてから埋まる | 一部 |
-| effect の後始末関数、Portal、Suspense、Error Boundary | なし | ❌ |
-| ハンドラ内の任意の JS（`Date.now()`、`localStorage`、外部ライブラリの呼び出し） | 式の演算は上の表にあるものに限る | ❌ |
+| Datastar | hypersig |
+|---|---|
+| `data-signals` | `#[derive(Signals)]` した構造体を `Page::new` に渡す。入れ子の構造体は `Sig::at` でたどる |
+| `data-text`、`data-show` | `bind_text`、`show` |
+| `data-class`、`data-attr`、`data-style` | `class_when`、`bind_attr` と `attr_when`、`bind_style` |
+| `data-bind` | `bind`（text、textarea、select、number、checkbox）、`bind_radio`、enum を選ぶ `bind_select` |
+| `data-on` | `on_click`、`on_key(Key::Enter, ...)`、`on_blur` など。`__debounce` は `on_debounced` |
+| `data-on-interval` | `on_interval(Duration, stmt)` |
+| `data-init` | `on_load` |
+| `data-effect` | `effect(stmt)`。文が読んだシグナルが変わると再実行する |
+| `data-on-signal-patch` | `on_signal_change(sig, stmt)`。そのシグナルか中のフィールドが変わると動く |
+| `data-indicator` | `ACTION.call().indicator(flag)`。失敗時のメッセージは `.error(message)` |
+| `data-ref` | `const R: NodeRef<S> = NodeRef::new(...)` と `R.focus()` など |
+| `@post`、`@get` | `const A: Action<S, Args> = Action::post(...)` と `A.call()` |
+| `datastar-patch-elements`、`datastar-patch-signals` | `Patches::element(&fragment)`、`Patches::signals(sig.patch(v))` |
 
-ルーティングは React 本体の機能ではないので表に入れていない。hypersig ではページごとに axum のルートを分ける。
+Datastar にないものも 2 つ足した。
+
+- **ブラウザ側のリストと条件付き要素**: `each(list, |item| ...)` が `Vec` のシグナルを項目ごとに描き、`key` で要素を保ったまま並べ替える。`when(cond, el)` は条件が偽の間、要素を DOM から外す。項目は `push`、`item.remove()`、`retain`、`set_all`、`count` で操作する。
+- **サーバー側での式の評価**: `Page::render` が初期シグナルで式を評価し、テキスト、表示切り替え、class、属性、フォームの値、リストの項目を HTML に書き込む。ランタイムは読み込み後、その要素を作り直さずに引き継ぐ。JS を切ったブラウザでも最初の画面はそのまま見える。
+
+ランタイムは束縛ごとに読んだシグナルを記録し、変わったシグナルを読んでいる束縛だけを評価し直す。2000 件の TodoMVC（headless Chrome、release ビルド、5 回の中央値）では、入力欄への 1 文字入力が 0.5 ms、1 件のチェックが 5.7 ms だった。チェックが遅いのは、リストのキーを全件照合しているため。
 
 ## 例
 
@@ -84,7 +82,7 @@ fn app() -> hypersig::html::El<Todos> {
 }
 ```
 
-この画面の操作はすべてブラウザ内で完結する。サーバーに処理を渡すときは `Action` を宣言して `on_click(SAVE.call())` のように呼び、ハンドラはシグナル構造体を受け取って `Patches` を返す。
+この画面の操作はすべてブラウザ内で完結し、最初の HTML にはサーバーが項目と残数を書き込む。サーバーに処理を渡すときは `Action` を宣言して `on_click(SAVE.call())` のように呼び、ハンドラはシグナル構造体を受け取って `Patches` を返す。
 
 コンパイルエラーになる例は `crates/hypersig/tests/ui/fail/` に 17 件ある。たとえば `div().show(Counter::count())` は次のように止まる。
 
@@ -100,10 +98,10 @@ error[E0277]: `Sig<Counter, i32>` is not an expression of type `bool` on the pag
 cargo run -p example-counter    # http://127.0.0.1:3000
 cargo run -p example-todo       # http://127.0.0.1:3001 を 2 タブで開くと変更が同期する
 cargo run -p example-todomvc    # http://127.0.0.1:3002 TodoMVC。再読み込みしても一覧が残る
-cargo run -p example-showcase   # http://127.0.0.1:3003 上の表の残りの項目
+cargo run -p example-showcase   # http://127.0.0.1:3003 状態を持つ部品、インターバル、検索、フォーム
 ```
 
-Node は不要。ブラウザ用ランタイムはビルド済みの `crates/hypersig/assets/hypersig.js`（約 13 KB、gzip 前）をコミットしてあり、`include_str!` で埋め込まれる。
+Node は不要。ブラウザ用ランタイムはビルド済みの `crates/hypersig/assets/hypersig.js`（約 14 KB、gzip 後は約 5 KB）をコミットしてあり、`include_str!` で埋め込まれる。
 
 ## 構成
 
@@ -115,15 +113,16 @@ Node は不要。ブラウザ用ランタイムはビルド済みの `crates/hyp
 | `crates/hypersig/tests/fixtures.rs` | Rust で組んだ画面を `runtime/test/fixtures/` に書き出す。ランタイムのテストはこれを読み込むので、Rust 側とランタイム側の形式がずれるとどちらかのテストが落ちる |
 | `runtime/` | ブラウザ用ランタイム（TypeScript）。`pnpm build` で上記 `assets/` に出力する |
 | `examples/` | counter、todo、todomvc、showcase |
+| `e2e/` | 例を起動して Chrome で操作する Playwright のテスト |
 
 ## できないこと
 
-- 上の表の ❌ の行
-- `each` と `when` の中身はブラウザが描くので、JS が動くまで空のまま表示される
+- ハンドラや式で使える演算は上に挙げたものに限る。`Date.now()`、`localStorage`、外部ライブラリの呼び出しなど、任意の JS は書けない
 - 部品ごとの状態は、ページのシグナル構造体にあらかじめ場所を用意しておく必要がある。実行中に部品を増やすときは `Vec` の項目にする
 - 算術は `i32` と `f64` だけ、除算は `f64` だけ。JavaScript の数値で同じ結果にならない型は式に使えない
 - `equals` は JSON の形で比べる。derive した `PartialEq` とは一致するが、手で書いた `PartialEq` とは一致しない場合がある
-- 再描画は依存の追跡をせず、シグナルが変わるたびにページ上のすべての束縛を評価し直す。項目が数千を超えるリストでは遅くなる見込みだが、計測はしていない
+- サーバー側で式を評価するのは `Page::render` だけ。`Patches::element` で送るフラグメントはシグナルの値を持たないので、中の束縛はブラウザが埋める
+- サーバー側の評価とブラウザ側の評価は、`to_fixed` のちょうど半分の丸め、`1e-6` 未満か `1e21` 以上の数の文字列化、基本多言語面の外の文字の大小比較で食い違うことがある。読み込み後はブラウザ側の値で上書きされる
 - サーバーからのパッチで `each` を含むフラグメントを差し替えると、その中のリスト項目は作り直される（項目の値はシグナルにあるので内容は保たれる）
 - シグナルは `#[serde(rename)]` などを使えない。derive が拒否する
 
@@ -134,6 +133,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
+cd e2e && pnpm install && pnpm check && pnpm test   # 4 つの例を起動して Chrome で操作する
 ```
 
 Lint の構成とコーディング規約は Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っている。エージェント向けの指示は `AGENTS.md` と `.claude/` にある。
