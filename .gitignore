@@ -9,3 +9,4 @@ node_modules/
 /bench/compare/results/raw
 /bench/compare/tanstack-start/dist
 /bench/compare/tanstack-start/.tanstack
+/bench/js-framework-benchmark/*/target
