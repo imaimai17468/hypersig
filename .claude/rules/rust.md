@@ -33,7 +33,7 @@ The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, wi
 
 ## Performance
 
-**Rendering reads the signals and the expression trees by reference** (M-HOTPATH). `Page::render` runs once per request and writes each `each` template once per list item, so it borrows what it reads (`Ctx::get`, `Expr::as_json`, the `Cow` from `ssr::evaluate`) and allocates only for a value it produces. A claim that a change is faster carries the render time before and after, measured with `--release`.
+**Rendering reads the signals and the expression trees by reference** (M-HOTPATH). `Page::render` runs once per request and writes each `each` template once per list item, so it borrows what it reads (`Ctx::get`, `Expr::as_json`, the `Cow` from `ssr::evaluate`) and allocates only for a value it produces. A claim that a change is faster carries the medians from `cargo bench -p hypersig --bench render` before and after, which report allocations alongside time.
 
 ## Errors and panics
 

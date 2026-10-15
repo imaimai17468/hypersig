@@ -20,6 +20,7 @@ hypersig_proc = { path = "crates/hypersig_proc", version = "=0.1.0" }
 hypersig_proc_impl = { path = "crates/hypersig_proc_impl", version = "=0.1.0" }
 
 axum = "0.8.9"
+divan = "0.1.21"
 futures = "0.3.34"
 insta = "1.49.0"
 prettyplease = "0.3.0"

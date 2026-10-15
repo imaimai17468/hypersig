@@ -11,6 +11,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `crates/hypersig` | The library: `Signals`, `Sig`, `Expr`, `Stmt`, the HTML builder, `Action`, `Fragment`, `Patches`, the axum integration, and the embedded runtime |
 | `crates/hypersig_proc` | `#[derive(Signals)]` as a thin `proc-macro = true` shim |
 | `crates/hypersig_proc_impl` | The token transformation behind the derive, with its snapshot tests |
+| `crates/hypersig/benches/render.rs` | divan benchmarks of `Page::render` over list pages, with allocation counts |
 | `crates/hypersig/tests/ui` | trybuild cases. Each `fail/*.rs` is a mistake that must not compile |
 | `crates/hypersig/tests/fixtures.rs` | Builds pages with the Rust builder and writes them to `runtime/test/fixtures/`, which the runtime tests load |
 | `runtime/` | The browser runtime in TypeScript. `pnpm build` writes `crates/hypersig/assets/hypersig.js`, which is committed so that `cargo build` needs no Node |
@@ -28,6 +29,7 @@ No hook runs these. Run them yourself before reporting a change complete:
 - `cargo test --workspace` (this includes the trybuild cases)
 - `cargo check -p hypersig --no-default-features`, because the axum integration is behind a feature
 - `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`, which fails on a broken intra-doc link
+- `cargo bench -p hypersig --bench render` before and after the change, where it touches `html.rs`, `page.rs`, `ssr.rs`, or `expr.rs`. The commit body carries both medians.
 - In `runtime/`: `pnpm check` and `pnpm test`, where the change touches `runtime/` or the wire format
 - In `runtime/`: `pnpm build`, then `git diff --exit-code crates/hypersig/assets`, so the committed bundle matches the source
 - In `e2e/`: `pnpm check` and `pnpm test`, where the change touches the runtime, the HTML builder, or an example. Locally it drives the installed Chrome; CI installs Playwright's Chromium.

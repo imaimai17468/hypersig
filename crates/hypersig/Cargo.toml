@@ -23,10 +23,15 @@ serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+divan.workspace = true
 http-body-util.workspace = true
 tokio.workspace = true
 tower.workspace = true
 trybuild.workspace = true
+
+[[bench]]
+name = "render"
+harness = false
 
 [lints]
 workspace = true
