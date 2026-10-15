@@ -58,8 +58,8 @@ Your training data goes stale. `syn` is at 3.x here and `axum` at 0.8.x, and bot
 
 ## Code Practices
 
-**Make the wrong thing fail to compile.** Where you are about to write a comment, a runtime check, or a doc line so that a caller does not misuse an API, change the types first. A comment is the fallback when the type system genuinely cannot carry the rule, and then the comment says what the type system cannot check.
+**Let the types and the structure carry each restriction.** When the reader has to be stopped from calling something or passing something, give the code a shape in which that use fails to compile: a method that exists only on the type where it is valid, or an argument of the function that owns the decision. `each_keyed` takes the key as an argument for this reason, so a key can sit only on the root of a list template. Where you reach for a comment, a runtime check, or a doc line to warn a caller, read it as a sign that the shape is still missing, and change the shape first. A restriction lives in prose only where the type system cannot hold it within this project's limits, such as the two-type-parameter ceiling, and then the prose names what goes unchecked and what happens when it is broken.
 
-**Comments explain the code directly below them and nothing else.** No narration, no restating the obvious, no issue numbers, no pointers to another file's behavior.
+**A comment describes the code directly below it.** It gives the reason that code has its shape, or a fact about it the code cannot show by itself, such as an assumption about the browser or where the value below was produced. It speaks about that code alone, in terms a reader of that line can check there. History belongs in the commit message, and another file's behavior in that file.
 
 **Decide what the work needs and act on it.** Hand back only a decision that is the user's to make: taste, risk tolerance, and anything that reaches outside this repository, such as publishing a crate or changing the GitHub repository's settings.
