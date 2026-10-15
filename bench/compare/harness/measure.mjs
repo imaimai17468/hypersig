@@ -191,12 +191,13 @@ const md = `# TodoMVC-2000 results
 
 ${results.date}, commit ${results.commit}, Chrome ${results.chrome}, ${results.machine}. CPU slowed ${CPU_SLOWDOWN}x and ${LATENCY_MS} ms added to every request. Medians of ${SESSIONS} runs.
 
-| App | JS (gzip) | FCP | TBT | INP |
-|---|---|---|---|---|
-${names
-  .map((name) => {
-    const a = results.apps[name];
-    return `| ${name} | ${kb(a.js)} | ${ms(a.fcp)} | ${ms(a.tbt)} | ${inp(a.inp)} |`;
+| | ${names.join(" | ")} |
+|---|${names.map(() => "---").join("|")}|
+| JS (gzip) | ${names.map((n) => kb(results.apps[n].js)).join(" | ")} |
+| FCP | ${names.map((n) => ms(results.apps[n].fcp)).join(" | ")} |
+| TBT | ${names.map((n) => ms(results.apps[n].tbt)).join(" | ")} |
+| INP | ${names.map((n) => inp(results.apps[n].inp)).join(" | ")} |
+`;
   })
   .join("\n")}
 `;

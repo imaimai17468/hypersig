@@ -8,16 +8,16 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 
 export const APPS = {
   hypersig: { port: 4100, cmd: ["hypersig/target/release/bench-hypersig"] },
-  htmx: { port: 4102, cmd: ["htmx/target/release/bench-htmx"] },
-  next: { port: 4103, cmd: ["npm", "--prefix", "next", "run", "start"] },
-  react: { port: 4105, cmd: ["npm", "--prefix", "react", "run", "start"] },
-  "tanstack-start": { port: 4106, cmd: ["npm", "--prefix", "tanstack-start", "run", "start"] },
-  nuxt: { port: 4107, cmd: ["npm", "--prefix", "nuxt", "run", "start"] },
   leptos: {
     port: 4104,
     cmd: ["leptos/target/release/bench-leptos"],
     env: { LEPTOS_SITE_ROOT: "leptos/target/site", LEPTOS_SITE_ADDR: "127.0.0.1:4104" },
   },
+  react: { port: 4105, cmd: ["npm", "--prefix", "react", "run", "start"] },
+  next: { port: 4103, cmd: ["npm", "--prefix", "next", "run", "start"] },
+  "tanstack-start": { port: 4106, cmd: ["npm", "--prefix", "tanstack-start", "run", "start"] },
+  nuxt: { port: 4107, cmd: ["npm", "--prefix", "nuxt", "run", "start"] },
+  htmx: { port: 4102, cmd: ["htmx/target/release/bench-htmx"] },
 };
 
 export const url = (name) => `http://127.0.0.1:${APPS[name].port}/`;
