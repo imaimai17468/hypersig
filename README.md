@@ -2,7 +2,11 @@
 
 [日本語](README.ja.md)
 
-A web framework that runs on axum. You write the page, its behavior in the browser, and the server handlers in Rust. The server holds the state as one Rust struct, the signal struct, and renders the first HTML from it. In the browser, a small runtime applies each change at once and tells the server afterwards, so a click never waits for a round trip.
+A web framework that runs on axum. The page, its behavior in the browser, and the server handlers live in one Rust crate that `cargo build` builds on its own, with no Node and no wasm.
+
+The page's state is one Rust struct, the signal struct, and both the expressions in the page and the server handlers read and write values through its fields. Renaming a field or changing its type makes every place that uses it, in the page or in a handler, a compile error.
+
+The server embeds the signal struct's values as JSON in the first HTML, and the runtime in the browser loads them and keeps them. When a click or an input changes a value, the browser at once rewrites only the parts of the page that use it, the same reactive updates Solid and Vue make. Saving the new value to the server sends the request after that rewrite, so the page updates without waiting for the server's answer and without any optimistic-update code.
 
 ## Compared with Leptos, Next.js, React, TanStack Start, Nuxt, and htmx
 
