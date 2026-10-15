@@ -46,6 +46,11 @@ describe("Runtime", () => {
     runtime.store.set("selected", 5);
     await tick();
     expect(on()).toEqual([true, false, false, false]);
+
+    runtime.store.set("selected", 3);
+    runtime.store.set("rows", (get("rows") as unknown[]).slice(1));
+    await tick();
+    expect(on()).toEqual([false, true, false]);
   });
 
   it("moves the reads of items that shift unchanged, and reruns the bindings that read their position", async () => {

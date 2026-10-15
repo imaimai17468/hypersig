@@ -686,7 +686,7 @@ export class Runtime implements Host {
    * Moves the reads of the bindings inside `root` from the item path `from`
    * to `to`, for an item whose value moved there unchanged, so they do not
    * run again. A binding still runs again where it read the item's position
-   * or where `changes` reach something else it read.
+   * or where `changes` reach something else it read or the path its selector compares.
    */
   #rebase(root: Element, from: string, to: string): void {
     const prefix = `${from}.`;
@@ -696,7 +696,7 @@ export class Runtime implements Host {
     for (const element of own(root)?.members ?? []) {
       for (const effect of own(element)?.effects ?? []) {
         if (effect.deps === null) continue;
-        let rerun = false;
+        let rerun = effect.selector !== null && lookup.affects(effect.selector.path, true);
         for (const [path, deep] of effect.deps) {
           if (move(path) === path ? lookup.affects(path, deep) : path === positionOf(from)) rerun = true;
         }
