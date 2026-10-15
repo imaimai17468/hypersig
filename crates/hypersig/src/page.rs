@@ -21,6 +21,7 @@ use crate::ssr::{self, Ctx};
 pub struct Page<S> {
     title: String,
     signals: S,
+    stylesheets: Vec<&'static str>,
     styles: Vec<&'static str>,
     computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
@@ -42,6 +43,7 @@ impl<S: Signals> Page<S> {
         Self {
             title: title.into(),
             signals,
+            stylesheets: Vec::new(),
             styles: Vec::new(),
             computed: Vec::new(),
             body: Vec::new(),
@@ -96,6 +98,13 @@ impl<S: Signals> Page<S> {
         self
     }
 
+    /// Adds a `<link rel="stylesheet">` for the file at `href` to `<head>`.
+    #[must_use]
+    pub fn stylesheet(mut self, href: &'static str) -> Self {
+        self.stylesheets.push(href);
+        self
+    }
+
     /// Adds a `<style>` block to `<head>`.
     #[must_use]
     pub fn style(mut self, css: &'static str) -> Self {
@@ -136,6 +145,11 @@ impl<S: Signals> Page<S> {
         out.push_str("<title>");
         escape_into(&mut out, &self.title, false);
         out.push_str("</title>");
+        for href in &self.stylesheets {
+            out.push_str("<link rel=\"stylesheet\"");
+            write_attr(&mut out, "href", href);
+            out.push('>');
+        }
         for css in &self.styles {
             out.push_str("<style>");
             out.push_str(css);
