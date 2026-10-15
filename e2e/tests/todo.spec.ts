@@ -8,9 +8,13 @@ test("two tabs see each other's changes over the update stream", async ({ page: 
   await b.goto(url("todo"));
   const items = (page: typeof a) => page.locator("#todo-list li");
 
-  await a.getByPlaceholder("What needs doing?").fill("buy tea");
-  await a.getByPlaceholder("What needs doing?").press("Enter");
-  await a.getByPlaceholder("What needs doing?").fill("write docs");
+  const draft = a.getByPlaceholder("What needs doing?");
+  await draft.fill("buy tea");
+  await draft.press("Enter");
+  // The reply to an add clears the draft. Typing before it arrives loses the text.
+  await expect(draft).toHaveValue("");
+  await expect(items(a)).toHaveCount(1);
+  await draft.fill("write docs");
   await a.getByPlaceholder("What needs doing?").press("Enter");
   await expect(items(b)).toHaveCount(2);
   await expect(b.locator(".summary").filter({ visible: true })).toHaveText("2 left");
