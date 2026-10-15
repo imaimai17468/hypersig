@@ -1,54 +1,74 @@
 # hypersig
 
-画面もブラウザ側の振る舞いもサーバーの処理も Rust だけで書く Web フレームワーク。状態の正本はサーバーにあり、サーバーは HTML を返し、変更は SSE（Server-Sent Events）で差分として送る。ブラウザ側は約 5 KB（gzip 後）のランタイムが差分を当て、入力やクリックへの反応をその場で処理する。
+[日本語](README.ja.md)
 
-## 特徴
+A web framework that runs on axum. You write the page, its behavior in the browser, and the server handlers in Rust. The server holds the state as one Rust struct, the signal struct, and renders the first HTML from it. In the browser, a small runtime applies each change at once and tells the server afterwards, so a click never waits for a round trip.
 
-**ブラウザが実行するものを、すべて Rust の型から作る。** シグナル名、属性に書く式、呼び出すエンドポイント、差し替える要素の id、フォーカスする要素の名前は、どれも Rust の値として書き、ライブラリが HTML に書き出す。手で文字列を書く場所がないので、次の間違いはどれもコンパイルエラーになる（`crates/hypersig/tests/ui/fail/` に 17 件）。
+## Compared with Leptos, Next.js, React, TanStack Start, Nuxt, and htmx
 
-| 間違い | 止まる理由 |
-|---|---|
-| シグナル名の綴り違い | `#[derive(Signals)]` が生成する `Counter::count()` しか使えない |
-| 表示切り替えに数値を渡す | `show` は `bool` の式しか受け取らない |
-| 別ページのシグナルやアクションを使う | 式と文はページのシグナル構造体を型引数に持つ |
-| アクションの引数を渡し忘れる、型を間違える | `Action<Page, Args>` を画面とルーターの両方で使う |
-| リストの項目をサーバーから書き換えようとする | 項目を指すシグナルには `patch` がない |
+`bench/compare/` builds the same 2000-item TodoMVC in each of them and checks that they behave the same.
 
-**サーバーが書いた HTML がそのまま最初の画面になる。** `Page::render` は初期の値で式を評価し、テキスト、表示切り替え、class、属性、フォームの値、リストの項目を HTML に書き込む。ブラウザ側のランタイムは読み込み後にその要素を作り直さずに引き継ぐ。JS を切ったブラウザでも最初の画面は同じに見える。
+| | hypersig | Leptos | Next.js | React | TanStack Start | Nuxt | htmx |
+|---|---|---|---|---|---|---|---|
+| You write | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript and Vue templates | HTML attributes, any server language |
+| Build step for the browser | None | wasm (cargo-leptos) | Node bundler | Vite | Vite | Vite | None |
+| First HTML has the data | Yes | Yes | Yes | No, fetched after load | Yes | Yes | Yes |
+| A click updates the page before the server answers | Yes | Yes | Yes | Yes | Yes | Yes | No |
+| The browser gets server state as | The signal struct | Server functions | Server actions and props | A JSON API | Server functions into a query cache | API routes | HTML fragments |
 
-**変わったところだけを描き直す。** ランタイムは束縛ごとに読んだシグナルのパスを記録し、変更されたパスからたどれる束縛だけを評価し直す。2000 件の TodoMVC（headless Chrome、release ビルド、5 回の中央値）で、入力欄への 1 文字入力が 0.1 ms、1 件のチェックが 2.8 ms だった。チェックのうち約 1.2 ms は、この例が変更のたびに一覧全体をサーバーへ保存している分。
+Three things set hypersig apart from that list:
 
-**CSP を緩めなくてよい。** 式は JSON の構文木として属性に入り、ランタイムが解釈する。`eval` も `new Function` も使わないので `unsafe-eval` は要らない（`runtime/test/bundle.test.ts` がバンドルを検査している）。
+- **No JavaScript toolchain and no wasm.** The whole app is one Rust crate built by `cargo build`. The browser runtime is prebuilt and embedded in the crate.
+- **One struct is the page's state on both sides.** The page's signals are a Rust struct that the browser keeps a copy of, and server handlers answer with patches to it. An action's arguments are typed where the page calls it and where the handler receives them. Renaming a field breaks every expression, call, and patch that names it at compile time, so nothing falls out of step unnoticed.
+- **The strings the browser runs never appear in your source.** Signal names, expressions, action URLs, and patch targets are Rust values, so a misspelled signal or a number passed where a `bool` belongs is a compile error. The repository keeps 18 such mistakes under `crates/hypersig/tests/ui/fail/`.
 
-**利用者のビルドに Node が要らない。** ランタイムはビルド済みのものをクレートに埋め込んである。`cargo build` だけで動く。
+## Measured on the same app
 
-## 書けること
+The 2000-item TodoMVC in each framework, in headless Chrome on an Apple M4 Max, with 50 ms added to every request. Medians; `bench/compare/SPEC.md` defines each column and `bench/compare/results/latest.md` holds the latest run.
 
-| やりたいこと | 書き方 |
-|---|---|
-| ページの状態 | `#[derive(Signals)]` した構造体を `Page::new` に渡す。入れ子の構造体は `Sig::at` でたどる |
-| 状態を持つ部品の再利用 | 部品関数に `Sig<S, Disclosure>` を渡す。置いた場所ごとに別の状態になる |
-| 他のシグナルから計算する値 | `Page::computed(sig, expr)`。読むシグナルが変わったときだけ計算し直す |
-| テキスト、表示切り替え | `bind_text`、`show` |
-| class、属性、style | `class_when`、`bind_attr`、`attr_when`、`bind_style` |
-| フォーム部品 | `bind`（text、textarea、select、number、checkbox）、`bind_radio`、enum を選ぶ `bind_select` |
-| リスト | `each(list, \|item\| ...)` と、キーで項目を見分ける `each_keyed`。`push`、`item.remove()`、`retain`、`set_all`、`count` |
-| 条件付きの要素 | `when(cond, el)`。偽の間は DOM から外す |
-| イベント | `on_click`、`on_key(Key::Enter, ...)`、`on_blur`、`on_debounced` など |
-| 表示時と定期的な処理 | `on_load`、`on_interval(Duration, stmt)` |
-| 値の変化に反応する処理 | `effect(stmt)` は文が読んだシグナルの変化で、`on_signal_change(sig, stmt)` は指定したシグナルの変化で動く |
-| サーバーの処理を呼ぶ | `const A: Action<S, Args> = Action::post(...)` と `A.call()`。`indicator(flag)` で通信中、`error(message)` で失敗を表示 |
-| サーバーからの更新 | ハンドラが `Patches` を返す。`Fragment` で要素を、`sig.patch(v)` でシグナルを差し替える。`stream` で送り続けることもできる |
-| DOM の操作 | `const R: NodeRef<S> = NodeRef::new(...)` と `R.focus()` など |
+| | Code sent to the browser (gzip) | First Contentful Paint | Toggle one item | Add one item | Bytes per toggle |
+|---|---|---|---|---|---|
+| hypersig | 6.5 KB | 96 ms | 1.6 ms | 1.6 ms | 0.8 KB |
+| Leptos | 140.5 KB | 94 ms | 1.7 ms | 1.5 ms | 0.8 KB |
+| Next.js | 133.3 KB | 96 ms | 2.0 ms | 2.8 ms | 1.3 KB |
+| React | 67.1 KB | 136 ms | 1.6 ms | 1.4 ms | 0.7 KB |
+| TanStack Start | 119.5 KB | 94 ms | 16 ms | 18 ms | 1.3 KB |
+| Nuxt | 59.2 KB | 92 ms | 1.4 ms | 2.0 ms | 0.7 KB |
+| htmx | 16.5 KB | 144 ms | 57 ms | 57 ms | 1.1 KB |
 
-## 例
+hypersig sends the browser between 1/9 and 1/22 of the code that the other frameworks updating before the server answers send, and answers a click as fast as they do. It does not win every column: Nuxt paints first by a few milliseconds, and React and Nuxt match it on toggling and adding.
+
+## Updating after a change
+
+Toggling a todo and saving it to the server, with TanStack Query's documented optimistic update:
+
+```tsx
+const queryClient = useQueryClient();
+const toggle = useMutation({
+  mutationFn: (change: { id: number; done: boolean }) => setTodoDone({ data: change }),
+  onMutate: async ({ id, done }) => {
+    await queryClient.cancelQueries({ queryKey: ["todos"] });
+    const previous = queryClient.getQueryData<Todo[]>(["todos"]);
+    queryClient.setQueryData<Todo[]>(["todos"], (list) =>
+      list?.map((todo) => (todo.id === id ? { ...todo, done } : todo)),
+    );
+    return { previous };
+  },
+  onError: (_error, _change, context) => queryClient.setQueryData(["todos"], context?.previous),
+});
+
+<input type="checkbox" checked={todo.done}
+  onChange={(event) => toggle.mutate({ id: todo.id, done: event.target.checked })} />
+```
+
+The same in hypersig:
 
 ```rust
-use hypersig::html::{Key, button, div, each_keyed, input, li, span, ul};
-use hypersig::{Expr, Signals, Stmt};
+use hypersig::html::{El, each_keyed, input, li, ul};
+use hypersig::{Action, Patches, Signals};
 use serde::{Deserialize, Serialize};
 
-#[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Signals, Serialize, Deserialize)]
 struct Todo {
     id: i32,
     title: String,
@@ -58,88 +78,112 @@ struct Todo {
 #[derive(Signals, Serialize, Deserialize)]
 struct Todos {
     todos: Vec<Todo>,
-    draft: String,
-    next_id: i32,
 }
 
-fn app() -> hypersig::html::El<Todos> {
-    let (todos, draft, next_id) = (Todos::todos(), Todos::draft(), Todos::next_id());
-    let blank = Expr::lit(&Todo { id: 0, title: String::new(), done: false });
-    let add = Stmt::when(
-        !draft.trim().is_empty(),
-        todos
-            .push(blank.with(Todo::id(), next_id).with(Todo::title(), draft.trim()))
-            .then(next_id.set(next_id + 1))
-            .then(draft.set("")),
+const SET_DONE: Action<Todos, (i32, bool)> = Action::post("/done");
+
+fn list() -> El<Todos> {
+    ul().child(each_keyed(Todos::todos(), |todo| todo.at(Todo::id()), |todo| {
+        let done = todo.at(Todo::done());
+        li().child(
+            input()
+                .attr("type", "checkbox")
+                .bind(done)
+                .on_change(SET_DONE.call_with((todo.at(Todo::id()), done))),
+        )
+    }))
+}
+
+async fn set_done((): (), (id, done): (i32, bool)) -> Patches<Todos> {
+    store(id, done);
+    Patches::new()
+}
+
+fn store(_id: i32, _done: bool) {}
+```
+
+The checkbox writes `done` in the browser, and only the bindings that read that item's `done` run again. `on_change` then sends the id and the new value to `set_done`, typed as `(i32, bool)` on both ends. There is no query key to choose, no cache to snapshot, and no list to refetch.
+
+The cost is on failure. When the server answers with an error, the change stays in the browser: `error(message)` can show the failure, but nothing rolls the value back.
+
+## Getting started
+
+Add the dependencies to `Cargo.toml`. hypersig is not on crates.io yet, so it comes from Git.
+
+```toml
+[dependencies]
+hypersig = { git = "https://github.com/imaimai17468/hypersig" }
+axum = "0.8"
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
+```
+
+Write `src/main.rs`:
+
+```rust,no_run
+use axum::{Router, response::Html, routing::get};
+use hypersig::html::{button, div, span};
+use hypersig::{Action, Page, Patches, RouterExt, Signals};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Counter {
+    count: i32,
+}
+
+const RESET: Action<Counter> = Action::post("/reset");
+
+async fn index() -> Html<String> {
+    let count = Counter::count();
+    let page = Page::new("Counter", Counter { count: 0 }).child(
+        div()
+            .child(button().on_click(count.set(count + 1)).text("+1"))
+            .child(span().bind_text(count.to_text()))
+            .child(button().on_click(RESET.call()).text("Reset on the server")),
     );
-    div()
-        .child(input().bind(draft).on_key(Key::Enter, add))
-        .child(ul().child(each_keyed(todos, |todo| todo.at(Todo::id()), |todo| {
-            li()
-                .class_when("done", todo.at(Todo::done()))
-                .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
-                .child(span().bind_text(todo.at(Todo::title())))
-                .child(button().on_click(todo.remove()).text("×"))
-        })))
-        .child(span().bind_text(todos.count(|todo| !todo.at(Todo::done())).to_text()))
+    Html(page.render())
+}
+
+async fn reset((): (), (): ()) -> Patches<Counter> {
+    Counter::count().patch(0).into()
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let app = Router::new()
+        .route("/", get(index))
+        .hypersig_runtime()
+        .action(RESET, reset);
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    axum::serve(listener, app).await
 }
 ```
 
-この画面の操作はすべてブラウザ内で完結し、最初の HTML にはサーバーが項目と残数を書き込む。サーバーに処理を渡すときは `Action` を宣言して `on_click(SAVE.call())` のように呼び、ハンドラはシグナル構造体を受け取って `Patches` を返す。
+Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime, and no Node or JavaScript build is involved.
 
-コンパイルエラーになる例は `crates/hypersig/tests/ui/fail/` に 18 件ある。たとえば `div().show(Counter::count())` は次のように止まる。
+## Limits
 
-```text
-error[E0277]: `Sig<Counter, i32>` is not an expression of type `bool` on the page whose signals are `Counter`
-```
+- Handlers and expressions can use only the operations the library provides. Arbitrary JavaScript such as `Date.now()`, `localStorage`, or a call into another library cannot be written.
+- A component's state needs a place prepared for it in the page's signal struct. To add components at run time, make them items of a `Vec`.
+- Arithmetic is limited to `i32` and `f64`, and division to `f64`. A type whose results JavaScript numbers cannot reproduce cannot appear in an expression.
+- `equals` compares the JSON form. It agrees with a derived `PartialEq` and can disagree with a hand-written one.
+- `Page::render` is the only place the server evaluates expressions. A fragment sent with `Patches::element` carries no signal values, so the browser fills in its bindings.
+- The server and the browser can disagree on rounding an exact half in `to_fixed`, on formatting numbers below `1e-6` or at or above `1e21`, and on ordering characters outside the Basic Multilingual Plane. After loading, the browser's values replace the server's.
+- Replacing a fragment that contains an `each` with a server patch rebuilds the list items inside it. Their values live in signals, so their contents are kept.
+- Signals cannot use attributes such as `#[serde(rename)]`. The derive rejects them.
 
-リストの項目のフィールドに `patch` を呼ぶと、そのメソッドが存在しないというエラーになる。サーバーは「ブラウザがいま描いている項目」を指せないので、`patch` はページを起点にしたシグナルにだけある。
-
-## 動かす
-
-```sh
-cargo run -p example-counter    # http://127.0.0.1:3000
-cargo run -p example-todo       # http://127.0.0.1:3001 を 2 タブで開くと変更が同期する
-cargo run -p example-todomvc    # http://127.0.0.1:3002 TodoMVC。再読み込みしても一覧が残る
-cargo run -p example-showcase   # http://127.0.0.1:3003 状態を持つ部品、インターバル、検索、フォーム
-```
-
-Node は不要。ブラウザ用ランタイムはビルド済みの `crates/hypersig/assets/hypersig.js`（約 14 KB、gzip 後は約 5 KB）をコミットしてあり、`include_str!` で埋め込まれる。
-
-## 構成
-
-| パス | 内容 |
-|---|---|
-| `crates/hypersig` | 本体。シグナル、式、HTML ビルダー、アクション、フラグメント、パッチ、axum 連携 |
-| `crates/hypersig_proc` | `#[derive(Signals)]` の proc-macro シム |
-| `crates/hypersig_proc_impl` | derive の実装とスナップショットテスト |
-| `crates/hypersig/tests/fixtures.rs` | Rust で組んだ画面を `runtime/test/fixtures/` に書き出す。ランタイムのテストはこれを読み込むので、Rust 側とランタイム側の形式がずれるとどちらかのテストが落ちる |
-| `runtime/` | ブラウザ用ランタイム（TypeScript）。`pnpm build` で上記 `assets/` に出力する |
-| `examples/` | counter、todo、todomvc、showcase |
-| `e2e/` | 例を起動して Chrome で操作する Playwright のテスト |
-
-## できないこと
-
-- ハンドラや式で使える演算は、ライブラリが用意したものに限る。`Date.now()`、`localStorage`、外部ライブラリの呼び出しなど、任意の JS は書けない
-- 部品ごとの状態は、ページのシグナル構造体にあらかじめ場所を用意しておく必要がある。実行中に部品を増やすときは `Vec` の項目にする
-- 算術は `i32` と `f64` だけ、除算は `f64` だけ。JavaScript の数値で同じ結果にならない型は式に使えない
-- `equals` は JSON の形で比べる。derive した `PartialEq` とは一致するが、手で書いた `PartialEq` とは一致しない場合がある
-- サーバー側で式を評価するのは `Page::render` だけ。`Patches::element` で送るフラグメントはシグナルの値を持たないので、中の束縛はブラウザが埋める
-- サーバー側の評価とブラウザ側の評価は、`to_fixed` のちょうど半分の丸め、`1e-6` 未満か `1e21` 以上の数の文字列化、基本多言語面の外の文字の大小比較で食い違うことがある。読み込み後はブラウザ側の値で上書きされる
-- サーバーからのパッチで `each` を含むフラグメントを差し替えると、その中のリスト項目は作り直される（項目の値はシグナルにあるので内容は保たれる）
-- シグナルは `#[serde(rename)]` などを使えない。derive が拒否する
-
-## 開発
+## Development
 
 ```sh
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+cargo bench -p hypersig --bench render
 cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
-cd e2e && pnpm install && pnpm check && pnpm test   # 4 つの例を起動して Chrome で操作する
+cd e2e && pnpm install && pnpm check && pnpm test   # starts the four examples and drives them in Chrome
 ```
 
-Lint の構成とコーディング規約は Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っている。エージェント向けの指示は `AGENTS.md` と `.claude/` にある。
+The browser runtime is TypeScript under `runtime/`, and `pnpm build` writes the prebuilt `crates/hypersig/assets/hypersig.js` (about 14 KB, about 5 KB gzipped) that the crate embeds. `AGENTS.md` describes the repository layout and the checks a change runs. The lint set and coding conventions follow Microsoft's [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/).
 
 ## License
 

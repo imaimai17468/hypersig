@@ -54,6 +54,10 @@ mod ssr;
 #[doc = include_str!("../../../README.md")]
 struct Readme;
 
+#[cfg(doctest)]
+#[doc = include_str!("../../../README.ja.md")]
+struct ReadmeJa;
+
 pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]
 pub use axum::{RequestError, RouterExt};
