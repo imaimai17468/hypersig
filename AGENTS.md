@@ -36,6 +36,8 @@ A trybuild `.stderr` file records the compiler's message. Regenerate it with `TR
 
 `rust-toolchain.toml` pins the compiler and installs `rust-src`, and CI uses the same version and components, because the trybuild `.stderr` files hold rustc's exact output and rustc quotes standard library source only where `rust-src` is present. Raising the pin is one commit that changes `rust-toolchain.toml`, `rust-version` in `Cargo.toml`, the CI toolchain, and every regenerated `.stderr` together.
 
+CI also runs `cargo udeps --workspace --all-targets` and `cargo miri test -p hypersig --lib` on the nightly pinned in `.github/workflows/ci.yml`. Run them locally with `cargo +nightly-2026-10-14 ...` when a change adds a dependency or touches `ssr.rs`, `signal.rs`, or `expr.rs`. `hypersig_proc_impl` is left out of miri because insta spawns a process to find the workspace, which miri cannot do.
+
 Report a step you could not run as "not run", never as "passed".
 
 ## Rules

@@ -71,3 +71,19 @@ jobs:
         with:
           name: playwright-report
           path: e2e/test-results
+
+  nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned so that a new nightly cannot fail main on its own.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-14
+          components: miri, rust-src
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-udeps
+      - run: cargo +nightly-2026-10-14 udeps --workspace --all-targets
+      - run: cargo +nightly-2026-10-14 miri test -p hypersig --lib

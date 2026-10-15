@@ -116,11 +116,9 @@ name = "example-counter"
 version = "0.0.0"
 dependencies = [
  "axum",
- "futures",
  "hypersig",
  "serde",
  "tokio",
- "tokio-stream",
 ]
 
 [[package]]

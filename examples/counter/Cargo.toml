@@ -7,11 +7,9 @@ publish = false
 
 [dependencies]
 axum.workspace = true
-futures.workspace = true
 hypersig.workspace = true
 serde.workspace = true
 tokio.workspace = true
-tokio-stream = { workspace = true, features = ["sync"] }
 
 [lints]
 workspace = true
