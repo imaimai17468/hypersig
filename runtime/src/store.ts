@@ -5,7 +5,6 @@ export function join(...parts: string[]): string {
   return parts.filter((part) => part !== "").join(".");
 }
 
-/** Reads the value at a dotted path, where a numeric segment indexes an array. */
 const splits = new Map<string, readonly string[]>();
 
 /** `path.split(".")`, remembered, because the same paths are read on every render. */
@@ -19,6 +18,7 @@ function segmentsOf(path: string): readonly string[] {
   return segments;
 }
 
+/** Reads the value at a dotted path, where a numeric segment indexes an array. */
 export function getPath(value: unknown, path: string): unknown {
   if (path === "") return value;
   let current = value;
