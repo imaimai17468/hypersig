@@ -89,7 +89,7 @@ fn app() -> hypersig::html::El<Todos> {
 
 コンパイルエラーになる例は `crates/hypersig/tests/ui/fail/` に 17 件ある。たとえば `div().show(Counter::count())` は次のように止まる。
 
-```
+```text
 error[E0277]: `Sig<Counter, i32>` is not an expression of type `bool` on the page whose signals are `Counter`
 ```
 

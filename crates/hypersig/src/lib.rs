@@ -49,6 +49,10 @@ mod patch;
 mod signal;
 mod ssr;
 
+#[cfg(doctest)]
+#[doc = include_str!("../../../README.md")]
+struct Readme;
+
 pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]
 pub use axum::{RequestError, RouterExt};
