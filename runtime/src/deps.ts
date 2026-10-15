@@ -25,6 +25,8 @@ class PathNode {
  */
 export class DepIndex {
   readonly #root = new PathNode();
+  /** The node at each path that has one, so registering a read does not walk the tree. */
+  readonly #nodes = new Map<string, PathNode>();
 
   /** Replaces what `effect` is registered under with `reads`, touching only the reads that differ. */
   set(effect: Effect, reads: Reads): void {
@@ -58,15 +60,13 @@ export class DepIndex {
   }
 
   #node(path: string): PathNode {
-    let node = this.#root;
-    for (const segment of path.split(".")) {
-      let child = node.children.get(segment);
-      if (child === undefined) {
-        child = new PathNode();
-        node.children.set(segment, child);
-      }
-      node = child;
-    }
+    let node = this.#nodes.get(path);
+    if (node !== undefined) return node;
+    const dot = path.lastIndexOf(".");
+    const parent = dot === -1 ? this.#root : this.#node(path.slice(0, dot));
+    node = new PathNode();
+    parent.children.set(path.slice(dot + 1), node);
+    this.#nodes.set(path, node);
     return node;
   }
 

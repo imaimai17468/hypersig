@@ -377,6 +377,33 @@ describe("server rendering", () => {
     expect(item.querySelector<HTMLInputElement>("input.edit")!.value).toBe("tea");
   });
 
+  it("registers the bindings of server-rendered items in a later task and shows changes made before it", async () => {
+    serve("todos_page");
+    const item = $("#list li");
+    const runtime = start();
+    runtime.store.set("todos.0.done", true);
+    await Promise.resolve();
+    expect(item.classList.contains("done")).toBe(false);
+    await tick();
+    expect(item.classList.contains("done")).toBe(true);
+    expect($$("#list li")).toEqual([item]);
+  });
+
+  it("registers a waiting item's bindings at once when an event reaches it", async () => {
+    serve("todos_page");
+    const item = $("#list li");
+    const runtime = start();
+    item.querySelector<HTMLInputElement>("input[type=checkbox]")!.click();
+    expect(runtime.store.get("todos.0.done")).toBe(true);
+    await Promise.resolve();
+    expect(item.classList.contains("done")).toBe(true);
+
+    serve("nested_page");
+    const nested = start();
+    $$("#rows button")[2]!.click();
+    expect(nested.store.get("rows.1.tags.0.on")).toBe(true);
+  });
+
   it("adopts nested list items with their own item scope", async () => {
     serve("nested_page");
     expect($$("#rows button").map((b) => b.textContent)).toEqual(["a/x", "a/y", "b/z"]);
