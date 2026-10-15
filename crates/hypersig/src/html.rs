@@ -43,7 +43,7 @@
 //! ```
 
 use std::collections::BTreeMap;
-use std::fmt::{self, Write as _};
+use std::fmt;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -938,8 +938,9 @@ impl<S> El<S> {
                 }
             }
         }
-        // `fmt::Write` for `String` never fails.
-        let _ = write!(out, "</{}>", self.tag);
+        out.push_str("</");
+        out.push_str(self.tag);
+        out.push('>');
     }
 
     fn write_selected(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
