@@ -32,7 +32,7 @@
 | テキスト、表示切り替え | `bind_text`、`show` |
 | class、属性、style | `class_when`、`bind_attr`、`attr_when`、`bind_style` |
 | フォーム部品 | `bind`（text、textarea、select、number、checkbox）、`bind_radio`、enum を選ぶ `bind_select` |
-| リスト | `each(list, \|item\| ...)` と `key`。`push`、`item.remove()`、`retain`、`set_all`、`count` |
+| リスト | `each(list, \|item\| ...)` と、キーで項目を見分ける `each_keyed`。`push`、`item.remove()`、`retain`、`set_all`、`count` |
 | 条件付きの要素 | `when(cond, el)`。偽の間は DOM から外す |
 | イベント | `on_click`、`on_key(Key::Enter, ...)`、`on_blur`、`on_debounced` など |
 | 表示時と定期的な処理 | `on_load`、`on_interval(Duration, stmt)` |
@@ -44,7 +44,7 @@
 ## 例
 
 ```rust
-use hypersig::html::{Key, button, div, each, input, li, span, ul};
+use hypersig::html::{Key, button, div, each_keyed, input, li, span, ul};
 use hypersig::{Expr, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 
@@ -74,8 +74,8 @@ fn app() -> hypersig::html::El<Todos> {
     );
     div()
         .child(input().bind(draft).on_key(Key::Enter, add))
-        .child(ul().child(each(todos, |todo| {
-            li().key(todo.at(Todo::id()))
+        .child(ul().child(each_keyed(todos, |todo| todo.at(Todo::id()), |todo| {
+            li()
                 .class_when("done", todo.at(Todo::done()))
                 .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
                 .child(span().bind_text(todo.at(Todo::title())))
@@ -87,7 +87,7 @@ fn app() -> hypersig::html::El<Todos> {
 
 この画面の操作はすべてブラウザ内で完結し、最初の HTML にはサーバーが項目と残数を書き込む。サーバーに処理を渡すときは `Action` を宣言して `on_click(SAVE.call())` のように呼び、ハンドラはシグナル構造体を受け取って `Patches` を返す。
 
-コンパイルエラーになる例は `crates/hypersig/tests/ui/fail/` に 17 件ある。たとえば `div().show(Counter::count())` は次のように止まる。
+コンパイルエラーになる例は `crates/hypersig/tests/ui/fail/` に 18 件ある。たとえば `div().show(Counter::count())` は次のように止まる。
 
 ```text
 error[E0277]: `Sig<Counter, i32>` is not an expression of type `bool` on the page whose signals are `Counter`

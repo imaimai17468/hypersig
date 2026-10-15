@@ -149,10 +149,9 @@ impl<S> From<String> for Node<S> {
 /// Renders `render` once per item of `list`, in the browser, kept in step with the list.
 ///
 /// `render` runs once on the server to build a template, receiving an
-/// [`Item`] that stands for whichever item the browser is rendering. Give the
-/// root element a [`El::key`] so an item keeps its element when the list is
-/// reordered or an item before it is removed. Without a key, items are matched
-/// by position.
+/// [`Item`] that stands for whichever item the browser is rendering. Items are
+/// matched to their elements by position. Use [`each_keyed`] where the list is
+/// reordered or an item before another is removed.
 ///
 /// ```
 /// use hypersig::html::{each, li, ul};
@@ -171,7 +170,7 @@ impl<S> From<String> for Node<S> {
 /// }
 ///
 /// let list = ul::<Todos>().child(each(Todos::items(), |todo| {
-///     li().key(todo.at(Todo::id())).bind_text(todo.at(Todo::title()))
+///     li().bind_text(todo.at(Todo::title()))
 /// }));
 /// assert!(list.render().contains("data-hs-each"));
 /// ```
@@ -185,6 +184,47 @@ pub fn each<S, T, R>(list: Sig<S, Vec<T>, R>, render: impl FnOnce(Item<S, T>) ->
             depth,
             template: Box::new(template),
         })
+    })
+}
+
+/// [`each`], with each item's element identified by `key`.
+///
+/// An item keeps its element when the list is reordered or an item before it
+/// is removed, so focus and the state of its inputs move with it.
+///
+/// ```
+/// use hypersig::html::{each_keyed, li, ul};
+/// use hypersig::Signals;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Todo {
+///     id: i32,
+///     title: String,
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Todos {
+///     items: Vec<Todo>,
+/// }
+///
+/// let list = ul::<Todos>().child(each_keyed(
+///     Todos::items(),
+///     |todo| todo.at(Todo::id()),
+///     |todo| li().bind_text(todo.at(Todo::title())),
+/// ));
+/// assert!(list.render().contains("data-hs-key"));
+/// ```
+#[must_use]
+pub fn each_keyed<S, T, R, K, E: IntoExpr<S, K>>(
+    list: Sig<S, Vec<T>, R>,
+    key: impl FnOnce(Item<S, T>) -> E,
+    render: impl FnOnce(Item<S, T>) -> El<S>,
+) -> Node<S> {
+    each(list, |item| {
+        let mut template = render(item);
+        template.key = Some(key(item).into_expr().into_json());
+        template
     })
 }
 
@@ -498,15 +538,6 @@ impl<S> El<S> {
     #[must_use]
     pub fn class_when(mut self, class: &'static str, when: impl IntoExpr<S, bool>) -> Self {
         self.class_when.push((class, when.into_expr()));
-        self
-    }
-
-    /// Identifies this element among the items of an [`each`] by `key`.
-    ///
-    /// Only the root element of an `each` template reads its key.
-    #[must_use]
-    pub fn key<K>(mut self, key: impl IntoExpr<S, K>) -> Self {
-        self.key = Some(key.into_expr().into_json());
         self
     }
 
@@ -1196,7 +1227,8 @@ mod tests {
 
     #[test]
     fn nested_lists_render_the_same_twice() {
-        use crate::html::{each, li, ul};
+        use crate::Item;
+        use crate::html::{each, each_keyed, li, ul};
 
         struct Row;
         fn rows() -> Sig<Page, Vec<Row>> {
@@ -1207,9 +1239,8 @@ mod tests {
         }
         let build = || {
             ul::<Page>()
-                .child(each(rows(), |row| {
-                    li().key(row.index())
-                        .child(each(row.at(cells()), |cell| span().bind_text(cell)))
+                .child(each_keyed(rows(), Item::index, |row| {
+                    li().child(each(row.at(cells()), |cell| span().bind_text(cell)))
                 }))
                 .render()
         };

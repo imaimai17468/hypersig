@@ -12,7 +12,8 @@ use axum::extract::State;
 use axum::response::Html;
 use axum::routing::get;
 use hypersig::html::{
-    El, Key, a, button, each, footer, h1, header, input, label, li, section, span, strong, ul, when,
+    El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
+    ul, when,
 };
 use hypersig::{Action, Expr, NodeRef, Page, Patches, RouterExt, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
@@ -84,49 +85,52 @@ fn todo_list() -> El<TodoMvc> {
     let filter = TodoMvc::filter();
     let editing = TodoMvc::editing();
     let edit_text = TodoMvc::edit_text();
-    ul().class("todo-list").child(each(todos, |todo| {
-        let id = todo.at(Todo::id());
-        let title = todo.at(Todo::title());
-        let done = todo.at(Todo::done());
-        let is_editing = editing.equals(id.some());
-        let visible = filter
-            .equals(&Filter::All)
-            .or(filter.equals(&Filter::Active).and(!done))
-            .or(filter.equals(&Filter::Completed).and(done));
-        let commit = Stmt::when(
-            is_editing.clone(),
-            Stmt::if_else(
-                edit_text.trim().is_empty(),
-                todo.remove(),
-                title.set(edit_text.trim()),
-            )
-            .then(editing.set(&None)),
-        );
-        li().key(id)
-            .show(visible)
-            .class_when("completed", done)
-            .class_when("editing", is_editing)
-            .child(input().class("toggle").attr("type", "checkbox").bind(done))
-            .child(
-                label().bind_text(title).on_double_click(
-                    edit_text
-                        .set(title)
-                        .then(editing.set(id.some()))
-                        .then(EDIT.focus()),
-                ),
-            )
-            .child(button().class("destroy").on_click(todo.remove()))
-            .child(when(
-                editing.equals(id.some()),
-                input()
-                    .class("edit")
-                    .node_ref(EDIT)
-                    .bind(edit_text)
-                    .on_key(Key::Enter, commit.clone())
-                    .on_key(Key::Escape, editing.set(&None))
-                    .on_blur(commit),
-            ))
-    }))
+    ul().class("todo-list").child(each_keyed(
+        todos,
+        |todo| todo.at(Todo::id()),
+        |todo| {
+            let id = todo.at(Todo::id());
+            let title = todo.at(Todo::title());
+            let done = todo.at(Todo::done());
+            let is_editing = editing.equals(id.some());
+            let visible = filter
+                .equals(&Filter::All)
+                .or(filter.equals(&Filter::Active).and(!done))
+                .or(filter.equals(&Filter::Completed).and(done));
+            let commit = Stmt::when(
+                is_editing.clone(),
+                Stmt::if_else(
+                    edit_text.trim().is_empty(),
+                    todo.remove(),
+                    title.set(edit_text.trim()),
+                )
+                .then(editing.set(&None)),
+            );
+            li().show(visible)
+                .class_when("completed", done)
+                .class_when("editing", is_editing)
+                .child(input().class("toggle").attr("type", "checkbox").bind(done))
+                .child(
+                    label().bind_text(title).on_double_click(
+                        edit_text
+                            .set(title)
+                            .then(editing.set(id.some()))
+                            .then(EDIT.focus()),
+                    ),
+                )
+                .child(button().class("destroy").on_click(todo.remove()))
+                .child(when(
+                    editing.equals(id.some()),
+                    input()
+                        .class("edit")
+                        .node_ref(EDIT)
+                        .bind(edit_text)
+                        .on_key(Key::Enter, commit.clone())
+                        .on_key(Key::Escape, editing.set(&None))
+                        .on_blur(commit),
+                ))
+        },
+    ))
 }
 
 fn filter_link(filter: Filter, text: &str) -> El<TodoMvc> {

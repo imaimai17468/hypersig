@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, button, div, each, input, label, li, main, select, span, ul, when,
+    El, Event, Key, button, div, each, each_keyed, input, label, li, main, select, span, ul, when,
 };
 use hypersig::{Action, Expr, NodeRef, Page, Signals, Stmt};
 use serde::{Deserialize, Serialize};
@@ -54,27 +54,30 @@ fn todos() -> (El<TodoApp>, TodoApp) {
     );
     let el = main()
         .child(input().id("draft").bind(draft).on_key(Key::Enter, add))
-        .child(ul().id("list").child(each(todos, |todo| {
-            let id = todo.at(Todo::id());
-            li().key(id)
-                .class_when("done", todo.at(Todo::done()))
-                .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
-                .child(
-                    label()
-                        .bind_text(todo.at(Todo::title()))
-                        .on_double_click(editing.set(id.some()).then(EDIT.focus())),
-                )
-                .child(when(
-                    editing.equals(id.some()),
-                    input()
-                        .class("edit")
-                        .node_ref(EDIT)
-                        .bind(todo.at(Todo::title()))
-                        .on_key(Key::Enter, editing.set(&None))
-                        .on_key(Key::Escape, editing.set(&None)),
-                ))
-                .child(button().class("remove").on_click(todo.remove()).text("×"))
-        })))
+        .child(ul().id("list").child(each_keyed(
+            todos,
+            |todo| todo.at(Todo::id()),
+            |todo| {
+                let id = todo.at(Todo::id());
+                li().class_when("done", todo.at(Todo::done()))
+                    .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
+                    .child(
+                        label()
+                            .bind_text(todo.at(Todo::title()))
+                            .on_double_click(editing.set(id.some()).then(EDIT.focus())),
+                    )
+                    .child(when(
+                        editing.equals(id.some()),
+                        input()
+                            .class("edit")
+                            .node_ref(EDIT)
+                            .bind(todo.at(Todo::title()))
+                            .on_key(Key::Enter, editing.set(&None))
+                            .on_key(Key::Escape, editing.set(&None)),
+                    ))
+                    .child(button().class("remove").on_click(todo.remove()).text("×"))
+            },
+        )))
         .child(
             span()
                 .id("left")
@@ -240,28 +243,31 @@ struct Nested {
 fn nested() -> (El<Nested>, Nested) {
     let hovered = Nested::hovered();
     let el = main()
-        .child(ul().id("rows").child(each(Nested::rows(), |row| {
-            let tags = row.at(Row::tags());
-            li().key(row.at(Row::name()))
-                .on(Event::MouseEnter, hovered.set(row.at(Row::name())))
-                .on(Event::MouseLeave, hovered.set(""))
-                .child(span().class("name").bind_text(row.at(Row::name())))
-                .child(
-                    span()
-                        .class("count")
-                        .bind_text(tags.count(|tag| tag.at(Tag::on())).to_text()),
-                )
-                .child(ul().child(each(tags, |tag| {
-                    li().child(
-                        button()
-                            .class_when("on", tag.at(Tag::on()))
-                            .on_click(tag.at(Tag::on()).toggle())
-                            .bind_text(
-                                row.at(Row::name()).concat("/").concat(tag.at(Tag::label())),
-                            ),
+        .child(ul().id("rows").child(each_keyed(
+            Nested::rows(),
+            |row| row.at(Row::name()),
+            |row| {
+                let tags = row.at(Row::tags());
+                li().on(Event::MouseEnter, hovered.set(row.at(Row::name())))
+                    .on(Event::MouseLeave, hovered.set(""))
+                    .child(span().class("name").bind_text(row.at(Row::name())))
+                    .child(
+                        span()
+                            .class("count")
+                            .bind_text(tags.count(|tag| tag.at(Tag::on())).to_text()),
                     )
-                })))
-        })))
+                    .child(ul().child(each(tags, |tag| {
+                        li().child(
+                            button()
+                                .class_when("on", tag.at(Tag::on()))
+                                .on_click(tag.at(Tag::on()).toggle())
+                                .bind_text(
+                                    row.at(Row::name()).concat("/").concat(tag.at(Tag::label())),
+                                ),
+                        )
+                    })))
+            },
+        )))
         .child(
             div()
                 .id("field")
