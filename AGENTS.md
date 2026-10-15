@@ -17,7 +17,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `examples/` | Runnable axum applications |
 | `e2e/` | Playwright tests that start every example and drive it in Chrome |
 
-The wire format between the two halves is defined twice, once in `crates/hypersig/src/expr.rs`, `html.rs`, and `patch.rs` and once in `runtime/src/`. A change to one is a change to both in the same commit. `tests/fixtures.rs` fails when a committed fixture differs from what the builder writes now, and `runtime/test/features.test.ts` runs those fixtures, so a change on one side that the other side does not follow fails one of the two test suites. Regenerate the fixtures with `HYPERSIG_FIXTURES=overwrite cargo test -p hypersig --test fixtures`, then run `pnpm test`.
+The wire format between the two halves is defined twice, once in `crates/hypersig/src/expr.rs`, `html.rs`, `page.rs`, and `patch.rs` and once in `runtime/src/`. A change to one is a change to both in the same commit. `tests/fixtures.rs` fails when a committed fixture differs from what the builder writes now, and `runtime/test/features.test.ts` runs those fixtures, so a change on one side that the other side does not follow fails one of the two test suites. Regenerate the fixtures with `HYPERSIG_FIXTURES=overwrite cargo test -p hypersig --test fixtures`, then run `pnpm test`.
 
 ## Verification before completion
 

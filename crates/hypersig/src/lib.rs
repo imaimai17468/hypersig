@@ -45,6 +45,7 @@ mod action;
 mod axum;
 mod expr;
 pub mod html;
+mod page;
 mod patch;
 mod signal;
 mod ssr;
@@ -57,8 +58,8 @@ pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]
 pub use axum::{RequestError, RouterExt};
 pub use expr::{Comparable, Expr, IntoExpr, IntoStmt, Number, Stmt, Textual, if_else};
-pub use html::Page;
 pub use hypersig_proc::Signals;
+pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 

@@ -51,7 +51,7 @@ use serde_json::{Value, json};
 
 use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
-use crate::signal::{Item, Sig, Signals, in_item_scope};
+use crate::signal::{Item, Sig, in_item_scope};
 use crate::ssr::{self, Ctx};
 
 const RESERVED_PREFIX: &str = "data-hs-";
@@ -93,7 +93,7 @@ impl<S> fmt::Debug for Node<S> {
 }
 
 impl<S> Node<S> {
-    fn write(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
+    pub(crate) fn write(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
         match &self.0 {
             NodeKind::Element(el) => el.write(out, ctx, None),
             NodeKind::Text(text) => escape_into(out, text, false),
@@ -760,7 +760,7 @@ impl<S> El<S> {
     /// Renders the element and its children to an HTML string.
     ///
     /// The reactive parts are left for the runtime to fill in, because an
-    /// element alone has no signal values. [`Page::render`] fills them in.
+    /// element alone has no signal values. [`Page::render`](crate::Page::render) fills them in.
     #[must_use]
     pub fn render(&self) -> String {
         let mut out = String::new();
@@ -1001,7 +1001,7 @@ fn write_pairs<S, T>(out: &mut String, name: &str, pairs: &[(&'static str, Expr<
     write_attr(out, name, &Value::from(pairs).to_string());
 }
 
-fn write_attr(out: &mut String, name: &str, value: &str) {
+pub(crate) fn write_attr(out: &mut String, name: &str, value: &str) {
     out.push(' ');
     out.push_str(name);
     out.push_str("=\"");
@@ -1009,7 +1009,7 @@ fn write_attr(out: &mut String, name: &str, value: &str) {
     out.push('"');
 }
 
-fn escape_into(out: &mut String, text: &str, attribute: bool) {
+pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
     for c in text.chars() {
         match c {
             '&' => out.push_str("&amp;"),
@@ -1019,153 +1019,6 @@ fn escape_into(out: &mut String, text: &str, attribute: bool) {
             '\'' if attribute => out.push_str("&#39;"),
             c => out.push(c),
         }
-    }
-}
-
-/// A full HTML document for a page whose signals are `S`.
-///
-/// The document loads the runtime from [`RUNTIME_PATH`](crate::RUNTIME_PATH)
-/// and puts the initial signal values on `<body>`. It is rendered with those
-/// values already applied: text, visibility, classes, attributes, form
-/// values, list items, and conditional elements show before the runtime
-/// loads, and the runtime adopts the elements instead of rebuilding them.
-pub struct Page<S> {
-    title: String,
-    signals: S,
-    styles: Vec<&'static str>,
-    computed: Vec<(String, Value)>,
-    body: Vec<Node<S>>,
-}
-
-impl<S> fmt::Debug for Page<S> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Page")
-            .field("title", &self.title)
-            .finish_non_exhaustive()
-    }
-}
-
-impl<S: Signals> Page<S> {
-    /// Starts a page with its title and initial signal values.
-    #[must_use]
-    pub fn new(title: impl Into<String>, signals: S) -> Self {
-        Self {
-            title: title.into(),
-            signals,
-            styles: Vec::new(),
-            computed: Vec::new(),
-            body: Vec::new(),
-        }
-    }
-
-    /// Keeps `signal` equal to `value`, recomputed when a signal `value` reads changes.
-    ///
-    /// The result is stored in a field of the signal struct, so bindings read
-    /// it like any other signal and rerun only when the result changes, rather
-    /// than each evaluating `value`. The server computes it once for the first
-    /// HTML, and the action handlers receive it with the other signals.
-    /// Computed signals are evaluated in the order they are declared, so one
-    /// may read an earlier one.
-    ///
-    /// The type system does not stop a handler from setting `signal` or the
-    /// server from patching it. Either value lasts until a signal `value` reads
-    /// changes.
-    ///
-    /// ```
-    /// use hypersig::html::span;
-    /// use hypersig::{Page, Signals};
-    /// use serde::{Deserialize, Serialize};
-    ///
-    /// #[derive(Signals, Serialize, Deserialize)]
-    /// struct Cart {
-    ///     price: f64,
-    ///     quantity: i32,
-    ///     total: f64,
-    /// }
-    ///
-    /// let html = Page::new("Cart", Cart { price: 2.5, quantity: 3, total: 0.0 })
-    ///     .computed(Cart::total(), Cart::price() * Cart::quantity().to_f64())
-    ///     .child(span().bind_text(Cart::total().to_text()))
-    ///     .render();
-    /// assert!(html.contains("<span data-hs-text=") && html.contains(">7.5</span>"));
-    /// ```
-    #[must_use]
-    pub fn computed<T>(mut self, signal: Sig<S, T>, value: impl IntoExpr<S, T>) -> Self {
-        self.computed
-            .push((signal.path(), value.into_expr().into_json()));
-        self
-    }
-
-    /// Adds a `<style>` block to `<head>`.
-    #[must_use]
-    pub fn style(mut self, css: &'static str) -> Self {
-        self.styles.push(css);
-        self
-    }
-
-    /// Appends a node to `<body>`.
-    #[must_use]
-    pub fn child(mut self, child: impl Into<Node<S>>) -> Self {
-        self.body.push(child.into());
-        self
-    }
-
-    /// Renders the document.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the signal struct fails to serialize to JSON, which only
-    /// happens for a `Serialize` impl that returns an error.
-    #[must_use]
-    pub fn render(&self) -> String {
-        let mut root = serde_json::to_value(&self.signals)
-            .expect("a Signals struct serializes to a JSON object");
-        for (path, value) in &self.computed {
-            let ctx = Ctx {
-                root: &root,
-                scope: Vec::new(),
-            };
-            if let Some(value) = ssr::evaluate(value, &ctx) {
-                root = ssr::set_path(&root, path, value);
-            }
-        }
-        let mut out = String::from("<!doctype html><html><head><meta charset=\"utf-8\">");
-        out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-        out.push_str("<link rel=\"icon\" href=\"data:,\">");
-        out.push_str("<title>");
-        escape_into(&mut out, &self.title, false);
-        out.push_str("</title>");
-        for css in &self.styles {
-            out.push_str("<style>");
-            out.push_str(css);
-            out.push_str("</style>");
-        }
-        out.push_str("<script type=\"module\"");
-        write_attr(&mut out, "src", crate::RUNTIME_PATH);
-        out.push_str("></script></head><body");
-        write_attr(&mut out, "data-hs-signals", &root.to_string());
-        if !self.computed.is_empty() {
-            let computed: Vec<Value> = self
-                .computed
-                .iter()
-                .map(|(path, value)| json!([path, value]))
-                .collect();
-            write_attr(
-                &mut out,
-                "data-hs-computed",
-                &Value::from(computed).to_string(),
-            );
-        }
-        out.push('>');
-        let ctx = Ctx {
-            root: &root,
-            scope: Vec::new(),
-        };
-        for child in &self.body {
-            child.write(&mut out, Some(&ctx));
-        }
-        out.push_str("</body></html>");
-        out
     }
 }
 
