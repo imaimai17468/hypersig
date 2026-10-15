@@ -8,13 +8,13 @@ A web framework that runs on axum. You write the page, its behavior in the brows
 
 `bench/compare/` builds the same 2000-item TodoMVC in each of them and checks that they behave the same.
 
-| | hypersig | Leptos | Next.js | React | TanStack Start | Nuxt | htmx |
+| | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
 | You write | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript and Vue templates | HTML attributes, any server language |
-| Build step for the browser | None | wasm (cargo-leptos) | Node bundler | Vite | Vite | Vite | None |
-| First HTML has the data | Yes | Yes | Yes | No, fetched after load | Yes | Yes | Yes |
+| Build step for the browser | None | wasm (cargo-leptos) | Vite | Node bundler | Vite | Vite | None |
+| First HTML has the data | Yes | Yes | No, fetched after load | Yes | Yes | Yes | Yes |
 | A click updates the page before the server answers | Yes | Yes | Yes | Yes | Yes | Yes | No |
-| The browser gets server state as | The signal struct | Server functions | Server actions and props | A JSON API | Server functions into a query cache | API routes | HTML fragments |
+| The browser gets server state as | The signal struct | Server functions | A JSON API | Server actions and props | Server functions into a query cache | API routes | HTML fragments |
 
 Three things set hypersig apart from that list:
 
@@ -22,21 +22,37 @@ Three things set hypersig apart from that list:
 - **One struct is the page's state on both sides.** The page's signals are a Rust struct that the browser keeps a copy of, and server handlers answer with patches to it. An action's arguments are typed where the page calls it and where the handler receives them. Renaming a field breaks every expression, call, and patch that names it at compile time, so nothing falls out of step unnoticed.
 - **The strings the browser runs never appear in your source.** Signal names, expressions, action URLs, and patch targets are Rust values, so a misspelled signal or a number passed where a `bool` belongs is a compile error. The repository keeps 19 such mistakes under `crates/hypersig/tests/ui/fail/`.
 
-## Measured on the same app
+## Benchmarks
 
-The 2000-item TodoMVC in each framework, in headless Chrome on an Apple M4 Max, with Lighthouse's mobile CPU slowdown (4x) and 50 ms added to every request. FCP and TBT come from Lighthouse, INP from Chrome's Event Timing API over 30 interactions (checking a todo and adding one). Medians of 3 runs; `bench/compare/SPEC.md` has the details.
+### js-framework-benchmark
 
-| | JS (gzip) | FCP | TBT | INP |
-|---|---|---|---|---|
-| hypersig | 6.5 KB | 178 ms | 71 ms | 16 ms |
-| Leptos | 140.5 KB | 196 ms | 28 ms | 24 ms |
-| Next.js | 133.3 KB | 191 ms | 8 ms | 24 ms |
-| React | 67.1 KB | 178 ms | 4 ms | 16 ms |
-| TanStack Start | 119.5 KB | 179 ms | 0 ms | 24 ms |
-| Nuxt | 59.2 KB | 167 ms | 26 ms | 24 ms |
-| htmx | 16.5 KB | 230 ms | 248 ms | 16 ms |
+[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), keyed, with hypersig's entry in `bench/js-framework-benchmark/`. Headless Chrome 155 on an Apple M4 Max, medians of 10 runs, with the benchmark's own CPU slowdowns.
 
-hypersig sends between 1/9 and 1/22 of the JavaScript that Leptos, Next.js, React, TanStack Start, and Nuxt send, and its INP is among the lowest. It loses on TBT to all of them except htmx. The likely cause, not yet profiled, is the runtime taking over the 2000 server-rendered items, which blocks the main thread longer than hydration does in Next.js, TanStack Start, Nuxt, and Leptos. INP stops at the first frame after a click, so it does not show that htmx's checkbox changes only after the server answers, 59 ms later, where every other app shows it within 17 ms.
+| | hypersig | Leptos | React | Vue | Solid | vanillajs |
+|---|---|---|---|---|---|---|
+| create rows (ms) | 30.4 | 25.3 | 23.0 | 24.5 | 21.6 | 21.0 |
+| replace all rows (ms) | 35.1 | 29.1 | 29.1 | 26.5 | 23.7 | 22.1 |
+| partial update (ms) | 20.1 | 11.6 | 14.6 | 12.7 | 10.8 | 10.1 |
+| select row (ms) | 8.7 | 6.3 | 6.5 | 4.0 | 5.2 | 3.2 |
+| swap rows (ms) | 87.8 | 13.0 | 90.7 | 13.5 | 13.4 | 12.0 |
+| remove row (ms) | 52.9 | 12.9 | 14.7 | 13.6 | 12.3 | 10.7 |
+| create many rows (ms) | 338.4 | 265.2 | 388.3 | 247.6 | 232.7 | 208.7 |
+| append rows to large table (ms) | 34.1 | 27.9 | 28.3 | 26.0 | 24.3 | 23.1 |
+| clear rows (ms) | 25.1 | 14.7 | 16.7 | 12.1 | 11.0 | 10.1 |
+| memory after create/clear ×5 (MB) | 5.11 | 4.58 | 1.93 | 1.12 | 0.77 | 0.64 |
+| size, compressed (KB) | 7.1 | 48.8 | 51.4 | 23.3 | 4.5 | 2.5 |
+| first paint (ms) | 42 | 279.9 | 281.9 | 113.9 | 116.5 | 67.7 |
+
+### TodoMVC with a server
+
+The same 2000-item TodoMVC in each framework, in `bench/compare/`. FCP and TBT from Lighthouse, INP from the Event Timing API over 30 interactions. CPU slowed 4x, 50 ms added to every request, medians of 3 runs.
+
+| | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
+|---|---|---|---|---|---|---|---|
+| JS (gzip) | 6.5 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
+| FCP | 178 ms | 196 ms | 178 ms | 191 ms | 179 ms | 167 ms | 230 ms |
+| TBT | 71 ms | 28 ms | 4 ms | 8 ms | 0 ms | 26 ms | 248 ms |
+| INP | 16 ms | 24 ms | 16 ms | 24 ms | 24 ms | 24 ms | 16 ms |
 
 ## Updating after a change
 

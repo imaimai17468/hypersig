@@ -8,13 +8,13 @@ axum の上で動く Web フレームワークです。画面、ブラウザ側�
 
 `bench/compare/` では、同じ 2000 件の TodoMVC をそれぞれで作り、動作が同じであることを確かめています。
 
-| | hypersig | Leptos | Next.js | React | TanStack Start | Nuxt | htmx |
+| | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
 | 書く言語 | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript と Vue のテンプレート | HTML の属性と、任意のサーバー言語 |
-| ブラウザ向けのビルド | なし | wasm（cargo-leptos） | Node のバンドラー | Vite | Vite | Vite | なし |
-| 最初の HTML にデータが入っている | はい | はい | はい | いいえ（読み込み後に取得） | はい | はい | はい |
+| ブラウザ向けのビルド | なし | wasm（cargo-leptos） | Vite | Node のバンドラー | Vite | Vite | なし |
+| 最初の HTML にデータが入っている | はい | はい | いいえ（読み込み後に取得） | はい | はい | はい | はい |
 | クリックした画面が、サーバーの応答より先に変わる | はい | はい | はい | はい | はい | はい | いいえ |
-| サーバーの状態がブラウザに届く形 | シグナル構造体 | サーバー関数 | サーバーアクションと props | JSON の API | サーバー関数からクエリキャッシュへ | API ルート | HTML の断片 |
+| サーバーの状態がブラウザに届く形 | シグナル構造体 | サーバー関数 | JSON の API | サーバーアクションと props | サーバー関数からクエリキャッシュへ | API ルート | HTML の断片 |
 
 この中で hypersig だけが持つ点は 3 つです。
 
@@ -22,21 +22,37 @@ axum の上で動く Web フレームワークです。画面、ブラウザ側�
 - **1 つの構造体が、サーバーとブラウザ両方でページの状態になります。** ページのシグナルは Rust の構造体で、ブラウザはその写しを持ち、サーバーのハンドラはそれに対する差分を返します。アクションの引数は、ページが呼ぶ側でもハンドラが受け取る側でも型付きです。フィールドの名前を変えると、それを使っている式、呼び出し、差分がすべてコンパイルエラーになるので、気づかないうちにずれることはありません。
 - **ブラウザが実行する文字列を、ソースに書きません。** シグナル名、式、アクションの URL、差分の宛先はどれも Rust の値です。そのため、シグナル名の綴り違いや、`bool` を渡すべき所に数値を渡す間違いはコンパイルエラーになります。リポジトリの `crates/hypersig/tests/ui/fail/` には、こうした間違いを 19 件置いています。
 
-## 同じアプリでの計測
+## ベンチマーク
 
-2000 件の TodoMVC をそれぞれで作り、Apple M4 Max の headless Chrome で測りました。CPU は Lighthouse のモバイル設定と同じく 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。FCP と TBT は Lighthouse の値、INP は Chrome の Event Timing API で 30 回の操作（todo のチェックと追加）から求めた値です。3 回の中央値で、詳しい条件は `bench/compare/SPEC.md` にあります。
+### js-framework-benchmark
 
-| | JS（gzip） | FCP | TBT | INP |
-|---|---|---|---|---|
-| hypersig | 6.5 KB | 178 ms | 71 ms | 16 ms |
-| Leptos | 140.5 KB | 196 ms | 28 ms | 24 ms |
-| Next.js | 133.3 KB | 191 ms | 8 ms | 24 ms |
-| React | 67.1 KB | 178 ms | 4 ms | 16 ms |
-| TanStack Start | 119.5 KB | 179 ms | 0 ms | 24 ms |
-| Nuxt | 59.2 KB | 167 ms | 26 ms | 24 ms |
-| htmx | 16.5 KB | 230 ms | 248 ms | 16 ms |
+[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) のキー付きの部門です。hypersig 版は `bench/js-framework-benchmark/` にあります。Apple M4 Max の headless Chrome 155 で 10 回測った中央値で、CPU の減速はベンチマーク本体の設定のままです。
 
-hypersig が送る JavaScript は、Leptos、Next.js、React、TanStack Start、Nuxt の 1/9 から 1/22 で、INP は最も小さいグループに入ります。負けているのは TBT で、htmx 以外のすべてより長くなっています。まだプロファイルで確かめてはいませんが、サーバーが描いた 2000 件をランタイムが引き継ぐ処理が、Next.js、TanStack Start、Nuxt、Leptos のハイドレーションより長くメインスレッドを止めていると考えられます。INP はクリックの直後のフレームまでしか測らないので、htmx のチェックボックスがサーバーの応答を待って 59 ms 後に変わることは表に出ません。ほかのアプリでは 17 ms 以内に変わります。
+| | hypersig | Leptos | React | Vue | Solid | vanillajs |
+|---|---|---|---|---|---|---|
+| 1,000 行の作成（ms） | 30.4 | 25.3 | 23.0 | 24.5 | 21.6 | 21.0 |
+| 全行の置き換え（ms） | 35.1 | 29.1 | 29.1 | 26.5 | 23.7 | 22.1 |
+| 10 行ごとの更新（ms） | 20.1 | 11.6 | 14.6 | 12.7 | 10.8 | 10.1 |
+| 行の選択（ms） | 8.7 | 6.3 | 6.5 | 4.0 | 5.2 | 3.2 |
+| 行の入れ替え（ms） | 87.8 | 13.0 | 90.7 | 13.5 | 13.4 | 12.0 |
+| 行の削除（ms） | 52.9 | 12.9 | 14.7 | 13.6 | 12.3 | 10.7 |
+| 10,000 行の作成（ms） | 338.4 | 265.2 | 388.3 | 247.6 | 232.7 | 208.7 |
+| 1,000 行の追加（ms） | 34.1 | 27.9 | 28.3 | 26.0 | 24.3 | 23.1 |
+| 全行の削除（ms） | 25.1 | 14.7 | 16.7 | 12.1 | 11.0 | 10.1 |
+| 作成と削除を 5 回繰り返したあとのメモリ（MB） | 5.11 | 4.58 | 1.93 | 1.12 | 0.77 | 0.64 |
+| 圧縮後のサイズ（KB） | 7.1 | 48.8 | 51.4 | 23.3 | 4.5 | 2.5 |
+| 最初の描画（ms） | 42 | 279.9 | 281.9 | 113.9 | 116.5 | 67.7 |
+
+### サーバーのある TodoMVC
+
+同じ 2000 件の TodoMVC をそれぞれで作ったもので、`bench/compare/` にあります。FCP と TBT は Lighthouse、INP は Event Timing API で 30 回の操作から求めました。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足した、3 回の中央値です。
+
+| | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
+|---|---|---|---|---|---|---|---|
+| JS（gzip） | 6.5 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
+| FCP | 178 ms | 196 ms | 178 ms | 191 ms | 179 ms | 167 ms | 230 ms |
+| TBT | 71 ms | 28 ms | 4 ms | 8 ms | 0 ms | 26 ms | 248 ms |
+| INP | 16 ms | 24 ms | 16 ms | 24 ms | 24 ms | 24 ms | 16 ms |
 
 ## 変更のあとの更新
 
