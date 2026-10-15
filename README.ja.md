@@ -2,35 +2,29 @@
 
 [English](README.md)
 
-axum の上で動く Web フレームワークです。画面、ブラウザでの動き、サーバーの処理を 1 つの Rust のクレートに書き、`cargo build` だけでビルドします。Node も wasm も使いません。
+axum の上で動き、画面もブラウザでの動きもサーバーの処理も Rust で書く Web フレームワークです。
 
-ページの状態は 1 つの Rust の構造体（シグナル構造体）で定義し、画面に書く式もサーバーのハンドラも、この構造体のフィールドを通して値を読み書きします。フィールドの名前や型を変えると、それを使っている箇所が画面側でもサーバー側でもコンパイルエラーになります。
+- `cargo build` だけでビルドでき、Node も wasm も要りません。
+- 画面とサーバーの食い違いは、コンパイルエラーになります。
+- サーバーの応答を待たずに画面を変える処理（楽観的更新）を、追加のコードなしで書けます。
 
-サーバーは最初の HTML にシグナル構造体の値を JSON で埋め込み、ブラウザのランタイムはその値を読み込んで持ち続けます。クリックや入力で値が変わると、ブラウザはその値を使っている表示だけをすぐに書き換えます（Solid や Vue と同じリアクティブな更新です）。変えた値をサーバーに保存するときも、リクエストは書き換えたあとに送るので、楽観的更新のコードを書かなくても、画面はサーバーの応答を待たずに変わります。
+## フレームワークの比較
 
-## Leptos、Next.js、React、TanStack Start、Nuxt、htmx との比較
-
-`bench/compare/` では、同じ 2000 件の TodoMVC をそれぞれで作り、動作が同じであることを確かめています。
+Rust のサーバーに画面を付けようとすると、今は 2 通りの選び方になります。Leptos なら画面とサーバーの間で型が検査される代わりに、wasm とそのビルドが要ります。htmx ならビルドは要りませんが、属性に書く URL や式は型で検査されません。
 
 | | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
-| 書く言語 | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript と Vue のテンプレート | HTML の属性と、任意のサーバー言語 |
-| ブラウザ向けのビルド | なし | wasm（cargo-leptos） | Vite | Node のバンドラー | Vite | Vite | なし |
-| 最初の HTML にデータが入っている | はい | はい | いいえ（読み込み後に取得） | はい | はい | はい | はい |
-| クリックした画面が、サーバーの応答より先に変わる | はい | はい | はい | はい | はい | はい | いいえ |
-| サーバーの状態がブラウザに届く形 | シグナル構造体 | サーバー関数 | JSON の API | サーバーアクションと props | サーバー関数からクエリキャッシュへ | API ルート | HTML の断片 |
-
-この中で hypersig だけが持つ点は 3 つです。
-
-- **JavaScript のツールチェインも wasm も要りません。** アプリ全体が 1 つの Rust のクレートで、`cargo build` だけでビルドできます。ブラウザ用のランタイムはビルド済みのものをクレートに埋め込んでいます。
-- **1 つの構造体が、サーバーとブラウザ両方でページの状態になります。** ページのシグナルは Rust の構造体で、ブラウザはその写しを持ち、サーバーのハンドラはそれに対する差分を返します。アクションの引数は、ページが呼ぶ側でもハンドラが受け取る側でも型付きです。フィールドの名前を変えると、それを使っている式、呼び出し、差分がすべてコンパイルエラーになるので、気づかないうちにずれることはありません。
-- **ブラウザが実行する文字列を、ソースに書きません。** シグナル名、式、アクションの URL、差分の宛先はどれも Rust の値です。そのため、シグナル名の綴り違いや、`bool` を渡すべき所に数値を渡す間違いはコンパイルエラーになります。リポジトリの `crates/hypersig/tests/ui/fail/` には、こうした間違いを 19 件置いています。
+| 画面を書く言語 | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript と Vue のテンプレート | HTML の属性 |
+| サーバーを書く言語 | Rust | Rust | 任意 | TypeScript | TypeScript | TypeScript | 任意 |
+| ブラウザ向けのビルドが不要 | はい | いいえ（wasm と cargo-leptos） | いいえ（Vite） | いいえ（Node のバンドラー） | いいえ（Vite） | いいえ（Vite） | はい |
+| 送る値の型をコンパイル時に検査 | はい | はい | いいえ | はい | はい | いいえ | いいえ |
+| ブラウザの中で状態を持てる | はい | はい | はい | はい | はい | はい | いいえ |
 
 ## ベンチマーク
 
 ### js-framework-benchmark
 
-[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) のキー付きの部門です。hypersig 版は `bench/js-framework-benchmark/` にあります。Apple M4 Max の headless Chrome 155 で 10 回測った中央値で、CPU の減速はベンチマーク本体の設定のままです。
+[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) のキー付きの部門を、Apple M4 Max の headless Chrome 155 で 10 回測った中央値です。CPU の減速はベンチマーク本体の設定のままです。
 
 | | hypersig | Leptos | React | Vue | Solid | vanillajs |
 |---|---|---|---|---|---|---|
@@ -47,9 +41,9 @@ axum の上で動く Web フレームワークです。画面、ブラウザで�
 | 圧縮後のサイズ（KB） | 7.1 | 48.8 | 51.4 | 23.3 | 4.5 | 2.5 |
 | 最初の描画（ms） | 42 | 279.9 | 281.9 | 113.9 | 116.5 | 67.7 |
 
-### サーバーのある TodoMVC
+### フルスタックの TodoMVC
 
-同じ 2000 件の TodoMVC をそれぞれで作ったもので、`bench/compare/` にあります。FCP と TBT は Lighthouse、INP は Event Timing API で 30 回の操作から求めました。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足した、3 回の中央値です。
+追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。
 
 | | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
@@ -58,75 +52,23 @@ axum の上で動く Web フレームワークです。画面、ブラウザで�
 | TBT | 71 ms | 28 ms | 4 ms | 8 ms | 0 ms | 26 ms | 248 ms |
 | INP | 16 ms | 24 ms | 16 ms | 24 ms | 24 ms | 24 ms | 16 ms |
 
-## 変更のあとの更新
+## 状態管理とレンダリング
 
-todo をチェックしてサーバーに保存する処理を、TanStack Query のドキュメントにある楽観的更新で書くと次のようになります。
+ページの状態は 1 つの Rust の構造体（シグナル構造体）で定義します。画面の式もサーバーのハンドラも、値はこの構造体のフィールドを通してしか読み書きできません。そのため、フィールドの名前を変えたのに画面の式を直し忘れた、表示の条件に `bool` ではなく数値を渡した、別のページのアクションを呼んだ、といった間違いは、ブラウザで動かす前にコンパイルエラーになります。
 
-```tsx
-const queryClient = useQueryClient();
-const toggle = useMutation({
-  mutationFn: (change: { id: number; done: boolean }) => setTodoDone({ data: change }),
-  onMutate: async ({ id, done }) => {
-    await queryClient.cancelQueries({ queryKey: ["todos"] });
-    const previous = queryClient.getQueryData<Todo[]>(["todos"]);
-    queryClient.setQueryData<Todo[]>(["todos"], (list) =>
-      list?.map((todo) => (todo.id === id ? { ...todo, done } : todo)),
-    );
-    return { previous };
-  },
-  onError: (_error, _change, context) => queryClient.setQueryData(["todos"], context?.previous),
-});
+読み込みと更新でブラウザが実行するものを、ほかのフレームワークと比べると次のようになります。表の「エフェクト」は、シグナルの値を読んで DOM を書き換える処理です。hypersig では `data-hs-text` や `data-hs-show` のような表示の属性 1 つにつき 1 つあります。
 
-<input type="checkbox" checked={todo.done}
-  onChange={(event) => toggle.mutate({ id: todo.id, done: event.target.checked })} />
-```
+| | hypersig | React | Vue | Solid | Qwik |
+|---|---|---|---|---|---|
+| ブラウザに送るアプリのコード | なし（式は HTML の属性にデータとして入る） | コンポーネント全部 | コンポーネント全部 | コンポーネント全部 | 操作されたハンドラの分だけ、操作したときに |
+| 読み込み時にブラウザが実行するもの | すべてのエフェクトを 1 回ずつ実行 | コンポーネントのツリー全体 | コンポーネントのツリー全体 | 各コンポーネントを 1 回（リアクティブな依存関係を作る） | なし（状態とハンドラの場所は HTML に入っている） |
+| 更新で再実行する範囲 | 値を読んだエフェクトだけ | 状態を持つコンポーネントと子孫 | コンポーネントの描画関数（仮想 DOM で差分を取る） | 値を読んだエフェクトだけ | 値を読んだエフェクトだけ |
 
-同じ処理を hypersig で書くと次のとおりです。
-
-```rust
-use hypersig::html::{El, each_keyed, input, li, ul};
-use hypersig::{Action, Patches, Signals};
-use serde::{Deserialize, Serialize};
-
-#[derive(Signals, Serialize, Deserialize)]
-struct Todo {
-    id: i32,
-    title: String,
-    done: bool,
-}
-
-#[derive(Signals, Serialize, Deserialize)]
-struct Todos {
-    todos: Vec<Todo>,
-}
-
-const SET_DONE: Action<Todos, (i32, bool)> = Action::post("/done");
-
-fn list() -> El<Todos> {
-    ul().child(each_keyed(Todos::todos(), |todo| todo.at(Todo::id()), |todo| {
-        let done = todo.at(Todo::done());
-        li().child(
-            input()
-                .attr("type", "checkbox")
-                .bind(done)
-                .on_change(SET_DONE.call_with((todo.at(Todo::id()), done))),
-        )
-    }))
-}
-
-async fn set_done((): (), (id, done): (i32, bool)) -> Patches<Todos> {
-    store(id, done);
-    Patches::new()
-}
-
-fn store(_id: i32, _done: bool) {}
-```
-
-チェックボックスはブラウザで `done` を書き換え、その項目の `done` を読んでいる束縛だけが動き直します。そのあと `on_change` が、id と新しい値を `set_done` に送ります。型はどちらの側でも `(i32, bool)` です。クエリキーを決めることも、キャッシュの写しを取っておくことも、一覧を取り直すこともありません。
+アクションに送る値の型は、呼ぶ側の画面のコードでも受け取るハンドラでも `(i32, bool)` です。TanStack Query の楽観的更新で書くクエリキーの指定、キャッシュの前の値の保存、一覧の取り直しは要りません。
 
 負担になるのは失敗したときです。サーバーがエラーを返しても、ブラウザで変えた値はそのまま残ります。`error(message)` で失敗は表示できますが、値を元に戻す仕組みはありません。
 
-## はじめかた
+## クイックスタート
 
 `Cargo.toml` に依存を追加します。hypersig はまだ crates.io に公開していないので、Git から取得します。
 
@@ -181,13 +123,13 @@ async fn main() -> std::io::Result<()> {
 
 `cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。ブラウザ用のランタイムは `hypersig_runtime()` が配信するので、Node も JavaScript のビルドも要りません。
 
-## できないこと
+## 制限事項
 
 - ハンドラや式で使える演算は、ライブラリが用意したものに限られます。`localStorage` や外部ライブラリの呼び出しのような任意の JavaScript は書けません。
 - 部品ごとの状態は、ページのシグナル構造体にあらかじめ置き場所を用意しておく必要があります。実行中に部品を増やすときは、`Vec` の項目にします。
 - 算術は `i32` と `f64` だけで、除算は `f64` だけです。JavaScript の数値で同じ結果にならない型は、式に使えません。
 - `equals` は JSON の形で比べます。derive した `PartialEq` とは結果が一致しますが、手で書いた `PartialEq` とは一致しない場合があります。
-- サーバー側で式を評価するのは `Page::render` だけです。`Patches::element` で送るフラグメントはシグナルの値を持たないので、中の束縛はブラウザが埋めます。
+- サーバー側で式を評価するのは `Page::render` だけです。`Patches::element` で送るフラグメントはシグナルの値を持たないので、中の表示はブラウザに届いたあとでエフェクトが埋めます。
 - サーバー側とブラウザ側の評価は、`to_fixed` のちょうど半分の丸め、`1e-6` 未満か `1e21` 以上の数の文字列化、基本多言語面の外の文字の大小比較で食い違うことがあります。読み込んだあとは、ブラウザ側の値で上書きされます。
 - サーバーからのパッチで `each` を含むフラグメントを差し替えると、その中のリストの項目は作り直されます。項目の値はシグナルにあるので、内容は保たれます。
 - シグナルには `#[serde(rename)]` などの属性を使えません。derive がエラーにします。

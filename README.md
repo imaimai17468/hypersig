@@ -2,35 +2,29 @@
 
 [日本語](README.ja.md)
 
-A web framework that runs on axum. The page, its behavior in the browser, and the server handlers live in one Rust crate that `cargo build` builds on its own, with no Node and no wasm.
+A web framework on axum where the page, its behavior in the browser, and the server handlers are all written in Rust.
 
-The page's state is one Rust struct, the signal struct, and both the expressions in the page and the server handlers read and write values through its fields. Renaming a field or changing its type makes every place that uses it, in the page or in a handler, a compile error.
+- `cargo build` builds it, with no Node and no wasm.
+- A mismatch between the page and the server is a compile error.
+- Changing the page before the server answers (an optimistic update) takes no extra code.
 
-The server embeds the signal struct's values as JSON in the first HTML, and the runtime in the browser loads them and keeps them. When a click or an input changes a value, the browser at once rewrites only the parts of the page that use it, the same reactive updates Solid and Vue make. Saving the new value to the server sends the request after that rewrite, so the page updates without waiting for the server's answer and without any optimistic-update code.
+## Framework comparison
 
-## Compared with Leptos, Next.js, React, TanStack Start, Nuxt, and htmx
-
-`bench/compare/` builds the same 2000-item TodoMVC in each of them and checks that they behave the same.
+Adding a page to a Rust server leaves two choices today. Leptos type-checks what passes between the page and the server, and needs wasm and its build. htmx needs no build, but the URLs and expressions written in its attributes are not type-checked.
 
 | | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
-| You write | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript and Vue templates | HTML attributes, any server language |
-| Build step for the browser | None | wasm (cargo-leptos) | Vite | Node bundler | Vite | Vite | None |
-| First HTML has the data | Yes | Yes | No, fetched after load | Yes | Yes | Yes | Yes |
-| A click updates the page before the server answers | Yes | Yes | Yes | Yes | Yes | Yes | No |
-| The browser gets server state as | The signal struct | Server functions | A JSON API | Server actions and props | Server functions into a query cache | API routes | HTML fragments |
-
-Three things set hypersig apart from that list:
-
-- **No JavaScript toolchain and no wasm.** The whole app is one Rust crate built by `cargo build`. The browser runtime is prebuilt and embedded in the crate.
-- **One struct is the page's state on both sides.** The page's signals are a Rust struct that the browser keeps a copy of, and server handlers answer with patches to it. An action's arguments are typed where the page calls it and where the handler receives them. Renaming a field breaks every expression, call, and patch that names it at compile time, so nothing falls out of step unnoticed.
-- **The strings the browser runs never appear in your source.** Signal names, expressions, action URLs, and patch targets are Rust values, so a misspelled signal or a number passed where a `bool` belongs is a compile error. The repository keeps 19 such mistakes under `crates/hypersig/tests/ui/fail/`.
+| Page written in | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript and Vue templates | HTML attributes |
+| Server written in | Rust | Rust | Any | TypeScript | TypeScript | TypeScript | Any |
+| No browser build | Yes | No (wasm and cargo-leptos) | No (Vite) | No (Node bundler) | No (Vite) | No (Vite) | Yes |
+| Request types checked at compile time | Yes | Yes | No | Yes | Yes | No | No |
+| State kept in the browser | Yes | Yes | Yes | Yes | Yes | Yes | No |
 
 ## Benchmarks
 
 ### js-framework-benchmark
 
-[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), keyed, with hypersig's entry in `bench/js-framework-benchmark/`. Headless Chrome 155 on an Apple M4 Max, medians of 10 runs, with the benchmark's own CPU slowdowns.
+[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), keyed. Medians of 10 runs in headless Chrome 155 on an Apple M4 Max, with the benchmark's own CPU slowdowns.
 
 | | hypersig | Leptos | React | Vue | Solid | vanillajs |
 |---|---|---|---|---|---|---|
@@ -47,9 +41,9 @@ Three things set hypersig apart from that list:
 | size, compressed (KB) | 7.1 | 48.8 | 51.4 | 23.3 | 4.5 | 2.5 |
 | first paint (ms) | 42 | 279.9 | 281.9 | 113.9 | 116.5 | 67.7 |
 
-### TodoMVC with a server
+### Full-stack TodoMVC
 
-The same 2000-item TodoMVC in each framework, in `bench/compare/`. FCP and TBT from Lighthouse, INP from the Event Timing API over 30 interactions. CPU slowed 4x, 50 ms added to every request, medians of 3 runs.
+A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request.
 
 | | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
@@ -58,75 +52,23 @@ The same 2000-item TodoMVC in each framework, in `bench/compare/`. FCP and TBT f
 | TBT | 71 ms | 28 ms | 4 ms | 8 ms | 0 ms | 26 ms | 248 ms |
 | INP | 16 ms | 24 ms | 16 ms | 24 ms | 24 ms | 24 ms | 16 ms |
 
-## Updating after a change
+## State management and rendering
 
-Toggling a todo and saving it to the server, with TanStack Query's documented optimistic update:
+The page's state is one Rust struct, the signal struct. Expressions in the page and server handlers can read and write values only through its fields, so renaming a field and forgetting an expression that used it, passing a number where a condition needs a `bool`, or calling another page's action is a compile error before anything runs in the browser.
 
-```tsx
-const queryClient = useQueryClient();
-const toggle = useMutation({
-  mutationFn: (change: { id: number; done: boolean }) => setTodoDone({ data: change }),
-  onMutate: async ({ id, done }) => {
-    await queryClient.cancelQueries({ queryKey: ["todos"] });
-    const previous = queryClient.getQueryData<Todo[]>(["todos"]);
-    queryClient.setQueryData<Todo[]>(["todos"], (list) =>
-      list?.map((todo) => (todo.id === id ? { ...todo, done } : todo)),
-    );
-    return { previous };
-  },
-  onError: (_error, _change, context) => queryClient.setQueryData(["todos"], context?.previous),
-});
+What the browser runs on load and on an update, compared with other frameworks. An effect is the code that reads signal values and rewrites the DOM. hypersig has one for each display attribute such as `data-hs-text` or `data-hs-show`.
 
-<input type="checkbox" checked={todo.done}
-  onChange={(event) => toggle.mutate({ id: todo.id, done: event.target.checked })} />
-```
+| | hypersig | React | Vue | Solid | Qwik |
+|---|---|---|---|---|---|
+| App code sent to the browser | None (expressions travel as data in HTML attributes) | Every component | Every component | Every component | Only the handlers used, when they are used |
+| What the browser runs on load | Every effect, once each | The whole component tree | The whole component tree | Each component once, to build its reactive dependencies | Nothing (state and handler locations are in the HTML) |
+| What reruns on an update | Only the effects that read the value | The component holding the state and its descendants | The component's render function, diffed through a virtual DOM | Only the effects that read the value | Only the effects that read the value |
 
-The same in hypersig:
-
-```rust
-use hypersig::html::{El, each_keyed, input, li, ul};
-use hypersig::{Action, Patches, Signals};
-use serde::{Deserialize, Serialize};
-
-#[derive(Signals, Serialize, Deserialize)]
-struct Todo {
-    id: i32,
-    title: String,
-    done: bool,
-}
-
-#[derive(Signals, Serialize, Deserialize)]
-struct Todos {
-    todos: Vec<Todo>,
-}
-
-const SET_DONE: Action<Todos, (i32, bool)> = Action::post("/done");
-
-fn list() -> El<Todos> {
-    ul().child(each_keyed(Todos::todos(), |todo| todo.at(Todo::id()), |todo| {
-        let done = todo.at(Todo::done());
-        li().child(
-            input()
-                .attr("type", "checkbox")
-                .bind(done)
-                .on_change(SET_DONE.call_with((todo.at(Todo::id()), done))),
-        )
-    }))
-}
-
-async fn set_done((): (), (id, done): (i32, bool)) -> Patches<Todos> {
-    store(id, done);
-    Patches::new()
-}
-
-fn store(_id: i32, _done: bool) {}
-```
-
-The checkbox writes `done` in the browser, and only the bindings that read that item's `done` run again. `on_change` then sends the id and the new value to `set_done`, typed as `(i32, bool)` on both ends. There is no query key to choose, no cache to snapshot, and no list to refetch.
+The arguments are typed as `(i32, bool)` both in the page code that calls the action and in the handler that receives them. The query key, the cache snapshot, and the refetch that a TanStack Query optimistic update needs are not written.
 
 The cost is on failure. When the server answers with an error, the change stays in the browser: `error(message)` can show the failure, but nothing rolls the value back.
 
-## Getting started
+## Quick start
 
 Add the dependencies to `Cargo.toml`. hypersig is not on crates.io yet, so it comes from Git.
 
@@ -181,13 +123,13 @@ async fn main() -> std::io::Result<()> {
 
 Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime, and no Node or JavaScript build is involved.
 
-## Limits
+## Limitations
 
 - Handlers and expressions can use only the operations the library provides. Arbitrary JavaScript, such as `localStorage` or a call into another library, cannot be written.
 - A component's state needs a place prepared for it in the page's signal struct. To add components at run time, make them items of a `Vec`.
 - Arithmetic is limited to `i32` and `f64`, and division to `f64`. A type whose results JavaScript numbers cannot reproduce cannot appear in an expression.
 - `equals` compares the JSON form. It agrees with a derived `PartialEq` and can disagree with a hand-written one.
-- `Page::render` is the only place the server evaluates expressions. A fragment sent with `Patches::element` carries no signal values, so the browser fills in its bindings.
+- `Page::render` is the only place the server evaluates expressions. A fragment sent with `Patches::element` carries no signal values, so its effects fill in what it shows once it reaches the browser.
 - The server and the browser can disagree on rounding an exact half in `to_fixed`, on formatting numbers below `1e-6` or at or above `1e21`, and on ordering characters outside the Basic Multilingual Plane. After loading, the browser's values replace the server's.
 - Replacing a fragment that contains an `each` with a server patch rebuilds the list items inside it. Their values live in signals, so their contents are kept.
 - Signals cannot use attributes such as `#[serde(rename)]`. The derive rejects them.
