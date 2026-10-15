@@ -118,8 +118,7 @@ impl<S> Node<S> {
                 template.write(out, None, None);
                 out.push_str("</template>");
                 if let Some(ctx) = ctx
-                    && ssr::evaluate(&cond.clone().into_json(), ctx)
-                        .is_some_and(|v| ssr::truthy(&v))
+                    && ssr::evaluate(cond.as_json(), ctx).is_some_and(|v| ssr::truthy(&v))
                 {
                     template.write(out, Some(ctx), Some(""));
                 }
@@ -800,59 +799,60 @@ impl<S> El<S> {
         reason = "one attribute after another, in the order the runtime documents them"
     )]
     fn write(&self, out: &mut String, ctx: Option<&Ctx<'_>>, ssr_key: Option<&str>) {
-        let eval = |expr: &Value| ctx.and_then(|ctx| ssr::evaluate(expr, ctx));
-        let eval_bool = |expr: &Value| eval(expr).map(|v| ssr::truthy(&v));
+        let eval_text =
+            |expr: &Value| ctx.and_then(|ctx| ssr::evaluate(expr, ctx).map(|v| ssr::js_string(&v)));
+        let eval_bool =
+            |expr: &Value| ctx.and_then(|ctx| ssr::evaluate(expr, ctx).map(|v| ssr::truthy(&v)));
         let mut classes: Vec<&str> = self.classes.clone();
         for (class, when) in &self.class_when {
-            if eval_bool(&when.clone().into_json()) == Some(true) {
+            if eval_bool(when.as_json()) == Some(true) {
                 classes.push(class);
             }
         }
         let mut style: Vec<String> = Vec::new();
         for (property, value) in &self.style {
-            if let Some(value) = eval(&value.clone().into_json()) {
-                style.push(format!("{property}: {}", ssr::js_string(&value)));
+            if let Some(value) = eval_text(value.as_json()) {
+                style.push(format!("{property}: {value}"));
             }
         }
         if let Some(show) = &self.show
-            && eval_bool(&show.clone().into_json()) == Some(false)
+            && eval_bool(show.as_json()) == Some(false)
         {
             style.push("display: none".to_owned());
         }
         let mut computed: Vec<(&str, String)> = Vec::new();
         for (name, value) in &self.attr_bind {
-            if let Some(value) = eval(&value.clone().into_json()) {
-                computed.push((name, ssr::js_string(&value)));
+            if let Some(value) = eval_text(value.as_json()) {
+                computed.push((name, value));
             }
         }
         for (name, when) in &self.attr_when {
-            if eval_bool(&when.clone().into_json()) == Some(true) {
+            if eval_bool(when.as_json()) == Some(true) {
                 computed.push((name, String::new()));
             }
         }
         if let Some(checked) = &self.checked
-            && eval_bool(&checked.clone().into_json()) == Some(true)
+            && eval_bool(checked.as_json()) == Some(true)
         {
             computed.push(("checked", String::new()));
         }
         let mut content: Option<String> = self
             .text
             .as_ref()
-            .and_then(|text| eval(&text.clone().into_json()))
-            .map(|value| ssr::js_string(&value));
+            .and_then(|text| eval_text(text.as_json()));
         let mut selected: Option<String> = None;
         if let (Some(ctx), Some(bind)) = (ctx, &self.bind)
             && let Some(path) = bind.get(0).and_then(|place| ctx.resolve(place))
         {
             let value = ctx.get(&path);
             match bind.get(1).and_then(Value::as_str) {
-                Some("bool") if ssr::truthy(&value) => computed.push(("checked", String::new())),
-                Some("radio") if bind.get(2).is_some_and(|choice| ssr::equal(choice, &value)) => {
+                Some("bool") if ssr::truthy(value) => computed.push(("checked", String::new())),
+                Some("radio") if bind.get(2).is_some_and(|choice| ssr::equal(choice, value)) => {
                     computed.push(("checked", String::new()));
                 }
-                Some("json") => selected = Some(ssr::js_json(&value)),
+                Some("json") => selected = Some(ssr::js_json(value)),
                 Some("text" | "int" | "float") if !value.is_null() => {
-                    let text = ssr::js_string(&value);
+                    let text = ssr::js_string(value);
                     match self.tag {
                         "textarea" => content = Some(text),
                         "select" => selected = Some(text),
@@ -914,38 +914,35 @@ impl<S> El<S> {
             write_attr(out, "data-hs-ref", name);
         }
         if !self.effects.is_empty() {
-            let effects: Vec<Value> = self
-                .effects
-                .iter()
-                .map(|stmt| stmt.clone().into_json())
-                .collect();
-            write_attr(out, "data-hs-effect", &Value::from(effects).to_string());
+            let effects: Vec<&Value> = self.effects.iter().map(Stmt::as_json).collect();
+            write_attr(out, "data-hs-effect", &json_text(&effects));
         }
         if !self.watches.is_empty() {
-            let watches: Vec<Value> = self
+            let watches: Vec<(&Value, &Value)> = self
                 .watches
                 .iter()
-                .map(|(place, stmt)| json!([place, stmt.clone().into_json()]))
+                .map(|(place, stmt)| (place, stmt.as_json()))
                 .collect();
-            write_attr(out, "data-hs-on-signal", &Value::from(watches).to_string());
+            write_attr(out, "data-hs-on-signal", &json_text(&watches));
         }
         if let Some((period, stmt)) = &self.interval {
-            let interval = json!([
-                u64::try_from(*period).unwrap_or(u64::MAX),
-                stmt.clone().into_json()
-            ]);
-            write_attr(out, "data-hs-on-interval", &interval.to_string());
+            let period = u64::try_from(*period).unwrap_or(u64::MAX);
+            write_attr(
+                out,
+                "data-hs-on-interval",
+                &json_text(&(period, stmt.as_json())),
+            );
         }
         for (event, stmt) in &self.on {
             write_attr(out, event.attribute(), &stmt.to_json());
         }
         if !self.keys.is_empty() {
-            let keys: Vec<Value> = self
+            let keys: Vec<(String, &Value)> = self
                 .keys
                 .iter()
-                .map(|(key, stmt)| json!([key.name(), stmt.clone().into_json()]))
+                .map(|(key, stmt)| (key.name(), stmt.as_json()))
                 .collect();
-            write_attr(out, "data-hs-on-key", &Value::from(keys).to_string());
+            write_attr(out, "data-hs-on-key", &json_text(&keys));
         }
         out.push('>');
         if self.void {
@@ -994,11 +991,15 @@ fn write_pairs<S, T>(out: &mut String, name: &str, pairs: &[(&'static str, Expr<
     if pairs.is_empty() {
         return;
     }
-    let pairs: Vec<Value> = pairs
+    let pairs: Vec<(&str, &Value)> = pairs
         .iter()
-        .map(|(key, expr)| json!([key, expr.clone().into_json()]))
+        .map(|(key, expr)| (*key, expr.as_json()))
         .collect();
-    write_attr(out, name, &Value::from(pairs).to_string());
+    write_attr(out, name, &json_text(&pairs));
+}
+
+fn json_text(value: &impl Serialize) -> String {
+    serde_json::to_string(value).expect("JSON values and strings serialize")
 }
 
 pub(crate) fn write_attr(out: &mut String, name: &str, value: &str) {

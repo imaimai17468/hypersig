@@ -95,6 +95,10 @@ impl<S, T> Expr<S, T> {
         self.ast
     }
 
+    pub(crate) fn as_json(&self) -> &Value {
+        &self.ast
+    }
+
     pub(crate) fn to_json(&self) -> String {
         self.ast.to_string()
     }
@@ -523,6 +527,10 @@ impl<S> Stmt<S> {
 
     pub(crate) fn into_json(self) -> Value {
         self.ast
+    }
+
+    pub(crate) fn as_json(&self) -> &Value {
+        &self.ast
     }
 
     pub(crate) fn to_json(&self) -> String {

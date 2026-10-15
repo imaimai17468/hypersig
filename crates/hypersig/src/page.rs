@@ -1,5 +1,6 @@
 //! The full HTML document a page is served as.
 
+use std::borrow::Cow;
 use std::fmt;
 
 use serde_json::{Value, json};
@@ -112,7 +113,7 @@ impl<S: Signals> Page<S> {
                 root: &root,
                 scope: Vec::new(),
             };
-            if let Some(value) = ssr::evaluate(value, &ctx) {
+            if let Some(value) = ssr::evaluate(value, &ctx).map(Cow::into_owned) {
                 root = ssr::set_path(&root, path, value);
             }
         }

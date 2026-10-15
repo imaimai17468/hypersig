@@ -8,7 +8,11 @@
 //! or above `1e21` in `to_text`, and string ordering outside the Basic
 //! Multilingual Plane.
 
+use std::borrow::Cow;
+
 use serde_json::{Map, Number, Value};
+
+static NULL: Value = Value::Null;
 
 /// The signals an expression reads, and the store path of each enclosing list item.
 pub(crate) struct Ctx<'a> {
@@ -16,8 +20,8 @@ pub(crate) struct Ctx<'a> {
     pub(crate) scope: Vec<String>,
 }
 
-impl Ctx<'_> {
-    pub(crate) fn with_item(&self, depth: usize, path: String) -> Ctx<'_> {
+impl<'a> Ctx<'a> {
+    pub(crate) fn with_item(&self, depth: usize, path: String) -> Ctx<'a> {
         let mut scope: Vec<String> = self.scope.iter().take(depth).cloned().collect();
         scope.push(path);
         Ctx {
@@ -39,8 +43,8 @@ impl Ctx<'_> {
         }
     }
 
-    pub(crate) fn get(&self, path: &str) -> Value {
-        get_path(self.root, path).cloned().unwrap_or(Value::Null)
+    pub(crate) fn get(&self, path: &str) -> &'a Value {
+        get_path(self.root, path).unwrap_or(&NULL)
     }
 }
 
@@ -192,39 +196,47 @@ fn s(value: &Value) -> Option<&str> {
 
 /// Evaluates `ast`. `None` means the server cannot compute it, and the
 /// runtime fills it in.
-pub(crate) fn evaluate(ast: &Value, ctx: &Ctx<'_>) -> Option<Value> {
+pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Value>> {
     let parts = ast.as_array()?;
     let op = parts.first()?.as_str()?;
     let arg = |i: usize| parts.get(i);
     let eval = |i: usize| evaluate(arg(i)?, ctx);
-    Some(match op {
-        "sig" => ctx.get(arg(1)?.as_str()?),
-        "item" => ctx.get(&ctx.resolve(ast)?),
+    let value = match op {
+        "sig" => return Some(Cow::Borrowed(ctx.get(arg(1)?.as_str()?))),
+        "item" => return Some(Cow::Borrowed(ctx.get(&ctx.resolve(ast)?))),
+        "lit" => return arg(1).map(Cow::Borrowed),
+        "if" => return if truthy(&*eval(1)?) { eval(2) } else { eval(3) },
+        "get" => {
+            let tail = arg(2)?.as_str()?;
+            return Some(match eval(1)? {
+                Cow::Borrowed(value) => Cow::Borrowed(get_path(value, tail).unwrap_or(&NULL)),
+                Cow::Owned(value) => {
+                    Cow::Owned(get_path(&value, tail).cloned().unwrap_or(Value::Null))
+                }
+            });
+        }
+        "or_else" => {
+            let value = eval(1)?;
+            return if value.is_null() {
+                eval(2)
+            } else {
+                Some(value)
+            };
+        }
         "index" => {
             let depth = usize::try_from(arg(1)?.as_u64()?).ok()?;
             let path = ctx.scope.get(depth)?;
             Value::from(path.rsplit('.').next()?.parse::<u64>().ok()?)
         }
-        "lit" => arg(1)?.clone(),
-        "and" => Value::Bool(truthy(&eval(1)?) && truthy(&eval(2)?)),
-        "or" => Value::Bool(truthy(&eval(1)?) || truthy(&eval(2)?)),
-        "not" => Value::Bool(!truthy(&eval(1)?)),
-        "if" => {
-            if truthy(&eval(1)?) {
-                eval(2)?
-            } else {
-                eval(3)?
-            }
-        }
-        "str" => Value::from(js_string(&eval(1)?)),
+        "and" => Value::Bool(truthy(&*eval(1)?) && truthy(&*eval(2)?)),
+        "or" => Value::Bool(truthy(&*eval(1)?) || truthy(&*eval(2)?)),
+        "not" => Value::Bool(!truthy(&*eval(1)?)),
+        "str" => Value::from(js_string(&*eval(1)?)),
         "fixed" => {
             let digits = usize::try_from(arg(2)?.as_u64()?).ok()?;
-            Value::from(format!("{:.*}", digits, f(&eval(1)?)?))
+            Value::from(format!("{:.*}", digits, f(&*eval(1)?)?))
         }
-        "get" => get_path(&eval(1)?, arg(2)?.as_str()?)
-            .cloned()
-            .unwrap_or(Value::Null),
-        "with" => set_path(&eval(1)?, arg(2)?.as_str()?, eval(3)?),
+        "with" => set_path(&*eval(1)?, arg(2)?.as_str()?, eval(3)?.into_owned()),
         "count" => {
             let path = ctx.resolve(arg(1)?)?;
             let depth = usize::try_from(arg(2)?.as_u64()?).ok()?;
@@ -232,29 +244,25 @@ pub(crate) fn evaluate(ast: &Value, ctx: &Ctx<'_>) -> Option<Value> {
             let mut count = 0_u64;
             for index in 0..len {
                 let item = ctx.with_item(depth, join(&path, &index.to_string()));
-                if truthy(&evaluate(arg(3)?, &item)?) {
+                if truthy(&*evaluate(arg(3)?, &item)?) {
                     count += 1;
                 }
             }
             Value::from(count)
         }
-        "trim" => Value::from(s(&eval(1)?)?.trim()),
-        "lower" => Value::from(s(&eval(1)?)?.to_lowercase()),
-        "upper" => Value::from(s(&eval(1)?)?.to_uppercase()),
-        "chars" => Value::from(s(&eval(1)?)?.chars().count()),
+        "trim" => Value::from(s(&*eval(1)?)?.trim()),
+        "lower" => Value::from(s(&*eval(1)?)?.to_lowercase()),
+        "upper" => Value::from(s(&*eval(1)?)?.to_uppercase()),
+        "chars" => Value::from(s(&*eval(1)?)?.chars().count()),
         "len" => Value::from(eval(1)?.as_array().map_or(0, Vec::len)),
-        "eq" => Value::Bool(equal(&eval(1)?, &eval(2)?)),
-        "ne" => Value::Bool(!equal(&eval(1)?, &eval(2)?)),
-        "or_else" => match eval(1)? {
-            Value::Null => eval(2)?,
-            value => value,
-        },
-        "concat" => Value::from(format!("{}{}", s(&eval(1)?)?, s(&eval(2)?)?)),
-        "contains" => Value::Bool(s(&eval(1)?)?.contains(s(&eval(2)?)?)),
-        "starts" => Value::Bool(s(&eval(1)?)?.starts_with(s(&eval(2)?)?)),
+        "eq" => Value::Bool(equal(&*eval(1)?, &*eval(2)?)),
+        "ne" => Value::Bool(!equal(&*eval(1)?, &*eval(2)?)),
+        "concat" => Value::from(format!("{}{}", s(&*eval(1)?)?, s(&*eval(2)?)?)),
+        "contains" => Value::Bool(s(&*eval(1)?)?.contains(s(&*eval(2)?)?)),
+        "starts" => Value::Bool(s(&*eval(1)?)?.starts_with(s(&*eval(2)?)?)),
         "gt" | "ge" | "lt" | "le" => {
             let (a, b) = (eval(1)?, eval(2)?);
-            let order = match (&a, &b) {
+            let order = match (&*a, &*b) {
                 (Value::String(a), Value::String(b)) => a.cmp(b),
                 _ => f(&a)?.partial_cmp(&f(&b)?)?,
             };
@@ -266,7 +274,7 @@ pub(crate) fn evaluate(ast: &Value, ctx: &Ctx<'_>) -> Option<Value> {
             })
         }
         "add" | "sub" | "mul" | "div" | "rem" | "min" | "max" => {
-            let (a, b) = (f(&eval(1)?)?, f(&eval(2)?)?);
+            let (a, b) = (f(&*eval(1)?)?, f(&*eval(2)?)?);
             number(match op {
                 "add" => a + b,
                 "sub" => a - b,
@@ -278,7 +286,8 @@ pub(crate) fn evaluate(ast: &Value, ctx: &Ctx<'_>) -> Option<Value> {
             })
         }
         _ => return None,
-    })
+    };
+    Some(Cow::Owned(value))
 }
 
 #[cfg(test)]
@@ -296,6 +305,7 @@ mod tests {
             },
         )
         .expect("evaluates")
+        .into_owned()
     }
 
     #[test]
