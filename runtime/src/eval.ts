@@ -88,7 +88,7 @@ export function resolve(place: unknown, ctx: Context): string {
 
 function list(ctx: Context, place: unknown): [string, unknown[]] {
   const path = resolve(place, ctx);
-  const value = ctx.store.get(path);
+  const value = ctx.store.getShallow(path);
   return [path, Array.isArray(value) ? value : []];
 }
 

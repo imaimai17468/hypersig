@@ -234,6 +234,35 @@ describe("nested lists and direct events", () => {
 });
 
 describe("dependency tracking", () => {
+  it("does not recheck list keys when a field outside the key changes", async () => {
+    const runtime = mount("todos");
+    runtime.store.set("todos", [
+      { id: 1, title: "a", done: false },
+      { id: 2, title: "b", done: false },
+    ]);
+    await tick();
+    const reads: string[] = [];
+    const get = runtime.store.get.bind(runtime.store);
+    runtime.store.get = (path: string) => {
+      reads.push(path);
+      return get(path);
+    };
+    $$("#list li input[type=checkbox]")[1]!.click();
+    await tick();
+    expect(runtime.store.get("todos.1.done")).toBe(true);
+    expect(reads.filter((path) => path.endsWith(".id"))).toEqual([]);
+    expect($("#left").textContent).toBe("1");
+
+    reads.length = 0;
+    runtime.store.set("todos.0.id", 7);
+    await tick();
+    expect(reads).toEqual(expect.arrayContaining(["todos.0.id", "todos.1.id"]));
+    $$("#list li .remove")[0]!.click();
+    await tick();
+    expect($$("#list li label").map((label) => label.textContent)).toEqual(["b"]);
+  });
+
+
   it("reruns only the bindings that read a changed signal", async () => {
     const runtime = mount("todos");
     runtime.store.set("todos", [

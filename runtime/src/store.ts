@@ -6,10 +6,23 @@ export function join(...parts: string[]): string {
 }
 
 /** Reads the value at a dotted path, where a numeric segment indexes an array. */
+const splits = new Map<string, readonly string[]>();
+
+/** `path.split(".")`, remembered, because the same paths are read on every render. */
+function segmentsOf(path: string): readonly string[] {
+  let segments = splits.get(path);
+  if (segments === undefined) {
+    segments = path.split(".");
+    if (splits.size > 100_000) splits.clear();
+    splits.set(path, segments);
+  }
+  return segments;
+}
+
 export function getPath(value: unknown, path: string): unknown {
   if (path === "") return value;
   let current = value;
-  for (const segment of path.split(".")) {
+  for (const segment of segmentsOf(path)) {
     if (current === null || typeof current !== "object") return undefined;
     current = (current as Record<string, unknown>)[segment];
   }
@@ -47,6 +60,23 @@ export function overlaps(a: string, b: string): boolean {
 }
 
 /**
+ * The paths a binding read. A deep read (`true`) depends on everything inside
+ * the value. A shallow read (`false`) depends only on which value sits at the
+ * path, such as a list whose items are read one by one through their own paths.
+ */
+export type Reads = Map<string, boolean>;
+
+/** Whether a change at `path` can change what a binding that made `reads` saw. */
+export function affects(reads: ReadonlyMap<string, boolean>, changed: ReadonlySet<string>): boolean {
+  for (const [read, deep] of reads) {
+    for (const path of changed) {
+      if (deep ? overlaps(read, path) : read === path || read.startsWith(`${path}.`)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * The page's signals as one JSON object. Reads made inside `track` are
  * recorded, and listeners receive the paths changed since they last ran.
  */
@@ -54,14 +84,25 @@ export class Store {
   #values: Values;
   #listeners = new Set<(changed: ReadonlySet<string>) => void>();
   #changed = new Set<string>();
-  #reads: Set<string> | null = null;
+  #reads: Reads | null = null;
 
   constructor(initial: Values) {
     this.#values = { ...initial };
   }
 
   get(path: string): unknown {
-    this.#reads?.add(path);
+    this.#reads?.set(path, true);
+    return getPath(this.#values, path);
+  }
+
+  /**
+   * Reads a value whose contents the caller reads separately, path by path,
+   * so a change inside it does not count as a change to this read. Lists use
+   * it: a binding over a list reruns when the list is replaced or resized,
+   * and through its per-item reads when an item it looked at changes.
+   */
+  getShallow(path: string): unknown {
+    if (this.#reads !== null && !this.#reads.has(path)) this.#reads.set(path, false);
     return getPath(this.#values, path);
   }
 
@@ -81,9 +122,9 @@ export class Store {
   }
 
   /** Runs `body` and returns the paths it read. */
-  track(body: () => void): Set<string> {
+  track(body: () => void): Reads {
     const outer = this.#reads;
-    const reads = new Set<string>();
+    const reads: Reads = new Map();
     this.#reads = reads;
     try {
       body();

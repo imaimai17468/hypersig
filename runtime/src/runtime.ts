@@ -1,7 +1,8 @@
 import { type Context, evaluate, type Host, resolve, run, type Slot } from "./eval.ts";
 import { morph } from "./morph.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
-import { equal, join, overlaps, Store, type Values } from "./store.ts";
+import { DepIndex, type Effect } from "./deps.ts";
+import { equal, join, Store, type Values } from "./store.ts";
 
 /** Events handled by one listener on the root, matched to the closest element with a handler. */
 const BUBBLING = ["click", "dblclick", "input", "change", "submit", "keydown", "focusin", "focusout"] as const;
@@ -29,11 +30,6 @@ const ATTRIBUTES = [
 ];
 const REACTIVE = ATTRIBUTES.map((name) => `[data-hs-${name}]`).join(",");
 
-/** One binding of one element. `deps` is null until it has run once. */
-interface Effect {
-  readonly run: () => void;
-  deps: Set<string> | null;
-}
 type Bind = [place: unknown, kind: string, value?: unknown];
 
 interface Instance {
@@ -48,6 +44,11 @@ export class Runtime implements Host {
   readonly store: Store;
   readonly #root: Element;
   readonly #effects = new Map<Element, Effect[]>();
+  readonly #index = new DepIndex();
+  /** Bindings to run in the current or next render: new ones, and ones whose item moved. */
+  #fresh: Effect[] = [];
+  #ran = new Set<Effect>();
+  #nextId = 0;
   readonly #scopes = new WeakMap<Element, readonly Slot[]>();
   readonly #started = new WeakSet<Element>();
   readonly #instanceRoots = new WeakSet<Element>();
@@ -78,7 +79,10 @@ export class Runtime implements Host {
       if (rendered !== null && !this.#instanceRoots.has(rendered)) continue;
       const own = this.#scopes.get(element) ?? scope;
       this.#scopes.set(element, own);
-      this.#effects.set(element, this.#effectsFor(element, own));
+      for (const old of this.#effects.get(element) ?? []) this.#index.remove(old);
+      const effects = this.#effectsFor(element, own);
+      this.#effects.set(element, effects);
+      this.#fresh.push(...effects);
       if (this.#started.has(element)) continue;
       this.#started.add(element);
       const load = element.getAttribute("data-hs-on-load");
@@ -197,7 +201,7 @@ export class Runtime implements Host {
     const value = (ast: unknown) => evaluate(ast, ctx);
     const effects: Effect[] = [];
     const add = (run: () => void): void => {
-      effects.push({ run, deps: null });
+      effects.push({ id: this.#nextId++, element, run, deps: null, nodes: [] });
     };
 
     const show = parse(element.getAttribute("data-hs-show"));
@@ -269,7 +273,7 @@ export class Runtime implements Host {
     if (proto === null || parent === null) return;
     const ctx: Context = { store: this.store, scope };
     const path = resolve(place, ctx);
-    const items = this.store.get(path);
+    const items = this.store.getShallow(path);
     const keyAst = parse(proto.getAttribute("data-hs-key"));
     const previous = this.#lists.get(template) ?? this.#adoptItems(template);
     const next = new Map<string, Instance>();
@@ -288,7 +292,10 @@ export class Runtime implements Host {
         instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: false };
         this.#instanceRoots.add(instance.element);
       } else {
-        instance.slot.path = itemPath;
+        if (instance.slot.path !== itemPath) {
+          instance.slot.path = itemPath;
+          this.#requeue(instance.element);
+        }
       }
       next.set(key, instance);
       if (anchor.nextSibling !== instance.element) parent.insertBefore(instance.element, anchor.nextSibling);
@@ -300,7 +307,7 @@ export class Runtime implements Host {
     });
 
     for (const [key, instance] of previous) {
-      if (next.get(key) !== instance) instance.element.remove();
+      if (next.get(key) !== instance) this.#unmount(instance.element);
     }
     this.#lists.set(template, next);
   }
@@ -326,7 +333,7 @@ export class Runtime implements Host {
         this.scan(rendered, scope);
         return;
       }
-      rendered.remove();
+      this.#unmount(rendered);
     }
     current = this.#mounted.get(template);
     if (visible && (current === undefined || !current.isConnected)) {
@@ -338,7 +345,7 @@ export class Runtime implements Host {
       template.after(element);
       this.scan(element, scope);
     } else if (!visible && current !== undefined) {
-      current.remove();
+      this.#unmount(current);
       this.#mounted.delete(template);
     }
   }
@@ -398,23 +405,52 @@ export class Runtime implements Host {
     }
   }
 
-  /** Reruns the bindings that read a path in `changed`, and every binding that has not run yet. */
+  /** Runs the bindings that read a path in `changed`, oldest first, then every binding that has not run yet. */
   #render(changed: ReadonlySet<string>): void {
-    for (const [element, effects] of this.#effects) {
-      if (!element.isConnected) {
-        this.#effects.delete(element);
-        continue;
+    this.#ran = new Set();
+    const affected = [...this.#index.affected(changed)].sort((a, b) => a.id - b.id);
+    for (const effect of affected) this.#runEffect(effect);
+    while (this.#fresh.length > 0) {
+      const batch = this.#fresh;
+      this.#fresh = [];
+      for (const effect of batch) this.#runEffect(effect);
+    }
+  }
+
+  #runEffect(effect: Effect): void {
+    if (this.#ran.has(effect)) return;
+    this.#ran.add(effect);
+    if (!effect.element.isConnected) {
+      this.#index.remove(effect);
+      this.#effects.delete(effect.element);
+      return;
+    }
+    const reads = this.store.track(() => {
+      try {
+        effect.run();
+      } catch (error) {
+        console.error("hypersig:", error);
       }
-      for (const effect of effects) {
-        if (effect.deps !== null && !dependsOn(effect.deps, changed)) continue;
-        effect.deps = this.store.track(() => {
-          try {
-            effect.run();
-          } catch (error) {
-            console.error("hypersig:", error);
-          }
-        });
+    });
+    this.#index.set(effect, reads);
+  }
+
+  /** Reruns the bindings inside `root`, whose item now sits at a different path. */
+  #requeue(root: Element): void {
+    for (const element of [root, ...root.querySelectorAll(REACTIVE)]) {
+      for (const effect of this.#effects.get(element) ?? []) {
+        this.#ran.delete(effect);
+        this.#fresh.push(effect);
       }
+    }
+  }
+
+  /** Removes `root` from the document and forgets the bindings inside it. */
+  #unmount(root: Element): void {
+    root.remove();
+    for (const element of [root, ...root.querySelectorAll(REACTIVE)]) {
+      for (const effect of this.#effects.get(element) ?? []) this.#index.remove(effect);
+      this.#effects.delete(element);
     }
   }
 
@@ -498,13 +534,6 @@ export class Runtime implements Host {
       console.error("hypersig:", error);
     });
   }
-}
-
-function dependsOn(deps: ReadonlySet<string>, changed: ReadonlySet<string>): boolean {
-  for (const dep of deps) {
-    for (const path of changed) if (overlaps(dep, path)) return true;
-  }
-  return false;
 }
 
 function parse(source: string | null): unknown {
