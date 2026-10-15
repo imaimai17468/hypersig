@@ -68,6 +68,14 @@ The arguments are typed as `(i32, bool)` both in the page code that calls the ac
 
 The cost is on failure. When the server answers with an error, the change stays in the browser: `error(message)` can show the failure, but nothing rolls the value back.
 
+## The unit of fetching
+
+In RSC and Next.js, data fetching is written with `await` inside server components, so each component starts its fetch separately and the results appear in arrival order, one Suspense boundary at a time. Depending on where the boundaries sit, the page fills in piece by piece (popcorn UI), and code in which a child component's fetch cannot start until its parent's `await` finishes puts the fetches in series and delays the page. After a change, `revalidatePath` or `router.refresh` renders the route's server components again.
+
+In Remix and TanStack Start, each route's loader runs in parallel before the page is shown, so fetches rarely run in series and the page rarely fills in piece by piece. The loaders run again after a change, though: Remix reruns the loaders of every route on screen after an action, TanStack Router reruns them on `router.invalidate()`, and TanStack Query reruns the queries you invalidate, so toggling one checkbox fetches the page's or the list's data again.
+
+In hypersig, the first data is already in the page's HTML as the signal struct's JSON, so the browser fetches nothing to show the page. After a change, the action's handler returns only the values of the signals that changed, as in `Counter::count().patch(0)`, and the browser rewrites only what shows those values, so toggling one checkbox fetches neither the page nor the list again.
+
 ## Quick start
 
 Add the dependencies to `Cargo.toml`. hypersig is not on crates.io yet, so it comes from Git.
