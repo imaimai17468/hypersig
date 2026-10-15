@@ -19,6 +19,35 @@ afterEach(() => {
 });
 
 describe("Runtime", () => {
+  it("runs only the items whose comparison with a selected signal changes", async () => {
+    const runtime = mount(
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' ` +
+        `data-hs-class='[["on",["eq",["sig","selected"],["item",0,"id"]]]]'></li></template></ul>`,
+      { rows: [1, 2, 3, 4].map((id) => ({ id })), selected: 2 },
+    );
+    await tick();
+    const on = () => [...document.querySelectorAll("#l li")].map((li) => li.classList.contains("on"));
+    expect(on()).toEqual([false, true, false, false]);
+    const reads: string[] = [];
+    const get = runtime.store.get.bind(runtime.store);
+    runtime.store.get = (path: string) => {
+      reads.push(path);
+      return get(path);
+    };
+    runtime.store.set("selected", 4);
+    await tick();
+    expect(on()).toEqual([false, false, false, true]);
+    expect(reads.filter((path) => path.endsWith(".id")).sort()).toEqual(["rows.1.id", "rows.3.id"]);
+
+    runtime.store.set("selected", 1);
+    runtime.store.set("rows.0.id", 5);
+    await tick();
+    expect(on()).toEqual([false, false, false, false]);
+    runtime.store.set("selected", 5);
+    await tick();
+    expect(on()).toEqual([true, false, false, false]);
+  });
+
   it("moves the reads of items that shift unchanged, and reruns the bindings that read their position", async () => {
     const runtime = mount(
       `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +

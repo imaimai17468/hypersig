@@ -9,6 +9,25 @@ export interface Effect {
   deps: Reads | null;
   /** The tree node each read is registered under, by path. */
   nodes: Map<string, PathNode>;
+  /** The comparison it registered with `DepIndex.select` in place of a read, if any. */
+  selector: Selector | null;
+}
+
+/**
+ * A binding's comparison of the value at `path` with a value whose key is
+ * `key`, made without reading `path`. `current` is the key of the value at
+ * `path` that the binding compared against. A key is a value's JSON.
+ */
+export interface Selector {
+  readonly path: string;
+  readonly key: string;
+  readonly current: string;
+}
+
+class Selection {
+  readonly byKey = new Map<string, Set<Effect>>();
+  /** The keys of the values at the path that registered bindings compared against since the last `selected`. */
+  seen = new Set<string>();
 }
 
 class PathNode {
@@ -27,6 +46,7 @@ export class DepIndex {
   readonly #root = new PathNode();
   /** The node at each path that has one, so registering a read does not walk the tree. */
   readonly #nodes = new Map<string, PathNode>();
+  readonly #selections = new Map<string, Selection>();
 
   /** Replaces what `effect` is registered under with `reads`, touching only the reads that differ. */
   set(effect: Effect, reads: Reads): void {
@@ -79,6 +99,53 @@ export class DepIndex {
       node.shallow.delete(effect);
     }
     effect.nodes = new Map();
+    this.select(effect, null);
+  }
+
+  /**
+   * Registers `effect` to run when the value at `selector.path` becomes, or
+   * stops being, the value whose key is `selector.key`, replacing what it
+   * registered before.
+   */
+  select(effect: Effect, selector: Selector | null): void {
+    const old = effect.selector;
+    if (old !== null) {
+      const selection = this.#selections.get(old.path);
+      const effects = selection?.byKey.get(old.key);
+      effects?.delete(effect);
+      if (effects?.size === 0) selection!.byKey.delete(old.key);
+      if (selection?.byKey.size === 0) this.#selections.delete(old.path);
+    }
+    effect.selector = selector;
+    if (selector === null) return;
+    let selection = this.#selections.get(selector.path);
+    if (selection === undefined) {
+      selection = new Selection();
+      this.#selections.set(selector.path, selection);
+    }
+    let effects = selection.byKey.get(selector.key);
+    if (effects === undefined) {
+      effects = new Set();
+      selection.byKey.set(selector.key, effects);
+    }
+    effects.add(effect);
+    selection.seen.add(selector.current);
+  }
+
+  /**
+   * Adds to `found` the bindings whose comparison can have changed: for each
+   * path that `touched` says a change reached, the ones registered under a
+   * key seen there before or under `keyAt(path)`, the key of its value now.
+   */
+  selected(touched: (path: string) => boolean, keyAt: (path: string) => string, found: Set<Effect>): void {
+    for (const [path, selection] of this.#selections) {
+      if (!touched(path)) continue;
+      const now = keyAt(path);
+      for (const key of [...selection.seen, now]) {
+        for (const effect of selection.byKey.get(key) ?? []) found.add(effect);
+      }
+      selection.seen = new Set([now]);
+    }
   }
 
   #node(path: string): PathNode {

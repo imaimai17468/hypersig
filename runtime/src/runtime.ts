@@ -1,8 +1,8 @@
 import { type Context, evaluate, type Host, resolve, run, type Slot } from "./eval.ts";
 import { morph } from "./morph.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
-import { DepIndex, type Effect } from "./deps.ts";
-import { ChangeLookup, type Changes, equal, join, positionOf, type Reads, Store, type Values } from "./store.ts";
+import { DepIndex, type Effect, type Selector } from "./deps.ts";
+import { ChangeLookup, type Changes, equal, join, overlaps, positionOf, type Reads, Store, type Values } from "./store.ts";
 
 /** Events handled by one listener on the root, matched to the closest element with a handler. */
 const BUBBLING = ["click", "dblclick", "input", "change", "submit", "keydown", "focusin", "focusout"] as const;
@@ -60,6 +60,8 @@ export class Runtime implements Host {
   #ran = new Set<Effect>();
   /** The changes the current render is running for. */
   #changes: Changes = new Map();
+  /** The selector the binding being run recorded through `#compare`. */
+  #selector: Selector | null = null;
   /** `#changes` indexed for `#rebase`, built the first time a render needs it. */
   #lookup: ChangeLookup | null = null;
   #nextId = 0;
@@ -114,6 +116,7 @@ export class Runtime implements Host {
       },
       deps: null,
       nodes: new Map(),
+      selector: null,
     }));
     this.#fresh.push(...effects);
   }
@@ -290,15 +293,19 @@ export class Runtime implements Host {
     const spec = source === undefined ? readSpec(element) : specOf(source);
     const ctx = this.#context(element, scope);
     const value = (ast: unknown) => evaluate(ast, ctx);
+    const truth = (ast: unknown): boolean => {
+      const compared = comparison(ast);
+      return compared === null ? Boolean(value(ast)) : this.#compare(compared[0], compared[1], ctx);
+    };
     const effects: Effect[] = [];
     const add = (run: () => void): void => {
-      effects.push({ id: this.#nextId++, element, run, deps: null, nodes: new Map() });
+      effects.push({ id: this.#nextId++, element, run, deps: null, nodes: new Map(), selector: null });
     };
 
     const { show, text, checked } = spec;
     if (show !== undefined && element instanceof HTMLElement) {
       add(() => {
-        const next = value(show) ? "" : "none";
+        const next = truth(show) ? "" : "none";
         if (element.style.display !== next) element.style.display = next;
       });
     }
@@ -315,7 +322,7 @@ export class Runtime implements Host {
     }
     for (const [name, when] of spec.classes) {
       add(() => {
-        const on = Boolean(value(when));
+        const on = truth(when);
         if (element.classList.contains(name) !== on) element.classList.toggle(name, on);
       });
     }
@@ -327,7 +334,7 @@ export class Runtime implements Host {
     }
     for (const [name, when] of spec.toggles) {
       add(() => {
-        const on = Boolean(value(when));
+        const on = truth(when);
         if (element.hasAttribute(name) !== on) element.toggleAttribute(name, on);
       });
     }
@@ -580,7 +587,15 @@ export class Runtime implements Host {
     this.#ran = new Set();
     this.#changes = changes;
     this.#lookup = null;
-    const affected = [...this.#index.affected(changes)].sort((a, b) => a.id - b.id);
+    const found = this.#index.affected(changes);
+    if (changes.size > 0) {
+      this.#index.selected(
+        (path) => (this.#lookup ??= new ChangeLookup(changes)).affects(path, true),
+        (path) => keyOf(this.store.untracked(() => this.store.get(path))),
+        found,
+      );
+    }
+    const affected = [...found].sort((a, b) => a.id - b.id);
     for (const effect of affected) this.#runEffect(effect);
     while (this.#fresh.length > 0) {
       const batch = this.#fresh;
@@ -597,6 +612,7 @@ export class Runtime implements Host {
       this.#effects.delete(effect.element);
       return;
     }
+    this.#selector = null;
     const reads = this.store.track(() => {
       try {
         effect.run();
@@ -605,6 +621,27 @@ export class Runtime implements Host {
       }
     });
     this.#index.set(effect, reads);
+    this.#index.select(effect, this.#selector);
+    this.#selector = null;
+  }
+
+  /**
+   * Evaluates `["eq", ["sig", path], other]` for the binding being run. Where
+   * `other` is a JSON scalar that does not read `path`, it records a selector
+   * in place of reading `path`, so a change there runs only the bindings
+   * whose result it can flip.
+   */
+  #compare(path: string, other: unknown, ctx: Context): boolean {
+    let value: unknown;
+    const reads = this.store.track(() => {
+      value = evaluate(other, ctx);
+    });
+    this.store.replay(reads);
+    const scalar = value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+    if (!scalar || [...reads.keys()].some((read) => overlaps(read, path))) return equal(this.store.get(path), value);
+    const current = this.store.untracked(() => this.store.get(path));
+    this.#selector = { path, key: keyOf(value), current: keyOf(current) };
+    return equal(current, value);
   }
 
   /** Reruns the bindings inside `root`, whose item now sits at a different path. */
@@ -773,6 +810,23 @@ function parse(source: string | null): unknown {
     parsed.set(source, value);
   }
   return value;
+}
+
+/** The key `DepIndex.select` files a value under. */
+function keyOf(value: unknown): string {
+  return JSON.stringify(value) ?? "undefined";
+}
+
+/** The page signal path and the other operand of `ast`, where `ast` compares a page signal for equality. */
+function comparison(ast: unknown): [path: string, other: unknown] | null {
+  if (!Array.isArray(ast) || ast[0] !== "eq" || ast.length !== 3) return null;
+  const [, a, b] = ast as [string, unknown, unknown];
+  const signal = (side: unknown): string | null =>
+    Array.isArray(side) && side[0] === "sig" && typeof side[1] === "string" ? side[1] : null;
+  const left = signal(a);
+  if (left !== null) return [left, b];
+  const right = signal(b);
+  return right === null ? null : [right, a];
 }
 
 function pairs(element: Element, attribute: string): [string, unknown][] {
