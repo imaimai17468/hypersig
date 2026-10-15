@@ -360,7 +360,8 @@ export class Runtime implements Host {
     const items = Array.isArray(value) ? value : [];
     const keyAst = parse(proto.getAttribute("data-hs-key"));
     const known = this.#lists.get(template);
-    const item = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>, anchor: Node): Node => {
+    const created = new Set<Instance>();
+    const match = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>): Instance => {
       const itemPath = join(path, String(index));
       const itemScope = [...scope.slice(0, depth), { path: itemPath }];
       let key = `#${index}`;
@@ -379,7 +380,7 @@ export class Runtime implements Host {
       if (instance === undefined || !instance.element.isConnected) {
         instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: true, keyReads };
         this.#instanceRoots.add(instance.element);
-        this.#mount(instance.element, proto, itemScope);
+        created.add(instance);
       } else {
         instance.keyReads = keyReads;
         if (instance.slot.path !== itemPath) {
@@ -388,11 +389,14 @@ export class Runtime implements Host {
         }
       }
       next.set(key, instance);
-      if (anchor.nextSibling !== instance.element) parent.insertBefore(instance.element, anchor.nextSibling);
-      if (!instance.scanned && !this.#waiting.has(instance.element)) {
-        this.#wait(instance, proto, [...scope.slice(0, depth), instance.slot]);
+      return instance;
+    };
+    const register = (order: readonly Instance[]): void => {
+      for (const instance of order) {
+        const itemScope = [...scope.slice(0, depth), instance.slot];
+        if (created.has(instance)) this.#mount(instance.element, proto, itemScope);
+        else if (!instance.scanned && !this.#waiting.has(instance.element)) this.#wait(instance, proto, itemScope);
       }
-      return instance.element;
     };
 
     if (known !== undefined && appended(this.#changes, path, known, items.length)) {
@@ -402,20 +406,24 @@ export class Runtime implements Host {
         anchor = instance.element;
       }
       const next = new Map(known);
-      for (let index = known.size; index < items.length; index++) anchor = item(index, known, next, anchor);
+      const added: Instance[] = [];
+      for (let index = known.size; index < items.length; index++) added.push(match(index, known, next));
+      const fragment = document.createDocumentFragment();
+      for (const instance of added) fragment.append(instance.element);
+      parent.insertBefore(fragment, anchor.nextSibling);
+      register(added);
       this.#lists.set(template, next);
       return;
     }
 
     const previous = known ?? this.#adoptItems(template);
     const next = new Map<string, Instance>();
-    let anchor: Node = template;
-    items.forEach((_, index) => {
-      anchor = item(index, previous, next, anchor);
-    });
+    const order = items.map((_, index) => match(index, previous, next));
     for (const [key, instance] of previous) {
       if (next.get(key) !== instance) this.#unmount(instance.element);
     }
+    arrange(parent, template, previous, order);
+    register(order);
     this.#lists.set(template, next);
   }
 
@@ -823,6 +831,51 @@ function locate(plan: Plan, copy: Element, found: (element: Element, source: Ele
     const target = children[index];
     if (target !== undefined && target.tagName === child.tag) locate(child, target, found);
   }
+}
+
+/**
+ * Puts the elements of `order` right after `template` in that order, moving
+ * as few as it can. The items of `previous` still in the document keep their
+ * place where their old positions increase along `order`, the longest such
+ * run, and the rest are inserted around them.
+ */
+function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, Instance>, order: readonly Instance[]): void {
+  const positions = new Map<Instance, number>();
+  let last: Element | null = null;
+  for (const instance of previous.values()) {
+    if (instance.element.parentNode !== parent) continue;
+    positions.set(instance, positions.size);
+    last = instance.element;
+  }
+  const stay = increasing(order.map((instance) => positions.get(instance) ?? -1));
+  let before: Node | null = last === null ? template.nextSibling : last.nextSibling;
+  for (let index = order.length - 1; index >= 0; index--) {
+    const element = order[index]!.element;
+    if (!stay.has(index)) parent.insertBefore(element, before);
+    before = element;
+  }
+}
+
+/** The indices of a longest strictly increasing run of the values of `values` that are not -1. */
+function increasing(values: readonly number[]): Set<number> {
+  /** `tails[k]` is the index ending the run of length k + 1 whose last value is smallest. */
+  const tails: number[] = [];
+  const previous = new Array<number>(values.length).fill(-1);
+  values.forEach((value, index) => {
+    if (value === -1) return;
+    let low = 0;
+    let high = tails.length;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (values[tails[mid]!]! < value) low = mid + 1;
+      else high = mid;
+    }
+    if (low > 0) previous[index] = tails[low - 1]!;
+    tails[low] = index;
+  });
+  const run = new Set<number>();
+  for (let at = tails.length === 0 ? -1 : tails[tails.length - 1]!; at !== -1; at = previous[at]!) run.add(at);
+  return run;
 }
 
 /**

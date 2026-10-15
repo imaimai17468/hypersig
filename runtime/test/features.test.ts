@@ -210,12 +210,25 @@ describe("list statements and browser values", () => {
     await tick();
     expect(labels()).toEqual([`${before[0]} !`, before[1], `${before[2]} !`]);
 
+    const rows = $$("#lines li");
     $("#swap").click();
     await tick();
     expect(ids()).toEqual([3, 2, 1]);
+    expect($$("#lines li")).toEqual([rows[2], rows[1], rows[0]]);
     $("#sort").click();
     await tick();
     expect(ids()).toEqual([1, 2, 3]);
+    expect($$("#lines li")).toEqual(rows);
+
+    const lines = Array.from({ length: 10 }, (_, index) => ({ id: index + 1, label: "a" }));
+    runtime.store.set("lines", lines);
+    await tick();
+    const ten = $$("#lines li");
+    const moves = vi.spyOn($("#lines"), "insertBefore");
+    runtime.store.set("lines", lines.map((line, index) => lines[index === 1 ? 8 : index === 8 ? 1 : index]!));
+    await tick();
+    expect($$("#lines li")).toEqual(ten.map((_, index) => ten[index === 1 ? 8 : index === 8 ? 1 : index]));
+    expect(moves).toHaveBeenCalledTimes(2);
 
     $("#stamp").click();
     expect(Math.abs((runtime.store.get("stamp") as number) - Date.now())).toBeLessThan(1000);
