@@ -19,7 +19,7 @@ struct Counter {
     status: String,
 }
 
-const SAVE: Action<Counter> = Action::post("/save");
+const SAVE: Action<Counter, (i32, String)> = Action::post("/save");
 const RESET: Action<Counter> = Action::post("/reset");
 
 #[derive(Clone, Default)]
@@ -73,7 +73,11 @@ async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> H
             .child(
                 div()
                     .class("row")
-                    .child(button().on_click(SAVE.call()).text("Save to server"))
+                    .child(
+                        button()
+                            .on_click(SAVE.call_with((count, note)))
+                            .text("Save to server"),
+                    )
                     .child(
                         button()
                             .show(count.not_equals(0))
@@ -86,17 +90,17 @@ async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> H
     Html(page.render())
 }
 
-async fn save(state: AppState, signals: Counter, (): ()) -> Patches<Counter> {
-    state.saved.store(signals.count, Ordering::Relaxed);
-    let status = if signals.note.is_empty() {
-        format!("Saved {}.", signals.count)
+async fn save(state: AppState, (count, note): (i32, String)) -> Patches<Counter> {
+    state.saved.store(count, Ordering::Relaxed);
+    let status = if note.is_empty() {
+        format!("Saved {count}.")
     } else {
-        format!("Saved {} ({}).", signals.count, signals.note)
+        format!("Saved {count} ({note}).")
     };
     Counter::status().patch(status).into()
 }
 
-async fn reset(state: AppState, _signals: Counter, (): ()) -> Patches<Counter> {
+async fn reset(state: AppState, (): ()) -> Patches<Counter> {
     state.saved.store(0, Ordering::Relaxed);
     Patches::new().signals(
         Counter::count()

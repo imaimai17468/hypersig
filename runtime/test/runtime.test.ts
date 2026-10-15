@@ -47,7 +47,7 @@ describe("Runtime", () => {
     expect(input.value).toBe("");
   });
 
-  it("posts the signals to an action and applies the patches it returns", async () => {
+  it("posts the arguments to an action, and nothing else, and applies the patches it returns", async () => {
     const fetch = vi.fn(async (_url: URL, _init: RequestInit) =>
       sseResponse(
         'event: hs-signals\ndata: {"draft":""}\n\n' +
@@ -64,10 +64,20 @@ describe("Runtime", () => {
 
     const [url, init] = fetch.mock.calls[0]!;
     expect(url.pathname).toBe("/add");
-    expect(url.searchParams.get("args")).toBe('{"id":3}');
+    expect(url.search).toBe("");
     expect(init.method).toBe("POST");
-    expect(init.body).toBe('{"draft":"tea"}');
+    expect(init.body).toBe('{"id":3}');
     expect(runtime.store.get("draft")).toBe("");
+  });
+
+  it("runs the statement after a call without waiting for the answer", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    const runtime = mount(
+      `<button data-hs-on-click='["seq",[["call","POST","/slow",["sig","n"],null,null],["set","n",["lit",2]]]]'>go</button>`,
+      { n: 1 },
+    );
+    document.querySelector("button")!.click();
+    await vi.waitFor(() => expect(runtime.store.get("n")).toBe(2));
   });
 
   it("re-registers effects inside a patched fragment", async () => {

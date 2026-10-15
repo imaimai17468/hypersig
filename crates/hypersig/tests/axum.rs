@@ -13,16 +13,17 @@ struct Counter {
     count: i32,
 }
 
-#[derive(Serialize, Deserialize)]
-struct By(i32);
-
-const ADD: Action<Counter, By> = Action::post("/add");
+const ADD: Action<Counter, (i32, i32)> = Action::post("/add");
+const PEEK: Action<Counter, i32> = Action::get("/peek");
 
 fn app() -> Router {
     Router::new()
         .hypersig_runtime()
-        .action(ADD, |(), signals: Counter, By(by): By| async move {
-            Patches::from(Counter::count().patch(signals.count + by))
+        .action(ADD, |(), (count, by): (i32, i32)| async move {
+            Patches::from(Counter::count().patch(count + by))
+        })
+        .action(PEEK, |(), count: i32| async move {
+            Patches::from(Counter::count().patch(count))
         })
 }
 
@@ -45,11 +46,11 @@ async fn send(request: Request<Body>) -> (StatusCode, String) {
 }
 
 #[tokio::test]
-async fn action_answers_with_patches() {
+async fn post_reads_the_arguments_from_the_body() {
     let (status, body) = send(
-        Request::post("/add?args=3")
+        Request::post("/add")
             .header("content-type", "application/json")
-            .body(Body::from(r#"{"count":4}"#))
+            .body(Body::from("[4,3]"))
             .expect("request"),
     )
     .await;
@@ -58,30 +59,40 @@ async fn action_answers_with_patches() {
 }
 
 #[tokio::test]
-async fn signals_that_do_not_deserialize_get_400() {
+async fn get_reads_the_arguments_from_the_query() {
     let (status, body) = send(
-        Request::post("/add?args=1")
-            .body(Body::from(r#"{"count":"four"}"#))
+        Request::get("/peek?args=5")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, "event: hs-signals\ndata: {\"count\":5}\n\n");
+}
+
+#[tokio::test]
+async fn arguments_of_the_wrong_type_get_400() {
+    let (status, body) = send(
+        Request::post("/add")
+            .body(Body::from(r#"["four",3]"#))
             .expect("request"),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert!(
-        body.starts_with("the request's signals did not deserialize"),
+        body.starts_with("the action's arguments did not deserialize"),
         "{body}"
     );
 }
 
 #[tokio::test]
 async fn missing_arguments_get_400() {
-    let (status, body) = send(
-        Request::post("/add")
-            .body(Body::from(r#"{"count":1}"#))
-            .expect("request"),
-    )
-    .await;
+    let (status, body) = send(Request::post("/add").body(Body::empty()).expect("request")).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(body.starts_with("the request's action arguments"), "{body}");
+    assert!(
+        body.starts_with("the action's arguments did not deserialize"),
+        "{body}"
+    );
 }
 
 #[tokio::test]

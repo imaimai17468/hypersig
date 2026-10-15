@@ -152,10 +152,6 @@ export class Store {
     for (const [path, value] of Object.entries(values)) this.set(path, value);
   }
 
-  snapshot(): Values {
-    return this.#values;
-  }
-
   /** Runs `body` and returns the paths it read. */
   track(body: () => void): Reads {
     const outer = this.#reads;

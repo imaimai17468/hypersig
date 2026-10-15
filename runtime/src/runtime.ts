@@ -115,7 +115,7 @@ export class Runtime implements Host {
     }
   }
 
-  /** Calls an action with the current signals and applies the patches it streams back. */
+  /** Calls an action with `args` and applies the patches it streams back. */
   async call(
     method: string,
     path: string,
@@ -124,14 +124,13 @@ export class Runtime implements Host {
     error: string | null,
   ): Promise<void> {
     const url = new URL(path, document.baseURI);
-    if (args !== null && args !== undefined) url.searchParams.set("args", JSON.stringify(args));
-    const signals = JSON.stringify(this.store.snapshot());
+    const body = JSON.stringify(args ?? null);
     const init: RequestInit = { method, headers: { accept: "text/event-stream" } };
     if (method === "GET") {
-      url.searchParams.set("signals", signals);
+      if (args !== null && args !== undefined) url.searchParams.set("args", body);
     } else {
       init.headers = { accept: "text/event-stream", "content-type": "application/json" };
-      init.body = signals;
+      init.body = body;
     }
     if (indicator !== null) this.store.set(indicator, true);
     try {

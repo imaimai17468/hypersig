@@ -44,7 +44,7 @@ struct TodoMvc {
     completed: i32,
 }
 
-const SAVE: Action<TodoMvc> = Action::post("/save");
+const SAVE: Action<TodoMvc, Vec<Todo>> = Action::post("/save");
 const EDIT: NodeRef<TodoMvc> = NodeRef::new("edit");
 
 #[derive(Clone, Default)]
@@ -164,7 +164,7 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
         .child(
             section()
                 .class("todoapp")
-                .on_signal_change(list, SAVE.call())
+                .on_signal_change(list, SAVE.call_with(list))
                 .child(header().child(h1().text("todos")).child(new_todo()))
                 .child(
                     section()
@@ -221,8 +221,8 @@ async fn index(State(state): State<AppState>) -> Html<String> {
     Html(page(todos).render())
 }
 
-async fn save(state: AppState, signals: TodoMvc, (): ()) -> Patches<TodoMvc> {
-    *state.todos.lock().expect("todo lock poisoned") = signals.todos;
+async fn save(state: AppState, todos: Vec<Todo>) -> Patches<TodoMvc> {
+    *state.todos.lock().expect("todo lock poisoned") = todos;
     Patches::new()
 }
 

@@ -39,7 +39,7 @@ The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, wi
 
 **The library's errors are structs with a `Display`, an `Error` impl, and a `source` where one exists** (M-ERRORS-CANONICAL-STRUCTS). The examples are applications and may use whatever is shortest (M-APP-ERROR).
 
-**A broken invariant panics, and bad input returns `Result`** (M-PANIC-ON-BUG). A request body that does not deserialize into the signal struct is input and gets a 400. A `Sig` whose path is empty is a bug in generated code and panics.
+**A broken invariant panics, and bad input returns `Result`** (M-PANIC-ON-BUG). An action request whose arguments do not deserialize into the action's argument type is input and gets a 400. A `Sig` whose path is empty is a bug in generated code and panics.
 
 ## Macros
 

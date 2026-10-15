@@ -17,6 +17,7 @@
 //! | `a.gt(b)`, `ge`, `lt`, `le` | `["gt",a,b]`, ... |
 //! | `a.and(b)`, `a.or(b)`, `!a` | `["and",a,b]`, `["or",a,b]`, `["not",a]` |
 //! | `if_else(c, a, b)` | `["if",c,a,b]` |
+//! | `(a, b)`, `(a, b, c)` | `["tuple",a,b]`, `["tuple",a,b,c]` |
 //! | `a.to_text()`, `a.to_fixed(n)` | `["str",a]`, `["fixed",a,n]` |
 //! | `a.concat(b)`, `trim`, `to_lowercase`, `to_uppercase` | `["concat",a,b]`, `["trim",a]`, `["lower",a]`, `["upper",a]` |
 //! | `a.contains(b)`, `a.starts_with(b)`, `a.char_count()` | `["contains",a,b]`, `["starts",a,b]`, `["chars",a]` |
@@ -159,6 +160,22 @@ macro_rules! literal {
 }
 
 literal!(i32 => i32, f64 => f64, bool => bool, String => String, &str => String);
+
+macro_rules! tuple {
+    ($(($expr:ident, $value:ident, $ty:ident)),+) => {
+        /// A tuple of expressions is an expression of the tuple of their values,
+        /// such as the arguments of an [`Action`](crate::Action) call.
+        impl<S, $($ty,)+ $($expr: IntoExpr<S, $ty>,)+> IntoExpr<S, ($($ty,)+)> for ($($expr,)+) {
+            fn into_expr(self) -> Expr<S, ($($ty,)+)> {
+                let ($($value,)+) = self;
+                Expr::from_json(json!(["tuple", $($value.into_expr().ast),+]))
+            }
+        }
+    };
+}
+
+tuple!((A, a, TA), (B, b, TB));
+tuple!((A, a, TA), (B, b, TB), (C, c, TC));
 
 /// The expression `then` while `cond` is true, and `otherwise` while it is false.
 #[must_use]

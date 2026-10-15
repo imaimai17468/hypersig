@@ -51,11 +51,11 @@ impl<S: Signals> Page<S> {
     /// The result is stored in a field of the signal struct, so bindings read
     /// it like any other signal and rerun only when the result changes, rather
     /// than each evaluating `value`. The server computes it once for the first
-    /// HTML, and the action handlers receive it with the other signals.
+    /// HTML, and an action call can pass it as an argument like any signal.
     /// Computed signals are evaluated in the order they are declared, so one
     /// may read an earlier one.
     ///
-    /// The type system does not stop a handler from setting `signal` or the
+    /// The type system does not stop a statement from setting `signal` or the
     /// server from patching it. Either value lasts until a signal `value` reads
     /// changes.
     ///

@@ -30,6 +30,10 @@ describe("evaluate", () => {
     expect(evaluate(["or_else", ["lit", null], ["lit", 4]], ctx)).toBe(4);
   });
 
+  it("builds a tuple into an array, as serde writes one", () => {
+    expect(evaluate(["tuple", ["sig", "count"], ["lit", "x"], ["not", ["lit", false]]], ctx)).toEqual([3, "x", true]);
+  });
+
   it("compares records structurally", () => {
     expect(evaluate(["eq", ["lit", { a: [1, { b: 2 }] }], ["lit", { a: [1, { b: 2 }] }]], ctx)).toBe(true);
     expect(evaluate(["ne", ["lit", { a: 1 }], ["lit", { a: 1, b: 2 }]], ctx)).toBe(true);

@@ -1,4 +1,4 @@
-//! Server endpoints that the browser calls with the page's signals.
+//! Server endpoints that the browser calls with typed arguments.
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -29,12 +29,15 @@ impl Method {
     }
 }
 
-/// A server endpoint that receives the signals `S` and arguments `A`.
+/// A server endpoint on the page whose signals are `S`, which receives arguments `A`.
 ///
 /// Declare one as a `const` and use the same value on both sides: the page
 /// calls it with [`Action::call`] or [`Action::call_with`], and the router
 /// registers its handler with `RouterExt::action`. Both sides then agree on the
-/// path, the method, the signal struct, and the argument type.
+/// path, the method, the argument type, and the signal struct its patches target.
+///
+/// The request carries the arguments and nothing else. A handler that needs
+/// several values takes a tuple, which the page passes as a tuple of expressions.
 ///
 /// ```
 /// use hypersig::{Action, Signals};
@@ -46,7 +49,9 @@ impl Method {
 /// }
 ///
 /// const INCREMENT: Action<Counter> = Action::post("/increment");
+/// const SET: Action<Counter, (i32, String)> = Action::post("/set");
 /// let _click = INCREMENT.call();
+/// let _save = SET.call_with((Counter::count(), "typed"));
 /// ```
 pub struct Action<S, A = ()> {
     method: Method,
@@ -103,7 +108,7 @@ impl<S, A> Action<S, A> {
 }
 
 impl<S> Action<S, ()> {
-    /// A call to this action with the page's current signals.
+    /// A call to this action, which takes no arguments.
     #[must_use]
     pub fn call(&self) -> Call<S> {
         Call::new(self.method, self.path, Value::Null)
@@ -111,7 +116,7 @@ impl<S> Action<S, ()> {
 }
 
 impl<S, A> Action<S, A> {
-    /// A call to this action with `args` and the current signals.
+    /// A call to this action with `args`.
     ///
     /// `args` is evaluated in the browser when the call runs, so it can be a
     /// literal such as `&id` or an expression such as `item.at(Todo::id())`.
@@ -188,7 +193,11 @@ impl<S> Call<S> {
         self
     }
 
-    /// Runs this call, then `next`.
+    /// Sends this call, then runs `next` without waiting for the answer.
+    ///
+    /// The arguments are evaluated when the call is sent, so `next` can
+    /// change what they read. The patches the server answers with apply when
+    /// they arrive.
     #[must_use]
     pub fn then(self, next: impl IntoStmt<S>) -> Stmt<S> {
         self.into_stmt().then(next)

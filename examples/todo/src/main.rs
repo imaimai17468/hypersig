@@ -24,7 +24,7 @@ struct TodoPage {
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 struct TodoId(u64);
 
-const ADD: Action<TodoPage> = Action::post("/todos");
+const ADD: Action<TodoPage, String> = Action::post("/todos");
 const TOGGLE: Action<TodoPage, TodoId> = Action::post("/todos/toggle");
 const REMOVE: Action<TodoPage, TodoId> = Action::post("/todos/remove");
 const UPDATES: Action<TodoPage> = Action::get("/todos/updates");
@@ -137,7 +137,7 @@ async fn index(State(state): State<AppState>) -> Html<String> {
             .child(h1().text("Todo"))
             .child(
                 form()
-                    .on_submit(ADD.call())
+                    .on_submit(ADD.call_with(draft))
                     .child(input().attr("placeholder", "What needs doing?").bind(draft))
                     .child(button().show(!draft.is_empty()).text("Add")),
             )
@@ -156,8 +156,8 @@ async fn index(State(state): State<AppState>) -> Html<String> {
     Html(page.render())
 }
 
-async fn add(state: AppState, signals: TodoPage, (): ()) -> Patches<TodoPage> {
-    let title = signals.draft.trim().to_owned();
+async fn add(state: AppState, draft: String) -> Patches<TodoPage> {
+    let title = draft.trim().to_owned();
     if !title.is_empty() {
         state.update(|todos| {
             todos.next_id += 1;
@@ -172,7 +172,7 @@ async fn add(state: AppState, signals: TodoPage, (): ()) -> Patches<TodoPage> {
     TodoPage::draft().patch(String::new()).into()
 }
 
-async fn toggle(state: AppState, _signals: TodoPage, id: TodoId) -> Patches<TodoPage> {
+async fn toggle(state: AppState, id: TodoId) -> Patches<TodoPage> {
     state.update(|todos| {
         if let Some(todo) = todos.items.iter_mut().find(|todo| todo.id == id) {
             todo.done = !todo.done;
@@ -181,12 +181,12 @@ async fn toggle(state: AppState, _signals: TodoPage, id: TodoId) -> Patches<Todo
     Patches::new()
 }
 
-async fn remove(state: AppState, _signals: TodoPage, id: TodoId) -> Patches<TodoPage> {
+async fn remove(state: AppState, id: TodoId) -> Patches<TodoPage> {
     state.update(|todos| todos.items.retain(|todo| todo.id != id));
     Patches::new()
 }
 
-fn updates(state: AppState, _signals: TodoPage, (): ()) -> impl Stream<Item = Patches<TodoPage>> {
+fn updates(state: AppState, (): ()) -> impl Stream<Item = Patches<TodoPage>> {
     let changes = BroadcastStream::new(state.changed.subscribe());
     let current = TodoList {
         items: state.snapshot(),

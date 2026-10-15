@@ -143,6 +143,10 @@ function build(ast: Ast): Compiled {
       const value = rest[0];
       return () => value;
     }
+    case "tuple": {
+      const parts = rest.map(compile);
+      return (ctx) => parts.map((part) => part(ctx));
+    }
     case "and": {
       const [a, b] = [compile(rest[0]), compile(rest[1])];
       return (ctx) => Boolean(a(ctx)) && Boolean(b(ctx));
@@ -226,7 +230,7 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       return;
     case "call": {
       const args = rest[2] === null ? null : evaluate(rest[2], ctx);
-      await host.call(rest[0] as string, rest[1] as string, args, rest[3] as string | null, rest[4] as string | null);
+      void host.call(rest[0] as string, rest[1] as string, args, rest[3] as string | null, rest[4] as string | null);
       return;
     }
     case "dom":

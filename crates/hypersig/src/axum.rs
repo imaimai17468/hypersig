@@ -28,15 +28,15 @@ pub trait RouterExt<St>: Sized {
 
     /// Serves `action` with a handler that answers with one batch of patches.
     ///
-    /// The handler receives the router state, the page's signals, and the
-    /// action's arguments, each already deserialized. A request whose signals
-    /// or arguments do not deserialize gets a 400 before the handler runs.
+    /// The handler receives the router state and the arguments the call
+    /// passed, already deserialized. A request whose arguments do not
+    /// deserialize gets a 400 before the handler runs.
     #[must_use]
     fn action<S, A, H, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
     where
         S: Signals,
         A: DeserializeOwned + Send + 'static,
-        H: Fn(St, S, A) -> Fut + Clone + Send + Sync + 'static,
+        H: Fn(St, A) -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = P> + Send + 'static,
         P: Into<Patches<S>>;
 
@@ -50,7 +50,7 @@ pub trait RouterExt<St>: Sized {
     where
         S: Signals,
         A: DeserializeOwned + Send + 'static,
-        H: Fn(St, S, A) -> Str + Clone + Send + Sync + 'static,
+        H: Fn(St, A) -> Str + Clone + Send + Sync + 'static,
         Str: Stream<Item = Patches<S>> + Send + 'static;
 }
 
@@ -71,7 +71,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
     where
         S: Signals,
         A: DeserializeOwned + Send + 'static,
-        H: Fn(St, S, A) -> Fut + Clone + Send + Sync + 'static,
+        H: Fn(St, A) -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = P> + Send + 'static,
         P: Into<Patches<S>>,
     {
@@ -81,8 +81,8 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                           body: Bytes| {
             let handler = handler.clone();
             async move {
-                let (signals, args) = read_request::<S, A>(method, &query, &body)?;
-                let patches: Patches<S> = handler(state, signals, args).await.into();
+                let args = read_args::<A>(method, &query, &body)?;
+                let patches: Patches<S> = handler(state, args).await.into();
                 let events = stream::iter(patches.into_events())
                     .map(|event| Ok::<_, Infallible>(to_sse(&event)));
                 Ok::<_, RequestError>(Sse::new(events).into_response())
@@ -95,7 +95,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
     where
         S: Signals,
         A: DeserializeOwned + Send + 'static,
-        H: Fn(St, S, A) -> Str + Clone + Send + Sync + 'static,
+        H: Fn(St, A) -> Str + Clone + Send + Sync + 'static,
         Str: Stream<Item = Patches<S>> + Send + 'static,
     {
         let method = action.method();
@@ -104,8 +104,8 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                           body: Bytes| {
             let handler = handler.clone();
             async move {
-                let (signals, args) = read_request::<S, A>(method, &query, &body)?;
-                let events = handler(state, signals, args)
+                let args = read_args::<A>(method, &query, &body)?;
+                let events = handler(state, args)
                     .flat_map(|patches| stream::iter(patches.into_events()))
                     .map(|event| Ok::<_, Infallible>(to_sse(&event)));
                 Ok::<_, RequestError>(
@@ -131,54 +131,39 @@ where
     }
 }
 
-fn read_request<S: Signals, A: DeserializeOwned>(
+/// Reads the arguments from the body of a POST and from the `args` query parameter of a GET.
+fn read_args<A: DeserializeOwned>(
     method: Method,
     query: &HashMap<String, String>,
     body: &[u8],
-) -> Result<(S, A), RequestError> {
-    let signals = match method {
-        Method::Post => serde_json::from_slice(body),
-        Method::Get => serde_json::from_str(query.get("signals").map_or("{}", String::as_str)),
+) -> Result<A, RequestError> {
+    match method {
+        Method::Post if !body.is_empty() => serde_json::from_slice(body),
+        Method::Post => serde_json::from_str("null"),
+        Method::Get => serde_json::from_str(query.get("args").map_or("null", String::as_str)),
     }
-    .map_err(|source| RequestError::new(Part::Signals, source))?;
-    let args = serde_json::from_str(query.get("args").map_or("null", String::as_str))
-        .map_err(|source| RequestError::new(Part::Args, source))?;
-    Ok((signals, args))
+    .map_err(RequestError::new)
 }
 
 fn to_sse(event: &PatchEvent) -> SseEvent {
     SseEvent::default().event(event.name()).data(event.data())
 }
 
-#[derive(Debug, Clone, Copy)]
-enum Part {
-    Signals,
-    Args,
-}
-
-/// A request to an action whose signals or arguments did not deserialize.
+/// A request to an action whose arguments did not deserialize.
 ///
 /// Its response is `400 Bad Request` with the serde message as the body.
 #[derive(Debug)]
 pub struct RequestError {
-    part: Part,
     source: serde_json::Error,
     backtrace: Backtrace,
 }
 
 impl RequestError {
-    fn new(part: Part, source: serde_json::Error) -> Self {
+    fn new(source: serde_json::Error) -> Self {
         Self {
-            part,
             source,
             backtrace: Backtrace::capture(),
         }
-    }
-
-    /// Whether the signals, as opposed to the arguments, failed to deserialize.
-    #[must_use]
-    pub fn is_signals(&self) -> bool {
-        matches!(self.part, Part::Signals)
     }
 
     /// The backtrace captured where the error was created.
@@ -190,13 +175,9 @@ impl RequestError {
 
 impl fmt::Display for RequestError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let part = match self.part {
-            Part::Signals => "signals",
-            Part::Args => "action arguments",
-        };
         write!(
             f,
-            "the request's {part} did not deserialize: {}",
+            "the action's arguments did not deserialize: {}",
             self.source
         )
     }

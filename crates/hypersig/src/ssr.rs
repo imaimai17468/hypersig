@@ -241,6 +241,12 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
             let path = ctx.scope.get(depth)?;
             Value::from(path.rsplit('.').next()?.parse::<u64>().ok()?)
         }
+        "tuple" => Value::Array(
+            parts[1..]
+                .iter()
+                .map(|part| evaluate(part, ctx).map(Cow::into_owned))
+                .collect::<Option<_>>()?,
+        ),
         "and" => Value::Bool(truthy(&*eval(1)?) && truthy(&*eval(2)?)),
         "or" => Value::Bool(truthy(&*eval(1)?) || truthy(&*eval(2)?)),
         "not" => Value::Bool(!truthy(&*eval(1)?)),
@@ -342,6 +348,10 @@ mod tests {
             json!("tea")
         );
         assert_eq!(eval(&json!(["chars", ["lit", "a😀"]]), &root), json!(2));
+        assert_eq!(
+            eval(&json!(["tuple", ["sig", "count"], ["lit", "x"]]), &root),
+            json!([3, "x"])
+        );
         assert_eq!(
             eval(&json!(["fixed", ["lit", 2.5], 2]), &root),
             json!("2.50")

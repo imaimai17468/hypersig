@@ -60,8 +60,8 @@ struct Showcase {
     order: Order,
 }
 
-const SEARCH: Action<Showcase> = Action::post("/search");
-const ORDER: Action<Showcase> = Action::post("/order");
+const SEARCH: Action<Showcase, String> = Action::post("/search");
+const ORDER: Action<Showcase, (i32, Size, bool)> = Action::post("/order");
 const SEARCH_FIELD: NodeRef<Showcase> = NodeRef::new("search");
 
 const NOTE_LIMIT: i32 = 40;
@@ -221,11 +221,13 @@ fn search() -> El<Showcase> {
                         .on_debounced(
                             Event::Input,
                             Duration::from_millis(250),
-                            SEARCH.call().indicator(searching),
+                            SEARCH.call_with(query).indicator(searching),
                         )
                         .on_key(
                             Key::Escape,
-                            query.set("").then(SEARCH.call().indicator(searching)),
+                            query
+                                .set("")
+                                .then(SEARCH.call_with("").indicator(searching)),
                         ),
                 )
                 .child(
@@ -261,7 +263,11 @@ fn order_form() -> El<Showcase> {
             form()
                 .on_submit(
                     ORDER
-                        .call()
+                        .call_with((
+                            order.at(Order::quantity()),
+                            order.at(Order::size()),
+                            order.at(Order::gift()),
+                        ))
                         .indicator(placing)
                         .error(order.at(Order::error())),
                 )
@@ -350,20 +356,19 @@ async fn index() -> Html<String> {
     Html(page.render())
 }
 
-async fn search_fruit((): (), signals: Showcase, (): ()) -> Patches<Showcase> {
+async fn search_fruit((): (), query: String) -> Patches<Showcase> {
     tokio::time::sleep(Duration::from_millis(200)).await;
-    Patches::new().element(&Results::for_query(&signals.search.query))
+    Patches::new().element(&Results::for_query(&query))
 }
 
-async fn order((): (), signals: Showcase, (): ()) -> Patches<Showcase> {
+async fn order((): (), (quantity, size, gift): (i32, Size, bool)) -> Patches<Showcase> {
     tokio::time::sleep(Duration::from_millis(300)).await;
-    let order = signals.order;
-    let size = match order.size {
+    let size = match size {
         Size::Small => "small",
         Size::Large => "large",
     };
-    let wrap = if order.gift { ", gift wrapped" } else { "" };
-    let status = format!("Ordered {} {size}{wrap}.", order.quantity);
+    let wrap = if gift { ", gift wrapped" } else { "" };
+    let status = format!("Ordered {quantity} {size}{wrap}.");
     Showcase::order().at(Order::status()).patch(status).into()
 }
 
