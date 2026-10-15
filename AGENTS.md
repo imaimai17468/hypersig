@@ -15,6 +15,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `crates/hypersig/tests/fixtures.rs` | Builds pages with the Rust builder and writes them to `runtime/test/fixtures/`, which the runtime tests load |
 | `runtime/` | The browser runtime in TypeScript. `pnpm build` writes `crates/hypersig/assets/hypersig.js`, which is committed so that `cargo build` needs no Node |
 | `examples/` | Runnable axum applications |
+| `e2e/` | Playwright tests that start every example and drive it in Chrome |
 
 The wire format between the two halves is defined twice, once in `crates/hypersig/src/expr.rs`, `html.rs`, and `patch.rs` and once in `runtime/src/`. A change to one is a change to both in the same commit. `tests/fixtures.rs` fails when a committed fixture differs from what the builder writes now, and `runtime/test/features.test.ts` runs those fixtures, so a change on one side that the other side does not follow fails one of the two test suites. Regenerate the fixtures with `HYPERSIG_FIXTURES=overwrite cargo test -p hypersig --test fixtures`, then run `pnpm test`.
 
@@ -29,6 +30,7 @@ No hook runs these. Run them yourself before reporting a change complete:
 - `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`, which fails on a broken intra-doc link
 - In `runtime/`: `pnpm check` and `pnpm test`, where the change touches `runtime/` or the wire format
 - In `runtime/`: `pnpm build`, then `git diff --exit-code crates/hypersig/assets`, so the committed bundle matches the source
+- In `e2e/`: `pnpm check` and `pnpm test`, where the change touches the runtime, the HTML builder, or an example. Locally it drives the installed Chrome; CI installs Playwright's Chromium.
 
 A trybuild `.stderr` file records the compiler's message. Regenerate it with `TRYBUILD=overwrite cargo test -p hypersig --test ui` only after reading the new message and confirming it still names the mistake the case exists for.
 
