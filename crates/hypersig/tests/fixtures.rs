@@ -317,6 +317,35 @@ fn write_or_compare(name: &str, text: &str) {
     );
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Sums {
+    a: i32,
+    b: i32,
+    sum: i32,
+    doubled: i32,
+}
+
+fn computed_page() -> String {
+    let (a, b, sum, doubled) = (Sums::a(), Sums::b(), Sums::sum(), Sums::doubled());
+    Page::new(
+        "computed",
+        Sums {
+            a: 1,
+            b: 2,
+            sum: 0,
+            doubled: 0,
+        },
+    )
+    .computed(sum, a + b)
+    .computed(doubled, sum * 2)
+    .child(
+        main()
+            .child(span().id("sum").bind_text(sum.to_text()))
+            .child(span().id("doubled").bind_text(doubled.to_text())),
+    )
+    .render()
+}
+
 /// Writes the page as `Page::render` serves it, with the server-side values applied.
 fn check_page<S: Signals>(name: &str, el: El<S>, signals: S) {
     let html = Page::new(name, signals).child(el).render();
@@ -345,4 +374,12 @@ fn fixtures_match_the_builder() {
     check_page("nested_page", el, signals);
     let (el, signals) = controls();
     check_page("controls_page", el, signals);
+    let document = computed_page();
+    write_or_compare(
+        "computed_page",
+        &format!(
+            "{}\n",
+            serde_json::to_string_pretty(&json!({ "document": document })).expect("fixture JSON")
+        ),
+    );
 }

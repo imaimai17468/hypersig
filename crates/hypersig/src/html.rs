@@ -1001,6 +1001,7 @@ pub struct Page<S> {
     title: String,
     signals: S,
     styles: Vec<&'static str>,
+    computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
 }
 
@@ -1020,8 +1021,47 @@ impl<S: Signals> Page<S> {
             title: title.into(),
             signals,
             styles: Vec::new(),
+            computed: Vec::new(),
             body: Vec::new(),
         }
+    }
+
+    /// Keeps `signal` equal to `value`, recomputed when a signal `value` reads changes.
+    ///
+    /// This is Datastar's `data-computed`. The result is stored in a field of
+    /// the signal struct, so bindings read it like any other signal and rerun
+    /// only when the result changes, rather than each evaluating `value`. The
+    /// server computes it once for the first HTML, and the action handlers
+    /// receive it with the other signals. Computed signals are evaluated in the
+    /// order they are declared, so one may read an earlier one.
+    ///
+    /// The type system does not stop a handler from setting `signal` or the
+    /// server from patching it. Either value lasts until a signal `value` reads
+    /// changes.
+    ///
+    /// ```
+    /// use hypersig::html::span;
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Cart {
+    ///     price: f64,
+    ///     quantity: i32,
+    ///     total: f64,
+    /// }
+    ///
+    /// let html = Page::new("Cart", Cart { price: 2.5, quantity: 3, total: 0.0 })
+    ///     .computed(Cart::total(), Cart::price() * Cart::quantity().to_f64())
+    ///     .child(span().bind_text(Cart::total().to_text()))
+    ///     .render();
+    /// assert!(html.contains("<span data-hs-text=") && html.contains(">7.5</span>"));
+    /// ```
+    #[must_use]
+    pub fn computed<T>(mut self, signal: Sig<S, T>, value: impl IntoExpr<S, T>) -> Self {
+        self.computed
+            .push((signal.path(), value.into_expr().into_json()));
+        self
     }
 
     /// Adds a `<style>` block to `<head>`.
@@ -1046,8 +1086,17 @@ impl<S: Signals> Page<S> {
     /// happens for a `Serialize` impl that returns an error.
     #[must_use]
     pub fn render(&self) -> String {
-        let signals = serde_json::to_string(&self.signals)
+        let mut root = serde_json::to_value(&self.signals)
             .expect("a Signals struct serializes to a JSON object");
+        for (path, value) in &self.computed {
+            let ctx = Ctx {
+                root: &root,
+                scope: Vec::new(),
+            };
+            if let Some(value) = ssr::evaluate(value, &ctx) {
+                root = ssr::set_path(&root, path, value);
+            }
+        }
         let mut out = String::from("<!doctype html><html><head><meta charset=\"utf-8\">");
         out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
         out.push_str("<link rel=\"icon\" href=\"data:,\">");
@@ -1062,10 +1111,20 @@ impl<S: Signals> Page<S> {
         out.push_str("<script type=\"module\"");
         write_attr(&mut out, "src", crate::RUNTIME_PATH);
         out.push_str("></script></head><body");
-        write_attr(&mut out, "data-hs-signals", &signals);
+        write_attr(&mut out, "data-hs-signals", &root.to_string());
+        if !self.computed.is_empty() {
+            let computed: Vec<Value> = self
+                .computed
+                .iter()
+                .map(|(path, value)| json!([path, value]))
+                .collect();
+            write_attr(
+                &mut out,
+                "data-hs-computed",
+                &Value::from(computed).to_string(),
+            );
+        }
         out.push('>');
-        let root = serde_json::to_value(&self.signals)
-            .expect("a Signals struct serializes to a JSON object");
         let ctx = Ctx {
             root: &root,
             scope: Vec::new(),

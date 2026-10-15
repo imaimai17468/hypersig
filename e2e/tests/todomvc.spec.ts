@@ -3,7 +3,7 @@ import { expect, test } from "./support.ts";
 
 test.beforeEach(async ({ request }) => {
   await request.post(`${url("todomvc")}save`, {
-    data: { todos: [], next_id: 1, draft: "", filter: "All", editing: null, edit_text: "" },
+    data: { todos: [], next_id: 1, draft: "", filter: "All", editing: null, edit_text: "", left: 0, completed: 0 },
   });
 });
 

@@ -293,7 +293,8 @@ function serve(name: string): void {
   const { document: html } = JSON.parse(readFileSync(path, "utf8")) as { document: string };
   const parsed = new DOMParser().parseFromString(html, "text/html");
   document.body.replaceChildren(...parsed.body.childNodes);
-  document.body.setAttribute("data-hs-signals", parsed.body.getAttribute("data-hs-signals")!);
+  for (const { name } of [...document.body.attributes]) document.body.removeAttribute(name);
+  for (const { name, value } of [...parsed.body.attributes]) document.body.setAttribute(name, value);
 }
 
 function start(): Runtime {
@@ -348,5 +349,32 @@ describe("server rendering", () => {
     expect($("#buy").getAttribute("title")).toBe("5.00");
     expect($("#buy").style.getPropertyValue("width")).toBe("1rem");
     expect($("#total").textContent).toBe("small");
+  });
+});
+
+describe("computed signals", () => {
+  it("are computed on the server, recomputed in order in the browser, and rerun readers only when their value changes", async () => {
+    serve("computed_page");
+    expect($("#sum").textContent).toBe("3");
+    expect($("#doubled").textContent).toBe("6");
+    const runtime = start();
+    await tick();
+
+    runtime.store.set("a", 5);
+    await vi.waitFor(() => expect($("#doubled").textContent).toBe("14"));
+    expect($("#sum").textContent).toBe("7");
+
+    const written = new Set<Node>();
+    const observer = new MutationObserver((records) => {
+      for (const record of records) written.add(record.target);
+    });
+    observer.observe($("#doubled"), { childList: true, characterData: true, subtree: true });
+    runtime.store.set("a", 4);
+    runtime.store.set("b", 3);
+    await tick();
+    await tick();
+    expect(runtime.store.get("sum")).toBe(7);
+    expect(written.size).toBe(0);
+    observer.disconnect();
   });
 });

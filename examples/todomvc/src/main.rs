@@ -39,6 +39,8 @@ struct TodoMvc {
     filter: Filter,
     editing: Option<i32>,
     edit_text: String,
+    left: i32,
+    completed: i32,
 }
 
 const SAVE: Action<TodoMvc> = Action::post("/save");
@@ -138,8 +140,8 @@ fn filter_link(filter: Filter, text: &str) -> El<TodoMvc> {
 
 fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
     let list = TodoMvc::todos();
-    let left = list.count(|todo| !todo.at(Todo::done()));
-    let completed = list.count(|todo| todo.at(Todo::done()));
+    let left = TodoMvc::left();
+    let completed = TodoMvc::completed();
     let next_id = todos.iter().map(|todo| todo.id).max().unwrap_or(0) + 1;
     let signals = TodoMvc {
         todos,
@@ -148,60 +150,66 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
         filter: Filter::All,
         editing: None,
         edit_text: String::new(),
+        left: 0,
+        completed: 0,
     };
-    Page::new("hypersig TodoMVC", signals).style(STYLE).child(
-        section()
-            .class("todoapp")
-            .on_signal_change(list, SAVE.call())
-            .child(header().child(h1().text("todos")).child(new_todo()))
-            .child(
-                section()
-                    .class("main")
-                    .show(!list.is_empty())
-                    .child(
-                        input()
-                            .id("toggle-all")
-                            .class("toggle-all")
-                            .attr("type", "checkbox")
-                            .bind_checked(left.clone().equals(0))
-                            .on_change(list.set_all(Todo::done(), left.clone().gt(0))),
-                    )
-                    .child(
-                        label()
-                            .attr("for", "toggle-all")
-                            .text("Mark all as complete"),
-                    )
-                    .child(todo_list()),
-            )
-            .child(
-                footer()
-                    .class("footer")
-                    .show(!list.is_empty())
-                    .child(
-                        span()
-                            .class("todo-count")
-                            .child(strong().bind_text(left.clone().to_text()))
-                            .child(span().bind_text(if_else(
-                                left.equals(1),
-                                " item left",
-                                " items left",
-                            ))),
-                    )
-                    .child(
-                        ul().class("filters")
-                            .child(filter_link(Filter::All, "All"))
-                            .child(filter_link(Filter::Active, "Active"))
-                            .child(filter_link(Filter::Completed, "Completed")),
-                    )
-                    .child(
-                        button()
-                            .class("clear-completed")
-                            .show(completed.gt(0))
-                            .on_click(list.retain(|todo| !todo.at(Todo::done())))
-                            .text("Clear completed"),
-                    ),
-            ),
-    )
+    Page::new("hypersig TodoMVC", signals)
+        .style(STYLE)
+        .computed(left, list.count(|todo| !todo.at(Todo::done())))
+        .computed(completed, list.count(|todo| todo.at(Todo::done())))
+        .child(
+            section()
+                .class("todoapp")
+                .on_signal_change(list, SAVE.call())
+                .child(header().child(h1().text("todos")).child(new_todo()))
+                .child(
+                    section()
+                        .class("main")
+                        .show(!list.is_empty())
+                        .child(
+                            input()
+                                .id("toggle-all")
+                                .class("toggle-all")
+                                .attr("type", "checkbox")
+                                .bind_checked(left.equals(0))
+                                .on_change(list.set_all(Todo::done(), left.gt(0))),
+                        )
+                        .child(
+                            label()
+                                .attr("for", "toggle-all")
+                                .text("Mark all as complete"),
+                        )
+                        .child(todo_list()),
+                )
+                .child(
+                    footer()
+                        .class("footer")
+                        .show(!list.is_empty())
+                        .child(
+                            span()
+                                .class("todo-count")
+                                .child(strong().bind_text(left.to_text()))
+                                .child(span().bind_text(if_else(
+                                    left.equals(1),
+                                    " item left",
+                                    " items left",
+                                ))),
+                        )
+                        .child(
+                            ul().class("filters")
+                                .child(filter_link(Filter::All, "All"))
+                                .child(filter_link(Filter::Active, "Active"))
+                                .child(filter_link(Filter::Completed, "Completed")),
+                        )
+                        .child(
+                            button()
+                                .class("clear-completed")
+                                .show(completed.gt(0))
+                                .on_click(list.retain(|todo| !todo.at(Todo::done())))
+                                .text("Clear completed"),
+                        ),
+                ),
+        )
 }
 
 async fn index(State(state): State<AppState>) -> Html<String> {

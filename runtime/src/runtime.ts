@@ -66,8 +66,27 @@ export class Runtime implements Host {
     for (const type of DIRECT) {
       root.addEventListener(type, (event) => this.#onDirect(type, event), { capture: true });
     }
+    this.#computed(root);
     this.scan(root, []);
     this.#render(new Set());
+  }
+
+  /** Registers the computed signals on `root`, before any element, so they run first. */
+  #computed(root: Element): void {
+    const computed = parse(root.getAttribute("data-hs-computed"));
+    if (!Array.isArray(computed)) return;
+    const ctx: Context = { store: this.store, scope: [] };
+    const effects = (computed as [string, unknown][]).map(([path, expr]): Effect => ({
+      id: this.#nextId++,
+      element: root,
+      run: () => {
+        const value = evaluate(expr, ctx);
+        this.store.untracked(() => this.store.set(path, value));
+      },
+      deps: null,
+      nodes: [],
+    }));
+    this.#fresh.push(...effects);
   }
 
   /** Registers the reactive attributes of `root` and every element below it. */

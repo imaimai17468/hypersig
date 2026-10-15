@@ -18,6 +18,7 @@ Datastar の属性ごとに、hypersig で同じことをする書き方を並�
 | Datastar | hypersig |
 |---|---|
 | `data-signals` | `#[derive(Signals)]` した構造体を `Page::new` に渡す。入れ子の構造体は `Sig::at` でたどる |
+| `data-computed` | `Page::computed(sig, expr)`。結果はシグナル構造体のフィールドに入り、読む束縛は値が変わったときだけ評価し直す |
 | `data-text`、`data-show` | `bind_text`、`show` |
 | `data-class`、`data-attr`、`data-style` | `class_when`、`bind_attr` と `attr_when`、`bind_style` |
 | `data-bind` | `bind`（text、textarea、select、number、checkbox）、`bind_radio`、enum を選ぶ `bind_select` |
@@ -36,7 +37,7 @@ Datastar にないものも 2 つ足した。
 - **ブラウザ側のリストと条件付き要素**: `each(list, |item| ...)` が `Vec` のシグナルを項目ごとに描き、`key` で要素を保ったまま並べ替える。`when(cond, el)` は条件が偽の間、要素を DOM から外す。項目は `push`、`item.remove()`、`retain`、`set_all`、`count` で操作する。
 - **サーバー側での式の評価**: `Page::render` が初期シグナルで式を評価し、テキスト、表示切り替え、class、属性、フォームの値、リストの項目を HTML に書き込む。ランタイムは読み込み後、その要素を作り直さずに引き継ぐ。JS を切ったブラウザでも最初の画面はそのまま見える。
 
-ランタイムは束縛ごとに読んだシグナルを記録し、パスの木から、変わったシグナルを読んでいる束縛だけを探して評価し直す。リストの束縛はリスト自体を浅く読むので、項目のキー以外のフィールドが変わってもキーの照合は走らない。2000 件の TodoMVC（headless Chrome、release ビルド、5 回の中央値）では、入力欄への 1 文字入力が 0.1 ms 未満、1 件のチェックが 3.3 ms だった。チェックに残っている時間の多くは、残数を数える `count` の 4 か所がそれぞれ 2000 件をたどる分。
+ランタイムは束縛ごとに読んだシグナルを記録し、パスの木から、変わったシグナルを読んでいる束縛だけを探して評価し直す。リストの束縛はリスト自体を浅く読むので、項目のキー以外のフィールドが変わってもキーの照合は走らない。2000 件の TodoMVC（headless Chrome、release ビルド、5 回の中央値）では、入力欄への 1 文字入力が 0.1 ms、1 件のチェックが 2.8 ms だった。チェックの 2.8 ms のうち約 1.2 ms は、この例が変更のたびに一覧全体をサーバーへ保存している分で、保存を外すと 1.6 ms になる。
 
 ## 例
 

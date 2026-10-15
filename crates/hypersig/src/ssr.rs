@@ -64,7 +64,7 @@ fn get_path<'v>(value: &'v Value, path: &str) -> Option<&'v Value> {
         })
 }
 
-fn set_path(value: &Value, path: &str, next: Value) -> Value {
+pub(crate) fn set_path(value: &Value, path: &str, next: Value) -> Value {
     if path.is_empty() {
         return next;
     }
