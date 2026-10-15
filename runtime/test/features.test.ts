@@ -257,3 +257,67 @@ describe("dependency tracking", () => {
     observer.disconnect();
   });
 });
+
+/** Loads a document written by `Page::render`, without starting the runtime. */
+function serve(name: string): void {
+  const path = resolve(__dirname, `fixtures/${name}.json`);
+  const { document: html } = JSON.parse(readFileSync(path, "utf8")) as { document: string };
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  document.body.replaceChildren(...parsed.body.childNodes);
+  document.body.setAttribute("data-hs-signals", parsed.body.getAttribute("data-hs-signals")!);
+}
+
+function start(): Runtime {
+  return new Runtime(document.body, JSON.parse(document.body.getAttribute("data-hs-signals")!) as Record<string, unknown>);
+}
+
+describe("server rendering", () => {
+  it("shows list items, counts, and visibility before the runtime starts, and the runtime adopts them", async () => {
+    serve("todos_page");
+    const item = $("#list li");
+    expect($$("#list li label").map((label) => label.textContent)).toEqual(["tea"]);
+    expect($("#left").textContent).toBe("1");
+    expect($("#clear").style.display).toBe("none");
+
+    const runtime = start();
+    await tick();
+    expect($$("#list li")).toEqual([item]);
+    item.querySelector<HTMLInputElement>("input[type=checkbox]")!.click();
+    await tick();
+    expect(runtime.store.get("todos.0.done")).toBe(true);
+    expect(item.classList.contains("done")).toBe(true);
+    expect($("#left").textContent).toBe("0");
+
+    item.querySelector("label")!.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    await tick();
+    expect(item.querySelector<HTMLInputElement>("input.edit")!.value).toBe("tea");
+  });
+
+  it("adopts nested list items with their own item scope", async () => {
+    serve("nested_page");
+    expect($$("#rows button").map((b) => b.textContent)).toEqual(["a/x", "a/y", "b/z"]);
+    expect($$("#rows .count").map((s) => s.textContent)).toEqual(["1", "0"]);
+    expect($$("#rows button")[0]!.classList.contains("on")).toBe(true);
+    const buttons = $$("#rows button");
+
+    const runtime = start();
+    await tick();
+    expect($$("#rows button")).toEqual(buttons);
+    buttons[2]!.click();
+    await tick();
+    expect(runtime.store.get("rows.1.tags.0.on")).toBe(true);
+    expect($$("#rows .count").map((s) => s.textContent)).toEqual(["1", "1"]);
+  });
+
+  it("writes form values, attributes, and styles on the server", () => {
+    serve("controls_page");
+    expect($<HTMLInputElement>("#quantity").value).toBe("1");
+    expect($<HTMLInputElement>("#price").value).toBe("2.5");
+    expect($<HTMLSelectElement>("#size").value).toBe('"Small"');
+    expect($<HTMLInputElement>("#small").checked).toBe(true);
+    expect($<HTMLInputElement>("#large").checked).toBe(false);
+    expect($("#buy").getAttribute("title")).toBe("5.00");
+    expect($("#buy").style.getPropertyValue("width")).toBe("1rem");
+    expect($("#total").textContent).toBe("small");
+  });
+});

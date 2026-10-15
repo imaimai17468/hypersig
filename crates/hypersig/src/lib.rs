@@ -47,6 +47,7 @@ mod expr;
 pub mod html;
 mod patch;
 mod signal;
+mod ssr;
 
 pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]

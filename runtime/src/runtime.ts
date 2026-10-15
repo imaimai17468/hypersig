@@ -39,6 +39,8 @@ type Bind = [place: unknown, kind: string, value?: unknown];
 interface Instance {
   readonly element: Element;
   readonly slot: Slot;
+  /** False for an element the server rendered, until the runtime scans it with its item scope. */
+  scanned: boolean;
 }
 
 /** Connects the signals on `<body>` and the `data-hs-*` attributes of `root`. */
@@ -72,6 +74,8 @@ export class Runtime implements Host {
     const elements = root.matches(REACTIVE) ? [root] : [];
     elements.push(...root.querySelectorAll(REACTIVE));
     for (const element of elements) {
+      const rendered = element.closest("[data-hs-ssr]");
+      if (rendered !== null && !this.#instanceRoots.has(rendered)) continue;
       const own = this.#scopes.get(element) ?? scope;
       this.#scopes.set(element, own);
       this.#effects.set(element, this.#effectsFor(element, own));
@@ -267,7 +271,7 @@ export class Runtime implements Host {
     const path = resolve(place, ctx);
     const items = this.store.get(path);
     const keyAst = parse(proto.getAttribute("data-hs-key"));
-    const previous = this.#lists.get(template) ?? new Map<string, Instance>();
+    const previous = this.#lists.get(template) ?? this.#adoptItems(template);
     const next = new Map<string, Instance>();
     let anchor: Node = template;
 
@@ -280,17 +284,18 @@ export class Runtime implements Host {
         key = `${key}#${index}`;
       }
       let instance = previous.get(key);
-      let created = false;
       if (instance === undefined || !instance.element.isConnected) {
-        instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]! };
+        instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: false };
         this.#instanceRoots.add(instance.element);
-        created = true;
       } else {
         instance.slot.path = itemPath;
       }
       next.set(key, instance);
       if (anchor.nextSibling !== instance.element) parent.insertBefore(instance.element, anchor.nextSibling);
-      if (created) this.scan(instance.element, [...scope.slice(0, depth), instance.slot]);
+      if (!instance.scanned) {
+        instance.scanned = true;
+        this.scan(instance.element, [...scope.slice(0, depth), instance.slot]);
+      }
       anchor = instance.element;
     });
 
@@ -300,8 +305,30 @@ export class Runtime implements Host {
     this.#lists.set(template, next);
   }
 
+  /** Takes over the items the server rendered right after `template`, keyed as it keyed them. */
+  #adoptItems(template: HTMLTemplateElement): Map<string, Instance> {
+    const adopted = new Map<string, Instance>();
+    for (let at = template.nextElementSibling; at !== null && at.hasAttribute("data-hs-ssr"); at = at.nextElementSibling) {
+      if (this.#instanceRoots.has(at)) break;
+      this.#instanceRoots.add(at);
+      adopted.set(at.getAttribute("data-hs-ssr")!, { element: at, slot: { path: "" }, scanned: false });
+    }
+    return adopted;
+  }
+
   #renderIf(template: HTMLTemplateElement, visible: boolean, scope: readonly Slot[]): void {
-    const current = this.#mounted.get(template);
+    let current = this.#mounted.get(template);
+    const rendered = template.nextElementSibling;
+    if (current === undefined && rendered?.getAttribute("data-hs-ssr") === "" && !this.#instanceRoots.has(rendered)) {
+      this.#instanceRoots.add(rendered);
+      if (visible) {
+        this.#mounted.set(template, rendered);
+        this.scan(rendered, scope);
+        return;
+      }
+      rendered.remove();
+    }
+    current = this.#mounted.get(template);
     if (visible && (current === undefined || !current.isConnected)) {
       const proto = template.content.firstElementChild;
       if (proto === null || template.parentNode === null) return;

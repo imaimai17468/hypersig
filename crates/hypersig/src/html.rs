@@ -52,6 +52,7 @@ use serde_json::{Value, json};
 use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
 use crate::signal::{Item, Sig, Signals, in_item_scope};
+use crate::ssr::{self, Ctx};
 
 const RESERVED_PREFIX: &str = "data-hs-";
 
@@ -92,9 +93,9 @@ impl<S> fmt::Debug for Node<S> {
 }
 
 impl<S> Node<S> {
-    fn write(&self, out: &mut String) {
+    fn write(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
         match &self.0 {
-            NodeKind::Element(el) => el.write(out),
+            NodeKind::Element(el) => el.write(out, ctx, None),
             NodeKind::Text(text) => escape_into(out, text, false),
             NodeKind::Each {
                 list,
@@ -104,15 +105,24 @@ impl<S> Node<S> {
                 out.push_str("<template");
                 write_attr(out, "data-hs-each", &json!([list, depth]).to_string());
                 out.push('>');
-                template.write(out);
+                template.write(out, None, None);
                 out.push_str("</template>");
+                if let Some(ctx) = ctx {
+                    template.write_items(out, ctx, list, usize::from(*depth));
+                }
             }
             NodeKind::When { cond, template } => {
                 out.push_str("<template");
                 write_attr(out, "data-hs-if", &cond.to_json());
                 out.push('>');
-                template.write(out);
+                template.write(out, None, None);
                 out.push_str("</template>");
+                if let Some(ctx) = ctx
+                    && ssr::evaluate(&cond.clone().into_json(), ctx)
+                        .is_some_and(|v| ssr::truthy(&v))
+                {
+                    template.write(out, Some(ctx), Some(""));
+                }
             }
         }
     }
@@ -717,24 +727,138 @@ impl<S> El<S> {
     }
 
     /// Renders the element and its children to an HTML string.
+    ///
+    /// The reactive parts are left for the runtime to fill in, because an
+    /// element alone has no signal values. [`Page::render`] fills them in.
     #[must_use]
     pub fn render(&self) -> String {
         let mut out = String::new();
-        self.write(&mut out);
+        self.write(&mut out, None, None);
         out
     }
 
-    fn write(&self, out: &mut String) {
+    /// Writes one copy of this template per item of `list`, each marked with
+    /// the key the runtime will compute for it, so the runtime adopts them.
+    fn write_items(&self, out: &mut String, ctx: &Ctx<'_>, list: &Value, depth: usize) {
+        let Some(path) = ctx.resolve(list) else {
+            return;
+        };
+        let len = ctx.get(&path).as_array().map_or(0, Vec::len);
+        for index in 0..len {
+            let item = ctx.with_item(depth, ssr::join(&path, &index.to_string()));
+            let key = match &self.key {
+                None => format!("#{index}"),
+                Some(key) => match ssr::evaluate(key, &item) {
+                    Some(value) => ssr::js_json(&value),
+                    None => continue,
+                },
+            };
+            self.write(out, Some(&item), Some(&key));
+        }
+    }
+
+    fn has_attr(&self, name: &str) -> bool {
+        self.attrs.iter().any(|(attr, _)| *attr == name)
+    }
+
+    /// Writes the element. With `ctx`, reactive attributes and text are
+    /// computed from the signals as well. `ssr_key` marks the root of a list
+    /// item or conditional copy rendered on the server.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one attribute after another, in the order the runtime documents them"
+    )]
+    fn write(&self, out: &mut String, ctx: Option<&Ctx<'_>>, ssr_key: Option<&str>) {
+        let eval = |expr: &Value| ctx.and_then(|ctx| ssr::evaluate(expr, ctx));
+        let eval_bool = |expr: &Value| eval(expr).map(|v| ssr::truthy(&v));
+        let mut classes: Vec<&str> = self.classes.clone();
+        for (class, when) in &self.class_when {
+            if eval_bool(&when.clone().into_json()) == Some(true) {
+                classes.push(class);
+            }
+        }
+        let mut style: Vec<String> = Vec::new();
+        for (property, value) in &self.style {
+            if let Some(value) = eval(&value.clone().into_json()) {
+                style.push(format!("{property}: {}", ssr::js_string(&value)));
+            }
+        }
+        if let Some(show) = &self.show
+            && eval_bool(&show.clone().into_json()) == Some(false)
+        {
+            style.push("display: none".to_owned());
+        }
+        let mut computed: Vec<(&str, String)> = Vec::new();
+        for (name, value) in &self.attr_bind {
+            if let Some(value) = eval(&value.clone().into_json()) {
+                computed.push((name, ssr::js_string(&value)));
+            }
+        }
+        for (name, when) in &self.attr_when {
+            if eval_bool(&when.clone().into_json()) == Some(true) {
+                computed.push((name, String::new()));
+            }
+        }
+        if let Some(checked) = &self.checked
+            && eval_bool(&checked.clone().into_json()) == Some(true)
+        {
+            computed.push(("checked", String::new()));
+        }
+        let mut content: Option<String> = self
+            .text
+            .as_ref()
+            .and_then(|text| eval(&text.clone().into_json()))
+            .map(|value| ssr::js_string(&value));
+        let mut selected: Option<String> = None;
+        if let (Some(ctx), Some(bind)) = (ctx, &self.bind)
+            && let Some(path) = bind.get(0).and_then(|place| ctx.resolve(place))
+        {
+            let value = ctx.get(&path);
+            match bind.get(1).and_then(Value::as_str) {
+                Some("bool") if ssr::truthy(&value) => computed.push(("checked", String::new())),
+                Some("radio") if bind.get(2).is_some_and(|choice| ssr::equal(choice, &value)) => {
+                    computed.push(("checked", String::new()));
+                }
+                Some("json") => selected = Some(ssr::js_json(&value)),
+                Some("text" | "int" | "float") if !value.is_null() => {
+                    let text = ssr::js_string(&value);
+                    match self.tag {
+                        "textarea" => content = Some(text),
+                        "select" => selected = Some(text),
+                        _ => computed.push(("value", text)),
+                    }
+                }
+                _ => {}
+            }
+        }
+
         out.push('<');
         out.push_str(self.tag);
         if let Some(id) = &self.id {
             write_attr(out, "id", id);
         }
-        if !self.classes.is_empty() {
-            write_attr(out, "class", &self.classes.join(" "));
+        if !classes.is_empty() {
+            write_attr(out, "class", &classes.join(" "));
         }
         for (name, value) in &self.attrs {
+            if *name == "style" && !style.is_empty() {
+                continue;
+            }
             write_attr(out, name, value);
+        }
+        if !style.is_empty() {
+            let own = self.attrs.iter().find(|(name, _)| *name == "style");
+            let mut all: Vec<String> = own.map(|(_, value)| value.clone()).into_iter().collect();
+            all.extend(style);
+            write_attr(out, "style", &all.join("; "));
+        }
+        for (name, value) in &computed {
+            if !self.has_attr(name) {
+                write_attr(out, name, value);
+            }
+        }
+        if let Some(key) = ssr_key {
+            write_attr(out, "data-hs-ssr", key);
         }
         if let Some(show) = &self.show {
             write_attr(out, "data-hs-show", &show.to_json());
@@ -796,11 +920,35 @@ impl<S> El<S> {
         if self.void {
             return;
         }
-        for child in &self.children {
-            child.write(out);
+        if let Some(text) = content {
+            escape_into(out, &text, false);
+        } else {
+            for child in &self.children {
+                match (&child.0, &selected) {
+                    (NodeKind::Element(option), Some(value))
+                        if option.tag == "option"
+                            && option
+                                .attrs
+                                .iter()
+                                .any(|(name, v)| *name == "value" && v == value) =>
+                    {
+                        option.write_selected(out, ctx);
+                    }
+                    _ => child.write(out, ctx),
+                }
+            }
         }
         // `fmt::Write` for `String` never fails.
         let _ = write!(out, "</{}>", self.tag);
+    }
+
+    fn write_selected(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
+        let mut out_el = String::new();
+        self.write(&mut out_el, ctx, None);
+        let open = format!("<{}", self.tag);
+        out.push_str(&open);
+        out.push_str(" selected=\"\"");
+        out.push_str(&out_el[open.len()..]);
     }
 }
 
@@ -845,7 +993,10 @@ fn escape_into(out: &mut String, text: &str, attribute: bool) {
 /// A full HTML document for a page whose signals are `S`.
 ///
 /// The document loads the runtime from [`RUNTIME_PATH`](crate::RUNTIME_PATH)
-/// and puts the initial signal values on `<body>`.
+/// and puts the initial signal values on `<body>`. It is rendered with those
+/// values already applied: text, visibility, classes, attributes, form
+/// values, list items, and conditional elements show before the runtime
+/// loads, and the runtime adopts the elements instead of rebuilding them.
 pub struct Page<S> {
     title: String,
     signals: S,
@@ -913,8 +1064,14 @@ impl<S: Signals> Page<S> {
         out.push_str("></script></head><body");
         write_attr(&mut out, "data-hs-signals", &signals);
         out.push('>');
+        let root = serde_json::to_value(&self.signals)
+            .expect("a Signals struct serializes to a JSON object");
+        let ctx = Ctx {
+            root: &root,
+            scope: Vec::new(),
+        };
         for child in &self.body {
-            child.write(&mut out);
+            child.write(&mut out, Some(&ctx));
         }
         out.push_str("</body></html>");
         out

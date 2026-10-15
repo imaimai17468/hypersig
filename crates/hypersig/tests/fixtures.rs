@@ -10,7 +10,7 @@ use std::time::Duration;
 use hypersig::html::{
     El, Event, Key, button, div, each, input, label, li, main, select, span, ul, when,
 };
-use hypersig::{Action, Expr, NodeRef, Signals, Stmt};
+use hypersig::{Action, Expr, NodeRef, Page, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -292,15 +292,21 @@ fn nested() -> (El<Nested>, Nested) {
 
 fn check(name: &str, el: &El<impl Signals>, signals: &impl Serialize) {
     let fixture = json!({ "html": el.render(), "signals": signals });
-    let text = format!(
-        "{}\n",
-        serde_json::to_string_pretty(&fixture).expect("fixture JSON")
+    write_or_compare(
+        name,
+        &format!(
+            "{}\n",
+            serde_json::to_string_pretty(&fixture).expect("fixture JSON")
+        ),
     );
+}
+
+fn write_or_compare(name: &str, text: &str) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../runtime/test/fixtures")
         .join(format!("{name}.json"));
     if std::env::var("HYPERSIG_FIXTURES").as_deref() == Ok("overwrite") {
-        std::fs::write(&path, &text).expect("write fixture");
+        std::fs::write(&path, text).expect("write fixture");
         return;
     }
     let on_disk = std::fs::read_to_string(&path).unwrap_or_default();
@@ -308,6 +314,18 @@ fn check(name: &str, el: &El<impl Signals>, signals: &impl Serialize) {
         on_disk == text,
         "{} is out of date; rerun with HYPERSIG_FIXTURES=overwrite",
         path.display()
+    );
+}
+
+/// Writes the page as `Page::render` serves it, with the server-side values applied.
+fn check_page<S: Signals>(name: &str, el: El<S>, signals: S) {
+    let html = Page::new(name, signals).child(el).render();
+    write_or_compare(
+        name,
+        &format!(
+            "{}\n",
+            serde_json::to_string_pretty(&json!({ "document": html })).expect("fixture JSON")
+        ),
     );
 }
 
@@ -321,4 +339,10 @@ fn fixtures_match_the_builder() {
     check("timers", &el, &signals);
     let (el, signals) = nested();
     check("nested", &el, &signals);
+    let (el, signals) = todos();
+    check_page("todos_page", el, signals);
+    let (el, signals) = nested();
+    check_page("nested_page", el, signals);
+    let (el, signals) = controls();
+    check_page("controls_page", el, signals);
 }
