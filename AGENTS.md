@@ -47,6 +47,7 @@ Report a step you could not run as "not run", never as "passed".
 - `.claude/rules/rust.md` covers every `.rs` file. It is the short list of guidelines this codebase leans on.
 - `.claude/skills/rust-guidelines/` holds the full Pragmatic Rust Guidelines. Invoke the skill where a decision is not covered by the rule file: a new public type, an error type, a new crate, an `unsafe` block.
 - `.claude/rules/prose.md` covers every text a person reads.
+- `.claude/skills/japanese-prose/` holds the polite Japanese register and the rules that keep `README.md` and `README.ja.md` one document. Invoke it before writing Japanese prose that a person reads.
 
 ## Knowledge Currency
 
