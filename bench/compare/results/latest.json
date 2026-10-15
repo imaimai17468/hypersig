@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-15T05:11:20.525Z",
+  "commit": "df40b71",
+  "chrome": "155.0.8059.41",
+  "machine": "Apple M4 Max, darwin 25.6.0",
+  "latencyMs": 50,
+  "apps": {
+    "hypersig": {
+      "code": 6669,
+      "fcp": 96,
+      "toggle": 1.5999999940395355,
+      "add": 1.5999999940395355,
+      "toggleBytes": 794
+    },
+    "htmx": {
+      "code": 16897,
+      "fcp": 144,
+      "toggle": 57.1000000089407,
+      "add": 56.8999999910593,
+      "toggleBytes": 1108
+    },
+    "next": {
+      "code": 136528,
+      "fcp": 96,
+      "toggle": 2,
+      "add": 2.7999999970197678,
+      "toggleBytes": 1313
+    },
+    "react": {
+      "code": 68729,
+      "fcp": 136,
+      "toggle": 1.5999999940395355,
+      "add": 1.3999999910593033,
+      "toggleBytes": 698
+    },
+    "tanstack-start": {
+      "code": 122413,
+      "fcp": 94,
+      "toggle": 16.30000001192093,
+      "add": 18.399999991059303,
+      "toggleBytes": 1281
+    },
+    "nuxt": {
+      "code": 60669,
+      "fcp": 92,
+      "toggle": 1.3999999910593033,
+      "add": 2,
+      "toggleBytes": 711
+    },
+    "leptos": {
+      "code": 143918,
+      "fcp": 94,
+      "toggle": 1.7000000029802322,
+      "add": 1.5,
+      "toggleBytes": 808
+    }
+  }
+}

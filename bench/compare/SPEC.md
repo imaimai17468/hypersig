@@ -1,6 +1,6 @@
 # TodoMVC-2000
 
-The same TodoMVC written in hypersig, Datastar, htmx, Next.js, and Leptos, measured in one harness. This file is the contract every implementation follows.
+The same TodoMVC written in hypersig, Leptos, Next.js, React, TanStack Start, Nuxt, and htmx, measured in one harness. This file is the contract every implementation follows.
 
 ## Data
 
@@ -38,20 +38,23 @@ Each app is written the way an experienced user of that framework would write it
 
 | App | Port | Version | Pattern |
 |---|---|---|---|
-| `hypersig/` | 4100 | this repository | The list is a signal updated in the browser. Each change calls an action with its arguments |
-| `datastar/` | 4101 | Datastar 1.0.4, `datastar` crate 0.4.1, axum | The server answers each action with element patches for the changed item and the count |
+| `hypersig/` | 4100 | this repository | The list is a signal updated in the browser. Each add, toggle, and delete also calls an action with that change's typed arguments |
 | `htmx/` | 4102 | htmx 2.0.11, axum | The server answers each request with the changed item and an out-of-band count |
 | `next/` | 4103 | Next.js 16.4.1, React 19.3.1 | A server component renders the list into a client component that holds it in state, with memoized items. Each change calls a server action |
 | `leptos/` | 4104 | Leptos 0.8.22, leptos_axum 0.8.10 | Server rendering with hydration, a signal per item, and a server function per change |
+| `react/` | 4105 | React 19.3.1, Vite 8.3.4 | A single-page app. The HTML is empty, the app fetches the list from a JSON API, holds it in state with memoized items, and sends each change to the API |
+| `tanstack-start/` | 4106 | TanStack Start 1.169.2, TanStack Query 5.104.2 | Server rendering with a route loader that fills the query cache. Each change is a `useMutation` that updates the cache before the server function answers |
+| `nuxt/` | 4107 | Nuxt 4.6.1, Vue 3.5.44 | Server rendering with `useFetch`, the list in a reactive ref with a component per item, and a server API route per change |
 
 ## Measurements
 
-`harness/measure.mjs` drives Chrome through Playwright and measures inside the page, so its own round trips do not count.
+`harness/measure.mjs` drives Chrome through Playwright and measures inside the page, so its own round trips do not count. Every request gets 50 ms of added latency through Chrome DevTools Protocol network emulation, so an app that waits for the server pays for it as it would over a real network.
 
-- **Load**: bytes transferred for HTML and for scripts, First Contentful Paint, and the total length of long tasks until the `load` event.
-- **Interaction latency**: two times from the input event (captured on `window` before the app sees it). The first ends when the DOM shows the result, and the second at the first frame painted after that, which is what the user sees and what Chrome's Interaction to Next Paint measures. The second is rounded up to the display's frame interval, so the first shows the framework's own work more finely. For a toggle, the result is the item's `completed` class and the count. For an add, the new item and the count. For a delete, the item gone and the count. For typing, the input's value.
-- **Bytes per interaction**: the bytes sent and received over the network during one toggle.
+- **Code sent to the browser**: the gzip size of every script and wasm file the page loads, compressed by the harness so server settings do not matter.
+- **First Contentful Paint**, from a cold load.
+- **Toggle one item** and **add one item**: the time from the input event, caught on `window` before the app sees it, to the moment the DOM shows the result. For a toggle that is the item's `completed` class and the count, and for an add, the new item and the count.
+- **Bytes per toggle**: the bytes sent and received over the network during one toggle, including any save the app sends afterwards.
 
-Each interaction runs at two network conditions: localhost, and 50 ms of added latency per request through Chrome DevTools Protocol network emulation. Each value is the median of 15 runs on different items, after 3 warm-up runs.
+Each value is the median of 15 runs on different items after 3 warm-up runs, and First Contentful Paint is the median of 10 loads.
 
 `harness/parity.mjs` checks the behavior above on every app before measuring.

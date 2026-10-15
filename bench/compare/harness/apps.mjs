@@ -8,9 +8,11 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 
 export const APPS = {
   hypersig: { port: 4100, cmd: ["hypersig/target/release/bench-hypersig"] },
-  datastar: { port: 4101, cmd: ["datastar/target/release/bench-datastar"] },
   htmx: { port: 4102, cmd: ["htmx/target/release/bench-htmx"] },
   next: { port: 4103, cmd: ["npm", "--prefix", "next", "run", "start"] },
+  react: { port: 4105, cmd: ["npm", "--prefix", "react", "run", "start"] },
+  "tanstack-start": { port: 4106, cmd: ["npm", "--prefix", "tanstack-start", "run", "start"] },
+  nuxt: { port: 4107, cmd: ["npm", "--prefix", "nuxt", "run", "start"] },
   leptos: {
     port: 4104,
     cmd: ["leptos/target/release/bench-leptos"],

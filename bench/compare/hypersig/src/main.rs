@@ -1,8 +1,9 @@
 //! TodoMVC-2000 in hypersig, following `examples/todomvc`.
 //!
-//! Pattern: the list is a `Vec` signal that the browser updates in place. A
-//! change to the list calls `SAVE`, which sends the signals to the server, and
-//! the server stores the list. The remaining count is a computed signal.
+//! Pattern: the list is a `Vec` signal that the browser updates in place. Each
+//! add, toggle, and delete also calls an action with that change's arguments,
+//! sent before the local update, and the server applies the same change. The
+//! remaining count is a computed signal.
 
 use std::sync::{Arc, Mutex};
 
@@ -41,7 +42,9 @@ struct TodoMvc {
     left: i32,
 }
 
-const SAVE: Action<TodoMvc> = Action::post("/save");
+const ADD: Action<TodoMvc, (i32, String)> = Action::post("/add");
+const SET_DONE: Action<TodoMvc, (i32, bool)> = Action::post("/done");
+const DELETE: Action<TodoMvc, i32> = Action::post("/delete");
 const STYLE: &str = include_str!("../../shared/todomvc.css");
 
 #[derive(Clone)]
@@ -70,12 +73,12 @@ fn new_todo() -> El<TodoMvc> {
     });
     let add = Stmt::when(
         !draft.trim().is_empty(),
-        todos
-            .push(
+        ADD.call_with((next_id, draft.trim()))
+            .then(todos.push(
                 blank
                     .with(Todo::id(), next_id)
                     .with(Todo::title(), draft.trim()),
-            )
+            ))
             .then(next_id.set(next_id + 1))
             .then(draft.set("")),
     );
@@ -92,6 +95,7 @@ fn todo_list() -> El<TodoMvc> {
         TodoMvc::todos(),
         |todo| todo.at(Todo::id()),
         |todo| {
+            let id = todo.at(Todo::id());
             let done = todo.at(Todo::done());
             let visible = filter
                 .equals(&Filter::All)
@@ -99,9 +103,19 @@ fn todo_list() -> El<TodoMvc> {
                 .or(filter.equals(&Filter::Completed).and(done));
             li().show(visible)
                 .class_when("completed", done)
-                .child(input().class("toggle").attr("type", "checkbox").bind(done))
+                .child(
+                    input()
+                        .class("toggle")
+                        .attr("type", "checkbox")
+                        .bind(done)
+                        .on_change(SET_DONE.call_with((id, done))),
+                )
                 .child(label().bind_text(todo.at(Todo::title())))
-                .child(button().class("destroy").on_click(todo.remove()))
+                .child(
+                    button()
+                        .class("destroy")
+                        .on_click(DELETE.call_with(id).then(todo.remove())),
+                )
         },
     ))
 }
@@ -132,7 +146,6 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
         .child(
             section()
                 .class("todoapp")
-                .on_signal_change(list, SAVE.call())
                 .child(header().child(h1().text("todos")).child(new_todo()))
                 .child(section().class("main").child(todo_list()))
                 .child(
@@ -163,8 +176,30 @@ async fn index(State(state): State<AppState>) -> Html<String> {
     Html(page(todos).render())
 }
 
-async fn save(state: AppState, signals: TodoMvc, (): ()) -> Patches<TodoMvc> {
-    *state.todos.lock().expect("todo lock poisoned") = signals.todos;
+async fn add(state: AppState, (id, title): (i32, String)) -> Patches<TodoMvc> {
+    let mut todos = state.todos.lock().expect("todo lock poisoned");
+    todos.push(Todo {
+        id,
+        title,
+        done: false,
+    });
+    Patches::new()
+}
+
+async fn set_done(state: AppState, (id, done): (i32, bool)) -> Patches<TodoMvc> {
+    let mut todos = state.todos.lock().expect("todo lock poisoned");
+    if let Some(todo) = todos.iter_mut().find(|todo| todo.id == id) {
+        todo.done = done;
+    }
+    Patches::new()
+}
+
+async fn delete(state: AppState, id: i32) -> Patches<TodoMvc> {
+    state
+        .todos
+        .lock()
+        .expect("todo lock poisoned")
+        .retain(|todo| todo.id != id);
     Patches::new()
 }
 
@@ -179,7 +214,9 @@ async fn main() -> std::io::Result<()> {
         .route("/", get(index))
         .route("/bench-reset", post(reset))
         .hypersig_runtime()
-        .action(SAVE, save)
+        .action(ADD, add)
+        .action(SET_DONE, set_done)
+        .action(DELETE, delete)
         .with_state(AppState {
             todos: Arc::new(Mutex::new(seed())),
         });

@@ -7,3 +7,5 @@ node_modules/
 /bench/compare/*/target
 /bench/compare/next/.next
 /bench/compare/results/raw
+/bench/compare/tanstack-start/dist
+/bench/compare/tanstack-start/.tanstack
