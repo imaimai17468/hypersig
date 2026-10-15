@@ -48,7 +48,7 @@ Report a step you could not run as "not run", never as "passed".
 
 ## Knowledge Currency
 
-Your training data goes stale. `syn` is at 3.x here and `axum` at 0.8.x, and both differ from the versions most examples on the web were written against. Before writing an import path or an API call from memory, read the pinned version's source under `~/.cargo/registry/src/` or its docs.rs page for that exact version. Where you cannot confirm a fact, write that into the sentence it limits.
+Your training data goes stale. `syn` is at 3.x here and `axum` at 0.8.x, and both differ from the versions most examples on the web were written against. Before writing an import path or an API call from memory, read the pinned version's source under `~/.cargo/registry/src/` or its docs.rs page for that exact version. The language features and standard library APIs the pinned compiler offers are listed in `~/.rustup/toolchains/<channel in rust-toolchain.toml>-<host>/share/doc/rust/html/releases.md`, which `rust-toolchain.toml` installs, so read it before choosing an older idiom over a newer API. Where you cannot confirm a fact, write that into the sentence it limits.
 
 ## Commits
 

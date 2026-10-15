@@ -27,7 +27,13 @@ The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, wi
 
 **Do not put `Arc`, `Box`, `Rc`, or `RefCell` in a public signature** (M-AVOID-WRAPPERS). Take `&T` or `T` and wrap inside.
 
+**A public item has one public path** (M-SINGLE-ITEM-PATH). An item re-exported at the crate root lives in a private module, as `Page` lives in `page.rs` behind `pub use page::Page`. A public module such as `html` holds the items a reader reaches through its name.
+
 **Third-party types in the public API are limited to `serde`'s traits and, behind the `axum` feature, axum's `Router`** (M-DONT-LEAK-TYPES).
+
+## Performance
+
+**Rendering reads the signals and the expression trees by reference** (M-HOTPATH). `Page::render` runs once per request and writes each `each` template once per list item, so it borrows what it reads (`Ctx::get`, `Expr::as_json`, the `Cow` from `ssr::evaluate`) and allocates only for a value it produces. A claim that a change is faster carries the render time before and after, measured with `--release`.
 
 ## Errors and panics
 
