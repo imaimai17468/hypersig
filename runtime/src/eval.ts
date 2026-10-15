@@ -25,7 +25,7 @@ export interface Host {
     method: string,
     path: string,
     args: unknown,
-    pending: string | null,
+    indicator: string | null,
     error: string | null,
   ): Promise<void>;
   dom(op: string, name: string, origin: Element | undefined): void;

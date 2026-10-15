@@ -207,8 +207,9 @@ pub struct El<S> {
     style: Vec<(&'static str, Expr<S, String>)>,
     key: Option<Value>,
     node_ref: Option<&'static str>,
-    effects: Vec<(Value, Stmt<S>)>,
-    every: Option<(u128, Stmt<S>)>,
+    effects: Vec<Stmt<S>>,
+    watches: Vec<(Value, Stmt<S>)>,
+    interval: Option<(u128, Stmt<S>)>,
     on: BTreeMap<Event, Stmt<S>>,
     keys: Vec<(Key, Stmt<S>)>,
     children: Vec<Node<S>>,
@@ -403,7 +404,8 @@ impl<S> El<S> {
             key: None,
             node_ref: None,
             effects: Vec::new(),
-            every: None,
+            watches: Vec::new(),
+            interval: None,
             on: BTreeMap::new(),
             keys: Vec::new(),
             children: Vec::new(),
@@ -681,21 +683,31 @@ impl<S> El<S> {
     ///
     /// A second call replaces the first.
     #[must_use]
-    pub fn every(mut self, period: Duration, stmt: impl IntoStmt<S>) -> Self {
-        self.every = Some((period.as_millis(), stmt.into_stmt()));
+    pub fn on_interval(mut self, period: Duration, stmt: impl IntoStmt<S>) -> Self {
+        self.interval = Some((period.as_millis(), stmt.into_stmt()));
         self
     }
 
     /// Runs `stmt` when the element enters the document and again whenever
-    /// the value of `deps` changes.
+    /// a signal that `stmt` reads changes.
     ///
-    /// This is React's `useEffect` with a dependency list: pass a tuple-like
-    /// expression such as a signal, or a record built with
-    /// [`Expr::with`](crate::Expr::with), as `deps`.
+    /// The runtime records which signals `stmt` reads as it runs, so there is
+    /// no dependency list to keep in step. A signal read only after an
+    /// action's response arrives is not recorded.
     #[must_use]
-    pub fn effect<T>(mut self, deps: impl IntoExpr<S, T>, stmt: impl IntoStmt<S>) -> Self {
-        self.effects
-            .push((deps.into_expr().into_json(), stmt.into_stmt()));
+    pub fn effect(mut self, stmt: impl IntoStmt<S>) -> Self {
+        self.effects.push(stmt.into_stmt());
+        self
+    }
+
+    /// Runs `stmt` whenever `signal`, or any field inside it, changes.
+    ///
+    /// Use it where `stmt` does not read `signal` itself, such as an action
+    /// call that saves a list each time the list changes.
+    #[must_use]
+    pub fn on_signal_change<T, R>(mut self, signal: Sig<S, T, R>, stmt: impl IntoStmt<S>) -> Self {
+        self.watches
+            .push((signal.raw_path().place_json(), stmt.into_stmt()));
         self
     }
 
@@ -750,16 +762,24 @@ impl<S> El<S> {
             let effects: Vec<Value> = self
                 .effects
                 .iter()
-                .map(|(deps, stmt)| json!([deps, stmt.clone().into_json()]))
+                .map(|stmt| stmt.clone().into_json())
                 .collect();
             write_attr(out, "data-hs-effect", &Value::from(effects).to_string());
         }
-        if let Some((period, stmt)) = &self.every {
-            let every = json!([
+        if !self.watches.is_empty() {
+            let watches: Vec<Value> = self
+                .watches
+                .iter()
+                .map(|(place, stmt)| json!([place, stmt.clone().into_json()]))
+                .collect();
+            write_attr(out, "data-hs-on-signal", &Value::from(watches).to_string());
+        }
+        if let Some((period, stmt)) = &self.interval {
+            let interval = json!([
                 u64::try_from(*period).unwrap_or(u64::MAX),
                 stmt.clone().into_json()
             ]);
-            write_attr(out, "data-hs-every", &every.to_string());
+            write_attr(out, "data-hs-on-interval", &interval.to_string());
         }
         for (event, stmt) in &self.on {
             write_attr(out, event.attribute(), &stmt.to_json());

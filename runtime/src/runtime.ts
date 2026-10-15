@@ -1,7 +1,7 @@
 import { type Context, evaluate, type Host, resolve, run, type Slot } from "./eval.ts";
 import { morph } from "./morph.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
-import { equal, join, Store, type Values } from "./store.ts";
+import { equal, join, overlaps, Store, type Values } from "./store.ts";
 
 /** Events handled by one listener on the root, matched to the closest element with a handler. */
 const BUBBLING = ["click", "dblclick", "input", "change", "submit", "keydown", "focusin", "focusout"] as const;
@@ -18,7 +18,8 @@ const ATTRIBUTES = [
   "toggle",
   "style",
   "effect",
-  "every",
+  "on-signal",
+  "on-interval",
   "each",
   "if",
   "on-load",
@@ -28,7 +29,11 @@ const ATTRIBUTES = [
 ];
 const REACTIVE = ATTRIBUTES.map((name) => `[data-hs-${name}]`).join(",");
 
-type Effect = () => void;
+/** One binding of one element. `deps` is null until it has run once. */
+interface Effect {
+  readonly run: () => void;
+  deps: Set<string> | null;
+}
 type Bind = [place: unknown, kind: string, value?: unknown];
 
 interface Instance {
@@ -46,13 +51,12 @@ export class Runtime implements Host {
   readonly #instanceRoots = new WeakSet<Element>();
   readonly #lists = new WeakMap<Element, Map<string, Instance>>();
   readonly #mounted = new WeakMap<Element, Element>();
-  readonly #watched = new WeakMap<Element, string[]>();
   readonly #timers = new WeakMap<Element, Map<string, ReturnType<typeof setTimeout>>>();
 
   constructor(root: Element, initial: Values) {
     this.#root = root;
     this.store = new Store(initial);
-    this.store.subscribe(() => this.#render());
+    this.store.subscribe((changed) => this.#render(changed));
     for (const type of BUBBLING) {
       root.addEventListener(type, (event) => this.#onEvent(type, event));
     }
@@ -60,7 +64,7 @@ export class Runtime implements Host {
       root.addEventListener(type, (event) => this.#onDirect(type, event), { capture: true });
     }
     this.scan(root, []);
-    this.#render();
+    this.#render(new Set());
   }
 
   /** Registers the reactive attributes of `root` and every element below it. */
@@ -75,8 +79,8 @@ export class Runtime implements Host {
       this.#started.add(element);
       const load = element.getAttribute("data-hs-on-load");
       if (load !== null) this.#runAttribute(load, element);
-      const every = parse(element.getAttribute("data-hs-every"));
-      if (Array.isArray(every)) this.#every(element, every[0] as number, every[1]);
+      const interval = parse(element.getAttribute("data-hs-on-interval"));
+      if (Array.isArray(interval)) this.#interval(element, interval[0] as number, interval[1]);
     }
   }
 
@@ -85,7 +89,7 @@ export class Runtime implements Host {
     method: string,
     path: string,
     args: unknown,
-    pending: string | null,
+    indicator: string | null,
     error: string | null,
   ): Promise<void> {
     const url = new URL(path, document.baseURI);
@@ -98,7 +102,7 @@ export class Runtime implements Host {
       init.headers = { accept: "text/event-stream", "content-type": "application/json" };
       init.body = signals;
     }
-    if (pending !== null) this.store.set(pending, true);
+    if (indicator !== null) this.store.set(indicator, true);
     try {
       const response = await fetch(url, init);
       if (!response.ok || response.body === null) {
@@ -111,7 +115,7 @@ export class Runtime implements Host {
     } catch (cause) {
       this.#fail(method, path, String(cause), error, 0);
     } finally {
-      if (pending !== null) this.store.set(pending, false);
+      if (indicator !== null) this.store.set(indicator, false);
     }
   }
 
@@ -172,7 +176,7 @@ export class Runtime implements Host {
         }
         const morphed = morph(target, next);
         this.scan(morphed, this.#scopeOf(morphed.parentElement));
-        this.#render();
+        this.#render(new Set());
         return;
       }
       default:
@@ -188,62 +192,69 @@ export class Runtime implements Host {
     const ctx = this.#context(element, scope);
     const value = (ast: unknown) => evaluate(ast, ctx);
     const effects: Effect[] = [];
+    const add = (run: () => void): void => {
+      effects.push({ run, deps: null });
+    };
 
     const show = parse(element.getAttribute("data-hs-show"));
     if (show !== undefined && element instanceof HTMLElement) {
-      effects.push(() => {
+      add(() => {
         element.style.display = value(show) ? "" : "none";
       });
     }
     const text = parse(element.getAttribute("data-hs-text"));
     if (text !== undefined) {
-      effects.push(() => {
+      add(() => {
         const next = String(value(text));
         if (element.textContent !== next) element.textContent = next;
       });
     }
     const checked = parse(element.getAttribute("data-hs-checked"));
     if (checked !== undefined && element instanceof HTMLInputElement) {
-      effects.push(() => {
+      add(() => {
         element.checked = Boolean(value(checked));
       });
     }
     for (const [name, when] of pairs(element, "data-hs-class")) {
-      effects.push(() => element.classList.toggle(name, Boolean(value(when))));
+      add(() => element.classList.toggle(name, Boolean(value(when))));
     }
     for (const [name, expr] of pairs(element, "data-hs-attr")) {
-      effects.push(() => {
+      add(() => {
         const next = String(value(expr));
         if (element.getAttribute(name) !== next) element.setAttribute(name, next);
       });
     }
     for (const [name, when] of pairs(element, "data-hs-toggle")) {
-      effects.push(() => element.toggleAttribute(name, Boolean(value(when))));
+      add(() => element.toggleAttribute(name, Boolean(value(when))));
     }
     for (const [name, expr] of pairs(element, "data-hs-style")) {
       if (!(element instanceof HTMLElement)) continue;
-      effects.push(() => element.style.setProperty(name, String(value(expr))));
+      add(() => element.style.setProperty(name, String(value(expr))));
     }
     const bind = parse(element.getAttribute("data-hs-bind")) as Bind | undefined;
-    if (bind !== undefined) effects.push(() => this.#writeControl(element, bind, ctx));
+    if (bind !== undefined) add(() => this.#writeControl(element, bind, ctx));
 
-    const watched = parse(element.getAttribute("data-hs-effect"));
-    if (Array.isArray(watched)) {
-      effects.push(() => {
-        const last = this.#watched.get(element) ?? [];
-        const now = (watched as [unknown, unknown][]).map(([deps]) => JSON.stringify(value(deps)) ?? "null");
-        this.#watched.set(element, now);
-        now.forEach((key, i) => {
-          if (last[i] !== key) this.#run((watched as [unknown, unknown][])[i]![1], ctx);
+    const effect = parse(element.getAttribute("data-hs-effect"));
+    if (Array.isArray(effect)) {
+      for (const stmt of effect) add(() => this.#runTracked(stmt, ctx));
+    }
+    const watches = parse(element.getAttribute("data-hs-on-signal"));
+    if (Array.isArray(watches)) {
+      for (const [place, stmt] of watches as [unknown, unknown][]) {
+        let first = true;
+        add(() => {
+          this.store.get(resolve(place, ctx));
+          if (!first) this.#run(stmt, ctx);
+          first = false;
         });
-      });
+      }
     }
 
     if (element instanceof HTMLTemplateElement) {
       const each = parse(element.getAttribute("data-hs-each"));
-      if (Array.isArray(each)) effects.push(() => this.#renderList(element, each[0], each[1] as number, scope));
+      if (Array.isArray(each)) add(() => this.#renderList(element, each[0], each[1] as number, scope));
       const cond = parse(element.getAttribute("data-hs-if"));
-      if (cond !== undefined) effects.push(() => this.#renderIf(element, Boolean(value(cond)), scope));
+      if (cond !== undefined) add(() => this.#renderIf(element, Boolean(value(cond)), scope));
     }
     return effects;
   }
@@ -360,18 +371,22 @@ export class Runtime implements Host {
     }
   }
 
-  #render(): void {
+  /** Reruns the bindings that read a path in `changed`, and every binding that has not run yet. */
+  #render(changed: ReadonlySet<string>): void {
     for (const [element, effects] of this.#effects) {
       if (!element.isConnected) {
         this.#effects.delete(element);
         continue;
       }
       for (const effect of effects) {
-        try {
-          effect();
-        } catch (error) {
-          console.error("hypersig:", error);
-        }
+        if (effect.deps !== null && !dependsOn(effect.deps, changed)) continue;
+        effect.deps = this.store.track(() => {
+          try {
+            effect.run();
+          } catch (error) {
+            console.error("hypersig:", error);
+          }
+        });
       }
     }
   }
@@ -407,7 +422,7 @@ export class Runtime implements Host {
     if (stmt !== null) this.#runAttribute(stmt, target);
   }
 
-  #every(element: Element, ms: number, stmt: unknown): void {
+  #interval(element: Element, ms: number, stmt: unknown): void {
     const timer = setInterval(() => {
       if (!element.isConnected) {
         clearInterval(timer);
@@ -445,11 +460,24 @@ export class Runtime implements Host {
     this.#run(JSON.parse(source), this.#context(element, this.#scopeOf(element)));
   }
 
+  /** Runs a statement whose reads do not belong to the binding being rendered. */
   #run(ast: unknown, ctx: Context): void {
+    this.store.untracked(() => this.#runTracked(ast, ctx));
+  }
+
+  /** Runs a statement, recording the reads of its synchronous part in the enclosing binding. */
+  #runTracked(ast: unknown, ctx: Context): void {
     run(ast, ctx, this).catch((error: unknown) => {
       console.error("hypersig:", error);
     });
   }
+}
+
+function dependsOn(deps: ReadonlySet<string>, changed: ReadonlySet<string>): boolean {
+  for (const dep of deps) {
+    for (const path of changed) if (overlaps(dep, path)) return true;
+  }
+  return false;
 }
 
 function parse(source: string | null): unknown {

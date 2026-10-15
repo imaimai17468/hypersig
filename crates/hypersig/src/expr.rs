@@ -28,7 +28,7 @@
 //! | `list.push(e)`, `list.remove_at(i)` | `["push",place,e]`, `["remove",place,i]` |
 //! | `list.retain(\|item\| p)`, `list.set_all(f, e)` | `["retain",place,depth,p]`, `["set_all",place,"path",e]` |
 //! | `Stmt::when(c, s)`, `Stmt::if_else(c, s, t)` | `["if",c,s,t]` |
-//! | `action.call()` | `["call",method,path,args,pending,error]` |
+//! | `action.call()` | `["call",method,path,args,indicator,error]` |
 //! | `node_ref.focus()` | `["dom","focus",name]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |
 //!

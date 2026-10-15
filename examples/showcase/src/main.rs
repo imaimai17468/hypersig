@@ -1,4 +1,4 @@
-//! The patterns a React app is built from, one section each.
+//! Components with their own state, intervals, server search, and forms, one section each.
 //!
 //! Run with `cargo run -p example-showcase` and open <http://localhost:3003>.
 
@@ -132,7 +132,7 @@ fn stopwatch() -> El<Showcase> {
     let elapsed = Showcase::stopwatch().at(Stopwatch::elapsed());
     section()
         .id("stopwatch")
-        .every(
+        .on_interval(
             Duration::from_millis(100),
             Stmt::when(running, elapsed.set(elapsed + 0.1)),
         )
@@ -221,11 +221,11 @@ fn search() -> El<Showcase> {
                         .on_debounced(
                             Event::Input,
                             Duration::from_millis(250),
-                            SEARCH.call().pending(searching),
+                            SEARCH.call().indicator(searching),
                         )
                         .on_key(
                             Key::Escape,
-                            query.set("").then(SEARCH.call().pending(searching)),
+                            query.set("").then(SEARCH.call().indicator(searching)),
                         ),
                 )
                 .child(
@@ -262,7 +262,7 @@ fn order_form() -> El<Showcase> {
                 .on_submit(
                     ORDER
                         .call()
-                        .pending(placing)
+                        .indicator(placing)
                         .error(order.at(Order::error())),
                 )
                 .child(

@@ -170,6 +170,7 @@ struct Timers {
     query: String,
     searched: String,
     effects: i32,
+    echo: String,
     saving: bool,
     error: String,
 }
@@ -184,19 +185,24 @@ fn timers() -> (El<Timers>, Timers) {
         .child(
             span()
                 .id("clock")
-                .every(Duration::from_millis(100), ticks.set(ticks + 1)),
+                .on_interval(Duration::from_millis(100), ticks.set(ticks + 1)),
         )
         .child(input().id("query").bind(query).on_debounced(
             Event::Input,
             Duration::from_millis(50),
             Timers::searched().set(query),
         ))
-        .child(span().id("effect").effect(query, effects.set(effects + 1)))
+        .child(
+            span()
+                .id("effect")
+                .on_signal_change(query, effects.set(effects + 1))
+                .effect(Timers::echo().set(query.to_uppercase())),
+        )
         .child(
             button().id("save").on_click(
                 SEARCH
                     .call()
-                    .pending(Timers::saving())
+                    .indicator(Timers::saving())
                     .error(Timers::error()),
             ),
         );
@@ -205,6 +211,7 @@ fn timers() -> (El<Timers>, Timers) {
         query: String::new(),
         searched: String::new(),
         effects: 0,
+        echo: String::new(),
         saving: false,
         error: String::new(),
     };

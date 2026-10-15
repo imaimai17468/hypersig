@@ -162,21 +162,25 @@ describe("timers, effects, and calls", () => {
     expect(runtime.store.get("ticks")).toBe(3);
   });
 
-  it("debounces input and reruns an effect when its dependency changes", async () => {
+  it("debounces input, runs an on-signal-change handler per change, and reruns an effect from what it reads", async () => {
     vi.useFakeTimers();
     const runtime = mount("timers");
-    expect(runtime.store.get("effects")).toBe(1);
+    expect(runtime.store.get("effects")).toBe(0);
     type($<HTMLInputElement>("#query"), "t");
     await vi.advanceTimersByTimeAsync(20);
     type($<HTMLInputElement>("#query"), "te");
     await vi.advanceTimersByTimeAsync(20);
     expect(runtime.store.get("searched")).toBe("");
+    expect(runtime.store.get("echo")).toBe("TE");
     await vi.advanceTimersByTimeAsync(60);
     expect(runtime.store.get("searched")).toBe("te");
-    expect(runtime.store.get("effects")).toBe(3);
+    expect(runtime.store.get("effects")).toBe(2);
+    runtime.store.set("ticks", 99);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(runtime.store.get("effects")).toBe(2);
   });
 
-  it("sets the pending flag during a call and the error after a failed one", async () => {
+  it("sets the indicator during a call and the error after a failed one", async () => {
     let finish: (response: Response) => void = () => {};
     vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((resolve) => (finish = resolve))));
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -226,5 +230,30 @@ describe("nested lists and direct events", () => {
     expect(runtime.store.get("focused")).toBe(true);
     $("#field input").dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
     expect(runtime.store.get("focused")).toBe(false);
+  });
+});
+
+describe("dependency tracking", () => {
+  it("reruns only the bindings that read a changed signal", async () => {
+    const runtime = mount("todos");
+    runtime.store.set("todos", [
+      { id: 1, title: "a", done: false },
+      { id: 2, title: "b", done: false },
+    ]);
+    await tick();
+    const labels = $$("#list label");
+    const written = new Set<Node>();
+    const observer = new MutationObserver((records) => {
+      for (const record of records) written.add(record.target);
+    });
+    for (const label of labels) observer.observe(label, { childList: true, characterData: true, subtree: true });
+    runtime.store.set("draft", "typing");
+    await tick();
+    expect(written.size).toBe(0);
+    runtime.store.set("todos.1.title", "B");
+    await tick();
+    expect(labels.map((label) => label.textContent)).toEqual(["a", "B"]);
+    expect([...written]).toEqual([labels[1]]);
+    observer.disconnect();
   });
 });

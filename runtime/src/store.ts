@@ -41,24 +41,35 @@ export function equal(a: unknown, b: unknown): boolean {
   return keysA.every((key) => equal((a as Values)[key], (b as Values)[key]));
 }
 
-/** The page's signals as one JSON object, with batched change notification. */
+/** Whether a change at one path can change the value read at the other. */
+export function overlaps(a: string, b: string): boolean {
+  return a === b || a.startsWith(`${b}.`) || b.startsWith(`${a}.`);
+}
+
+/**
+ * The page's signals as one JSON object. Reads made inside `track` are
+ * recorded, and listeners receive the paths changed since they last ran.
+ */
 export class Store {
   #values: Values;
-  #listeners = new Set<() => void>();
-  #scheduled = false;
+  #listeners = new Set<(changed: ReadonlySet<string>) => void>();
+  #changed = new Set<string>();
+  #reads: Set<string> | null = null;
 
   constructor(initial: Values) {
     this.#values = { ...initial };
   }
 
   get(path: string): unknown {
+    this.#reads?.add(path);
     return getPath(this.#values, path);
   }
 
   set(path: string, value: unknown): void {
-    if (Object.is(this.get(path), value)) return;
+    if (Object.is(getPath(this.#values, path), value)) return;
     this.#values = setPath(this.#values, path, value) as Values;
-    this.#schedule();
+    if (this.#changed.size === 0) queueMicrotask(() => this.#notify());
+    this.#changed.add(path);
   }
 
   merge(values: Values): void {
@@ -69,16 +80,37 @@ export class Store {
     return this.#values;
   }
 
-  subscribe(listener: () => void): void {
+  /** Runs `body` and returns the paths it read. */
+  track(body: () => void): Set<string> {
+    const outer = this.#reads;
+    const reads = new Set<string>();
+    this.#reads = reads;
+    try {
+      body();
+    } finally {
+      this.#reads = outer;
+    }
+    return reads;
+  }
+
+  /** Runs `body` without recording its reads in the enclosing `track`. */
+  untracked<T>(body: () => T): T {
+    const outer = this.#reads;
+    this.#reads = null;
+    try {
+      return body();
+    } finally {
+      this.#reads = outer;
+    }
+  }
+
+  subscribe(listener: (changed: ReadonlySet<string>) => void): void {
     this.#listeners.add(listener);
   }
 
-  #schedule(): void {
-    if (this.#scheduled) return;
-    this.#scheduled = true;
-    queueMicrotask(() => {
-      this.#scheduled = false;
-      for (const listener of this.#listeners) listener();
-    });
+  #notify(): void {
+    const changed = this.#changed;
+    this.#changed = new Set();
+    for (const listener of this.#listeners) listener(changed);
   }
 }

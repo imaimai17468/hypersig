@@ -11,5 +11,5 @@ struct Form {
 const SAVE: Action<Form> = Action::post("/save");
 
 fn main() {
-    let _ = button::<Form>().on_click(SAVE.call().pending(Form::saves()));
+    let _ = button::<Form>().on_click(SAVE.call().indicator(Form::saves()));
 }

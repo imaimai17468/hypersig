@@ -138,7 +138,7 @@ impl<S, A> fmt::Debug for Action<S, A> {
     }
 }
 
-/// A pending call to an [`Action`], usable wherever a [`Stmt`] is.
+/// A call to an [`Action`], usable wherever a [`Stmt`] is.
 ///
 /// ```
 /// use hypersig::{Action, Signals};
@@ -151,13 +151,13 @@ impl<S, A> fmt::Debug for Action<S, A> {
 /// }
 ///
 /// const SAVE: Action<Form> = Action::post("/save");
-/// let _click = SAVE.call().pending(Form::saving()).error(Form::error());
+/// let _click = SAVE.call().indicator(Form::saving()).error(Form::error());
 /// ```
 pub struct Call<S> {
     method: Method,
     path: &'static str,
     args: Value,
-    pending: Value,
+    indicator: Value,
     error: Value,
     marker: PhantomData<fn() -> S>,
 }
@@ -168,7 +168,7 @@ impl<S> Call<S> {
             method,
             path,
             args,
-            pending: Value::Null,
+            indicator: Value::Null,
             error: Value::Null,
             marker: PhantomData,
         }
@@ -176,8 +176,8 @@ impl<S> Call<S> {
 
     /// Sets `flag` to true while the request is in flight and to false after.
     #[must_use]
-    pub fn pending(mut self, flag: Sig<S, bool>) -> Self {
-        self.pending = Value::from(flag.path());
+    pub fn indicator(mut self, flag: Sig<S, bool>) -> Self {
+        self.indicator = Value::from(flag.path());
         self
     }
 
@@ -203,7 +203,7 @@ impl<S> IntoStmt<S> for Call<S> {
             call.method.as_str(),
             call.path,
             call.args,
-            call.pending,
+            call.indicator,
             call.error
         ]))
     }

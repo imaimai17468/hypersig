@@ -152,7 +152,7 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
     Page::new("hypersig TodoMVC", signals).style(STYLE).child(
         section()
             .class("todoapp")
-            .effect(list, SAVE.call())
+            .on_signal_change(list, SAVE.call())
             .child(header().child(h1().text("todos")).child(new_todo()))
             .child(
                 section()
