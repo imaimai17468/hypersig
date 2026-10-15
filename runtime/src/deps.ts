@@ -34,6 +34,12 @@ class PathNode {
   readonly children = new Map<string, PathNode>();
   readonly deep = new Set<Effect>();
   readonly shallow = new Set<Effect>();
+
+  constructor(
+    readonly parent: PathNode | null,
+    readonly path: string,
+    readonly segment: string,
+  ) {}
 }
 
 /**
@@ -43,7 +49,7 @@ class PathNode {
  * the container at the path was replaced.
  */
 export class DepIndex {
-  readonly #root = new PathNode();
+  readonly #root = new PathNode(null, "", "");
   /** The node at each path that has one, so registering a read does not walk the tree. */
   readonly #nodes = new Map<string, PathNode>();
   readonly #selections = new Map<string, Selection>();
@@ -57,8 +63,7 @@ export class DepIndex {
         if (reads.get(path) === deep) continue;
         const node = effect.nodes.get(path);
         if (node === undefined) continue;
-        node.deep.delete(effect);
-        node.shallow.delete(effect);
+        this.#leave(node, effect);
         effect.nodes.delete(path);
       }
     }
@@ -82,10 +87,10 @@ export class DepIndex {
       reads.set(to, deep);
       let node = effect.nodes.get(path);
       if (to !== path || node === undefined) {
-        node?.deep.delete(effect);
-        node?.shallow.delete(effect);
-        node = this.#node(to);
-        (deep ? node.deep : node.shallow).add(effect);
+        const next = this.#node(to);
+        (deep ? next.deep : next.shallow).add(effect);
+        if (node !== undefined) this.#leave(node, effect);
+        node = next;
       }
       nodes.set(to, node);
     }
@@ -94,10 +99,7 @@ export class DepIndex {
   }
 
   remove(effect: Effect): void {
-    for (const node of effect.nodes.values()) {
-      node.deep.delete(effect);
-      node.shallow.delete(effect);
-    }
+    for (const node of effect.nodes.values()) this.#leave(node, effect);
     effect.nodes = new Map();
     this.select(effect, null);
   }
@@ -153,10 +155,20 @@ export class DepIndex {
     if (node !== undefined) return node;
     const dot = path.lastIndexOf(".");
     const parent = dot === -1 ? this.#root : this.#node(path.slice(0, dot));
-    node = new PathNode();
-    parent.children.set(path.slice(dot + 1), node);
+    node = new PathNode(parent, path, path.slice(dot + 1));
+    parent.children.set(node.segment, node);
     this.#nodes.set(path, node);
     return node;
+  }
+
+  /** Takes `effect` off `node`, and drops the nodes that are left holding nothing. */
+  #leave(node: PathNode, effect: Effect): void {
+    node.deep.delete(effect);
+    node.shallow.delete(effect);
+    for (let at = node; at.parent !== null && at.deep.size + at.shallow.size + at.children.size === 0; at = at.parent) {
+      at.parent.children.delete(at.segment);
+      this.#nodes.delete(at.path);
+    }
   }
 
   /** The bindings whose reads `changes` can affect, as `affects` decides. */

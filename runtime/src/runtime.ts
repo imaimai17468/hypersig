@@ -49,11 +49,45 @@ interface Instance {
   value: unknown;
 }
 
+const STATE = Symbol("hypersig");
+
+/**
+ * What the runtime keeps about one element. It lives on the element, so it
+ * goes when the element does, without a table that keeps its size after the
+ * elements it held are gone.
+ */
+interface ElementState {
+  /**
+   * The template element whose `data-hs-*` attributes this element, part of
+   * a list item or a condition, carries its bindings from. The server writes
+   * those copies without the attributes, and a patch that morphs a clone
+   * removes them.
+   */
+  source?: Element;
+  scope?: readonly Slot[];
+  effects?: Effect[];
+  /** Whether its on-load and on-interval statements have started. */
+  started?: boolean;
+  /** Whether it is the root of a list item or a condition. */
+  root?: boolean;
+  /** For such a root, the elements with bindings inside it, outside its nested lists and conditions. */
+  members?: readonly Element[];
+}
+
+type Stateful = Element & { [STATE]?: ElementState };
+
+function own(element: Element): ElementState | undefined {
+  return (element as Stateful)[STATE];
+}
+
+function state(element: Element): ElementState {
+  return ((element as Stateful)[STATE] ??= {});
+}
+
 /** Connects the signals on `<body>` and the `data-hs-*` attributes of `root`. */
 export class Runtime implements Host {
   readonly store: Store;
   readonly #root: Element;
-  readonly #effects = new Map<Element, Effect[]>();
   readonly #index = new DepIndex();
   /** Bindings to run in the current or next render: new ones, and ones whose item moved. */
   #fresh: Effect[] = [];
@@ -65,20 +99,9 @@ export class Runtime implements Host {
   /** `#changes` indexed for `#rebase`, built the first time a render needs it. */
   #lookup: ChangeLookup | null = null;
   #nextId = 0;
-  readonly #scopes = new WeakMap<Element, readonly Slot[]>();
-  readonly #started = new WeakSet<Element>();
-  readonly #instanceRoots = new WeakSet<Element>();
   readonly #lists = new WeakMap<Element, Map<string, Instance>>();
   readonly #mounted = new WeakMap<Element, Element>();
   readonly #timers = new WeakMap<Element, Map<string, ReturnType<typeof setTimeout>>>();
-  /**
-   * The template element whose `data-hs-*` attributes an element of a list
-   * item or a condition carries its bindings from. The server writes those
-   * copies without the attributes, and a patch that morphs a clone removes them.
-   */
-  readonly #sources = new WeakMap<Element, Element>();
-  /** The elements with bindings inside each item or condition root, outside its nested ones. */
-  readonly #members = new WeakMap<Element, readonly Element[]>();
   /**
    * Registers the bindings of a server-rendered item that is still waiting
    * for its turn, by its root. The item already shows its values, so it
@@ -129,8 +152,8 @@ export class Runtime implements Host {
     const elements = root.matches(REACTIVE) ? [root] : [];
     elements.push(...root.querySelectorAll(REACTIVE));
     for (const element of elements) {
-      if (this.#sources.has(element)) continue;
-      this.#register(element, this.#scopes.get(element) ?? scope);
+      if (own(element)?.source !== undefined) continue;
+      this.#register(element, own(element)?.scope ?? scope);
     }
   }
 
@@ -142,7 +165,7 @@ export class Runtime implements Host {
   #mount(root: Element, proto: Element, scope: readonly Slot[]): void {
     const members: Element[] = [];
     locate(planOf(proto), root, (element, source) => {
-      this.#sources.set(element, source);
+      state(element).source = source;
       if (source.hasAttribute("data-hs-ref") && !element.hasAttribute("data-hs-ref")) {
         element.setAttribute("data-hs-ref", source.getAttribute("data-hs-ref")!);
       }
@@ -150,17 +173,18 @@ export class Runtime implements Host {
       members.push(element);
       this.#register(element, scope);
     });
-    this.#members.set(root, members);
+    state(root).members = members;
   }
 
   #register(element: Element, scope: readonly Slot[]): void {
-    this.#scopes.set(element, scope);
-    for (const old of this.#effects.get(element) ?? []) this.#index.remove(old);
+    const bound = state(element);
+    bound.scope = scope;
+    for (const old of bound.effects ?? []) this.#index.remove(old);
     const effects = this.#effectsFor(element, scope);
-    this.#effects.set(element, effects);
+    bound.effects = effects;
     this.#fresh.push(...effects);
-    if (this.#started.has(element)) return;
-    this.#started.add(element);
+    if (bound.started) return;
+    bound.started = true;
     const load = this.#attr(element, "data-hs-on-load");
     if (load !== null) this.#runAttribute(load, element);
     const interval = parse(this.#attr(element, "data-hs-on-interval"));
@@ -169,7 +193,7 @@ export class Runtime implements Host {
 
   /** The `data-hs-*` attribute `name` of `element`, read from its template element where it has one. */
   #attr(element: Element, name: string): string | null {
-    return (this.#sources.get(element) ?? element).getAttribute(name);
+    return (own(element)?.source ?? element).getAttribute(name);
   }
 
   /** The closest element from `element` up whose attribute `name` is set, with its value. */
@@ -289,7 +313,7 @@ export class Runtime implements Host {
   }
 
   #effectsFor(element: Element, scope: readonly Slot[]): Effect[] {
-    const source = this.#sources.get(element);
+    const source = own(element)?.source;
     const spec = source === undefined ? readSpec(element) : specOf(source);
     const ctx = this.#context(element, scope);
     const value = (ast: unknown) => evaluate(ast, ctx);
@@ -390,7 +414,7 @@ export class Runtime implements Host {
       let instance = previous.get(key);
       if (instance === undefined || !instance.element.isConnected) {
         instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: true, keyReads, value: items[index] };
-        this.#instanceRoots.add(instance.element);
+        state(instance.element).root = true;
         created.add(instance);
       } else {
         instance.keyReads = keyReads;
@@ -484,8 +508,8 @@ export class Runtime implements Host {
       }
       if (outermost === undefined) return;
       this.#waiting.get(outermost)!();
-      for (const member of this.#members.get(outermost) ?? []) {
-        if (member instanceof HTMLTemplateElement) for (const effect of this.#effects.get(member) ?? []) this.#runEffect(effect);
+      for (const member of own(outermost)?.members ?? []) {
+        if (member instanceof HTMLTemplateElement) for (const effect of own(member)?.effects ?? []) this.#runEffect(effect);
       }
     }
   }
@@ -494,8 +518,8 @@ export class Runtime implements Host {
   #adoptItems(template: HTMLTemplateElement): Map<string, Instance> {
     const adopted = new Map<string, Instance>();
     for (let at = template.nextElementSibling; at !== null && at.hasAttribute("data-hs-ssr"); at = at.nextElementSibling) {
-      if (this.#instanceRoots.has(at)) break;
-      this.#instanceRoots.add(at);
+      if (own(at)?.root === true) break;
+      state(at).root = true;
       adopted.set(at.getAttribute("data-hs-ssr")!, { element: at, slot: { path: "" }, scanned: false, keyReads: new Map(), value: undefined });
     }
     return adopted;
@@ -504,8 +528,8 @@ export class Runtime implements Host {
   #renderIf(template: HTMLTemplateElement, proto: Element | null, visible: boolean, scope: readonly Slot[]): void {
     let current = this.#mounted.get(template);
     const rendered = template.nextElementSibling;
-    if (current === undefined && rendered?.getAttribute("data-hs-ssr") === "" && !this.#instanceRoots.has(rendered)) {
-      this.#instanceRoots.add(rendered);
+    if (current === undefined && rendered?.getAttribute("data-hs-ssr") === "" && own(rendered)?.root !== true) {
+      state(rendered).root = true;
       if (visible && proto !== null) {
         this.#mounted.set(template, rendered);
         this.#mount(rendered, proto, scope);
@@ -518,7 +542,7 @@ export class Runtime implements Host {
       if (proto === null || template.parentNode === null) return;
       const element = proto.cloneNode(true) as Element;
       this.#mounted.set(template, element);
-      this.#instanceRoots.add(element);
+      state(element).root = true;
       template.after(element);
       this.#mount(element, proto, scope);
     } else if (!visible && current !== undefined) {
@@ -602,6 +626,10 @@ export class Runtime implements Host {
       this.#fresh = [];
       for (const effect of batch) this.#runEffect(effect);
     }
+    // The bindings that ran hold their elements, which may have left the document.
+    this.#ran = new Set();
+    this.#changes = new Map();
+    this.#lookup = null;
   }
 
   #runEffect(effect: Effect): void {
@@ -609,7 +637,7 @@ export class Runtime implements Host {
     this.#ran.add(effect);
     if (!effect.element.isConnected) {
       this.#index.remove(effect);
-      this.#effects.delete(effect.element);
+      delete state(effect.element).effects;
       return;
     }
     this.#selector = null;
@@ -647,7 +675,7 @@ export class Runtime implements Host {
   /** Reruns the bindings inside `root`, whose item now sits at a different path. */
   #requeue(root: Element): void {
     this.#visit(root, (element) => {
-      for (const effect of this.#effects.get(element) ?? []) {
+      for (const effect of own(element)?.effects ?? []) {
         this.#ran.delete(effect);
         this.#fresh.push(effect);
       }
@@ -665,8 +693,8 @@ export class Runtime implements Host {
     const move = (path: string): string => (path === from || path.startsWith(prefix) ? to + path.slice(from.length) : path);
     this.#lookup ??= new ChangeLookup(this.#changes);
     const lookup = this.#lookup;
-    for (const element of this.#members.get(root) ?? []) {
-      for (const effect of this.#effects.get(element) ?? []) {
+    for (const element of own(root)?.members ?? []) {
+      for (const effect of own(element)?.effects ?? []) {
         if (effect.deps === null) continue;
         let rerun = false;
         for (const [path, deep] of effect.deps) {
@@ -695,14 +723,15 @@ export class Runtime implements Host {
   #unmount(root: Element): void {
     root.remove();
     this.#visit(root, (element) => {
-      for (const effect of this.#effects.get(element) ?? []) this.#index.remove(effect);
-      this.#effects.delete(element);
+      const bound = own(element);
+      for (const effect of bound?.effects ?? []) this.#index.remove(effect);
+      if (bound !== undefined) delete bound.effects;
     });
   }
 
   /** Calls `visit` on each element with bindings inside the item or condition `root`, nested ones included. */
   #visit(root: Element, visit: (element: Element) => void): void {
-    for (const element of this.#members.get(root) ?? []) {
+    for (const element of own(root)?.members ?? []) {
       visit(element);
       if (!(element instanceof HTMLTemplateElement)) continue;
       for (const instance of this.#lists.get(element)?.values() ?? []) this.#visit(instance.element, visit);
@@ -755,7 +784,7 @@ export class Runtime implements Host {
 
   #scopeOf(element: Element | null): readonly Slot[] {
     for (let at = element; at !== null; at = at.parentElement) {
-      const scope = this.#scopes.get(at);
+      const scope = own(at)?.scope;
       if (scope !== undefined) return scope;
     }
     return [];
@@ -764,7 +793,7 @@ export class Runtime implements Host {
   #findRef(name: string, origin: Element | undefined): Element | null {
     const selector = `[data-hs-ref="${CSS.escape(name)}"]`;
     for (let at = origin ?? null; at !== null; at = at.parentElement) {
-      if (!this.#instanceRoots.has(at)) continue;
+      if (own(at)?.root !== true) continue;
       const found = at.matches(selector) ? at : at.querySelector(selector);
       if (found !== null) return found;
     }
@@ -925,10 +954,17 @@ function build(element: Element): Plan | null {
 function locate(plan: Plan, copy: Element, found: (element: Element, source: Element) => void): void {
   if (plan.source !== null) found(copy, plan.source);
   if (plan.children.length === 0) return;
-  const children = [...copy.children].filter((child) => !child.hasAttribute("data-hs-ssr"));
+  // Walks the siblings, because reading `children` makes the element keep an HTMLCollection.
+  let at = copy.firstElementChild;
+  let position = 0;
   for (const [index, child] of plan.children) {
-    const target = children[index];
-    if (target !== undefined && target.tagName === child.tag) locate(child, target, found);
+    for (; at !== null; at = at.nextElementSibling) {
+      if (at.hasAttribute("data-hs-ssr")) continue;
+      if (position++ === index) break;
+    }
+    if (at === null) return;
+    if (at.tagName === child.tag) locate(child, at, found);
+    at = at.nextElementSibling;
   }
 }
 
