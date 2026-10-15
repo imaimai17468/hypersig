@@ -8,13 +8,16 @@ import os from "node:os";
 import { setTimeout as sleep } from "node:timers/promises";
 import { gzipSync } from "node:zlib";
 import { chromium } from "@playwright/test";
+import lighthouse from "lighthouse";
 import { APPS, reset, start, url } from "./apps.mjs";
 import { instrument } from "./page.mjs";
 
+const LATENCY_MS = 50;
+const CPU_SLOWDOWN = 4;
+const SESSIONS = 3;
 const WARMUP = 3;
 const RUNS = 15;
-const LOAD_RUNS = 10;
-const LATENCY_MS = 50;
+const DEBUG_PORT = 9333;
 
 const median = (values) => {
   const sorted = [...values].sort((a, b) => a - b);
@@ -22,148 +25,154 @@ const median = (values) => {
   return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
 
-function trackNetwork(page) {
-  const inflight = new Set();
-  const finished = [];
-  page.on("request", (request) => inflight.add(request));
-  page.on("requestfinished", async (request) => {
-    inflight.delete(request);
-    try {
-      const sizes = await request.sizes();
-      finished.push(sizes.requestHeadersSize + sizes.requestBodySize + sizes.responseHeadersSize + sizes.responseBodySize);
-    } catch {
-      // the request failed before any size was known
-    }
-  });
-  // Chrome reports a fetch whose response nobody reads as aborted even after
-  // the response arrived, so count what was sent and received from the headers.
-  page.on("requestfailed", async (request) => {
-    inflight.delete(request);
-    const headerBytes = (headers) => headers.reduce((sum, { name, value }) => sum + name.length + value.length + 4, 0);
-    let bytes = headerBytes(await request.headersArray()) + (request.postDataBuffer()?.length ?? 0);
-    const response = await request.response().catch(() => null);
-    if (response !== null) bytes += headerBytes(await response.headersArray());
-    finished.push(bytes);
-  });
-  return {
-    async idle(quiet = 150) {
-      let since = Date.now();
-      while (Date.now() - since < quiet) {
-        if (inflight.size > 0) since = Date.now();
-        await sleep(10);
-      }
+/** Lighthouse's mobile run, with its CPU slowdown and request latency but no bandwidth cap. */
+const lighthouseConfig = {
+  extends: "lighthouse:default",
+  settings: {
+    onlyAudits: ["first-contentful-paint", "total-blocking-time"],
+    throttlingMethod: "devtools",
+    throttling: {
+      requestLatencyMs: LATENCY_MS,
+      downloadThroughputKbps: 0,
+      uploadThroughputKbps: 0,
+      cpuSlowdownMultiplier: CPU_SLOWDOWN,
     },
-    take() {
-      return finished.splice(0).reduce((sum, bytes) => sum + bytes, 0);
-    },
-  };
+  },
+};
+
+async function load(name) {
+  const runs = [];
+  for (let k = 0; k < SESSIONS; k++) {
+    await reset(name);
+    const result = await lighthouse(url(name), { port: DEBUG_PORT, logLevel: "error", output: "json" }, lighthouseConfig);
+    const audits = result.lhr.audits;
+    runs.push({
+      fcp: audits["first-contentful-paint"].numericValue,
+      tbt: audits["total-blocking-time"].numericValue,
+    });
+  }
+  return { fcp: median(runs.map((r) => r.fcp)), tbt: median(runs.map((r) => r.tbt)) };
 }
 
-async function measureOne(page, net, check, act) {
-  await page.evaluate((c) => {
-    window.__result = window.__bench.arm(c);
-  }, check);
-  await act();
-  const ms = await Promise.race([
-    page.evaluate(() => window.__result),
-    sleep(10_000).then(() => {
-      throw new Error(`timed out waiting for ${JSON.stringify(check)}`);
-    }),
-  ]);
-  await net.idle();
-  return ms;
+async function code(browser, name) {
+  const page = await browser.newPage();
+  await page.goto(url(name), { waitUntil: "load" });
+  await sleep(1500);
+  const scripts = await page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .filter((entry) => /\.(m?js|wasm)$/.test(new URL(entry.name).pathname) || entry.initiatorType === "script")
+      .map((entry) => entry.name),
+  );
+  await page.close();
+  let bytes = 0;
+  for (const src of new Set(scripts)) bytes += gzipSync(Buffer.from(await (await fetch(src)).arrayBuffer())).length;
+  return bytes;
 }
 
-async function updates(browser, name) {
+async function waitIdle(page, quiet = 150) {
+  let inflight = 0;
+  const up = () => inflight++;
+  const down = () => inflight--;
+  page.on("request", up);
+  page.on("requestfinished", down);
+  page.on("requestfailed", down);
+  let since = Date.now();
+  while (Date.now() - since < quiet) {
+    if (inflight > 0) since = Date.now();
+    await sleep(10);
+  }
+  page.off("request", up);
+  page.off("requestfinished", down);
+  page.off("requestfailed", down);
+}
+
+/**
+ * One page session of 15 toggles and 15 adds after warm-ups. Returns its INP,
+ * the worst interaction as Web Vitals defines it for fewer than 50
+ * interactions, and the median time until a toggle shows in the DOM.
+ */
+async function session(browser, name) {
   const context = await browser.newContext();
   await context.addInitScript(instrument);
+  await context.addInitScript(() => {
+    window.__interactions = new Map();
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.interactionId === 0) continue;
+        const known = window.__interactions.get(entry.interactionId) ?? 0;
+        window.__interactions.set(entry.interactionId, Math.max(known, entry.duration));
+      }
+    }).observe({ type: "event", durationThreshold: 16, buffered: true });
+  });
   const page = await context.newPage();
-  const net = trackNetwork(page);
   const cdp = await context.newCDPSession(page);
   await cdp.send("Network.enable");
   await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: LATENCY_MS, downloadThroughput: -1, uploadThroughput: -1 });
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU_SLOWDOWN });
   await reset(name);
   await page.goto(url(name), { waitUntil: "load" });
-  await net.idle(1500);
+  await waitIdle(page, 1500);
   const count = () => page.evaluate(() => Number(window.__bench.count()));
+  const shown = [];
 
-  const toggle = [];
-  const bytes = [];
   for (let k = 0; k < WARMUP + RUNS; k++) {
+    if (k === WARMUP) await page.evaluate(() => window.__interactions.clear());
     let id = 40 + k * 105;
     while (id % 3 === 0) id++;
     const title = `todo ${id}`;
     const left = await count();
     const box = page.locator("ul.todo-list > li", { has: page.getByText(title, { exact: true }) }).locator("input.toggle");
     await box.scrollIntoViewIfNeeded();
-    net.take();
-    const ms = await measureOne(page, net, { kind: "toggle", title, count: String(left - 1) }, () => box.click());
-    if (k >= WARMUP) {
-      toggle.push(ms);
-      bytes.push(net.take());
-    }
+    await page.evaluate((c) => {
+      window.__result = window.__bench.arm(c);
+    }, { kind: "toggle", title, count: String(left - 1) });
+    await box.click();
+    const ms = await page.evaluate(() => window.__result);
+    if (k >= WARMUP) shown.push(ms);
+    await waitIdle(page);
   }
 
-  const add = [];
   const input = page.locator("input.new-todo");
-  for (let k = 0; k < WARMUP + RUNS; k++) {
+  for (let k = 0; k < RUNS; k++) {
     const title = `bench add ${k}`;
     const left = await count();
     await input.fill(title);
-    await net.idle();
-    const ms = await measureOne(page, net, { kind: "add", title, count: String(left + 1) }, () => input.press("Enter"));
-    if (k >= WARMUP) add.push(ms);
+    await waitIdle(page);
+    await page.evaluate((c) => {
+      window.__result = window.__bench.arm(c);
+    }, { kind: "add", title, count: String(left + 1) });
+    await input.press("Enter");
+    await page.evaluate(() => window.__result);
+    await waitIdle(page);
   }
 
+  const durations = await page.evaluate(() => [...window.__interactions.values()]);
   await context.close();
-  return { toggle: median(toggle), add: median(add), toggleBytes: median(bytes) };
-}
-
-async function load(browser, name) {
-  const fcp = [];
-  let scripts = [];
-  for (let k = 0; k < LOAD_RUNS; k++) {
-    await reset(name);
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    const cdp = await context.newCDPSession(page);
-    await cdp.send("Network.enable");
-    await cdp.send("Network.setCacheDisabled", { cacheDisabled: true });
-    await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: LATENCY_MS, downloadThroughput: -1, uploadThroughput: -1 });
-    await page.goto(url(name), { waitUntil: "load" });
-    await sleep(1500);
-    const perf = await page.evaluate(() => ({
-      fcp: performance.getEntriesByName("first-contentful-paint")[0]?.startTime ?? null,
-      scripts: performance
-        .getEntriesByType("resource")
-        .filter((entry) => /\.(m?js|wasm)$/.test(new URL(entry.name).pathname) || entry.initiatorType === "script")
-        .map((entry) => entry.name),
-    }));
-    fcp.push(perf.fcp);
-    scripts = perf.scripts;
-    await context.close();
-  }
-  let code = 0;
-  for (const src of new Set(scripts)) {
-    code += gzipSync(Buffer.from(await (await fetch(src)).arrayBuffer())).length;
-  }
-  return { code, fcp: median(fcp) };
+  return { inp: durations.length === 0 ? 0 : Math.max(...durations), shown: median(shown) };
 }
 
 const names = process.argv.slice(2).length > 0 ? process.argv.slice(2) : Object.keys(APPS);
-const browser = await chromium.launch({ channel: "chrome", headless: true });
+const browser = await chromium.launch({ channel: "chrome", headless: true, args: [`--remote-debugging-port=${DEBUG_PORT}`] });
 const results = {
   date: new Date().toISOString(),
   commit: execSync("git rev-parse --short HEAD").toString().trim(),
   chrome: browser.version(),
   machine: `${os.cpus()[0].model}, ${os.platform()} ${os.release()}`,
-  latencyMs: LATENCY_MS,
+  conditions: { latencyMs: LATENCY_MS, cpuSlowdown: CPU_SLOWDOWN },
   apps: {},
 };
 for (const name of names) {
   const stop = await start(name);
   try {
-    results.apps[name] = { ...(await load(browser, name)), ...(await updates(browser, name)) };
+    const sessions = [];
+    for (let k = 0; k < SESSIONS; k++) sessions.push(await session(browser, name));
+    results.apps[name] = {
+      js: await code(browser, name),
+      ...(await load(name)),
+      inp: median(sessions.map((s) => s.inp)),
+      toggleShown: median(sessions.map((s) => s.shown)),
+    };
     console.log(name, JSON.stringify(results.apps[name]));
   } finally {
     stop();
@@ -176,17 +185,18 @@ mkdirSync(dir, { recursive: true });
 writeFileSync(new URL("latest.json", dir), `${JSON.stringify(results, null, 2)}\n`);
 
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
-const ms = (value) => `${value < 10 ? value.toFixed(1) : Math.round(value)} ms`;
+const ms = (value) => `${Math.round(value)} ms`;
+const inp = (value) => (value < 16 ? "< 16 ms" : ms(value));
 const md = `# TodoMVC-2000 results
 
-${results.date}, commit ${results.commit}, Chrome ${results.chrome}, ${results.machine}. Medians, with ${LATENCY_MS} ms added to every request. \`SPEC.md\` defines each column.
+${results.date}, commit ${results.commit}, Chrome ${results.chrome}, ${results.machine}. CPU slowed ${CPU_SLOWDOWN}x and ${LATENCY_MS} ms added to every request. Medians of ${SESSIONS} runs.
 
-| App | Code sent to the browser (gzip) | First Contentful Paint | Toggle one item | Add one item | Bytes per toggle |
-|---|---|---|---|---|---|
+| App | JS (gzip) | FCP | TBT | INP |
+|---|---|---|---|---|
 ${names
   .map((name) => {
     const a = results.apps[name];
-    return `| ${name} | ${kb(a.code)} | ${ms(a.fcp)} | ${ms(a.toggle)} | ${ms(a.add)} | ${kb(a.toggleBytes)} |`;
+    return `| ${name} | ${kb(a.js)} | ${ms(a.fcp)} | ${ms(a.tbt)} | ${inp(a.inp)} |`;
   })
   .join("\n")}
 `;

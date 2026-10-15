@@ -48,13 +48,12 @@ Each app is written the way an experienced user of that framework would write it
 
 ## Measurements
 
-`harness/measure.mjs` drives Chrome through Playwright and measures inside the page, so its own round trips do not count. Every request gets 50 ms of added latency through Chrome DevTools Protocol network emulation, so an app that waits for the server pays for it as it would over a real network.
+`harness/measure.mjs` reports the metrics Lighthouse and Web Vitals define, under Lighthouse's mobile CPU slowdown (4x) with 50 ms added to every request. Bandwidth is not capped, because the Rust servers here send uncompressed responses while Next.js compresses its own, and a bandwidth cap would measure that setting instead of the framework.
 
-- **Code sent to the browser**: the gzip size of every script and wasm file the page loads, compressed by the harness so server settings do not matter.
-- **First Contentful Paint**, from a cold load.
-- **Toggle one item** and **add one item**: the time from the input event, caught on `window` before the app sees it, to the moment the DOM shows the result. For a toggle that is the item's `completed` class and the count, and for an add, the new item and the count.
-- **Bytes per toggle**: the bytes sent and received over the network during one toggle, including any save the app sends afterwards.
+- **JS (gzip)**: every script and wasm file the page loads, gzipped by the harness.
+- **FCP** and **TBT** (First Contentful Paint, Total Blocking Time): from Lighthouse 13.5.0 with the settings above. Largest Contentful Paint is left out, because in every app it equals First Contentful Paint.
+- **INP** (Interaction to Next Paint): from the Event Timing API, over one page session of 15 checkbox clicks and 15 additions with the Enter key after 3 warm-up clicks. With fewer than 50 interactions, INP is the slowest one. Chrome reports only interactions of 16 ms or more, so a faster page shows as "< 16 ms".
 
-Each value is the median of 15 runs on different items after 3 warm-up runs, and First Contentful Paint is the median of 10 loads.
+Each value is the median of 3 runs. `results/latest.json` also records, for each app, the median time from a checkbox click until the DOM shows the item done and the new count, which shows whether the app waits for the server.
 
 `harness/parity.mjs` checks the behavior above on every app before measuring.

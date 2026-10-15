@@ -1,58 +1,61 @@
 {
-  "date": "2026-10-15T05:11:20.525Z",
-  "commit": "df40b71",
+  "date": "2026-10-15T05:34:12.774Z",
+  "commit": "ddf3f9a",
   "chrome": "155.0.8059.41",
   "machine": "Apple M4 Max, darwin 25.6.0",
-  "latencyMs": 50,
+  "conditions": {
+    "latencyMs": 50,
+    "cpuSlowdown": 4
+  },
   "apps": {
     "hypersig": {
-      "code": 6669,
-      "fcp": 96,
-      "toggle": 1.5999999940395355,
-      "add": 1.5999999940395355,
-      "toggleBytes": 794
+      "js": 6669,
+      "fcp": 178.165,
+      "tbt": 70.97900000000001,
+      "inp": 16,
+      "toggleShown": 6.399999991059303
     },
     "htmx": {
-      "code": 16897,
-      "fcp": 144,
-      "toggle": 57.1000000089407,
-      "add": 56.8999999910593,
-      "toggleBytes": 1108
+      "js": 16897,
+      "fcp": 229.575,
+      "tbt": 247.94499999999994,
+      "inp": 16,
+      "toggleShown": 59.1000000089407
     },
     "next": {
-      "code": 136528,
-      "fcp": 96,
-      "toggle": 2,
-      "add": 2.7999999970197678,
-      "toggleBytes": 1313
+      "js": 136528,
+      "fcp": 190.79,
+      "tbt": 7.7050000000000125,
+      "inp": 24,
+      "toggleShown": 7
     },
     "react": {
-      "code": 68729,
-      "fcp": 136,
-      "toggle": 1.5999999940395355,
-      "add": 1.3999999910593033,
-      "toggleBytes": 698
+      "js": 68729,
+      "fcp": 178.175,
+      "tbt": 4.064999999999998,
+      "inp": 16,
+      "toggleShown": 6.199999988079071
     },
     "tanstack-start": {
-      "code": 122413,
-      "fcp": 94,
-      "toggle": 16.30000001192093,
-      "add": 18.399999991059303,
-      "toggleBytes": 1281
+      "js": 122413,
+      "fcp": 178.606,
+      "tbt": 0,
+      "inp": 24,
+      "toggleShown": 16.5
     },
     "nuxt": {
-      "code": 60669,
-      "fcp": 92,
-      "toggle": 1.3999999910593033,
-      "add": 2,
-      "toggleBytes": 711
+      "js": 60669,
+      "fcp": 167.267,
+      "tbt": 26.289999999999992,
+      "inp": 24,
+      "toggleShown": 5.5999999940395355
     },
     "leptos": {
-      "code": 143918,
-      "fcp": 94,
-      "toggle": 1.7000000029802322,
-      "add": 1.5,
-      "toggleBytes": 808
+      "js": 143918,
+      "fcp": 195.676,
+      "tbt": 28.20199999999997,
+      "inp": 24,
+      "toggleShown": 7
     }
   }
 }

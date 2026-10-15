@@ -24,19 +24,19 @@ Three things set hypersig apart from that list:
 
 ## Measured on the same app
 
-The 2000-item TodoMVC in each framework, in headless Chrome on an Apple M4 Max, with 50 ms added to every request. Medians; `bench/compare/SPEC.md` defines each column and `bench/compare/results/latest.md` holds the latest run.
+The 2000-item TodoMVC in each framework, in headless Chrome on an Apple M4 Max, with Lighthouse's mobile CPU slowdown (4x) and 50 ms added to every request. FCP and TBT come from Lighthouse, INP from Chrome's Event Timing API over 30 interactions (checking a todo and adding one). Medians of 3 runs; `bench/compare/SPEC.md` has the details.
 
-| | Code sent to the browser (gzip) | First Contentful Paint | Toggle one item | Add one item | Bytes per toggle |
-|---|---|---|---|---|---|
-| hypersig | 6.5 KB | 96 ms | 1.6 ms | 1.6 ms | 0.8 KB |
-| Leptos | 140.5 KB | 94 ms | 1.7 ms | 1.5 ms | 0.8 KB |
-| Next.js | 133.3 KB | 96 ms | 2.0 ms | 2.8 ms | 1.3 KB |
-| React | 67.1 KB | 136 ms | 1.6 ms | 1.4 ms | 0.7 KB |
-| TanStack Start | 119.5 KB | 94 ms | 16 ms | 18 ms | 1.3 KB |
-| Nuxt | 59.2 KB | 92 ms | 1.4 ms | 2.0 ms | 0.7 KB |
-| htmx | 16.5 KB | 144 ms | 57 ms | 57 ms | 1.1 KB |
+| | JS (gzip) | FCP | TBT | INP |
+|---|---|---|---|---|
+| hypersig | 6.5 KB | 178 ms | 71 ms | 16 ms |
+| Leptos | 140.5 KB | 196 ms | 28 ms | 24 ms |
+| Next.js | 133.3 KB | 191 ms | 8 ms | 24 ms |
+| React | 67.1 KB | 178 ms | 4 ms | 16 ms |
+| TanStack Start | 119.5 KB | 179 ms | 0 ms | 24 ms |
+| Nuxt | 59.2 KB | 167 ms | 26 ms | 24 ms |
+| htmx | 16.5 KB | 230 ms | 248 ms | 16 ms |
 
-hypersig sends the browser between 1/9 and 1/22 of the code that the other frameworks updating before the server answers send, and answers a click as fast as they do. It does not win every column: Nuxt paints first by a few milliseconds, and React and Nuxt match it on toggling and adding.
+hypersig sends between 1/9 and 1/22 of the JavaScript that Leptos, Next.js, React, TanStack Start, and Nuxt send, and its INP is among the lowest. It loses on TBT to all of them except htmx. The likely cause, not yet profiled, is the runtime taking over the 2000 server-rendered items, which blocks the main thread longer than hydration does in Next.js, TanStack Start, Nuxt, and Leptos. INP stops at the first frame after a click, so it does not show that htmx's checkbox changes only after the server answers, 59 ms later, where every other app shows it within 17 ms.
 
 ## Updating after a change
 

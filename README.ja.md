@@ -24,19 +24,19 @@ axum の上で動く Web フレームワークです。画面、ブラウザ側�
 
 ## 同じアプリでの計測
 
-2000 件の TodoMVC をそれぞれで作り、Apple M4 Max の headless Chrome で、通信のたびに 50 ms の遅延を足して測りました。値は中央値です。各列の定義は `bench/compare/SPEC.md` に、最新の結果は `bench/compare/results/latest.md` にあります。
+2000 件の TodoMVC をそれぞれで作り、Apple M4 Max の headless Chrome で測りました。CPU は Lighthouse のモバイル設定と同じく 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。FCP と TBT は Lighthouse の値、INP は Chrome の Event Timing API で 30 回の操作（todo のチェックと追加）から求めた値です。3 回の中央値で、詳しい条件は `bench/compare/SPEC.md` にあります。
 
-| | ブラウザに送るコード（gzip） | 最初の表示（First Contentful Paint） | 1 件のチェック | 1 件の追加 | チェック 1 回のバイト数 |
-|---|---|---|---|---|---|
-| hypersig | 6.5 KB | 96 ms | 1.6 ms | 1.6 ms | 0.8 KB |
-| Leptos | 140.5 KB | 94 ms | 1.7 ms | 1.5 ms | 0.8 KB |
-| Next.js | 133.3 KB | 96 ms | 2.0 ms | 2.8 ms | 1.3 KB |
-| React | 67.1 KB | 136 ms | 1.6 ms | 1.4 ms | 0.7 KB |
-| TanStack Start | 119.5 KB | 94 ms | 16 ms | 18 ms | 1.3 KB |
-| Nuxt | 59.2 KB | 92 ms | 1.4 ms | 2.0 ms | 0.7 KB |
-| htmx | 16.5 KB | 144 ms | 57 ms | 57 ms | 1.1 KB |
+| | JS（gzip） | FCP | TBT | INP |
+|---|---|---|---|---|
+| hypersig | 6.5 KB | 178 ms | 71 ms | 16 ms |
+| Leptos | 140.5 KB | 196 ms | 28 ms | 24 ms |
+| Next.js | 133.3 KB | 191 ms | 8 ms | 24 ms |
+| React | 67.1 KB | 178 ms | 4 ms | 16 ms |
+| TanStack Start | 119.5 KB | 179 ms | 0 ms | 24 ms |
+| Nuxt | 59.2 KB | 167 ms | 26 ms | 24 ms |
+| htmx | 16.5 KB | 230 ms | 248 ms | 16 ms |
 
-サーバーの応答より先に画面を変えるほかのフレームワークと比べて、hypersig がブラウザに送るコードは 1/9 から 1/22 で、クリックへの応答の速さは同じ水準です。すべての列で勝っているわけではありません。最初の表示は Nuxt が数 ms 早く、チェックと追加の速さは React や Nuxt と並んでいます。
+hypersig が送る JavaScript は、Leptos、Next.js、React、TanStack Start、Nuxt の 1/9 から 1/22 で、INP は最も小さいグループに入ります。負けているのは TBT で、htmx 以外のすべてより長くなっています。まだプロファイルで確かめてはいませんが、サーバーが描いた 2000 件をランタイムが引き継ぐ処理が、Next.js、TanStack Start、Nuxt、Leptos のハイドレーションより長くメインスレッドを止めていると考えられます。INP はクリックの直後のフレームまでしか測らないので、htmx のチェックボックスがサーバーの応答を待って 59 ms 後に変わることは表に出ません。ほかのアプリでは 17 ms 以内に変わります。
 
 ## 変更のあとの更新
 

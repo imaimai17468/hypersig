@@ -1,13 +1,13 @@
 # TodoMVC-2000 results
 
-2026-10-15T05:11:20.525Z, commit df40b71, Chrome 155.0.8059.41, Apple M4 Max, darwin 25.6.0. Medians, with 50 ms added to every request. `SPEC.md` defines each column.
+2026-10-15T05:34:12.774Z, commit ddf3f9a, Chrome 155.0.8059.41, Apple M4 Max, darwin 25.6.0. CPU slowed 4x and 50 ms added to every request. Medians of 3 runs.
 
-| App | Code sent to the browser (gzip) | First Contentful Paint | Toggle one item | Add one item | Bytes per toggle |
-|---|---|---|---|---|---|
-| hypersig | 6.5 KB | 96 ms | 1.6 ms | 1.6 ms | 0.8 KB |
-| htmx | 16.5 KB | 144 ms | 57 ms | 57 ms | 1.1 KB |
-| next | 133.3 KB | 96 ms | 2.0 ms | 2.8 ms | 1.3 KB |
-| react | 67.1 KB | 136 ms | 1.6 ms | 1.4 ms | 0.7 KB |
-| tanstack-start | 119.5 KB | 94 ms | 16 ms | 18 ms | 1.3 KB |
-| nuxt | 59.2 KB | 92 ms | 1.4 ms | 2.0 ms | 0.7 KB |
-| leptos | 140.5 KB | 94 ms | 1.7 ms | 1.5 ms | 0.8 KB |
+| App | JS (gzip) | FCP | TBT | INP |
+|---|---|---|---|---|
+| hypersig | 6.5 KB | 178 ms | 71 ms | 16 ms |
+| htmx | 16.5 KB | 230 ms | 248 ms | 16 ms |
+| next | 133.3 KB | 191 ms | 8 ms | 24 ms |
+| react | 67.1 KB | 178 ms | 4 ms | 16 ms |
+| tanstack-start | 119.5 KB | 179 ms | 0 ms | 24 ms |
+| nuxt | 59.2 KB | 167 ms | 26 ms | 24 ms |
+| leptos | 140.5 KB | 196 ms | 28 ms | 24 ms |
