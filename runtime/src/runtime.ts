@@ -2,7 +2,7 @@ import { type Context, evaluate, type Host, resolve, run, type Slot } from "./ev
 import { morph } from "./morph.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
 import { DepIndex, type Effect } from "./deps.ts";
-import { type Changes, equal, join, type Reads, Store, type Values } from "./store.ts";
+import { ChangeLookup, type Changes, equal, join, positionOf, type Reads, Store, type Values } from "./store.ts";
 
 /** Events handled by one listener on the root, matched to the closest element with a handler. */
 const BUBBLING = ["click", "dblclick", "input", "change", "submit", "keydown", "focusin", "focusout"] as const;
@@ -45,6 +45,8 @@ interface Instance {
   scanned: boolean;
   /** What evaluating this item's key read, recorded again when the key is not reevaluated. */
   keyReads: Reads;
+  /** The item's value when the list last matched it, to tell a move from a change. */
+  value: unknown;
 }
 
 /** Connects the signals on `<body>` and the `data-hs-*` attributes of `root`. */
@@ -58,6 +60,8 @@ export class Runtime implements Host {
   #ran = new Set<Effect>();
   /** The changes the current render is running for. */
   #changes: Changes = new Map();
+  /** `#changes` indexed for `#rebase`, built the first time a render needs it. */
+  #lookup: ChangeLookup | null = null;
   #nextId = 0;
   readonly #scopes = new WeakMap<Element, readonly Slot[]>();
   readonly #started = new WeakSet<Element>();
@@ -378,15 +382,18 @@ export class Runtime implements Host {
       }
       let instance = previous.get(key);
       if (instance === undefined || !instance.element.isConnected) {
-        instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: true, keyReads };
+        instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: true, keyReads, value: items[index] };
         this.#instanceRoots.add(instance.element);
         created.add(instance);
       } else {
         instance.keyReads = keyReads;
         if (instance.slot.path !== itemPath) {
+          const from = instance.slot.path;
           instance.slot.path = itemPath;
-          if (instance.scanned) this.#requeue(instance.element);
+          if (instance.scanned && Object.is(instance.value, items[index])) this.#rebase(instance.element, from, itemPath);
+          else if (instance.scanned) this.#requeue(instance.element);
         }
+        instance.value = items[index];
       }
       next.set(key, instance);
       return instance;
@@ -482,7 +489,7 @@ export class Runtime implements Host {
     for (let at = template.nextElementSibling; at !== null && at.hasAttribute("data-hs-ssr"); at = at.nextElementSibling) {
       if (this.#instanceRoots.has(at)) break;
       this.#instanceRoots.add(at);
-      adopted.set(at.getAttribute("data-hs-ssr")!, { element: at, slot: { path: "" }, scanned: false, keyReads: new Map() });
+      adopted.set(at.getAttribute("data-hs-ssr")!, { element: at, slot: { path: "" }, scanned: false, keyReads: new Map(), value: undefined });
     }
     return adopted;
   }
@@ -572,6 +579,7 @@ export class Runtime implements Host {
   #render(changes: Changes): void {
     this.#ran = new Set();
     this.#changes = changes;
+    this.#lookup = null;
     const affected = [...this.#index.affected(changes)].sort((a, b) => a.id - b.id);
     for (const effect of affected) this.#runEffect(effect);
     while (this.#fresh.length > 0) {
@@ -607,6 +615,43 @@ export class Runtime implements Host {
         this.#fresh.push(effect);
       }
     });
+  }
+
+  /**
+   * Moves the reads of the bindings inside `root` from the item path `from`
+   * to `to`, for an item whose value moved there unchanged, so they do not
+   * run again. A binding still runs again where it read the item's position
+   * or where `changes` reach something else it read.
+   */
+  #rebase(root: Element, from: string, to: string): void {
+    const prefix = `${from}.`;
+    const move = (path: string): string => (path === from || path.startsWith(prefix) ? to + path.slice(from.length) : path);
+    this.#lookup ??= new ChangeLookup(this.#changes);
+    const lookup = this.#lookup;
+    for (const element of this.#members.get(root) ?? []) {
+      for (const effect of this.#effects.get(element) ?? []) {
+        if (effect.deps === null) continue;
+        let rerun = false;
+        for (const [path, deep] of effect.deps) {
+          if (move(path) === path ? lookup.affects(path, deep) : path === positionOf(from)) rerun = true;
+        }
+        this.#index.move(effect, move);
+        if (rerun) {
+          this.#ran.delete(effect);
+          this.#fresh.push(effect);
+        } else {
+          this.#ran.add(effect);
+        }
+      }
+      if (!(element instanceof HTMLTemplateElement)) continue;
+      for (const instance of this.#lists.get(element)?.values() ?? []) {
+        instance.slot.path = move(instance.slot.path);
+        instance.keyReads = new Map([...instance.keyReads].map(([path, deep]) => [move(path), deep]));
+        this.#rebase(instance.element, from, to);
+      }
+      const mounted = this.#mounted.get(element);
+      if (mounted !== undefined) this.#rebase(mounted, from, to);
+    }
   }
 
   /** Removes `root` from the document and forgets the bindings inside it. */

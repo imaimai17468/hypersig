@@ -136,6 +136,7 @@ function build(ast: Ast): Compiled {
       const depth = rest[0];
       return (ctx) => {
         const path = slot(ctx, depth).path;
+        ctx.store.getPosition(path);
         return Number(path.slice(path.lastIndexOf(".") + 1));
       };
     }

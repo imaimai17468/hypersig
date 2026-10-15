@@ -89,6 +89,41 @@ export function affects(reads: ReadonlyMap<string, boolean>, changes: Changes): 
   return false;
 }
 
+/**
+ * Answers `affects` for one read at a time, in time proportional to the
+ * read's depth rather than to the number of changes.
+ */
+export class ChangeLookup {
+  readonly #changes: Changes;
+  /** Every path that has a change strictly below it. */
+  readonly #above = new Set<string>();
+
+  constructor(changes: Changes) {
+    this.#changes = changes;
+    for (const path of changes.keys()) {
+      for (let dot = path.indexOf("."); dot !== -1; dot = path.indexOf(".", dot + 1)) this.#above.add(path.slice(0, dot));
+    }
+  }
+
+  /** Whether the changes can change what a read at `read`, deep or shallow, saw. */
+  affects(read: string, deep: boolean): boolean {
+    if (this.#changes.has(read)) return true;
+    for (let dot = read.indexOf("."); dot !== -1; dot = read.indexOf(".", dot + 1)) {
+      if (this.#changes.get(read.slice(0, dot)) === true) return true;
+    }
+    return deep && this.#above.has(read);
+  }
+}
+
+/**
+ * The read that `index` records for the list item at `path`. Its last
+ * segment is never a field name, so it marks a read of the item's position,
+ * which changes when the item moves without its value changing.
+ */
+export function positionOf(path: string): string {
+  return `${path}.#`;
+}
+
 function isContainer(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object";
 }
@@ -110,6 +145,11 @@ export class Store {
   get(path: string): unknown {
     this.#reads?.set(path, true);
     return getPath(this.#values, path);
+  }
+
+  /** Records a read of the position of the list item at `path`, for `index`. */
+  getPosition(path: string): void {
+    this.#reads?.set(positionOf(path), true);
   }
 
   /**

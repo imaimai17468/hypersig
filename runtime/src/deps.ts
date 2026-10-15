@@ -51,6 +51,28 @@ export class DepIndex {
     }
   }
 
+  /** Registers the reads of `effect` under the paths `move` maps them to, as if it had read those. */
+  move(effect: Effect, move: (path: string) => string): void {
+    const old = effect.deps;
+    if (old === null) return;
+    const reads: Reads = new Map();
+    const nodes = new Map<string, PathNode>();
+    for (const [path, deep] of old) {
+      const to = move(path);
+      reads.set(to, deep);
+      let node = effect.nodes.get(path);
+      if (to !== path || node === undefined) {
+        node?.deep.delete(effect);
+        node?.shallow.delete(effect);
+        node = this.#node(to);
+        (deep ? node.deep : node.shallow).add(effect);
+      }
+      nodes.set(to, node);
+    }
+    effect.deps = reads;
+    effect.nodes = nodes;
+  }
+
   remove(effect: Effect): void {
     for (const node of effect.nodes.values()) {
       node.deep.delete(effect);

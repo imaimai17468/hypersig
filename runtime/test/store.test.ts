@@ -1,5 +1,5 @@
-import { expect, it } from "vitest";
-import { affects, Store } from "../src/store.ts";
+import { describe, expect, it } from "vitest";
+import { affects, ChangeLookup, Store } from "../src/store.ts";
 
 it("a shallow read depends on the path and its ancestors, a deep read also on what is inside", () => {
   const shallow = new Map([["todos", false]]);
@@ -52,4 +52,25 @@ it("a deep read of a path wins over a shallow read of it in the same binding", (
     store.getShallow("todos");
   });
   expect(reads.get("todos")).toBe(true);
+});
+
+describe("ChangeLookup", () => {
+  it("answers as affects does for one read", () => {
+    const paths = ["a", "b", "a.0", "a.1", "a.0.x", "a.0.y", "a.1.x", "b.c", "b.c.d"];
+    const cases: [string, boolean][][] = [
+      [["a", false], ["a.0", true]],
+      [["a", true]],
+      [["a.0.x", true]],
+      [["b.c", false], ["b.c.d", true], ["a.1", true]],
+    ];
+    for (const entries of cases) {
+      const changes = new Map(entries);
+      const lookup = new ChangeLookup(changes);
+      for (const read of paths) {
+        for (const deep of [true, false]) {
+          expect([read, deep, lookup.affects(read, deep)]).toEqual([read, deep, affects(new Map([[read, deep]]), changes)]);
+        }
+      }
+    }
+  });
 });

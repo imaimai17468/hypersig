@@ -19,6 +19,35 @@ afterEach(() => {
 });
 
 describe("Runtime", () => {
+  it("moves the reads of items that shift unchanged, and reruns the bindings that read their position", async () => {
+    const runtime = mount(
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
+        `<b data-hs-text='["str",["index",0]]'></b><i data-hs-text='["item",0,"label"]'></i>` +
+        `<s data-hs-text='["concat",["item",0,"label"],["sig","suffix"]]'></s></li></template></ul>`,
+      { rows: [1, 2, 3, 4].map((id) => ({ id, label: `r${id}` })), suffix: "" },
+    );
+    await tick();
+    const [first, ...rest] = [...document.querySelectorAll("#l li")];
+    const reads: string[] = [];
+    const get = runtime.store.get.bind(runtime.store);
+    runtime.store.get = (path: string) => {
+      reads.push(path);
+      return get(path);
+    };
+    runtime.store.set("rows", (get("rows") as unknown[]).slice(1));
+    await tick();
+    expect([...document.querySelectorAll("#l li")]).toEqual(rest);
+    expect(first!.isConnected).toBe(false);
+    expect(rest.map((li) => li.querySelector("b")!.textContent)).toEqual(["0", "1", "2"]);
+    expect(reads.filter((path) => path.endsWith(".label"))).toEqual([]);
+
+    runtime.store.set("suffix", "!");
+    runtime.store.set("rows.0.label", "x");
+    await tick();
+    expect(rest.map((li) => li.querySelector("s")!.textContent)).toEqual(["x!", "r3!", "r4!"]);
+    expect(rest.map((li) => li.querySelector("i")!.textContent)).toEqual(["x", "r3", "r4"]);
+  });
+
   it("renders text and show from signals, and reacts to a click", async () => {
     mount(
       `<span id="t" data-hs-text='["str",["sig","count"]]'></span>` +
