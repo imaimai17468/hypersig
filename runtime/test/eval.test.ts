@@ -34,6 +34,16 @@ describe("evaluate", () => {
     expect(evaluate(["tuple", ["sig", "count"], ["lit", "x"], ["not", ["lit", false]]], ctx)).toEqual([3, "x", true]);
   });
 
+  it("draws random integers below the bound, reads the clock, and indexes lists", () => {
+    for (let k = 0; k < 50; k++) {
+      const value = evaluate(["random", ["lit", 3]], ctx) as number;
+      expect(Number.isInteger(value) && value >= 0 && value < 3).toBe(true);
+    }
+    expect(Math.abs((evaluate(["now"], ctx) as number) - Date.now())).toBeLessThan(1000);
+    expect(evaluate(["nth", ["lit", ["a", "b"]], ["lit", 1]], ctx)).toBe("b");
+    expect(evaluate(["nth", ["lit", ["a", "b"]], ["lit", 5]], ctx)).toBe(null);
+  });
+
   it("compares records structurally", () => {
     expect(evaluate(["eq", ["lit", { a: [1, { b: 2 }] }], ["lit", { a: [1, { b: 2 }] }]], ctx)).toBe(true);
     expect(evaluate(["ne", ["lit", { a: 1 }], ["lit", { a: 1, b: 2 }]], ctx)).toBe(true);
@@ -65,6 +75,26 @@ describe("run", () => {
     );
     expect(h.call).toHaveBeenCalledWith("POST", "/save", 5, "busy", null);
     expect(ctx.store.get("count")).toBe(9);
+  });
+
+  it("extends, updates, swaps, and sorts lists", async () => {
+    const ctx = context({ rows: [{ id: 1, label: "b" }], next: 2 });
+    const h = host();
+    await run(["extend", "rows", ["lit", 3], 0, ["with", ["with", ["lit", { id: 0, label: "" }], "id", ["add", ["sig", "next"], ["index", 0]]], "label", ["str", ["index", 0]]]], ctx, h);
+    expect(ctx.store.get("rows")).toEqual([
+      { id: 1, label: "b" },
+      { id: 2, label: "0" },
+      { id: 3, label: "1" },
+      { id: 4, label: "2" },
+    ]);
+    await run(["update", "rows", 0, ["eq", ["rem", ["index", 0], ["lit", 2]], ["lit", 0]], "label", ["concat", ["item", 0, "label"], ["lit", "!"]]], ctx, h);
+    expect((ctx.store.get("rows") as { label: string }[]).map((row) => row.label)).toEqual(["b!", "0", "1!", "2"]);
+    await run(["swap", "rows", ["lit", 0], ["lit", 3]], ctx, h);
+    expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([4, 2, 3, 1]);
+    await run(["swap", "rows", ["lit", 0], ["lit", 9]], ctx, h);
+    expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([4, 2, 3, 1]);
+    await run(["sort", "rows", 0, ["item", 0, "id"]], ctx, h);
+    expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([1, 2, 3, 4]);
   });
 
   it("edits lists", async () => {

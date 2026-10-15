@@ -20,7 +20,7 @@ Three things set hypersig apart from that list:
 
 - **No JavaScript toolchain and no wasm.** The whole app is one Rust crate built by `cargo build`. The browser runtime is prebuilt and embedded in the crate.
 - **One struct is the page's state on both sides.** The page's signals are a Rust struct that the browser keeps a copy of, and server handlers answer with patches to it. An action's arguments are typed where the page calls it and where the handler receives them. Renaming a field breaks every expression, call, and patch that names it at compile time, so nothing falls out of step unnoticed.
-- **The strings the browser runs never appear in your source.** Signal names, expressions, action URLs, and patch targets are Rust values, so a misspelled signal or a number passed where a `bool` belongs is a compile error. The repository keeps 18 such mistakes under `crates/hypersig/tests/ui/fail/`.
+- **The strings the browser runs never appear in your source.** Signal names, expressions, action URLs, and patch targets are Rust values, so a misspelled signal or a number passed where a `bool` belongs is a compile error. The repository keeps 19 such mistakes under `crates/hypersig/tests/ui/fail/`.
 
 ## Measured on the same app
 
@@ -163,7 +163,7 @@ Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the 
 
 ## Limits
 
-- Handlers and expressions can use only the operations the library provides. Arbitrary JavaScript such as `Date.now()`, `localStorage`, or a call into another library cannot be written.
+- Handlers and expressions can use only the operations the library provides. Arbitrary JavaScript, such as `localStorage` or a call into another library, cannot be written.
 - A component's state needs a place prepared for it in the page's signal struct. To add components at run time, make them items of a `Vec`.
 - Arithmetic is limited to `i32` and `f64`, and division to `f64`. A type whose results JavaScript numbers cannot reproduce cannot appear in an expression.
 - `equals` compares the JSON form. It agrees with a derived `PartialEq` and can disagree with a hand-written one.

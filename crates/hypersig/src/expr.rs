@@ -21,13 +21,17 @@
 //! | `a.to_text()`, `a.to_fixed(n)` | `["str",a]`, `["fixed",a,n]` |
 //! | `a.concat(b)`, `trim`, `to_lowercase`, `to_uppercase` | `["concat",a,b]`, `["trim",a]`, `["lower",a]`, `["upper",a]` |
 //! | `a.contains(b)`, `a.starts_with(b)`, `a.char_count()` | `["contains",a,b]`, `["starts",a,b]`, `["chars",a]` |
-//! | `list.len()` | `["len",a]` |
+//! | `list.len()`, `list.nth(i)` | `["len",a]`, `["nth",a,i]` |
+//! | `Expr::random_below(n)`, `Expr::now()` | `["random",n]`, `["now"]` |
 //! | `list.count(\|item\| p)` | `["count",place,depth,p]` |
 //! | `opt.unwrap_or(d)`, `a.some()` | `["or_else",a,d]`, `a` |
 //! | `rec.at(field)`, `rec.with(field, v)` | `["get",a,"path"]`, `["with",a,"path",v]` |
 //! | `sig.set(e)` | `["set",place,e]` |
 //! | `list.push(e)`, `list.remove_at(i)` | `["push",place,e]`, `["remove",place,i]` |
 //! | `list.retain(\|item\| p)`, `list.set_all(f, e)` | `["retain",place,depth,p]`, `["set_all",place,"path",e]` |
+//! | `list.extend(n, \|i\| e)` | `["extend",place,n,depth,e]` |
+//! | `list.update_where(\|item\| p, f, \|item\| e)` | `["update",place,depth,p,"path",e]` |
+//! | `list.swap(i, j)`, `list.sort_by(\|item\| k)` | `["swap",place,i,j]`, `["sort",place,depth,k]` |
 //! | `Stmt::when(c, s)`, `Stmt::if_else(c, s, t)` | `["if",c,s,t]` |
 //! | `action.call()` | `["call",method,path,args,indicator,error]` |
 //! | `node_ref.focus()` | `["dom","focus",name]` |
@@ -49,6 +53,27 @@ use crate::signal::Sig;
 pub struct Expr<S, T> {
     ast: Value,
     marker: PhantomData<fn() -> (S, T)>,
+}
+
+impl<S> Expr<S, i32> {
+    /// A random integer from 0 up to but not including `bound`, drawn in the browser.
+    ///
+    /// The server leaves it out of the first HTML, because it cannot draw the
+    /// number the browser will.
+    #[must_use]
+    pub fn random_below(bound: impl IntoExpr<S, i32>) -> Self {
+        Self::from_json(json!(["random", bound.into_expr().ast]))
+    }
+}
+
+impl<S> Expr<S, f64> {
+    /// The browser's current time, in milliseconds since the Unix epoch.
+    ///
+    /// The server leaves it out of the first HTML, as it does a random number.
+    #[must_use]
+    pub fn now() -> Self {
+        Self::from_json(json!(["now"]))
+    }
 }
 
 impl<S, T> Expr<S, T> {
@@ -361,6 +386,12 @@ macro_rules! operations {
             #[must_use]
             pub fn len(self) -> Expr<S, i32> {
                 Expr::unary("len", self.into_expr())
+            }
+
+            /// The item at `index`, or `None` past either end.
+            #[must_use]
+            pub fn nth(self, index: impl IntoExpr<S, i32>) -> Expr<S, Option<T>> {
+                Expr::from_json(json!(["nth", self.into_expr().ast, index.into_expr().ast]))
             }
 
             /// Whether the list has no items.

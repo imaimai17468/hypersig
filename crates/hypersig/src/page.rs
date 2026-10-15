@@ -12,8 +12,9 @@ use crate::ssr::{self, Ctx};
 
 /// A full HTML document for a page whose signals are `S`.
 ///
-/// The document loads the runtime from [`RUNTIME_PATH`](crate::RUNTIME_PATH)
-/// and puts the initial signal values on `<body>`. It is rendered with those
+/// The document loads the runtime from [`RUNTIME_PATH`](crate::RUNTIME_PATH),
+/// or from [`Page::runtime_src`], and puts the initial signal values on
+/// `<body>`. It is rendered with those
 /// values already applied: text, visibility, classes, attributes, form
 /// values, list items, and conditional elements show before the runtime
 /// loads, and the runtime adopts the elements instead of rebuilding them.
@@ -23,6 +24,7 @@ pub struct Page<S> {
     styles: Vec<&'static str>,
     computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
+    runtime: &'static str,
 }
 
 impl<S> fmt::Debug for Page<S> {
@@ -43,6 +45,7 @@ impl<S: Signals> Page<S> {
             styles: Vec::new(),
             computed: Vec::new(),
             body: Vec::new(),
+            runtime: crate::RUNTIME_PATH,
         }
     }
 
@@ -81,6 +84,15 @@ impl<S: Signals> Page<S> {
     pub fn computed<T>(mut self, signal: Sig<S, T>, value: impl IntoExpr<S, T>) -> Self {
         self.computed
             .push((signal.path(), value.into_expr().into_json()));
+        self
+    }
+
+    /// Loads the runtime from `src` instead of [`RUNTIME_PATH`](crate::RUNTIME_PATH),
+    /// for a page served as a static file next to a copy of
+    /// [`RUNTIME_JS`](crate::RUNTIME_JS).
+    #[must_use]
+    pub fn runtime_src(mut self, src: &'static str) -> Self {
+        self.runtime = src;
         self
     }
 
@@ -130,7 +142,7 @@ impl<S: Signals> Page<S> {
             out.push_str("</style>");
         }
         out.push_str("<script type=\"module\"");
-        write_attr(&mut out, "src", crate::RUNTIME_PATH);
+        write_attr(&mut out, "src", self.runtime);
         out.push_str("></script></head><body");
         write_attr(&mut out, "data-hs-signals", &root.to_string());
         if !self.computed.is_empty() {

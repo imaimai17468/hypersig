@@ -1,0 +1,20 @@
+error[E0277]: the trait bound `bool: Comparable` is not satisfied
+  --> tests/ui/fail/sort_by_bool.rs:17:41
+   |
+17 |     let _: Stmt<Todos> = Todos::items().sort_by(|todo| todo.at(Todo::done()));
+   |                                         ^^^^^^^ the trait `Comparable` is not implemented for `bool`
+   |
+help: the following other types implement trait `Comparable`
+  --> src/expr.rs
+   |
+   | impl Comparable for i32 {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^ `i32`
+   | impl Comparable for f64 {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^ `f64`
+   | impl Comparable for String {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `String`
+note: required by a bound in `Sig::<S, Vec<T>, R>::sort_by`
+  --> src/signal.rs
+   |
+   |     pub fn sort_by<K: Comparable, E: IntoExpr<S, K>>(
+   |                       ^^^^^^^^^^ required by this bound in `Sig::<S, Vec<T>, R>::sort_by`

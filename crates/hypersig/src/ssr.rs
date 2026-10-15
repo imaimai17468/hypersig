@@ -247,6 +247,12 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
                 .map(|part| evaluate(part, ctx).map(Cow::into_owned))
                 .collect::<Option<_>>()?,
         ),
+        "nth" => {
+            let index = usize::try_from(eval(2)?.as_i64()?).ok();
+            index
+                .and_then(|index| eval(1)?.as_array()?.get(index).cloned())
+                .unwrap_or(Value::Null)
+        }
         "and" => Value::Bool(truthy(&*eval(1)?) && truthy(&*eval(2)?)),
         "or" => Value::Bool(truthy(&*eval(1)?) || truthy(&*eval(2)?)),
         "not" => Value::Bool(!truthy(&*eval(1)?)),
@@ -279,34 +285,39 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "concat" => Value::from(format!("{}{}", s(&*eval(1)?)?, s(&*eval(2)?)?)),
         "contains" => Value::Bool(s(&*eval(1)?)?.contains(s(&*eval(2)?)?)),
         "starts" => Value::Bool(s(&*eval(1)?)?.starts_with(s(&*eval(2)?)?)),
-        "gt" | "ge" | "lt" | "le" => {
-            let (a, b) = (eval(1)?, eval(2)?);
-            let order = match (&*a, &*b) {
-                (Value::String(a), Value::String(b)) => a.cmp(b),
-                _ => f(&a)?.partial_cmp(&f(&b)?)?,
-            };
-            Value::Bool(match op {
-                "gt" => order.is_gt(),
-                "ge" => order.is_ge(),
-                "lt" => order.is_lt(),
-                _ => order.is_le(),
-            })
-        }
+        "gt" | "ge" | "lt" | "le" => compare(op, &*eval(1)?, &*eval(2)?)?,
         "add" | "sub" | "mul" | "div" | "rem" | "min" | "max" => {
-            let (a, b) = (f(&*eval(1)?)?, f(&*eval(2)?)?);
-            number(match op {
-                "add" => a + b,
-                "sub" => a - b,
-                "mul" => a * b,
-                "div" => a / b,
-                "rem" => a % b,
-                "min" => a.min(b),
-                _ => a.max(b),
-            })
+            arithmetic(op, f(&*eval(1)?)?, f(&*eval(2)?)?)
         }
         _ => return None,
     };
     Some(Cow::Owned(value))
+}
+
+/// `a < b` and friends: strings in code point order, anything else as numbers.
+fn compare(op: &str, a: &Value, b: &Value) -> Option<Value> {
+    let order = match (a, b) {
+        (Value::String(a), Value::String(b)) => a.cmp(b),
+        _ => f(a)?.partial_cmp(&f(b)?)?,
+    };
+    Some(Value::Bool(match op {
+        "gt" => order.is_gt(),
+        "ge" => order.is_ge(),
+        "lt" => order.is_lt(),
+        _ => order.is_le(),
+    }))
+}
+
+fn arithmetic(op: &str, a: f64, b: f64) -> Value {
+    number(match op {
+        "add" => a + b,
+        "sub" => a - b,
+        "mul" => a * b,
+        "div" => a / b,
+        "rem" => a % b,
+        "min" => a.min(b),
+        _ => a.max(b),
+    })
 }
 
 #[cfg(test)]

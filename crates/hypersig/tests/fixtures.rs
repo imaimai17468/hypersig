@@ -296,6 +296,70 @@ fn nested() -> (El<Nested>, Nested) {
     (el, signals)
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Line {
+    id: i32,
+    label: String,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Table {
+    lines: Vec<Line>,
+    next_id: i32,
+    stamp: f64,
+}
+
+fn table() -> (El<Table>, Table) {
+    let lines = Table::lines();
+    let next_id = Table::next_id();
+    let words = Expr::lit(&vec!["a".to_owned(), "b".to_owned()]);
+    let blank = Expr::lit(&Line {
+        id: 0,
+        label: String::new(),
+    });
+    let el = main()
+        .child(
+            button().id("run").on_click(
+                lines
+                    .clear()
+                    .then(lines.extend(3, |i| {
+                        blank.clone().with(Line::id(), next_id + i).with(
+                            Line::label(),
+                            words.clone().nth(Expr::random_below(2)).unwrap_or("?"),
+                        )
+                    }))
+                    .then(next_id.set(next_id + 3)),
+            ),
+        )
+        .child(button().id("update").on_click(lines.update_where(
+            |line| (line.index() % 2).equals(0),
+            Line::label(),
+            |line| line.at(Line::label()).concat(" !"),
+        )))
+        .child(button().id("swap").on_click(lines.swap(0, 2)))
+        .child(
+            button()
+                .id("sort")
+                .on_click(lines.sort_by(|line| line.at(Line::id()))),
+        )
+        .child(
+            button()
+                .id("stamp")
+                .on_click(Table::stamp().set(Expr::now())),
+        )
+        .child(ul().id("lines").child(each_keyed(
+            lines,
+            |line| line.at(Line::id()),
+            |line| li().bind_text(line.at(Line::label())),
+        )));
+    let signals = Table {
+        lines: Vec::new(),
+        next_id: 1,
+        stamp: 0.0,
+    };
+    (el, signals)
+}
+
 fn check(name: &str, el: &El<impl Signals>, signals: &impl Serialize) {
     let fixture = json!({ "html": el.render(), "signals": signals });
     write_or_compare(
@@ -374,6 +438,8 @@ fn fixtures_match_the_builder() {
     check("timers", &el, &signals);
     let (el, signals) = nested();
     check("nested", &el, &signals);
+    let (el, signals) = table();
+    check("table", &el, &signals);
     let (el, signals) = todos();
     check_page("todos_page", el, signals);
     let (el, signals) = nested();

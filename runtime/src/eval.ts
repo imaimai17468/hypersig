@@ -143,6 +143,19 @@ function build(ast: Ast): Compiled {
       const value = rest[0];
       return () => value;
     }
+    case "random": {
+      const bound = compile(rest[0]);
+      return (ctx) => Math.floor(Math.random() * (bound(ctx) as number));
+    }
+    case "now":
+      return () => Date.now();
+    case "nth": {
+      const [list, index] = [compile(rest[0]), compile(rest[1])];
+      return (ctx) => {
+        const items = list(ctx);
+        return Array.isArray(items) ? (items[index(ctx) as number] ?? null) : null;
+      };
+    }
     case "tuple": {
       const parts = rest.map(compile);
       return (ctx) => parts.map((part) => part(ctx));
@@ -217,6 +230,60 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       const keep = testItems(ctx, depth, path, items, compile(rest[2]));
       const kept = items.filter((_, i) => keep[i]);
       if (kept.length !== items.length) store.set(path, kept);
+      return;
+    }
+    case "extend": {
+      const [path, items] = list(ctx, rest[0]);
+      const count = evaluate(rest[1], ctx) as number;
+      const build = compile(rest[3]);
+      const slot: Slot = { path: "" };
+      const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, rest[2] as number), slot] };
+      const added = Array.from({ length: Math.max(0, count) }, (_, index) => {
+        slot.path = String(index);
+        return build(itemCtx);
+      });
+      if (added.length > 0) store.set(path, [...items, ...added]);
+      return;
+    }
+    case "update": {
+      const [path, items] = list(ctx, rest[0]);
+      const depth = rest[1] as number;
+      const when = testItems(ctx, depth, path, items, compile(rest[2]));
+      const field = rest[3] as string;
+      const value = compile(rest[4]);
+      const slot: Slot = { path };
+      const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
+      let next: unknown[] | null = null;
+      items.forEach((item, index) => {
+        if (!when[index]) return;
+        slot.path = join(path, String(index));
+        next ??= [...items];
+        next[index] = setPath(item, field, value(itemCtx));
+      });
+      if (next !== null) store.set(path, next);
+      return;
+    }
+    case "swap": {
+      const [path, items] = list(ctx, rest[0]);
+      const [a, b] = [evaluate(rest[1], ctx) as number, evaluate(rest[2], ctx) as number];
+      if (a === b || !(a in items) || !(b in items)) return;
+      const next = [...items];
+      [next[a], next[b]] = [next[b], next[a]];
+      store.set(path, next);
+      return;
+    }
+    case "sort": {
+      const [path, items] = list(ctx, rest[0]);
+      const depth = rest[1] as number;
+      const key = compile(rest[2]);
+      const slot: Slot = { path };
+      const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
+      const keys = items.map((_, index) => {
+        slot.path = join(path, String(index));
+        return key(itemCtx) as number | string;
+      });
+      const order = items.map((_, index) => index).sort((a, b) => (keys[a]! < keys[b]! ? -1 : keys[a]! > keys[b]! ? 1 : a - b));
+      if (order.some((at, index) => at !== index)) store.set(path, order.map((at) => items[at]));
       return;
     }
     case "set_all": {

@@ -194,6 +194,34 @@ describe("timers, effects, and calls", () => {
   });
 });
 
+describe("list statements and browser values", () => {
+  it("creates, updates, swaps, and sorts items, and reads random numbers and the clock", async () => {
+    const runtime = mount("table");
+    const ids = () => (runtime.store.get("lines") as { id: number }[]).map((line) => line.id);
+    $("#run").click();
+    await tick();
+    expect(ids()).toEqual([1, 2, 3]);
+    expect(runtime.store.get("next_id")).toBe(4);
+    const labels = () => $$("#lines li").map((li) => li.textContent);
+    expect(labels().every((label) => label === "a" || label === "b")).toBe(true);
+
+    const before = labels();
+    $("#update").click();
+    await tick();
+    expect(labels()).toEqual([`${before[0]} !`, before[1], `${before[2]} !`]);
+
+    $("#swap").click();
+    await tick();
+    expect(ids()).toEqual([3, 2, 1]);
+    $("#sort").click();
+    await tick();
+    expect(ids()).toEqual([1, 2, 3]);
+
+    $("#stamp").click();
+    expect(Math.abs((runtime.store.get("stamp") as number) - Date.now())).toBeLessThan(1000);
+  });
+});
+
 describe("nested lists and direct events", () => {
   it("resolves item fields and counts one list deep inside another", async () => {
     const runtime = mount("nested");

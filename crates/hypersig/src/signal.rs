@@ -8,7 +8,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use crate::expr::{Expr, IntoExpr, Stmt};
+use crate::expr::{Comparable, Expr, IntoExpr, Stmt};
 use crate::patch::SignalPatch;
 
 /// A struct whose fields are signals.
@@ -299,6 +299,80 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
             field.path.dotted(),
             value.into_expr().into_json()
         ]))
+    }
+
+    /// A statement that appends `count` items, building each from its position
+    /// `i`, which runs from 0 up to `count`.
+    #[must_use]
+    pub fn extend<E: IntoExpr<S, T>>(
+        self,
+        count: impl IntoExpr<S, i32>,
+        build: impl FnOnce(Expr<S, i32>) -> E,
+    ) -> Stmt<S> {
+        let (depth, item) = in_item_scope(|depth| {
+            let index = Expr::from_json(json!(["index", depth]));
+            (depth, build(index).into_expr().into_json())
+        });
+        Stmt::new(json!([
+            "extend",
+            self.path.place_json(),
+            count.into_expr().into_json(),
+            depth,
+            item
+        ]))
+    }
+
+    /// A statement that sets `field` to `value` on the items for which `when` is true.
+    ///
+    /// Both closures receive the item being updated, so `value` can read it.
+    #[must_use]
+    pub fn update_where<U, P: IntoExpr<S, bool>, E: IntoExpr<S, U>>(
+        self,
+        when: impl FnOnce(Item<S, T>) -> P,
+        field: Sig<T, U>,
+        value: impl FnOnce(Item<S, T>) -> E,
+    ) -> Stmt<S> {
+        let (depth, when, value) = in_item_scope(|depth| {
+            let item = Item::new(self.path, depth);
+            (
+                depth,
+                when(item).into_expr().into_json(),
+                value(item).into_expr().into_json(),
+            )
+        });
+        Stmt::new(json!([
+            "update",
+            self.path.place_json(),
+            depth,
+            when,
+            field.path.dotted(),
+            value
+        ]))
+    }
+
+    /// A statement that exchanges the items at `a` and `b`, if both exist.
+    #[must_use]
+    pub fn swap(self, a: impl IntoExpr<S, i32>, b: impl IntoExpr<S, i32>) -> Stmt<S> {
+        Stmt::new(json!([
+            "swap",
+            self.path.place_json(),
+            a.into_expr().into_json(),
+            b.into_expr().into_json()
+        ]))
+    }
+
+    /// A statement that orders the items by `key`, ascending, keeping the
+    /// order of items with equal keys.
+    #[must_use]
+    pub fn sort_by<K: Comparable, E: IntoExpr<S, K>>(
+        self,
+        key: impl FnOnce(Item<S, T>) -> E,
+    ) -> Stmt<S> {
+        let (depth, key) = in_item_scope(|depth| {
+            let item = Item::new(self.path, depth);
+            (depth, key(item).into_expr().into_json())
+        });
+        Stmt::new(json!(["sort", self.path.place_json(), depth, key]))
     }
 
     fn predicate<P: IntoExpr<S, bool>>(self, build: impl FnOnce(Item<S, T>) -> P) -> (u8, Value) {
