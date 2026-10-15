@@ -198,8 +198,5 @@ ${results.date}, commit ${results.commit}, Chrome ${results.chrome}, ${results.m
 | TBT | ${names.map((n) => ms(results.apps[n].tbt)).join(" | ")} |
 | INP | ${names.map((n) => inp(results.apps[n].inp)).join(" | ")} |
 `;
-  })
-  .join("\n")}
-`;
 writeFileSync(new URL("latest.md", dir), md);
 console.log(md);
