@@ -2,12 +2,12 @@
 //!
 //! The server owns the state, renders HTML, and answers browser events with
 //! patches over Server-Sent Events. A small runtime in the browser keeps a
-//! store of signals for local reactivity and applies the patches. The design
-//! follows [Datastar](https://data-star.dev/). What hypersig changes is that
-//! signal names, attribute expressions, action endpoints, and patch targets
-//! are all produced from Rust types, so a misspelled signal, a type mismatch
-//! in an expression, or an action called from the wrong page is a compile
-//! error.
+//! store of signals for local reactivity and applies the patches. Signal
+//! names, attribute expressions, action endpoints, and patch targets are all
+//! produced from Rust types, so a misspelled signal, a type mismatch in an
+//! expression, or an action called from the wrong page is a compile error.
+//! [`Page::render`] evaluates the expressions with the initial signals, so the
+//! first HTML already shows what the runtime would compute.
 //!
 //! ```
 //! use hypersig::html::{button, div, span};

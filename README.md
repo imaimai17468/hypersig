@@ -1,43 +1,45 @@
 # hypersig
 
-Rust 向けのサーバー駆動ハイパーメディアライブラリ。[Datastar](https://data-star.dev/) の設計（状態はサーバーが持ち、HTML とシグナルの差分を SSE で流し、ブラウザ側は小さなランタイムが適用する）を借りて、Datastar が手書きの文字列で書かせる部分をすべて Rust の型から生成する。
+画面もブラウザ側の振る舞いもサーバーの処理も Rust だけで書く Web フレームワーク。状態の正本はサーバーにあり、サーバーは HTML を返し、変更は SSE（Server-Sent Events）で差分として送る。ブラウザ側は約 5 KB（gzip 後）のランタイムが差分を当て、入力やクリックへの反応をその場で処理する。
 
-| Datastar で手書きする文字列 | hypersig での書き方 | 間違えたとき |
-|---|---|---|
-| シグナル名 `$count` | `#[derive(Signals)]` が生成する `Counter::count()` | 綴りを間違えるとコンパイルエラー |
-| 属性の式 `data-show="$count > 0"` | `.show(count.gt(0))`。`show` は `bool` の式しか受け取らない | 型が合わないとコンパイルエラー |
-| アクションの URL `@post('/increment')` | `const INC: Action<Counter> = Action::post("/increment")` を画面とルーターで共有 | 別ページのアクションを呼ぶとコンパイルエラー |
-| パッチ先の id `#cart` | `impl Fragment for Cart { const ID = "cart"; ... }` | id を書く場所がひとつしかない |
+## 特徴
 
-式は JSON の AST として属性に書き出され、ランタイムがそれを解釈する。`eval` も `new Function` も使わないので、CSP で `unsafe-eval` を許可する必要がない（`runtime/test/bundle.test.ts` がバンドルを検査している）。
+**ブラウザが実行するものを、すべて Rust の型から作る。** シグナル名、属性に書く式、呼び出すエンドポイント、差し替える要素の id、フォーカスする要素の名前は、どれも Rust の値として書き、ライブラリが HTML に書き出す。手で文字列を書く場所がないので、次の間違いはどれもコンパイルエラーになる（`crates/hypersig/tests/ui/fail/` に 17 件）。
 
-## Datastar の属性との対応
-
-Datastar の属性ごとに、hypersig で同じことをする書き方を並べる。どれも引数が型で縛られ、別ページのシグナルや型の合わない式はコンパイルで止まる。
-
-| Datastar | hypersig |
+| 間違い | 止まる理由 |
 |---|---|
-| `data-signals` | `#[derive(Signals)]` した構造体を `Page::new` に渡す。入れ子の構造体は `Sig::at` でたどる |
-| `data-computed` | `Page::computed(sig, expr)`。結果はシグナル構造体のフィールドに入り、読む束縛は値が変わったときだけ評価し直す |
-| `data-text`、`data-show` | `bind_text`、`show` |
-| `data-class`、`data-attr`、`data-style` | `class_when`、`bind_attr` と `attr_when`、`bind_style` |
-| `data-bind` | `bind`（text、textarea、select、number、checkbox）、`bind_radio`、enum を選ぶ `bind_select` |
-| `data-on` | `on_click`、`on_key(Key::Enter, ...)`、`on_blur` など。`__debounce` は `on_debounced` |
-| `data-on-interval` | `on_interval(Duration, stmt)` |
-| `data-init` | `on_load` |
-| `data-effect` | `effect(stmt)`。文が読んだシグナルが変わると再実行する |
-| `data-on-signal-patch` | `on_signal_change(sig, stmt)`。そのシグナルか中のフィールドが変わると動く |
-| `data-indicator` | `ACTION.call().indicator(flag)`。失敗時のメッセージは `.error(message)` |
-| `data-ref` | `const R: NodeRef<S> = NodeRef::new(...)` と `R.focus()` など |
-| `@post`、`@get` | `const A: Action<S, Args> = Action::post(...)` と `A.call()` |
-| `datastar-patch-elements`、`datastar-patch-signals` | `Patches::element(&fragment)`、`Patches::signals(sig.patch(v))` |
+| シグナル名の綴り違い | `#[derive(Signals)]` が生成する `Counter::count()` しか使えない |
+| 表示切り替えに数値を渡す | `show` は `bool` の式しか受け取らない |
+| 別ページのシグナルやアクションを使う | 式と文はページのシグナル構造体を型引数に持つ |
+| アクションの引数を渡し忘れる、型を間違える | `Action<Page, Args>` を画面とルーターの両方で使う |
+| リストの項目をサーバーから書き換えようとする | 項目を指すシグナルには `patch` がない |
 
-Datastar にないものも 2 つ足した。
+**サーバーが書いた HTML がそのまま最初の画面になる。** `Page::render` は初期の値で式を評価し、テキスト、表示切り替え、class、属性、フォームの値、リストの項目を HTML に書き込む。ブラウザ側のランタイムは読み込み後にその要素を作り直さずに引き継ぐ。JS を切ったブラウザでも最初の画面は同じに見える。
 
-- **ブラウザ側のリストと条件付き要素**: `each(list, |item| ...)` が `Vec` のシグナルを項目ごとに描き、`key` で要素を保ったまま並べ替える。`when(cond, el)` は条件が偽の間、要素を DOM から外す。項目は `push`、`item.remove()`、`retain`、`set_all`、`count` で操作する。
-- **サーバー側での式の評価**: `Page::render` が初期シグナルで式を評価し、テキスト、表示切り替え、class、属性、フォームの値、リストの項目を HTML に書き込む。ランタイムは読み込み後、その要素を作り直さずに引き継ぐ。JS を切ったブラウザでも最初の画面はそのまま見える。
+**変わったところだけを描き直す。** ランタイムは束縛ごとに読んだシグナルのパスを記録し、変更されたパスからたどれる束縛だけを評価し直す。2000 件の TodoMVC（headless Chrome、release ビルド、5 回の中央値）で、入力欄への 1 文字入力が 0.1 ms、1 件のチェックが 2.8 ms だった。チェックのうち約 1.2 ms は、この例が変更のたびに一覧全体をサーバーへ保存している分。
 
-ランタイムは束縛ごとに読んだシグナルを記録し、パスの木から、変わったシグナルを読んでいる束縛だけを探して評価し直す。リストの束縛はリスト自体を浅く読むので、項目のキー以外のフィールドが変わってもキーの照合は走らない。2000 件の TodoMVC（headless Chrome、release ビルド、5 回の中央値）では、入力欄への 1 文字入力が 0.1 ms、1 件のチェックが 2.8 ms だった。チェックの 2.8 ms のうち約 1.2 ms は、この例が変更のたびに一覧全体をサーバーへ保存している分で、保存を外すと 1.6 ms になる。
+**CSP を緩めなくてよい。** 式は JSON の構文木として属性に入り、ランタイムが解釈する。`eval` も `new Function` も使わないので `unsafe-eval` は要らない（`runtime/test/bundle.test.ts` がバンドルを検査している）。
+
+**利用者のビルドに Node が要らない。** ランタイムはビルド済みのものをクレートに埋め込んである。`cargo build` だけで動く。
+
+## 書けること
+
+| やりたいこと | 書き方 |
+|---|---|
+| ページの状態 | `#[derive(Signals)]` した構造体を `Page::new` に渡す。入れ子の構造体は `Sig::at` でたどる |
+| 状態を持つ部品の再利用 | 部品関数に `Sig<S, Disclosure>` を渡す。置いた場所ごとに別の状態になる |
+| 他のシグナルから計算する値 | `Page::computed(sig, expr)`。読むシグナルが変わったときだけ計算し直す |
+| テキスト、表示切り替え | `bind_text`、`show` |
+| class、属性、style | `class_when`、`bind_attr`、`attr_when`、`bind_style` |
+| フォーム部品 | `bind`（text、textarea、select、number、checkbox）、`bind_radio`、enum を選ぶ `bind_select` |
+| リスト | `each(list, \|item\| ...)` と `key`。`push`、`item.remove()`、`retain`、`set_all`、`count` |
+| 条件付きの要素 | `when(cond, el)`。偽の間は DOM から外す |
+| イベント | `on_click`、`on_key(Key::Enter, ...)`、`on_blur`、`on_debounced` など |
+| 表示時と定期的な処理 | `on_load`、`on_interval(Duration, stmt)` |
+| 値の変化に反応する処理 | `effect(stmt)` は文が読んだシグナルの変化で、`on_signal_change(sig, stmt)` は指定したシグナルの変化で動く |
+| サーバーの処理を呼ぶ | `const A: Action<S, Args> = Action::post(...)` と `A.call()`。`indicator(flag)` で通信中、`error(message)` で失敗を表示 |
+| サーバーからの更新 | ハンドラが `Patches` を返す。`Fragment` で要素を、`sig.patch(v)` でシグナルを差し替える。`stream` で送り続けることもできる |
+| DOM の操作 | `const R: NodeRef<S> = NodeRef::new(...)` と `R.focus()` など |
 
 ## 例
 
@@ -118,7 +120,7 @@ Node は不要。ブラウザ用ランタイムはビルド済みの `crates/hyp
 
 ## できないこと
 
-- ハンドラや式で使える演算は上に挙げたものに限る。`Date.now()`、`localStorage`、外部ライブラリの呼び出しなど、任意の JS は書けない
+- ハンドラや式で使える演算は、ライブラリが用意したものに限る。`Date.now()`、`localStorage`、外部ライブラリの呼び出しなど、任意の JS は書けない
 - 部品ごとの状態は、ページのシグナル構造体にあらかじめ場所を用意しておく必要がある。実行中に部品を増やすときは `Vec` の項目にする
 - 算術は `i32` と `f64` だけ、除算は `f64` だけ。JavaScript の数値で同じ結果にならない型は式に使えない
 - `equals` は JSON の形で比べる。derive した `PartialEq` とは一致するが、手で書いた `PartialEq` とは一致しない場合がある

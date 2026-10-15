@@ -1,6 +1,6 @@
 # Project Instructions
 
-hypersig is a server-driven hypermedia library for Rust. The server owns the state, renders HTML, and streams patches over Server-Sent Events. A small JavaScript runtime in the browser applies them and keeps a store of signals for local reactivity. The idea is Datastar's. What this repository adds is that every string Datastar asks you to write by hand (signal names, attribute expressions, action URLs, patch target ids) is produced from a Rust type, so a mistake in any of them is a compile error.
+hypersig is a server-driven hypermedia library for Rust. The server owns the state, renders HTML, and streams patches over Server-Sent Events. A small JavaScript runtime in the browser applies them and keeps a store of signals for local reactivity. Every string the browser acts on (signal names, attribute expressions, action URLs, patch target ids, node ref names) is produced from a Rust type, so a mistake in any of them is a compile error.
 
 That last sentence is the project's thesis. A change that lets a user write one of those strings by hand again, or that turns a compile error into a runtime failure, needs the user's own words.
 
