@@ -2,7 +2,7 @@
 //!
 //! An [`Expr`] or [`Stmt`] is serialized into an HTML attribute as a JSON
 //! array whose first element names the operation. The runtime in
-//! `runtime/src/eval.ts` interprets that array directly, with no `eval`.
+//! `runtime/src/eval.ts` builds each array into a function once, with no `eval`.
 //!
 //! | Rust | JSON |
 //! |---|---|

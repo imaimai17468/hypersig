@@ -263,6 +263,32 @@ describe("dependency tracking", () => {
   });
 
 
+  it("does not rerun the bindings of the other items when an item is pushed", async () => {
+    const runtime = mount("todos");
+    runtime.store.set("todos", [
+      { id: 1, title: "a", done: false },
+      { id: 2, title: "b", done: false },
+    ]);
+    await tick();
+    const reads: string[] = [];
+    const get = runtime.store.get.bind(runtime.store);
+    runtime.store.get = (path: string) => {
+      reads.push(path);
+      return get(path);
+    };
+    runtime.store.set("todos", [...(get("todos") as unknown[]), { id: 3, title: "c", done: false }]);
+    await tick();
+    expect($$("#list li label").map((label) => label.textContent)).toEqual(["a", "b", "c"]);
+    expect(reads.filter((path) => /^todos\.[01]\.(id|title)$/.test(path))).toEqual([]);
+    expect(reads.filter((path) => path.endsWith(".title"))).toEqual(["todos.2.title"]);
+
+    runtime.store.set("todos.0.id", 9);
+    await tick();
+    runtime.store.set("todos", (get("todos") as { id: number }[]).slice(1));
+    await tick();
+    expect($$("#list li label").map((label) => label.textContent)).toEqual(["b", "c"]);
+  });
+
   it("reruns only the bindings that read a changed signal", async () => {
     const runtime = mount("todos");
     runtime.store.set("todos", [

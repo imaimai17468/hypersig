@@ -92,48 +92,98 @@ function list(ctx: Context, place: unknown): [string, unknown[]] {
   return [path, Array.isArray(value) ? value : []];
 }
 
-/** `ctx` with the list item `path` bound at `depth`. */
-export function withItem(ctx: Context, depth: number, path: string): Context {
-  return { ...ctx, scope: [...ctx.scope.slice(0, depth), { path }] };
+/** Whether `test` holds for each item of the list at `path`, with one context reused for every item. */
+function testItems(ctx: Context, depth: number, path: string, items: readonly unknown[], test: Compiled): boolean[] {
+  const slot: Slot = { path };
+  const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
+  return items.map((_, index) => {
+    slot.path = join(path, String(index));
+    return Boolean(test(itemCtx));
+  });
 }
 
+type Compiled = (ctx: Context) => unknown;
+
+const compiled = new WeakMap<Ast, Compiled>();
+
+/** Evaluates an expression, building it into a function the first time this AST is seen. */
 export function evaluate(ast: unknown, ctx: Context): unknown {
+  return compile(ast)(ctx);
+}
+
+function compile(ast: unknown): Compiled {
   if (!isAst(ast)) throw new AstError(ast);
+  let fn = compiled.get(ast);
+  if (fn === undefined) {
+    fn = build(ast);
+    compiled.set(ast, fn);
+  }
+  return fn;
+}
+
+function build(ast: Ast): Compiled {
   const [op, ...rest] = ast;
   switch (op) {
-    case "sig":
-      return ctx.store.get(rest[0] as string);
-    case "item":
-      return ctx.store.get(resolve(ast, ctx));
-    case "index": {
-      const path = slot(ctx, rest[0]).path;
-      return Number(path.slice(path.lastIndexOf(".") + 1));
+    case "sig": {
+      const path = rest[0] as string;
+      return (ctx) => ctx.store.get(path);
     }
-    case "lit":
-      return rest[0];
-    case "and":
-      return Boolean(evaluate(rest[0], ctx)) && Boolean(evaluate(rest[1], ctx));
-    case "or":
-      return Boolean(evaluate(rest[0], ctx)) || Boolean(evaluate(rest[1], ctx));
-    case "if":
-      return evaluate(evaluate(rest[0], ctx) ? rest[1] : rest[2], ctx);
-    case "fixed":
-      return (evaluate(rest[0], ctx) as number).toFixed(rest[1] as number);
-    case "get":
-      return getPath(evaluate(rest[0], ctx), rest[1] as string);
-    case "with":
-      return setPath(evaluate(rest[0], ctx), rest[1] as string, evaluate(rest[2], ctx));
+    case "item": {
+      const [depth, field] = rest as [number, string];
+      return (ctx) => ctx.store.get(join(slot(ctx, depth).path, field));
+    }
+    case "index": {
+      const depth = rest[0];
+      return (ctx) => {
+        const path = slot(ctx, depth).path;
+        return Number(path.slice(path.lastIndexOf(".") + 1));
+      };
+    }
+    case "lit": {
+      const value = rest[0];
+      return () => value;
+    }
+    case "and": {
+      const [a, b] = [compile(rest[0]), compile(rest[1])];
+      return (ctx) => Boolean(a(ctx)) && Boolean(b(ctx));
+    }
+    case "or": {
+      const [a, b] = [compile(rest[0]), compile(rest[1])];
+      return (ctx) => Boolean(a(ctx)) || Boolean(b(ctx));
+    }
+    case "if": {
+      const [cond, then, otherwise] = [compile(rest[0]), compile(rest[1]), compile(rest[2])];
+      return (ctx) => (cond(ctx) ? then(ctx) : otherwise(ctx));
+    }
+    case "fixed": {
+      const [value, digits] = [compile(rest[0]), rest[1] as number];
+      return (ctx) => (value(ctx) as number).toFixed(digits);
+    }
+    case "get": {
+      const [value, path] = [compile(rest[0]), rest[1] as string];
+      return (ctx) => getPath(value(ctx), path);
+    }
+    case "with": {
+      const [value, path, next] = [compile(rest[0]), rest[1] as string, compile(rest[2])];
+      return (ctx) => setPath(value(ctx), path, next(ctx));
+    }
     case "count": {
-      const [path, items] = list(ctx, rest[0]);
-      const depth = rest[1] as number;
-      return items.filter((_, i) => evaluate(rest[2], withItem(ctx, depth, join(path, String(i))))).length;
+      const [place, depth, test] = [rest[0], rest[1] as number, compile(rest[2])];
+      return (ctx) => {
+        const [path, items] = list(ctx, place);
+        return testItems(ctx, depth, path, items, test).filter(Boolean).length;
+      };
     }
     default: {
       const one = unary[op as string];
-      if (one !== undefined && rest.length === 1) return one(evaluate(rest[0], ctx) as never);
+      if (one !== undefined && rest.length === 1) {
+        const a = compile(rest[0]);
+        return (ctx) => one(a(ctx) as never);
+      }
       const two = binary[op as string];
       if (two === undefined || rest.length !== 2) throw new AstError(ast);
-      return two(evaluate(rest[0], ctx) as never, evaluate(rest[1], ctx) as never);
+      const [a, b] = [compile(rest[0]), compile(rest[1])];
+      return (ctx) => two(a(ctx) as never, b(ctx) as never);
     }
   }
 }
@@ -160,7 +210,8 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
     case "retain": {
       const [path, items] = list(ctx, rest[0]);
       const depth = rest[1] as number;
-      const kept = items.filter((_, i) => evaluate(rest[2], withItem(ctx, depth, join(path, String(i)))));
+      const keep = testItems(ctx, depth, path, items, compile(rest[2]));
+      const kept = items.filter((_, i) => keep[i]);
       if (kept.length !== items.length) store.set(path, kept);
       return;
     }

@@ -1,4 +1,4 @@
-import type { Reads } from "./store.ts";
+import type { Changes, Reads } from "./store.ts";
 
 /** One binding of one element. `deps` is null until it has run once. */
 export interface Effect {
@@ -7,7 +7,8 @@ export interface Effect {
   readonly element: Element;
   readonly run: () => void;
   deps: Reads | null;
-  nodes: PathNode[];
+  /** The tree node each read is registered under, by path. */
+  nodes: Map<string, PathNode>;
 }
 
 class PathNode {
@@ -18,47 +19,61 @@ class PathNode {
 
 /**
  * Finds the bindings a change can affect without visiting the others. Reads
- * are stored in a tree of path segments. A change at a path affects every
- * read at or below it, and the deep reads above it.
+ * are stored in a tree of path segments. A change at a path affects the deep
+ * reads above it and the reads at it, and also the reads below it unless only
+ * the container at the path was replaced.
  */
 export class DepIndex {
   readonly #root = new PathNode();
 
-  /** Replaces what `effect` is registered under with `reads`. */
+  /** Replaces what `effect` is registered under with `reads`, touching only the reads that differ. */
   set(effect: Effect, reads: Reads): void {
-    if (effect.deps !== null && effect.nodes.length > 0 && same(effect.deps, reads)) {
-      effect.deps = reads;
-      return;
-    }
-    this.remove(effect);
+    const old = effect.deps;
     effect.deps = reads;
-    for (const [path, deep] of reads) {
-      let node = this.#root;
-      for (const segment of path.split(".")) {
-        let child = node.children.get(segment);
-        if (child === undefined) {
-          child = new PathNode();
-          node.children.set(segment, child);
-        }
-        node = child;
+    if (old !== null) {
+      for (const [path, deep] of old) {
+        if (reads.get(path) === deep) continue;
+        const node = effect.nodes.get(path);
+        if (node === undefined) continue;
+        node.deep.delete(effect);
+        node.shallow.delete(effect);
+        effect.nodes.delete(path);
       }
+    }
+    for (const [path, deep] of reads) {
+      if (old?.get(path) === deep && effect.nodes.has(path)) continue;
+      const node = this.#node(path);
+      (deep ? node.shallow : node.deep).delete(effect);
       (deep ? node.deep : node.shallow).add(effect);
-      effect.nodes.push(node);
+      effect.nodes.set(path, node);
     }
   }
 
   remove(effect: Effect): void {
-    for (const node of effect.nodes) {
+    for (const node of effect.nodes.values()) {
       node.deep.delete(effect);
       node.shallow.delete(effect);
     }
-    effect.nodes = [];
+    effect.nodes = new Map();
   }
 
-  /** The bindings that read a path a change in `changed` can affect. */
-  affected(changed: Iterable<string>): Set<Effect> {
+  #node(path: string): PathNode {
+    let node = this.#root;
+    for (const segment of path.split(".")) {
+      let child = node.children.get(segment);
+      if (child === undefined) {
+        child = new PathNode();
+        node.children.set(segment, child);
+      }
+      node = child;
+    }
+    return node;
+  }
+
+  /** The bindings whose reads `changes` can affect, as `affects` decides. */
+  affected(changes: Changes): Set<Effect> {
     const found = new Set<Effect>();
-    for (const path of changed) {
+    for (const [path, inside] of changes) {
       let node: PathNode | undefined = this.#root;
       const segments = path.split(".");
       for (const [i, segment] of segments.entries()) {
@@ -66,16 +81,16 @@ export class DepIndex {
         if (node === undefined) break;
         if (i < segments.length - 1) for (const effect of node.deep) found.add(effect);
       }
-      if (node !== undefined) collect(node, found);
+      if (node === undefined) continue;
+      if (inside) {
+        collect(node, found);
+      } else {
+        for (const effect of node.deep) found.add(effect);
+        for (const effect of node.shallow) found.add(effect);
+      }
     }
     return found;
   }
-}
-
-function same(a: Reads, b: Reads): boolean {
-  if (a.size !== b.size) return false;
-  for (const [path, deep] of a) if (b.get(path) !== deep) return false;
-  return true;
 }
 
 function collect(node: PathNode, found: Set<Effect>): void {

@@ -17,24 +17,32 @@ it("finds exactly the bindings that `affects` says a change reaches", () => {
   for (let id = 0; id < 200; id++) {
     const reads: Reads = new Map();
     for (let k = 0; k < 3; k++) reads.set(randomPath(next), next() < 0.5);
-    const effect: Effect = { id, element: document.body, run: () => {}, deps: null, nodes: [] };
+    const effect: Effect = { id, element: document.body, run: () => {}, deps: null, nodes: new Map() };
     index.set(effect, reads);
     effects.push(effect);
   }
   for (let round = 0; round < 300; round++) {
-    const changed = new Set([randomPath(next), randomPath(next)]);
-    const expected = effects.filter((effect) => affects(effect.deps!, changed));
-    expect([...index.affected(changed)].sort((a, b) => a.id - b.id)).toEqual(expected);
+    const moved = effects[Math.floor(next() * effects.length)]!;
+    const reads: Reads = new Map(moved.deps!);
+    reads.delete([...reads.keys()][0]!);
+    reads.set(randomPath(next), next() < 0.5);
+    index.set(moved, reads);
+    const changes = new Map([
+      [randomPath(next), next() < 0.5],
+      [randomPath(next), next() < 0.5],
+    ]);
+    const expected = effects.filter((effect) => affects(effect.deps!, changes));
+    expect([...index.affected(changes)].sort((a, b) => a.id - b.id)).toEqual(expected);
   }
 });
 
 it("forgets a binding's old reads when it is registered again", () => {
   const index = new DepIndex();
-  const effect: Effect = { id: 0, element: document.body, run: () => {}, deps: null, nodes: [] };
+  const effect: Effect = { id: 0, element: document.body, run: () => {}, deps: null, nodes: new Map() };
   index.set(effect, new Map([["a", true]]));
   index.set(effect, new Map([["b", true]]));
-  expect(index.affected(["a"]).size).toBe(0);
-  expect(index.affected(["b"]).size).toBe(1);
+  expect(index.affected(new Map([["a", true]])).size).toBe(0);
+  expect(index.affected(new Map([["b", true]])).size).toBe(1);
   index.remove(effect);
-  expect(index.affected(["b"]).size).toBe(0);
+  expect(index.affected(new Map([["b", true]])).size).toBe(0);
 });

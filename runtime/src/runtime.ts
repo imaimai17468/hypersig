@@ -2,7 +2,7 @@ import { type Context, evaluate, type Host, resolve, run, type Slot } from "./ev
 import { morph } from "./morph.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
 import { DepIndex, type Effect } from "./deps.ts";
-import { equal, join, Store, type Values } from "./store.ts";
+import { type Changes, equal, join, type Reads, Store, type Values } from "./store.ts";
 
 /** Events handled by one listener on the root, matched to the closest element with a handler. */
 const BUBBLING = ["click", "dblclick", "input", "change", "submit", "keydown", "focusin", "focusout"] as const;
@@ -37,6 +37,8 @@ interface Instance {
   readonly slot: Slot;
   /** False for an element the server rendered, until the runtime scans it with its item scope. */
   scanned: boolean;
+  /** What evaluating this item's key read, recorded again when the key is not reevaluated. */
+  keyReads: Reads;
 }
 
 /** Connects the signals on `<body>` and the `data-hs-*` attributes of `root`. */
@@ -48,6 +50,8 @@ export class Runtime implements Host {
   /** Bindings to run in the current or next render: new ones, and ones whose item moved. */
   #fresh: Effect[] = [];
   #ran = new Set<Effect>();
+  /** The changes the current render is running for. */
+  #changes: Changes = new Map();
   #nextId = 0;
   readonly #scopes = new WeakMap<Element, readonly Slot[]>();
   readonly #started = new WeakSet<Element>();
@@ -59,7 +63,7 @@ export class Runtime implements Host {
   constructor(root: Element, initial: Values) {
     this.#root = root;
     this.store = new Store(initial);
-    this.store.subscribe((changed) => this.#render(changed));
+    this.store.subscribe((changes) => this.#render(changes));
     for (const type of BUBBLING) {
       root.addEventListener(type, (event) => this.#onEvent(type, event));
     }
@@ -68,7 +72,7 @@ export class Runtime implements Host {
     }
     this.#computed(root);
     this.scan(root, []);
-    this.#render(new Set());
+    this.#render(new Map());
   }
 
   /** Registers the computed signals on `root`, before any element, so they run first. */
@@ -84,7 +88,7 @@ export class Runtime implements Host {
         this.store.untracked(() => this.store.set(path, value));
       },
       deps: null,
-      nodes: [],
+      nodes: new Map(),
     }));
     this.#fresh.push(...effects);
   }
@@ -203,7 +207,7 @@ export class Runtime implements Host {
         }
         const morphed = morph(target, next);
         this.scan(morphed, this.#scopeOf(morphed.parentElement));
-        this.#render(new Set());
+        this.#render(new Map());
         return;
       }
       default:
@@ -220,7 +224,7 @@ export class Runtime implements Host {
     const value = (ast: unknown) => evaluate(ast, ctx);
     const effects: Effect[] = [];
     const add = (run: () => void): void => {
-      effects.push({ id: this.#nextId++, element, run, deps: null, nodes: [] });
+      effects.push({ id: this.#nextId++, element, run, deps: null, nodes: new Map() });
     };
 
     const show = parse(element.getAttribute("data-hs-show"));
@@ -290,27 +294,32 @@ export class Runtime implements Host {
     const proto = template.content.firstElementChild;
     const parent = template.parentNode;
     if (proto === null || parent === null) return;
-    const ctx: Context = { store: this.store, scope };
-    const path = resolve(place, ctx);
-    const items = this.store.getShallow(path);
+    const path = resolve(place, { store: this.store, scope });
+    const value = this.store.getShallow(path);
+    const items = Array.isArray(value) ? value : [];
     const keyAst = parse(proto.getAttribute("data-hs-key"));
-    const previous = this.#lists.get(template) ?? this.#adoptItems(template);
-    const next = new Map<string, Instance>();
-    let anchor: Node = template;
-
-    (Array.isArray(items) ? items : []).forEach((_, index) => {
+    const known = this.#lists.get(template);
+    const item = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>, anchor: Node): Node => {
       const itemPath = join(path, String(index));
       const itemScope = [...scope.slice(0, depth), { path: itemPath }];
-      let key = keyAst === undefined ? `#${index}` : JSON.stringify(evaluate(keyAst, { store: this.store, scope: itemScope }));
+      let key = `#${index}`;
+      let keyReads: Reads = new Map();
+      if (keyAst !== undefined) {
+        keyReads = this.store.track(() => {
+          key = JSON.stringify(evaluate(keyAst, { store: this.store, scope: itemScope }));
+        });
+        this.store.replay(keyReads);
+      }
       if (next.has(key)) {
         console.warn(`hypersig: duplicate key ${key} in a list; matching it by position`);
         key = `${key}#${index}`;
       }
       let instance = previous.get(key);
       if (instance === undefined || !instance.element.isConnected) {
-        instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: false };
+        instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: false, keyReads };
         this.#instanceRoots.add(instance.element);
       } else {
+        instance.keyReads = keyReads;
         if (instance.slot.path !== itemPath) {
           instance.slot.path = itemPath;
           this.#requeue(instance.element);
@@ -322,9 +331,27 @@ export class Runtime implements Host {
         instance.scanned = true;
         this.scan(instance.element, [...scope.slice(0, depth), instance.slot]);
       }
-      anchor = instance.element;
-    });
+      return instance.element;
+    };
 
+    if (known !== undefined && appended(this.#changes, path, known, items.length)) {
+      let anchor: Node = template;
+      for (const instance of known.values()) {
+        this.store.replay(instance.keyReads);
+        anchor = instance.element;
+      }
+      const next = new Map(known);
+      for (let index = known.size; index < items.length; index++) anchor = item(index, known, next, anchor);
+      this.#lists.set(template, next);
+      return;
+    }
+
+    const previous = known ?? this.#adoptItems(template);
+    const next = new Map<string, Instance>();
+    let anchor: Node = template;
+    items.forEach((_, index) => {
+      anchor = item(index, previous, next, anchor);
+    });
     for (const [key, instance] of previous) {
       if (next.get(key) !== instance) this.#unmount(instance.element);
     }
@@ -337,7 +364,7 @@ export class Runtime implements Host {
     for (let at = template.nextElementSibling; at !== null && at.hasAttribute("data-hs-ssr"); at = at.nextElementSibling) {
       if (this.#instanceRoots.has(at)) break;
       this.#instanceRoots.add(at);
-      adopted.set(at.getAttribute("data-hs-ssr")!, { element: at, slot: { path: "" }, scanned: false });
+      adopted.set(at.getAttribute("data-hs-ssr")!, { element: at, slot: { path: "" }, scanned: false, keyReads: new Map() });
     }
     return adopted;
   }
@@ -424,10 +451,11 @@ export class Runtime implements Host {
     }
   }
 
-  /** Runs the bindings that read a path in `changed`, oldest first, then every binding that has not run yet. */
-  #render(changed: ReadonlySet<string>): void {
+  /** Runs the bindings that `changes` affects, oldest first, then every binding that has not run yet. */
+  #render(changes: Changes): void {
     this.#ran = new Set();
-    const affected = [...this.#index.affected(changed)].sort((a, b) => a.id - b.id);
+    this.#changes = changes;
+    const affected = [...this.#index.affected(changes)].sort((a, b) => a.id - b.id);
     for (const effect of affected) this.#runEffect(effect);
     while (this.#fresh.length > 0) {
       const batch = this.#fresh;
@@ -539,7 +567,7 @@ export class Runtime implements Host {
   }
 
   #runAttribute(source: string, element: Element): void {
-    this.#run(JSON.parse(source), this.#context(element, this.#scopeOf(element)));
+    this.#run(parse(source), this.#context(element, this.#scopeOf(element)));
   }
 
   /** Runs a statement whose reads do not belong to the binding being rendered. */
@@ -555,11 +583,45 @@ export class Runtime implements Host {
   }
 }
 
+const parsed = new Map<string, unknown>();
+
+/**
+ * `JSON.parse(source)`, remembered, so the items of a list share one AST per
+ * attribute and `evaluate` builds each expression once. The result is never
+ * modified, because the store copies a value before changing it.
+ */
 function parse(source: string | null): unknown {
-  return source === null ? undefined : JSON.parse(source);
+  if (source === null) return undefined;
+  let value = parsed.get(source);
+  if (value === undefined) {
+    value = JSON.parse(source);
+    if (parsed.size > 10_000) parsed.clear();
+    parsed.set(source, value);
+  }
+  return value;
 }
 
 function pairs(element: Element, attribute: string): [string, unknown][] {
   const value = parse(element.getAttribute(attribute));
   return Array.isArray(value) ? (value as [string, unknown][]) : [];
+}
+
+/**
+ * Whether `changes` only appended items to the list at `path`, which `known`
+ * rendered at its previous length, so the items it holds are unchanged and
+ * still sit at the same paths.
+ */
+function appended(changes: Changes, path: string, known: ReadonlyMap<string, Instance>, length: number): boolean {
+  if (changes.get(path) !== false || length < known.size) return false;
+  let index = 0;
+  for (const instance of known.values()) {
+    if (instance.slot.path !== join(path, String(index++)) || !instance.element.isConnected) return false;
+  }
+  const prefix = `${path}.`;
+  for (const changed of changes.keys()) {
+    if (!changed.startsWith(prefix)) continue;
+    const segment = changed.slice(prefix.length).split(".", 1)[0]!;
+    if (!(Number(segment) >= known.size)) return false;
+  }
+  return true;
 }

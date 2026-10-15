@@ -66,24 +66,41 @@ export function overlaps(a: string, b: string): boolean {
  */
 export type Reads = Map<string, boolean>;
 
-/** Whether a change at `path` can change what a binding that made `reads` saw. */
-export function affects(reads: ReadonlyMap<string, boolean>, changed: ReadonlySet<string>): boolean {
+/**
+ * The paths a write changed. `true` means the value at the path and anything
+ * inside it may differ. `false` means the value at the path was replaced by a
+ * container whose children are the old ones, apart from the children listed
+ * under their own paths, as when an item is pushed onto a list.
+ */
+export type Changes = ReadonlyMap<string, boolean>;
+
+/** Whether `changes` can change what a binding that made `reads` saw. */
+export function affects(reads: ReadonlyMap<string, boolean>, changes: Changes): boolean {
   for (const [read, deep] of reads) {
-    for (const path of changed) {
-      if (deep ? overlaps(read, path) : read === path || read.startsWith(`${path}.`)) return true;
+    for (const [path, inside] of changes) {
+      const hit = inside
+        ? deep
+          ? overlaps(read, path)
+          : read === path || read.startsWith(`${path}.`)
+        : read === path || (deep && path.startsWith(`${read}.`));
+      if (hit) return true;
     }
   }
   return false;
 }
 
+function isContainer(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
+
 /**
  * The page's signals as one JSON object. Reads made inside `track` are
- * recorded, and listeners receive the paths changed since they last ran.
+ * recorded, and listeners receive the changes made since they last ran.
  */
 export class Store {
   #values: Values;
-  #listeners = new Set<(changed: ReadonlySet<string>) => void>();
-  #changed = new Set<string>();
+  #listeners = new Set<(changes: Changes) => void>();
+  #changes = new Map<string, boolean>();
   #reads: Reads | null = null;
 
   constructor(initial: Values) {
@@ -107,10 +124,28 @@ export class Store {
   }
 
   set(path: string, value: unknown): void {
-    if (Object.is(getPath(this.#values, path), value)) return;
+    const previous = getPath(this.#values, path);
+    if (Object.is(previous, value)) return;
     this.#values = setPath(this.#values, path, value) as Values;
-    if (this.#changed.size === 0) queueMicrotask(() => this.#notify());
-    this.#changed.add(path);
+    if (this.#changes.size === 0) queueMicrotask(() => this.#notify());
+    if (isContainer(previous) && isContainer(value) && Array.isArray(previous) === Array.isArray(value)) {
+      this.#record(path, false);
+      if (Array.isArray(previous) && Array.isArray(value)) {
+        for (let index = 0; index < Math.max(previous.length, value.length); index++) {
+          if (!Object.is(previous[index], value[index])) this.#record(join(path, String(index)), true);
+        }
+      } else {
+        for (const key of new Set([...Object.keys(previous), ...Object.keys(value)])) {
+          if (!Object.is(previous[key], value[key])) this.#record(join(path, key), true);
+        }
+      }
+    } else {
+      this.#record(path, true);
+    }
+  }
+
+  #record(path: string, inside: boolean): void {
+    this.#changes.set(path, this.#changes.get(path) === true || inside);
   }
 
   merge(values: Values): void {
@@ -134,6 +169,14 @@ export class Store {
     return reads;
   }
 
+  /** Records `reads` in the enclosing `track` as if they had been made again. */
+  replay(reads: Reads): void {
+    if (this.#reads === null) return;
+    for (const [path, deep] of reads) {
+      if (deep || !this.#reads.has(path)) this.#reads.set(path, deep || this.#reads.get(path) === true);
+    }
+  }
+
   /** Runs `body` without recording its reads in the enclosing `track`. */
   untracked<T>(body: () => T): T {
     const outer = this.#reads;
@@ -145,13 +188,13 @@ export class Store {
     }
   }
 
-  subscribe(listener: (changed: ReadonlySet<string>) => void): void {
+  subscribe(listener: (changes: Changes) => void): void {
     this.#listeners.add(listener);
   }
 
   #notify(): void {
-    const changed = this.#changed;
-    this.#changed = new Set();
-    for (const listener of this.#listeners) listener(changed);
+    const changes = this.#changes;
+    this.#changes = new Map();
+    for (const listener of this.#listeners) listener(changes);
   }
 }
