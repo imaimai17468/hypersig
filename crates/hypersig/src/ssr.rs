@@ -18,6 +18,10 @@ static NULL: Value = Value::Null;
 pub(crate) struct Ctx<'a> {
     pub(crate) root: &'a Value,
     pub(crate) scope: Vec<String>,
+    /// Whether the HTML being written is a copy of a template that the runtime
+    /// takes over. A copy leaves out the `data-hs-*` attributes, because the
+    /// runtime reads them from the template.
+    pub(crate) copy: bool,
 }
 
 impl<'a> Ctx<'a> {
@@ -27,6 +31,15 @@ impl<'a> Ctx<'a> {
         Ctx {
             root: self.root,
             scope,
+            copy: true,
+        }
+    }
+
+    pub(crate) fn as_copy(&self) -> Ctx<'a> {
+        Ctx {
+            root: self.root,
+            scope: self.scope.clone(),
+            copy: true,
         }
     }
 
@@ -302,6 +315,7 @@ mod tests {
             &Ctx {
                 root,
                 scope: Vec::new(),
+                copy: false,
             },
         )
         .expect("evaluates")

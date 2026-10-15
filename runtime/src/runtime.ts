@@ -361,9 +361,11 @@ export class Runtime implements Host {
   /** Takes over the items the server rendered right after `template`, keyed as it keyed them. */
   #adoptItems(template: HTMLTemplateElement): Map<string, Instance> {
     const adopted = new Map<string, Instance>();
+    const proto = template.content.firstElementChild;
     for (let at = template.nextElementSibling; at !== null && at.hasAttribute("data-hs-ssr"); at = at.nextElementSibling) {
       if (this.#instanceRoots.has(at)) break;
       this.#instanceRoots.add(at);
+      if (proto !== null) restore(proto, at);
       adopted.set(at.getAttribute("data-hs-ssr")!, { element: at, slot: { path: "" }, scanned: false, keyReads: new Map() });
     }
     return adopted;
@@ -375,6 +377,8 @@ export class Runtime implements Host {
     if (current === undefined && rendered?.getAttribute("data-hs-ssr") === "" && !this.#instanceRoots.has(rendered)) {
       this.#instanceRoots.add(rendered);
       if (visible) {
+        const proto = template.content.firstElementChild;
+        if (proto !== null) restore(proto, rendered);
         this.#mounted.set(template, rendered);
         this.scan(rendered, scope);
         return;
@@ -604,6 +608,23 @@ function parse(source: string | null): unknown {
 function pairs(element: Element, attribute: string): [string, unknown][] {
   const value = parse(element.getAttribute(attribute));
   return Array.isArray(value) ? (value as [string, unknown][]) : [];
+}
+
+/**
+ * Copies the `data-hs-*` attributes of `template` and of each element inside
+ * it onto the matching element of `copy`, which the server rendered from that
+ * template without them. A child that carries `data-hs-ssr` was rendered for a
+ * nested list or condition, and gets its attributes when that template adopts it.
+ */
+function restore(template: Element, copy: Element): void {
+  for (const { name, value } of template.attributes) {
+    if (name.startsWith("data-hs-") && name !== "data-hs-ssr" && !copy.hasAttribute(name)) copy.setAttribute(name, value);
+  }
+  const copies = [...copy.children].filter((child) => !child.hasAttribute("data-hs-ssr"));
+  [...template.children].forEach((child, index) => {
+    const target = copies[index];
+    if (target !== undefined && target.tagName === child.tagName) restore(child, target);
+  });
 }
 
 /**

@@ -112,6 +112,7 @@ impl<S: Signals> Page<S> {
             let ctx = Ctx {
                 root: &root,
                 scope: Vec::new(),
+                copy: false,
             };
             if let Some(value) = ssr::evaluate(value, &ctx).map(Cow::into_owned) {
                 root = ssr::set_path(&root, path, value);
@@ -148,6 +149,7 @@ impl<S: Signals> Page<S> {
         let ctx = Ctx {
             root: &root,
             scope: Vec::new(),
+            copy: false,
         };
         for child in &self.body {
             child.write(&mut out, Some(&ctx));

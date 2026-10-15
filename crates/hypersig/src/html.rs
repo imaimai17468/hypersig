@@ -103,7 +103,9 @@ impl<S> Node<S> {
                 template,
             } => {
                 out.push_str("<template");
-                write_attr(out, "data-hs-each", &json!([list, depth]).to_string());
+                if !ctx.is_some_and(|ctx| ctx.copy) {
+                    write_attr(out, "data-hs-each", &json!([list, depth]).to_string());
+                }
                 out.push('>');
                 template.write(out, None, None);
                 out.push_str("</template>");
@@ -113,14 +115,16 @@ impl<S> Node<S> {
             }
             NodeKind::When { cond, template } => {
                 out.push_str("<template");
-                write_attr(out, "data-hs-if", &cond.to_json());
+                if !ctx.is_some_and(|ctx| ctx.copy) {
+                    write_attr(out, "data-hs-if", &cond.to_json());
+                }
                 out.push('>');
                 template.write(out, None, None);
                 out.push_str("</template>");
                 if let Some(ctx) = ctx
                     && ssr::evaluate(cond.as_json(), ctx).is_some_and(|v| ssr::truthy(&v))
                 {
-                    template.write(out, Some(ctx), Some(""));
+                    template.write(out, Some(&ctx.as_copy()), Some(""));
                 }
             }
         }
@@ -891,6 +895,38 @@ impl<S> El<S> {
         if let Some(key) = ssr_key {
             write_attr(out, "data-hs-ssr", key);
         }
+        if !ctx.is_some_and(|ctx| ctx.copy) {
+            self.write_bindings(out);
+        }
+        out.push('>');
+        if self.void {
+            return;
+        }
+        if let Some(text) = content {
+            escape_into(out, &text, false);
+        } else {
+            for child in &self.children {
+                match (&child.0, &selected) {
+                    (NodeKind::Element(option), Some(value))
+                        if option.tag == "option"
+                            && option
+                                .attrs
+                                .iter()
+                                .any(|(name, v)| *name == "value" && v == value) =>
+                    {
+                        option.write_selected(out, ctx);
+                    }
+                    _ => child.write(out, ctx),
+                }
+            }
+        }
+        out.push_str("</");
+        out.push_str(self.tag);
+        out.push('>');
+    }
+
+    /// Writes the `data-hs-*` attributes the runtime builds this element's bindings from.
+    fn write_bindings(&self, out: &mut String) {
         if let Some(show) = &self.show {
             write_attr(out, "data-hs-show", &show.to_json());
         }
@@ -944,31 +980,6 @@ impl<S> El<S> {
                 .collect();
             write_attr(out, "data-hs-on-key", &json_text(&keys));
         }
-        out.push('>');
-        if self.void {
-            return;
-        }
-        if let Some(text) = content {
-            escape_into(out, &text, false);
-        } else {
-            for child in &self.children {
-                match (&child.0, &selected) {
-                    (NodeKind::Element(option), Some(value))
-                        if option.tag == "option"
-                            && option
-                                .attrs
-                                .iter()
-                                .any(|(name, v)| *name == "value" && v == value) =>
-                    {
-                        option.write_selected(out, ctx);
-                    }
-                    _ => child.write(out, ctx),
-                }
-            }
-        }
-        out.push_str("</");
-        out.push_str(self.tag);
-        out.push('>');
     }
 
     fn write_selected(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
