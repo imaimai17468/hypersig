@@ -45,10 +45,14 @@ interface Instance {
   scanned: boolean;
   /** The item's key as its key expression evaluated it, before a duplicate is told apart by position. */
   key: string;
-  /** What evaluating this item's key read, recorded again when the key is not reevaluated. */
+  /** What evaluating this item's key read, which `watch` is registered under. */
   keyReads: Reads;
-  /** The name the key's reads of this item were recorded under: its path, or for a nested list a name below the enclosing item's. */
-  at: string;
+  /**
+   * Reruns the list when something its key read changes. The key's reads are
+   * registered under it rather than under the list's own binding, so a
+   * render of the list does not record every item's key reads again.
+   */
+  watch: Effect | null;
   /**
    * Whether the key read nothing but the item's own fields, so another item
    * with the same value has the same key wherever it sits.
@@ -81,6 +85,8 @@ interface ElementState {
   root?: boolean;
   /** For such a root, the elements with bindings inside it, outside its nested lists and conditions. */
   members?: readonly Element[];
+  /** For the root of a list item, the binding that watches the item's key. */
+  watch?: Effect;
 }
 
 type Stateful = Element & { [STATE]?: ElementState };
@@ -346,8 +352,10 @@ export class Runtime implements Host {
       return compared === null ? Boolean(value(ast)) : this.#compare(compared[0], compared[1], ctx);
     };
     const effects: Effect[] = [];
-    const add = (run: () => void): void => {
-      effects.push({ id: this.#nextId++, element, run, deps: null, nodes: new Map(), selector: null });
+    const add = (run: () => void): Effect => {
+      const effect: Effect = { id: this.#nextId++, element, run, deps: null, nodes: new Map(), selector: null };
+      effects.push(effect);
+      return effect;
     };
 
     const { show, text, checked } = spec;
@@ -405,13 +413,15 @@ export class Runtime implements Host {
 
     if (element instanceof HTMLTemplateElement) {
       const { proto, each, cond } = spec;
-      if (each !== undefined) add(() => this.#renderList(element, proto, each[0], each[1], scope));
+      if (each !== undefined) {
+        const list: Effect = add(() => this.#renderList(element, proto, each[0], each[1], scope, list));
+      }
       if (cond !== undefined) add(() => this.#renderIf(element, proto, Boolean(value(cond)), scope));
     }
     return effects;
   }
 
-  #renderList(template: HTMLTemplateElement, proto: Element | null, place: unknown, depth: number, scope: readonly Slot[]): void {
+  #renderList(template: HTMLTemplateElement, proto: Element | null, place: unknown, depth: number, scope: readonly Slot[], list: Effect): void {
     const parent = template.parentNode;
     if (proto === null || parent === null) return;
     const listCtx: Context = { store: this.store, scope };
@@ -440,28 +450,31 @@ export class Runtime implements Host {
     };
     /** The key `match` filed its last item under. */
     let matched = "";
-    const match = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>): Instance => {
+    const match = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>, appending = false): Instance => {
       const itemPath = join(path, String(index));
       const itemAt = read === path ? itemPath : join(read, String(index));
       let key = `#${index}`;
       let keyReads: Reads = new Map();
-      let local = false;
+      /** The name `keyReads` read the item under, where they read nothing else. */
+      let named: string | null = null;
       if (keyAst !== undefined) {
-        const same = sameValue(previous, index);
+        // An appended item has no previous item at its position, and is rarely one moved from elsewhere in the list.
+        const same = appending ? undefined : sameValue(previous, index);
         if (same !== undefined) {
           key = same.key;
-          keyReads = same.at === itemAt ? same.keyReads : rebased(same.keyReads, same.at, itemAt);
-          local = true;
+          keyReads = same.keyReads;
+          named = same.slot.read!;
         } else {
           // The key reads the item by its path, or by a name below the enclosing item's, so the list reruns when they change.
           const keySlot: Slot = itemAt === itemPath ? { path: itemPath } : { path: itemPath, read: itemAt };
           keyReads = this.store.track(() => {
             key = JSON.stringify(evaluate(keyAst, { store: this.store, scope: [...scope.slice(0, depth), keySlot] }));
           });
-          local = [...keyReads.keys()].every((at) => at !== positionOf(itemAt) && (at === itemAt || at.startsWith(`${itemAt}.`)));
+          const local = [...keyReads.keys()].every((at) => at !== positionOf(itemAt) && (at === itemAt || at.startsWith(`${itemAt}.`)));
+          if (local) named = itemAt;
         }
-        this.store.replay(keyReads);
       }
+      const local = named !== null;
       const raw = key;
       if (next.has(key)) {
         console.warn(`hypersig: duplicate key ${key} in a list; matching it by position`);
@@ -471,13 +484,19 @@ export class Runtime implements Host {
       if (instance === undefined || !instance.element.isConnected) {
         const slot: Slot = { path: itemPath, read: `@${this.#nextSlot++}` };
         this.#file(itemPath, slot);
-        instance = { element: proto.cloneNode(true) as Element, slot, scanned: true, key: raw, keyReads, at: itemAt, local, value: items[index] };
+        // A key that read only the item reads it under the item's name, so the item can move without registering it again.
+        if (named !== null) keyReads = rebased(keyReads, named, slot.read!);
+        instance = { element: proto.cloneNode(true) as Element, slot, scanned: true, key: raw, keyReads, watch: null, local, value: items[index] };
         state(instance.element).root = true;
         created.add(instance);
+        this.#watchKey(instance, list);
       } else {
         instance.key = raw;
-        instance.keyReads = keyReads;
-        instance.at = itemAt;
+        if (named !== null && named !== instance.slot.read) keyReads = rebased(keyReads, named, instance.slot.read!);
+        if (instance.keyReads !== keyReads || instance.watch === null) {
+          instance.keyReads = keyReads;
+          this.#watchKey(instance, list);
+        }
         instance.local = local;
         const changed = !Object.is(instance.value, items[index]);
         const name = instance.slot.read!;
@@ -507,13 +526,10 @@ export class Runtime implements Host {
 
     if (known !== undefined && appended(this.#changes, path, known, items.length)) {
       let anchor: Node = template;
-      for (const instance of known.values()) {
-        this.store.replay(instance.keyReads);
-        anchor = instance.element;
-      }
-      const next = new Map(known);
+      for (const instance of known.values()) anchor = instance.element;
+      const next = known;
       const added: Instance[] = [];
-      for (let index = known.size; index < items.length; index++) added.push(match(index, known, next));
+      for (let index = known.size; index < items.length; index++) added.push(match(index, known, next, true));
       const fragment = document.createDocumentFragment();
       for (const instance of added) fragment.append(instance.element);
       parent.insertBefore(fragment, anchor.nextSibling);
@@ -537,10 +553,7 @@ export class Runtime implements Host {
         keys[index] = matched;
       }
       const next = new Map<string, Instance>();
-      order.forEach((instance, index) => {
-        next.set(keys[index]!, instance);
-        if (!touched.has(index)) this.store.replay(instance.keyReads);
-      });
+      order.forEach((instance, index) => next.set(keys[index]!, instance));
       for (const index of at) if (next.get(wasKeys[index]!) !== was[index]) this.#unmountItem(was[index]!);
       for (let i = at.length - 1; i >= 0; i--) {
         const index = at[i]!;
@@ -621,7 +634,7 @@ export class Runtime implements Host {
       state(at).root = true;
       const key = at.getAttribute("data-hs-ssr")!;
       const slot: Slot = { path: "", read: `@${this.#nextSlot++}` };
-      adopted.set(key, { element: at, slot, scanned: false, key, keyReads: new Map(), at: "", local: false, value: undefined });
+      adopted.set(key, { element: at, slot, scanned: false, key, keyReads: new Map(), watch: null, local: false, value: undefined });
     }
     return adopted;
   }
@@ -799,6 +812,27 @@ export class Runtime implements Host {
     return named ?? changes;
   }
 
+  /** Registers the reads of `instance`'s key under its watch, which reruns `list` when they change. */
+  #watchKey(instance: Instance, list: Effect): void {
+    if (instance.keyReads.size === 0 && instance.watch === null) return;
+    if (instance.watch === null) {
+      const watch: Effect = {
+        id: this.#nextId++,
+        element: instance.element,
+        run: () => {
+          this.store.replay(instance.keyReads);
+          this.#again(list);
+        },
+        deps: null,
+        nodes: new Map(),
+        selector: null,
+      };
+      instance.watch = watch;
+      state(instance.element).watch = watch;
+    }
+    this.#index.set(instance.watch, instance.keyReads);
+  }
+
   /** Queues `effect` to run again in this render. */
   readonly #again = (effect: Effect): void => {
     this.#ran.delete(effect);
@@ -873,14 +907,18 @@ export class Runtime implements Host {
     this.#sweeping = false;
     const forget = (element: Element): void => {
       const bound = own(element);
-      for (const effect of bound?.effects ?? []) this.#index.remove(effect);
-      if (bound !== undefined) delete bound.effects;
+      if (bound === undefined) return;
+      for (const effect of bound.effects ?? []) this.#index.remove(effect);
+      if (bound.watch !== undefined) this.#index.remove(bound.watch);
+      delete bound.effects;
+      delete bound.watch;
     };
     const unfile = (root: Element): void => {
       for (const element of own(root)?.members ?? []) {
         if (!(element instanceof HTMLTemplateElement)) continue;
         for (const instance of this.#lists.get(element)?.values() ?? []) {
           this.#unfile(instance.slot);
+          forget(instance.element);
           unfile(instance.element);
         }
         const mounted = this.#mounted.get(element);
@@ -1164,7 +1202,7 @@ function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, 
   }
 }
 
-/** `reads`, made by a key that read the item under the name `from`, as if it had read it under `to`. */
+/** `reads`, made by a key that read only the item, under the name `from`, as if it had read it under `to`. */
 function rebased(reads: Reads, from: string, to: string): Reads {
   const moved: Reads = new Map();
   for (const [path, deep] of reads) moved.set(to + path.slice(from.length), deep);
