@@ -180,12 +180,12 @@ export class Runtime implements Host {
    */
   #mount(root: Element, proto: Element, scope: readonly Slot[]): void {
     const members: Element[] = [];
-    locate(planOf(proto), root, (element, source) => {
+    locate(planOf(proto), root, (element, source, reactive) => {
       state(element).source = source;
       if (source.hasAttribute("data-hs-ref") && !element.hasAttribute("data-hs-ref")) {
         element.setAttribute("data-hs-ref", source.getAttribute("data-hs-ref")!);
       }
-      if (!source.matches(REACTIVE)) return;
+      if (!reactive) return;
       members.push(element);
       this.#register(element, scope);
     });
@@ -1023,6 +1023,8 @@ function specOf(source: Element): Spec {
 interface Plan {
   readonly tag: string;
   readonly source: Element | null;
+  /** Whether `source` carries a reactive attribute, rather than a node ref alone. */
+  readonly reactive: boolean;
   readonly children: readonly (readonly [number, Plan])[];
 }
 
@@ -1031,7 +1033,7 @@ const plans = new WeakMap<Element, Plan>();
 function planOf(proto: Element): Plan {
   let plan = plans.get(proto);
   if (plan === undefined) {
-    plan = build(proto) ?? { tag: proto.tagName, source: null, children: [] };
+    plan = build(proto) ?? { tag: proto.tagName, source: null, reactive: false, children: [] };
     plans.set(proto, plan);
   }
   return plan;
@@ -1043,8 +1045,9 @@ function build(element: Element): Plan | null {
     const plan = build(child);
     if (plan !== null) children.push([index, plan]);
   });
-  const carries = element.matches(REACTIVE) || element.hasAttribute("data-hs-ref");
-  return carries || children.length > 0 ? { tag: element.tagName, source: carries ? element : null, children } : null;
+  const reactive = element.matches(REACTIVE);
+  const carries = reactive || element.hasAttribute("data-hs-ref");
+  return carries || children.length > 0 ? { tag: element.tagName, source: carries ? element : null, reactive, children } : null;
 }
 
 /**
@@ -1053,8 +1056,8 @@ function build(element: Element): Plan | null {
  * rendered for a nested list or condition, has no counterpart in the
  * template, and is skipped when counting positions.
  */
-function locate(plan: Plan, copy: Element, found: (element: Element, source: Element) => void): void {
-  if (plan.source !== null) found(copy, plan.source);
+function locate(plan: Plan, copy: Element, found: (element: Element, source: Element, reactive: boolean) => void): void {
+  if (plan.source !== null) found(copy, plan.source, plan.reactive);
   if (plan.children.length === 0) return;
   // Walks the siblings, because reading `children` makes the element keep an HTMLCollection.
   let at = copy.firstElementChild;
