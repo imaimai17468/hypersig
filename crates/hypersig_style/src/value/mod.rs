@@ -172,6 +172,10 @@ impl Color {
     /// The element's `color`, written `currentColor`.
     pub const CURRENT_COLOR: Self = Self::named("currentColor");
 
+    /// Fully transparent black, written `transparent`. MDN lists it apart
+    /// from the named colors, so the generator does not write it.
+    pub const TRANSPARENT: Self = Self::named("transparent");
+
     pub(crate) const fn named(name: &'static str) -> Self {
         Self(Cow::Borrowed(name))
     }
