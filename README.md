@@ -28,18 +28,18 @@ Adding a page to a Rust server leaves two choices today. Leptos type-checks what
 
 | | hypersig | Leptos | React | Vue | Solid | vanillajs |
 |---|---|---|---|---|---|---|
-| create rows (ms) | 24.7 | 25.1 | 23.2 | 24.3 | 21.9 | 20.8 |
-| replace all rows (ms) | 27.8 | 29.1 | 29.0 | 27.0 | 23.6 | 21.8 |
-| partial update (ms) | 15.1 | 11.9 | 14.5 | 12.7 | 11.2 | 9.8 |
-| select row (ms) | 3.6 | 5.2 | 6.3 | 4.2 | 7.6 | 3.1 |
-| swap rows (ms) | 13.2 | 12.6 | 90.2 | 13.6 | 12.9 | 11.6 |
-| remove row (ms) | 14.1 | 13.1 | 14.6 | 13.2 | 12.1 | 10.4 |
-| create many rows (ms) | 264.8 | 261.8 | 388.2 | 254.9 | 229.4 | 210.6 |
-| append rows to large table (ms) | 29.2 | 28.0 | 27.8 | 26.1 | 24.4 | 23.2 |
-| clear rows (ms) | 13.1 | 14.7 | 16.5 | 11.6 | 11.8 | 9.8 |
-| memory after create/clear ×5 (MB) | 1.50 | 4.58 | 1.98 | 1.19 | 0.77 | 0.64 |
-| size, compressed (KB) | 12.7 | 48.8 | 51.4 | 23.3 | 4.5 | 2.5 |
-| first paint (ms) | 66.1 | 250.9 | 248.4 | 98.9 | 55.2 | 45.1 |
+| create rows (ms) | 24.3 | 25.1 | 23.6 | 24.3 | 21.7 | 20.7 |
+| replace all rows (ms) | 26.9 | 28.9 | 29.2 | 26.3 | 23.6 | 21.9 |
+| partial update (ms) | 15.0 | 11.3 | 13.7 | 12.9 | 11.1 | 22.9 |
+| select row (ms) | 3.3 | 4.5 | 5.8 | 5.1 | 4.0 | 4.8 |
+| swap rows (ms) | 13.0 | 12.4 | 88.1 | 13.4 | 13.1 | 13.0 |
+| remove row (ms) | 13.4 | 12.4 | 13.8 | 12.7 | 12.8 | 9.9 |
+| create many rows (ms) | 252.9 | 259.5 | 383.3 | 247.9 | 220.4 | 208.3 |
+| append rows to large table (ms) | 27.8 | 27.8 | 27.4 | 26.3 | 23.8 | 23.0 |
+| clear rows (ms) | 14.2 | 16.4 | 16.4 | 12.2 | 10.4 | 9.1 |
+| memory after create/clear ×5 (MB) | 1.37 | 4.58 | 1.93 | 1.11 | 0.76 | 0.64 |
+| size, compressed (KB) | 13.1 | 48.8 | 51.4 | 23.3 | 4.5 | 2.5 |
+| first paint (ms) | 81.1 | 268.3 | 244.9 | 113.7 | 63.4 | 53.8 |
 
 ### Full-stack TodoMVC
 
@@ -47,10 +47,10 @@ A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Med
 
 | | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
-| JS (gzip) | 13.0 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
-| FCP | 185 ms | 196 ms | 192 ms | 194 ms | 188 ms | 184 ms | 236 ms |
-| TBT | 0 ms | 24 ms | 0 ms | 4 ms | 0 ms | 20 ms | 229 ms |
-| INP | 24 ms | 16 ms | 24 ms | 24 ms | 16 ms | 16 ms | 16 ms |
+| JS (gzip) | 13.4 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
+| FCP | 179 ms | 190 ms | 184 ms | 198 ms | 188 ms | 172 ms | 235 ms |
+| TBT | 0 ms | 27 ms | 2 ms | 5 ms | 0 ms | 25 ms | 233 ms |
+| INP | 24 ms | 16 ms | 24 ms | 16 ms | 24 ms | 16 ms | 16 ms |
 
 ## State management and rendering
 
@@ -153,7 +153,7 @@ cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
 cd e2e && pnpm install && pnpm check && pnpm test   # starts the four examples and drives them in Chrome
 ```
 
-The browser runtime is TypeScript under `runtime/`, and `pnpm build` writes the prebuilt `crates/hypersig/assets/hypersig.js` (about 37 KB, about 13 KB gzipped) that the crate embeds. `AGENTS.md` describes the repository layout and the checks a change runs. The lint set and coding conventions follow Microsoft's [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/).
+The browser runtime is TypeScript under `runtime/`, and `pnpm build` writes the prebuilt `crates/hypersig/assets/hypersig.js` (about 38 KB, about 13 KB gzipped) that the crate embeds. `AGENTS.md` describes the repository layout and the checks a change runs. The lint set and coding conventions follow Microsoft's [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/).
 
 ## License
 
