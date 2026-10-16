@@ -1,7 +1,9 @@
 //! Typed atomic CSS for hypersig.
 //!
-//! A [`Style`] is built from one method per standard CSS property, so a
-//! misspelled property or keyword does not compile. Each declaration becomes
+//! A [`Style`] is built from one method per standard CSS property, and per
+//! anchor positioning property, which MDN's data still marks experimental
+//! although every major engine ships it. A misspelled property or keyword
+//! does not compile. Each declaration becomes
 //! one class whose name is derived from the declaration, and a [`Sheet`]
 //! collects the styles a page uses and writes each rule once.
 //!

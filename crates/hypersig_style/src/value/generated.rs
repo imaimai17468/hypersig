@@ -262,6 +262,31 @@ impl fmt::Display for All {
     }
 }
 
+/// A value of [`anchor-name`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/anchor-name).
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub enum AnchorName {
+    /// `none`.
+    None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
+}
+
+impl fmt::Display for AnchorName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
+        }
+    }
+}
+
+impl From<Raw> for AnchorName {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`animation`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/animation).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -13249,6 +13274,99 @@ impl fmt::Display for Position {
             Self::Static => f.write_str("static"),
             Self::Sticky => f.write_str("sticky"),
         }
+    }
+}
+
+/// A value of [`position-anchor`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/position-anchor).
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub enum PositionAnchor {
+    /// `auto`.
+    Auto,
+    /// `match-parent`.
+    MatchParent,
+    /// `none`.
+    None,
+    /// `normal`.
+    Normal,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
+}
+
+impl fmt::Display for PositionAnchor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Auto => f.write_str("auto"),
+            Self::MatchParent => f.write_str("match-parent"),
+            Self::None => f.write_str("none"),
+            Self::Normal => f.write_str("normal"),
+            Self::Raw(v) => v.fmt(f),
+        }
+    }
+}
+
+impl From<Raw> for PositionAnchor {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
+/// A value of [`position-area`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/position-area).
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub enum PositionArea {
+    /// `none`.
+    None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
+}
+
+impl fmt::Display for PositionArea {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
+        }
+    }
+}
+
+impl From<Raw> for PositionArea {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
+/// A value of [`position-try-fallbacks`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/position-try-fallbacks).
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub enum PositionTryFallbacks {
+    /// `flip-block`.
+    FlipBlock,
+    /// `flip-inline`.
+    FlipInline,
+    /// `flip-start`.
+    FlipStart,
+    /// `none`.
+    None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
+}
+
+impl fmt::Display for PositionTryFallbacks {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::FlipBlock => f.write_str("flip-block"),
+            Self::FlipInline => f.write_str("flip-inline"),
+            Self::FlipStart => f.write_str("flip-start"),
+            Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
+        }
+    }
+}
+
+impl From<Raw> for PositionTryFallbacks {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 

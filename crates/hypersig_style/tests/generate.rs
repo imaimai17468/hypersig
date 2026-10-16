@@ -548,6 +548,21 @@ fn is_standard(value: &Value) -> bool {
     value["status"].as_str() == Some("standard")
 }
 
+/// Properties MDN's data marks experimental that the crate generates anyway.
+/// They are the anchor positioning properties that tether a popover to the
+/// element that opens it, which MDN's `position-area` page lists as Baseline
+/// since January 2026, when Firefox 147 joined Chrome 125 and Safari 26.
+const EXPERIMENTAL: &[&str] = &[
+    "anchor-name",
+    "position-anchor",
+    "position-area",
+    "position-try-fallbacks",
+];
+
+fn is_generated(name: &str, value: &Value) -> bool {
+    (is_standard(value) || EXPERIMENTAL.contains(&name)) && !name.starts_with('-')
+}
+
 /// Longest chain of shorthands above each property, so that a shorthand is
 /// written before the longhands it sets.
 fn ranks(properties: &BTreeMap<&str, &Value>) -> BTreeMap<String, u32> {
@@ -595,7 +610,7 @@ fn generate() -> (String, String) {
     };
     let properties: BTreeMap<&str, &Value> = all_properties
         .iter()
-        .filter(|(name, value)| is_standard(value) && !name.starts_with('-'))
+        .filter(|(name, value)| is_generated(name, value))
         .map(|(name, value)| (name.as_str(), value))
         .collect();
     let ranks = ranks(&properties);
@@ -606,7 +621,7 @@ fn generate() -> (String, String) {
     );
     let mut single_kinds = BTreeSet::new();
 
-    out.push_str("/// A standard CSS property.\n");
+    out.push_str("/// A standard CSS property, or one of the anchor positioning properties.\n");
     out.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\n");
     out.push_str("#[non_exhaustive]\npub enum Property {\n");
     let mut type_names: BTreeSet<String> = TYPE_NAMES.iter().map(|s| (*s).to_owned()).collect();
