@@ -26,10 +26,11 @@ use crate::token;
 /// key is pressed on the button.
 ///
 /// The tooltip is a `popover="hint"`, which the browser closes on Escape
-/// without closing an open menu. A browser without hint popovers, which
-/// browser-compat-data 8.1.6 lists as Chrome before 151 and Firefox before
-/// 153, treats the value as `manual`. There, Escape closes the tooltip only
-/// while focus is on its button.
+/// without closing an open menu. browser-compat-data 8.1.6 lists hint
+/// popovers for Chrome 151 and Firefox 153, an older partial version for
+/// Chrome 133 to 150 and Firefox 149 to 152, and Safari only in its
+/// preview. A browser without them treats the value as `manual`, and there
+/// Escape closes the tooltip only while focus is on its button.
 ///
 /// The button carries the attributes the tooltip needs, so build it here
 /// rather than adding a tooltip to a button made elsewhere. Two tooltips with

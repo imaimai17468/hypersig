@@ -577,8 +577,9 @@ const EXPERIMENTAL: &[&str] = &[
 ///
 /// `appearance: base-select` opts a `<select>` and its `::picker(select)`
 /// into the styleable select of the CSS Forms draft. browser-compat-data
-/// 8.1.6 lists it for Chrome 135, Firefox 149, and Safari 27, and
-/// mdn-data 2.37.2 leaves it out of the `appearance` syntax.
+/// 8.1.6 lists it for Chrome 135 and Safari 27, and for Firefox 149 behind
+/// a preference, and mdn-data 2.37.2 leaves it out of the `appearance`
+/// syntax.
 const ADDED_KEYWORDS: &[(&str, &str)] = &[("appearance", "base-select")];
 
 fn is_generated(name: &str, value: &Value) -> bool {
