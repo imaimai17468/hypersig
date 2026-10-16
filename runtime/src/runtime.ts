@@ -705,6 +705,7 @@ export class Runtime implements Host {
       this.#fresh = [];
       for (const effect of batch) this.#runEffect(effect);
     }
+    this.#index.prune();
     // The bindings that ran hold their elements, which may have left the document.
     this.#ran = new Set();
     this.#changes = new Map();
@@ -769,7 +770,9 @@ export class Runtime implements Host {
    */
   #rebase(root: Element, from: string, to: string): void {
     const prefix = `${from}.`;
-    const move = (path: string): string => (path === from || path.startsWith(prefix) ? to + path.slice(from.length) : path);
+    const inside = (path: string): boolean => path === from || path.startsWith(prefix);
+    const move = (path: string): string => (inside(path) ? to + path.slice(from.length) : path);
+    const position = positionOf(from);
     this.#lookup ??= new ChangeLookup(this.#changes);
     const lookup = this.#lookup;
     for (const element of own(root)?.members ?? []) {
@@ -777,7 +780,7 @@ export class Runtime implements Host {
         if (effect.deps === null) continue;
         let rerun = effect.selector !== null && lookup.affects(effect.selector.path, true);
         for (const [path, deep] of effect.deps) {
-          if (move(path) === path ? lookup.affects(path, deep) : path === positionOf(from)) rerun = true;
+          if (inside(path) ? path === position : lookup.affects(path, deep)) rerun = true;
         }
         this.#index.move(effect, move);
         if (rerun) {
