@@ -278,6 +278,7 @@ pub struct El<S> {
     effects: Vec<Stmt<S>>,
     watches: Vec<(Value, Stmt<S>)>,
     interval: Option<(u128, Stmt<S>)>,
+    timeout: Option<(u128, Stmt<S>)>,
     on: BTreeMap<Event, Stmt<S>>,
     keys: Vec<(Key, Stmt<S>)>,
     roving: Option<Orientation>,
@@ -670,6 +671,7 @@ impl<S> El<S> {
             effects: Vec::new(),
             watches: Vec::new(),
             interval: None,
+            timeout: None,
             on: BTreeMap::new(),
             keys: Vec::new(),
             roving: None,
@@ -1138,6 +1140,45 @@ impl<S> El<S> {
         self
     }
 
+    /// Runs `stmt` once, `delay` after the element enters the document, if
+    /// the element is still in it then.
+    ///
+    /// A second call replaces the first.
+    ///
+    /// ```
+    /// use std::time::Duration;
+    ///
+    /// use hypersig::html::{each_keyed, li, ul};
+    /// use hypersig::Signals;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Notice {
+    ///     id: i32,
+    ///     text: String,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Page {
+    ///     notices: Vec<Notice>,
+    /// }
+    ///
+    /// let list = ul::<Page>().child(each_keyed(
+    ///     Page::notices(),
+    ///     |notice| notice.at(Notice::id()),
+    ///     |notice| {
+    ///         li().bind_text(notice.at(Notice::text()))
+    ///             .on_timeout(Duration::from_secs(5), notice.remove())
+    ///     },
+    /// ));
+    /// assert!(list.render().contains("data-hs-on-timeout"));
+    /// ```
+    #[must_use]
+    pub fn on_timeout(mut self, delay: Duration, stmt: impl IntoStmt<S>) -> Self {
+        self.timeout = Some((delay.as_millis(), stmt.into_stmt()));
+        self
+    }
+
     /// Runs `stmt` when the element enters the document and again whenever
     /// a signal that `stmt` reads changes.
     ///
@@ -1396,6 +1437,14 @@ impl<S> El<S> {
                 out,
                 "data-hs-on-interval",
                 &json_text(&(period, stmt.as_json())),
+            );
+        }
+        if let Some((delay, stmt)) = &self.timeout {
+            let delay = u64::try_from(*delay).unwrap_or(u64::MAX);
+            write_attr(
+                out,
+                "data-hs-on-timeout",
+                &json_text(&(delay, stmt.as_json())),
             );
         }
         for (event, stmt) in &self.on {

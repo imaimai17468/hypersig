@@ -1,9 +1,10 @@
 {
-  "html": "<main><span id=\"clock\" data-hs-on-interval=\"[100,[&quot;set&quot;,&quot;ticks&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;ticks&quot;],[&quot;lit&quot;,1]]]]\"></span><input id=\"query\" data-hs-bind=\"[&quot;query&quot;,&quot;text&quot;]\" data-hs-on-input=\"[&quot;debounce&quot;,50,[&quot;set&quot;,&quot;searched&quot;,[&quot;sig&quot;,&quot;query&quot;]]]\"><span id=\"effect\" data-hs-effect=\"[[&quot;set&quot;,&quot;echo&quot;,[&quot;upper&quot;,[&quot;sig&quot;,&quot;query&quot;]]]]\" data-hs-on-signal=\"[[&quot;query&quot;,[&quot;set&quot;,&quot;effects&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;effects&quot;],[&quot;lit&quot;,1]]]]]\"></span><button id=\"save\" data-hs-on-click=\"[&quot;call&quot;,&quot;POST&quot;,&quot;/search&quot;,null,&quot;saving&quot;,&quot;error&quot;]\"></button></main>",
+  "html": "<main><span id=\"clock\" data-hs-on-interval=\"[100,[&quot;set&quot;,&quot;ticks&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;ticks&quot;],[&quot;lit&quot;,1]]]]\"></span><input id=\"query\" data-hs-bind=\"[&quot;query&quot;,&quot;text&quot;]\" data-hs-on-input=\"[&quot;debounce&quot;,50,[&quot;set&quot;,&quot;searched&quot;,[&quot;sig&quot;,&quot;query&quot;]]]\"><span id=\"effect\" data-hs-effect=\"[[&quot;set&quot;,&quot;echo&quot;,[&quot;upper&quot;,[&quot;sig&quot;,&quot;query&quot;]]]]\" data-hs-on-signal=\"[[&quot;query&quot;,[&quot;set&quot;,&quot;effects&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;effects&quot;],[&quot;lit&quot;,1]]]]]\"></span><button id=\"save\" data-hs-on-click=\"[&quot;call&quot;,&quot;POST&quot;,&quot;/search&quot;,null,&quot;saving&quot;,&quot;error&quot;]\"></button><span id=\"soon\" data-hs-on-timeout=\"[100,[&quot;set&quot;,&quot;fired&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;fired&quot;],[&quot;lit&quot;,1]]]]\"></span><span id=\"gone\" data-hs-on-timeout=\"[100,[&quot;set&quot;,&quot;fired&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;fired&quot;],[&quot;lit&quot;,10]]]]\"></span></main>",
   "signals": {
     "echo": "",
     "effects": 0,
     "error": "",
+    "fired": 0,
     "query": "",
     "saving": false,
     "searched": "",

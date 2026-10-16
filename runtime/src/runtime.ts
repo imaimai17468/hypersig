@@ -23,6 +23,7 @@ const ATTRIBUTES = [
   "effect",
   "on-signal",
   "on-interval",
+  "on-timeout",
   "each",
   "if",
   "on-load",
@@ -342,6 +343,8 @@ export class Runtime implements Host {
     if (load !== null) this.#runAttribute(load, element);
     const interval = parse(this.#attr(element, "data-hs-on-interval"));
     if (Array.isArray(interval)) this.#interval(element, interval[0] as number, interval[1]);
+    const timeout = parse(this.#attr(element, "data-hs-on-timeout"));
+    if (Array.isArray(timeout)) this.#timeout(element, timeout[0] as number, timeout[1]);
   }
 
   /** The `data-hs-*` attribute `name` of `element`, read from its template element where it has one. */
@@ -1346,6 +1349,12 @@ export class Runtime implements Host {
     }, ms);
   }
 
+  #timeout(element: Element, ms: number, stmt: unknown): void {
+    setTimeout(() => {
+      if (element.isConnected) this.#run(stmt, this.#context(element, this.#scopeOf(element)));
+    }, ms);
+  }
+
   #scopeOf(element: Element | null): readonly Slot[] {
     for (let at = element; at !== null; at = at.parentElement) {
       const scope = own(at)?.scope;
@@ -1681,7 +1690,7 @@ function sources(plan: Plan, visit: (source: Element) => void): void {
 function partsFor(source: Element, depth: number): [Part, StaticRead[]][] | null {
   const spec = specOf(source);
   if (spec.effects.length > 0 || spec.watches.length > 0) return null;
-  if (source.hasAttribute("data-hs-on-load") || source.hasAttribute("data-hs-on-interval")) return null;
+  if (source.hasAttribute("data-hs-on-load") || source.hasAttribute("data-hs-on-interval") || source.hasAttribute("data-hs-on-timeout")) return null;
   const found: [Part, StaticRead[]][] = [];
   if (spec.each !== undefined) {
     // A nested list over a field of this item runs as a part. A rerun its items' keys ask for marks the part through `Row.lists`.

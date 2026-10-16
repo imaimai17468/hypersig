@@ -284,6 +284,14 @@ describe("timers, effects, and calls", () => {
     expect(runtime.store.get("ticks")).toBe(3);
   });
 
+  it("runs a timeout once, and not for an element that left the document", async () => {
+    vi.useFakeTimers();
+    const runtime = mount("timers");
+    $("#gone").remove();
+    await vi.advanceTimersByTimeAsync(350);
+    expect(runtime.store.get("fired")).toBe(1);
+  });
+
   it("debounces input, runs an on-signal-change handler per change, and reruns an effect from what it reads", async () => {
     vi.useFakeTimers();
     const runtime = mount("timers");

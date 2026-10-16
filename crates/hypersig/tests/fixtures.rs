@@ -195,6 +195,7 @@ struct Timers {
     echo: String,
     saving: bool,
     error: String,
+    fired: i32,
 }
 
 const SEARCH: Action<Timers> = Action::post("/search");
@@ -203,6 +204,7 @@ fn timers() -> (El<Timers>, Timers) {
     let ticks = Timers::ticks();
     let query = Timers::query();
     let effects = Timers::effects();
+    let fired = Timers::fired();
     let el = main()
         .child(
             span()
@@ -227,6 +229,16 @@ fn timers() -> (El<Timers>, Timers) {
                     .indicator(Timers::saving())
                     .error(Timers::error()),
             ),
+        )
+        .child(
+            span()
+                .id("soon")
+                .on_timeout(Duration::from_millis(100), fired.set(fired + 1)),
+        )
+        .child(
+            span()
+                .id("gone")
+                .on_timeout(Duration::from_millis(100), fired.set(fired + 10)),
         );
     let signals = Timers {
         ticks: 0,
@@ -236,6 +248,7 @@ fn timers() -> (El<Timers>, Timers) {
         echo: String::new(),
         saving: false,
         error: String::new(),
+        fired: 0,
     };
     (el, signals)
 }
