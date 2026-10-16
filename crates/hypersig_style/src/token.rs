@@ -227,7 +227,7 @@ mod tests {
             .set(&brand, Color::NAVY);
         assert_eq!(
             theme.to_css(),
-            "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;\
+            "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
              @layer hypersig-tokens{:root{--brand:navy;--gap:8px}\
              @media (prefers-color-scheme: dark){:root{--brand:white}}}"
         );

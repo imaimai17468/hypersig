@@ -12,7 +12,7 @@ use hypersig::html::{
     ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
-use hypersig::style::{Media, PseudoClass, Style};
+use hypersig::style::{Keyframes, Media, PseudoClass, Style};
 use hypersig::{Action, Expr, Fragment, NodeRef, Page, Patches, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -457,8 +457,9 @@ fn styled() -> (El<Styled>, Styled) {
     (el, Styled { on: false })
 }
 
-/// Fills the slot with rules in two buckets the page does not have: one that
-/// sorts before the page's breakpoint bucket, and one between.
+/// Fills the slot with rules in two buckets the page does not have, one that
+/// sorts before the page's breakpoint bucket and one between, and with an
+/// `@keyframes` rule, which sorts after every layer.
 struct Panel;
 
 impl Fragment for Panel {
@@ -466,10 +467,14 @@ impl Fragment for Panel {
     const ID: &'static str = "slot";
 
     fn render(&self) -> El<Styled> {
+        let pulse = Keyframes::new("pulse")
+            .at(0, Style::new().opacity(1))
+            .at(50, Style::new().opacity(0.5));
         div().css(
             Style::new()
                 .width(pct(100))
                 .padding(px(4))
+                .keyframes(&pulse)
                 .on(PseudoClass::Hover, Style::new().color(Color::BLUE)),
         )
     }

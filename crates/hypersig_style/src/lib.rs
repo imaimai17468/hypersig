@@ -19,6 +19,8 @@ mod condition;
 // Written by tests/generate.rs, whose output is kept as it writes it.
 #[rustfmt::skip]
 mod generated;
+mod global;
+mod keyframes;
 pub mod pattern;
 mod sheet;
 mod style;
@@ -27,6 +29,8 @@ pub mod value;
 
 pub use condition::{Condition, Media};
 pub use generated::{Property, PseudoClass, PseudoElement};
-pub use sheet::{Bucket, LAYER, Sheet, TOGGLED_LAYER, TOKEN_LAYER};
+pub use global::{Element, FontFace, Global, Selector};
+pub use keyframes::Keyframes;
+pub use sheet::{BASE_LAYER, Bucket, LAYER, Sheet, TOGGLED_LAYER, TOKEN_LAYER};
 pub use style::Style;
 pub use token::{Theme, Token, TokenValue};

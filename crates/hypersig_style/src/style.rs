@@ -4,6 +4,7 @@ use std::fmt::Write as _;
 
 use crate::condition::{Condition, Conditions};
 use crate::generated::{Property, PseudoElement};
+use crate::keyframes::Keyframes;
 use crate::token::{Token, TokenValue};
 use crate::value::Global;
 
@@ -29,6 +30,7 @@ use crate::value::Global;
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Style {
     atoms: Vec<Atom>,
+    keyframes: Vec<Keyframes>,
 }
 
 /// One declaration and the conditions it applies under.
@@ -129,6 +131,20 @@ impl Style {
         &self.atoms
     }
 
+    pub(crate) fn keyframes_used(&self) -> &[Keyframes] {
+        &self.keyframes
+    }
+
+    /// Animates the element with `keyframes`: sets `animation-name` to its
+    /// name, and carries the `@keyframes` rule to the page.
+    #[must_use]
+    pub fn keyframes(mut self, keyframes: &Keyframes) -> Self {
+        if !self.keyframes.iter().any(|k| k.name() == keyframes.name()) {
+            self.keyframes.push(keyframes.clone());
+        }
+        self.with(Property::AnimationName, keyframes.name().to_owned())
+    }
+
     fn insert(&mut self, atom: Atom) {
         if let Some(old) = self
             .atoms
@@ -174,6 +190,7 @@ impl Style {
         for atom in style.atoms {
             self.insert(atom);
         }
+        self.keyframes.extend(style.keyframes);
         self
     }
 
@@ -190,6 +207,7 @@ impl Style {
             atom.conditions.add(condition);
             self.insert(atom);
         }
+        self.keyframes.extend(style.keyframes);
         self
     }
 
@@ -213,6 +231,7 @@ impl Style {
             atom.conditions.element = Some(element);
             self.insert(atom);
         }
+        self.keyframes.extend(style.keyframes);
         self
     }
 

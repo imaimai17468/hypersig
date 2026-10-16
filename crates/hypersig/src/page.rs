@@ -9,7 +9,7 @@ use crate::expr::IntoExpr;
 use crate::html::{Node, Stylesheet, escape_into, write_attr};
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
-use crate::style::{Sheet, Theme};
+use crate::style::{Global, Sheet, Theme};
 
 /// A full HTML document for a page whose signals are `S`.
 ///
@@ -25,6 +25,7 @@ pub struct Page<S> {
     stylesheets: Vec<&'static str>,
     styles: Vec<&'static str>,
     theme: Theme,
+    global: Global,
     computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
     runtime: &'static str,
@@ -48,6 +49,7 @@ impl<S: Signals> Page<S> {
             stylesheets: Vec::new(),
             styles: Vec::new(),
             theme: Theme::new(),
+            global: Global::new(),
             computed: Vec::new(),
             body: Vec::new(),
             runtime: crate::RUNTIME_PATH,
@@ -145,6 +147,31 @@ impl<S: Signals> Page<S> {
         self
     }
 
+    /// Adds rules for elements by their tag, and fonts, to the page. A later
+    /// call adds to the earlier ones.
+    ///
+    /// ```
+    /// use hypersig::html::p;
+    /// use hypersig::style::value::FontFamily;
+    /// use hypersig::style::{Element, Global, Style};
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Note {}
+    ///
+    /// let html = Page::new("Note", Note {})
+    ///     .global(Global::preflight().rule(Element::Body, Style::new().font_family(FontFamily::SystemUi)))
+    ///     .child(p().text("Hello"))
+    ///     .render();
+    /// assert!(html.contains("<style data-hs-global>"));
+    /// ```
+    #[must_use]
+    pub fn global(mut self, global: Global) -> Self {
+        self.global = std::mem::take(&mut self.global).merge(global);
+        self
+    }
+
     /// Appends a node to `<body>`.
     #[must_use]
     pub fn child(mut self, child: impl Into<Node<S>>) -> Self {
@@ -178,6 +205,11 @@ impl<S: Signals> Page<S> {
         out.push_str("<title>");
         escape_into(&mut out, &self.title, false);
         out.push_str("</title>");
+        if !self.global.is_empty() {
+            out.push_str("<style data-hs-global>");
+            out.push_str(&self.global.to_css());
+            out.push_str("</style>");
+        }
         if !self.theme.is_empty() {
             out.push_str("<style data-hs-theme>");
             out.push_str(&self.theme.to_css());
@@ -189,7 +221,7 @@ impl<S: Signals> Page<S> {
         }
         for bucket in sheet.buckets() {
             out.push_str("<style");
-            write_attr(&mut out, "data-hs-css", &bucket.sort_key());
+            write_attr(&mut out, "data-hs-css", bucket.sort_key());
             out.push('>');
             out.push_str(bucket.css());
             out.push_str("</style>");

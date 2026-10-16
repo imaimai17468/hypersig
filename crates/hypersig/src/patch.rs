@@ -195,7 +195,7 @@ impl<S: Signals> Patches<S> {
         el.collect_css(&mut sheet);
         let css = sheet
             .buckets()
-            .map(|bucket| (bucket.sort_key(), bucket.css().to_owned()))
+            .map(|bucket| (bucket.sort_key().to_owned(), bucket.css().to_owned()))
             .collect();
         self.events.push(PatchEvent::Element {
             html: el.render(),

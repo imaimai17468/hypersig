@@ -6,7 +6,7 @@ error[E0369]: cannot divide `Sig<Counter, i32>` by `{integer}`
    |                                  |
    |                                  Sig<Counter, i32>
    |
-note: `Sig<Counter, i32>` does not implement `Div<{integer}>`
+note: `Sig<Counter, i32>` does not implement `std::ops::Div<{integer}>`
   --> src/signal.rs
    |
    | pub struct Sig<S, T, R = Root> {

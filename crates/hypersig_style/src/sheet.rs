@@ -1,6 +1,6 @@
 //! [`Sheet`], which collects styles and writes their rules.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 use crate::condition::Conditions;
@@ -16,11 +16,16 @@ pub const TOGGLED_LAYER: &str = "hypersig-toggled";
 /// The cascade layer of a [`Theme`](crate::Theme)'s values, before [`LAYER`].
 pub const TOKEN_LAYER: &str = "hypersig-tokens";
 
-/// The statement that puts [`TOKEN_LAYER`], [`LAYER`], and [`TOGGLED_LAYER`]
-/// in that order. Every bucket and theme starts with it, because the first
-/// stylesheet to name a layer fixes its place, and any of them may be the
-/// first one a page has.
-pub(crate) const ORDER: &str = "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;";
+/// The cascade layer of a [`Global`](crate::Global)'s rules, after
+/// [`TOKEN_LAYER`] and before [`LAYER`], so an element's classes override them.
+pub const BASE_LAYER: &str = "hypersig-base";
+
+/// The statement that puts [`TOKEN_LAYER`], [`BASE_LAYER`], [`LAYER`], and
+/// [`TOGGLED_LAYER`] in that order. Every bucket, theme, and global
+/// stylesheet starts with it, because the first stylesheet to name a layer
+/// fixes its place, and any of them may be the first one a page has.
+pub(crate) const ORDER: &str =
+    "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;";
 
 /// The rules for a set of styles, each declaration written once.
 ///
@@ -38,9 +43,9 @@ pub(crate) const ORDER: &str = "@layer hypersig-tokens,hypersig-atoms,hypersig-t
 /// assert_eq!(
 ///     css,
 ///     [
-///         "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;\
+///         "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
 ///          @layer hypersig-atoms.k--00{.color_crimson{color:crimson}.padding_8px{padding:8px}}",
-///         "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;\
+///         "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
 ///          @layer hypersig-atoms.k-4019-00{.hover\\:color_red:hover{color:red}}",
 ///     ]
 /// );
@@ -48,6 +53,7 @@ pub(crate) const ORDER: &str = "@layer hypersig-tokens,hypersig-atoms,hypersig-t
 #[derive(Debug, Clone, Default)]
 pub struct Sheet {
     rules: BTreeSet<Key>,
+    keyframes: BTreeMap<&'static str, String>,
 }
 
 /// The order rules are written in: toggled after untoggled, then by
@@ -64,7 +70,7 @@ struct Key {
 }
 
 /// The rules of one place in the order: one cascade layer, one set of
-/// conditions, and one shorthand rank.
+/// conditions, and one shorthand rank, or one `@keyframes` rule.
 ///
 /// Rules in one bucket never set the same property on the same element, so
 /// their order among themselves does not matter. A page writes each bucket as
@@ -72,34 +78,22 @@ struct Key {
 /// to the right bucket, or insert a new bucket at its place in the order.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Bucket {
-    toggled: bool,
-    key: String,
+    sort_key: String,
     css: String,
 }
 
 impl Bucket {
-    /// The cascade layer, [`LAYER`] or [`TOGGLED_LAYER`].
+    /// A string that sorts the way buckets are ordered: `0` for [`LAYER`] or
+    /// `1` for [`TOGGLED_LAYER`], a space, and the sublayer name, whose fixed
+    /// fields compare as strings the way the buckets do. A `@keyframes` rule,
+    /// which no order affects, is `2`, a space, and its name.
     #[must_use]
-    pub fn layer(&self) -> &'static str {
-        if self.toggled { TOGGLED_LAYER } else { LAYER }
+    pub fn sort_key(&self) -> &str {
+        &self.sort_key
     }
 
-    /// The sublayer name, which sorts as a string the way the buckets of one
-    /// layer are ordered.
-    #[must_use]
-    pub fn key(&self) -> &str {
-        &self.key
-    }
-
-    /// A string that sorts the way buckets are ordered across both layers:
-    /// `0` or `1` for the layer, a space, and [`Bucket::key`].
-    #[must_use]
-    pub fn sort_key(&self) -> String {
-        format!("{} {}", u8::from(self.toggled), self.key)
-    }
-
-    /// The bucket's rules as a stylesheet of their own: the order of the two
-    /// layers, then the rules inside `@layer <layer>.<key>{...}`.
+    /// The bucket's rules as a stylesheet of their own: the order of the
+    /// layers, then the rules inside `@layer <layer>.<sublayer>{...}`.
     #[must_use]
     pub fn css(&self) -> &str {
         &self.css
@@ -114,6 +108,11 @@ impl Sheet {
     }
 
     fn insert(&mut self, style: &Style, toggled: bool) {
+        for keyframes in style.keyframes_used() {
+            self.keyframes
+                .entry(keyframes.name())
+                .or_insert_with(|| keyframes.to_css());
+        }
         for atom in style.atoms() {
             self.rules.insert(Key {
                 toggled,
@@ -138,18 +137,22 @@ impl Sheet {
     /// Adds every rule of `other`.
     pub fn extend(&mut self, other: &Self) {
         self.rules.extend(other.rules.iter().cloned());
+        for (name, css) in &other.keyframes {
+            self.keyframes.entry(name).or_insert_with(|| css.clone());
+        }
     }
 
     /// Whether no style has been added.
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.rules.is_empty()
+        self.rules.is_empty() && self.keyframes.is_empty()
     }
 
-    /// The rules grouped into buckets, in the order they apply.
+    /// The rules grouped into buckets, in the order they apply, then one
+    /// bucket per `@keyframes` rule.
     pub fn buckets(&self) -> impl Iterator<Item = Bucket> + '_ {
         let mut rules = self.rules.iter().peekable();
-        std::iter::from_fn(move || {
+        let atoms = std::iter::from_fn(move || {
             let first = rules.next()?;
             let layer = if first.toggled { TOGGLED_LAYER } else { LAYER };
             let key = first.bucket();
@@ -174,11 +177,14 @@ impl Sheet {
             }
             css.push('}');
             Some(Bucket {
-                toggled: first.toggled,
-                key,
+                sort_key: format!("{} {key}", u8::from(first.toggled)),
                 css,
             })
-        })
+        });
+        atoms.chain(self.keyframes.iter().map(|(name, css)| Bucket {
+            sort_key: format!("2 {name}"),
+            css: format!("{ORDER}{css}"),
+        }))
     }
 
     /// Writes every bucket, as one stylesheet.
@@ -314,7 +320,7 @@ mod tests {
                 .padding(px(1)),
         );
         sheet.add_toggled(&Style::new().color(Color::GRAY));
-        let keys: Vec<String> = sheet.buckets().map(|b| b.sort_key()).collect();
+        let keys: Vec<String> = sheet.buckets().map(|b| b.sort_key().to_owned()).collect();
         let mut sorted = keys.clone();
         sorted.sort();
         assert_eq!(keys, sorted);
@@ -353,7 +359,7 @@ mod tests {
         sheet.add_toggled(&style);
         assert_eq!(
             sheet.to_css(),
-            "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;\
+            "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
              @layer hypersig-toggled.k--00{.when\\:color_red{color:red}}"
         );
     }

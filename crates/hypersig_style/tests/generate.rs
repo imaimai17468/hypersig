@@ -48,7 +48,18 @@ const TYPE_NAMES: &[&str] = &[
 ];
 
 /// Methods `Style` defines by hand, which no property method may shadow.
-const STYLE_METHODS: &[&str] = &["new", "on", "pseudo", "global", "merge", "class_names"];
+const STYLE_METHODS: &[&str] = &[
+    "new",
+    "on",
+    "pseudo",
+    "global",
+    "merge",
+    "class_names",
+    "toggled_class_names",
+    "token",
+    "keyframes",
+    "is_empty",
+];
 
 /// Strict and reserved keywords of Rust 2024, which no identifier may be.
 const RUST_KEYWORDS: &[&str] = &[
