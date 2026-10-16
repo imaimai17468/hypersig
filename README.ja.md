@@ -22,35 +22,16 @@ Rust のサーバーに画面を付けようとすると、今は 2 通りの選
 
 ## ベンチマーク
 
-### js-framework-benchmark
-
-[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) のキー付きの部門を、Apple M4 Max の headless Chrome 155 で 10 回測った中央値です。CPU の減速はベンチマーク本体の設定のままです。
-
-| | hypersig | Leptos | React | Vue | Solid | vanillajs |
-|---|---|---|---|---|---|---|
-| 1,000 行の作成（ms） | 24.3 | 25.1 | 23.6 | 24.3 | 21.7 | 20.7 |
-| 全行の置き換え（ms） | 26.9 | 28.9 | 29.2 | 26.3 | 23.6 | 21.9 |
-| 10 行ごとの更新（ms） | 15.0 | 11.3 | 13.7 | 12.9 | 11.1 | 22.9 |
-| 行の選択（ms） | 3.3 | 4.5 | 5.8 | 5.1 | 4.0 | 4.8 |
-| 行の入れ替え（ms） | 13.0 | 12.4 | 88.1 | 13.4 | 13.1 | 13.0 |
-| 行の削除（ms） | 13.4 | 12.4 | 13.8 | 12.7 | 12.8 | 9.9 |
-| 10,000 行の作成（ms） | 252.9 | 259.5 | 383.3 | 247.9 | 220.4 | 208.3 |
-| 1,000 行の追加（ms） | 27.8 | 27.8 | 27.4 | 26.3 | 23.8 | 23.0 |
-| 全行の削除（ms） | 14.2 | 16.4 | 16.4 | 12.2 | 10.4 | 9.1 |
-| 作成と削除を 5 回繰り返したあとのメモリ（MB） | 1.37 | 4.58 | 1.93 | 1.11 | 0.76 | 0.64 |
-| 圧縮後のサイズ（KB） | 13.1 | 48.8 | 51.4 | 23.3 | 4.5 | 2.5 |
-| 最初の描画（ms） | 81.1 | 268.3 | 244.9 | 113.7 | 63.4 | 53.8 |
-
-### フルスタックの TodoMVC
-
 追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。
 
 | | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
 | JS（gzip） | 13.4 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
-| FCP | 179 ms | 190 ms | 184 ms | 198 ms | 188 ms | 172 ms | 235 ms |
-| TBT | 0 ms | 27 ms | 2 ms | 5 ms | 0 ms | 25 ms | 233 ms |
-| INP | 24 ms | 16 ms | 24 ms | 16 ms | 24 ms | 16 ms | 16 ms |
+| First Contentful Paint | 179 ms | 190 ms | 184 ms | 198 ms | 188 ms | 172 ms | 235 ms |
+| Total Blocking Time | 0 ms | 27 ms | 2 ms | 5 ms | 0 ms | 25 ms | 233 ms |
+| Interaction to Next Paint | 24 ms | 16 ms | 24 ms | 16 ms | 24 ms | 16 ms | 16 ms |
+
+測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。
 
 ## 状態管理とレンダリング
 

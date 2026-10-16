@@ -22,35 +22,16 @@ Adding a page to a Rust server leaves two choices today. Leptos type-checks what
 
 ## Benchmarks
 
-### js-framework-benchmark
-
-[js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), keyed. Medians of 10 runs in headless Chrome 155 on an Apple M4 Max, with the benchmark's own CPU slowdowns.
-
-| | hypersig | Leptos | React | Vue | Solid | vanillajs |
-|---|---|---|---|---|---|---|
-| create rows (ms) | 24.3 | 25.1 | 23.6 | 24.3 | 21.7 | 20.7 |
-| replace all rows (ms) | 26.9 | 28.9 | 29.2 | 26.3 | 23.6 | 21.9 |
-| partial update (ms) | 15.0 | 11.3 | 13.7 | 12.9 | 11.1 | 22.9 |
-| select row (ms) | 3.3 | 4.5 | 5.8 | 5.1 | 4.0 | 4.8 |
-| swap rows (ms) | 13.0 | 12.4 | 88.1 | 13.4 | 13.1 | 13.0 |
-| remove row (ms) | 13.4 | 12.4 | 13.8 | 12.7 | 12.8 | 9.9 |
-| create many rows (ms) | 252.9 | 259.5 | 383.3 | 247.9 | 220.4 | 208.3 |
-| append rows to large table (ms) | 27.8 | 27.8 | 27.4 | 26.3 | 23.8 | 23.0 |
-| clear rows (ms) | 14.2 | 16.4 | 16.4 | 12.2 | 10.4 | 9.1 |
-| memory after create/clear ×5 (MB) | 1.37 | 4.58 | 1.93 | 1.11 | 0.76 | 0.64 |
-| size, compressed (KB) | 13.1 | 48.8 | 51.4 | 23.3 | 4.5 | 2.5 |
-| first paint (ms) | 81.1 | 268.3 | 244.9 | 113.7 | 63.4 | 53.8 |
-
-### Full-stack TodoMVC
-
 A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request.
 
 | | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
 | JS (gzip) | 13.4 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
-| FCP | 179 ms | 190 ms | 184 ms | 198 ms | 188 ms | 172 ms | 235 ms |
-| TBT | 0 ms | 27 ms | 2 ms | 5 ms | 0 ms | 25 ms | 233 ms |
-| INP | 24 ms | 16 ms | 24 ms | 16 ms | 24 ms | 16 ms | 16 ms |
+| First Contentful Paint | 179 ms | 190 ms | 184 ms | 198 ms | 188 ms | 172 ms | 235 ms |
+| Total Blocking Time | 0 ms | 27 ms | 2 ms | 5 ms | 0 ms | 25 ms | 233 ms |
+| Interaction to Next Paint | 24 ms | 16 ms | 24 ms | 16 ms | 24 ms | 16 ms | 16 ms |
+
+The apps and the harness are in [`bench/compare`](bench/compare). Results of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), which compares list operations in the browser alone, are in [`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md).
 
 ## State management and rendering
 
