@@ -71,13 +71,16 @@ interface Instance {
  * item's copy of it in the `DepIndex`.
  */
 interface Part {
-  readonly kind: "show" | "text" | "checked" | "class" | "attr" | "toggle" | "style" | "bind";
+  /** What it writes, or `if` for a condition's `<template>`, which it shows or removes. */
+  readonly kind: "show" | "text" | "checked" | "class" | "attr" | "toggle" | "style" | "bind" | "if";
   /** The class, attribute, or CSS property it writes. */
   readonly name: string;
   /** The expression, or for `bind` the `Bind`. */
   readonly ast: unknown;
   /** For `["eq", ["sig", path], other]` where `other` reads only the item: the signal and `other`. */
   readonly selector: { readonly path: string; readonly other: unknown } | null;
+  /** For `if`, the element its template holds. */
+  readonly proto: Element | null;
 }
 
 /** What the items of one `<template>` share, worked out once from its element. */
@@ -707,6 +710,10 @@ export class Runtime implements Host {
       for (const member of own(outermost)?.members ?? []) {
         if (member instanceof HTMLTemplateElement) for (const effect of own(member)?.effects ?? []) this.#runEffect(effect);
       }
+      const row = own(outermost)?.row;
+      row?.nodes?.forEach((node, index) => {
+        if (row.shape.parts[index]!.kind === "if" && node !== undefined) this.store.untracked(() => this.#runPart(row, index));
+      });
     }
   }
 
@@ -1045,6 +1052,7 @@ export class Runtime implements Host {
     if (element === undefined) return;
     const part = row.shape.parts[index]!;
     if (part.kind === "bind") this.#writeControl(element, part.ast as Bind, row.ctx!);
+    else if (part.kind === "if") this.#renderIf(element as HTMLTemplateElement, part.proto, this.#holds(row, index), row.ctx!.scope);
     else write(element, part.kind, part.name, CONDITIONS.has(part.kind) ? this.#holds(row, index) : evaluate(part.ast, row.ctx!));
   }
 
@@ -1455,10 +1463,10 @@ function locate(plan: Plan, copy: Element, found: (element: Element, source: Ele
   }
 }
 
-type Write = Exclude<Part["kind"], "bind">;
+type Write = Exclude<Part["kind"], "bind" | "if">;
 
 /** The kinds of binding whose expression is a condition, which `#compare` or a selector part can answer. */
-const CONDITIONS: ReadonlySet<Part["kind"]> = new Set(["show", "class", "toggle"]);
+const CONDITIONS: ReadonlySet<Part["kind"]> = new Set(["show", "class", "toggle", "if"]);
 
 /** The bindings of `spec` that write to the element, in the order the runtime runs them. */
 function writes(spec: Spec): [kind: Write, name: string, ast: unknown][] {
@@ -1562,11 +1570,19 @@ function shapeOf(proto: Element, depth: number): Shape {
     moved,
     all: parts.length === 0 ? 0 : 2 ** parts.length - 1,
     keyFields: keyAst === undefined ? null : keyFields,
-    whole: partsOf.size === reactive && (keyAst === undefined || keyFields !== null),
+    // The bindings inside a condition that an `if` part shows are effects of their own, which read under the item's slot name.
+    whole: partsOf.size === reactive && (keyAst === undefined || keyFields !== null) && !parts.some((part) => part.kind === "if" && part.proto !== null && bound(part.proto)),
     masks: new Map(),
   };
   shapes.set(proto, shape);
   return shape;
+}
+
+/** Whether `proto` or an element inside it carries a reactive attribute. */
+function bound(proto: Element): boolean {
+  let found = false;
+  sources(planOf(proto), () => (found = true));
+  return found;
 }
 
 /** Calls `visit` with each element of `plan` that carries a reactive attribute, in the order `locate` finds them. */
@@ -1583,24 +1599,26 @@ function sources(plan: Plan, visit: (source: Element) => void): void {
  */
 function partsFor(source: Element, depth: number): [Part, StaticRead[]][] | null {
   const spec = specOf(source);
-  if (spec.effects.length > 0 || spec.watches.length > 0 || spec.proto !== null) return null;
+  if (spec.effects.length > 0 || spec.watches.length > 0 || spec.each !== undefined) return null;
   if (source.hasAttribute("data-hs-on-load") || source.hasAttribute("data-hs-on-interval")) return null;
   const found: [Part, StaticRead[]][] = [];
-  for (const [kind, name, ast] of writes(spec)) {
+  const conditions: [Part["kind"], string, unknown][] = writes(spec);
+  if (spec.cond !== undefined && source instanceof HTMLTemplateElement) conditions.push(["if", "", spec.cond]);
+  for (const [kind, name, ast] of conditions) {
     const reads = staticReads(ast);
     if (reads === null || reads.some((read) => read.kind !== "sig" && read.depth > depth)) return null;
     const compared = CONDITIONS.has(kind) ? comparison(ast) : null;
     const otherReads = compared === null ? null : staticReads(compared[1]);
     if (otherReads !== null && otherReads.every((read) => read.kind === "item" && read.depth === depth)) {
-      found.push([{ kind, name, ast, selector: { path: compared![0], other: compared![1] } }, otherReads]);
+      found.push([{ kind, name, ast, selector: { path: compared![0], other: compared![1] }, proto: spec.proto }, otherReads]);
     } else {
-      found.push([{ kind, name, ast, selector: null }, reads]);
+      found.push([{ kind, name, ast, selector: null, proto: spec.proto }, reads]);
     }
   }
   if (spec.bind !== undefined) {
     const read = placeRead(spec.bind[0]);
     if (read === null || (read.kind === "item" && read.depth > depth)) return null;
-    found.push([{ kind: "bind", name: "", ast: spec.bind, selector: null }, [read]]);
+    found.push([{ kind: "bind", name: "", ast: spec.bind, selector: null, proto: null }, [read]]);
   }
   return found;
 }

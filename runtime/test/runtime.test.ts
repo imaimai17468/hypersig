@@ -252,6 +252,34 @@ describe("Runtime", () => {
     expect(inputs().map((input) => input.value)).toEqual(["set", "typed"]);
   });
 
+  it("shows the condition of only the items whose comparison with a selected signal changes, with the bindings inside it", async () => {
+    const runtime = mount(
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
+        `<template data-hs-if='["eq",["sig","editing"],["item",0,"id"]]'><input data-hs-bind='[["item",0,"title"],"text"]'></template>` +
+        `</li></template></ul>`,
+      { rows: [1, 2, 3, 4].map((id) => ({ id, title: `t${id}` })), editing: 2 },
+    );
+    await tick();
+    const editing = () => [...document.querySelectorAll("#l li")].map((li) => li.querySelector("input")?.value ?? null);
+    expect(editing()).toEqual([null, "t2", null, null]);
+    const reads = spyReads(runtime);
+    runtime.store.set("editing", 4);
+    await tick();
+    expect(editing()).toEqual([null, null, null, "t4"]);
+    expect(reads.filter((path) => path.endsWith(".id")).sort()).toEqual(["rows.1.id", "rows.3.id"]);
+
+    runtime.store.set("rows", [4, 3, 2, 1].map((id) => ({ id, title: `t${id}` })));
+    await tick();
+    expect(editing()).toEqual(["t4", null, null, null]);
+    runtime.store.set("rows.0.title", "renamed");
+    await tick();
+    expect(editing()).toEqual(["renamed", null, null, null]);
+    const input = document.querySelector<HTMLInputElement>("#l input")!;
+    input.value = "typed";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(runtime.store.get("rows.0.title")).toBe("typed");
+  });
+
   it("updates the items of a nested list when the enclosing item or a page signal they read changes", async () => {
     const runtime = mount(
       `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
