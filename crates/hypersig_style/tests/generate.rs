@@ -572,6 +572,15 @@ const EXPERIMENTAL: &[&str] = &[
     "position-try-fallbacks",
 ];
 
+/// Keywords that browsers ship and MDN's data does not list yet, as
+/// (property, keyword).
+///
+/// `appearance: base-select` opts a `<select>` and its `::picker(select)`
+/// into the styleable select of the CSS Forms draft. browser-compat-data
+/// 8.1.6 lists it for Chrome 135, Firefox 149, and Safari 27, and
+/// mdn-data 2.37.2 leaves it out of the `appearance` syntax.
+const ADDED_KEYWORDS: &[(&str, &str)] = &[("appearance", "base-select")];
+
 fn is_generated(name: &str, value: &Value) -> bool {
     (is_standard(value) || EXPERIMENTAL.contains(&name)) && !name.starts_with('-')
 }
@@ -685,9 +694,14 @@ fn generate() -> (String, String) {
     );
     let mut method_names = BTreeSet::new();
     for (&name, value) in &properties {
-        let syntax = value["syntax"].as_str().expect("syntax");
+        let mut syntax = value["syntax"].as_str().expect("syntax").to_owned();
+        for (property, keyword) in ADDED_KEYWORDS {
+            if *property == name {
+                let _ = write!(syntax, " | {keyword}");
+            }
+        }
         let mut seen = vec![name.to_owned()];
-        let singles = data.singles(&Parser::parse(syntax), &mut seen);
+        let singles = data.singles(&Parser::parse(&syntax), &mut seen);
         let keywords: Vec<&str> = singles
             .atoms
             .iter()

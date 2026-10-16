@@ -739,6 +739,8 @@ impl From<Raw> for AnimationTrigger {
 pub enum Appearance {
     /// `auto`.
     Auto,
+    /// `base-select`.
+    BaseSelect,
     /// `button`.
     Button,
     /// `checkbox`.
@@ -769,6 +771,7 @@ impl fmt::Display for Appearance {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Auto => f.write_str("auto"),
+            Self::BaseSelect => f.write_str("base-select"),
             Self::Button => f.write_str("button"),
             Self::Checkbox => f.write_str("checkbox"),
             Self::Listbox => f.write_str("listbox"),
