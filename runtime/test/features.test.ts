@@ -253,6 +253,24 @@ describe("node refs", () => {
     await tick();
     expect(hide).toHaveBeenCalledOnce();
   });
+
+  it("shows a closed popover and leaves an open one alone", async () => {
+    mount("roving");
+    const menu = $("#menu");
+    menu.setAttribute("popover", "auto");
+    const show = vi.fn();
+    menu.showPopover = show;
+    let open = true;
+    const matches = menu.matches.bind(menu);
+    vi.spyOn(menu, "matches").mockImplementation((selector: string) => (selector === ":popover-open" ? open : matches(selector)));
+    key($("#item0"), "Enter");
+    await tick();
+    expect(show).not.toHaveBeenCalled();
+    open = false;
+    key($("#item0"), "Enter");
+    await tick();
+    expect(show).toHaveBeenCalledOnce();
+  });
 });
 
 describe("timers, effects, and calls", () => {

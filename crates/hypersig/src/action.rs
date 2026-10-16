@@ -309,6 +309,12 @@ impl<S> NodeRef<S> {
     pub fn hide_popover(self) -> Stmt<S> {
         self.dom("hide-popover")
     }
+
+    /// A statement that shows the element if it is a popover that is not open.
+    #[must_use]
+    pub fn show_popover(self) -> Stmt<S> {
+        self.dom("show-popover")
+    }
 }
 
 impl<S> Clone for NodeRef<S> {
