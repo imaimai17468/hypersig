@@ -112,6 +112,45 @@ async fn main() -> std::io::Result<()> {
 
 Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime, and no Node or JavaScript build is involved.
 
+## Styling
+
+Styles are Rust values too. `Style` has one method per standard CSS property, generated from MDN's CSS data, and each declaration becomes one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. A misspelled property or keyword, or a value of the wrong type such as a color for `width`, is a compile error. The page writes the rules its elements use into `<head>`, and a patch that brings new elements brings their rules, placed so that a breakpoint still overrides the base value.
+
+```rust
+use hypersig::html::button;
+use hypersig::style::value::{Color, Cursor, rem};
+use hypersig::style::{Media, PseudoClass, Style, Theme, Token};
+use hypersig::{Page, Signals};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Cart {
+    busy: bool,
+}
+
+let accent = Token::new("accent", Color::hex(0xb83f45));
+let page = Page::new("Cart", Cart { busy: false })
+    .theme(Theme::new().on(Media::Dark, Theme::new().set(&accent, Color::hex(0xff6b6b))))
+    .child(
+        button()
+            .css(
+                Style::new()
+                    .padding(rem(0.5))
+                    .color(accent.var())
+                    .cursor(Cursor::Pointer)
+                    .on(PseudoClass::Hover, Style::new().color(Color::CRIMSON))
+                    .on(Media::Md, Style::new().padding(rem(1))),
+            )
+            .css_when(Style::new().opacity(0.5), Cart::busy())
+            .text("Buy"),
+    );
+assert!(page.render().contains("hover:color_crimson"));
+```
+
+`css_when` switches a style with a signal, and `css_match` picks one per value of a signal, the variants of a Panda CSS recipe. Conditions cover pseudo-classes and pseudo-elements, media features, container sizes, and the state of a marked ancestor or sibling (`group` and `peer`). `hypersig::style` also has design tokens with a page theme, layout patterns such as `stack` and `grid`, rules for elements by tag with a small reset, `@font-face`, and `@keyframes`. The [`todomvc`](examples/todomvc) example is written with them alone, and a Chrome screenshot of it matched, byte for byte, one taken with the stylesheet it had before.
+
+A value with several parts, such as `margin: 0 auto`, a shadow, or a `calc()`, goes through `raw(...)`, which is passed to the browser unchecked, and so is a value outside a property's range, such as a negative width. A page that loads an existing stylesheet keeps it: `Stylesheet::class("name")` checks at compile time that the stylesheet has a selector for the class.
+
 ## Limitations
 
 In hypersig the server holds the state. What the browser can do on its own is the set of operations and statements hypersig provides, such as arithmetic on `i32` and `f64`, string and list operations, and focus. Anything else goes through a server action, so it responds a network round trip later.
@@ -132,7 +171,7 @@ cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
 cd e2e && pnpm install && pnpm check && pnpm test   # starts the four examples and drives them in Chrome
 ```
 
-The browser runtime is TypeScript under `runtime/`, and `pnpm build` writes the prebuilt `crates/hypersig/assets/hypersig.js` (about 38 KB, about 13 KB gzipped) that the crate embeds. `AGENTS.md` describes the repository layout and the checks a change runs. The lint set and coding conventions follow Microsoft's [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/).
+The browser runtime is TypeScript under `runtime/`, and `pnpm build` writes the prebuilt `crates/hypersig/assets/hypersig.js` (about 39 KB, about 14 KB gzipped) that the crate embeds. `AGENTS.md` describes the repository layout and the checks a change runs. The lint set and coding conventions follow Microsoft's [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/).
 
 ## License
 

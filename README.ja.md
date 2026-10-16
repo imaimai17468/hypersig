@@ -112,6 +112,45 @@ async fn main() -> std::io::Result<()> {
 
 `cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。ブラウザ用のランタイムは `hypersig_runtime()` が配信するので、Node も JavaScript のビルドも要りません。
 
+## スタイル
+
+スタイルも Rust の値として書きます。`Style` には MDN の CSS データから生成した、標準の CSS プロパティごとのメソッドがあり、宣言 1 つが、その宣言から名前の決まるクラス 1 つになります（Panda CSS や Tailwind CSS と同じ atomic CSS です）。プロパティやキーワードの綴り違いと、`width` に色を渡すような型の違う値は、コンパイルエラーになります。ページは要素が使うルールを `<head>` に書き、新しい要素を運ぶパッチはそのルールも運びます。ルールは、ブレークポイントの値が基本の値に勝つ順番に並びます。
+
+```rust
+use hypersig::html::button;
+use hypersig::style::value::{Color, Cursor, rem};
+use hypersig::style::{Media, PseudoClass, Style, Theme, Token};
+use hypersig::{Page, Signals};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Cart {
+    busy: bool,
+}
+
+let accent = Token::new("accent", Color::hex(0xb83f45));
+let page = Page::new("Cart", Cart { busy: false })
+    .theme(Theme::new().on(Media::Dark, Theme::new().set(&accent, Color::hex(0xff6b6b))))
+    .child(
+        button()
+            .css(
+                Style::new()
+                    .padding(rem(0.5))
+                    .color(accent.var())
+                    .cursor(Cursor::Pointer)
+                    .on(PseudoClass::Hover, Style::new().color(Color::CRIMSON))
+                    .on(Media::Md, Style::new().padding(rem(1))),
+            )
+            .css_when(Style::new().opacity(0.5), Cart::busy())
+            .text("Buy"),
+    );
+assert!(page.render().contains("hover:color_crimson"));
+```
+
+`css_when` はシグナルでスタイルを切り替え、`css_match` はシグナルの値ごとにスタイルを選びます（Panda CSS の recipe の variants に当たります）。条件には、擬似クラスと擬似要素、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態（`group` と `peer`）を使えます。`hypersig::style` には、ページのテーマと組み合わせるデザイントークン、`stack` や `grid` のようなレイアウトのパターン、タグごとの要素へのルールと小さなリセット、`@font-face`、`@keyframes` もあります。例の [`todomvc`](examples/todomvc) はこれらだけで書いてあり、Chrome で撮ったスクリーンショットは、以前のスタイルシートで撮ったものとバイト単位で一致しました。
+
+`margin: 0 auto`、影、`calc()` のように複数の部分からなる値は `raw(...)` を通し、ブラウザに検査なしで渡ります。負の幅のような、プロパティの範囲を外れた値も検査しません。既存のスタイルシートを読み込むページは、それをそのまま使えます。`Stylesheet::class("name")` は、そのクラスのセレクタがスタイルシートにあるかをコンパイル時に確かめます。
+
 ## 制限事項
 
 hypersig では、状態をサーバーが持ちます。ブラウザだけで完結するのは、hypersig が用意した演算と命令です。`i32` と `f64` の計算、文字列とリストの操作、フォーカスなどがこれに当たります。それ以外の処理はサーバーのアクションを通すので、通信の分だけ反応が遅れます。
@@ -132,7 +171,7 @@ cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
 cd e2e && pnpm install && pnpm check && pnpm test   # 4 つの例を起動して Chrome で操作する
 ```
 
-ブラウザ用のランタイムは `runtime/` にある TypeScript です。`pnpm build` がビルド済みの `crates/hypersig/assets/hypersig.js`（約 38 KB、gzip 後は約 13 KB）を書き出し、クレートはそれを埋め込みます。リポジトリの構成と、変更のたびに通す確認は `AGENTS.md` にあります。Lint の構成とコーディング規約は、Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っています。
+ブラウザ用のランタイムは `runtime/` にある TypeScript です。`pnpm build` がビルド済みの `crates/hypersig/assets/hypersig.js`（約 39 KB、gzip 後は約 14 KB）を書き出し、クレートはそれを埋め込みます。リポジトリの構成と、変更のたびに通す確認は `AGENTS.md` にあります。Lint の構成とコーディング規約は、Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っています。
 
 ## License
 
