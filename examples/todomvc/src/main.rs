@@ -12,8 +12,8 @@ use axum::extract::State;
 use axum::response::Html;
 use axum::routing::get;
 use hypersig::html::{
-    El, Key, Stylesheet, a, button, each_keyed, footer, h1, header, input, label, li, section,
-    span, strong, ul, when,
+    El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
+    ul, when,
 };
 use hypersig::{Action, Expr, NodeRef, Page, Patches, RouterExt, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
@@ -73,7 +73,7 @@ fn new_todo() -> El<TodoMvc> {
             .then(draft.set("")),
     );
     input()
-        .class(class::NEW_TODO)
+        .css(styles::new_todo())
         .attr("placeholder", "What needs to be done?")
         .attr("autofocus", "")
         .bind(draft)
@@ -85,7 +85,7 @@ fn todo_list() -> El<TodoMvc> {
     let filter = TodoMvc::filter();
     let editing = TodoMvc::editing();
     let edit_text = TodoMvc::edit_text();
-    ul().class(class::TODO_LIST).child(each_keyed(
+    ul().id("todo-list").css(styles::list()).child(each_keyed(
         todos,
         |todo| todo.at(Todo::id()),
         |todo| {
@@ -107,27 +107,40 @@ fn todo_list() -> El<TodoMvc> {
                 .then(editing.set(&None)),
             );
             li().show(visible)
-                .class_when(class::COMPLETED, done)
-                .class_when(class::EDITING, is_editing)
+                .css(styles::item())
                 .child(
                     input()
-                        .class(class::TOGGLE)
+                        .css(styles::toggle())
+                        .css_when(styles::hidden(), is_editing.clone())
                         .attr("type", "checkbox")
+                        .attr("aria-label", "Toggle")
                         .bind(done),
                 )
                 .child(
-                    label().bind_text(title).on_double_click(
-                        edit_text
-                            .set(title)
-                            .then(editing.set(id.some()))
-                            .then(EDIT.focus()),
-                    ),
+                    label()
+                        .css(styles::title())
+                        .css_when(styles::completed_title(), done)
+                        .css_when(styles::hidden(), is_editing.clone())
+                        .bind_text(title)
+                        .on_double_click(
+                            edit_text
+                                .set(title)
+                                .then(editing.set(id.some()))
+                                .then(EDIT.focus()),
+                        ),
                 )
-                .child(button().class(class::DESTROY).on_click(todo.remove()))
+                .child(
+                    button()
+                        .css(styles::destroy())
+                        .css_when(styles::hidden(), is_editing)
+                        .attr("aria-label", "Delete")
+                        .on_click(todo.remove()),
+                )
                 .child(when(
                     editing.equals(id.some()),
                     input()
-                        .class(class::EDIT)
+                        .css(styles::edit())
+                        .attr("aria-label", "Edit")
                         .node_ref(EDIT)
                         .bind(edit_text)
                         .on_key(Key::Enter, commit.clone())
@@ -141,7 +154,8 @@ fn todo_list() -> El<TodoMvc> {
 fn filter_link(filter: Filter, text: &str) -> El<TodoMvc> {
     li().child(
         a().attr("href", "#")
-            .class_when(class::SELECTED, TodoMvc::filter().equals(&filter))
+            .css(styles::filter_link())
+            .css_when(styles::selected(), TodoMvc::filter().equals(&filter))
             .on_click(TodoMvc::filter().set(&filter))
             .text(text),
     )
@@ -163,28 +177,34 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
         completed: 0,
     };
     Page::new("hypersig TodoMVC", signals)
-        .style(STYLE)
+        .global(styles::global())
         .computed(left, list.count(|todo| !todo.at(Todo::done())))
         .computed(completed, list.count(|todo| todo.at(Todo::done())))
         .child(
             section()
-                .class(class::TODOAPP)
+                .css(styles::app())
                 .on_signal_change(list, SAVE.call_with(list))
-                .child(header().child(h1().text("todos")).child(new_todo()))
+                .child(
+                    header()
+                        .child(h1().css(styles::heading()).text("todos"))
+                        .child(new_todo()),
+                )
                 .child(
                     section()
-                        .class(class::MAIN)
+                        .id("main")
+                        .css(styles::main())
                         .show(!list.is_empty())
                         .child(
                             input()
                                 .id("toggle-all")
-                                .class(class::TOGGLE_ALL)
+                                .css(styles::toggle_all())
                                 .attr("type", "checkbox")
                                 .bind_checked(left.equals(0))
                                 .on_change(list.set_all(Todo::done(), left.gt(0))),
                         )
                         .child(
                             label()
+                                .css(styles::toggle_all_label())
                                 .attr("for", "toggle-all")
                                 .text("Mark all as complete"),
                         )
@@ -192,11 +212,11 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                 )
                 .child(
                     footer()
-                        .class(class::FOOTER)
+                        .css(styles::footer())
                         .show(!list.is_empty())
                         .child(
                             span()
-                                .class(class::TODO_COUNT)
+                                .id("todo-count")
                                 .child(strong().bind_text(left.to_text()))
                                 .child(span().bind_text(if_else(
                                     left.equals(1),
@@ -205,14 +225,16 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                                 ))),
                         )
                         .child(
-                            ul().class(class::FILTERS)
+                            ul().id("filters")
+                                .css(styles::filters())
                                 .child(filter_link(Filter::All, "All"))
                                 .child(filter_link(Filter::Active, "Active"))
                                 .child(filter_link(Filter::Completed, "Completed")),
                         )
                         .child(
                             button()
-                                .class(class::CLEAR_COMPLETED)
+                                .id("clear-completed")
+                                .css(styles::plain_button())
                                 .show(completed.gt(0))
                                 .on_click(list.retain(|todo| !todo.at(Todo::done())))
                                 .text("Clear completed"),
@@ -231,58 +253,220 @@ async fn save(state: AppState, todos: Vec<Todo>) -> Patches<TodoMvc> {
     Patches::new()
 }
 
-mod class {
-    use hypersig::html::Class;
+/// The look of the app, one function per kind of element.
+mod styles {
+    use hypersig::style::value::{
+        AlignItems, Border, BoxSizing, Color, Content, Cursor, Display, FontWeight, Global,
+        JustifyContent, ListStyle, MarginInline, Outline, Position, TextAlign, TextDecoration,
+        WordBreak, deg, pct, px, quoted, raw,
+    };
+    use hypersig::style::{
+        Condition, Element, Global as Rules, Property, PseudoClass, PseudoElement, Selector, Style,
+    };
 
-    use super::STYLE;
+    const GRAY: u32 = 0x0094_9494;
 
-    pub const NEW_TODO: Class = STYLE.class("new-todo");
-    pub const TODO_LIST: Class = STYLE.class("todo-list");
-    pub const COMPLETED: Class = STYLE.class("completed");
-    pub const EDITING: Class = STYLE.class("editing");
-    pub const TOGGLE: Class = STYLE.class("toggle");
-    pub const DESTROY: Class = STYLE.class("destroy");
-    pub const EDIT: Class = STYLE.class("edit");
-    pub const SELECTED: Class = STYLE.class("selected");
-    pub const TODOAPP: Class = STYLE.class("todoapp");
-    pub const MAIN: Class = STYLE.class("main");
-    pub const TOGGLE_ALL: Class = STYLE.class("toggle-all");
-    pub const FOOTER: Class = STYLE.class("footer");
-    pub const FILTERS: Class = STYLE.class("filters");
-    pub const CLEAR_COMPLETED: Class = STYLE.class("clear-completed");
+    pub fn global() -> Rules {
+        Rules::new()
+            .rule(
+                Selector::Everything,
+                Style::new().box_sizing(BoxSizing::BorderBox),
+            )
+            .rule(
+                Element::Body,
+                Style::new()
+                    .font_size(px(14))
+                    .font_family(raw("'Helvetica Neue', Helvetica, Arial, sans-serif"))
+                    .background_color(Color::hex(0x00f5_f5f5))
+                    .color(Color::hex(0x0011_1111))
+                    .margin(px(0)),
+            )
+    }
 
-    // No rule in `STYLE` styles the classes below.
-    pub const TODO_COUNT: Class = Class::new("todo-count");
+    pub fn app() -> Style {
+        Style::new()
+            .background_color(Color::WHITE)
+            .max_width(px(550))
+            .margin_top(px(130))
+            .margin_inline(MarginInline::Auto)
+            .margin_bottom(px(40))
+            .position(Position::Relative)
+            .box_shadow(raw("0 2px 4px rgba(0,0,0,.2), 0 25px 50px rgba(0,0,0,.1)"))
+    }
+
+    pub fn heading() -> Style {
+        Style::new()
+            .position(Position::Absolute)
+            .top(px(-110))
+            .width(pct(100))
+            .font_size(px(80))
+            .font_weight(FontWeight::Number(200.0))
+            .text_align(TextAlign::Center)
+            .color(Color::hex(0x00b8_3f45))
+            .margin(px(0))
+    }
+
+    fn text_field() -> Style {
+        Style::new()
+            .width(pct(100))
+            .font_size(px(24))
+            .border(Border::None)
+            .outline(Outline::None)
+    }
+
+    pub fn new_todo() -> Style {
+        text_field()
+            .padding_block(px(16))
+            .padding_right(px(16))
+            .padding_left(px(60))
+            .box_shadow(raw("inset 0 -2px 1px rgba(0,0,0,.03)"))
+    }
+
+    pub fn edit() -> Style {
+        text_field()
+            .margin_left(px(43))
+            .padding_block(px(12))
+            .padding_inline(px(16))
+            .border(raw("1px solid #999"))
+            .box_shadow(raw("inset 0 -1px 5px rgba(0,0,0,.2)"))
+    }
+
+    pub fn main() -> Style {
+        Style::new()
+            .position(Position::Relative)
+            .border_top(raw("1px solid #e6e6e6"))
+    }
+
+    /// The checkbox is invisible; the label after it draws the arrow, which
+    /// darkens while the box is checked.
+    pub fn toggle_all() -> Style {
+        Style::new().position(Position::Absolute).opacity(0).peer()
+    }
+
+    pub fn toggle_all_label() -> Style {
+        let arrow = Style::new()
+            .content(quoted("❯"))
+            .font_size(px(22))
+            .color(Color::hex(GRAY))
+            .transform(raw(format!("rotate({})", deg(90))));
+        Style::new()
+            .position(Position::Absolute)
+            .top(px(-52))
+            .left(px(0))
+            .width(px(45))
+            .height(px(65))
+            .font_size(px(0))
+            .display(Display::Flex)
+            .align_items(AlignItems::Center)
+            .justify_content(JustifyContent::Center)
+            .pseudo(PseudoElement::Before, arrow)
+            .on(
+                Condition::Peer(PseudoClass::Checked),
+                Style::new().pseudo(
+                    PseudoElement::Before,
+                    Style::new().color(Color::hex(0x0048_4848)),
+                ),
+            )
+    }
+
+    pub fn list() -> Style {
+        Style::new()
+            .margin(px(0))
+            .padding(px(0))
+            .list_style(ListStyle::None)
+    }
+
+    /// The item is the group its delete button watches for hover.
+    pub fn item() -> Style {
+        Style::new()
+            .position(Position::Relative)
+            .font_size(px(24))
+            .border_bottom(raw("1px solid #ededed"))
+            .display(Display::Flex)
+            .align_items(AlignItems::Center)
+            .group()
+    }
+
+    pub fn toggle() -> Style {
+        Style::new()
+            .width(px(40))
+            .height(px(40))
+            .margin_block(px(0))
+            .margin_inline(px(10))
+    }
+
+    pub fn title() -> Style {
+        Style::new()
+            .flex(1)
+            .padding(px(15))
+            .word_break(WordBreak::BreakAll)
+            .transition(raw("color .2s"))
+    }
+
+    pub fn completed_title() -> Style {
+        Style::new()
+            .color(Color::hex(GRAY))
+            .text_decoration(TextDecoration::LineThrough)
+    }
+
+    pub fn hidden() -> Style {
+        Style::new().display(Display::None)
+    }
+
+    pub fn plain_button() -> Style {
+        Style::new()
+            .border(Border::None)
+            .background_color(Color::TRANSPARENT)
+            .cursor(Cursor::Pointer)
+            .global(Property::Color, Global::Inherit)
+    }
+
+    /// Hidden until the pointer is over its item.
+    pub fn destroy() -> Style {
+        plain_button()
+            .display(Display::None)
+            .font_size(px(30))
+            .color(Color::hex(GRAY))
+            .margin_right(px(10))
+            .pseudo(
+                PseudoElement::After,
+                Style::new().content(Content::Quoted(quoted("×"))),
+            )
+            .on(
+                Condition::Group(PseudoClass::Hover),
+                Style::new().display(Display::Block),
+            )
+    }
+
+    pub fn footer() -> Style {
+        Style::new()
+            .padding_block(px(10))
+            .padding_inline(px(15))
+            .display(Display::Flex)
+            .align_items(AlignItems::Center)
+            .justify_content(JustifyContent::SpaceBetween)
+            .border_top(raw("1px solid #e6e6e6"))
+            .color(Color::hex(0x0011_1111))
+    }
+
+    pub fn filters() -> Style {
+        list().display(Display::Flex).gap(px(4))
+    }
+
+    pub fn filter_link() -> Style {
+        Style::new()
+            .global(Property::Color, Global::Inherit)
+            .text_decoration(TextDecoration::None)
+            .padding_block(px(3))
+            .padding_inline(px(7))
+            .border(raw("1px solid transparent"))
+            .border_radius(px(3))
+    }
+
+    pub fn selected() -> Style {
+        Style::new().border_color(Color::hex(0x00ce_4646))
+    }
 }
-
-const STYLE: Stylesheet = Stylesheet::new("
-* { box-sizing: border-box; }
-body { font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f5f5f5; color: #111; margin: 0; }
-.todoapp { background: #fff; max-width: 550px; margin: 130px auto 40px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,.2), 0 25px 50px rgba(0,0,0,.1); }
-.todoapp h1 { position: absolute; top: -110px; width: 100%; font-size: 80px; font-weight: 200; text-align: center; color: #b83f45; margin: 0; }
-.new-todo, .edit { width: 100%; font-size: 24px; padding: 16px 16px 16px 60px; border: none; outline: none; }
-.new-todo { box-shadow: inset 0 -2px 1px rgba(0,0,0,.03); }
-.main { position: relative; border-top: 1px solid #e6e6e6; }
-.toggle-all { position: absolute; opacity: 0; }
-.toggle-all + label { position: absolute; top: -52px; left: 0; width: 45px; height: 65px; font-size: 0; display: flex; align-items: center; justify-content: center; }
-.toggle-all + label::before { content: '❯'; font-size: 22px; color: #949494; transform: rotate(90deg); }
-.toggle-all:checked + label::before { color: #484848; }
-.todo-list { margin: 0; padding: 0; list-style: none; }
-.todo-list li { position: relative; font-size: 24px; border-bottom: 1px solid #ededed; display: flex; align-items: center; }
-.todo-list li .toggle { width: 40px; height: 40px; margin: 0 10px; }
-.todo-list li label { flex: 1; padding: 15px; word-break: break-all; transition: color .2s; }
-.todo-list li.completed label { color: #949494; text-decoration: line-through; }
-.todo-list li .destroy { display: none; border: none; background: none; font-size: 30px; color: #949494; margin-right: 10px; cursor: pointer; }
-.todo-list li .destroy::after { content: '×'; }
-.todo-list li:hover .destroy { display: block; }
-.todo-list li.editing .toggle, .todo-list li.editing label, .todo-list li.editing .destroy { display: none; }
-.todo-list li .edit { margin-left: 43px; padding: 12px 16px; border: 1px solid #999; box-shadow: inset 0 -1px 5px rgba(0,0,0,.2); }
-.footer { padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e6e6e6; color: #111; }
-.filters { margin: 0; padding: 0; list-style: none; display: flex; gap: 4px; }
-.filters a { color: inherit; text-decoration: none; padding: 3px 7px; border: 1px solid transparent; border-radius: 3px; }
-.filters a.selected { border-color: #ce4646; }
-.clear-completed { border: none; background: none; cursor: pointer; color: inherit; }
-");
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

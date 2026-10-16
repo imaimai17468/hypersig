@@ -10,10 +10,10 @@ test.beforeEach(async ({ request }) => {
 test("adds, completes, filters, edits, and clears todos in the browser", async ({ page }) => {
   await page.goto(url("todomvc"));
   const input = page.getByPlaceholder("What needs to be done?");
-  const visible = page.locator(".todo-list li").filter({ visible: true });
-  const count = page.locator(".todo-count");
-  const filter = (name: string) => page.locator(".filters a").getByText(name, { exact: true });
-  await expect(page.locator(".main")).toBeHidden();
+  const visible = page.locator("#todo-list li").filter({ visible: true });
+  const count = page.locator("#todo-count");
+  const filter = (name: string) => page.locator("#filters a").getByText(name, { exact: true });
+  await expect(page.locator("#main")).toBeHidden();
 
   for (const title of ["buy milk", "walk dog", "write code"]) {
     await input.fill(title);
@@ -23,9 +23,10 @@ test("adds, completes, filters, edits, and clears todos in the browser", async (
   await expect(count).toHaveText("3 items left");
   await expect(input).toHaveValue("");
 
-  await visible.nth(1).locator(".toggle").check();
+  await visible.nth(1).getByLabel("Toggle").check();
   await expect(count).toHaveText("2 items left");
-  await expect(visible.nth(1)).toHaveClass(/completed/);
+  await expect(visible.nth(1).locator("label")).toHaveCSS("text-decoration-line", "line-through");
+  await expect(visible.nth(0).locator("label")).toHaveCSS("text-decoration-line", "none");
 
   await filter("Active").click();
   await expect(visible.locator("label")).toHaveText(["buy milk", "write code"]);
@@ -33,7 +34,7 @@ test("adds, completes, filters, edits, and clears todos in the browser", async (
   await expect(visible.locator("label")).toHaveText(["walk dog"]);
   await filter("All").click();
 
-  const edit = page.locator(".todo-list .edit");
+  const edit = page.getByLabel("Edit");
   await visible.nth(0).locator("label").dblclick();
   await expect(edit).toBeFocused();
   await edit.fill("buy oat milk");
@@ -54,14 +55,19 @@ test("adds, completes, filters, edits, and clears todos in the browser", async (
   await expect(page.locator("#toggle-all")).toBeChecked();
   await page.locator("label[for=toggle-all]").click();
   await expect(count).toHaveText("2 items left");
-  await visible.nth(0).locator(".toggle").check();
+  await visible.nth(0).getByLabel("Toggle").check();
   await expect(count).toHaveText("1 item left");
-  await page.locator(".clear-completed").click();
+  await page.locator("#clear-completed").click();
   await expect(visible.locator("label")).toHaveText(["walk dog"]);
 
+  // The delete button shows only while the pointer is over its item.
+  const destroy = visible.nth(0).getByLabel("Delete");
+  await page.mouse.move(0, 0);
+  await expect(destroy).toBeHidden();
   await visible.nth(0).hover();
-  await visible.nth(0).locator(".destroy").click();
-  await expect(page.locator(".main")).toBeHidden();
+  await expect(destroy).toBeVisible();
+  await destroy.click();
+  await expect(page.locator("#main")).toBeHidden();
 });
 
 test("keeps the list across a reload and serves it as HTML without JavaScript", async ({ page, browser }) => {
@@ -71,7 +77,7 @@ test("keeps the list across a reload and serves it as HTML without JavaScript", 
     await input.fill(title);
     await input.press("Enter");
   }
-  await page.locator(".todo-list li").first().locator(".toggle").check();
+  await page.locator("#todo-list li").first().getByLabel("Toggle").check();
   await expect.poll(async () => {
     const response = await page.request.get(url("todomvc"));
     return (await response.text()).includes("two");
@@ -80,15 +86,15 @@ test("keeps the list across a reload and serves it as HTML without JavaScript", 
   const plain = await browser.newContext({ javaScriptEnabled: false });
   const html = await plain.newPage();
   await html.goto(url("todomvc"));
-  await expect(html.locator(".todo-list li label")).toHaveText(["one", "two"]);
-  await expect(html.locator(".todo-list li").first()).toHaveClass(/completed/);
-  await expect(html.locator(".todo-count")).toHaveText("1 item left");
-  await expect(html.locator(".clear-completed")).toBeVisible();
+  await expect(html.locator("#todo-list li label")).toHaveText(["one", "two"]);
+  await expect(html.locator("#todo-list li label").first()).toHaveCSS("text-decoration-line", "line-through");
+  await expect(html.locator("#todo-count")).toHaveText("1 item left");
+  await expect(html.locator("#clear-completed")).toBeVisible();
   await plain.close();
 
   await page.reload();
-  await expect(page.locator(".todo-list li")).toHaveCount(2);
+  await expect(page.locator("#todo-list li")).toHaveCount(2);
   await input.fill("three");
   await input.press("Enter");
-  await expect(page.locator(".todo-list li label")).toHaveText(["one", "two", "three"]);
+  await expect(page.locator("#todo-list li label")).toHaveText(["one", "two", "three"]);
 });
