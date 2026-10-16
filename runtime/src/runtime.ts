@@ -409,6 +409,7 @@ export class Runtime implements Host {
         else if (op === "blur" && target instanceof HTMLElement) target.blur();
         else if (op === "select" && (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) target.select();
         else if (op === "scroll") target.scrollIntoView({ block: "nearest" });
+        else if (op === "hide-popover" && target instanceof HTMLElement && target.matches(":popover-open")) target.hidePopover();
       }),
     );
   }

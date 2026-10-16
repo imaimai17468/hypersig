@@ -236,6 +236,25 @@ describe("roving focus", () => {
   });
 });
 
+describe("node refs", () => {
+  it("hides an open popover and leaves a closed one alone", async () => {
+    mount("roving");
+    const menu = $("#menu");
+    const hide = vi.fn();
+    menu.hidePopover = hide;
+    let open = false;
+    const matches = menu.matches.bind(menu);
+    vi.spyOn(menu, "matches").mockImplementation((selector: string) => (selector === ":popover-open" ? open : matches(selector)));
+    key($("#item0"), "Tab");
+    await tick();
+    expect(hide).not.toHaveBeenCalled();
+    open = true;
+    key($("#item0"), "Tab");
+    await tick();
+    expect(hide).toHaveBeenCalledOnce();
+  });
+});
+
 describe("timers, effects, and calls", () => {
   it("runs an interval while the element is in the document", async () => {
     vi.useFakeTimers();

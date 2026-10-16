@@ -300,6 +300,15 @@ impl<S> NodeRef<S> {
     pub fn scroll_into_view(self) -> Stmt<S> {
         self.dom("scroll")
     }
+
+    /// A statement that hides the element if it is an open popover.
+    ///
+    /// The browser then returns focus to the element that had it before the
+    /// popover opened, where focus was inside the popover.
+    #[must_use]
+    pub fn hide_popover(self) -> Stmt<S> {
+        self.dom("hide-popover")
+    }
 }
 
 impl<S> Clone for NodeRef<S> {

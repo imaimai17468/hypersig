@@ -385,6 +385,8 @@ struct Roving {
     taken: i32,
 }
 
+const MENU: NodeRef<Roving> = NodeRef::new("menu");
+
 /// A tab list whose third tab is disabled and whose last tab takes the right
 /// arrow for itself, and a vertical menu inside it whose items belong to the
 /// menu rather than to the tab list.
@@ -409,6 +411,8 @@ fn roving() -> (El<Roving>, Roving) {
                 div()
                     .id("menu")
                     .roving_focus(Orientation::Vertical)
+                    .node_ref(MENU)
+                    .on_key(Key::Tab, MENU.hide_popover())
                     .children(
                         (0..2).map(|i| button().id(format!("item{i}")).attr("tabindex", "-1")),
                     ),
