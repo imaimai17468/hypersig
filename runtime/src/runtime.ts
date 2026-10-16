@@ -116,6 +116,15 @@ export class Runtime implements Host {
    */
   readonly #waiting = new Map<Element, () => void>();
   #draining = false;
+  /**
+   * Items and conditions taken out of the document, and bindings found
+   * outside it, whose registrations `#sweep` removes after the next paint.
+   * The runtime never puts a removed element back, so until then they only
+   * hold memory, and a render that reaches them skips them.
+   */
+  #removed: Element[] = [];
+  #stale = new Set<Effect>();
+  #sweeping = false;
 
   constructor(root: Element, initial: Values) {
     this.#root = root;
@@ -706,8 +715,8 @@ export class Runtime implements Host {
     if (this.#ran.has(effect)) return;
     this.#ran.add(effect);
     if (!effect.element.isConnected) {
-      this.#index.remove(effect);
-      delete state(effect.element).effects;
+      this.#stale.add(effect);
+      this.#sweepLater();
       return;
     }
     this.#selector = null;
@@ -789,14 +798,34 @@ export class Runtime implements Host {
     }
   }
 
-  /** Removes `root` from the document and forgets the bindings inside it. */
+  /** Removes `root` from the document, and the bindings inside it after the next paint. */
   #unmount(root: Element): void {
     root.remove();
-    this.#visit(root, (element) => {
+    this.#removed.push(root);
+    this.#sweepLater();
+  }
+
+  #sweepLater(): void {
+    if (this.#sweeping) return;
+    this.#sweeping = true;
+    // A frame callback runs right before a paint, so the timer it sets runs after one. A hidden page paints nothing.
+    const after = (): void => void setTimeout(() => this.#sweep(), 0);
+    if (document.hidden) after();
+    else requestAnimationFrame(after);
+  }
+
+  /** Forgets the bindings of the removed items and conditions, and of the bindings found outside the document. */
+  #sweep(): void {
+    this.#sweeping = false;
+    const forget = (element: Element): void => {
       const bound = own(element);
       for (const effect of bound?.effects ?? []) this.#index.remove(effect);
       if (bound !== undefined) delete bound.effects;
-    });
+    };
+    for (const root of this.#removed) this.#visit(root, forget);
+    this.#removed = [];
+    for (const effect of this.#stale) if (!effect.element.isConnected) forget(effect.element);
+    this.#stale = new Set();
   }
 
   /** Calls `visit` on each element with bindings inside the item or condition `root`, nested ones included. */
