@@ -839,6 +839,59 @@ impl<S> El<S> {
         self
     }
 
+    /// Adds the style of the case whose value `value` equals, as
+    /// [`El::css_when`] does for each case.
+    ///
+    /// This is the variant half of a recipe: the base goes in [`El::css`], and
+    /// each case adds what one value changes. At most one case applies at a
+    /// time, so two cases never compete for a property. A value with no case
+    /// adds nothing, and nothing checks that the cases cover every value of `T`.
+    /// Where the value is known on the server, call a function that returns a
+    /// [`Style`] with a `match` instead, which the compiler checks for
+    /// exhaustiveness.
+    ///
+    /// ```
+    /// use hypersig::html::button;
+    /// use hypersig::style::Style;
+    /// use hypersig::style::value::{Color, px};
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+    /// enum Tone {
+    ///     Calm,
+    ///     Loud,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Alert {
+    ///     tone: Tone,
+    /// }
+    ///
+    /// let html = Page::new("Alert", Alert { tone: Tone::Loud })
+    ///     .child(button().css(Style::new().padding(px(8))).css_match(
+    ///         Alert::tone(),
+    ///         [
+    ///             (Tone::Calm, Style::new().color(Color::GRAY)),
+    ///             (Tone::Loud, Style::new().color(Color::CRIMSON)),
+    ///         ],
+    ///     ))
+    ///     .render();
+    /// assert!(html.contains(r#"class="padding_8px when:color_crimson""#));
+    /// ```
+    #[must_use]
+    pub fn css_match<T: PartialEq + Serialize>(
+        mut self,
+        value: impl IntoExpr<S, T>,
+        cases: impl IntoIterator<Item = (T, Style)>,
+    ) -> Self {
+        let value = value.into_expr();
+        for (case, style) in cases {
+            self = self.css_when(style, value.clone().equals(&case));
+        }
+        self
+    }
+
     /// Adds the rules this element and the elements inside it need to `sheet`.
     pub(crate) fn collect_css(&self, sheet: &mut Sheet) {
         sheet.add(&self.css);
