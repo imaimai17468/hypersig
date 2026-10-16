@@ -23,6 +23,19 @@ it("replaces an element whose tag changed", () => {
   expect(document.body.innerHTML).toBe('<div id="root"><span>new</span></div>');
 });
 
+it("keeps the elements drawn after a template it keeps, and drops those after one it replaces", () => {
+  document.body.innerHTML = '<div id="root"><template>a</template><li>1</li><li>2</li><template>b</template><li>3</li></div>';
+  const [kept, one, two, replaced, three] = [...document.getElementById("root")!.children];
+  const drawn = new Map<Element, Set<Element>>([
+    [kept!, new Set([one!, two!])],
+    [replaced!, new Set([three!])],
+  ]);
+  const removed: Element[] = [];
+  morph(document.getElementById("root")!, element('<div id="root"><template>a</template><template>c</template></div>'), removed, (template) => drawn.get(template));
+  expect(document.body.innerHTML).toBe('<div id="root"><template>a</template><li>1</li><li>2</li><template>c</template></div>');
+  expect(removed).toEqual([replaced, three]);
+});
+
 it("collects the elements it takes out of the document", () => {
   document.body.innerHTML = '<div id="root"><span id="a">A</span><i>x</i><p>y</p></div>';
   const [a, i, p] = [...document.getElementById("root")!.children];

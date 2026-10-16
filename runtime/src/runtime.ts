@@ -450,7 +450,7 @@ export class Runtime implements Host {
           console.error(`hypersig: no element with id "${next.id}" to patch`);
           return;
         }
-        const morphed = morph(target, next, this.#removed);
+        const morphed = morph(target, next, this.#removed, (template) => this.#drawn(template));
         this.scan(morphed, this.#scopeOf(morphed.parentElement));
         this.#render(new Map());
         this.#patched = true;
@@ -460,6 +460,14 @@ export class Runtime implements Host {
       default:
         console.warn(`hypersig: ignored server event "${event.event}"`);
     }
+  }
+
+  /** The elements the runtime drew after `template`, which a patch that keeps `template` leaves in place. */
+  #drawn(template: HTMLTemplateElement): ReadonlySet<Element> | undefined {
+    const items = this.#lists.get(template);
+    if (items !== undefined) return new Set([...items.values()].map((instance) => instance.element));
+    const mounted = this.#mounted.get(template);
+    return mounted === undefined ? undefined : new Set([mounted]);
   }
 
   #context(element: Element, scope: readonly Slot[]): Context {

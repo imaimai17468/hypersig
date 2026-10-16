@@ -125,13 +125,24 @@ describe("lists", () => {
     expect($("#list label").textContent).toBe("green tea");
   });
 
-  it("rebuilds list items after a server patch replaces the fragment around them", async () => {
+  it("keeps the list items and the field being edited when a server patch carries only the list's template", async () => {
     const runtime = mount("todos");
-    const html = $("#list").outerHTML;
-    const list = html.slice(0, html.lastIndexOf("</template>") + "</template>".length) + "</ul>";
-    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: list }) });
+    $("#list label").dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
     await tick();
-    expect($$("#list li label").map((label) => label.textContent)).toEqual(["tea"]);
+    const item = $("#list li");
+    const edit = $<HTMLInputElement>("#list input.edit");
+    edit.value = "green";
+    // A fragment the server renders holds a list as its template alone, with no items.
+    const fragment = $("#list").cloneNode(true) as Element;
+    fragment.replaceChildren(fragment.querySelector("template")!);
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: fragment.outerHTML }) });
+    await tick();
+    expect($("#list li")).toBe(item);
+    expect(document.activeElement).toBe(edit);
+    expect(edit.value).toBe("green");
+    runtime.store.set("todos.0.title", "oolong");
+    await tick();
+    expect($$("#list li label").map((label) => label.textContent)).toEqual(["oolong"]);
   });
 });
 

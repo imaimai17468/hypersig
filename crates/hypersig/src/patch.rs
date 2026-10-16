@@ -174,8 +174,9 @@ impl<S: Signals> Patches<S> {
     ///
     /// The fragment is rendered without the signal values, so the text and
     /// attributes its bindings show are written by the runtime once the patch
-    /// arrives. The items of an `each` inside it are built again, which drops
-    /// the focus and any text being typed in them.
+    /// arrives. A list or condition inside it whose template is unchanged keeps
+    /// the items and content the runtime drew, with their focus and any text
+    /// being typed in them.
     #[must_use]
     pub fn element<F: Fragment<Signals = S>>(mut self, fragment: &F) -> Self {
         self.events

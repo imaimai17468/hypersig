@@ -365,6 +365,49 @@ describe("Runtime", () => {
     expect(on()).toEqual([false, false, true]);
   });
 
+  it("keeps the items of a list and their bindings when a patch keeps its template", async () => {
+    const list = `<ul><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></li></template></ul>`;
+    const runtime = mount(`<div id="frag"><p>a</p>${list}</div>`, { rows: [1, 2].map((id) => ({ id, label: `r${id}` })) });
+    await tick();
+    const items = [...document.querySelectorAll("#frag li")];
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p>b</p>${list}</div>` }) });
+    await tick();
+    expect(document.querySelector("#frag p")!.textContent).toBe("b");
+    expect([...document.querySelectorAll("#frag li")]).toEqual(items);
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    runtime.store.set("rows.1.label", "x");
+    runtime.store.set("rows", [...(runtime.store.get("rows") as unknown[]), { id: 3, label: "r3" }]);
+    await tick();
+    expect([...document.querySelectorAll("#frag li")].map((li) => li.textContent)).toEqual(["r1", "x", "r3"]);
+    expect(document.querySelector("#frag li")).toBe(items[0]);
+  });
+
+  it("builds the items of a list again when a patch changes its template", async () => {
+    const list = (tag: string) =>
+      `<div id="frag"><ul><template data-hs-each='["rows",0]'><${tag} data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></${tag}></template></ul></div>`;
+    const runtime = mount(list("li"), { rows: [1, 2].map((id) => ({ id, label: `r${id}` })) });
+    await tick();
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: list("b") }) });
+    await tick();
+    expect(document.querySelectorAll("#frag li")).toHaveLength(0);
+    expect([...document.querySelectorAll("#frag b")].map((b) => b.textContent)).toEqual(["r1", "r2"]);
+  });
+
+  it("keeps the content of a condition, with its focus, when a patch keeps its template", async () => {
+    const html = `<div id="frag"><template data-hs-if='["sig","on"]'><input data-hs-bind='["text","text"]'></template></div>`;
+    const runtime = mount(html, { on: true, text: "a" });
+    await tick();
+    const input = document.querySelector<HTMLInputElement>("#frag input")!;
+    input.focus();
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html }) });
+    await tick();
+    expect(document.querySelector("#frag input")).toBe(input);
+    expect(document.activeElement).toBe(input);
+    runtime.store.set("on", false);
+    await tick();
+    expect(document.querySelector("#frag input")).toBeNull();
+  });
+
   it("forgets the items of a list that a patch removed after the next frame", async () => {
     const runtime = mount(
       `<div id="frag"><ul><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></li></template></ul></div>`,

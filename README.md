@@ -121,8 +121,6 @@ It does not suit these applications:
 - An application that runs a JavaScript library in the browser, such as a map, a chart, or a rich text editor. These have to run inside the browser, and the server cannot stand in for them.
 - An application that works without a connection to the server, such as one used offline.
 
-For now, redrawing a list with a server patch also drops the focus and any text being typed in its items.
-
 ## Development
 
 ```sh
