@@ -8,11 +8,25 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, button, div, each, each_keyed, input, label, li, main, select, span, ul, when,
+    El, Event, Key, Property, button, div, each, each_keyed, input, label, li, main, select, span,
+    ul, when,
 };
 use hypersig::{Action, Expr, NodeRef, Page, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+
+mod class {
+    use hypersig::html::Class;
+
+    pub const DONE: Class = Class::new("done");
+    pub const EDIT: Class = Class::new("edit");
+    pub const REMOVE: Class = Class::new("remove");
+    pub const NAME: Class = Class::new("name");
+    pub const COUNT: Class = Class::new("count");
+    pub const ON: Class = Class::new("on");
+}
+
+const WIDTH: Property = Property::new("width");
 
 #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
 struct Todo {
@@ -59,7 +73,7 @@ fn todos() -> (El<TodoApp>, TodoApp) {
             |todo| todo.at(Todo::id()),
             |todo| {
                 let id = todo.at(Todo::id());
-                li().class_when("done", todo.at(Todo::done()))
+                li().class_when(class::DONE, todo.at(Todo::done()))
                     .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
                     .child(
                         label()
@@ -69,13 +83,18 @@ fn todos() -> (El<TodoApp>, TodoApp) {
                     .child(when(
                         editing.equals(id.some()),
                         input()
-                            .class("edit")
+                            .class(class::EDIT)
                             .node_ref(EDIT)
                             .bind(todo.at(Todo::title()))
                             .on_key(Key::Enter, editing.set(&None))
                             .on_key(Key::Escape, editing.set(&None)),
                     ))
-                    .child(button().class("remove").on_click(todo.remove()).text("×"))
+                    .child(
+                        button()
+                            .class(class::REMOVE)
+                            .on_click(todo.remove())
+                            .text("×"),
+                    )
             },
         )))
         .child(
@@ -150,7 +169,7 @@ fn controls() -> (El<Controls>, Controls) {
                 .id("buy")
                 .attr_when("disabled", quantity.le(0))
                 .bind_attr("title", (Controls::price() * 2.0).to_fixed(2))
-                .bind_style("width", quantity.to_text().concat("rem"))
+                .bind_style(WIDTH, quantity.to_text().concat("rem"))
                 .text("Buy"),
         )
         .child(span().id("total").bind_text(hypersig::if_else(
@@ -250,16 +269,16 @@ fn nested() -> (El<Nested>, Nested) {
                 let tags = row.at(Row::tags());
                 li().on(Event::MouseEnter, hovered.set(row.at(Row::name())))
                     .on(Event::MouseLeave, hovered.set(""))
-                    .child(span().class("name").bind_text(row.at(Row::name())))
+                    .child(span().class(class::NAME).bind_text(row.at(Row::name())))
                     .child(
                         span()
-                            .class("count")
+                            .class(class::COUNT)
                             .bind_text(tags.count(|tag| tag.at(Tag::on())).to_text()),
                     )
                     .child(ul().child(each(tags, |tag| {
                         li().child(
                             button()
-                                .class_when("on", tag.at(Tag::on()))
+                                .class_when(class::ON, tag.at(Tag::on()))
                                 .on_click(tag.at(Tag::on()).toggle())
                                 .bind_text(
                                     row.at(Row::name()).concat("/").concat(tag.at(Tag::label())),

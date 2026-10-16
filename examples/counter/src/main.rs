@@ -27,6 +27,15 @@ struct AppState {
     saved: Arc<AtomicI32>,
 }
 
+mod class {
+    use hypersig::html::Class;
+
+    pub const ROW: Class = Class::new("row");
+    pub const COUNT: Class = Class::new("count");
+    pub const BIG: Class = Class::new("big");
+    pub const STATUS: Class = Class::new("status");
+}
+
 const STYLE: &str = "
 body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; padding: 0 1rem; }
 .row { display: flex; gap: .5rem; align-items: center; }
@@ -50,19 +59,19 @@ async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> H
             .child(h1().text("Counter"))
             .child(
                 div()
-                    .class("row")
+                    .class(class::ROW)
                     .child(button().on_click(count.set(count - 1)).text("-"))
                     .child(
                         span()
-                            .class("count")
-                            .class_when("big", count.ge(10))
+                            .class(class::COUNT)
+                            .class_when(class::BIG, count.ge(10))
                             .bind_text(count.to_text()),
                     )
                     .child(button().on_click(count.set(count + 1)).text("+")),
             )
             .child(
                 div()
-                    .class("row")
+                    .class(class::ROW)
                     .child(label().text("Note"))
                     .child(input().attr("placeholder", "why this number?").bind(note)),
             )
@@ -72,7 +81,7 @@ async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> H
             )
             .child(
                 div()
-                    .class("row")
+                    .class(class::ROW)
                     .child(
                         button()
                             .on_click(SAVE.call_with((count, note)))
@@ -85,7 +94,7 @@ async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> H
                             .text("Reset"),
                     ),
             )
-            .child(p().class("status").bind_text(Counter::status())),
+            .child(p().class(class::STATUS).bind_text(Counter::status())),
     );
     Html(page.render())
 }

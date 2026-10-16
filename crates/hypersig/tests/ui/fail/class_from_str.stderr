@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/class_from_str.rs:13:37
+   |
+13 |     let _ = span::<Counter>().class("big");
+   |                               ----- ^^^^^ expected `Class`, found `&str`
+   |                               |
+   |                               arguments to this method are incorrect
+   |
+note: method defined here
+  --> src/html.rs
+   |
+   |     pub fn class(mut self, class: Class) -> Self {
+   |            ^^^^^

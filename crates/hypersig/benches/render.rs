@@ -3,12 +3,14 @@
 //! Run with `cargo bench -p hypersig --bench render`.
 
 use divan::{AllocProfiler, Bencher};
-use hypersig::html::{El, Node, each_keyed, input, li, span, ul};
+use hypersig::html::{Class, El, Node, each_keyed, input, li, span, ul};
 use hypersig::{Page, Signals};
 use serde::{Deserialize, Serialize};
 
 #[global_allocator]
 static ALLOC: AllocProfiler = AllocProfiler::system();
+
+const DONE: Class = Class::new("done");
 
 #[derive(Signals, Serialize, Deserialize)]
 struct Todo {
@@ -44,7 +46,7 @@ fn list(left: impl Fn() -> El<Todos>) -> Node<Todos> {
         Todos::items(),
         |todo| todo.at(Todo::id()),
         |todo| {
-            li().class_when("done", todo.at(Todo::done()))
+            li().class_when(DONE, todo.at(Todo::done()))
                 .show(Todos::filter().equals("all").or(!todo.at(Todo::done())))
                 .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
                 .child(span().bind_text(todo.at(Todo::title())))

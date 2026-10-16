@@ -82,12 +82,12 @@ impl Fragment for TodoList {
 
     fn render(&self) -> El<TodoPage> {
         ul().children(self.items.iter().map(|todo| {
-            let title = span().class("title").text(todo.title.as_str());
+            let title = span().class(class::TITLE).text(todo.title.as_str());
             li().id(format!("todo-{}", todo.id.0))
-                .class(if todo.done { "done" } else { "open" })
+                .class(if todo.done { class::DONE } else { class::OPEN })
                 .child(
                     button()
-                        .class("check")
+                        .class(class::CHECK)
                         .attr("aria-label", "toggle")
                         .on_click(TOGGLE.call_with(&todo.id))
                         .text(if todo.done { "✓" } else { "○" }),
@@ -95,13 +95,24 @@ impl Fragment for TodoList {
                 .child(title)
                 .child(
                     button()
-                        .class("remove")
+                        .class(class::REMOVE)
                         .attr("aria-label", "remove")
                         .on_click(REMOVE.call_with(&todo.id))
                         .text("×"),
                 )
         }))
     }
+}
+
+mod class {
+    use hypersig::html::Class;
+
+    pub const DONE: Class = Class::new("done");
+    pub const OPEN: Class = Class::new("open");
+    pub const TITLE: Class = Class::new("title");
+    pub const CHECK: Class = Class::new("check");
+    pub const REMOVE: Class = Class::new("remove");
+    pub const SUMMARY: Class = Class::new("summary");
 }
 
 const STYLE: &str = "
@@ -143,12 +154,12 @@ async fn index(State(state): State<AppState>) -> Html<String> {
             )
             .child(hypersig::fragment(&list))
             .child(
-                p().class("summary")
+                p().class(class::SUMMARY)
                     .show(remaining.gt(0))
                     .bind_text(remaining.to_text().concat(" left")),
             )
             .child(
-                p().class("summary")
+                p().class(class::SUMMARY)
                     .show(remaining.equals(0))
                     .text("All done."),
             ),

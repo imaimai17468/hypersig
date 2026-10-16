@@ -278,6 +278,115 @@ impl<S> fmt::Debug for El<S> {
     }
 }
 
+/// A class name that [`El::class`] and [`El::class_when`] put on an element.
+///
+/// Declare each class once as a `const` and use the constant everywhere, so a
+/// misspelled class at a use site is an unknown name to the compiler. The
+/// stylesheet given to [`Page::style`](crate::Page::style) is plain CSS text,
+/// and nothing checks that it has a rule for the class.
+///
+/// ```
+/// use hypersig::html::{Class, li};
+/// use hypersig::{Sig, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Todo {
+///     done: bool,
+/// }
+///
+/// const ITEM: Class = Class::new("item");
+/// const DONE: Class = Class::new("done");
+/// let html = li::<Todo>().class(ITEM).class_when(DONE, Todo::done()).render();
+/// assert!(html.starts_with(r#"<li class="item""#));
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Class(&'static str);
+
+impl Class {
+    /// A class named `name`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` is empty or contains ASCII whitespace. In a `const`,
+    /// that is a compile error.
+    #[must_use]
+    pub const fn new(name: &'static str) -> Self {
+        // The `class` attribute splits on ASCII whitespace, and
+        // `classList.toggle` throws on a token that contains it.
+        let bytes = name.as_bytes();
+        assert!(!bytes.is_empty(), "a class name is never empty");
+        let mut i = 0;
+        while i < bytes.len() {
+            assert!(
+                !bytes[i].is_ascii_whitespace(),
+                "a class name holds no whitespace; declare one `Class` per name"
+            );
+            i += 1;
+        }
+        Self(name)
+    }
+}
+
+/// A CSS property that [`El::bind_style`] keeps up to date.
+///
+/// Declare each property once as a `const`, as with [`Class`]. Only the shape
+/// of the name is checked, so a name no browser knows, such as `colr`, is
+/// accepted and the browser ignores it.
+///
+/// ```
+/// use hypersig::html::{Property, div};
+/// use hypersig::Signals;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Meter {
+///     level: i32,
+/// }
+///
+/// const WIDTH: Property = Property::new("width");
+/// let bar = div::<Meter>().bind_style(WIDTH, Meter::level().to_text().concat("%"));
+/// assert!(bar.render().contains("data-hs-style"));
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Property(&'static str);
+
+impl Property {
+    /// The property named `name`, written as in a stylesheet.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` is neither a custom property (`--` followed by at
+    /// least one character other than whitespace, `:`, and `;`) nor lowercase
+    /// ASCII letters and hyphens. In a `const`, that is a compile error.
+    #[must_use]
+    pub const fn new(name: &'static str) -> Self {
+        // `style.setProperty` silently ignores a camelCase name such as
+        // `fontSize`, and the server writes the name into `style="name: value"`,
+        // where `:` or `;` would start another declaration.
+        let bytes = name.as_bytes();
+        let custom = bytes.len() > 2 && bytes[0] == b'-' && bytes[1] == b'-';
+        assert!(!bytes.is_empty(), "a CSS property name is never empty");
+        let mut i = 0;
+        while i < bytes.len() {
+            let b = bytes[i];
+            if custom {
+                assert!(
+                    !b.is_ascii_whitespace() && b != b':' && b != b';',
+                    "a custom property name holds no whitespace, `:`, or `;`"
+                );
+            } else {
+                assert!(
+                    b.is_ascii_lowercase() || b == b'-',
+                    "a CSS property is written in lowercase and hyphens, as in `font-size`"
+                );
+            }
+            i += 1;
+        }
+        Self(name)
+    }
+}
+
 /// A DOM event a statement can run on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
@@ -515,8 +624,8 @@ impl<S> El<S> {
 
     /// Keeps the CSS property `property` equal to `value` as signals change.
     #[must_use]
-    pub fn bind_style(mut self, property: &'static str, value: impl IntoExpr<S, String>) -> Self {
-        self.style.push((property, value.into_expr()));
+    pub fn bind_style(mut self, property: Property, value: impl IntoExpr<S, String>) -> Self {
+        self.style.push((property.0, value.into_expr()));
         self
     }
 
@@ -532,15 +641,15 @@ impl<S> El<S> {
 
     /// Adds a static class.
     #[must_use]
-    pub fn class(mut self, class: &'static str) -> Self {
-        self.classes.push(class);
+    pub fn class(mut self, class: Class) -> Self {
+        self.classes.push(class.0);
         self
     }
 
     /// Adds `class` while `when` is true.
     #[must_use]
-    pub fn class_when(mut self, class: &'static str, when: impl IntoExpr<S, bool>) -> Self {
-        self.class_when.push((class, when.into_expr()));
+    pub fn class_when(mut self, class: Class, when: impl IntoExpr<S, bool>) -> Self {
+        self.class_when.push((class.0, when.into_expr()));
         self
     }
 
@@ -1036,7 +1145,7 @@ pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
 
 #[cfg(test)]
 mod tests {
-    use super::{button, div, input, span};
+    use super::{Class, Property, button, div, input, span};
     use crate::_private::sig;
     use crate::{Sig, Stmt};
 
@@ -1051,9 +1160,20 @@ mod tests {
     }
 
     #[test]
+    fn binds_a_custom_property() {
+        let html = div::<Page>()
+            .bind_style(Property::new("--accent"), name())
+            .render();
+        assert!(
+            html.contains(r#"data-hs-style="[[&quot;--accent&quot;,"#),
+            "{html}"
+        );
+    }
+
+    #[test]
     fn renders_typed_attributes() {
         let html = div::<Page>()
-            .class("box")
+            .class(Class::new("box"))
             .show(count().gt(0))
             .child(span().bind_text(count().to_text()))
             .child(input().bind(name()))

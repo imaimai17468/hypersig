@@ -1,0 +1,25 @@
+error[E0080]: evaluation panicked: a CSS property is written in lowercase and hyphens, as in `font-size`
+  --> tests/ui/fail/property_camel_case.rs:12:29
+   |
+12 | const FONT_SIZE: Property = Property::new("fontSize");
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `FONT_SIZE` failed inside this call
+   |
+note: inside `Property::new`
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: src/html.rs
+   |
+   | /                 assert!(
+   | |                     b.is_ascii_lowercase() || b == b'-',
+   | |                     "a CSS property is written in lowercase and hyphens, as in `font-size`"
+   | |                 );
+   | |_________________- in this macro invocation
+
+note: erroneous constant encountered
+  --> tests/ui/fail/property_camel_case.rs:15:42
+   |
+15 |     let _ = span::<Counter>().bind_style(FONT_SIZE, Counter::count().to_text());
+   |                                          ^^^^^^^^^

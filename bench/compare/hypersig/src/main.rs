@@ -13,8 +13,7 @@ use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
 use hypersig::html::{
-    El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
-    ul,
+    El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong, ul,
 };
 use hypersig::{Action, Expr, Page, Patches, RouterExt, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
@@ -45,6 +44,22 @@ struct TodoMvc {
 const ADD: Action<TodoMvc, (i32, String)> = Action::post("/add");
 const SET_DONE: Action<TodoMvc, (i32, bool)> = Action::post("/done");
 const DELETE: Action<TodoMvc, i32> = Action::post("/delete");
+mod class {
+    use hypersig::html::Class;
+
+    pub const NEW_TODO: Class = Class::new("new-todo");
+    pub const TODO_LIST: Class = Class::new("todo-list");
+    pub const COMPLETED: Class = Class::new("completed");
+    pub const TOGGLE: Class = Class::new("toggle");
+    pub const DESTROY: Class = Class::new("destroy");
+    pub const SELECTED: Class = Class::new("selected");
+    pub const TODOAPP: Class = Class::new("todoapp");
+    pub const MAIN: Class = Class::new("main");
+    pub const FOOTER: Class = Class::new("footer");
+    pub const TODO_COUNT: Class = Class::new("todo-count");
+    pub const FILTERS: Class = Class::new("filters");
+}
+
 const STYLE: &str = include_str!("../../shared/todomvc.css");
 
 #[derive(Clone)]
@@ -74,16 +89,18 @@ fn new_todo() -> El<TodoMvc> {
     let add = Stmt::when(
         !draft.trim().is_empty(),
         ADD.call_with((next_id, draft.trim()))
-            .then(todos.push(
-                blank
-                    .with(Todo::id(), next_id)
-                    .with(Todo::title(), draft.trim()),
-            ))
+            .then(
+                todos.push(
+                    blank
+                        .with(Todo::id(), next_id)
+                        .with(Todo::title(), draft.trim()),
+                ),
+            )
             .then(next_id.set(next_id + 1))
             .then(draft.set("")),
     );
     input()
-        .class("new-todo")
+        .class(class::NEW_TODO)
         .attr("placeholder", "What needs to be done?")
         .bind(draft)
         .on_key(Key::Enter, add)
@@ -91,7 +108,7 @@ fn new_todo() -> El<TodoMvc> {
 
 fn todo_list() -> El<TodoMvc> {
     let filter = TodoMvc::filter();
-    ul().class("todo-list").child(each_keyed(
+    ul().class(class::TODO_LIST).child(each_keyed(
         TodoMvc::todos(),
         |todo| todo.at(Todo::id()),
         |todo| {
@@ -102,10 +119,10 @@ fn todo_list() -> El<TodoMvc> {
                 .or(filter.equals(&Filter::Active).and(!done))
                 .or(filter.equals(&Filter::Completed).and(done));
             li().show(visible)
-                .class_when("completed", done)
+                .class_when(class::COMPLETED, done)
                 .child(
                     input()
-                        .class("toggle")
+                        .class(class::TOGGLE)
                         .attr("type", "checkbox")
                         .bind(done)
                         .on_change(SET_DONE.call_with((id, done))),
@@ -113,7 +130,7 @@ fn todo_list() -> El<TodoMvc> {
                 .child(label().bind_text(todo.at(Todo::title())))
                 .child(
                     button()
-                        .class("destroy")
+                        .class(class::DESTROY)
                         .on_click(DELETE.call_with(id).then(todo.remove())),
                 )
         },
@@ -123,7 +140,7 @@ fn todo_list() -> El<TodoMvc> {
 fn filter_link(filter: Filter, text: &str) -> El<TodoMvc> {
     li().child(
         a().attr("href", "#")
-            .class_when("selected", TodoMvc::filter().equals(&filter))
+            .class_when(class::SELECTED, TodoMvc::filter().equals(&filter))
             .on_click(TodoMvc::filter().set(&filter))
             .text(text),
     )
@@ -145,15 +162,15 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
         .computed(left, list.count(|todo| !todo.at(Todo::done())))
         .child(
             section()
-                .class("todoapp")
+                .class(class::TODOAPP)
                 .child(header().child(h1().text("todos")).child(new_todo()))
-                .child(section().class("main").child(todo_list()))
+                .child(section().class(class::MAIN).child(todo_list()))
                 .child(
                     footer()
-                        .class("footer")
+                        .class(class::FOOTER)
                         .child(
                             span()
-                                .class("todo-count")
+                                .class(class::TODO_COUNT)
                                 .child(strong().bind_text(left.to_text()))
                                 .child(span().bind_text(if_else(
                                     left.equals(1),
@@ -162,7 +179,7 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                                 ))),
                         )
                         .child(
-                            ul().class("filters")
+                            ul().class(class::FILTERS)
                                 .child(filter_link(Filter::All, "All"))
                                 .child(filter_link(Filter::Active, "Active"))
                                 .child(filter_link(Filter::Completed, "Completed")),

@@ -24,10 +24,56 @@ struct Bench {
     selected: i32,
 }
 
+mod class {
+    use hypersig::html::Class;
+
+    pub const COL_SM_6: Class = Class::new("col-sm-6");
+    pub const SMALLPAD: Class = Class::new("smallpad");
+    pub const BTN: Class = Class::new("btn");
+    pub const BTN_PRIMARY: Class = Class::new("btn-primary");
+    pub const BTN_BLOCK: Class = Class::new("btn-block");
+    pub const DANGER: Class = Class::new("danger");
+    pub const COL_MD_1: Class = Class::new("col-md-1");
+    pub const COL_MD_4: Class = Class::new("col-md-4");
+    pub const GLYPHICON: Class = Class::new("glyphicon");
+    pub const GLYPHICON_REMOVE: Class = Class::new("glyphicon-remove");
+    pub const COL_MD_6: Class = Class::new("col-md-6");
+    pub const ROW: Class = Class::new("row");
+    pub const JUMBOTRON: Class = Class::new("jumbotron");
+    pub const CONTAINER: Class = Class::new("container");
+    pub const TABLE: Class = Class::new("table");
+    pub const TABLE_HOVER: Class = Class::new("table-hover");
+    pub const TABLE_STRIPED: Class = Class::new("table-striped");
+    pub const TEST_DATA: Class = Class::new("test-data");
+    pub const PRELOADICON: Class = Class::new("preloadicon");
+}
+
 const ADJECTIVES: &[&str] = &[
-    "pretty", "large", "big", "small", "tall", "short", "long", "handsome", "plain", "quaint",
-    "clean", "elegant", "easy", "angry", "crazy", "helpful", "mushy", "odd", "unsightly",
-    "adorable", "important", "inexpensive", "cheap", "expensive", "fancy",
+    "pretty",
+    "large",
+    "big",
+    "small",
+    "tall",
+    "short",
+    "long",
+    "handsome",
+    "plain",
+    "quaint",
+    "clean",
+    "elegant",
+    "easy",
+    "angry",
+    "crazy",
+    "helpful",
+    "mushy",
+    "odd",
+    "unsightly",
+    "adorable",
+    "important",
+    "inexpensive",
+    "cheap",
+    "expensive",
+    "fancy",
 ];
 const COLOURS: &[&str] = &[
     "red", "yellow", "blue", "green", "pink", "brown", "purple", "brown", "white", "black",
@@ -67,12 +113,12 @@ fn create(count: i32) -> Stmt<Bench> {
 }
 
 fn action(id: &'static str, text: &str, stmt: Stmt<Bench>) -> El<Bench> {
-    div().class("col-sm-6").class("smallpad").child(
+    div().class(class::COL_SM_6).class(class::SMALLPAD).child(
         button()
             .attr("type", "button")
-            .class("btn")
-            .class("btn-primary")
-            .class("btn-block")
+            .class(class::BTN)
+            .class(class::BTN_PRIMARY)
+            .class(class::BTN_BLOCK)
             .id(id)
             .on_click(stmt)
             .text(text),
@@ -86,25 +132,25 @@ fn rows() -> Node<Bench> {
         |row| row.at(Row::id()),
         |row| {
             let id = row.at(Row::id());
-            tr().class_when("danger", selected.equals(id))
-                .child(td().class("col-md-1").bind_text(id.to_text()))
+            tr().class_when(class::DANGER, selected.equals(id))
+                .child(td().class(class::COL_MD_1).bind_text(id.to_text()))
                 .child(
-                    td().class("col-md-4").child(
+                    td().class(class::COL_MD_4).child(
                         a().on_click(selected.set(id))
                             .bind_text(row.at(Row::label())),
                     ),
                 )
                 .child(
-                    td().class("col-md-1").child(
+                    td().class(class::COL_MD_1).child(
                         a().on_click(row.remove()).child(
                             span()
-                                .class("glyphicon")
-                                .class("glyphicon-remove")
+                                .class(class::GLYPHICON)
+                                .class(class::GLYPHICON_REMOVE)
                                 .attr("aria-hidden", "true"),
                         ),
                     ),
                 )
-                .child(td().class("col-md-6"))
+                .child(td().class(class::COL_MD_6))
         },
     )
 }
@@ -112,9 +158,17 @@ fn rows() -> Node<Bench> {
 fn page() -> Page<Bench> {
     let rows_signal = Bench::rows();
     let buttons = div()
-        .class("row")
-        .child(action("run", "Create 1,000 rows", rows_signal.clear().then(create(1000))))
-        .child(action("runlots", "Create 10,000 rows", rows_signal.clear().then(create(10_000))))
+        .class(class::ROW)
+        .child(action(
+            "run",
+            "Create 1,000 rows",
+            rows_signal.clear().then(create(1000)),
+        ))
+        .child(action(
+            "runlots",
+            "Create 10,000 rows",
+            rows_signal.clear().then(create(10_000)),
+        ))
         .child(action("add", "Append 1,000 rows", create(1000)))
         .child(action(
             "update",
@@ -127,10 +181,15 @@ fn page() -> Page<Bench> {
         ))
         .child(action("clear", "Clear", rows_signal.clear()))
         .child(action("swaprows", "Swap Rows", rows_signal.swap(1, 998)));
-    let jumbotron = div().class("jumbotron").child(
-        div().class("row")
-            .child(div().class("col-md-6").child(h1().text("hypersig-\"keyed\"")))
-            .child(div().class("col-md-6").child(buttons)),
+    let jumbotron = div().class(class::JUMBOTRON).child(
+        div()
+            .class(class::ROW)
+            .child(
+                div()
+                    .class(class::COL_MD_6)
+                    .child(h1().text("hypersig-\"keyed\"")),
+            )
+            .child(div().class(class::COL_MD_6).child(buttons)),
     );
     let signals = Bench {
         rows: Vec::new(),
@@ -143,21 +202,21 @@ fn page() -> Page<Bench> {
         .child(
             div().id("main").child(
                 div()
-                    .class("container")
+                    .class(class::CONTAINER)
                     .child(jumbotron)
                     .child(
                         table()
-                            .class("table")
-                            .class("table-hover")
-                            .class("table-striped")
-                            .class("test-data")
+                            .class(class::TABLE)
+                            .class(class::TABLE_HOVER)
+                            .class(class::TABLE_STRIPED)
+                            .class(class::TEST_DATA)
                             .child(tbody().id("tbody").child(rows())),
                     )
                     .child(
                         span()
-                            .class("preloadicon")
-                            .class("glyphicon")
-                            .class("glyphicon-remove")
+                            .class(class::PRELOADICON)
+                            .class(class::GLYPHICON)
+                            .class(class::GLYPHICON_REMOVE)
                             .attr("aria-hidden", "true"),
                     ),
             ),

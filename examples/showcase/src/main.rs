@@ -70,10 +70,10 @@ const NOTE_LIMIT: i32 = 40;
 fn disclosure<S>(state: Sig<S, Disclosure>, title: &str, body: &str) -> El<S> {
     let open = state.at(Disclosure::open());
     div()
-        .class("disclosure")
+        .class(class::DISCLOSURE)
         .child(
             button()
-                .class("disclosure-title")
+                .class(class::DISCLOSURE_TITLE)
                 .bind_attr("aria-expanded", if_else(open, "true", "false"))
                 .on_click(open.toggle())
                 .text(title),
@@ -84,8 +84,8 @@ fn disclosure<S>(state: Sig<S, Disclosure>, title: &str, body: &str) -> El<S> {
 /// A component that takes a signal as a prop and edits it within bounds.
 fn stepper<S>(name: &str, value: Sig<S, i32>, min: i32, max: i32) -> El<S> {
     div()
-        .class("stepper")
-        .child(span().class("name").text(name))
+        .class(class::STEPPER)
+        .child(span().class(class::NAME).text(name))
         .child(
             button()
                 .attr("aria-label", "fewer")
@@ -93,7 +93,7 @@ fn stepper<S>(name: &str, value: Sig<S, i32>, min: i32, max: i32) -> El<S> {
                 .on_click(value.set(value - 1))
                 .text("−"),
         )
-        .child(span().class("value").bind_text(value.to_text()))
+        .child(span().class(class::VALUE).bind_text(value.to_text()))
         .child(
             button()
                 .attr("aria-label", "more")
@@ -122,7 +122,7 @@ fn components() -> El<Showcase> {
         .child(stepper("Adults", adults, 1, 6))
         .child(stepper("Children", children, 0, 6))
         .child(
-            p().class("total")
+            p().class(class::TOTAL)
                 .bind_text((adults + children).to_text().concat(" guests")),
         )
 }
@@ -139,18 +139,18 @@ fn stopwatch() -> El<Showcase> {
         .child(h2().text("Intervals"))
         .child(
             span()
-                .class("elapsed")
+                .class(class::ELAPSED)
                 .bind_text(elapsed.to_fixed(1).concat(" s")),
         )
         .child(
             button()
-                .class("start")
+                .class(class::START)
                 .on_click(running.toggle())
                 .bind_text(if_else(running, "Stop", "Start")),
         )
         .child(
             button()
-                .class("reset")
+                .class(class::RESET)
                 .attr_when("disabled", running)
                 .on_click(elapsed.set(0.0))
                 .text("Reset"),
@@ -199,7 +199,7 @@ impl Fragment for Results {
             .children(
                 self.matches
                     .is_empty()
-                    .then(|| li().class("empty").text("No match")),
+                    .then(|| li().class(class::EMPTY).text("No match")),
             )
     }
 }
@@ -212,7 +212,7 @@ fn search() -> El<Showcase> {
         .child(h2().text("Server search as you type"))
         .child(
             div()
-                .class("row")
+                .class(class::ROW)
                 .child(
                     input()
                         .node_ref(SEARCH_FIELD)
@@ -232,14 +232,14 @@ fn search() -> El<Showcase> {
                 )
                 .child(
                     button()
-                        .class("focus")
+                        .class(class::FOCUS)
                         .on_click(SEARCH_FIELD.focus())
                         .text("Focus"),
                 ),
         )
         .child(
             small()
-                .class("searching")
+                .class(class::SEARCHING)
                 .show(searching)
                 .text("Searching…"),
         )
@@ -274,7 +274,7 @@ fn order_form() -> El<Showcase> {
                 .child(
                     label().text("Quantity ").child(
                         input()
-                            .class("quantity")
+                            .class(class::QUANTITY)
                             .attr("type", "number")
                             .attr("min", "0")
                             .bind(quantity),
@@ -283,7 +283,7 @@ fn order_form() -> El<Showcase> {
                 .child(
                     label().text("Size ").child(
                         select()
-                            .class("size")
+                            .class(class::SIZE)
                             .bind_select(size, [(Size::Small, "Small"), (Size::Large, "Large")]),
                     ),
                 )
@@ -291,7 +291,7 @@ fn order_form() -> El<Showcase> {
                     label()
                         .child(
                             input()
-                                .class("gift")
+                                .class(class::GIFT)
                                 .attr("type", "checkbox")
                                 .bind(order.at(Order::gift())),
                         )
@@ -299,14 +299,14 @@ fn order_form() -> El<Showcase> {
                 )
                 .child(
                     textarea()
-                        .class("note")
+                        .class(class::NOTE)
                         .attr("placeholder", "Note")
                         .bind(note),
                 )
                 .child(
                     small()
-                        .class("count")
-                        .class_when("over", too_long)
+                        .class(class::COUNT)
+                        .class_when(class::OVER, too_long)
                         .bind_text(
                             note.char_count()
                                 .to_text()
@@ -314,18 +314,21 @@ fn order_form() -> El<Showcase> {
                         ),
                 )
                 .child(
-                    p().class("price")
+                    p().class(class::PRICE)
                         .bind_text(total.to_fixed(2).concat(" USD")),
                 )
                 .child(
                     button()
-                        .class("place")
+                        .class(class::PLACE)
                         .attr_when("disabled", invalid.or(placing))
                         .bind_text(if_else(placing, "Placing…", "Place order")),
                 ),
         )
-        .child(p().class("status").bind_text(order.at(Order::status())))
-        .child(p().class("error").bind_text(order.at(Order::error())))
+        .child(
+            p().class(class::STATUS)
+                .bind_text(order.at(Order::status())),
+        )
+        .child(p().class(class::ERROR).bind_text(order.at(Order::error())))
 }
 
 async fn index() -> Html<String> {
@@ -370,6 +373,34 @@ async fn order((): (), (quantity, size, gift): (i32, Size, bool)) -> Patches<Sho
     let wrap = if gift { ", gift wrapped" } else { "" };
     let status = format!("Ordered {quantity} {size}{wrap}.");
     Showcase::order().at(Order::status()).patch(status).into()
+}
+
+mod class {
+    use hypersig::html::Class;
+
+    pub const DISCLOSURE: Class = Class::new("disclosure");
+    pub const DISCLOSURE_TITLE: Class = Class::new("disclosure-title");
+    pub const STEPPER: Class = Class::new("stepper");
+    pub const NAME: Class = Class::new("name");
+    pub const VALUE: Class = Class::new("value");
+    pub const TOTAL: Class = Class::new("total");
+    pub const ELAPSED: Class = Class::new("elapsed");
+    pub const START: Class = Class::new("start");
+    pub const RESET: Class = Class::new("reset");
+    pub const EMPTY: Class = Class::new("empty");
+    pub const ROW: Class = Class::new("row");
+    pub const FOCUS: Class = Class::new("focus");
+    pub const SEARCHING: Class = Class::new("searching");
+    pub const QUANTITY: Class = Class::new("quantity");
+    pub const SIZE: Class = Class::new("size");
+    pub const GIFT: Class = Class::new("gift");
+    pub const NOTE: Class = Class::new("note");
+    pub const COUNT: Class = Class::new("count");
+    pub const OVER: Class = Class::new("over");
+    pub const PRICE: Class = Class::new("price");
+    pub const PLACE: Class = Class::new("place");
+    pub const STATUS: Class = Class::new("status");
+    pub const ERROR: Class = Class::new("error");
 }
 
 const STYLE: &str = "

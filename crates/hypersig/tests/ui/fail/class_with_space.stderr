@@ -1,0 +1,25 @@
+error[E0080]: evaluation panicked: a class name holds no whitespace; declare one `Class` per name
+  --> tests/ui/fail/class_with_space.rs:12:20
+   |
+12 | const BIG: Class = Class::new("big red");
+   |                    ^^^^^^^^^^^^^^^^^^^^^ evaluation of `BIG` failed inside this call
+   |
+note: inside `Class::new`
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: src/html.rs
+   |
+   | /             assert!(
+   | |                 !bytes[i].is_ascii_whitespace(),
+   | |                 "a class name holds no whitespace; declare one `Class` per name"
+   | |             );
+   | |_____________- in this macro invocation
+
+note: erroneous constant encountered
+  --> tests/ui/fail/class_with_space.rs:15:37
+   |
+15 |     let _ = span::<Counter>().class(BIG);
+   |                                     ^^^

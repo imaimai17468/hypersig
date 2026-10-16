@@ -73,7 +73,7 @@ fn new_todo() -> El<TodoMvc> {
             .then(draft.set("")),
     );
     input()
-        .class("new-todo")
+        .class(class::NEW_TODO)
         .attr("placeholder", "What needs to be done?")
         .attr("autofocus", "")
         .bind(draft)
@@ -85,7 +85,7 @@ fn todo_list() -> El<TodoMvc> {
     let filter = TodoMvc::filter();
     let editing = TodoMvc::editing();
     let edit_text = TodoMvc::edit_text();
-    ul().class("todo-list").child(each_keyed(
+    ul().class(class::TODO_LIST).child(each_keyed(
         todos,
         |todo| todo.at(Todo::id()),
         |todo| {
@@ -107,9 +107,14 @@ fn todo_list() -> El<TodoMvc> {
                 .then(editing.set(&None)),
             );
             li().show(visible)
-                .class_when("completed", done)
-                .class_when("editing", is_editing)
-                .child(input().class("toggle").attr("type", "checkbox").bind(done))
+                .class_when(class::COMPLETED, done)
+                .class_when(class::EDITING, is_editing)
+                .child(
+                    input()
+                        .class(class::TOGGLE)
+                        .attr("type", "checkbox")
+                        .bind(done),
+                )
                 .child(
                     label().bind_text(title).on_double_click(
                         edit_text
@@ -118,11 +123,11 @@ fn todo_list() -> El<TodoMvc> {
                             .then(EDIT.focus()),
                     ),
                 )
-                .child(button().class("destroy").on_click(todo.remove()))
+                .child(button().class(class::DESTROY).on_click(todo.remove()))
                 .child(when(
                     editing.equals(id.some()),
                     input()
-                        .class("edit")
+                        .class(class::EDIT)
                         .node_ref(EDIT)
                         .bind(edit_text)
                         .on_key(Key::Enter, commit.clone())
@@ -136,7 +141,7 @@ fn todo_list() -> El<TodoMvc> {
 fn filter_link(filter: Filter, text: &str) -> El<TodoMvc> {
     li().child(
         a().attr("href", "#")
-            .class_when("selected", TodoMvc::filter().equals(&filter))
+            .class_when(class::SELECTED, TodoMvc::filter().equals(&filter))
             .on_click(TodoMvc::filter().set(&filter))
             .text(text),
     )
@@ -163,17 +168,17 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
         .computed(completed, list.count(|todo| todo.at(Todo::done())))
         .child(
             section()
-                .class("todoapp")
+                .class(class::TODOAPP)
                 .on_signal_change(list, SAVE.call_with(list))
                 .child(header().child(h1().text("todos")).child(new_todo()))
                 .child(
                     section()
-                        .class("main")
+                        .class(class::MAIN)
                         .show(!list.is_empty())
                         .child(
                             input()
                                 .id("toggle-all")
-                                .class("toggle-all")
+                                .class(class::TOGGLE_ALL)
                                 .attr("type", "checkbox")
                                 .bind_checked(left.equals(0))
                                 .on_change(list.set_all(Todo::done(), left.gt(0))),
@@ -187,11 +192,11 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                 )
                 .child(
                     footer()
-                        .class("footer")
+                        .class(class::FOOTER)
                         .show(!list.is_empty())
                         .child(
                             span()
-                                .class("todo-count")
+                                .class(class::TODO_COUNT)
                                 .child(strong().bind_text(left.to_text()))
                                 .child(span().bind_text(if_else(
                                     left.equals(1),
@@ -200,14 +205,14 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                                 ))),
                         )
                         .child(
-                            ul().class("filters")
+                            ul().class(class::FILTERS)
                                 .child(filter_link(Filter::All, "All"))
                                 .child(filter_link(Filter::Active, "Active"))
                                 .child(filter_link(Filter::Completed, "Completed")),
                         )
                         .child(
                             button()
-                                .class("clear-completed")
+                                .class(class::CLEAR_COMPLETED)
                                 .show(completed.gt(0))
                                 .on_click(list.retain(|todo| !todo.at(Todo::done())))
                                 .text("Clear completed"),
@@ -224,6 +229,26 @@ async fn index(State(state): State<AppState>) -> Html<String> {
 async fn save(state: AppState, todos: Vec<Todo>) -> Patches<TodoMvc> {
     *state.todos.lock().expect("todo lock poisoned") = todos;
     Patches::new()
+}
+
+mod class {
+    use hypersig::html::Class;
+
+    pub const NEW_TODO: Class = Class::new("new-todo");
+    pub const TODO_LIST: Class = Class::new("todo-list");
+    pub const COMPLETED: Class = Class::new("completed");
+    pub const EDITING: Class = Class::new("editing");
+    pub const TOGGLE: Class = Class::new("toggle");
+    pub const DESTROY: Class = Class::new("destroy");
+    pub const EDIT: Class = Class::new("edit");
+    pub const SELECTED: Class = Class::new("selected");
+    pub const TODOAPP: Class = Class::new("todoapp");
+    pub const MAIN: Class = Class::new("main");
+    pub const TOGGLE_ALL: Class = Class::new("toggle-all");
+    pub const FOOTER: Class = Class::new("footer");
+    pub const TODO_COUNT: Class = Class::new("todo-count");
+    pub const FILTERS: Class = Class::new("filters");
+    pub const CLEAR_COMPLETED: Class = Class::new("clear-completed");
 }
 
 const STYLE: &str = "
