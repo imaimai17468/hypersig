@@ -25,6 +25,8 @@ function segmentsOf(path: string): readonly string[] {
 /** Reads the value at a dotted path, where a numeric segment indexes an array. */
 export function getPath(value: unknown, path: string): unknown {
   if (path === "") return value;
+  // A field of an item is read once per item, and most fields are one segment.
+  if (!path.includes(".")) return value !== null && typeof value === "object" ? (value as Record<string, unknown>)[path] : undefined;
   let current = value;
   for (const segment of segmentsOf(path)) {
     if (current === null || typeof current !== "object") return undefined;

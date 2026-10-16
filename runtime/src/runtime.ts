@@ -284,14 +284,15 @@ export class Runtime implements Host {
 
   /**
    * Registers the bindings of `root`, an item or condition built from
-   * `proto` by cloning it or by the server, finding its elements by their
-   * position in `proto`. The bindings of a list item that are parts of its
-   * `row` are left to the row, which runs them all in the next render.
+   * `proto` by cloning it or, where `rendered`, by the server, finding its
+   * elements by their position in `proto`. The bindings of a list item that
+   * are parts of its `row` are left to the row, which runs them all in the
+   * next render.
    */
-  #mount(root: Element, proto: Element, scope: readonly Slot[], row?: Row): void {
+  #mount(root: Element, proto: Element, scope: readonly Slot[], rendered: boolean, row?: Row): void {
     const members: Element[] = [];
     const nodes = row === undefined ? [] : new Array<Element | undefined>(row.shape.parts.length);
-    locate(planOf(proto), root, (element, source, reactive) => {
+    locate(planOf(proto), root, rendered, (element, source, reactive) => {
       state(element).source = source;
       if (source.hasAttribute("data-hs-ref") && !element.hasAttribute("data-hs-ref")) {
         element.setAttribute("data-hs-ref", source.getAttribute("data-hs-ref")!);
@@ -608,7 +609,7 @@ export class Runtime implements Host {
     };
     const register = (order: readonly Instance[]): void => {
       for (const instance of order) {
-        if (created.has(instance)) this.#mount(instance.element, proto, [...scope.slice(0, depth), instance.slot], instance.row);
+        if (created.has(instance)) this.#mount(instance.element, proto, [...scope.slice(0, depth), instance.slot], false, instance.row);
         else if (!instance.scanned && !this.#waiting.has(instance.element)) this.#wait(instance, proto, [...scope.slice(0, depth), instance.slot]);
       }
     };
@@ -672,7 +673,7 @@ export class Runtime implements Host {
       this.#waiting.delete(instance.element);
       if (instance.scanned || !instance.element.isConnected) return;
       instance.scanned = true;
-      this.#mount(instance.element, proto, scope, instance.row);
+      this.#mount(instance.element, proto, scope, true, instance.row);
     });
     if (this.#draining) return;
     this.#draining = true;
@@ -740,7 +741,7 @@ export class Runtime implements Host {
       state(rendered).root = true;
       if (visible && proto !== null) {
         this.#mounted.set(template, rendered);
-        this.#mount(rendered, proto, scope);
+        this.#mount(rendered, proto, scope, true);
         return;
       }
       this.#unmount(rendered);
@@ -752,7 +753,7 @@ export class Runtime implements Host {
       this.#mounted.set(template, element);
       state(element).root = true;
       template.after(element);
-      this.#mount(element, proto, scope);
+      this.#mount(element, proto, scope, false);
     } else if (!visible && current !== undefined) {
       this.#unmount(current);
       this.#mounted.delete(template);
@@ -1444,11 +1445,13 @@ function build(element: Element): Plan | null {
 
 /**
  * Calls `found` with each element of `copy` that `plan` names, and the
- * template element it was built from. A child that carries `data-hs-ssr` was
- * rendered for a nested list or condition, has no counterpart in the
- * template, and is skipped when counting positions.
+ * template element it was built from. Where the server `rendered` `copy`, a
+ * child that carries `data-hs-ssr` was rendered for a nested list or
+ * condition, has no counterpart in the template, and is skipped when
+ * counting positions, and a child whose tag differs is left out. A clone of
+ * the template, not yet rendered into, has the template's children only.
  */
-function locate(plan: Plan, copy: Element, found: (element: Element, source: Element, reactive: boolean) => void): void {
+function locate(plan: Plan, copy: Element, rendered: boolean, found: (element: Element, source: Element, reactive: boolean) => void): void {
   if (plan.source !== null) found(copy, plan.source, plan.reactive);
   if (plan.children.length === 0) return;
   // Walks the siblings, because reading `children` makes the element keep an HTMLCollection.
@@ -1456,11 +1459,11 @@ function locate(plan: Plan, copy: Element, found: (element: Element, source: Ele
   let position = 0;
   for (const [index, child] of plan.children) {
     for (; at !== null; at = at.nextElementSibling) {
-      if (at.hasAttribute("data-hs-ssr")) continue;
+      if (rendered && at.hasAttribute("data-hs-ssr")) continue;
       if (position++ === index) break;
     }
     if (at === null) return;
-    if (at.tagName === child.tag) locate(child, at, found);
+    if (!rendered || at.tagName === child.tag) locate(child, at, rendered, found);
     at = at.nextElementSibling;
   }
 }
@@ -1675,6 +1678,13 @@ function unfileRow(selection: Selection, key: string, row: Row): void {
 function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, Instance>, order: readonly Instance[]): void {
   const placed: Instance[] = [];
   for (const instance of previous.values()) if (instance.element.parentNode === parent) placed.push(instance);
+  if (placed.length === 0) {
+    // Nothing stays, so the items go in together, as one insertion into the document.
+    const fragment = document.createDocumentFragment();
+    for (const instance of order) fragment.append(instance.element);
+    parent.insertBefore(fragment, template.nextSibling);
+    return;
+  }
   // The items that keep their place at either end stay without entering the run below.
   let start = 0;
   while (start < order.length && start < placed.length && order[start] === placed[start]) start++;
