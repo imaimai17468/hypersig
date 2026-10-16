@@ -216,6 +216,25 @@ describe("Runtime", () => {
     expect(labels("b")).toEqual(["x", "r3"]);
   });
 
+  it("counts the items of a list with one read of the list, and still reads the signals the test compares with", async () => {
+    const runtime = mount(`<b id="n" data-hs-text='["str",["count","rows",0,["eq",["item",0,"done"],["sig","want"]]]]'></b>`, {
+      rows: [false, true, false].map((done) => ({ done })),
+      want: false,
+    });
+    await tick();
+    const count = () => document.getElementById("n")!.textContent;
+    expect(count()).toBe("2");
+    runtime.store.set("rows.1.done", false);
+    await tick();
+    expect(count()).toBe("3");
+    runtime.store.set("want", true);
+    await tick();
+    expect(count()).toBe("0");
+    runtime.store.set("rows", [...(runtime.store.get("rows") as unknown[]), { done: true }]);
+    await tick();
+    expect(count()).toBe("1");
+  });
+
   it("forgets the bindings inside a removed condition after the next frame", async () => {
     const runtime = mount(`<template data-hs-if='["sig","on"]'><b id="b" data-hs-text='["sig","label"]'></b></template>`, { on: true, label: "x" });
     await tick();

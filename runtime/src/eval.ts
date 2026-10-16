@@ -221,7 +221,8 @@ function build(ast: Ast): Compiled {
     case "count": {
       const [place, depth, test] = [rest[0], rest[1] as number, compile(rest[2])];
       return (ctx) => {
-        return testItems(ctx, depth, list(ctx, place), test).filter(Boolean).length;
+        const found = list(ctx, place);
+        return ctx.store.fold(found[2], () => testItems(ctx, depth, found, test)).filter(Boolean).length;
       };
     }
     default: {

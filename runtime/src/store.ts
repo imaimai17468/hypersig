@@ -141,25 +141,27 @@ export class Store {
   #listeners = new Set<(changes: Changes) => void>();
   #changes = new Map<string, boolean>();
   #reads: Reads | null = null;
+  /** The prefixes, each a path and a dot, under which `fold` records no reads of its own. */
+  #folds: string[] = [];
 
   constructor(initial: Values) {
     this.#values = { ...initial };
   }
 
   get(path: string): unknown {
-    this.#reads?.set(path, true);
+    this.#note(path, true);
     return getPath(this.#values, path);
   }
 
   /** The value at `path`, recorded as a read of `read`, the name the caller tracks it under. */
   getAs(path: string, read: string): unknown {
-    this.#reads?.set(read, true);
+    this.#note(read, true);
     return getPath(this.#values, path);
   }
 
   /** Records a read of the position of the list item at `path`, for `index`. */
   getPosition(path: string): void {
-    this.#reads?.set(positionOf(path), true);
+    this.#note(positionOf(path), true);
   }
 
   /**
@@ -174,8 +176,31 @@ export class Store {
 
   /** `getShallow(path)`, recorded as a read of `read`. */
   getShallowAs(path: string, read: string): unknown {
-    if (this.#reads !== null && !this.#reads.has(read)) this.#reads.set(read, false);
+    this.#note(read, false);
     return getPath(this.#values, path);
+  }
+
+  #note(read: string, deep: boolean): void {
+    const reads = this.#reads;
+    if (reads === null) return;
+    for (const fold of this.#folds) if (read.startsWith(fold)) return;
+    if (deep) reads.set(read, true);
+    else if (!reads.has(read)) reads.set(read, false);
+  }
+
+  /**
+   * Runs `body`, recording one deep read of `read` in place of the reads it
+   * makes below `read`, for a value computed from every item of a list,
+   * which a change to any item can change.
+   */
+  fold<T>(read: string, body: () => T): T {
+    this.#note(read, true);
+    this.#folds.push(`${read}.`);
+    try {
+      return body();
+    } finally {
+      this.#folds.pop();
+    }
   }
 
   set(path: string, value: unknown): void {
@@ -210,12 +235,15 @@ export class Store {
   /** Runs `body` and returns the paths it read. */
   track(body: () => void): Reads {
     const outer = this.#reads;
+    const folds = this.#folds;
     const reads: Reads = new Map();
     this.#reads = reads;
+    this.#folds = [];
     try {
       body();
     } finally {
       this.#reads = outer;
+      this.#folds = folds;
     }
     return reads;
   }
