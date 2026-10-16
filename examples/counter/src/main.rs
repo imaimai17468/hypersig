@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicI32, Ordering};
 use axum::Router;
 use axum::response::Html;
 use axum::routing::get;
-use hypersig::html::{button, div, h1, input, label, p, span};
+use hypersig::html::{Stylesheet, button, div, h1, input, label, p, span};
 use hypersig::{Action, Page, Patches, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -30,13 +30,16 @@ struct AppState {
 mod class {
     use hypersig::html::Class;
 
-    pub const ROW: Class = Class::new("row");
-    pub const COUNT: Class = Class::new("count");
-    pub const BIG: Class = Class::new("big");
-    pub const STATUS: Class = Class::new("status");
+    use super::STYLE;
+
+    pub const ROW: Class = STYLE.class("row");
+    pub const COUNT: Class = STYLE.class("count");
+    pub const BIG: Class = STYLE.class("big");
+    pub const STATUS: Class = STYLE.class("status");
 }
 
-const STYLE: &str = "
+const STYLE: Stylesheet = Stylesheet::new(
+    "
 body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; padding: 0 1rem; }
 .row { display: flex; gap: .5rem; align-items: center; }
 .count { font-size: 3rem; font-variant-numeric: tabular-nums; min-width: 4ch; text-align: center; }
@@ -44,7 +47,8 @@ body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; 
 button { font-size: 1rem; padding: .4rem .9rem; }
 input { font-size: 1rem; padding: .3rem; flex: 1; }
 .status { color: #555; }
-";
+",
+);
 
 async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> Html<String> {
     let count = Counter::count();

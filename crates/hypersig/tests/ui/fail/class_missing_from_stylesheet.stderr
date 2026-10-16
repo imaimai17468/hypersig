@@ -1,0 +1,25 @@
+error[E0080]: evaluation panicked: the stylesheet has no selector for this class
+  --> tests/ui/fail/class_missing_from_stylesheet.rs:13:20
+   |
+13 | const BIG: Class = STYLE.class("bigg");
+   |                    ^^^^^^^^^^^^^^^^^^^ evaluation of `BIG` failed inside this call
+   |
+note: inside `Stylesheet::class`
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: src/html.rs
+   |
+   | /         assert!(
+   | |             selects(self.0.as_bytes(), name.as_bytes()),
+   | |             "the stylesheet has no selector for this class"
+   | |         );
+   | |_________- in this macro invocation
+
+note: erroneous constant encountered
+  --> tests/ui/fail/class_missing_from_stylesheet.rs:16:37
+   |
+16 |     let _ = span::<Counter>().class(BIG);
+   |                                     ^^^

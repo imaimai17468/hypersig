@@ -12,8 +12,8 @@ use axum::extract::State;
 use axum::response::Html;
 use axum::routing::get;
 use hypersig::html::{
-    El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
-    ul, when,
+    El, Key, Stylesheet, a, button, each_keyed, footer, h1, header, input, label, li, section,
+    span, strong, ul, when,
 };
 use hypersig::{Action, Expr, NodeRef, Page, Patches, RouterExt, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
@@ -234,24 +234,28 @@ async fn save(state: AppState, todos: Vec<Todo>) -> Patches<TodoMvc> {
 mod class {
     use hypersig::html::Class;
 
-    pub const NEW_TODO: Class = Class::new("new-todo");
-    pub const TODO_LIST: Class = Class::new("todo-list");
-    pub const COMPLETED: Class = Class::new("completed");
-    pub const EDITING: Class = Class::new("editing");
-    pub const TOGGLE: Class = Class::new("toggle");
-    pub const DESTROY: Class = Class::new("destroy");
-    pub const EDIT: Class = Class::new("edit");
-    pub const SELECTED: Class = Class::new("selected");
-    pub const TODOAPP: Class = Class::new("todoapp");
-    pub const MAIN: Class = Class::new("main");
-    pub const TOGGLE_ALL: Class = Class::new("toggle-all");
-    pub const FOOTER: Class = Class::new("footer");
+    use super::STYLE;
+
+    pub const NEW_TODO: Class = STYLE.class("new-todo");
+    pub const TODO_LIST: Class = STYLE.class("todo-list");
+    pub const COMPLETED: Class = STYLE.class("completed");
+    pub const EDITING: Class = STYLE.class("editing");
+    pub const TOGGLE: Class = STYLE.class("toggle");
+    pub const DESTROY: Class = STYLE.class("destroy");
+    pub const EDIT: Class = STYLE.class("edit");
+    pub const SELECTED: Class = STYLE.class("selected");
+    pub const TODOAPP: Class = STYLE.class("todoapp");
+    pub const MAIN: Class = STYLE.class("main");
+    pub const TOGGLE_ALL: Class = STYLE.class("toggle-all");
+    pub const FOOTER: Class = STYLE.class("footer");
+    pub const FILTERS: Class = STYLE.class("filters");
+    pub const CLEAR_COMPLETED: Class = STYLE.class("clear-completed");
+
+    // No rule in `STYLE` styles the classes below.
     pub const TODO_COUNT: Class = Class::new("todo-count");
-    pub const FILTERS: Class = Class::new("filters");
-    pub const CLEAR_COMPLETED: Class = Class::new("clear-completed");
 }
 
-const STYLE: &str = "
+const STYLE: Stylesheet = Stylesheet::new("
 * { box-sizing: border-box; }
 body { font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f5f5f5; color: #111; margin: 0; }
 .todoapp { background: #fff; max-width: 550px; margin: 130px auto 40px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,.2), 0 25px 50px rgba(0,0,0,.1); }
@@ -278,7 +282,7 @@ body { font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f
 .filters a { color: inherit; text-decoration: none; padding: 3px 7px; border: 1px solid transparent; border-radius: 3px; }
 .filters a.selected { border-color: #ce4646; }
 .clear-completed { border: none; background: none; cursor: pointer; color: inherit; }
-";
+");
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

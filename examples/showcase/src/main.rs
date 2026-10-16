@@ -8,8 +8,8 @@ use axum::Router;
 use axum::response::Html;
 use axum::routing::get;
 use hypersig::html::{
-    El, Event, Key, button, div, form, h1, h2, input, label, li, p, section, select, small, span,
-    textarea, ul,
+    El, Event, Key, Stylesheet, button, div, form, h1, h2, input, label, li, p, section, select,
+    small, span, textarea, ul,
 };
 use hypersig::{Action, Fragment, NodeRef, Page, Patches, RouterExt, Sig, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
@@ -378,32 +378,36 @@ async fn order((): (), (quantity, size, gift): (i32, Size, bool)) -> Patches<Sho
 mod class {
     use hypersig::html::Class;
 
+    use super::STYLE;
+
+    pub const DISCLOSURE_TITLE: Class = STYLE.class("disclosure-title");
+    pub const STEPPER: Class = STYLE.class("stepper");
+    pub const NAME: Class = STYLE.class("name");
+    pub const VALUE: Class = STYLE.class("value");
+    pub const ELAPSED: Class = STYLE.class("elapsed");
+    pub const ROW: Class = STYLE.class("row");
+    pub const SEARCHING: Class = STYLE.class("searching");
+    pub const COUNT: Class = STYLE.class("count");
+    pub const OVER: Class = STYLE.class("over");
+    pub const PRICE: Class = STYLE.class("price");
+    pub const ERROR: Class = STYLE.class("error");
+
+    // No rule in `STYLE` styles the classes below.
     pub const DISCLOSURE: Class = Class::new("disclosure");
-    pub const DISCLOSURE_TITLE: Class = Class::new("disclosure-title");
-    pub const STEPPER: Class = Class::new("stepper");
-    pub const NAME: Class = Class::new("name");
-    pub const VALUE: Class = Class::new("value");
     pub const TOTAL: Class = Class::new("total");
-    pub const ELAPSED: Class = Class::new("elapsed");
     pub const START: Class = Class::new("start");
     pub const RESET: Class = Class::new("reset");
     pub const EMPTY: Class = Class::new("empty");
-    pub const ROW: Class = Class::new("row");
     pub const FOCUS: Class = Class::new("focus");
-    pub const SEARCHING: Class = Class::new("searching");
     pub const QUANTITY: Class = Class::new("quantity");
     pub const SIZE: Class = Class::new("size");
     pub const GIFT: Class = Class::new("gift");
     pub const NOTE: Class = Class::new("note");
-    pub const COUNT: Class = Class::new("count");
-    pub const OVER: Class = Class::new("over");
-    pub const PRICE: Class = Class::new("price");
     pub const PLACE: Class = Class::new("place");
     pub const STATUS: Class = Class::new("status");
-    pub const ERROR: Class = Class::new("error");
 }
 
-const STYLE: &str = "
+const STYLE: Stylesheet = Stylesheet::new("
 body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; color: #222; }
 section { border: 1px solid #ddd; border-radius: 8px; padding: .5rem 1rem 1rem; margin: 1rem 0; }
 h2 { font-size: 1.1rem; }
@@ -422,7 +426,7 @@ textarea { font: inherit; min-height: 3rem; }
 .count.over { color: crimson; font-weight: bold; }
 .price { font-weight: bold; }
 .error { color: crimson; }
-";
+");
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {

@@ -13,7 +13,8 @@ use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
 use hypersig::html::{
-    El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong, ul,
+    El, Key, Stylesheet, a, button, each_keyed, footer, h1, header, input, label, li, section,
+    span, strong, ul,
 };
 use hypersig::{Action, Expr, Page, Patches, RouterExt, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
@@ -47,20 +48,24 @@ const DELETE: Action<TodoMvc, i32> = Action::post("/delete");
 mod class {
     use hypersig::html::Class;
 
-    pub const NEW_TODO: Class = Class::new("new-todo");
-    pub const TODO_LIST: Class = Class::new("todo-list");
-    pub const COMPLETED: Class = Class::new("completed");
-    pub const TOGGLE: Class = Class::new("toggle");
-    pub const DESTROY: Class = Class::new("destroy");
-    pub const SELECTED: Class = Class::new("selected");
-    pub const TODOAPP: Class = Class::new("todoapp");
-    pub const MAIN: Class = Class::new("main");
-    pub const FOOTER: Class = Class::new("footer");
+    use super::STYLE;
+
+    pub const NEW_TODO: Class = STYLE.class("new-todo");
+    pub const TODO_LIST: Class = STYLE.class("todo-list");
+    pub const COMPLETED: Class = STYLE.class("completed");
+    pub const TOGGLE: Class = STYLE.class("toggle");
+    pub const DESTROY: Class = STYLE.class("destroy");
+    pub const SELECTED: Class = STYLE.class("selected");
+    pub const TODOAPP: Class = STYLE.class("todoapp");
+    pub const MAIN: Class = STYLE.class("main");
+    pub const FOOTER: Class = STYLE.class("footer");
+    pub const FILTERS: Class = STYLE.class("filters");
+
+    // No rule in `STYLE` styles the classes below.
     pub const TODO_COUNT: Class = Class::new("todo-count");
-    pub const FILTERS: Class = Class::new("filters");
 }
 
-const STYLE: &str = include_str!("../../shared/todomvc.css");
+const STYLE: Stylesheet = Stylesheet::new(include_str!("../../shared/todomvc.css"));
 
 #[derive(Clone)]
 struct AppState {

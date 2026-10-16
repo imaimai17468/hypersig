@@ -9,7 +9,7 @@ use axum::extract::State;
 use axum::response::Html;
 use axum::routing::get;
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, button, div, form, h1, input, li, p, span, ul};
+use hypersig::html::{El, Stylesheet, button, div, form, h1, input, li, p, span, ul};
 use hypersig::{Action, Fragment, Page, Patches, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
@@ -107,15 +107,19 @@ impl Fragment for TodoList {
 mod class {
     use hypersig::html::Class;
 
-    pub const DONE: Class = Class::new("done");
+    use super::STYLE;
+
+    pub const DONE: Class = STYLE.class("done");
+    pub const TITLE: Class = STYLE.class("title");
+    pub const CHECK: Class = STYLE.class("check");
+    pub const REMOVE: Class = STYLE.class("remove");
+    pub const SUMMARY: Class = STYLE.class("summary");
+
+    // No rule in `STYLE` styles the classes below.
     pub const OPEN: Class = Class::new("open");
-    pub const TITLE: Class = Class::new("title");
-    pub const CHECK: Class = Class::new("check");
-    pub const REMOVE: Class = Class::new("remove");
-    pub const SUMMARY: Class = Class::new("summary");
 }
 
-const STYLE: &str = "
+const STYLE: Stylesheet = Stylesheet::new("
 body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; padding: 0 1rem; }
 form { display: flex; gap: .5rem; }
 input { flex: 1; font-size: 1rem; padding: .4rem; }
@@ -126,7 +130,7 @@ li .title { flex: 1; }
 li.done .title { text-decoration: line-through; color: #888; }
 .check, .remove { border: none; background: none; }
 .summary { color: #555; }
-";
+");
 
 async fn index(State(state): State<AppState>) -> Html<String> {
     let list = TodoList {

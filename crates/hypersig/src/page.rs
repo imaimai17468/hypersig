@@ -6,7 +6,7 @@ use std::fmt;
 use serde_json::{Value, json};
 
 use crate::expr::IntoExpr;
-use crate::html::{Node, escape_into, write_attr};
+use crate::html::{Node, Stylesheet, escape_into, write_attr};
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
 
@@ -105,10 +105,10 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Adds a `<style>` block to `<head>`.
+    /// Adds `sheet` to `<head>` as a `<style>` block.
     #[must_use]
-    pub fn style(mut self, css: &'static str) -> Self {
-        self.styles.push(css);
+    pub fn style(mut self, sheet: Stylesheet) -> Self {
+        self.styles.push(sheet.css());
         self
     }
 

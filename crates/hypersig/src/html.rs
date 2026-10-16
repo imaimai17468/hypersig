@@ -278,12 +278,129 @@ impl<S> fmt::Debug for El<S> {
     }
 }
 
+/// CSS text whose class selectors [`Stylesheet::class`] checks at compile time.
+///
+/// ```
+/// use hypersig::html::{Class, Stylesheet, li};
+/// use hypersig::{Page, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Todo {
+///     done: bool,
+/// }
+///
+/// const STYLE: Stylesheet = Stylesheet::new(".item { padding: 4px } .item.done { color: gray }");
+/// const ITEM: Class = STYLE.class("item");
+/// const DONE: Class = STYLE.class("done");
+///
+/// let html = Page::new("Todo", Todo { done: true })
+///     .style(STYLE)
+///     .child(li().class(ITEM).class_when(DONE, Todo::done()))
+///     .render();
+/// assert!(html.contains(r#"<li class="item done""#));
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Stylesheet(&'static str);
+
+impl Stylesheet {
+    /// Wraps the CSS text `css`, usually from `include_str!`.
+    #[must_use]
+    pub const fn new(css: &'static str) -> Self {
+        Self(css)
+    }
+
+    /// The CSS text.
+    #[must_use]
+    pub const fn css(self) -> &'static str {
+        self.0
+    }
+
+    /// The class `name`, which a selector in this stylesheet names as `.name`.
+    ///
+    /// The search skips comments and quoted strings, and reads a backslash
+    /// escape such as `.w-1\/2` as the character it escapes. It does not read
+    /// hex escapes, so a class the stylesheet writes only as `.\31 0` is not
+    /// found. A `.name` inside an unquoted `url(...)` counts as found.
+    ///
+    /// # Panics
+    ///
+    /// Panics if no selector names `.name`, or for the names [`Class::new`]
+    /// rejects. In a `const`, that is a compile error.
+    #[must_use]
+    pub const fn class(self, name: &'static str) -> Class {
+        let class = Class::new(name);
+        assert!(
+            selects(self.0.as_bytes(), name.as_bytes()),
+            "the stylesheet has no selector for this class"
+        );
+        class
+    }
+}
+
+/// Whether `css` has a class selector `.name` outside comments and strings.
+const fn selects(css: &[u8], name: &[u8]) -> bool {
+    let mut i = 0;
+    while i < css.len() {
+        match css[i] {
+            b'/' if i + 1 < css.len() && css[i + 1] == b'*' => {
+                i += 2;
+                while i + 1 < css.len() && !(css[i] == b'*' && css[i + 1] == b'/') {
+                    i += 1;
+                }
+                i += 2;
+            }
+            quote @ (b'"' | b'\'') => {
+                i += 1;
+                while i < css.len() && css[i] != quote {
+                    i += if css[i] == b'\\' { 2 } else { 1 };
+                }
+                i += 1;
+            }
+            b'\\' => i += 2,
+            // A dot after a digit is a decimal point, as in `1.5rem`.
+            b'.' if i == 0 || !css[i - 1].is_ascii_digit() => {
+                if let Some(end) = match_ident(css, i + 1, name)
+                    && (end == css.len() || !is_ident_byte(css[end]))
+                {
+                    return true;
+                }
+                i += 1;
+            }
+            _ => i += 1,
+        }
+    }
+    false
+}
+
+/// The index just past `name` when the identifier at `css[at..]` spells it.
+const fn match_ident(css: &[u8], at: usize, name: &[u8]) -> Option<usize> {
+    let (mut i, mut j) = (at, 0);
+    while j < name.len() {
+        if i < css.len() && css[i] == b'\\' {
+            i += 1;
+        }
+        if i >= css.len() || css[i] != name[j] {
+            return None;
+        }
+        i += 1;
+        j += 1;
+    }
+    Some(i)
+}
+
+/// Whether `b` continues a CSS identifier: an ASCII letter, digit, `-`, `_`,
+/// an escape, or a byte of a non-ASCII character.
+const fn is_ident_byte(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b'\\' || b >= 0x80
+}
+
 /// A class name that [`El::class`] and [`El::class_when`] put on an element.
 ///
 /// Declare each class once as a `const` and use the constant everywhere, so a
-/// misspelled class at a use site is an unknown name to the compiler. The
-/// stylesheet given to [`Page::style`](crate::Page::style) is plain CSS text,
-/// and nothing checks that it has a rule for the class.
+/// misspelled class at a use site is an unknown name to the compiler. A class
+/// from [`Stylesheet::class`] is also checked against the stylesheet. One from
+/// [`Class::new`] is not, which suits a stylesheet the page loads from a URL.
 ///
 /// ```
 /// use hypersig::html::{Class, li};
@@ -304,7 +421,7 @@ impl<S> fmt::Debug for El<S> {
 pub struct Class(&'static str);
 
 impl Class {
-    /// A class named `name`.
+    /// A class named `name`, unchecked against any stylesheet.
     ///
     /// # Panics
     ///
@@ -1157,6 +1274,18 @@ mod tests {
 
     fn name() -> Sig<Page, String> {
         sig("name")
+    }
+
+    #[test]
+    fn finds_class_selectors_only() {
+        let found = |css: &str, name: &str| super::selects(css.as_bytes(), name.as_bytes());
+        assert!(found(".big { color: red }", "big"));
+        assert!(found("li.done, .count.over:hover { }", "over"));
+        assert!(found(".w-1\\/2 { width: 50% }", "w-1/2"));
+        assert!(!found(".bigger { }", "big"));
+        assert!(!found("p { margin: 1.5rem }", "5rem"));
+        assert!(!found("/* .big */ p { }", "big"));
+        assert!(!found("p::before { content: '.big' }", "big"));
     }
 
     #[test]
