@@ -9,7 +9,7 @@ use crate::expr::IntoExpr;
 use crate::html::{Node, Stylesheet, escape_into, write_attr};
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
-use crate::style::Sheet;
+use crate::style::{Sheet, Theme};
 
 /// A full HTML document for a page whose signals are `S`.
 ///
@@ -24,6 +24,7 @@ pub struct Page<S> {
     signals: S,
     stylesheets: Vec<&'static str>,
     styles: Vec<&'static str>,
+    theme: Theme,
     computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
     runtime: &'static str,
@@ -46,6 +47,7 @@ impl<S: Signals> Page<S> {
             signals,
             stylesheets: Vec::new(),
             styles: Vec::new(),
+            theme: Theme::new(),
             computed: Vec::new(),
             body: Vec::new(),
             runtime: crate::RUNTIME_PATH,
@@ -116,6 +118,33 @@ impl<S: Signals> Page<S> {
         self
     }
 
+    /// Sets token values for the whole page. A later call adds to the theme,
+    /// and a value for the same token under the same conditions replaces the
+    /// earlier one.
+    ///
+    /// ```
+    /// use hypersig::html::p;
+    /// use hypersig::style::value::Color;
+    /// use hypersig::style::{Media, Style, Theme, Token};
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Note {}
+    ///
+    /// let ink = Token::new("ink", Color::hex(0x0022_2222));
+    /// let html = Page::new("Note", Note {})
+    ///     .theme(Theme::new().on(Media::Dark, Theme::new().set(&ink, Color::hex(0x00ee_eeee))))
+    ///     .child(p().css(Style::new().color(ink.var())).text("Hello"))
+    ///     .render();
+    /// assert!(html.contains("@media (prefers-color-scheme: dark){:root{--ink:#eeeeee}}"));
+    /// ```
+    #[must_use]
+    pub fn theme(mut self, theme: Theme) -> Self {
+        self.theme = std::mem::take(&mut self.theme).merge(theme);
+        self
+    }
+
     /// Appends a node to `<body>`.
     #[must_use]
     pub fn child(mut self, child: impl Into<Node<S>>) -> Self {
@@ -149,6 +178,11 @@ impl<S: Signals> Page<S> {
         out.push_str("<title>");
         escape_into(&mut out, &self.title, false);
         out.push_str("</title>");
+        if !self.theme.is_empty() {
+            out.push_str("<style data-hs-theme>");
+            out.push_str(&self.theme.to_css());
+            out.push_str("</style>");
+        }
         let mut sheet = Sheet::new();
         for child in &self.body {
             child.collect_css(&mut sheet);

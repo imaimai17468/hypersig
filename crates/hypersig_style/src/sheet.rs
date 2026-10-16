@@ -4,8 +4,7 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 
 use crate::condition::Conditions;
-use crate::generated::Property;
-use crate::style::{Atom, Style};
+use crate::style::{Atom, Prop, Style};
 
 /// The cascade layer of the classes from [`Sheet::add`].
 pub const LAYER: &str = "hypersig-atoms";
@@ -14,10 +13,14 @@ pub const LAYER: &str = "hypersig-atoms";
 /// after [`LAYER`], so a toggled declaration overrides an element's own.
 pub const TOGGLED_LAYER: &str = "hypersig-toggled";
 
-/// The statement that puts [`LAYER`] before [`TOGGLED_LAYER`]. Every bucket
-/// starts with it, because the first stylesheet to name a layer fixes its
-/// place, and any bucket may be the first one a page has.
-const ORDER: &str = "@layer hypersig-atoms,hypersig-toggled;";
+/// The cascade layer of a [`Theme`](crate::Theme)'s values, before [`LAYER`].
+pub const TOKEN_LAYER: &str = "hypersig-tokens";
+
+/// The statement that puts [`TOKEN_LAYER`], [`LAYER`], and [`TOGGLED_LAYER`]
+/// in that order. Every bucket and theme starts with it, because the first
+/// stylesheet to name a layer fixes its place, and any of them may be the
+/// first one a page has.
+pub(crate) const ORDER: &str = "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;";
 
 /// The rules for a set of styles, each declaration written once.
 ///
@@ -35,9 +38,9 @@ const ORDER: &str = "@layer hypersig-atoms,hypersig-toggled;";
 /// assert_eq!(
 ///     css,
 ///     [
-///         "@layer hypersig-atoms,hypersig-toggled;\
+///         "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;\
 ///          @layer hypersig-atoms.k--00{.color_crimson{color:crimson}.padding_8px{padding:8px}}",
-///         "@layer hypersig-atoms,hypersig-toggled;\
+///         "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;\
 ///          @layer hypersig-atoms.k-4019-00{.hover\\:color_red:hover{color:red}}",
 ///     ]
 /// );
@@ -56,7 +59,7 @@ struct Key {
     toggled: bool,
     conditions: Conditions,
     rank: u32,
-    property: Property,
+    property: Prop,
     value: String,
 }
 
@@ -241,7 +244,9 @@ impl Key {
             out.push_str("::");
             out.push_str(e.name());
         }
-        let _ = write!(out, "{{{}:{}}}", self.property.name(), self.value);
+        out.push('{');
+        self.property.write_name(out);
+        let _ = write!(out, ":{}}}", self.value);
     }
 }
 
@@ -348,7 +353,7 @@ mod tests {
         sheet.add_toggled(&style);
         assert_eq!(
             sheet.to_css(),
-            "@layer hypersig-atoms,hypersig-toggled;\
+            "@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;\
              @layer hypersig-toggled.k--00{.when\\:color_red{color:red}}"
         );
     }

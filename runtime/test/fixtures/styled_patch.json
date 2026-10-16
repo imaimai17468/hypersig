@@ -1,3 +1,3 @@
 {
-  "stream": "event: hs-element\ndata: {\"css\":[[\"0 k--00\",\"@layer hypersig-atoms,hypersig-toggled;@layer hypersig-atoms.k--00{.padding_4px{padding:4px}.width_100\\\\%{width:100%}}\"],[\"0 k-4019-00\",\"@layer hypersig-atoms,hypersig-toggled;@layer hypersig-atoms.k-4019-00{.hover\\\\:color_blue:hover{color:blue}}\"]],\"html\":\"<div id=\\\"slot\\\" class=\\\"width_100% padding_4px hover:color_blue\\\"></div>\"}\n\n"
+  "stream": "event: hs-element\ndata: {\"css\":[[\"0 k--00\",\"@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;@layer hypersig-atoms.k--00{.padding_4px{padding:4px}.width_100\\\\%{width:100%}}\"],[\"0 k-4019-00\",\"@layer hypersig-tokens,hypersig-atoms,hypersig-toggled;@layer hypersig-atoms.k-4019-00{.hover\\\\:color_blue:hover{color:blue}}\"]],\"html\":\"<div id=\\\"slot\\\" class=\\\"width_100% padding_4px hover:color_blue\\\"></div>\"}\n\n"
 }

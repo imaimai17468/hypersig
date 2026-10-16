@@ -4,6 +4,7 @@ use std::fmt::Write as _;
 
 use crate::condition::{Condition, Conditions};
 use crate::generated::{Property, PseudoElement};
+use crate::token::{Token, TokenValue};
 use crate::value::Global;
 
 /// A set of CSS declarations, each of which becomes one class.
@@ -34,8 +35,38 @@ pub struct Style {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct Atom {
     pub(crate) conditions: Conditions,
-    pub(crate) property: Property,
+    pub(crate) property: Prop,
     pub(crate) value: String,
+}
+
+/// The property of a declaration: a standard one, or the custom property of
+/// a [`Token`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) enum Prop {
+    Standard(Property),
+    Custom(&'static str),
+}
+
+impl Prop {
+    /// The name after which the declaration's class is named, which for a
+    /// custom property starts with `--`.
+    pub(crate) fn write_name(self, out: &mut String) {
+        match self {
+            Self::Standard(p) => out.push_str(p.name()),
+            Self::Custom(name) => {
+                out.push_str("--");
+                out.push_str(name);
+            }
+        }
+    }
+
+    /// How many shorthands stand above the property. A custom property has none.
+    pub(crate) fn rank(self) -> u32 {
+        match self {
+            Self::Standard(p) => p.rank(),
+            Self::Custom(_) => 0,
+        }
+    }
 }
 
 impl Atom {
@@ -62,7 +93,7 @@ impl Atom {
             name.push_str(e.name());
             name.push(':');
         }
-        name.push_str(self.property.name());
+        self.property.write_name(&mut name);
         name.push('_');
         let readable = self
             .value
@@ -113,8 +144,20 @@ impl Style {
     pub(crate) fn with(mut self, property: Property, value: String) -> Self {
         self.insert(Atom {
             conditions: Conditions::default(),
-            property,
+            property: Prop::Standard(property),
             value,
+        });
+        self
+    }
+
+    /// Sets `token` to `value` on the element and everything inside it, in
+    /// place of the default and the page's [`Theme`](crate::Theme).
+    #[must_use]
+    pub fn token<T: TokenValue>(mut self, token: &Token<T>, value: impl Into<T>) -> Self {
+        self.insert(Atom {
+            conditions: Conditions::default(),
+            property: Prop::Custom(token.name()),
+            value: value.into().to_string(),
         });
         self
     }

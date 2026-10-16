@@ -16,38 +16,51 @@ mod generated;
 // reached as `value::Width` like the hand-written types here.
 pub use generated::*;
 
-/// Writes `n` as a CSS number.
-///
-/// # Panics
-///
-/// Panics if `n` is NaN or infinite, which CSS cannot write.
-fn number(n: f64, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    assert!(n.is_finite(), "a CSS number is finite");
-    write!(f, "{n}")
+/// A number with a unit, or a `var()` that stands for one.
+#[derive(Debug, Clone, PartialEq)]
+enum Amount {
+    Unit(f64, &'static str),
+    Var(String),
 }
 
-/// A length such as `16px` or `1.5rem`.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Length {
-    value: f64,
-    unit: &'static str,
+impl Amount {
+    /// Writes the amount, leaving the unit off zero where `zero_bare` is set,
+    /// as a length may be written but a duration may not.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number is NaN or infinite, which CSS cannot write.
+    fn write(&self, f: &mut fmt::Formatter<'_>, zero_bare: bool) -> fmt::Result {
+        match self {
+            Self::Unit(n, unit) => {
+                assert!(n.is_finite(), "a CSS number is finite");
+                write!(f, "{n}")?;
+                if !(zero_bare && *n == 0.0) {
+                    f.write_str(unit)?;
+                }
+                Ok(())
+            }
+            Self::Var(css) => f.write_str(css),
+        }
+    }
 }
+
+/// A length such as `16px` or `1.5rem`, or a [`Token`](crate::Token) that holds one.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Length(Amount);
 
 impl Length {
     /// A length of zero, written `0`.
-    pub const ZERO: Self = Self {
-        value: 0.0,
-        unit: "",
-    };
+    pub const ZERO: Self = Self(Amount::Unit(0.0, ""));
+
+    pub(crate) fn var(css: String) -> Self {
+        Self(Amount::Var(css))
+    }
 }
 
 impl fmt::Display for Length {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        number(self.value, f)?;
-        if self.value != 0.0 {
-            f.write_str(self.unit)?;
-        }
-        Ok(())
+        self.0.write(f, true)
     }
 }
 
@@ -56,7 +69,7 @@ macro_rules! lengths {
         #[doc = concat!("A length in `", $unit, "`, ", $doc, ".")]
         #[must_use]
         pub fn $name(value: impl Into<f64>) -> Length {
-            Length { value: value.into(), unit: $unit }
+            Length(Amount::Unit(value.into(), $unit))
         }
     )*};
 }
@@ -82,89 +95,86 @@ lengths! {
     pt => "pt": "points",
 }
 
-/// A percentage such as `50%`.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Percentage(f64);
+/// A percentage such as `50%`, or a [`Token`](crate::Token) that holds one.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Percentage(Amount);
+
+impl Percentage {
+    pub(crate) fn var(css: String) -> Self {
+        Self(Amount::Var(css))
+    }
+}
 
 impl fmt::Display for Percentage {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        number(self.0, f)?;
-        f.write_str("%")
+        self.0.write(f, false)
     }
 }
 
 /// The percentage `value%`.
 #[must_use]
 pub fn pct(value: impl Into<f64>) -> Percentage {
-    Percentage(value.into())
+    Percentage(Amount::Unit(value.into(), "%"))
 }
 
-/// A duration such as `200ms`.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Time {
-    value: f64,
-    unit: &'static str,
+/// A duration such as `200ms`, or a [`Token`](crate::Token) that holds one.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Time(Amount);
+
+impl Time {
+    pub(crate) fn var(css: String) -> Self {
+        Self(Amount::Var(css))
+    }
 }
 
 impl fmt::Display for Time {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        number(self.value, f)?;
-        f.write_str(self.unit)
+        self.0.write(f, false)
     }
 }
 
 /// A duration in milliseconds.
 #[must_use]
 pub fn ms(value: impl Into<f64>) -> Time {
-    Time {
-        value: value.into(),
-        unit: "ms",
-    }
+    Time(Amount::Unit(value.into(), "ms"))
 }
 
 /// A duration in seconds.
 #[must_use]
 pub fn secs(value: impl Into<f64>) -> Time {
-    Time {
-        value: value.into(),
-        unit: "s",
-    }
+    Time(Amount::Unit(value.into(), "s"))
 }
 
-/// An angle such as `90deg`.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Angle {
-    value: f64,
-    unit: &'static str,
+/// An angle such as `90deg`, or a [`Token`](crate::Token) that holds one.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Angle(Amount);
+
+impl Angle {
+    pub(crate) fn var(css: String) -> Self {
+        Self(Amount::Var(css))
+    }
 }
 
 impl fmt::Display for Angle {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        number(self.value, f)?;
-        f.write_str(self.unit)
+        self.0.write(f, false)
     }
 }
 
 /// An angle in degrees.
 #[must_use]
 pub fn deg(value: impl Into<f64>) -> Angle {
-    Angle {
-        value: value.into(),
-        unit: "deg",
-    }
+    Angle(Amount::Unit(value.into(), "deg"))
 }
 
 /// An angle in whole turns.
 #[must_use]
 pub fn turn(value: impl Into<f64>) -> Angle {
-    Angle {
-        value: value.into(),
-        unit: "turn",
-    }
+    Angle(Amount::Unit(value.into(), "turn"))
 }
 
-/// A color: a named color such as [`Color::CRIMSON`], a hex or RGB value, or a
-/// mix of two colors.
+/// A color: a named color such as [`Color::CRIMSON`], a hex or RGB value, a
+/// mix of two colors, or a [`Token`](crate::Token) that holds one.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Color(Cow<'static, str>);
 
@@ -178,6 +188,10 @@ impl Color {
 
     pub(crate) const fn named(name: &'static str) -> Self {
         Self(Cow::Borrowed(name))
+    }
+
+    pub(crate) fn var(css: String) -> Self {
+        Self(Cow::Owned(css))
     }
 
     /// The color `#rrggbb` from the low 24 bits of `rgb`, as in `Color::hex(0xb83f45)`.
