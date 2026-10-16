@@ -1,0 +1,23 @@
+[package]
+name = "hypersig_ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Accessible components for hypersig, styled after shadcn/ui"
+keywords = ["hypermedia", "components", "accessibility", "ui", "hypersig"]
+categories = ["web-programming", "gui"]
+readme = "../../README.md"
+include = ["src/**/*.rs"]
+
+[dependencies]
+hypersig = { path = "../hypersig", version = "=0.1.0", default-features = false }
+serde.workspace = true
+
+[dev-dependencies]
+trybuild.workspace = true
+
+[lints]
+workspace = true

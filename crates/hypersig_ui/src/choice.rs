@@ -1,0 +1,287 @@
+//! Checkboxes, switches, and radio groups, drawn over native inputs.
+//!
+//! Each control is a native `<input>` the browser draws nothing for, laid
+//! over a box drawn by the elements after it. The input keeps its role, its
+//! keyboard handling, and its place in a form, and the drawn box follows its
+//! state through `Style::peer`.
+
+use hypersig::Sig;
+use hypersig::html::{El, fieldset, input, label, legend, span};
+use hypersig::style::pattern::{hstack, stack};
+use hypersig::style::value::{
+    Appearance, BorderStyle, Color, Cursor, Display, Opacity, Position, TextAlign, px, rem,
+};
+use hypersig::style::{Condition, PseudoClass, Style};
+use serde::Serialize;
+
+use crate::field::label_style;
+use crate::look::{self, icon};
+use crate::token;
+
+/// The native input, covering the box drawn after it and invisible, so that
+/// a click anywhere on the box reaches it.
+fn hidden_input() -> Style {
+    Style::new()
+        .appearance(Appearance::None)
+        .position(Position::Absolute)
+        .inset(px(0))
+        .margin(px(0))
+        .opacity(Opacity::Number(0.0))
+        .cursor(Cursor::Pointer)
+        .peer()
+        .on(
+            PseudoClass::Disabled,
+            Style::new().cursor(Cursor::NotAllowed),
+        )
+}
+
+/// The box around the input and what draws it.
+fn holder(size: hypersig::style::value::Length) -> Style {
+    Style::new()
+        .position(Position::Relative)
+        .display(Display::InlineFlex)
+        .flex_shrink(0.0)
+        .width(size.clone())
+        .height(size)
+}
+
+/// Dims what a disabled input draws.
+fn peer_disabled() -> Style {
+    Style::new().on(
+        Condition::Peer(PseudoClass::Disabled),
+        Style::new().opacity(Opacity::Number(0.5)),
+    )
+}
+
+/// The `<label>` that holds a control and its text, so that the text names
+/// the control and a click on it toggles the control.
+fn row<S>(text: String) -> (El<S>, El<S>) {
+    let wrapper = label().css(
+        hstack(rem(0.5))
+            .merge(label_style())
+            .cursor(Cursor::Pointer),
+    );
+    (wrapper, span().text(text))
+}
+
+/// A checkbox labeled `text`, bound to `checked`.
+///
+/// It is a native `<input type="checkbox">` inside the `<label>` that holds
+/// the text, so it needs no id, and it works on a field of a list item.
+///
+/// ```
+/// use hypersig::Signals;
+/// use hypersig_ui::checkbox;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Terms {
+///     accepted: bool,
+/// }
+///
+/// let accept = checkbox::<Terms, _>("I accept the terms", Terms::accepted());
+/// assert!(accept.render().contains(r#"type="checkbox""#));
+/// ```
+#[must_use]
+pub fn checkbox<S, R>(text: impl Into<String>, checked: Sig<S, bool, R>) -> El<S> {
+    let size = rem(1);
+    let (wrapper, text) = row(text.into());
+    let mark = span()
+        .attr("aria-hidden", "true")
+        .css(
+            Style::new()
+                .display(Display::InlineFlex)
+                .align_items(hypersig::style::value::AlignItems::Center)
+                .justify_content(hypersig::style::value::JustifyContent::Center)
+                .width(rem(1))
+                .height(rem(1))
+                .border_width(px(1))
+                .border_style(BorderStyle::Solid)
+                .border_color(token::input().var())
+                .border_radius(px(4))
+                .color(Color::TRANSPARENT)
+                .merge(look::transition())
+                .on(
+                    Condition::Peer(PseudoClass::Checked),
+                    Style::new()
+                        .border_color(token::primary().var())
+                        .background_color(token::primary().var())
+                        .color(token::primary_foreground().var()),
+                )
+                .merge(look::peer_focus_ring())
+                .merge(peer_disabled()),
+        )
+        .child(icon(icon::CHECK, rem(0.875)));
+    wrapper
+        .child(
+            span()
+                .css(holder(size))
+                .child(
+                    input()
+                        .attr("type", "checkbox")
+                        .css(hidden_input())
+                        .bind(checked),
+                )
+                .child(mark),
+        )
+        .child(text)
+}
+
+/// An on and off switch labeled `text`, bound to `on`.
+///
+/// It is a native checkbox with `role="switch"`, so a screen reader says
+/// "switch, on" rather than "checkbox, checked", and Space toggles it.
+///
+/// ```
+/// use hypersig::Signals;
+/// use hypersig_ui::switch;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Settings {
+///     airplane: bool,
+/// }
+///
+/// let airplane = switch::<Settings, _>("Airplane mode", Settings::airplane());
+/// assert!(airplane.render().contains(r#"role="switch""#));
+/// ```
+#[must_use]
+pub fn switch<S, R>(text: impl Into<String>, on: Sig<S, bool, R>) -> El<S> {
+    let (wrapper, text) = row(text.into());
+    let track = span().attr("aria-hidden", "true").css(
+        Style::new()
+            .display(Display::Block)
+            .width(rem(2))
+            .height(rem(1.15))
+            .border_width(px(1))
+            .border_style(BorderStyle::Solid)
+            .border_color(Color::TRANSPARENT)
+            .border_radius(px(999))
+            .background_color(token::input().var())
+            .merge(look::transition())
+            .on(
+                Condition::Peer(PseudoClass::Checked),
+                Style::new().background_color(token::primary().var()),
+            )
+            .merge(look::peer_focus_ring())
+            .merge(peer_disabled()),
+    );
+    let thumb = span().attr("aria-hidden", "true").css(
+        Style::new()
+            .position(Position::Absolute)
+            .top(rem(0.15))
+            .left(rem(0.15))
+            .width(rem(0.85))
+            .height(rem(0.85))
+            .border_radius(px(999))
+            .background_color(token::background().var())
+            .pointer_events(hypersig::style::value::PointerEvents::None)
+            .merge(look::transition())
+            .on(
+                Condition::Peer(PseudoClass::Checked),
+                Style::new().translate(hypersig::style::value::raw("0.85rem 0")),
+            ),
+    );
+    wrapper
+        .child(
+            span()
+                .css(
+                    holder(rem(2))
+                        .height(rem(1.15))
+                        .text_align(TextAlign::Start),
+                )
+                .child(
+                    input()
+                        .attr("type", "checkbox")
+                        .attr("role", "switch")
+                        .css(hidden_input())
+                        .bind(on),
+                )
+                .child(track)
+                .child(thumb),
+        )
+        .child(text)
+}
+
+/// A group of radio buttons under the legend `title`, one per option, that
+/// sets `selected` to the option's value.
+///
+/// The radios share a `name` derived from the signal's path, so the browser
+/// gives the group one Tab stop and moves between its radios with the arrow
+/// keys. The `<fieldset>` and `<legend>` name the group for a screen reader.
+///
+/// ```
+/// use hypersig::Signals;
+/// use hypersig_ui::radio_group;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+/// enum Plan {
+///     Free,
+///     Pro,
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Billing {
+///     plan: Plan,
+/// }
+///
+/// let plans = radio_group("Plan", Billing::plan(), [(Plan::Free, "Free"), (Plan::Pro, "Pro")]);
+/// assert!(plans.render().contains(r#"name="ui-plan-radio""#));
+/// ```
+#[must_use]
+pub fn radio_group<S, T: Serialize + PartialEq, L: Into<String>>(
+    title: impl Into<String>,
+    selected: Sig<S, T>,
+    options: impl IntoIterator<Item = (T, L)>,
+) -> El<S> {
+    let name = crate::id::of(selected, "radio");
+    let radio = |value: T, text: L| {
+        let (wrapper, text) = row(text.into());
+        let dot = span().attr("aria-hidden", "true").css(
+            Style::new()
+                .display(Display::Block)
+                .width(rem(1))
+                .height(rem(1))
+                .border_width(px(1))
+                .border_style(BorderStyle::Solid)
+                .border_color(token::input().var())
+                .border_radius(px(999))
+                .merge(look::transition())
+                .on(
+                    Condition::Peer(PseudoClass::Checked),
+                    Style::new()
+                        .border_color(token::primary().var())
+                        .border_width(px(5)),
+                )
+                .merge(look::peer_focus_ring())
+                .merge(peer_disabled()),
+        );
+        wrapper
+            .child(
+                span()
+                    .css(holder(rem(1)))
+                    .child(
+                        input()
+                            .attr("name", name.clone())
+                            .css(hidden_input())
+                            .bind_radio(selected, &value),
+                    )
+                    .child(dot),
+            )
+            .child(text)
+    };
+    fieldset()
+        .css(
+            stack(rem(0.75))
+                .border_style(BorderStyle::None)
+                .padding(px(0))
+                .min_width(hypersig::style::value::MinWidth::from(px(0))),
+        )
+        .child(
+            legend()
+                .css(label_style().padding(px(0)).margin_bottom(rem(0.75)))
+                .text(title),
+        )
+        .children(options.into_iter().map(|(value, text)| radio(value, text)))
+}

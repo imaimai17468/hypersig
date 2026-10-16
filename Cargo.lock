@@ -474,6 +474,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hypersig_ui"
+version = "0.1.0"
+dependencies = [
+ "hypersig",
+ "serde",
+ "trybuild",
+]
+
+[[package]]
 name = "indexmap"
 version = "2.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
