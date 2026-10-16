@@ -282,6 +282,7 @@ pub struct El<S> {
     on: BTreeMap<Event, Stmt<S>>,
     keys: Vec<(Key, Stmt<S>)>,
     roving: Option<Orientation>,
+    active: Option<(&'static str, Value)>,
     children: Vec<Node<S>>,
 }
 
@@ -675,6 +676,7 @@ impl<S> El<S> {
             on: BTreeMap::new(),
             keys: Vec::new(),
             roving: None,
+            active: None,
             children: Vec::new(),
         }
     }
@@ -1131,6 +1133,51 @@ impl<S> El<S> {
         self
     }
 
+    /// Tracks the active option of `listbox` in `active` on the up and down
+    /// arrows, while focus stays on this element.
+    ///
+    /// This is the keyboard half of a combobox whose focus stays in its text
+    /// field. An option is an element inside `listbox` with `role="option"`
+    /// and an `id`, which is not `aria-disabled="true"` and is not hidden by
+    /// [`El::show`]. The down arrow sets `active` to the id of the next shown
+    /// option and the up arrow to the previous one, wrapping at either end
+    /// and starting from the first or the last where `active` names no shown
+    /// option. Enter clicks the option `active` names. The runtime calls
+    /// `preventDefault` for a key it acts on, scrolls the new option into
+    /// view, and leaves a key alone while Alt, Control, or Meta is held.
+    ///
+    /// It runs before the handlers of [`El::on_key`], which then still see
+    /// the key. Bind `aria-activedescendant` to `active` and style the option
+    /// whose id equals it, since the runtime changes nothing but the signal.
+    ///
+    /// ```
+    /// use hypersig::html::{div, input};
+    /// use hypersig::{NodeRef, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Search {
+    ///     query: String,
+    ///     active: String,
+    /// }
+    ///
+    /// const RESULTS: NodeRef<Search> = NodeRef::new("results");
+    ///
+    /// let field = input::<Search>()
+    ///     .attr("role", "combobox")
+    ///     .bind(Search::query())
+    ///     .bind_attr("aria-activedescendant", Search::active())
+    ///     .active_descendant(RESULTS, Search::active());
+    /// let results = div::<Search>().attr("role", "listbox").node_ref(RESULTS);
+    /// assert!(field.render().contains(r#"data-hs-active="[&quot;results&quot;"#));
+    /// # let _ = results;
+    /// ```
+    #[must_use]
+    pub fn active_descendant(mut self, listbox: NodeRef<S>, active: Sig<S, String>) -> Self {
+        self.active = Some((listbox.name(), active.raw_path().place_json()));
+        self
+    }
+
     /// Runs `stmt` every `period` while the element is in the document.
     ///
     /// A second call replaces the first.
@@ -1460,6 +1507,9 @@ impl<S> El<S> {
         }
         if let Some(orientation) = self.roving {
             write_attr(out, "data-hs-roving", orientation.name());
+        }
+        if let Some((listbox, place)) = &self.active {
+            write_attr(out, "data-hs-active", &json_text(&(listbox, place)));
         }
     }
 

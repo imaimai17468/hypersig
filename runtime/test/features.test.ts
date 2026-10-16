@@ -236,6 +236,51 @@ describe("roving focus", () => {
   });
 });
 
+describe("active descendant", () => {
+  it("moves the signal among the shown options that are not disabled, and clicks the active one on Enter", async () => {
+    const runtime = mount("combo");
+    const field = $("#field");
+    key(field, "ArrowDown");
+    await tick();
+    expect(runtime.store.get("active")).toBe("o0");
+    key(field, "ArrowDown");
+    await tick();
+    expect(runtime.store.get("active")).toBe("o3");
+    key(field, "ArrowDown");
+    await tick();
+    expect(runtime.store.get("active")).toBe("o0");
+    key(field, "ArrowUp");
+    await tick();
+    expect(runtime.store.get("active")).toBe("o3");
+    expect(runtime.store.get("downs")).toBe(3);
+    key(field, "Enter");
+    await tick();
+    expect(runtime.store.get("picked")).toBe("o3");
+  });
+
+  it("starts from the last option on the up arrow and counts an option once it is shown", async () => {
+    const runtime = mount("combo");
+    const field = $<HTMLInputElement>("#field");
+    type(field, "a");
+    await tick();
+    key(field, "ArrowUp");
+    await tick();
+    expect(runtime.store.get("active")).toBe("o3");
+    key(field, "ArrowUp");
+    await tick();
+    expect(runtime.store.get("active")).toBe("o1");
+  });
+
+  it("leaves Enter alone while no option is active", async () => {
+    const runtime = mount("combo");
+    const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    $("#field").dispatchEvent(event);
+    await tick();
+    expect(event.defaultPrevented).toBe(false);
+    expect(runtime.store.get("picked")).toBe("");
+  });
+});
+
 describe("node refs", () => {
   it("hides an open popover and leaves a closed one alone", async () => {
     mount("roving");

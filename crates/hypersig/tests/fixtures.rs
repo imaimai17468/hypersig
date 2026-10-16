@@ -435,6 +435,55 @@ fn roving() -> (El<Roving>, Roving) {
     (el, Roving { tab: 0, taken: 0 })
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Combo {
+    query: String,
+    active: String,
+    picked: String,
+    downs: i32,
+}
+
+const OPTIONS: NodeRef<Combo> = NodeRef::new("options");
+
+/// A text field that tracks the active option of a listbox whose second
+/// option is hidden while the query is empty and whose third is disabled.
+fn combo() -> (El<Combo>, Combo) {
+    let query = Combo::query();
+    let active = Combo::active();
+    let picked = Combo::picked();
+    let downs = Combo::downs();
+    let option = |i: i32| {
+        div()
+            .id(format!("o{i}"))
+            .attr("role", "option")
+            .on_click(picked.set(format!("o{i}")))
+    };
+    let el = main()
+        .child(
+            input()
+                .id("field")
+                .bind(query)
+                .active_descendant(OPTIONS, active)
+                .on_key(Key::ArrowDown, downs.set(downs + 1)),
+        )
+        .child(
+            div()
+                .attr("role", "listbox")
+                .node_ref(OPTIONS)
+                .child(option(0))
+                .child(option(1).show(!query.is_empty()))
+                .child(option(2).attr("aria-disabled", "true"))
+                .child(option(3)),
+        );
+    let signals = Combo {
+        query: String::new(),
+        active: String::new(),
+        picked: String::new(),
+        downs: 0,
+    };
+    (el, signals)
+}
+
 fn check(name: &str, el: &El<impl Signals>, signals: &impl Serialize) {
     let fixture = json!({ "html": el.render(), "signals": signals });
     write_or_compare(
@@ -560,6 +609,8 @@ fn fixtures_match_the_builder() {
     check("table", &el, &signals);
     let (el, signals) = roving();
     check("roving", &el, &signals);
+    let (el, signals) = combo();
+    check("combo", &el, &signals);
     let (el, signals) = todos();
     check_page("todos_page", el, signals);
     let (el, signals) = nested();

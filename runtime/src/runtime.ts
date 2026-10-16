@@ -1286,6 +1286,7 @@ export class Runtime implements Host {
     this.#adoptAround(target);
     if (type === "input" || type === "change") this.#readControl(target, type);
     if (type === "keydown" && event instanceof KeyboardEvent) {
+      this.#activate(target, event);
       this.#onKey(target, event);
       if (!event.defaultPrevented) this.#rove(target, event);
     }
@@ -1329,6 +1330,38 @@ export class Runtime implements Host {
     else return;
     event.preventDefault();
     items[to]!.focus();
+  }
+
+  /**
+   * Moves the signal of a `data-hs-active` element to the id of the next or the previous shown option of its listbox
+   * for the down and up arrows, and clicks the option the signal names for Enter.
+   */
+  #activate(target: Element, event: KeyboardEvent): void {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const source = this.#attr(target, "data-hs-active");
+    if (source === null) return;
+    const [name, place] = parse(source) as [string, unknown];
+    const listbox = this.#findRef(name, target);
+    if (listbox === null) return;
+    const options = [...listbox.querySelectorAll<HTMLElement>('[role="option"]')].filter(
+      (option) => option.id !== "" && option.getAttribute("aria-disabled") !== "true" && !hiddenWithin(option, listbox),
+    );
+    const path = resolve(place, this.#context(target, this.#scopeOf(target)));
+    const at = options.findIndex((option) => option.id === this.store.get(path));
+    if (event.key === "Enter") {
+      if (at < 0) return;
+      event.preventDefault();
+      options[at]!.click();
+      return;
+    }
+    let to: number;
+    if (event.key === "ArrowDown") to = at < 0 ? 0 : (at + 1) % options.length;
+    else if (event.key === "ArrowUp") to = at < 0 ? options.length - 1 : (at - 1 + options.length) % options.length;
+    else return;
+    if (options.length === 0) return;
+    event.preventDefault();
+    this.store.set(path, options[to]!.id);
+    options[to]!.scrollIntoView({ block: "nearest" });
   }
 
   #onDirect(type: (typeof DIRECT)[number], event: Event): void {
@@ -1879,4 +1912,12 @@ function inPlace(path: string, known: ReadonlyMap<string, Instance>): boolean {
     last = instance;
   }
   return last === undefined || last.slot.path === join(path, String(known.size - 1));
+}
+
+/** Whether `element`, or an element between it and `root`, is hidden by `data-hs-show` or the `hidden` attribute. */
+function hiddenWithin(element: HTMLElement, root: Element): boolean {
+  for (let at: Element | null = element; at !== null && at !== root; at = at.parentElement) {
+    if (at instanceof HTMLElement && (at.hidden || at.style.display === "none")) return true;
+  }
+  return false;
 }
