@@ -47,6 +47,27 @@ export function setPath(value: unknown, path: string, next: unknown): unknown {
   return { ...record, [head]: setPath(record[head], tail, next) };
 }
 
+/** `setPath`, changing in place the containers on the way that `copied` holds, and copying the others into it. */
+function setCopied(root: unknown, path: string, next: unknown, copied: Set<unknown>): unknown {
+  if (path === "") return next;
+  const own = (value: unknown): Record<string, unknown> => {
+    if (copied.has(value)) return value as Record<string, unknown>;
+    const copy = Array.isArray(value) ? [...value] : value !== null && typeof value === "object" ? { ...(value as Values) } : {};
+    copied.add(copy);
+    return copy as Record<string, unknown>;
+  };
+  const top = own(root);
+  const segments = path.split(".");
+  let at = top;
+  for (let index = 0; index < segments.length - 1; index++) {
+    const child = own(at[segments[index]!]);
+    at[segments[index]!] = child;
+    at = child;
+  }
+  at[segments.at(-1)!] = next;
+  return top;
+}
+
 /** Structural equality over JSON values. */
 export function equal(a: unknown, b: unknown): boolean {
   if (Object.is(a, b) || a === b) return true;
@@ -204,9 +225,24 @@ export class Store {
   }
 
   set(path: string, value: unknown): void {
+    this.#write(path, value, null);
+  }
+
+  /**
+   * Sets each path to its value, as `set` would one after another. The
+   * arrays and objects on the way to them are copied once for all of them, so
+   * writing one field of every item of a list copies the list once.
+   */
+  setMany(writes: readonly (readonly [path: string, value: unknown])[]): void {
+    const copied = new Set<unknown>();
+    for (const [path, value] of writes) this.#write(path, value, copied);
+  }
+
+  /** Writes `value` at `path`, copying only what `copied` does not hold where it is given, and adding the copies to it. */
+  #write(path: string, value: unknown, copied: Set<unknown> | null): void {
     const previous = getPath(this.#values, path);
     if (Object.is(previous, value)) return;
-    this.#values = setPath(this.#values, path, value) as Values;
+    this.#values = (copied === null ? setPath(this.#values, path, value) : setCopied(this.#values, path, value, copied)) as Values;
     if (this.#changes.size === 0) queueMicrotask(() => this.#notify());
     if (isContainer(previous) && isContainer(value) && Array.isArray(previous) === Array.isArray(value)) {
       this.#record(path, false);

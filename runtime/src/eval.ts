@@ -289,14 +289,14 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       const value = compile(rest[4]);
       const [slot, at] = walker(path, read);
       const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
-      let next: unknown[] | null = null;
-      items.forEach((item, index) => {
+      // Each selected item's field is written at its own path, so only the bindings that read that field run.
+      const writes: [string, unknown][] = [];
+      items.forEach((_, index) => {
         if (!when[index]) return;
         at(index);
-        next ??= [...items];
-        next[index] = setPath(item, field, value(itemCtx));
+        writes.push([join(path, String(index), field), value(itemCtx)]);
       });
-      if (next !== null) store.set(path, next);
+      store.setMany(writes);
       return;
     }
     case "swap": {
@@ -325,7 +325,7 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
     case "set_all": {
       const [path, items] = list(ctx, rest[0]);
       const value = evaluate(rest[2], ctx);
-      items.forEach((_, i) => store.set(join(path, String(i), rest[1] as string), value));
+      store.setMany(items.map((_, i) => [join(path, String(i), rest[1] as string), value]));
       return;
     }
     case "if":
