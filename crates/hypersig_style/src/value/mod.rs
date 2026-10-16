@@ -313,9 +313,9 @@ pub fn raw(css: impl Into<String>) -> Raw {
     Raw(css)
 }
 
-/// A keyword every property accepts.
+/// A keyword every property accepts, which CSS calls a CSS-wide keyword.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Global {
+pub enum CssWideKeyword {
     /// `inherit`: the parent's computed value.
     Inherit,
     /// `initial`: the property's initial value.
@@ -328,7 +328,7 @@ pub enum Global {
     RevertLayer,
 }
 
-impl fmt::Display for Global {
+impl fmt::Display for CssWideKeyword {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Self::Inherit => "inherit",

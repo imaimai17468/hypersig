@@ -7,8 +7,7 @@ use crate::condition::Conditions;
 use crate::sheet::{BASE_LAYER, ORDER};
 use crate::style::Style;
 use crate::value::{
-    BoxSizing, Color, Display, FontFamily, Global as Keyword, LineHeight, Quoted, Url, pct, px,
-    quoted,
+    BoxSizing, Color, CssWideKeyword, Display, FontFamily, LineHeight, Quoted, Url, pct, px, quoted,
 };
 
 /// What a [`Global`] rule applies to.
@@ -214,7 +213,7 @@ impl Global {
 
     fn inherit_font() -> Style {
         Style::new()
-            .global(Property::Font, Keyword::Inherit)
+            .keyword(Property::Font, CssWideKeyword::Inherit)
             .color(Color::CURRENT_COLOR)
     }
 

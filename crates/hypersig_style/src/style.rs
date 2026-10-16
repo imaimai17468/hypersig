@@ -6,7 +6,7 @@ use crate::condition::{Condition, Conditions, GROUP, PEER};
 use crate::generated::{Property, PseudoElement};
 use crate::keyframes::Keyframes;
 use crate::token::{Token, TokenValue};
-use crate::value::Global;
+use crate::value::CssWideKeyword;
 
 /// A set of CSS declarations, each of which becomes one class.
 ///
@@ -195,7 +195,7 @@ impl Style {
 
     /// Sets `property` to a keyword every property accepts, such as `inherit`.
     #[must_use]
-    pub fn global(self, property: Property, value: Global) -> Self {
+    pub fn keyword(self, property: Property, value: CssWideKeyword) -> Self {
         self.with(property, value.to_string())
     }
 

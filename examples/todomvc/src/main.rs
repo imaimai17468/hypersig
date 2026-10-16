@@ -256,18 +256,18 @@ async fn save(state: AppState, todos: Vec<Todo>) -> Patches<TodoMvc> {
 /// The look of the app, one function per kind of element.
 mod styles {
     use hypersig::style::value::{
-        AlignItems, Border, BoxSizing, Color, Content, Cursor, Display, FontWeight, Global,
+        AlignItems, Border, BoxSizing, Color, Content, CssWideKeyword, Cursor, Display, FontWeight,
         JustifyContent, ListStyle, MarginInline, Outline, Position, TextAlign, TextDecoration,
         WordBreak, deg, pct, px, quoted, raw,
     };
     use hypersig::style::{
-        Condition, Element, Global as Rules, Property, PseudoClass, PseudoElement, Selector, Style,
+        Condition, Element, Global, Property, PseudoClass, PseudoElement, Selector, Style,
     };
 
     const GRAY: u32 = 0x0094_9494;
 
-    pub fn global() -> Rules {
-        Rules::new()
+    pub fn global() -> Global {
+        Global::new()
             .rule(
                 Selector::Everything,
                 Style::new().box_sizing(BoxSizing::BorderBox),
@@ -418,7 +418,7 @@ mod styles {
             .border(Border::None)
             .background_color(Color::TRANSPARENT)
             .cursor(Cursor::Pointer)
-            .global(Property::Color, Global::Inherit)
+            .keyword(Property::Color, CssWideKeyword::Inherit)
     }
 
     /// Hidden until the pointer is over its item.
@@ -455,7 +455,7 @@ mod styles {
 
     pub fn filter_link() -> Style {
         Style::new()
-            .global(Property::Color, Global::Inherit)
+            .keyword(Property::Color, CssWideKeyword::Inherit)
             .text_decoration(TextDecoration::None)
             .padding_block(px(3))
             .padding_inline(px(7))

@@ -32,7 +32,7 @@ const TYPE_NAMES: &[&str] = &[
     "Angle",
     "Color",
     "Condition",
-    "Global",
+    "CssWideKeyword",
     "Length",
     "Media",
     "Percentage",
@@ -52,7 +52,7 @@ const STYLE_METHODS: &[&str] = &[
     "new",
     "on",
     "pseudo",
-    "global",
+    "keyword",
     "merge",
     "class_names",
     "toggled_class_names",
@@ -559,10 +559,16 @@ fn ranks(properties: &BTreeMap<&str, &Value>) -> BTreeMap<String, u32> {
             }
         }
     }
-    properties
+    let ranks: BTreeMap<String, u32> = properties
         .keys()
         .map(|&name| (name.to_owned(), depth(name, &parents, 0)))
-        .collect()
+        .collect();
+    // `Key::bucket` in src/sheet.rs writes the rank as one digit.
+    assert!(
+        ranks.values().all(|&r| r < 10),
+        "a shorthand rank needs two digits"
+    );
+    ranks
 }
 
 fn depth(name: &str, parents: &BTreeMap<&str, Vec<&str>>, guard: u32) -> u32 {
