@@ -154,6 +154,21 @@ describe("Runtime", () => {
     expect(items()[0]!.textContent).toBe("first");
   });
 
+  it("forgets the bindings inside a removed condition after the next frame", async () => {
+    const runtime = mount(`<template data-hs-if='["sig","on"]'><b id="b" data-hs-text='["sig","label"]'></b></template>`, { on: true, label: "x" });
+    await tick();
+    const removed = document.getElementById("b")!;
+    // The runtime keeps what it knows about an element under the symbol `hypersig`.
+    const key = Object.getOwnPropertySymbols(removed).find((symbol) => symbol.description === "hypersig")!;
+    const bound = () => (removed as unknown as Record<symbol, { effects?: unknown[] }>)[key]!.effects;
+    expect(bound()).toHaveLength(1);
+    runtime.store.set("on", false);
+    await tick();
+    expect(removed.isConnected).toBe(false);
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    expect(bound()).toBeUndefined();
+  });
+
   it("renders text and show from signals, and reacts to a click", async () => {
     mount(
       `<span id="t" data-hs-text='["str",["sig","count"]]'></span>` +
