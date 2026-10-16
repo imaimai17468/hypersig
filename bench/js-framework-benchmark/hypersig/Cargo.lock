@@ -7,6 +7,7 @@ name = "hypersig"
 version = "0.1.0"
 dependencies = [
  "hypersig_proc",
+ "hypersig_style",
  "serde",
  "serde_json",
 ]
@@ -26,6 +27,10 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "hypersig_style"
+version = "0.1.0"
 
 [[package]]
 name = "itoa"
