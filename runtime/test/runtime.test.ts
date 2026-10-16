@@ -255,6 +255,47 @@ describe("Runtime", () => {
     expect(document.getElementById("frag")!.textContent).toBe("gone");
   });
 
+  it("forgets the bindings below an element that a patch removed after the next frame", async () => {
+    const runtime = mount(
+      `<div id="frag"><div><span data-hs-text='["sig","label"]'></span><template data-hs-if='["sig","on"]'><b data-hs-text='["sig","label"]'></b></template></div></div>`,
+      { label: "a", on: true },
+    );
+    await tick();
+    const span = document.querySelector("#frag span")!;
+    const b = document.querySelector("#frag b")!;
+    const key = Object.getOwnPropertySymbols(span).find((symbol) => symbol.description === "hypersig")!;
+    const bound = (element: Element) => (element as unknown as Record<symbol, { effects?: unknown[] }>)[key]!.effects;
+    expect(bound(span)).toHaveLength(1);
+    expect(bound(b)).toHaveLength(1);
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p>gone</p></div>` }) });
+    expect(span.isConnected).toBe(false);
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    expect(bound(span)).toBeUndefined();
+    expect(bound(b)).toBeUndefined();
+  });
+
+  it("keeps the bindings of an element that a patch moved by its id", async () => {
+    const runtime = mount(
+      `<div id="frag"><span id="kept" data-hs-text='["sig","label"]'></span><i>x</i></div>`,
+      { label: "a" },
+    );
+    await tick();
+    const kept = document.getElementById("kept")!;
+    const key = Object.getOwnPropertySymbols(kept).find((symbol) => symbol.description === "hypersig")!;
+    const bound = () => (kept as unknown as Record<symbol, { effects?: unknown[] }>)[key]!.effects;
+    // The morph replaces the span at the first position with the <b>, then finds it by id and moves it to the second.
+    runtime.apply({
+      event: "hs-element",
+      data: JSON.stringify({ html: `<div id="frag"><b>y</b><span id="kept" data-hs-text='["sig","label"]'></span></div>` }),
+    });
+    expect(document.getElementById("kept")).toBe(kept);
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    expect(bound()).toHaveLength(1);
+    runtime.store.set("label", "b");
+    await tick();
+    expect(kept.textContent).toBe("b");
+  });
+
   it("forgets the bindings inside a removed condition after the next frame", async () => {
     const runtime = mount(`<template data-hs-if='["sig","on"]'><b id="b" data-hs-text='["sig","label"]'></b></template>`, { on: true, label: "x" });
     await tick();

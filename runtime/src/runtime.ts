@@ -135,8 +135,9 @@ export class Runtime implements Host {
   readonly #waiting = new Map<Element, () => void>();
   #draining = false;
   /**
-   * Items and conditions taken out of the document, and bindings found
-   * outside it, whose registrations `#sweep` removes after the next paint.
+   * Items and conditions taken out of the document, elements a patch took
+   * out, and bindings found outside it, whose registrations `#sweep` removes
+   * after the next paint.
    * The runtime never puts a removed element back, so until then they only
    * hold memory, and a render that reaches them skips them.
    */
@@ -332,7 +333,7 @@ export class Runtime implements Host {
           console.error(`hypersig: no element with id "${next.id}" to patch`);
           return;
         }
-        const morphed = morph(target, next);
+        const morphed = morph(target, next, this.#removed);
         this.scan(morphed, this.#scopeOf(morphed.parentElement));
         this.#render(new Map());
         this.#patched = true;
@@ -946,9 +947,17 @@ export class Runtime implements Host {
       }
     }
     for (const root of this.#removed) {
-      forget(root);
-      this.#visit(root, forget);
-      unfile(root);
+      // A patch puts back an element it removed where a later child with the same id moves it.
+      if (root.isConnected) continue;
+      if (own(root)?.root === true) {
+        forget(root);
+        this.#visit(root, forget);
+        unfile(root);
+      } else {
+        // An element a patch removed has no list of its members. The slots of the items below it were taken out above.
+        forget(root);
+        for (const element of root.querySelectorAll("*")) forget(element);
+      }
     }
     this.#removed = [];
     for (const effect of this.#stale) if (!effect.element.isConnected) forget(effect.element);
