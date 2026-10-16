@@ -43,8 +43,15 @@ interface Instance {
   readonly slot: Slot;
   /** False for an item the server rendered, until the runtime registers its bindings. */
   scanned: boolean;
+  /** The item's key as its key expression evaluated it, before a duplicate is told apart by position. */
+  key: string;
   /** What evaluating this item's key read, recorded again when the key is not reevaluated. */
   keyReads: Reads;
+  /**
+   * Whether the key read nothing but the item's own fields, so another item
+   * with the same value has the same key wherever it sits.
+   */
+  local: boolean;
   /** The item's value when the list last matched it, to tell a move from a change. */
   value: unknown;
 }
@@ -396,28 +403,59 @@ export class Runtime implements Host {
     const keyAst = parse(proto.getAttribute("data-hs-key"));
     const known = this.#lists.get(template);
     const created = new Set<Instance>();
+    const itemScope = (itemPath: string): Slot[] => [...scope.slice(0, depth), { path: itemPath }];
+    /** The previous items by position and, built on first use, by value, to find one whose key holds for a value. */
+    let placed: Instance[] | null = null;
+    let byValue: Map<unknown, Instance> | null = null;
+    const sameValue = (previous: ReadonlyMap<string, Instance>, index: number): Instance | undefined => {
+      placed ??= [...previous.values()];
+      const item = items[index];
+      const at = placed[index];
+      if (at !== undefined && at.local && Object.is(at.value, item)) return at;
+      if (byValue === null) {
+        byValue = new Map();
+        for (const instance of placed) if (instance.local && !byValue.has(instance.value)) byValue.set(instance.value, instance);
+      }
+      // `match` gives an instance its new value as it goes, so the one found may no longer hold `item`.
+      const found = byValue.get(item);
+      return found !== undefined && found.local && Object.is(found.value, item) ? found : undefined;
+    };
+    /** The key `match` filed its last item under. */
+    let matched = "";
     const match = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>): Instance => {
       const itemPath = join(path, String(index));
-      const itemScope = [...scope.slice(0, depth), { path: itemPath }];
       let key = `#${index}`;
       let keyReads: Reads = new Map();
+      let local = false;
       if (keyAst !== undefined) {
-        keyReads = this.store.track(() => {
-          key = JSON.stringify(evaluate(keyAst, { store: this.store, scope: itemScope }));
-        });
+        const same = sameValue(previous, index);
+        if (same !== undefined) {
+          key = same.key;
+          keyReads = same.slot.path === itemPath ? same.keyReads : rebased(same.keyReads, same.slot.path, itemPath);
+          local = true;
+        } else {
+          const slot = itemPath;
+          keyReads = this.store.track(() => {
+            key = JSON.stringify(evaluate(keyAst, { store: this.store, scope: itemScope(slot) }));
+          });
+          local = [...keyReads.keys()].every((read) => read !== positionOf(slot) && (read === slot || read.startsWith(`${slot}.`)));
+        }
         this.store.replay(keyReads);
       }
+      const raw = key;
       if (next.has(key)) {
         console.warn(`hypersig: duplicate key ${key} in a list; matching it by position`);
         key = `${key}#${index}`;
       }
       let instance = previous.get(key);
       if (instance === undefined || !instance.element.isConnected) {
-        instance = { element: proto.cloneNode(true) as Element, slot: itemScope[depth]!, scanned: true, keyReads, value: items[index] };
+        instance = { element: proto.cloneNode(true) as Element, slot: { path: itemPath }, scanned: true, key: raw, keyReads, local, value: items[index] };
         state(instance.element).root = true;
         created.add(instance);
       } else {
+        instance.key = raw;
         instance.keyReads = keyReads;
+        instance.local = local;
         if (instance.slot.path !== itemPath) {
           const from = instance.slot.path;
           instance.slot.path = itemPath;
@@ -427,13 +465,13 @@ export class Runtime implements Host {
         instance.value = items[index];
       }
       next.set(key, instance);
+      matched = key;
       return instance;
     };
     const register = (order: readonly Instance[]): void => {
       for (const instance of order) {
-        const itemScope = [...scope.slice(0, depth), instance.slot];
-        if (created.has(instance)) this.#mount(instance.element, proto, itemScope);
-        else if (!instance.scanned && !this.#waiting.has(instance.element)) this.#wait(instance, proto, itemScope);
+        if (created.has(instance)) this.#mount(instance.element, proto, [...scope.slice(0, depth), instance.slot]);
+        else if (!instance.scanned && !this.#waiting.has(instance.element)) this.#wait(instance, proto, [...scope.slice(0, depth), instance.slot]);
       }
     };
 
@@ -450,6 +488,37 @@ export class Runtime implements Host {
       for (const instance of added) fragment.append(instance.element);
       parent.insertBefore(fragment, anchor.nextSibling);
       register(added);
+      this.#lists.set(template, next);
+      return;
+    }
+
+    const touched = known === undefined ? null : replaced(this.#changes, path, known, items.length);
+    if (known !== undefined && touched !== null) {
+      const was = [...known.values()];
+      const wasKeys = [...known.keys()];
+      const keys = [...wasKeys];
+      const order = [...was];
+      const end = was.at(-1)?.element.nextSibling ?? null;
+      const filed = new Map<string, Instance>();
+      for (let index = 0; index < was.length; index++) if (!touched.has(index)) filed.set(keys[index]!, was[index]!);
+      const at = [...touched].sort((a, b) => a - b);
+      for (const index of at) {
+        order[index] = match(index, known, filed);
+        keys[index] = matched;
+      }
+      const next = new Map<string, Instance>();
+      order.forEach((instance, index) => {
+        next.set(keys[index]!, instance);
+        if (!touched.has(index)) this.store.replay(instance.keyReads);
+      });
+      for (const index of at) if (next.get(wasKeys[index]!) !== was[index]) this.#unmount(was[index]!.element);
+      for (let i = at.length - 1; i >= 0; i--) {
+        const index = at[i]!;
+        const element = order[index]!.element;
+        const before = index + 1 < order.length ? order[index + 1]!.element : end;
+        if (element.parentNode !== parent || element.nextSibling !== before) parent.insertBefore(element, before);
+      }
+      register(at.map((index) => order[index]!));
       this.#lists.set(template, next);
       return;
     }
@@ -520,7 +589,8 @@ export class Runtime implements Host {
     for (let at = template.nextElementSibling; at !== null && at.hasAttribute("data-hs-ssr"); at = at.nextElementSibling) {
       if (own(at)?.root === true) break;
       state(at).root = true;
-      adopted.set(at.getAttribute("data-hs-ssr")!, { element: at, slot: { path: "" }, scanned: false, keyReads: new Map(), value: undefined });
+      const key = at.getAttribute("data-hs-ssr")!;
+      adopted.set(key, { element: at, slot: { path: "" }, scanned: false, key, keyReads: new Map(), local: false, value: undefined });
     }
     return adopted;
   }
@@ -975,20 +1045,30 @@ function locate(plan: Plan, copy: Element, found: (element: Element, source: Ele
  * run, and the rest are inserted around them.
  */
 function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, Instance>, order: readonly Instance[]): void {
+  const placed: Instance[] = [];
+  for (const instance of previous.values()) if (instance.element.parentNode === parent) placed.push(instance);
+  // The items that keep their place at either end stay without entering the run below.
+  let start = 0;
+  while (start < order.length && start < placed.length && order[start] === placed[start]) start++;
+  let end = 0;
+  while (end < order.length - start && end < placed.length - start && order[order.length - 1 - end] === placed[placed.length - 1 - end]) end++;
   const positions = new Map<Instance, number>();
-  let last: Element | null = null;
-  for (const instance of previous.values()) {
-    if (instance.element.parentNode !== parent) continue;
-    positions.set(instance, positions.size);
-    last = instance.element;
-  }
-  const stay = increasing(order.map((instance) => positions.get(instance) ?? -1));
-  let before: Node | null = last === null ? template.nextSibling : last.nextSibling;
-  for (let index = order.length - 1; index >= 0; index--) {
+  for (let at = start; at < placed.length - end; at++) positions.set(placed[at]!, at);
+  const stay = increasing(order.slice(start, order.length - end).map((instance) => positions.get(instance) ?? -1));
+  const last = placed.at(-1)?.element;
+  let before: Node | null = end > 0 ? order[order.length - end]!.element : last === undefined ? template.nextSibling : last.nextSibling;
+  for (let index = order.length - 1 - end; index >= start; index--) {
     const element = order[index]!.element;
-    if (!stay.has(index)) parent.insertBefore(element, before);
+    if (!stay.has(index - start)) parent.insertBefore(element, before);
     before = element;
   }
+}
+
+/** `reads`, made by the item at `from`, as the item at `to` would have made them. */
+function rebased(reads: Reads, from: string, to: string): Reads {
+  const moved: Reads = new Map();
+  for (const [path, deep] of reads) moved.set(to + path.slice(from.length), deep);
+  return moved;
 }
 
 /** The indices of a longest strictly increasing run of the values of `values` that are not -1. */
@@ -1020,15 +1100,46 @@ function increasing(values: readonly number[]): Set<number> {
  */
 function appended(changes: Changes, path: string, known: ReadonlyMap<string, Instance>, length: number): boolean {
   if (changes.get(path) !== false || length < known.size) return false;
-  let index = 0;
-  for (const instance of known.values()) {
-    if (instance.slot.path !== join(path, String(index++)) || !instance.element.isConnected) return false;
-  }
   const prefix = `${path}.`;
   for (const changed of changes.keys()) {
     if (!changed.startsWith(prefix)) continue;
     const segment = changed.slice(prefix.length).split(".", 1)[0]!;
     if (!(Number(segment) >= known.size)) return false;
   }
-  return true;
+  return inPlace(path, known);
+}
+
+/**
+ * The positions at which `changes` put other values into the list at `path`,
+ * which `known` rendered at the same length, where it changed nothing else of
+ * the list. The items at the other positions are unchanged and still sit at
+ * the same paths. Null where the changes did more, or reached most items.
+ */
+function replaced(changes: Changes, path: string, known: ReadonlyMap<string, Instance>, length: number): Set<number> | null {
+  if (changes.get(path) !== false || length !== known.size) return null;
+  const prefix = `${path}.`;
+  const touched = new Set<number>();
+  for (const changed of changes.keys()) {
+    if (!changed.startsWith(prefix)) continue;
+    const index = Number(changed.slice(prefix.length).split(".", 1)[0]);
+    if (!(Number.isInteger(index) && index >= 0 && index < length)) return null;
+    touched.add(index);
+  }
+  return touched.size * 2 <= length && inPlace(path, known) ? touched : null;
+}
+
+/**
+ * Whether the items of `known` are in the document, each at the path of its
+ * position in the list at `path`. Only the first and the last path are
+ * compared, because `#renderList` and `#rebase` give the items of one list
+ * their paths together, so they agree with each other.
+ */
+function inPlace(path: string, known: ReadonlyMap<string, Instance>): boolean {
+  let last: Instance | undefined;
+  for (const instance of known.values()) {
+    if (last === undefined && instance.slot.path !== join(path, "0")) return false;
+    if (!instance.element.isConnected) return false;
+    last = instance;
+  }
+  return last === undefined || last.slot.path === join(path, String(known.size - 1));
 }

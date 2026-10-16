@@ -82,6 +82,78 @@ describe("Runtime", () => {
     expect(rest.map((li) => li.querySelector("i")!.textContent)).toEqual(["x", "r3", "r4"]);
   });
 
+  it("evaluates again the key of an unchanged item where the key reads more than the item", async () => {
+    const list = (key: string) =>
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='${key}' data-hs-text='["item",0,"label"]'></li></template></ul>`;
+    const items = () => [...document.querySelectorAll("#l li")];
+
+    const byPrefix = mount(list('["concat",["sig","prefix"],["str",["item",0,"id"]]]'), {
+      rows: [1, 2, 3].map((id) => ({ id, label: `r${id}` })),
+      prefix: "a",
+    });
+    await tick();
+    const before = items();
+    const rows = byPrefix.store.get("rows") as unknown[];
+    byPrefix.store.set("rows", [...rows].reverse());
+    await tick();
+    expect(items()).toEqual([...before].reverse());
+    byPrefix.store.set("prefix", "b");
+    byPrefix.store.set("rows", rows);
+    await tick();
+    expect(items().map((li) => li.textContent)).toEqual(["r1", "r2", "r3"]);
+    expect(items().some((li) => before.includes(li))).toBe(false);
+
+    const byIndex = mount(list('["index",0]'), { rows: [1, 2, 3].map((id) => ({ id, label: `r${id}` })) });
+    await tick();
+    const placed = items();
+    byIndex.store.set("rows", [...(byIndex.store.get("rows") as unknown[])].reverse());
+    await tick();
+    expect(items()).toEqual(placed);
+    expect(items().map((li) => li.textContent)).toEqual(["r3", "r2", "r1"]);
+  });
+
+  it("moves the items between the ones that keep their place at either end", async () => {
+    const runtime = mount(
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["str",["item",0,"id"]]'></li></template></ul>`,
+      { rows: [1, 2, 3, 4, 5, 6].map((id) => ({ id })) },
+    );
+    await tick();
+    const byId = new Map([...document.querySelectorAll("#l li")].map((li) => [li.textContent, li]));
+    const rows = runtime.store.get("rows") as unknown[];
+    runtime.store.set("rows", [0, 1, 4, 3, 2, 5].map((at) => rows[at]));
+    await tick();
+    const after = [...document.querySelectorAll("#l li")];
+    expect(after.map((li) => li.textContent)).toEqual(["1", "2", "5", "4", "3", "6"]);
+    expect(after).toEqual(["1", "2", "5", "4", "3", "6"].map((id) => byId.get(id)));
+  });
+
+  it("matches only the positions a write replaced, and keeps the other items and their bindings", async () => {
+    const runtime = mount(
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></li></template></ul>`,
+      { rows: [1, 2, 3, 4, 5, 6].map((id) => ({ id, label: `r${id}` })) },
+    );
+    await tick();
+    const items = () => [...document.querySelectorAll("#l li")];
+    const before = items();
+    const rows = runtime.store.get("rows") as { id: number; label: string }[];
+    runtime.store.set("rows", [rows[0], rows[4], rows[2], rows[3], rows[1], rows[5]]);
+    await tick();
+    expect(items()).toEqual([0, 4, 2, 3, 1, 5].map((at) => before[at]));
+
+    const swapped = runtime.store.get("rows") as { id: number; label: string }[];
+    runtime.store.set("rows", swapped.map((row, at) => (at === 2 ? { id: 3, label: "x" } : at === 3 ? { id: 9, label: "new" } : row)));
+    await tick();
+    const after = items();
+    expect(after.map((li) => li.textContent)).toEqual(["r1", "r5", "x", "new", "r2", "r6"]);
+    expect(after[2]).toBe(before[2]);
+    expect(before.includes(after[3]!)).toBe(false);
+    expect(before[3]!.isConnected).toBe(false);
+
+    runtime.store.set("rows.0.label", "first");
+    await tick();
+    expect(items()[0]!.textContent).toBe("first");
+  });
+
   it("renders text and show from signals, and reacts to a click", async () => {
     mount(
       `<span id="t" data-hs-text='["str",["sig","count"]]'></span>` +

@@ -2,7 +2,11 @@ export type Values = Record<string, unknown>;
 
 /** Joins dotted path parts, skipping empty ones. */
 export function join(...parts: string[]): string {
-  return parts.filter((part) => part !== "").join(".");
+  let joined = "";
+  for (const part of parts) {
+    if (part !== "") joined = joined === "" ? part : `${joined}.${part}`;
+  }
+  return joined;
 }
 
 const splits = new Map<string, readonly string[]>();
