@@ -9,7 +9,7 @@ use axum::extract::State;
 use axum::response::Html;
 use axum::routing::get;
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, Stylesheet, button, div, form, h1, input, li, p, span, ul};
+use hypersig::html::{El, button, div, form, h1, input, li, p, span, ul};
 use hypersig::{Action, Fragment, Page, Patches, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
@@ -81,56 +81,99 @@ impl Fragment for TodoList {
     const ID: &'static str = "todo-list";
 
     fn render(&self) -> El<TodoPage> {
-        ul().children(self.items.iter().map(|todo| {
-            let title = span().class(class::TITLE).text(todo.title.as_str());
-            li().id(format!("todo-{}", todo.id.0))
-                .class(if todo.done { class::DONE } else { class::OPEN })
-                .child(
-                    button()
-                        .class(class::CHECK)
-                        .attr("aria-label", "toggle")
-                        .on_click(TOGGLE.call_with(&todo.id))
-                        .text(if todo.done { "✓" } else { "○" }),
-                )
-                .child(title)
-                .child(
-                    button()
-                        .class(class::REMOVE)
-                        .attr("aria-label", "remove")
-                        .on_click(REMOVE.call_with(&todo.id))
-                        .text("×"),
-                )
-        }))
+        ul().css(styles::list())
+            .children(self.items.iter().map(|todo| {
+                let title = span()
+                    .css(styles::title(todo.done))
+                    .text(todo.title.as_str());
+                li().id(format!("todo-{}", todo.id.0))
+                    .css(styles::item())
+                    .child(
+                        button()
+                            .css(styles::icon_button())
+                            .attr("aria-label", "toggle")
+                            .on_click(TOGGLE.call_with(&todo.id))
+                            .text(if todo.done { "✓" } else { "○" }),
+                    )
+                    .child(title)
+                    .child(
+                        button()
+                            .css(styles::icon_button())
+                            .attr("aria-label", "remove")
+                            .on_click(REMOVE.call_with(&todo.id))
+                            .text("×"),
+                    )
+            }))
     }
 }
 
-mod class {
-    use hypersig::html::Class;
+mod styles {
+    use hypersig::style::Style;
+    use hypersig::style::value::{
+        AlignItems, BorderBottomStyle, BorderStyle, Color, Cursor, Display, FontFamily, ListStyle,
+        MarginInline, TextDecorationLine, px, rem,
+    };
 
-    use super::STYLE;
+    pub fn page() -> Style {
+        Style::new()
+            .font_family(FontFamily::SystemUi)
+            .max_width(rem(32))
+            .margin_block(rem(3))
+            .margin_inline(MarginInline::Auto)
+            .padding_inline(rem(1))
+    }
 
-    pub const DONE: Class = STYLE.class("done");
-    pub const TITLE: Class = STYLE.class("title");
-    pub const CHECK: Class = STYLE.class("check");
-    pub const REMOVE: Class = STYLE.class("remove");
-    pub const SUMMARY: Class = STYLE.class("summary");
+    pub fn form() -> Style {
+        Style::new().display(Display::Flex).gap(rem(0.5))
+    }
 
-    // No rule in `STYLE` styles the classes below.
-    pub const OPEN: Class = Class::new("open");
+    pub fn input() -> Style {
+        Style::new()
+            .flex_grow(1)
+            .font_size(rem(1))
+            .padding(rem(0.4))
+    }
+
+    pub fn button() -> Style {
+        Style::new().font_size(rem(1)).cursor(Cursor::Pointer)
+    }
+
+    pub fn list() -> Style {
+        Style::new().list_style(ListStyle::None).padding(px(0))
+    }
+
+    pub fn item() -> Style {
+        Style::new()
+            .display(Display::Flex)
+            .gap(rem(0.5))
+            .align_items(AlignItems::Center)
+            .padding_block(rem(0.3))
+            .border_bottom_width(px(1))
+            .border_bottom_style(BorderBottomStyle::Solid)
+            .border_bottom_color(Color::hex(0x00ee_eeee))
+    }
+
+    pub fn title(done: bool) -> Style {
+        let title = Style::new().flex_grow(1);
+        if done {
+            title
+                .text_decoration_line(TextDecorationLine::LineThrough)
+                .color(Color::hex(0x0088_8888))
+        } else {
+            title
+        }
+    }
+
+    pub fn icon_button() -> Style {
+        button()
+            .border_style(BorderStyle::None)
+            .background_color(Color::TRANSPARENT)
+    }
+
+    pub fn summary() -> Style {
+        Style::new().color(Color::hex(0x0055_5555))
+    }
 }
-
-const STYLE: Stylesheet = Stylesheet::new("
-body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; padding: 0 1rem; }
-form { display: flex; gap: .5rem; }
-input { flex: 1; font-size: 1rem; padding: .4rem; }
-button { font-size: 1rem; cursor: pointer; }
-ul { list-style: none; padding: 0; }
-li { display: flex; gap: .5rem; align-items: center; padding: .3rem 0; border-bottom: 1px solid #eee; }
-li .title { flex: 1; }
-li.done .title { text-decoration: line-through; color: #888; }
-.check, .remove { border: none; background: none; }
-.summary { color: #555; }
-");
 
 async fn index(State(state): State<AppState>) -> Html<String> {
     let list = TodoList {
@@ -145,25 +188,38 @@ async fn index(State(state): State<AppState>) -> Html<String> {
             remaining: list.remaining(),
         },
     )
-    .style(STYLE)
     .child(
         div()
+            .css(styles::page())
             .on_load(UPDATES.call())
             .child(h1().text("Todo"))
             .child(
                 form()
+                    .css(styles::form())
                     .on_submit(ADD.call_with(draft))
-                    .child(input().attr("placeholder", "What needs doing?").bind(draft))
-                    .child(button().show(!draft.is_empty()).text("Add")),
+                    .child(
+                        input()
+                            .css(styles::input())
+                            .attr("placeholder", "What needs doing?")
+                            .bind(draft),
+                    )
+                    .child(
+                        button()
+                            .css(styles::button())
+                            .show(!draft.is_empty())
+                            .text("Add"),
+                    ),
             )
             .child(hypersig::fragment(&list))
             .child(
-                p().class(class::SUMMARY)
+                p().id("summary-left")
+                    .css(styles::summary())
                     .show(remaining.gt(0))
                     .bind_text(remaining.to_text().concat(" left")),
             )
             .child(
-                p().class(class::SUMMARY)
+                p().id("summary-done")
+                    .css(styles::summary())
                     .show(remaining.equals(0))
                     .text("All done."),
             ),

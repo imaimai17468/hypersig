@@ -17,14 +17,19 @@ test("two tabs see each other's changes over the update stream", async ({ page: 
   await draft.fill("write docs");
   await a.getByPlaceholder("What needs doing?").press("Enter");
   await expect(items(b)).toHaveCount(2);
-  await expect(b.locator(".summary").filter({ visible: true })).toHaveText("2 left");
+  await expect(b.locator("#summary-left")).toHaveText("2 left");
+  // The items arrived in a patch, so their rules did too.
+  const title = (page: typeof a, n: number) => items(page).nth(n).locator("span");
+  await expect(items(b).nth(0)).toHaveCSS("display", "flex");
+  await expect(title(b, 0)).toHaveCSS("text-decoration-line", "none");
 
-  await items(b).nth(0).locator(".check").click();
-  await expect(items(a).nth(0)).toHaveClass("done");
-  await items(a).nth(1).locator(".check").click();
-  await expect(b.locator(".summary").filter({ visible: true })).toHaveText("All done.");
+  await items(b).nth(0).getByLabel("toggle").click();
+  await expect(title(a, 0)).toHaveCSS("text-decoration-line", "line-through");
+  await expect(title(a, 0)).toHaveCSS("color", "rgb(136, 136, 136)");
+  await items(a).nth(1).getByLabel("toggle").click();
+  await expect(b.locator("#summary-done")).toHaveText("All done.");
 
-  await items(b).nth(0).locator(".remove").click();
+  await items(b).nth(0).getByLabel("remove").click();
   await expect(items(a)).toHaveCount(1);
   expect(problems).toEqual([]);
 });
