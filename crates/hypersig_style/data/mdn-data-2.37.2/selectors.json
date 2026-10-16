@@ -1,0 +1,1134 @@
+{
+  "Type selectors": {
+    "syntax": "element",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Type_selectors"
+  },
+  "Class selectors": {
+    "syntax": ".class",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Class_selectors"
+  },
+  "ID selectors": {
+    "syntax": "#id",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/ID_selectors"
+  },
+  "Universal selectors": {
+    "syntax": "*",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Universal_selectors"
+  },
+  "Attribute selectors": {
+    "syntax": "[attr=value]",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Attribute_selectors"
+  },
+  "Nesting selector": {
+    "syntax": "A { &B { } }",
+    "groups": [
+      "CSS Nesting"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Nesting_selector"
+  },
+  "Selector list": {
+    "syntax": ",",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Selector_list"
+  },
+  "Next-sibling combinator": {
+    "syntax": "A + B",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Next-sibling_combinator"
+  },
+  "Subsequent-sibling combinator": {
+    "syntax": "A ~ B",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Subsequent-sibling_combinator"
+  },
+  "Child combinator": {
+    "syntax": "A > B",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Child_combinator"
+  },
+  "Descendant combinator": {
+    "syntax": "A B",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Descendant_combinator"
+  },
+  "Column combinator": {
+    "syntax": "A || B",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Column_combinator"
+  },
+  "Namespace separator": {
+    "syntax": "A | B",
+    "groups": [
+      "CSS Namespaces"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Namespace_separator"
+  },
+  "Pseudo-classes": {
+    "syntax": ":",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Pseudo-classes"
+  },
+  "Pseudo-elements": {
+    "syntax": "::",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/Pseudo-elements"
+  },
+  ":active": {
+    "syntax": ":active",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:active"
+  },
+  ":active-view-transition": {
+    "syntax": ":active-view-transition",
+    "groups": [
+      "CSS View Transitions"
+    ],
+    "status": "standard"
+  },
+  ":active-view-transition-type()": {
+    "syntax": ":active-view-transition-type( <custom-ident># )",
+    "groups": [
+      "CSS View Transitions"
+    ],
+    "status": "standard"
+  },
+  ":any-link": {
+    "syntax": ":any-link",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:any-link"
+  },
+  ":autofill": {
+    "syntax": ":autofill",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:autofill"
+  },
+  ":blank": {
+    "syntax": ":blank",
+    "groups": [
+      "CSS Paged Media"
+    ],
+    "status": "experimental",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:blank"
+  },
+  ":buffering": {
+    "syntax": ":buffering",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:buffering"
+  },
+  ":checked": {
+    "syntax": ":checked",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:checked"
+  },
+  ":current": {
+    "syntax": ":current",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "experimental",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:current"
+  },
+  ":default": {
+    "syntax": ":default",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:default"
+  },
+  ":defined": {
+    "syntax": ":defined",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:defined"
+  },
+  ":dir()": {
+    "syntax": ":dir( [ ltr | rtl ] )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:dir"
+  },
+  ":disabled": {
+    "syntax": ":disabled",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:disabled"
+  },
+  ":empty": {
+    "syntax": ":empty",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:empty"
+  },
+  ":enabled": {
+    "syntax": ":enabled",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:enabled"
+  },
+  ":first": {
+    "syntax": ":first",
+    "groups": [
+      "CSS Paged Media"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:first"
+  },
+  ":first-child": {
+    "syntax": ":first-child",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:first-child"
+  },
+  ":first-of-type": {
+    "syntax": ":first-of-type",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:first-of-type"
+  },
+  ":focus": {
+    "syntax": ":focus",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:focus"
+  },
+  ":focus-visible": {
+    "syntax": ":focus-visible",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:focus-visible"
+  },
+  ":focus-within": {
+    "syntax": ":focus-within",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:focus-within"
+  },
+  ":fullscreen": {
+    "syntax": ":fullscreen",
+    "groups": [
+      "Selectors",
+      "Fullscreen API"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:fullscreen"
+  },
+  ":future": {
+    "syntax": ":future",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:future"
+  },
+  ":has()": {
+    "syntax": ":has( <forgiving-relative-selector-list> )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:has"
+  },
+  ":has-slotted": {
+    "syntax": ":has-slotted",
+    "groups": [
+      "CSS Scoping"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:has-slotted"
+  },
+  ":host": {
+    "syntax": ":host",
+    "groups": [
+      "CSS Scoping"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:host"
+  },
+  ":host()": {
+    "syntax": ":host( <compound-selector> )",
+    "groups": [
+      "CSS Scoping"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:host_function"
+  },
+  ":host-context()": {
+    "syntax": ":host-context( <compound-selector> )",
+    "groups": [
+      "CSS Scoping"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:host-context"
+  },
+  ":hover": {
+    "syntax": ":hover",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:hover"
+  },
+  ":in-range": {
+    "syntax": ":in-range",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:in-range"
+  },
+  ":indeterminate": {
+    "syntax": ":indeterminate",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:indeterminate"
+  },
+  ":invalid": {
+    "syntax": ":invalid",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:invalid"
+  },
+  ":is()": {
+    "syntax": ":is( <forgiving-selector-list> )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:is"
+  },
+  ":lang()": {
+    "syntax": ":lang( <language-code> )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:lang"
+  },
+  ":last-child": {
+    "syntax": ":last-child",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:last-child"
+  },
+  ":last-of-type": {
+    "syntax": ":last-of-type",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:last-of-type"
+  },
+  ":left": {
+    "syntax": ":left",
+    "groups": [
+      "CSS Paged Media"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:left"
+  },
+  ":link": {
+    "syntax": ":link",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:link"
+  },
+  ":local-link": {
+    "syntax": ":local-link",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "experimental",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:local-link"
+  },
+  ":modal": {
+    "syntax": ":modal",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:modal"
+  },
+  ":muted": {
+    "syntax": ":muted",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:muted"
+  },
+  ":not()": {
+    "syntax": ":not( <complex-selector-list> )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:not"
+  },
+  ":nth-child()": {
+    "syntax": ":nth-child( <an+b> [ of <complex-selector-list> ]? )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:nth-child"
+  },
+  ":nth-last-child()": {
+    "syntax": ":nth-last-child( <an+b> [ of <complex-selector-list> ]? )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:nth-last-child"
+  },
+  ":nth-last-of-type()": {
+    "syntax": ":nth-last-of-type( <an+b> )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:nth-last-of-type"
+  },
+  ":nth-of-type()": {
+    "syntax": ":nth-of-type( <an+b> )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:nth-of-type"
+  },
+  ":only-child": {
+    "syntax": ":only-child",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:only-child"
+  },
+  ":only-of-type": {
+    "syntax": ":only-of-type",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:only-of-type"
+  },
+  ":open": {
+    "syntax": ":open",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:open"
+  },
+  ":optional": {
+    "syntax": ":optional",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:optional"
+  },
+  ":out-of-range": {
+    "syntax": ":out-of-range",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:out-of-range"
+  },
+  ":past": {
+    "syntax": ":past",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:past"
+  },
+  ":paused": {
+    "syntax": ":paused",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:paused"
+  },
+  ":picture-in-picture": {
+    "syntax": ":picture-in-picture",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:picture-in-picture"
+  },
+  ":placeholder-shown": {
+    "syntax": ":placeholder-shown",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:placeholder-shown"
+  },
+  ":playing": {
+    "syntax": ":playing",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:playing"
+  },
+  ":popover-open": {
+    "syntax": ":popover-open",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:popover-open"
+  },
+  ":read-only": {
+    "syntax": ":read-only",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:read-only"
+  },
+  ":read-write": {
+    "syntax": ":read-write",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:read-write"
+  },
+  ":required": {
+    "syntax": ":required",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:required"
+  },
+  ":right": {
+    "syntax": ":right",
+    "groups": [
+      "CSS Paged Media"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:right"
+  },
+  ":root": {
+    "syntax": ":root",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:root"
+  },
+  ":scope": {
+    "syntax": ":scope",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:scope"
+  },
+  ":seeking": {
+    "syntax": ":seeking",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:seeking"
+  },
+  ":stalled": {
+    "syntax": ":stalled",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:stalled"
+  },
+  ":state()": {
+    "syntax": ":state( <custom-ident> )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:state"
+  },
+  ":target": {
+    "syntax": ":target",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:target"
+  },
+  ":target-current": {
+    "syntax": ":target-current",
+    "groups": [
+      "CSS Overflow"
+    ],
+    "status": "experimental"
+  },
+  ":target-within": {
+    "syntax": ":target-within",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "experimental",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:target-within"
+  },
+  ":user-invalid": {
+    "syntax": ":user-invalid",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:user-invalid"
+  },
+  ":user-valid": {
+    "syntax": ":user-valid",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:user-valid"
+  },
+  ":valid": {
+    "syntax": ":valid",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:valid"
+  },
+  ":visited": {
+    "syntax": ":visited",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:visited"
+  },
+  ":volume-locked": {
+    "syntax": ":volume-locked",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:volume-locked"
+  },
+  ":where()": {
+    "syntax": ":where( <complex-selector-list> )",
+    "groups": [
+      "Selectors"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/:where"
+  },
+  ":xr-overlay": {
+    "syntax": ":xr-overlay",
+    "groups": [
+      "WebXR DOM Overlays"
+    ],
+    "status": "experimental"
+  },
+  "::-ms-browse": {
+    "syntax": "::-ms-browse",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-check": {
+    "syntax": "::-ms-check",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-clear": {
+    "syntax": "::-ms-clear",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-expand": {
+    "syntax": "::-ms-expand",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-fill": {
+    "syntax": "::-ms-fill",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-fill-lower": {
+    "syntax": "::-ms-fill-lower",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-fill-upper": {
+    "syntax": "::-ms-fill-upper",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-reveal": {
+    "syntax": "::-ms-reveal",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-thumb": {
+    "syntax": "::-ms-thumb",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-ticks-after": {
+    "syntax": "::-ms-ticks-after",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-ticks-before": {
+    "syntax": "::-ms-ticks-before",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-tooltip": {
+    "syntax": "::-ms-tooltip",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-track": {
+    "syntax": "::-ms-track",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-ms-value": {
+    "syntax": "::-ms-value",
+    "groups": [
+      "Microsoft Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-moz-progress-bar": {
+    "syntax": "::-moz-progress-bar",
+    "groups": [
+      "Mozilla Extensions"
+    ],
+    "status": "nonstandard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::-moz-progress-bar"
+  },
+  "::-moz-range-progress": {
+    "syntax": "::-moz-range-progress",
+    "groups": [
+      "Mozilla Extensions"
+    ],
+    "status": "nonstandard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::-moz-range-progress"
+  },
+  "::-moz-range-thumb": {
+    "syntax": "::-moz-range-thumb",
+    "groups": [
+      "Mozilla Extensions"
+    ],
+    "status": "nonstandard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::-moz-range-thumb"
+  },
+  "::-moz-range-track": {
+    "syntax": "::-moz-range-track",
+    "groups": [
+      "Mozilla Extensions"
+    ],
+    "status": "nonstandard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::-moz-range-track"
+  },
+  "::-webkit-progress-bar": {
+    "syntax": "::-webkit-progress-bar",
+    "groups": [
+      "WebKit Extensions"
+    ],
+    "status": "nonstandard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::-webkit-progress-bar"
+  },
+  "::-webkit-progress-inner-value": {
+    "syntax": "::-webkit-progress-inner-value",
+    "groups": [
+      "WebKit Extensions"
+    ],
+    "status": "nonstandard"
+  },
+  "::-webkit-progress-value": {
+    "syntax": "::-webkit-progress-value",
+    "groups": [
+      "WebKit Extensions"
+    ],
+    "status": "nonstandard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::-webkit-progress-value"
+  },
+  "::-webkit-slider-runnable-track": {
+    "syntax": "::-webkit-slider-runnable-track",
+    "groups": [
+      "WebKit Extensions"
+    ],
+    "status": "nonstandard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::-webkit-slider-runnable-track"
+  },
+  "::-webkit-slider-thumb": {
+    "syntax": "::-webkit-slider-thumb",
+    "groups": [
+      "WebKit Extensions"
+    ],
+    "status": "nonstandard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::-webkit-slider-thumb"
+  },
+  "::after": {
+    "syntax": "::after",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::after"
+  },
+  "::backdrop": {
+    "syntax": "::backdrop",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::backdrop"
+  },
+  "::before": {
+    "syntax": "::before",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::before"
+  },
+  "::checkmark": {
+    "syntax": "::checkmark",
+    "groups": [
+      "CSS Form Control Styling"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::checkmark"
+  },
+  "::cue": {
+    "syntax": "::cue",
+    "groups": [
+      "WebVTT"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::cue"
+  },
+  "::cue()": {
+    "syntax": "::cue( <selector> )",
+    "groups": [
+      "WebVTT"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::cue"
+  },
+  "::cue-region": {
+    "syntax": "::cue-region",
+    "groups": [
+      "WebVTT"
+    ],
+    "status": "experimental"
+  },
+  "::cue-region()": {
+    "syntax": "::cue-region( <selector> )",
+    "groups": [
+      "WebVTT"
+    ],
+    "status": "experimental"
+  },
+  "::details-content": {
+    "syntax": "::details-content",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::details-content"
+  },
+  "::file-selector-button": {
+    "syntax": "::file-selector-button",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::file-selector-button"
+  },
+  "::first-letter": {
+    "syntax": "::first-letter",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::first-letter"
+  },
+  "::first-line": {
+    "syntax": "::first-line",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::first-line"
+  },
+  "::grammar-error": {
+    "syntax": "::grammar-error",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::grammar-error"
+  },
+  "::highlight()": {
+    "syntax": "::highlight( <custom-ident> )",
+    "groups": [
+      "CSS Pseudo-Elements",
+      "CSS Custom Highlight API"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::highlight"
+  },
+  "::marker": {
+    "syntax": "::marker",
+    "groups": [
+      "CSS Pseudo-Elements",
+      "CSS Lists and Counters"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::marker"
+  },
+  "::part()": {
+    "syntax": "::part( <ident>+ )",
+    "groups": [
+      "CSS Shadow Parts"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::part"
+  },
+  "::picker-icon": {
+    "syntax": "::picker-icon",
+    "groups": [
+      "CSS Form Control Styling"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::picker-icon"
+  },
+  "::picker()": {
+    "syntax": "::picker( <form-control-identifier>+ )",
+    "groups": [
+      "CSS Form Control Styling"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::picker"
+  },
+  "::placeholder": {
+    "syntax": "::placeholder",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::placeholder"
+  },
+  "::scroll-marker": {
+    "syntax": "::scroll-marker",
+    "groups": [
+      "CSS Overflow"
+    ],
+    "status": "experimental"
+  },
+  "::scroll-marker-group": {
+    "syntax": "::scroll-marker-group",
+    "groups": [
+      "CSS Overflow"
+    ],
+    "status": "experimental"
+  },
+  "::selection": {
+    "syntax": "::selection",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::selection"
+  },
+  "::slotted()": {
+    "syntax": "::slotted( <compound-selector> )",
+    "groups": [
+      "CSS Scoping"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::slotted"
+  },
+  "::spelling-error": {
+    "syntax": "::spelling-error",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::spelling-error"
+  },
+  "::target-text": {
+    "syntax": "::target-text",
+    "groups": [
+      "CSS Pseudo-Elements"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::target-text"
+  },
+  "::view-transition": {
+    "syntax": "::view-transition",
+    "groups": [
+      "CSS View Transitions"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::view-transition"
+  },
+  "::view-transition-group()": {
+    "syntax": "::view-transition-group([ '*' | <custom-ident> ])",
+    "groups": [
+      "CSS View Transitions"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::view-transition-group"
+  },
+  "::view-transition-image-pair()": {
+    "syntax": "::view-transition-image-pair([ '*' | <custom-ident> ])",
+    "groups": [
+      "CSS View Transitions"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::view-transition-image-pair"
+  },
+  "::view-transition-new()": {
+    "syntax": "::view-transition-new([ '*' | <custom-ident> ])",
+    "groups": [
+      "CSS View Transitions"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::view-transition-new"
+  },
+  "::view-transition-old()": {
+    "syntax": "::view-transition-old([ '*' | <custom-ident> ])",
+    "groups": [
+      "CSS View Transitions"
+    ],
+    "status": "standard",
+    "mdn_url": "https://developer.mozilla.org/docs/Web/CSS/Reference/Selectors/::view-transition-old"
+  }
+}

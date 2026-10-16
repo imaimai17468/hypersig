@@ -1,0 +1,19 @@
+[package]
+name = "hypersig_style"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Typed atomic CSS for hypersig. Use it through the hypersig crate"
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+include = ["src/**/*.rs"]
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

@@ -18,6 +18,7 @@ readme = "README.md"
 hypersig = { path = "crates/hypersig", version = "=0.1.0" }
 hypersig_proc = { path = "crates/hypersig_proc", version = "=0.1.0" }
 hypersig_proc_impl = { path = "crates/hypersig_proc_impl", version = "=0.1.0" }
+hypersig_style = { path = "crates/hypersig_style", version = "=0.1.0" }
 
 axum = "0.8.9"
 divan = "0.1.21"
