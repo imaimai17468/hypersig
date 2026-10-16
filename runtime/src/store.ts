@@ -35,16 +35,20 @@ export function getPath(value: unknown, path: string): unknown {
 
 /** Returns a copy of `value` with the value at `path` replaced, copying each container on the way. */
 export function setPath(value: unknown, path: string, next: unknown): unknown {
-  if (path === "") return next;
-  const [head, ...rest] = path.split(".") as [string, ...string[]];
-  const tail = rest.join(".");
+  return path === "" ? next : setAt(value, segmentsOf(path), 0, next);
+}
+
+/** `setPath` for the path whose segments from `at` on are left in `segments`. */
+function setAt(value: unknown, segments: readonly string[], at: number, next: unknown): unknown {
+  if (at === segments.length) return next;
+  const head = segments[at]!;
   if (Array.isArray(value)) {
     const copy = [...value];
-    copy[Number(head)] = setPath(copy[Number(head)], tail, next);
+    copy[Number(head)] = setAt(copy[Number(head)], segments, at + 1, next);
     return copy;
   }
   const record = value !== null && typeof value === "object" ? (value as Values) : {};
-  return { ...record, [head]: setPath(record[head], tail, next) };
+  return { ...record, [head]: setAt(record[head], segments, at + 1, next) };
 }
 
 /** `setPath`, changing in place the containers on the way that `copied` holds, and copying the others into it. */
@@ -180,9 +184,19 @@ export class Store {
     return getPath(this.#values, path);
   }
 
+  /**
+   * The value at `field` inside the value at `base`, recorded as a read of
+   * `field` under `read`. The joined path is built only where a read is
+   * being recorded.
+   */
+  getIn(base: string, field: string, read: string): unknown {
+    if (this.#reads !== null) this.#note(join(read, field), true);
+    return getPath(getPath(this.#values, base), field);
+  }
+
   /** Records a read of the position of the list item at `path`, for `index`. */
   getPosition(path: string): void {
-    this.#note(positionOf(path), true);
+    if (this.#reads !== null) this.#note(positionOf(path), true);
   }
 
   /**

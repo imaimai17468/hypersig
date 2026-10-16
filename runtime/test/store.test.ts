@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { affects, ChangeLookup, Store } from "../src/store.ts";
+import { affects, ChangeLookup, setPath, Store } from "../src/store.ts";
+
+it("setPath copies each container on the way and leaves the value it was given unchanged", () => {
+  const value = { rows: [{ id: 1, tags: ["a"] }], name: "n" };
+  const next = setPath(value, "rows.0.tags.1", "b") as typeof value;
+  expect(next).toEqual({ rows: [{ id: 1, tags: ["a", "b"] }], name: "n" });
+  expect(value).toEqual({ rows: [{ id: 1, tags: ["a"] }], name: "n" });
+  expect(next.rows).not.toBe(value.rows);
+  expect(setPath(null, "a.b", 1)).toEqual({ a: { b: 1 } });
+  expect(setPath(value, "", 2)).toBe(2);
+});
+
+it("getIn reads a field inside the value at a path and records it under the given name", () => {
+  const store = new Store({ rows: [{ label: "x" }] });
+  let value: unknown;
+  const reads = store.track(() => {
+    value = store.getIn("rows.0", "label", "@3");
+  });
+  expect(value).toBe("x");
+  expect([...reads]).toEqual([["@3.label", true]]);
+  expect(store.getIn("rows.0", "", "@3")).toEqual({ label: "x" });
+});
 
 it("a shallow read depends on the path and its ancestors, a deep read also on what is inside", () => {
   const shallow = new Map([["todos", false]]);

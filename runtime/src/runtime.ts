@@ -1,4 +1,4 @@
-import { type Context, evaluate, type Host, resolve, resolveRead, run, type Slot } from "./eval.ts";
+import { type Compiled, compile, type Context, evaluate, type Host, resolve, resolveRead, run, type Slot } from "./eval.ts";
 import { morph } from "./morph.ts";
 import { placeRead, type StaticRead, staticReads } from "./reads.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
@@ -77,8 +77,10 @@ interface Part {
   readonly name: string;
   /** The expression, or for `bind` the `Bind`. */
   readonly ast: unknown;
-  /** For `["eq", ["sig", path], other]` where `other` reads only the item: the signal and `other`. */
-  readonly selector: { readonly path: string; readonly other: unknown } | null;
+  /** The expression built by `compile`, null for `bind`. */
+  readonly value: Compiled | null;
+  /** For `["eq", ["sig", path], other]` where `other` reads only the item: the signal and `other`, built by `compile`. */
+  readonly selector: { readonly path: string; readonly other: Compiled } | null;
   /** For `if`, the element its template holds. */
   readonly proto: Element | null;
 }
@@ -1053,15 +1055,15 @@ export class Runtime implements Host {
     const part = row.shape.parts[index]!;
     if (part.kind === "bind") this.#writeControl(element, part.ast as Bind, row.ctx!);
     else if (part.kind === "if") this.#renderIf(element as HTMLTemplateElement, part.proto, this.#holds(row, index), row.ctx!.scope);
-    else write(element, part.kind, part.name, CONDITIONS.has(part.kind) ? this.#holds(row, index) : evaluate(part.ast, row.ctx!));
+    else write(element, part.kind, part.name, CONDITIONS.has(part.kind) ? this.#holds(row, index) : part.value!(row.ctx!));
   }
 
   /** Whether the condition of a show, class, or toggle part holds, filing a selector part's row under the value it compared. */
   #holds(row: Row, index: number): boolean {
     const part = row.shape.parts[index]!;
     const ctx = row.ctx!;
-    if (part.selector === null) return Boolean(evaluate(part.ast, ctx));
-    const other = evaluate(part.selector.other, ctx);
+    if (part.selector === null) return Boolean(part.value!(ctx));
+    const other = part.selector.other(ctx);
     const scalar = other === null || typeof other === "string" || typeof other === "number" || typeof other === "boolean";
     const key = scalar ? keyOf(other) : ANY;
     const keys = (row.keys ??= []);
@@ -1610,15 +1612,16 @@ function partsFor(source: Element, depth: number): [Part, StaticRead[]][] | null
     const compared = CONDITIONS.has(kind) ? comparison(ast) : null;
     const otherReads = compared === null ? null : staticReads(compared[1]);
     if (otherReads !== null && otherReads.every((read) => read.kind === "item" && read.depth === depth)) {
-      found.push([{ kind, name, ast, selector: { path: compared![0], other: compared![1] }, proto: spec.proto }, otherReads]);
+      const selector = { path: compared![0], other: compile(compared![1]) };
+      found.push([{ kind, name, ast, value: compile(ast), selector, proto: spec.proto }, otherReads]);
     } else {
-      found.push([{ kind, name, ast, selector: null, proto: spec.proto }, reads]);
+      found.push([{ kind, name, ast, value: compile(ast), selector: null, proto: spec.proto }, reads]);
     }
   }
   if (spec.bind !== undefined) {
     const read = placeRead(spec.bind[0]);
     if (read === null || (read.kind === "item" && read.depth > depth)) return null;
-    found.push([{ kind: "bind", name: "", ast: spec.bind, selector: null, proto: null }, [read]]);
+    found.push([{ kind: "bind", name: "", ast: spec.bind, value: null, selector: null, proto: null }, [read]]);
   }
   return found;
 }

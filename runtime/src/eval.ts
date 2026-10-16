@@ -135,7 +135,7 @@ function testItems(ctx: Context, depth: number, [path, items, read]: [string, re
   });
 }
 
-type Compiled = (ctx: Context) => unknown;
+export type Compiled = (ctx: Context) => unknown;
 
 const compiled = new WeakMap<Ast, Compiled>();
 
@@ -144,7 +144,8 @@ export function evaluate(ast: unknown, ctx: Context): unknown {
   return compile(ast)(ctx);
 }
 
-function compile(ast: unknown): Compiled {
+/** The function `evaluate` runs for `ast`, for a caller that evaluates one AST many times. */
+export function compile(ast: unknown): Compiled {
   if (!isAst(ast)) throw new AstError(ast);
   let fn = compiled.get(ast);
   if (fn === undefined) {
@@ -163,11 +164,9 @@ function build(ast: Ast): Compiled {
     }
     case "item": {
       const [depth, field] = rest as [number, string];
-      const under = (base: string): string => (field === "" ? base : base === "" ? field : `${base}.${field}`);
       return (ctx) => {
         const found = slot(ctx, depth);
-        const path = under(found.path);
-        return found.read === undefined ? ctx.store.get(path) : ctx.store.getAs(path, under(found.read));
+        return ctx.store.getIn(found.path, field, found.read ?? found.path);
       };
     }
     case "index": {

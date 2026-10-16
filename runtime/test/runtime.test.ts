@@ -24,6 +24,11 @@ function spyReads(runtime: Runtime): string[] {
     reads.push(path);
     return getAs(path, read);
   };
+  const getIn = store.getIn.bind(store);
+  store.getIn = (base: string, field: string, read: string) => {
+    reads.push(field === "" ? base : `${base}.${field}`);
+    return getIn(base, field, read);
+  };
   return reads;
 }
 
