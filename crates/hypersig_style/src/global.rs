@@ -3,6 +3,7 @@
 use std::fmt::Write as _;
 
 use crate::Property;
+use crate::condition::Conditions;
 use crate::sheet::{BASE_LAYER, ORDER};
 use crate::style::Style;
 use crate::value::{
@@ -289,17 +290,7 @@ impl Global {
                     suffix.push_str("::");
                     suffix.push_str(e.name());
                 }
-                let media = &conditions.media;
-                if !media.is_empty() {
-                    out.push_str("@media ");
-                    for (n, m) in media.iter().enumerate() {
-                        if n > 0 {
-                            out.push_str(" and ");
-                        }
-                        out.push_str(m.query());
-                    }
-                    out.push('{');
-                }
+                let open = conditions.open(&mut out);
                 selector.write(&mut out, &suffix);
                 out.push('{');
                 let mut first = true;
@@ -313,9 +304,7 @@ impl Global {
                     i += 1;
                 }
                 out.push('}');
-                if !media.is_empty() {
-                    out.push('}');
-                }
+                Conditions::close(open, &mut out);
             }
         }
         out.push('}');

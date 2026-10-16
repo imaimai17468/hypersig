@@ -87,6 +87,10 @@ impl Atom {
             name.push_str(m.name());
             name.push(':');
         }
+        for c in &self.conditions.container {
+            name.push_str(c.name());
+            name.push(':');
+        }
         for (_, p) in &self.conditions.pseudo {
             name.push_str(p.name());
             name.push(':');

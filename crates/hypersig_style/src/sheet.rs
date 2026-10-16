@@ -44,9 +44,9 @@ pub(crate) const ORDER: &str =
 ///     css,
 ///     [
 ///         "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-///          @layer hypersig-atoms.k--00{.color_crimson{color:crimson}.padding_8px{padding:8px}}",
+///          @layer hypersig-atoms.k---00{.color_crimson{color:crimson}.padding_8px{padding:8px}}",
 ///         "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-///          @layer hypersig-atoms.k-4019-00{.hover\\:color_red:hover{color:red}}",
+///          @layer hypersig-atoms.k--4019-00{.hover\\:color_red:hover{color:red}}",
 ///     ]
 /// );
 /// ```
@@ -157,24 +157,12 @@ impl Sheet {
             let layer = if first.toggled { TOGGLED_LAYER } else { LAYER };
             let key = first.bucket();
             let mut css = format!("{ORDER}@layer {layer}.{key}{{");
-            let media = first.conditions.media.as_slice();
-            if !media.is_empty() {
-                css.push_str("@media ");
-                for (i, m) in media.iter().enumerate() {
-                    if i > 0 {
-                        css.push_str(" and ");
-                    }
-                    css.push_str(m.query());
-                }
-                css.push('{');
-            }
+            let open = first.conditions.open(&mut css);
             first.write_rule(&mut css);
             while let Some(next) = rules.next_if(|k| k.same_bucket(first)) {
                 next.write_rule(&mut css);
             }
-            if !media.is_empty() {
-                css.push('}');
-            }
+            Conditions::close(open, &mut css);
             css.push('}');
             Some(Bucket {
                 sort_key: format!("{} {key}", u8::from(first.toggled)),
@@ -210,14 +198,19 @@ impl Key {
             && self.rank == other.rank
     }
 
-    /// The sublayer name: `k`, then one fixed-width field per condition and
-    /// the shorthand rank, so that comparing two names as strings compares
-    /// the buckets. Each list of conditions ends with `-`, which sorts before
-    /// the digits, so a list sorts before any longer list it starts.
+    /// The sublayer name: `k`, then the media, container, and pseudo-class
+    /// conditions, the pseudo-element, and the shorthand rank, each in fixed
+    /// width, so that comparing two names as strings compares the buckets.
+    /// Each list of conditions ends with `-`, which sorts before the digits,
+    /// so a list sorts before any longer list it starts.
     fn bucket(&self) -> String {
         let mut key = String::from("k");
         for &m in &self.conditions.media {
             let _ = write!(key, "{:02}", m as u8);
+        }
+        key.push('-');
+        for &c in &self.conditions.container {
+            let _ = write!(key, "{}", c as u8);
         }
         key.push('-');
         for &(rank, p) in &self.conditions.pseudo {
@@ -276,7 +269,7 @@ fn escape_class(name: &str, out: &mut String) {
 mod tests {
     use super::{Sheet, escape_class};
     use crate::value::{Color, Display, pct, px, quoted, raw, rem};
-    use crate::{Media, PseudoClass, PseudoElement, Style};
+    use crate::{Container, Media, PseudoClass, PseudoElement, Style};
 
     fn css(sheet: &Sheet) -> Vec<String> {
         sheet.buckets().map(|b| b.css().to_owned()).collect()
@@ -328,6 +321,25 @@ mod tests {
     }
 
     #[test]
+    fn writes_container_queries_inside_media_queries() {
+        let mut sheet = Sheet::new();
+        sheet.add(
+            &Style::new().width(pct(100)).on(
+                Container::Md,
+                Style::new()
+                    .width(pct(50))
+                    .on(Media::Print, Style::new().width(pct(25))),
+            ),
+        );
+        let css = css(&sheet);
+        assert_eq!(css.len(), 3);
+        assert!(css[1].ends_with(r"{@container (min-width: 48rem){.\@md\:width_50\%{width:50%}}}"));
+        assert!(css[2].ends_with(
+            r"{@media print{@container (min-width: 48rem){.print\:\@md\:width_25\%{width:25%}}}}"
+        ));
+    }
+
+    #[test]
     fn writes_shorthands_before_longhands() {
         let mut sheet = Sheet::new();
         sheet.add(&Style::new().padding_top(px(0)).padding(rem(1)));
@@ -360,7 +372,7 @@ mod tests {
         assert_eq!(
             sheet.to_css(),
             "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-             @layer hypersig-toggled.k--00{.when\\:color_red{color:red}}"
+             @layer hypersig-toggled.k---00{.when\\:color_red{color:red}}"
         );
     }
 

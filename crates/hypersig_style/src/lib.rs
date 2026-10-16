@@ -27,7 +27,7 @@ mod style;
 mod token;
 pub mod value;
 
-pub use condition::{Condition, Media};
+pub use condition::{Condition, Container, Media};
 pub use generated::{Property, PseudoClass, PseudoElement};
 pub use global::{Element, FontFace, Global, Selector};
 pub use keyframes::Keyframes;

@@ -527,12 +527,12 @@ describe("atomic css", () => {
   it("puts a patch's rule buckets at their place in the order", async () => {
     serve("styled_page");
     const runtime = start();
-    expect(buckets()).toEqual(["0 k01--00", "1 k--00"]);
+    expect(buckets()).toEqual(["0 k01---00", "1 k---00"]);
     runtime.apply(patch("styled_patch"));
     await tick();
-    expect(buckets()).toEqual(["0 k--00", "0 k--01", "0 k-4019-00", "0 k01--00", "1 k--00", "2 pulse"]);
+    expect(buckets()).toEqual(["0 k---00", "0 k---01", "0 k--4019-00", "0 k01---00", "1 k---00", "2 pulse"]);
     expect($("#slot").className).toBe("width_100% padding_4px animation-name_pulse hover:color_blue");
-    const base = document.head.querySelector<HTMLStyleElement>('style[data-hs-css="0 k--00"]')!;
+    const base = document.head.querySelector<HTMLStyleElement>('style[data-hs-css="0 k---00"]')!;
     const once = base.textContent;
     runtime.apply(patch("styled_patch"));
     await tick();

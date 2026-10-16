@@ -88,6 +88,51 @@ impl Media {
     }
 }
 
+/// A width of the nearest query container a part of a style applies from.
+///
+/// The widths are those of the breakpoints in [`Media`], measured on the
+/// container instead of the viewport. An ancestor becomes a query container
+/// with `container-type`, as `Style::new().container_type(ContainerType::InlineSize)`
+/// sets it. Without one, the condition never matches.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum Container {
+    /// From 40rem wide.
+    Sm,
+    /// From 48rem wide.
+    Md,
+    /// From 64rem wide.
+    Lg,
+    /// From 80rem wide.
+    Xl,
+    /// From 96rem wide.
+    Xxl,
+}
+
+impl Container {
+    /// The name this condition contributes to a class name, after `@`.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Sm => "@sm",
+            Self::Md => "@md",
+            Self::Lg => "@lg",
+            Self::Xl => "@xl",
+            Self::Xxl => "@2xl",
+        }
+    }
+
+    /// The container query, without `@container`.
+    pub(crate) fn query(self) -> &'static str {
+        match self {
+            Self::Sm => "(min-width: 40rem)",
+            Self::Md => "(min-width: 48rem)",
+            Self::Lg => "(min-width: 64rem)",
+            Self::Xl => "(min-width: 80rem)",
+            Self::Xxl => "(min-width: 96rem)",
+        }
+    }
+}
+
 /// The user-action pseudo-classes in the order they are written, so that a
 /// later one wins while both match: `:active` over `:hover` while a button is
 /// pressed, and `:disabled` over all of them. The order follows the
@@ -121,6 +166,14 @@ pub enum Condition {
     Pseudo(PseudoClass),
     /// The document matches a media feature.
     Media(Media),
+    /// The nearest query container is at least this wide.
+    Container(Container),
+}
+
+impl From<Container> for Condition {
+    fn from(c: Container) -> Self {
+        Self::Container(c)
+    }
 }
 
 impl From<PseudoClass> for Condition {
@@ -140,6 +193,8 @@ impl From<Media> for Condition {
 pub(crate) struct Conditions {
     /// Sorted by enum order, so breakpoints come out ascending.
     pub(crate) media: Vec<Media>,
+    /// Sorted by enum order, so widths come out ascending.
+    pub(crate) container: Vec<Container>,
     /// Sorted by [`PseudoClass::rank`], then enum order.
     pub(crate) pseudo: Vec<(usize, PseudoClass)>,
     pub(crate) element: Option<PseudoElement>,
@@ -153,12 +208,53 @@ impl Conditions {
                     self.media.insert(at, m);
                 }
             }
+            Condition::Container(c) => {
+                if let Err(at) = self.container.binary_search(&c) {
+                    self.container.insert(at, c);
+                }
+            }
             Condition::Pseudo(p) => {
                 let key = (p.rank(), p);
                 if let Err(at) = self.pseudo.binary_search(&key) {
                     self.pseudo.insert(at, key);
                 }
             }
+        }
+    }
+
+    /// Opens the `@media` and `@container` blocks these conditions need, and
+    /// returns how many [`Conditions::close`] has to close.
+    pub(crate) fn open(&self, out: &mut String) -> usize {
+        let mut open = 0;
+        if !self.media.is_empty() {
+            out.push_str("@media ");
+            for (i, m) in self.media.iter().enumerate() {
+                if i > 0 {
+                    out.push_str(" and ");
+                }
+                out.push_str(m.query());
+            }
+            out.push('{');
+            open += 1;
+        }
+        if !self.container.is_empty() {
+            out.push_str("@container ");
+            for (i, c) in self.container.iter().enumerate() {
+                if i > 0 {
+                    out.push_str(" and ");
+                }
+                out.push_str(c.query());
+            }
+            out.push('{');
+            open += 1;
+        }
+        open
+    }
+
+    /// Closes the blocks [`Conditions::open`] opened.
+    pub(crate) fn close(open: usize, out: &mut String) {
+        for _ in 0..open {
+            out.push('}');
         }
     }
 }
