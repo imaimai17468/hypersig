@@ -244,7 +244,8 @@ test("a combobox keeps focus in its field while the arrow keys reach the options
   await expect(list).toBeHidden();
 
   await field.fill("zz");
-  await expect(list.getByText("No matches")).toBeVisible();
+  await expect(page.getByText("No matches")).toBeVisible();
+  await expect(list).toBeHidden();
   await page.keyboard.press("Tab");
   await expect(field).toHaveAttribute("aria-expanded", "false");
 });

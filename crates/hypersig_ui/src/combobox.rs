@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use hypersig::html::{El, Event, Key, div, input, label, p};
 use hypersig::style::Style;
 use hypersig::style::pattern::stack;
-use hypersig::style::value::{OverflowY, Position, ZIndex, pct, raw, rem};
+use hypersig::style::value::{Display, FlexDirection, OverflowY, Position, ZIndex, pct, raw, rem};
 use hypersig::{Expr, NodeRef, Sig, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
 
@@ -195,16 +195,27 @@ impl<S> Combobox<S> {
             .on(Event::Blur, Stmt::when(!pointer, close))
             .css(field_style().height(rem(2.25)));
 
+        // The message sits beside the listbox rather than in it, because a
+        // listbox holds only options.
         let list = div()
-            .id(self.list)
-            .attr("role", "listbox")
-            .attr("aria-label", "Suggestions")
-            .node_ref(list_ref)
             .show(open)
             .on(Event::MouseEnter, pointer.set(true))
             .on(Event::MouseLeave, pointer.set(false))
             .css(drop_down_style())
-            .children(items)
+            .child(
+                div()
+                    .id(self.list)
+                    .attr("role", "listbox")
+                    .attr("aria-label", "Suggestions")
+                    .node_ref(list_ref)
+                    .show(!none_shown.clone())
+                    .css(
+                        Style::new()
+                            .display(Display::Flex)
+                            .flex_direction(FlexDirection::Column),
+                    )
+                    .children(items),
+            )
             .child(
                 p().css(
                     look::small_text()
