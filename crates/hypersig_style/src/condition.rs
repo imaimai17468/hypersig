@@ -168,6 +168,12 @@ pub enum Condition {
     Media(Media),
     /// The nearest query container is at least this wide.
     Container(Container),
+    /// An ancestor marked with [`Style::group`](crate::Style::group) matches
+    /// a pseudo-class, as in `.group:hover .x`.
+    Group(PseudoClass),
+    /// An earlier sibling marked with [`Style::peer`](crate::Style::peer)
+    /// matches a pseudo-class, as in `.peer:checked ~ .x`.
+    Peer(PseudoClass),
 }
 
 impl From<Container> for Condition {
@@ -195,9 +201,24 @@ pub(crate) struct Conditions {
     pub(crate) media: Vec<Media>,
     /// Sorted by enum order, so widths come out ascending.
     pub(crate) container: Vec<Container>,
-    /// Sorted by [`PseudoClass::rank`], then enum order.
+    /// Sorted by [`PseudoClass::rank`], then enum order, as are `peer` and `pseudo`.
+    pub(crate) group: Vec<(usize, PseudoClass)>,
+    pub(crate) peer: Vec<(usize, PseudoClass)>,
     pub(crate) pseudo: Vec<(usize, PseudoClass)>,
     pub(crate) element: Option<PseudoElement>,
+}
+
+/// The class [`Style::group`](crate::Style::group) marks an ancestor with.
+pub(crate) const GROUP: &str = "group";
+
+/// The class [`Style::peer`](crate::Style::peer) marks a sibling with.
+pub(crate) const PEER: &str = "peer";
+
+fn insert_ranked(list: &mut Vec<(usize, PseudoClass)>, p: PseudoClass) {
+    let key = (p.rank(), p);
+    if let Err(at) = list.binary_search(&key) {
+        list.insert(at, key);
+    }
 }
 
 impl Conditions {
@@ -213,12 +234,47 @@ impl Conditions {
                     self.container.insert(at, c);
                 }
             }
-            Condition::Pseudo(p) => {
-                let key = (p.rank(), p);
-                if let Err(at) = self.pseudo.binary_search(&key) {
-                    self.pseudo.insert(at, key);
-                }
+            Condition::Pseudo(p) => insert_ranked(&mut self.pseudo, p),
+            Condition::Group(p) => insert_ranked(&mut self.group, p),
+            Condition::Peer(p) => insert_ranked(&mut self.peer, p),
+        }
+    }
+
+    /// Whether a group or peer condition is present, which a selector
+    /// without a class of its own cannot carry.
+    pub(crate) fn has_relation(&self) -> bool {
+        !self.group.is_empty() || !self.peer.is_empty()
+    }
+
+    /// Writes the selector for the element `target` writes: the group and
+    /// peer prefixes, the target, then its pseudo-classes and pseudo-element.
+    pub(crate) fn write_selector(&self, out: &mut String, target: impl FnOnce(&mut String)) {
+        if !self.group.is_empty() {
+            out.push('.');
+            out.push_str(GROUP);
+            for (_, p) in &self.group {
+                out.push(':');
+                out.push_str(p.name());
             }
+            out.push(' ');
+        }
+        if !self.peer.is_empty() {
+            out.push('.');
+            out.push_str(PEER);
+            for (_, p) in &self.peer {
+                out.push(':');
+                out.push_str(p.name());
+            }
+            out.push_str(" ~ ");
+        }
+        target(out);
+        for (_, p) in &self.pseudo {
+            out.push(':');
+            out.push_str(p.name());
+        }
+        if let Some(e) = self.element {
+            out.push_str("::");
+            out.push_str(e.name());
         }
     }
 

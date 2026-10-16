@@ -44,9 +44,9 @@ pub(crate) const ORDER: &str =
 ///     css,
 ///     [
 ///         "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-///          @layer hypersig-atoms.k---00{.color_crimson{color:crimson}.padding_8px{padding:8px}}",
+///          @layer hypersig-atoms.k-----00{.color_crimson{color:crimson}.padding_8px{padding:8px}}",
 ///         "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-///          @layer hypersig-atoms.k--4019-00{.hover\\:color_red:hover{color:red}}",
+///          @layer hypersig-atoms.k----4019-00{.hover\\:color_red:hover{color:red}}",
 ///     ]
 /// );
 /// ```
@@ -213,6 +213,14 @@ impl Key {
             let _ = write!(key, "{}", c as u8);
         }
         key.push('-');
+        for &(rank, p) in &self.conditions.group {
+            let _ = write!(key, "{rank}{:03}", p as u16);
+        }
+        key.push('-');
+        for &(rank, p) in &self.conditions.peer {
+            let _ = write!(key, "{rank}{:03}", p as u16);
+        }
+        key.push('-');
         for &(rank, p) in &self.conditions.pseudo {
             let _ = write!(key, "{rank}{:03}", p as u16);
         }
@@ -233,16 +241,10 @@ impl Key {
             property: self.property,
             value: self.value.clone(),
         };
-        out.push('.');
-        escape_class(&atom.class_name(self.toggled), out);
-        for (_, p) in &self.conditions.pseudo {
-            out.push(':');
-            out.push_str(p.name());
-        }
-        if let Some(e) = self.conditions.element {
-            out.push_str("::");
-            out.push_str(e.name());
-        }
+        self.conditions.write_selector(out, |out| {
+            out.push('.');
+            escape_class(&atom.class_name(self.toggled), out);
+        });
         out.push('{');
         self.property.write_name(out);
         let _ = write!(out, ":{}}}", self.value);
@@ -269,7 +271,7 @@ fn escape_class(name: &str, out: &mut String) {
 mod tests {
     use super::{Sheet, escape_class};
     use crate::value::{Color, Display, pct, px, quoted, raw, rem};
-    use crate::{Container, Media, PseudoClass, PseudoElement, Style};
+    use crate::{Condition, Container, Media, PseudoClass, PseudoElement, Style};
 
     fn css(sheet: &Sheet) -> Vec<String> {
         sheet.buckets().map(|b| b.css().to_owned()).collect()
@@ -340,6 +342,36 @@ mod tests {
     }
 
     #[test]
+    fn writes_group_and_peer_conditions_before_the_class() {
+        let style = Style::new()
+            .on(
+                Condition::Group(PseudoClass::Hover),
+                Style::new().display(Display::Block),
+            )
+            .on(
+                Condition::Peer(PseudoClass::Checked),
+                Style::new().color(Color::RED),
+            );
+        assert_eq!(
+            style.class_names().collect::<Vec<_>>(),
+            ["group-hover:display_block", "peer-checked:color_red"]
+        );
+        let mut sheet = Sheet::new();
+        sheet.add(&style);
+        let css = sheet.to_css();
+        assert!(css.contains("{.group:hover .group-hover\\:display_block{display:block}}"));
+        assert!(css.contains("{.peer:checked ~ .peer-checked\\:color_red{color:red}}"));
+        assert_eq!(
+            Style::new()
+                .group()
+                .peer()
+                .class_names()
+                .collect::<Vec<_>>(),
+            ["group", "peer"]
+        );
+    }
+
+    #[test]
     fn writes_shorthands_before_longhands() {
         let mut sheet = Sheet::new();
         sheet.add(&Style::new().padding_top(px(0)).padding(rem(1)));
@@ -372,7 +404,7 @@ mod tests {
         assert_eq!(
             sheet.to_css(),
             "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-             @layer hypersig-toggled.k---00{.when\\:color_red{color:red}}"
+             @layer hypersig-toggled.k-----00{.when\\:color_red{color:red}}"
         );
     }
 

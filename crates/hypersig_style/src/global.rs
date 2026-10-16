@@ -259,9 +259,11 @@ impl Global {
     ///
     /// # Panics
     ///
-    /// Panics if `rule`'s style uses [`Style::keyframes`] or a pseudo-element
-    /// with [`Selector::Everything`], which already names `::before` and
-    /// `::after`.
+    /// Panics if a rule's style uses a pseudo-element with
+    /// [`Selector::Everything`], which already names `::before` and
+    /// `::after`, or a [`Condition::Group`](crate::Condition::Group) or
+    /// [`Condition::Peer`](crate::Condition::Peer), which need a marked
+    /// element the selector does not name.
     #[must_use]
     pub fn to_css(&self) -> String {
         let mut out = format!("{ORDER}@layer {BASE_LAYER}{{");
@@ -277,6 +279,10 @@ impl Global {
             let mut i = 0;
             while i < sorted.len() {
                 let conditions = &sorted[i].conditions;
+                assert!(
+                    !conditions.has_relation(),
+                    "a global rule takes no group or peer condition"
+                );
                 let mut suffix = String::new();
                 for (_, p) in &conditions.pseudo {
                     suffix.push(':');

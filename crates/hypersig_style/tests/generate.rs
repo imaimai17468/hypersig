@@ -59,6 +59,8 @@ const STYLE_METHODS: &[&str] = &[
     "token",
     "keyframes",
     "is_empty",
+    "group",
+    "peer",
 ];
 
 /// Strict and reserved keywords of Rust 2024, which no identifier may be.

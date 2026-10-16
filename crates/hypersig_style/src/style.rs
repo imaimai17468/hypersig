@@ -2,7 +2,7 @@
 
 use std::fmt::Write as _;
 
-use crate::condition::{Condition, Conditions};
+use crate::condition::{Condition, Conditions, GROUP, PEER};
 use crate::generated::{Property, PseudoElement};
 use crate::keyframes::Keyframes;
 use crate::token::{Token, TokenValue};
@@ -31,6 +31,7 @@ use crate::value::Global;
 pub struct Style {
     atoms: Vec<Atom>,
     keyframes: Vec<Keyframes>,
+    markers: Vec<&'static str>,
 }
 
 /// One declaration and the conditions it applies under.
@@ -89,6 +90,16 @@ impl Atom {
         }
         for c in &self.conditions.container {
             name.push_str(c.name());
+            name.push(':');
+        }
+        for (_, p) in &self.conditions.group {
+            name.push_str("group-");
+            name.push_str(p.name());
+            name.push(':');
+        }
+        for (_, p) in &self.conditions.peer {
+            name.push_str("peer-");
+            name.push_str(p.name());
             name.push(':');
         }
         for (_, p) in &self.conditions.pseudo {
@@ -195,6 +206,11 @@ impl Style {
             self.insert(atom);
         }
         self.keyframes.extend(style.keyframes);
+        for marker in style.markers {
+            if !self.markers.contains(&marker) {
+                self.markers.push(marker);
+            }
+        }
         self
     }
 
@@ -239,9 +255,33 @@ impl Style {
         self
     }
 
+    /// Marks the element as the ancestor that [`Condition::Group`] tests,
+    /// with the class `group`. Any marked ancestor that matches counts, as
+    /// with the `group` of Tailwind CSS and Panda CSS.
+    #[must_use]
+    pub fn group(mut self) -> Self {
+        if !self.markers.contains(&GROUP) {
+            self.markers.push(GROUP);
+        }
+        self
+    }
+
+    /// Marks the element as the earlier sibling that [`Condition::Peer`]
+    /// tests, with the class `peer`.
+    #[must_use]
+    pub fn peer(mut self) -> Self {
+        if !self.markers.contains(&PEER) {
+            self.markers.push(PEER);
+        }
+        self
+    }
+
     /// The class names an element needs for this style.
     pub fn class_names(&self) -> impl Iterator<Item = String> + '_ {
-        self.atoms.iter().map(|a| a.class_name(false))
+        self.markers
+            .iter()
+            .map(|&m| m.to_owned())
+            .chain(self.atoms.iter().map(|a| a.class_name(false)))
     }
 
     /// The class names for this style when it is switched on and off at run
@@ -249,12 +289,15 @@ impl Style {
     /// [`Style::class_names`], so while switched on they override the
     /// element's own declarations for the same property.
     pub fn toggled_class_names(&self) -> impl Iterator<Item = String> + '_ {
-        self.atoms.iter().map(|a| a.class_name(true))
+        self.markers
+            .iter()
+            .map(|&m| m.to_owned())
+            .chain(self.atoms.iter().map(|a| a.class_name(true)))
     }
 
     /// Whether the style has no declarations.
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.atoms.is_empty()
+        self.atoms.is_empty() && self.markers.is_empty()
     }
 }
