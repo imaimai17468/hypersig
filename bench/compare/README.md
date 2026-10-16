@@ -7,7 +7,6 @@ The same 2000-item TodoMVC in seven frameworks, checked for identical behavior a
 From this directory:
 
 ```sh
-cargo build --release --manifest-path hypersig/Cargo.toml
 cargo build --release --manifest-path htmx/Cargo.toml
 (cd leptos && cargo leptos build --release)
 (cd next && npm ci && npm run build)
@@ -18,6 +17,8 @@ pnpm install
 ```
 
 The Leptos build needs `rustup target add wasm32-unknown-unknown` and `cargo install cargo-leptos --version 0.3.11`. Where `RUSTUP_TOOLCHAIN` is set in the shell, it overrides the repository's `rust-toolchain.toml`, so unset it for that build.
+
+The harness builds the hypersig app itself with `cargo build --release` each time it starts it, because the binary embeds `crates/hypersig/assets/hypersig.js` and would otherwise keep serving the runtime from its last build. The other apps do not depend on this repository's runtime and are started from whatever the commands above last built.
 
 ## Run
 

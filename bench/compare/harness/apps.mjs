@@ -1,13 +1,19 @@
 // The apps under test, how to start each one, and where it listens.
 
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 
 export const APPS = {
-  hypersig: { port: 4100, cmd: ["hypersig/target/release/bench-hypersig"] },
+  // The binary embeds crates/hypersig/assets/hypersig.js, so it is rebuilt before each start
+  // to pick up a runtime built after the last cargo build. Cargo returns at once when nothing changed.
+  hypersig: {
+    port: 4100,
+    build: ["cargo", "build", "--release", "--quiet", "--manifest-path", "hypersig/Cargo.toml"],
+    cmd: ["hypersig/target/release/bench-hypersig"],
+  },
   leptos: {
     port: 4104,
     cmd: ["leptos/target/release/bench-leptos"],
@@ -25,6 +31,7 @@ export const url = (name) => `http://127.0.0.1:${APPS[name].port}/`;
 /** Starts the app, waits until it answers, and returns a function that stops it. */
 export async function start(name) {
   const app = APPS[name];
+  if (app.build) execFileSync(app.build[0], app.build.slice(1), { cwd: root, stdio: "inherit" });
   const child = spawn(app.cmd[0], app.cmd.slice(1), {
     cwd: root,
     env: { ...process.env, ...app.env },
