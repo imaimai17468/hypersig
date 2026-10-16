@@ -12,6 +12,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `crates/hypersig_proc` | `#[derive(Signals)]` as a thin `proc-macro = true` shim |
 | `crates/hypersig_proc_impl` | The token transformation behind the derive, with its snapshot tests |
 | `crates/hypersig_style` | Typed atomic CSS: `Style`, `Sheet`, the value types, and the code `tests/generate.rs` writes from the MDN data in `data/`. Regenerate it with `HYPERSIG_GENERATE=overwrite cargo test -p hypersig_style --test generate` |
+| `crates/hypersig_ui` | Components styled after shadcn/ui on native elements and the WAI-ARIA patterns, with trybuild cases under `tests/ui/fail` |
 | `crates/hypersig/benches/render.rs` | divan benchmarks of `Page::render` over list pages, with allocation counts |
 | `crates/hypersig/tests/ui` | trybuild cases. Each `fail/*.rs` is a mistake that must not compile |
 | `crates/hypersig/tests/fixtures.rs` | Builds pages with the Rust builder and writes them to `runtime/test/fixtures/`, which the runtime tests load |

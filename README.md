@@ -151,6 +151,14 @@ assert!(page.render().contains("hover:color_crimson"));
 
 A value with several parts, such as `margin: 0 auto`, a shadow, or a `calc()`, goes through `raw(...)`, which is passed to the browser unchecked, and so is a value outside a property's range, such as a negative width. A page that loads an existing stylesheet keeps it: `Stylesheet::class("name")` checks at compile time that the stylesheet has a selector for the class.
 
+## Components
+
+The `hypersig_ui` crate is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices: buttons, text fields, checkboxes, switches, radio groups, selects, tabs, an accordion, dialogs, a menu button, alerts, badges, cards, and a progress bar. Each returns an `El`, so it takes handlers and children like any other element.
+
+A text field's label, description, and error message are tied to the field by ids derived from the signal it is bound to, and the tabs of a tab list are tied to their panels the same way. A dialog or a menu has no signal, so it takes its name from a `const` handle that its buttons share, and a name that an id cannot hold is a compile error. The browser opens a dialog with `showModal()` through invoker commands, and puts a menu in the top layer as a `popover` placed under its button with anchor positioning. Tabs and menu items move with the arrow keys, Home, and End through `El::roving_focus`.
+
+The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 AA: a control's border has 3:1 contrast or more, secondary text keeps 4.5:1 on the muted fill, and focus is a solid outline, which forced-colors mode still draws. The [`ui`](examples/ui) example puts every component on one page, and its end-to-end test drives them with the keyboard and checks their roles and accessible names.
+
 ## Limitations
 
 In hypersig the server holds the state. What the browser can do on its own is the set of operations and statements hypersig provides, such as arithmetic on `i32` and `f64`, string and list operations, and focus. Anything else goes through a server action, so it responds a network round trip later.
@@ -168,10 +176,10 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo bench -p hypersig --bench render
 cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
-cd e2e && pnpm install && pnpm check && pnpm test   # starts the five examples and drives them in Chrome
+cd e2e && pnpm install && pnpm check && pnpm test   # starts the six examples and drives them in Chrome
 ```
 
-The browser runtime is TypeScript under `runtime/`, and `pnpm build` writes the prebuilt `crates/hypersig/assets/hypersig.js` (about 39 KB, about 14 KB gzipped) that the crate embeds. `AGENTS.md` describes the repository layout and the checks a change runs. The lint set and coding conventions follow Microsoft's [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/).
+The browser runtime is TypeScript under `runtime/`, and `pnpm build` writes the prebuilt `crates/hypersig/assets/hypersig.js` (about 40 KB, about 14 KB gzipped) that the crate embeds. `AGENTS.md` describes the repository layout and the checks a change runs. The lint set and coding conventions follow Microsoft's [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/).
 
 ## License
 

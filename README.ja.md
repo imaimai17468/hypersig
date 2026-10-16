@@ -151,6 +151,14 @@ assert!(page.render().contains("hover:color_crimson"));
 
 `margin: 0 auto`、影、`calc()` のように複数の部分からなる値は `raw(...)` を通し、ブラウザに検査なしで渡ります。負の幅のような、プロパティの範囲を外れた値も検査しません。既存のスタイルシートを読み込むページは、それをそのまま使えます。`Stylesheet::class("name")` は、そのクラスのセレクタがスタイルシートにあるかをコンパイル時に確かめます。
 
+## コンポーネント
+
+`hypersig_ui` クレートは、shadcn/ui の見た目を持ち、振る舞いをブラウザのネイティブ要素と WAI-ARIA Authoring Practices から取るコンポーネント集です。ボタン、テキストフィールド、チェックボックス、スイッチ、ラジオグループ、セレクト、タブ、アコーディオン、ダイアログ、メニューボタン、アラート、バッジ、カード、プログレスバーがあります。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を足せます。
+
+テキストフィールドのラベル、説明、エラーメッセージは、束縛するシグナルから作った id で入力欄に結び付きます。タブとパネルも同じ方法で結び付きます。ダイアログとメニューはシグナルを持たないので、ボタンと共有する `const` のハンドルから名前を取ります。id に使えない名前はコンパイルエラーになります。ダイアログはブラウザが invoker commands を通して `showModal()` で開き、メニューは `popover` として top layer に出て、anchor positioning でボタンの下に置かれます。タブとメニューの項目の間は、`El::roving_focus` を使って矢印キー、Home、End で移ります。
+
+色は shadcn/ui の zinc テーマに合わせ、WCAG 2.2 AA を満たすために 3 つの値を変えています。コントロールの境界線は 3:1 以上のコントラストを持ち、補足のテキストは muted の塗りの上でも 4.5:1 を保ち、フォーカスは forced-colors モードでも描かれる単色の outline です。例の [`ui`](examples/ui) は全コンポーネントを 1 ページに並べたもので、その E2E テストはキーボードで操作し、ロールとアクセシブルな名前を確かめます。
+
 ## 制限事項
 
 hypersig では、状態をサーバーが持ちます。ブラウザだけで完結するのは、hypersig が用意した演算と命令です。`i32` と `f64` の計算、文字列とリストの操作、フォーカスなどがこれに当たります。それ以外の処理はサーバーのアクションを通すので、通信の分だけ反応が遅れます。
@@ -168,10 +176,10 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo bench -p hypersig --bench render
 cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
-cd e2e && pnpm install && pnpm check && pnpm test   # 5 つの例を起動して Chrome で操作する
+cd e2e && pnpm install && pnpm check && pnpm test   # 6 つの例を起動して Chrome で操作する
 ```
 
-ブラウザ用のランタイムは `runtime/` にある TypeScript です。`pnpm build` がビルド済みの `crates/hypersig/assets/hypersig.js`（約 39 KB、gzip 後は約 14 KB）を書き出し、クレートはそれを埋め込みます。リポジトリの構成と、変更のたびに通す確認は `AGENTS.md` にあります。Lint の構成とコーディング規約は、Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っています。
+ブラウザ用のランタイムは `runtime/` にある TypeScript です。`pnpm build` がビルド済みの `crates/hypersig/assets/hypersig.js`（約 40 KB、gzip 後は約 14 KB）を書き出し、クレートはそれを埋め込みます。リポジトリの構成と、変更のたびに通す確認は `AGENTS.md` にあります。Lint の構成とコーディング規約は、Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っています。
 
 ## License
 
