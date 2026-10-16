@@ -15,17 +15,23 @@
 //! | [`TextField`] | `<label>`, `<input>` or `<textarea>`, `aria-describedby`, `aria-invalid`, a live error |
 //! | [`checkbox`], [`switch`] | `<input type="checkbox">`, the switch with `role="switch"` |
 //! | [`radio_group`] | `<fieldset>`, `<legend>`, and radios that share a name |
-//! | [`select_field`] | `<label>` and `<select>` |
+//! | [`select_field`] | `<label>` and `<select>`, with a `base-select` picker where supported |
+//! | [`Slider`] | `<input type="range">` over a drawn track and thumb |
+//! | [`Listbox`] | the listbox pattern, with roving focus |
+//! | [`Combobox`] | the combobox pattern with list autocomplete and `aria-activedescendant` |
 //! | [`Tabs`] | the tabs pattern, with roving focus |
 //! | [`Accordion`] | `<details>` and `<summary>` |
 //! | [`Dialog`] | `<dialog>` opened by invoker commands |
 //! | [`Menu`] | the menu button pattern on a `popover` |
+//! | [`Tooltip`] | the tooltip pattern on a `popover="hint"` |
+//! | [`Toaster`] | a landmark region holding an `aria-live` list |
 //! | [`progress`] | `role="progressbar"` |
 //!
 //! The ids that tie a label to its control, or a tab to its panel, are
-//! derived from the signal the component is bound to. A dialog and a menu
-//! have no signal, so they take a name in a `const` handle, as a
-//! [`NodeRef`](hypersig::NodeRef) does.
+//! derived from the signal the component is bound to. A dialog, a menu, a
+//! tooltip, and a combobox take names in a `const` handle, as a
+//! [`NodeRef`](hypersig::NodeRef) does, because the runtime or the browser
+//! finds their elements by id.
 //!
 //! ```
 //! use hypersig::{Page, Signals};
@@ -57,17 +63,22 @@ mod badge;
 mod button;
 mod card;
 mod choice;
+mod combobox;
 mod dialog;
 mod field;
 mod id;
+mod listbox;
 mod look;
 mod menu;
 mod progress;
 mod select;
 mod separator;
+mod slider;
 mod tabs;
 mod theme;
+mod toast;
 pub mod token;
+mod tooltip;
 
 pub use accordion::Accordion;
 pub use alert::{AlertVariant, alert, alert_description, alert_title};
@@ -75,11 +86,16 @@ pub use badge::{BadgeVariant, badge};
 pub use button::{ButtonSize, ButtonVariant, button, button_style, icon_button, submit_button};
 pub use card::{Level, card, card_content, card_description, card_footer, card_header, card_title};
 pub use choice::{checkbox, radio_group, switch};
+pub use combobox::{Combobox, ComboboxState};
 pub use dialog::{Dialog, dialog_footer};
 pub use field::{Autocomplete, InputKind, TextField};
+pub use listbox::Listbox;
 pub use menu::{Menu, MenuItem};
 pub use progress::{progress, skeleton};
 pub use select::select_field;
 pub use separator::separator;
+pub use slider::Slider;
 pub use tabs::Tabs;
 pub use theme::{dark, global, light, theme};
+pub use toast::{Toast, ToastVariant, Toaster};
+pub use tooltip::Tooltip;

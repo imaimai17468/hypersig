@@ -1,0 +1,19 @@
+error[E0080]: evaluation panicked: a combobox's field and list have different names
+  --> tests/ui/fail/combobox_same_names.rs:10:33
+   |
+10 | const COUNTRY: Combobox<Form> = Combobox::new("country", "country");
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `COUNTRY` failed inside this call
+   |
+note: inside `Combobox::<Form>::new`
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: src/combobox.rs
+   |
+   | /         assert!(
+   | |             !crate::id::same(field, list),
+   | |             "a combobox's field and list have different names"
+   | |         );
+   | |_________- in this macro invocation

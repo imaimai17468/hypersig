@@ -1,0 +1,24 @@
+error[E0080]: evaluation panicked: a component name is ASCII letters, digits, `-`, and `_`
+ --> tests/ui/fail/tooltip_name_with_dot.rs:8:31
+  |
+8 | const BOLD: Tooltip<Editor> = Tooltip::new("bold.tip");
+  |                               ^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `BOLD` failed inside this call
+  |
+note: inside `Tooltip::<Editor>::new`
+ --> src/tooltip.rs
+  |
+  |         check_name(name);
+  |         ^^^^^^^^^^^^^^^^
+note: inside `hypersig_ui::id::check_name`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/id.rs
+  |
+  | /         assert!(
+  | |             b.is_ascii_alphanumeric() || b == b'-' || b == b'_',
+  | |             "a component name is ASCII letters, digits, `-`, and `_`"
+  | |         );
+  | |_________- in this macro invocation
