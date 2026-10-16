@@ -90,45 +90,81 @@ impl Media {
 
 /// A width of the nearest query container a part of a style applies from.
 ///
-/// The widths are those of the breakpoints in [`Media`], measured on the
-/// container instead of the viewport. An ancestor becomes a query container
-/// with `container-type`, as `Style::new().container_type(ContainerType::InlineSize)`
-/// sets it. Without one, the condition never matches.
+/// The widths are the default container sizes of Panda CSS, from 16rem to
+/// 90rem. An ancestor becomes a query container with `container-type`, as
+/// `Style::new().container_type(ContainerType::InlineSize)` sets it. Without
+/// one, the condition never matches.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum Container {
-    /// From 40rem wide.
+    /// From 16rem wide, Panda CSS's `@/3xs`.
+    Xs3,
+    /// From 18rem wide, Panda CSS's `@/2xs`.
+    Xs2,
+    /// From 20rem wide, Panda CSS's `@/xs`.
+    Xs,
+    /// From 24rem wide, Panda CSS's `@/sm`.
     Sm,
-    /// From 48rem wide.
+    /// From 28rem wide, Panda CSS's `@/md`.
     Md,
-    /// From 64rem wide.
+    /// From 32rem wide, Panda CSS's `@/lg`.
     Lg,
-    /// From 80rem wide.
+    /// From 36rem wide, Panda CSS's `@/xl`.
     Xl,
-    /// From 96rem wide.
-    Xxl,
+    /// From 42rem wide, Panda CSS's `@/2xl`.
+    Xl2,
+    /// From 48rem wide, Panda CSS's `@/3xl`.
+    Xl3,
+    /// From 56rem wide, Panda CSS's `@/4xl`.
+    Xl4,
+    /// From 64rem wide, Panda CSS's `@/5xl`.
+    Xl5,
+    /// From 72rem wide, Panda CSS's `@/6xl`.
+    Xl6,
+    /// From 80rem wide, Panda CSS's `@/7xl`.
+    Xl7,
+    /// From 90rem wide, Panda CSS's `@/8xl`.
+    Xl8,
 }
 
 impl Container {
-    /// The name this condition contributes to a class name, after `@`.
+    /// The name this condition contributes to a class name.
     pub(crate) fn name(self) -> &'static str {
         match self {
+            Self::Xs3 => "@3xs",
+            Self::Xs2 => "@2xs",
+            Self::Xs => "@xs",
             Self::Sm => "@sm",
             Self::Md => "@md",
             Self::Lg => "@lg",
             Self::Xl => "@xl",
-            Self::Xxl => "@2xl",
+            Self::Xl2 => "@2xl",
+            Self::Xl3 => "@3xl",
+            Self::Xl4 => "@4xl",
+            Self::Xl5 => "@5xl",
+            Self::Xl6 => "@6xl",
+            Self::Xl7 => "@7xl",
+            Self::Xl8 => "@8xl",
         }
     }
 
     /// The container query, without `@container`.
     pub(crate) fn query(self) -> &'static str {
         match self {
-            Self::Sm => "(min-width: 40rem)",
-            Self::Md => "(min-width: 48rem)",
-            Self::Lg => "(min-width: 64rem)",
-            Self::Xl => "(min-width: 80rem)",
-            Self::Xxl => "(min-width: 96rem)",
+            Self::Xs3 => "(min-width: 16rem)",
+            Self::Xs2 => "(min-width: 18rem)",
+            Self::Xs => "(min-width: 20rem)",
+            Self::Sm => "(min-width: 24rem)",
+            Self::Md => "(min-width: 28rem)",
+            Self::Lg => "(min-width: 32rem)",
+            Self::Xl => "(min-width: 36rem)",
+            Self::Xl2 => "(min-width: 42rem)",
+            Self::Xl3 => "(min-width: 48rem)",
+            Self::Xl4 => "(min-width: 56rem)",
+            Self::Xl5 => "(min-width: 64rem)",
+            Self::Xl6 => "(min-width: 72rem)",
+            Self::Xl7 => "(min-width: 80rem)",
+            Self::Xl8 => "(min-width: 90rem)",
         }
     }
 }

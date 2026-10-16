@@ -210,7 +210,7 @@ impl Key {
         }
         key.push('-');
         for &c in &self.conditions.container {
-            let _ = write!(key, "{}", c as u8);
+            let _ = write!(key, "{:02}", c as u8);
         }
         key.push('-');
         for &(rank, p) in &self.conditions.group {
@@ -327,7 +327,7 @@ mod tests {
         let mut sheet = Sheet::new();
         sheet.add(
             &Style::new().width(pct(100)).on(
-                Container::Md,
+                Container::Xl3,
                 Style::new()
                     .width(pct(50))
                     .on(Media::Print, Style::new().width(pct(25))),
@@ -335,9 +335,11 @@ mod tests {
         );
         let css = css(&sheet);
         assert_eq!(css.len(), 3);
-        assert!(css[1].ends_with(r"{@container (min-width: 48rem){.\@md\:width_50\%{width:50%}}}"));
+        assert!(
+            css[1].ends_with(r"{@container (min-width: 48rem){.\@3xl\:width_50\%{width:50%}}}")
+        );
         assert!(css[2].ends_with(
-            r"{@media print{@container (min-width: 48rem){.print\:\@md\:width_25\%{width:25%}}}}"
+            r"{@media print{@container (min-width: 48rem){.print\:\@3xl\:width_25\%{width:25%}}}}"
         ));
     }
 
