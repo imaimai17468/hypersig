@@ -559,7 +559,7 @@ impl Key {
     }
 }
 
-/// The arrow keys that move focus inside an element marked with [`El::roving_focus`].
+/// A horizontal or vertical direction, which [`El::roving_focus`] reads as its arrow keys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Orientation {
