@@ -506,6 +506,19 @@ impl Data {
     }
 }
 
+/// The one pseudo-element with arguments that `PseudoElement` holds.
+///
+/// `::picker()` takes a form control, and `select` is the only one CSS
+/// defines, so it is written as `::picker(select)`. It styles the drop-down
+/// of a `<select>` whose `appearance` is `base-select`.
+const PICKER: &str = "::picker()";
+
+/// The name of a pseudo-class or pseudo-element as `camel` reads it, with
+/// the parentheses of `picker(select)` turned into word breaks.
+fn variant(name: &str) -> String {
+    name.replace(['(', ')'], "-")
+}
+
 fn camel(name: &str) -> String {
     let mut out = String::new();
     for part in name.split('-').filter(|p| !p.is_empty()) {
@@ -805,6 +818,10 @@ fn generate() -> (String, String) {
     let mut classes = Vec::new();
     let mut elements = Vec::new();
     for (name, value) in &selectors {
+        if name == PICKER {
+            elements.push("picker(select)".to_owned());
+            continue;
+        }
         if !is_standard(value) || name.ends_with(')') || name.starts_with("::-") {
             continue;
         }
@@ -825,17 +842,32 @@ fn generate() -> (String, String) {
         } else {
             "pseudo-element"
         };
-        let _ = writeln!(out, "/// A standard {what} without arguments.");
+        if prefix == ":" {
+            let _ = writeln!(out, "/// A standard {what} without arguments.");
+        } else {
+            let _ = writeln!(
+                out,
+                "/// A standard {what} without arguments, and `::picker(select)`."
+            );
+        }
         out.push_str("#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\n");
         let _ = writeln!(out, "#[non_exhaustive]\npub enum {ty} {{");
         for name in names {
-            let _ = writeln!(out, "    /// `{prefix}{name}`.\n    {},", camel(name));
+            let _ = writeln!(
+                out,
+                "    /// `{prefix}{name}`.\n    {},",
+                camel(&variant(name))
+            );
         }
         let _ = writeln!(out, "}}\n\nimpl {ty} {{");
         out.push_str("    /// The name without its colons.\n    #[must_use]\n");
         out.push_str("    pub fn name(self) -> &'static str {\n        match self {\n");
         for name in names {
-            let _ = writeln!(out, "            Self::{} => \"{name}\",", camel(name));
+            let _ = writeln!(
+                out,
+                "            Self::{} => \"{name}\",",
+                camel(&variant(name))
+            );
         }
         out.push_str("        }\n    }\n}\n\n");
     }

@@ -428,6 +428,19 @@ mod tests {
     }
 
     #[test]
+    fn escapes_the_parentheses_of_the_select_picker() {
+        let style =
+            Style::new().pseudo(PseudoElement::PickerSelect, Style::new().color(Color::RED));
+        let mut sheet = Sheet::new();
+        sheet.add(&style);
+        assert!(
+            sheet
+                .to_css()
+                .contains(".picker\\(select\\)\\:color_red::picker(select){color:red}")
+        );
+    }
+
+    #[test]
     fn a_later_value_replaces_an_earlier_one() {
         let style = Style::new()
             .color(Color::RED)

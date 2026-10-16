@@ -5692,7 +5692,7 @@ impl PseudoClass {
     }
 }
 
-/// A standard pseudo-element without arguments.
+/// A standard pseudo-element without arguments, and `::picker(select)`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum PseudoElement {
@@ -5718,6 +5718,8 @@ pub enum PseudoElement {
     GrammarError,
     /// `::marker`.
     Marker,
+    /// `::picker(select)`.
+    PickerSelect,
     /// `::picker-icon`.
     PickerIcon,
     /// `::placeholder`.
@@ -5748,6 +5750,7 @@ impl PseudoElement {
             Self::FirstLine => "first-line",
             Self::GrammarError => "grammar-error",
             Self::Marker => "marker",
+            Self::PickerSelect => "picker(select)",
             Self::PickerIcon => "picker-icon",
             Self::Placeholder => "placeholder",
             Self::Selection => "selection",
