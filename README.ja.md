@@ -147,7 +147,7 @@ let page = Page::new("Cart", Cart { busy: false })
 assert!(page.render().contains("hover:color_crimson"));
 ```
 
-`css_when` はシグナルでスタイルを切り替え、`css_match` はシグナルの値ごとにスタイルを選びます（Panda CSS の recipe の variants に当たります）。条件には、擬似クラスと擬似要素、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態（`group` と `peer`）を使えます。`hypersig::style` には、ページのテーマと組み合わせるデザイントークン、`stack` や `grid` のようなレイアウトのパターン、タグごとの要素へのルールと小さなリセット、`@font-face`、`@keyframes` もあります。例の [`todomvc`](examples/todomvc) はこれらだけで書いてあり、Chrome で撮ったスクリーンショットは、以前のスタイルシートで撮ったものとバイト単位で一致しました。
+`css_when` はシグナルでスタイルを切り替え、`css_match` はシグナルの値ごとにスタイルを選びます（Panda CSS の recipe の variants に当たります）。条件には、擬似クラスと擬似要素、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態（`group` と `peer`）を使えます。`hypersig::style` には、ページのテーマと組み合わせるデザイントークン、`stack` や `grid` のようなレイアウトのパターン、タグごとの要素へのルールと小さなリセット、`@font-face`、`@keyframes` もあります。例の [`style`](examples/style) は、これらを 1 ページに並べたものです。例の [`todomvc`](examples/todomvc) はこれらだけで書いてあり、Chrome で撮ったスクリーンショットは、以前のスタイルシートで撮ったものとバイト単位で一致しました。
 
 `margin: 0 auto`、影、`calc()` のように複数の部分からなる値は `raw(...)` を通し、ブラウザに検査なしで渡ります。負の幅のような、プロパティの範囲を外れた値も検査しません。既存のスタイルシートを読み込むページは、それをそのまま使えます。`Stylesheet::class("name")` は、そのクラスのセレクタがスタイルシートにあるかをコンパイル時に確かめます。
 
@@ -168,7 +168,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo bench -p hypersig --bench render
 cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
-cd e2e && pnpm install && pnpm check && pnpm test   # 4 つの例を起動して Chrome で操作する
+cd e2e && pnpm install && pnpm check && pnpm test   # 5 つの例を起動して Chrome で操作する
 ```
 
 ブラウザ用のランタイムは `runtime/` にある TypeScript です。`pnpm build` がビルド済みの `crates/hypersig/assets/hypersig.js`（約 39 KB、gzip 後は約 14 KB）を書き出し、クレートはそれを埋め込みます。リポジトリの構成と、変更のたびに通す確認は `AGENTS.md` にあります。Lint の構成とコーディング規約は、Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っています。

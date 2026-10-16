@@ -147,7 +147,7 @@ let page = Page::new("Cart", Cart { busy: false })
 assert!(page.render().contains("hover:color_crimson"));
 ```
 
-`css_when` switches a style with a signal, and `css_match` picks one per value of a signal, the variants of a Panda CSS recipe. Conditions cover pseudo-classes and pseudo-elements, media features, container sizes, and the state of a marked ancestor or sibling (`group` and `peer`). `hypersig::style` also has design tokens with a page theme, layout patterns such as `stack` and `grid`, rules for elements by tag with a small reset, `@font-face`, and `@keyframes`. The [`todomvc`](examples/todomvc) example is written with them alone, and a Chrome screenshot of it matched, byte for byte, one taken with the stylesheet it had before.
+`css_when` switches a style with a signal, and `css_match` picks one per value of a signal, the variants of a Panda CSS recipe. Conditions cover pseudo-classes and pseudo-elements, media features, container sizes, and the state of a marked ancestor or sibling (`group` and `peer`). `hypersig::style` also has design tokens with a page theme, layout patterns such as `stack` and `grid`, rules for elements by tag with a small reset, `@font-face`, and `@keyframes`. The [`style`](examples/style) example puts each of them on one page. The [`todomvc`](examples/todomvc) example is written with them alone, and a Chrome screenshot of it matched, byte for byte, one taken with the stylesheet it had before.
 
 A value with several parts, such as `margin: 0 auto`, a shadow, or a `calc()`, goes through `raw(...)`, which is passed to the browser unchecked, and so is a value outside a property's range, such as a negative width. A page that loads an existing stylesheet keeps it: `Stylesheet::class("name")` checks at compile time that the stylesheet has a selector for the class.
 
@@ -168,7 +168,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo bench -p hypersig --bench render
 cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
-cd e2e && pnpm install && pnpm check && pnpm test   # starts the four examples and drives them in Chrome
+cd e2e && pnpm install && pnpm check && pnpm test   # starts the five examples and drives them in Chrome
 ```
 
 The browser runtime is TypeScript under `runtime/`, and `pnpm build` writes the prebuilt `crates/hypersig/assets/hypersig.js` (about 39 KB, about 14 KB gzipped) that the crate embeds. `AGENTS.md` describes the repository layout and the checks a change runs. The lint set and coding conventions follow Microsoft's [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/).
