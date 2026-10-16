@@ -151,6 +151,12 @@ export class Store {
     return getPath(this.#values, path);
   }
 
+  /** The value at `path`, recorded as a read of `read`, the name the caller tracks it under. */
+  getAs(path: string, read: string): unknown {
+    this.#reads?.set(read, true);
+    return getPath(this.#values, path);
+  }
+
   /** Records a read of the position of the list item at `path`, for `index`. */
   getPosition(path: string): void {
     this.#reads?.set(positionOf(path), true);
@@ -163,7 +169,12 @@ export class Store {
    * and through its per-item reads when an item it looked at changes.
    */
   getShallow(path: string): unknown {
-    if (this.#reads !== null && !this.#reads.has(path)) this.#reads.set(path, false);
+    return this.getShallowAs(path, path);
+  }
+
+  /** `getShallow(path)`, recorded as a read of `read`. */
+  getShallowAs(path: string, read: string): unknown {
+    if (this.#reads !== null && !this.#reads.has(read)) this.#reads.set(read, false);
     return getPath(this.#values, path);
   }
 

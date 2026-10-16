@@ -1,4 +1,4 @@
-import { type Context, evaluate, type Host, resolve, run, type Slot } from "./eval.ts";
+import { type Context, evaluate, type Host, resolve, resolveRead, run, type Slot } from "./eval.ts";
 import { morph } from "./morph.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
 import { DepIndex, type Effect, type Selector } from "./deps.ts";
@@ -47,6 +47,8 @@ interface Instance {
   key: string;
   /** What evaluating this item's key read, recorded again when the key is not reevaluated. */
   keyReads: Reads;
+  /** The name the key's reads of this item were recorded under: its path, or for a nested list a name below the enclosing item's. */
+  at: string;
   /**
    * Whether the key read nothing but the item's own fields, so another item
    * with the same value has the same key wherever it sits.
@@ -103,10 +105,16 @@ export class Runtime implements Host {
   #changes: Changes = new Map();
   /** The selector the binding being run recorded through `#compare`. */
   #selector: Selector | null = null;
-  /** `#changes` indexed for `#rebase`, built the first time a render needs it. */
-  #lookup: ChangeLookup | null = null;
   #nextId = 0;
   readonly #lists = new WeakMap<Element, Map<string, Instance>>();
+  /**
+   * The slots of the rendered list items at each store path: one, or one per
+   * list where several lists show the same signal. The bindings of an item
+   * record their reads under its slot's name, so a change written at the
+   * item's path is looked up here to reach them.
+   */
+  readonly #slots = new Map<string, Slot | Slot[]>();
+  #nextSlot = 0;
   readonly #mounted = new WeakMap<Element, Element>();
   readonly #timers = new WeakMap<Element, Map<string, ReturnType<typeof setTimeout>>>();
   /**
@@ -389,7 +397,7 @@ export class Runtime implements Host {
     for (const [place, stmt] of spec.watches) {
       let first = true;
       add(() => {
-        this.store.get(resolve(place, ctx));
+        this.store.getAs(resolve(place, ctx), resolveRead(place, ctx));
         if (!first) this.#run(stmt, ctx);
         first = false;
       });
@@ -406,13 +414,14 @@ export class Runtime implements Host {
   #renderList(template: HTMLTemplateElement, proto: Element | null, place: unknown, depth: number, scope: readonly Slot[]): void {
     const parent = template.parentNode;
     if (proto === null || parent === null) return;
-    const path = resolve(place, { store: this.store, scope });
-    const value = this.store.getShallow(path);
+    const listCtx: Context = { store: this.store, scope };
+    const path = resolve(place, listCtx);
+    const read = resolveRead(place, listCtx);
+    const value = this.store.getShallowAs(path, read);
     const items = Array.isArray(value) ? value : [];
     const keyAst = parse(proto.getAttribute("data-hs-key"));
     const known = this.#lists.get(template);
     const created = new Set<Instance>();
-    const itemScope = (itemPath: string): Slot[] => [...scope.slice(0, depth), { path: itemPath }];
     /** The previous items by position and, built on first use, by value, to find one whose key holds for a value. */
     let placed: Instance[] | null = null;
     let byValue: Map<unknown, Instance> | null = null;
@@ -433,6 +442,7 @@ export class Runtime implements Host {
     let matched = "";
     const match = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>): Instance => {
       const itemPath = join(path, String(index));
+      const itemAt = read === path ? itemPath : join(read, String(index));
       let key = `#${index}`;
       let keyReads: Reads = new Map();
       let local = false;
@@ -440,14 +450,15 @@ export class Runtime implements Host {
         const same = sameValue(previous, index);
         if (same !== undefined) {
           key = same.key;
-          keyReads = same.slot.path === itemPath ? same.keyReads : rebased(same.keyReads, same.slot.path, itemPath);
+          keyReads = same.at === itemAt ? same.keyReads : rebased(same.keyReads, same.at, itemAt);
           local = true;
         } else {
-          const slot = itemPath;
+          // The key reads the item by its path, or by a name below the enclosing item's, so the list reruns when they change.
+          const keySlot: Slot = itemAt === itemPath ? { path: itemPath } : { path: itemPath, read: itemAt };
           keyReads = this.store.track(() => {
-            key = JSON.stringify(evaluate(keyAst, { store: this.store, scope: itemScope(slot) }));
+            key = JSON.stringify(evaluate(keyAst, { store: this.store, scope: [...scope.slice(0, depth), keySlot] }));
           });
-          local = [...keyReads.keys()].every((read) => read !== positionOf(slot) && (read === slot || read.startsWith(`${slot}.`)));
+          local = [...keyReads.keys()].every((at) => at !== positionOf(itemAt) && (at === itemAt || at.startsWith(`${itemAt}.`)));
         }
         this.store.replay(keyReads);
       }
@@ -458,18 +469,28 @@ export class Runtime implements Host {
       }
       let instance = previous.get(key);
       if (instance === undefined || !instance.element.isConnected) {
-        instance = { element: proto.cloneNode(true) as Element, slot: { path: itemPath }, scanned: true, key: raw, keyReads, local, value: items[index] };
+        const slot: Slot = { path: itemPath, read: `@${this.#nextSlot++}` };
+        this.#file(itemPath, slot);
+        instance = { element: proto.cloneNode(true) as Element, slot, scanned: true, key: raw, keyReads, at: itemAt, local, value: items[index] };
         state(instance.element).root = true;
         created.add(instance);
       } else {
         instance.key = raw;
         instance.keyReads = keyReads;
+        instance.at = itemAt;
         instance.local = local;
+        const changed = !Object.is(instance.value, items[index]);
+        const name = instance.slot.read!;
         if (instance.slot.path !== itemPath) {
           const from = instance.slot.path;
-          instance.slot.path = itemPath;
-          if (instance.scanned && Object.is(instance.value, items[index])) this.#rebase(instance.element, from, itemPath);
-          else if (instance.scanned) this.#requeue(instance.element);
+          this.#place(instance.slot, itemPath);
+          if (instance.scanned) {
+            this.#relocate(instance.element, from, itemPath);
+            if (changed) this.#index.within(name, this.#again);
+            else this.#index.at(positionOf(name), this.#again);
+          }
+        } else if (changed && instance.scanned) {
+          this.#index.within(name, this.#again);
         }
         instance.value = items[index];
       }
@@ -520,7 +541,7 @@ export class Runtime implements Host {
         next.set(keys[index]!, instance);
         if (!touched.has(index)) this.store.replay(instance.keyReads);
       });
-      for (const index of at) if (next.get(wasKeys[index]!) !== was[index]) this.#unmount(was[index]!.element);
+      for (const index of at) if (next.get(wasKeys[index]!) !== was[index]) this.#unmountItem(was[index]!);
       for (let i = at.length - 1; i >= 0; i--) {
         const index = at[i]!;
         const element = order[index]!.element;
@@ -536,7 +557,7 @@ export class Runtime implements Host {
     const next = new Map<string, Instance>();
     const order = items.map((_, index) => match(index, previous, next));
     for (const [key, instance] of previous) {
-      if (next.get(key) !== instance) this.#unmount(instance.element);
+      if (next.get(key) !== instance) this.#unmountItem(instance);
     }
     arrange(parent, template, previous, order);
     register(order);
@@ -599,7 +620,8 @@ export class Runtime implements Host {
       if (own(at)?.root === true) break;
       state(at).root = true;
       const key = at.getAttribute("data-hs-ssr")!;
-      adopted.set(key, { element: at, slot: { path: "" }, scanned: false, key, keyReads: new Map(), local: false, value: undefined });
+      const slot: Slot = { path: "", read: `@${this.#nextSlot++}` };
+      adopted.set(key, { element: at, slot, scanned: false, key, keyReads: new Map(), at: "", local: false, value: undefined });
     }
     return adopted;
   }
@@ -631,7 +653,7 @@ export class Runtime implements Host {
   }
 
   #writeControl(element: Element, [place, kind, choice]: Bind, ctx: Context): void {
-    const current = this.store.get(resolve(place, ctx));
+    const current = this.store.getAs(resolve(place, ctx), resolveRead(place, ctx));
     if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement)) return;
     switch (kind) {
       case "bool":
@@ -689,11 +711,11 @@ export class Runtime implements Host {
   #render(changes: Changes): void {
     this.#ran = new Set();
     this.#changes = changes;
-    this.#lookup = null;
-    const found = this.#index.affected(changes);
+    const found = this.#index.affected(this.#named(changes));
     if (changes.size > 0) {
+      let lookup: ChangeLookup | null = null;
       this.#index.selected(
-        (path) => (this.#lookup ??= new ChangeLookup(changes)).affects(path, true),
+        (path) => (lookup ??= new ChangeLookup(changes)).affects(path, true),
         (path) => keyOf(this.store.untracked(() => this.store.get(path))),
         found,
       );
@@ -705,11 +727,9 @@ export class Runtime implements Host {
       this.#fresh = [];
       for (const effect of batch) this.#runEffect(effect);
     }
-    this.#index.prune();
     // The bindings that ran hold their elements, which may have left the document.
     this.#ran = new Set();
     this.#changes = new Map();
-    this.#lookup = null;
   }
 
   #runEffect(effect: Effect): void {
@@ -752,53 +772,84 @@ export class Runtime implements Host {
     return equal(current, value);
   }
 
-  /** Reruns the bindings inside `root`, whose item now sits at a different path. */
-  #requeue(root: Element): void {
-    this.#visit(root, (element) => {
-      for (const effect of own(element)?.effects ?? []) {
-        this.#ran.delete(effect);
-        this.#fresh.push(effect);
+  /**
+   * `changes` with each change written inside a rendered list item added
+   * again under the item's slot name, where the bindings inside the item
+   * recorded their reads. A change under a list that `changes` replaces is
+   * left to that list, which compares its items when it renders.
+   */
+  #named(changes: Changes): Changes {
+    if (this.#slots.size === 0) return changes;
+    let named: Map<string, boolean> | null = null;
+    for (const [path, inside] of changes) {
+      for (let dot = path.indexOf("."); ; dot = path.indexOf(".", dot + 1)) {
+        const prefix = dot === -1 ? path : path.slice(0, dot);
+        const filed = this.#slots.get(prefix);
+        if (filed !== undefined) {
+          if (changes.has(prefix.slice(0, prefix.lastIndexOf(".")))) break;
+          named ??= new Map(changes);
+          for (const slot of Array.isArray(filed) ? filed : [filed]) {
+            const name = slot.read! + path.slice(prefix.length);
+            named.set(name, named.get(name) === true || inside);
+          }
+        }
+        if (dot === -1) break;
       }
-    });
+    }
+    return named ?? changes;
   }
 
-  /**
-   * Moves the reads of the bindings inside `root` from the item path `from`
-   * to `to`, for an item whose value moved there unchanged, so they do not
-   * run again. A binding still runs again where it read the item's position
-   * or where `changes` reach something else it read or the path its selector compares.
-   */
-  #rebase(root: Element, from: string, to: string): void {
+  /** Queues `effect` to run again in this render. */
+  readonly #again = (effect: Effect): void => {
+    this.#ran.delete(effect);
+    this.#fresh.push(effect);
+  };
+
+  /** Files `slot` under `path`, where its item now sits. */
+  #place(slot: Slot, path: string): void {
+    this.#unfile(slot);
+    slot.path = path;
+    this.#file(path, slot);
+  }
+
+  #file(path: string, slot: Slot): void {
+    const filed = this.#slots.get(path);
+    if (filed === undefined) this.#slots.set(path, slot);
+    else if (Array.isArray(filed)) filed.push(slot);
+    else if (filed !== slot) this.#slots.set(path, [filed, slot]);
+  }
+
+  /** Takes `slot` out of `#slots`, where it is filed under its path. */
+  #unfile(slot: Slot): void {
+    const filed = this.#slots.get(slot.path);
+    if (filed === slot) {
+      this.#slots.delete(slot.path);
+    } else if (Array.isArray(filed)) {
+      const rest = filed.filter((other) => other !== slot);
+      if (rest.length === 0) this.#slots.delete(slot.path);
+      else this.#slots.set(slot.path, rest.length === 1 ? rest[0]! : rest);
+    }
+  }
+
+  /** Gives the items of the lists inside `root`, whose item moved from `from` to `to`, their new paths. */
+  #relocate(root: Element, from: string, to: string): void {
     const prefix = `${from}.`;
-    const inside = (path: string): boolean => path === from || path.startsWith(prefix);
-    const move = (path: string): string => (inside(path) ? to + path.slice(from.length) : path);
-    const position = positionOf(from);
-    this.#lookup ??= new ChangeLookup(this.#changes);
-    const lookup = this.#lookup;
     for (const element of own(root)?.members ?? []) {
-      for (const effect of own(element)?.effects ?? []) {
-        if (effect.deps === null) continue;
-        let rerun = effect.selector !== null && lookup.affects(effect.selector.path, true);
-        for (const [path, deep] of effect.deps) {
-          if (inside(path) ? path === position : lookup.affects(path, deep)) rerun = true;
-        }
-        this.#index.move(effect, move);
-        if (rerun) {
-          this.#ran.delete(effect);
-          this.#fresh.push(effect);
-        } else {
-          this.#ran.add(effect);
-        }
-      }
       if (!(element instanceof HTMLTemplateElement)) continue;
       for (const instance of this.#lists.get(element)?.values() ?? []) {
-        instance.slot.path = move(instance.slot.path);
-        instance.keyReads = new Map([...instance.keyReads].map(([path, deep]) => [move(path), deep]));
-        this.#rebase(instance.element, from, to);
+        if (!instance.slot.path.startsWith(prefix)) continue;
+        this.#place(instance.slot, to + instance.slot.path.slice(from.length));
+        this.#relocate(instance.element, from, to);
       }
       const mounted = this.#mounted.get(element);
-      if (mounted !== undefined) this.#rebase(mounted, from, to);
+      if (mounted !== undefined) this.#relocate(mounted, from, to);
     }
+  }
+
+  /** Removes a list item, and its slot from `#slots`. */
+  #unmountItem(instance: Instance): void {
+    this.#unfile(instance.slot);
+    this.#unmount(instance.element);
   }
 
   /** Removes `root` from the document, and the bindings inside it after the next paint. */
@@ -825,7 +876,21 @@ export class Runtime implements Host {
       for (const effect of bound?.effects ?? []) this.#index.remove(effect);
       if (bound !== undefined) delete bound.effects;
     };
-    for (const root of this.#removed) this.#visit(root, forget);
+    const unfile = (root: Element): void => {
+      for (const element of own(root)?.members ?? []) {
+        if (!(element instanceof HTMLTemplateElement)) continue;
+        for (const instance of this.#lists.get(element)?.values() ?? []) {
+          this.#unfile(instance.slot);
+          unfile(instance.element);
+        }
+        const mounted = this.#mounted.get(element);
+        if (mounted !== undefined) unfile(mounted);
+      }
+    };
+    for (const root of this.#removed) {
+      this.#visit(root, forget);
+      unfile(root);
+    }
     this.#removed = [];
     for (const effect of this.#stale) if (!effect.element.isConnected) forget(effect.element);
     this.#stale = new Set();
@@ -1099,7 +1164,7 @@ function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, 
   }
 }
 
-/** `reads`, made by the item at `from`, as the item at `to` would have made them. */
+/** `reads`, made by a key that read the item under the name `from`, as if it had read it under `to`. */
 function rebased(reads: Reads, from: string, to: string): Reads {
   const moved: Reads = new Map();
   for (const [path, deep] of reads) moved.set(to + path.slice(from.length), deep);
@@ -1166,7 +1231,7 @@ function replaced(changes: Changes, path: string, known: ReadonlyMap<string, Ins
 /**
  * Whether the items of `known` are in the document, each at the path of its
  * position in the list at `path`. Only the first and the last path are
- * compared, because `#renderList` and `#rebase` give the items of one list
+ * compared, because `#renderList` and `#relocate` give the items of one list
  * their paths together, so they agree with each other.
  */
 function inPlace(path: string, known: ReadonlyMap<string, Instance>): boolean {

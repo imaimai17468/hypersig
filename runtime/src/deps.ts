@@ -54,8 +54,6 @@ export class DepIndex {
   /** The node at each path that has one, so registering a read does not walk the tree. */
   readonly #nodes = new Map<string, PathNode>();
   readonly #selections = new Map<string, Selection>();
-  /** Nodes `move` took a binding off, dropped by `prune` if they still hold nothing, so the next item to move there finds them. */
-  #vacated = new Set<PathNode>();
 
   /** Replaces what `effect` is registered under with `reads`, touching only the reads that differ. */
   set(effect: Effect, reads: Reads): void {
@@ -79,30 +77,17 @@ export class DepIndex {
     }
   }
 
-  /** Registers the reads of `effect` under the paths `move` maps them to, as if it had read those. */
-  move(effect: Effect, move: (path: string) => string): void {
-    const old = effect.deps;
-    if (old === null) return;
-    const reads: Reads = new Map();
-    const nodes = new Map<string, PathNode>();
-    for (const [path, deep] of old) {
-      const to = move(path);
-      reads.set(to, deep);
-      let node = effect.nodes.get(path);
-      if (to !== path || node === undefined) {
-        const next = this.#node(to);
-        enter(next, effect, deep);
-        if (node !== undefined) {
-          node.deep?.delete(effect);
-          node.shallow?.delete(effect);
-          this.#vacated.add(node);
-        }
-        node = next;
-      }
-      nodes.set(to, node);
-    }
-    effect.deps = reads;
-    effect.nodes = nodes;
+  /** Calls `found` with each binding that read `path` or a path below it. */
+  within(path: string, found: (effect: Effect) => void): void {
+    const node = this.#nodes.get(path);
+    if (node !== undefined) visit(node, found);
+  }
+
+  /** Calls `found` with each binding that read exactly `path`. */
+  at(path: string, found: (effect: Effect) => void): void {
+    const node = this.#nodes.get(path);
+    for (const effect of node?.deep ?? []) found(effect);
+    for (const effect of node?.shallow ?? []) found(effect);
   }
 
   remove(effect: Effect): void {
@@ -168,12 +153,6 @@ export class DepIndex {
     return node;
   }
 
-  /** Drops the nodes `move` left holding nothing. */
-  prune(): void {
-    for (const node of this.#vacated) this.#drop(node);
-    this.#vacated = new Set();
-  }
-
   /** Takes `effect` off `node`, and drops the nodes that are left holding nothing. */
   #leave(node: PathNode, effect: Effect): void {
     node.deep?.delete(effect);
@@ -215,9 +194,13 @@ export class DepIndex {
 }
 
 function collect(node: PathNode, found: Set<Effect>): void {
-  for (const effect of node.deep ?? []) found.add(effect);
-  for (const effect of node.shallow ?? []) found.add(effect);
-  for (const child of node.children?.values() ?? []) collect(child, found);
+  visit(node, (effect) => found.add(effect));
+}
+
+function visit(node: PathNode, found: (effect: Effect) => void): void {
+  for (const effect of node.deep ?? []) found(effect);
+  for (const effect of node.shallow ?? []) found(effect);
+  for (const child of node.children?.values() ?? []) visit(child, found);
 }
 
 function enter(node: PathNode, effect: Effect, deep: boolean): void {

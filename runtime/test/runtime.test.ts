@@ -10,6 +10,23 @@ function mount(html: string, signals: Record<string, unknown>): Runtime {
   return new Runtime(root, signals);
 }
 
+/** The store paths `runtime` reads from now on, whatever name it records each read under. */
+function spyReads(runtime: Runtime): string[] {
+  const reads: string[] = [];
+  const { store } = runtime;
+  const get = store.get.bind(store);
+  const getAs = store.getAs.bind(store);
+  store.get = (path: string) => {
+    reads.push(path);
+    return get(path);
+  };
+  store.getAs = (path: string, read: string) => {
+    reads.push(path);
+    return getAs(path, read);
+  };
+  return reads;
+}
+
 function sseResponse(body: string): Response {
   return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
 }
@@ -28,12 +45,8 @@ describe("Runtime", () => {
     await tick();
     const on = () => [...document.querySelectorAll("#l li")].map((li) => li.classList.contains("on"));
     expect(on()).toEqual([false, true, false, false]);
-    const reads: string[] = [];
     const get = runtime.store.get.bind(runtime.store);
-    runtime.store.get = (path: string) => {
-      reads.push(path);
-      return get(path);
-    };
+    const reads = spyReads(runtime);
     runtime.store.set("selected", 4);
     await tick();
     expect(on()).toEqual([false, false, false, true]);
@@ -53,7 +66,7 @@ describe("Runtime", () => {
     expect(on()).toEqual([false, true, false]);
   });
 
-  it("moves the reads of items that shift unchanged, and reruns the bindings that read their position", async () => {
+  it("keeps the bindings of items that shift unchanged, and reruns the bindings that read their position", async () => {
     const runtime = mount(
       `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
         `<b data-hs-text='["str",["index",0]]'></b><i data-hs-text='["item",0,"label"]'></i>` +
@@ -62,12 +75,8 @@ describe("Runtime", () => {
     );
     await tick();
     const [first, ...rest] = [...document.querySelectorAll("#l li")];
-    const reads: string[] = [];
     const get = runtime.store.get.bind(runtime.store);
-    runtime.store.get = (path: string) => {
-      reads.push(path);
-      return get(path);
-    };
+    const reads = spyReads(runtime);
     runtime.store.set("rows", (get("rows") as unknown[]).slice(1));
     await tick();
     expect([...document.querySelectorAll("#l li")]).toEqual(rest);
@@ -152,6 +161,59 @@ describe("Runtime", () => {
     runtime.store.set("rows.0.label", "first");
     await tick();
     expect(items()[0]!.textContent).toBe("first");
+  });
+
+  it("reaches the bindings of an item that moved through a write at its new path", async () => {
+    const runtime = mount(
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
+        `<b data-hs-text='["item",0,"label"]'></b><input type="checkbox" data-hs-bind='[["item",0,"done"],"bool"]'>` +
+        `<ol><template data-hs-each='[["item",0,"tags"],1]'><i data-hs-key='["item",1,"id"]' data-hs-text='["item",1,"name"]'></i></template></ol>` +
+        `</li></template></ul>`,
+      {
+        rows: [1, 2, 3].map((id) => ({ id, label: `r${id}`, done: false, tags: [{ id: 1, name: `t${id}` }, { id: 2, name: `u${id}` }] })),
+      },
+    );
+    await tick();
+    const items = () => [...document.querySelectorAll("#l > li")];
+    const [, second, third] = items();
+    runtime.store.set("rows", (runtime.store.get("rows") as unknown[]).slice(1));
+    await tick();
+    expect(items()).toEqual([second, third]);
+
+    runtime.store.set("rows.0.label", "x");
+    runtime.store.set("rows.1.done", true);
+    runtime.store.set("rows.1.tags.1.name", "y");
+    await tick();
+    expect(second!.querySelector("b")!.textContent).toBe("x");
+    expect(third!.querySelector("b")!.textContent).toBe("r3");
+    expect((third!.querySelector("input") as HTMLInputElement).checked).toBe(true);
+    expect((second!.querySelector("input") as HTMLInputElement).checked).toBe(false);
+    expect([...third!.querySelectorAll("i")].map((i) => i.textContent)).toEqual(["t3", "y"]);
+    expect([...second!.querySelectorAll("i")].map((i) => i.textContent)).toEqual(["t2", "u2"]);
+
+    runtime.store.set("rows.1.tags", [{ id: 2, name: "y" }]);
+    await tick();
+    expect([...third!.querySelectorAll("i")].map((i) => i.textContent)).toEqual(["y"]);
+    runtime.store.set("rows", [...(runtime.store.get("rows") as unknown[])].reverse());
+    await tick();
+    runtime.store.set("rows.0.tags.0.name", "z");
+    await tick();
+    expect(items()).toEqual([third, second]);
+    expect([...third!.querySelectorAll("i")].map((i) => i.textContent)).toEqual(["z"]);
+  });
+
+  it("reaches the items of every list over one signal through a write at an item's path", async () => {
+    const list = (id: string) =>
+      `<ul id="${id}"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></li></template></ul>`;
+    const runtime = mount(list("a") + list("b"), { rows: [1, 2, 3].map((id) => ({ id, label: `r${id}` })) });
+    await tick();
+    const labels = (id: string) => [...document.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
+    runtime.store.set("rows", (runtime.store.get("rows") as unknown[]).slice(1));
+    await tick();
+    runtime.store.set("rows.0.label", "x");
+    await tick();
+    expect(labels("a")).toEqual(["x", "r3"]);
+    expect(labels("b")).toEqual(["x", "r3"]);
   });
 
   it("forgets the bindings inside a removed condition after the next frame", async () => {

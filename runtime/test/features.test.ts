@@ -17,6 +17,23 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 const $ = <E extends Element = HTMLElement>(selector: string) => document.querySelector<E>(selector)!;
 const $$ = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)];
 
+/** The store paths `runtime` reads from now on, whatever name it records each read under. */
+function spyReads(runtime: Runtime): string[] {
+  const reads: string[] = [];
+  const { store } = runtime;
+  const get = store.get.bind(store);
+  const getAs = store.getAs.bind(store);
+  store.get = (path: string) => {
+    reads.push(path);
+    return get(path);
+  };
+  store.getAs = (path: string, read: string) => {
+    reads.push(path);
+    return getAs(path, read);
+  };
+  return reads;
+}
+
 function type(input: HTMLInputElement | HTMLSelectElement, value: string, event = "input"): void {
   input.value = value;
   input.dispatchEvent(new Event(event, { bubbles: true }));
@@ -282,12 +299,8 @@ describe("dependency tracking", () => {
       { id: 2, title: "b", done: false },
     ]);
     await tick();
-    const reads: string[] = [];
     const get = runtime.store.get.bind(runtime.store);
-    runtime.store.get = (path: string) => {
-      reads.push(path);
-      return get(path);
-    };
+    const reads = spyReads(runtime);
     $$("#list li input[type=checkbox]")[1]!.click();
     await tick();
     expect(runtime.store.get("todos.1.done")).toBe(true);
@@ -311,12 +324,8 @@ describe("dependency tracking", () => {
       { id: 2, title: "b", done: false },
     ]);
     await tick();
-    const reads: string[] = [];
     const get = runtime.store.get.bind(runtime.store);
-    runtime.store.get = (path: string) => {
-      reads.push(path);
-      return get(path);
-    };
+    const reads = spyReads(runtime);
     runtime.store.set("todos", [...(get("todos") as unknown[]), { id: 3, title: "c", done: false }]);
     await tick();
     expect($$("#list li label").map((label) => label.textContent)).toEqual(["a", "b", "c"]);

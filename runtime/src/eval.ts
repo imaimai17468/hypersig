@@ -9,6 +9,12 @@ export type Ast = readonly unknown[];
 /** The store path of one list item, updated in place when the item moves. */
 export interface Slot {
   path: string;
+  /**
+   * The name that reads through this slot are recorded under, where it is not
+   * `path`. The runtime gives each list item it renders a name of its own, so
+   * the reads of the item's bindings stay valid when the item moves.
+   */
+  read?: string;
 }
 
 /** What an expression is evaluated against: the store, and one slot per enclosing list. */
@@ -86,18 +92,40 @@ export function resolve(place: unknown, ctx: Context): string {
   throw new AstError(place);
 }
 
-function list(ctx: Context, place: unknown): [string, unknown[]] {
+/** The name a read of the value at `resolve(place, ctx)` is recorded under. */
+export function resolveRead(place: unknown, ctx: Context): string {
+  if (typeof place === "string") return place;
+  if (isAst(place) && place[0] === "item") {
+    const found = slot(ctx, place[1]);
+    return join(found.read ?? found.path, place[2] as string);
+  }
+  throw new AstError(place);
+}
+
+/** The path of the list at `place`, its items, and the name its items' reads are recorded under. */
+function list(ctx: Context, place: unknown): [path: string, items: unknown[], read: string] {
   const path = resolve(place, ctx);
-  const value = ctx.store.getShallow(path);
-  return [path, Array.isArray(value) ? value : []];
+  const read = resolveRead(place, ctx);
+  const value = ctx.store.getShallowAs(path, read);
+  return [path, Array.isArray(value) ? value : [], read];
+}
+
+/** A slot that `at` moves to each item of the list at `path`, whose items' reads are recorded under `read`. */
+function walker(path: string, read: string): [slot: Slot, at: (index: number) => void] {
+  const slot: Slot = { path };
+  const at = (index: number): void => {
+    slot.path = join(path, String(index));
+    if (read !== path) slot.read = join(read, String(index));
+  };
+  return [slot, at];
 }
 
 /** Whether `test` holds for each item of the list at `path`, with one context reused for every item. */
-function testItems(ctx: Context, depth: number, path: string, items: readonly unknown[], test: Compiled): boolean[] {
-  const slot: Slot = { path };
+function testItems(ctx: Context, depth: number, [path, items, read]: [string, readonly unknown[], string], test: Compiled): boolean[] {
+  const [slot, at] = walker(path, read);
   const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
   return items.map((_, index) => {
-    slot.path = join(path, String(index));
+    at(index);
     return Boolean(test(itemCtx));
   });
 }
@@ -130,14 +158,19 @@ function build(ast: Ast): Compiled {
     }
     case "item": {
       const [depth, field] = rest as [number, string];
-      return (ctx) => ctx.store.get(join(slot(ctx, depth).path, field));
+      const under = (base: string): string => (field === "" ? base : base === "" ? field : `${base}.${field}`);
+      return (ctx) => {
+        const found = slot(ctx, depth);
+        const path = under(found.path);
+        return found.read === undefined ? ctx.store.get(path) : ctx.store.getAs(path, under(found.read));
+      };
     }
     case "index": {
       const depth = rest[0];
       return (ctx) => {
-        const path = slot(ctx, depth).path;
-        ctx.store.getPosition(path);
-        return Number(path.slice(path.lastIndexOf(".") + 1));
+        const found = slot(ctx, depth);
+        ctx.store.getPosition(found.read ?? found.path);
+        return Number(found.path.slice(found.path.lastIndexOf(".") + 1));
       };
     }
     case "lit": {
@@ -188,8 +221,7 @@ function build(ast: Ast): Compiled {
     case "count": {
       const [place, depth, test] = [rest[0], rest[1] as number, compile(rest[2])];
       return (ctx) => {
-        const [path, items] = list(ctx, place);
-        return testItems(ctx, depth, path, items, test).filter(Boolean).length;
+        return testItems(ctx, depth, list(ctx, place), test).filter(Boolean).length;
       };
     }
     default: {
@@ -226,9 +258,10 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       return;
     }
     case "retain": {
-      const [path, items] = list(ctx, rest[0]);
+      const found = list(ctx, rest[0]);
+      const [path, items] = found;
       const depth = rest[1] as number;
-      const keep = testItems(ctx, depth, path, items, compile(rest[2]));
+      const keep = testItems(ctx, depth, found, compile(rest[2]));
       const kept = items.filter((_, i) => keep[i]);
       if (kept.length !== items.length) store.set(path, kept);
       return;
@@ -247,17 +280,18 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       return;
     }
     case "update": {
-      const [path, items] = list(ctx, rest[0]);
+      const found = list(ctx, rest[0]);
+      const [path, items, read] = found;
       const depth = rest[1] as number;
-      const when = testItems(ctx, depth, path, items, compile(rest[2]));
+      const when = testItems(ctx, depth, found, compile(rest[2]));
       const field = rest[3] as string;
       const value = compile(rest[4]);
-      const slot: Slot = { path };
+      const [slot, at] = walker(path, read);
       const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
       let next: unknown[] | null = null;
       items.forEach((item, index) => {
         if (!when[index]) return;
-        slot.path = join(path, String(index));
+        at(index);
         next ??= [...items];
         next[index] = setPath(item, field, value(itemCtx));
       });
@@ -274,13 +308,13 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       return;
     }
     case "sort": {
-      const [path, items] = list(ctx, rest[0]);
+      const [path, items, read] = list(ctx, rest[0]);
       const depth = rest[1] as number;
       const key = compile(rest[2]);
-      const slot: Slot = { path };
+      const [slot, at] = walker(path, read);
       const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
       const keys = items.map((_, index) => {
-        slot.path = join(path, String(index));
+        at(index);
         return key(itemCtx) as number | string;
       });
       const order = items.map((_, index) => index).sort((a, b) => (keys[a]! < keys[b]! ? -1 : keys[a]! > keys[b]! ? 1 : a - b));

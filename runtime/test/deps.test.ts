@@ -47,15 +47,24 @@ it("forgets a binding's old reads when it is registered again", () => {
   expect(index.affected(new Map([["b", true]])).size).toBe(0);
 });
 
-it("moves a binding's reads to the paths a mapping gives", () => {
+it("finds the bindings that read at a path, or at it and below", () => {
   const index = new DepIndex();
-  const effect: Effect = { id: 0, element: document.body, run: () => {}, deps: null, nodes: new Map(), selector: null };
-  index.set(effect, new Map([["rows.2.label", true], ["selected", true]]));
-  index.move(effect, (path) => path.replace(/^rows\.2/, "rows.1"));
-  expect([...effect.deps!]).toEqual([["rows.1.label", true], ["selected", true]]);
-  expect(index.affected(new Map([["rows.2", true]])).size).toBe(0);
-  expect(index.affected(new Map([["rows.1", true]])).size).toBe(1);
-  expect(index.affected(new Map([["selected", true]])).size).toBe(1);
+  const make = (id: number, reads: [string, boolean][]): Effect => {
+    const effect: Effect = { id, element: document.body, run: () => {}, deps: null, nodes: new Map(), selector: null };
+    index.set(effect, new Map(reads));
+    return effect;
+  };
+  const label = make(0, [["@1.label", true]]);
+  const position = make(1, [["@1.#", true]]);
+  const tags = make(2, [["@1.tags", false]]);
+  make(3, [["@2.label", true]]);
+  const within: Effect[] = [];
+  index.within("@1", (effect) => within.push(effect));
+  expect(within.sort((a, b) => a.id - b.id)).toEqual([label, position, tags]);
+  const at: Effect[] = [];
+  index.at("@1.#", (effect) => at.push(effect));
+  expect(at).toEqual([position]);
+  index.within("@9", () => expect.unreachable());
 });
 
 it("runs a selector's bindings only for the keys a change leaves or reaches", () => {
