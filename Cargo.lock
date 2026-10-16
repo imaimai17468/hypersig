@@ -195,6 +195,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-style"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "hypersig",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "example-todo"
 version = "0.0.0"
 dependencies = [
