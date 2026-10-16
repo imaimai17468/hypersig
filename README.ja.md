@@ -153,9 +153,9 @@ assert!(page.render().contains("hover:color_crimson"));
 
 ## コンポーネント
 
-`hypersig_ui` クレートは、shadcn/ui の見た目を持ち、振る舞いをブラウザのネイティブ要素と WAI-ARIA Authoring Practices から取るコンポーネント集です。ボタン、テキストフィールド、チェックボックス、スイッチ、ラジオグループ、セレクト、タブ、アコーディオン、ダイアログ、メニューボタン、アラート、バッジ、カード、プログレスバーがあります。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を足せます。
+`hypersig_ui` クレートは、shadcn/ui の見た目を持ち、振る舞いをブラウザのネイティブ要素と WAI-ARIA Authoring Practices から取るコンポーネント集です。ボタン、テキストフィールド、チェックボックス、スイッチ、ラジオグループ、セレクト、スライダー、リストボックス、コンボボックス、タブ、アコーディオン、ダイアログ、メニューボタン、ツールチップ、トースト、アラート、バッジ、カード、プログレスバーがあります。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を足せます。
 
-テキストフィールドのラベル、説明、エラーメッセージは、束縛するシグナルから作った id で入力欄に結び付きます。タブとパネルも同じ方法で結び付きます。ダイアログとメニューはシグナルを持たないので、ボタンと共有する `const` のハンドルから名前を取ります。id に使えない名前はコンパイルエラーになります。ダイアログはブラウザが invoker commands を通して `showModal()` で開き、メニューは `popover` として top layer に出て、anchor positioning でボタンの下に置かれます。タブとメニューの項目の間は、`El::roving_focus` を使って矢印キー、Home、End で移ります。
+テキストフィールドのラベル、説明、エラーメッセージは、束縛するシグナルから作った id で入力欄に結び付きます。タブとパネルも同じ方法で結び付きます。ダイアログ、メニュー、ツールチップ、コンボボックスは、部品どうしで共有する `const` のハンドルから名前を取ります。id に使えない名前はコンパイルエラーになります。ダイアログはブラウザが invoker commands を通して `showModal()` で開き、メニューとツールチップは `popover` として top layer に出て、anchor positioning でボタンの横に置かれます。タブ、リストボックスの選択肢、メニューの項目の間は、`El::roving_focus` を使って矢印キー、Home、End で移ります。コンボボックスはフォーカスをテキスト欄に置いたまま、`El::active_descendant` で表示中の選択肢をたどり、たどった選択肢の id をシグナルに書きます。トーストは `aria-live` の領域に並び、時間を指定しない限り閉じるまで残ります。
 
 色は shadcn/ui の zinc テーマに合わせ、WCAG 2.2 AA を満たすために 3 つの値を変えています。コントロールの境界線は 3:1 以上のコントラストを持ち、補足のテキストは muted の塗りの上でも 4.5:1 を保ち、フォーカスは forced-colors モードでも描かれる単色の outline です。例の [`ui`](examples/ui) は全コンポーネントを 1 ページに並べたもので、その E2E テストはキーボードで操作し、ロールとアクセシブルな名前を確かめます。
 
@@ -179,7 +179,7 @@ cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
 cd e2e && pnpm install && pnpm check && pnpm test   # 6 つの例を起動して Chrome で操作する
 ```
 
-ブラウザ用のランタイムは `runtime/` にある TypeScript です。`pnpm build` がビルド済みの `crates/hypersig/assets/hypersig.js`（約 40 KB、gzip 後は約 14 KB）を書き出し、クレートはそれを埋め込みます。リポジトリの構成と、変更のたびに通す確認は `AGENTS.md` にあります。Lint の構成とコーディング規約は、Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っています。
+ブラウザ用のランタイムは `runtime/` にある TypeScript です。`pnpm build` がビルド済みの `crates/hypersig/assets/hypersig.js`（約 41 KB、gzip 後は約 14 KB）を書き出し、クレートはそれを埋め込みます。リポジトリの構成と、変更のたびに通す確認は `AGENTS.md` にあります。Lint の構成とコーディング規約は、Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っています。
 
 ## License
 
