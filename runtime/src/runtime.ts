@@ -71,17 +71,21 @@ interface Instance {
  * item's copy of it in the `DepIndex`.
  */
 interface Part {
-  /** What it writes, or `if` for a condition's `<template>`, which it shows or removes. */
-  readonly kind: "show" | "text" | "checked" | "class" | "attr" | "toggle" | "style" | "bind" | "if";
+  /**
+   * What it writes, or for a `<template>` what it renders after itself: `if`
+   * a condition, which it shows or removes, and `each` a nested list over a
+   * field of the item.
+   */
+  readonly kind: "show" | "text" | "checked" | "class" | "attr" | "toggle" | "style" | "bind" | "if" | "each";
   /** The class, attribute, or CSS property it writes. */
   readonly name: string;
-  /** The expression, or for `bind` the `Bind`. */
+  /** The expression, for `bind` the `Bind`, and for `each` the list's place and item depth. */
   readonly ast: unknown;
-  /** The expression built by `compile`, null for `bind`. */
+  /** The expression built by `compile`, null for `bind` and `each`. */
   readonly value: Compiled | null;
   /** For `["eq", ["sig", path], other]` where `other` reads only the item: the signal and `other`, built by `compile`. */
   readonly selector: { readonly path: string; readonly other: Compiled } | null;
-  /** For `if`, the element its template holds. */
+  /** For `if` and `each`, the element its template holds. */
   readonly proto: Element | null;
 }
 
@@ -92,6 +96,12 @@ interface Shape {
   readonly partsOf: ReadonlyMap<Element, readonly number[]>;
   /** The item fields each part reads, `""` for the whole item. */
   readonly fields: readonly (readonly string[])[];
+  /**
+   * The parts whose field reads are shallow: the `each` parts, which run
+   * again when the list at the field is replaced or resized. A change inside
+   * one of its items reaches that item's own row.
+   */
+  readonly shallow: number;
   /** The reads outside the item, each with the parts that make it. */
   readonly external: readonly (readonly [StaticRead, number])[];
   /** The parts that read the item's position. */
@@ -123,6 +133,12 @@ interface Row {
   queued: boolean;
   /** The key of the value each selector part compared, where it filed the row in its `Selection`. */
   keys: (string | undefined)[] | null;
+  /**
+   * For each `each` part that has run, the binding its nested list is
+   * rendered under. It is never registered for reads, and running it marks
+   * the part, so a rerun the nested list asks for goes through the row.
+   */
+  lists: (Effect | undefined)[] | null;
 }
 
 /** The items whose selector part compared a value under each key, kept for one list. */
@@ -715,7 +731,8 @@ export class Runtime implements Host {
       }
       const row = own(outermost)?.row;
       row?.nodes?.forEach((node, index) => {
-        if (row.shape.parts[index]!.kind === "if" && node !== undefined) this.store.untracked(() => this.#runPart(row, index));
+        const { kind } = row.shape.parts[index]!;
+        if ((kind === "if" || kind === "each") && node !== undefined) this.store.untracked(() => this.#runPart(row, index));
       });
     }
   }
@@ -914,7 +931,7 @@ export class Runtime implements Host {
 
   /** Makes the row of a list item whose root is `element`, filed under its slot's name. */
   #row(element: Element, slot: Slot, shape: Shape, template: HTMLTemplateElement): Row {
-    const row: Row = { element, slot, shape, template, nodes: null, ctx: null, dirty: 0, queued: false, keys: null };
+    const row: Row = { element, slot, shape, template, nodes: null, ctx: null, dirty: 0, queued: false, keys: null, lists: null };
     this.#rows.set(slot.read!, row);
     state(element).row = row;
     return row;
@@ -1056,6 +1073,19 @@ export class Runtime implements Host {
     const part = row.shape.parts[index]!;
     if (part.kind === "bind") this.#writeControl(element, part.ast as Bind, row.ctx!);
     else if (part.kind === "if") this.#renderIf(element as HTMLTemplateElement, part.proto, this.#holds(row, index), row.ctx!.scope);
+    else if (part.kind === "each") {
+      const [place, depth] = part.ast as [unknown, number];
+      const lists = (row.lists ??= []);
+      const list = (lists[index] ??= {
+        id: this.#nextId++,
+        element,
+        run: () => this.#mark(row, 1 << index),
+        deps: null,
+        nodes: new Map(),
+        selector: null,
+      });
+      this.#renderList(element as HTMLTemplateElement, part.proto, place, depth, row.ctx!.scope, list);
+    }
     else write(element, part.kind, part.name, CONDITIONS.has(part.kind) ? this.#holds(row, index) : part.value!(row.ctx!));
   }
 
@@ -1468,7 +1498,7 @@ function locate(plan: Plan, copy: Element, rendered: boolean, found: (element: E
   }
 }
 
-type Write = Exclude<Part["kind"], "bind" | "if">;
+type Write = Exclude<Part["kind"], "bind" | "if" | "each">;
 
 /** The kinds of binding whose expression is a condition, which `#compare` or a selector part can answer. */
 const CONDITIONS: ReadonlySet<Part["kind"]> = new Set(["show", "class", "toggle", "if"]);
@@ -1536,6 +1566,7 @@ function shapeOf(proto: Element, depth: number): Shape {
   const partsOf = new Map<Element, number[]>();
   const external = new Map<string, [StaticRead, number]>();
   let moved = 0;
+  let shallow = 0;
   let reactive = 0;
   sources(planOf(proto), (source) => {
     reactive++;
@@ -1546,6 +1577,7 @@ function shapeOf(proto: Element, depth: number): Shape {
     for (const [part, reads] of found) {
       const index = parts.push(part) - 1;
       indices.push(index);
+      if (part.kind === "each") shallow |= 1 << index;
       const own: string[] = [];
       for (const read of reads) {
         if (read.kind === "item" && read.depth === depth) own.push(read.field);
@@ -1571,12 +1603,17 @@ function shapeOf(proto: Element, depth: number): Shape {
     parts,
     partsOf,
     fields,
+    shallow,
     external: [...external.values()],
     moved,
     all: parts.length === 0 ? 0 : 2 ** parts.length - 1,
     keyFields: keyAst === undefined ? null : keyFields,
-    // The bindings inside a condition that an `if` part shows are effects of their own, which read under the item's slot name.
-    whole: partsOf.size === reactive && (keyAst === undefined || keyFields !== null) && !parts.some((part) => part.kind === "if" && part.proto !== null && bound(part.proto)),
+    // The bindings inside a condition that an `if` part shows are effects of their own, which read under the item's slot name,
+    // and the items of a nested list are filed by their paths, which `#relocate` gives them again when this item moves.
+    whole:
+      partsOf.size === reactive &&
+      (keyAst === undefined || keyFields !== null) &&
+      !parts.some((part) => part.kind === "each" || (part.kind === "if" && part.proto !== null && bound(part.proto))),
     masks: new Map(),
   };
   shapes.set(proto, shape);
@@ -1604,9 +1641,15 @@ function sources(plan: Plan, visit: (source: Element) => void): void {
  */
 function partsFor(source: Element, depth: number): [Part, StaticRead[]][] | null {
   const spec = specOf(source);
-  if (spec.effects.length > 0 || spec.watches.length > 0 || spec.each !== undefined) return null;
+  if (spec.effects.length > 0 || spec.watches.length > 0) return null;
   if (source.hasAttribute("data-hs-on-load") || source.hasAttribute("data-hs-on-interval")) return null;
   const found: [Part, StaticRead[]][] = [];
+  if (spec.each !== undefined) {
+    // A nested list over a field of this item runs as a part. A rerun its items' keys ask for marks the part through `Row.lists`.
+    const read = placeRead(spec.each[0]);
+    if (read?.kind !== "item" || read.depth !== depth || spec.proto === null || !(source instanceof HTMLTemplateElement)) return null;
+    found.push([{ kind: "each", name: "", ast: spec.each, value: null, selector: null, proto: spec.proto }, [read]]);
+  }
   const conditions: [Part["kind"], string, unknown][] = writes(spec);
   if (spec.cond !== undefined && source instanceof HTMLTemplateElement) conditions.push(["if", "", spec.cond]);
   for (const [kind, name, ast] of conditions) {
@@ -1643,6 +1686,12 @@ function reaches(field: string, rest: string, inside: boolean): boolean {
   return inside && (rest === "" || field.startsWith(`${rest}.`));
 }
 
+/** `reaches` for a shallow read of `field`, which a change below it leaves alone. */
+function reachesShallow(field: string, rest: string, inside: boolean): boolean {
+  if (rest === field) return true;
+  return inside && (rest === "" || field.startsWith(`${rest}.`));
+}
+
 /** The parts of `shape` that a change at `rest` inside an item can reach. */
 function maskFor(shape: Shape, rest: string, inside: boolean): number {
   const id = `${inside ? 1 : 0}${rest}`;
@@ -1650,7 +1699,8 @@ function maskFor(shape: Shape, rest: string, inside: boolean): number {
   if (mask === undefined) {
     mask = 0;
     shape.fields.forEach((own, index) => {
-      if (own.some((field) => reaches(field, rest, inside))) mask! |= 1 << index;
+      const reach = (shape.shallow & (1 << index)) === 0 ? reaches : reachesShallow;
+      if (own.some((field) => reach(field, rest, inside))) mask! |= 1 << index;
     });
     // A change inside a nested list names the position it is at, so the changes seen can keep growing.
     if (shape.masks.size > 1000) shape.masks.clear();
