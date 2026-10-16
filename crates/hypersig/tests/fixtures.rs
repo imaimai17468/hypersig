@@ -8,11 +8,12 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, button, div, each, each_keyed, input, label, li, main, select, span, ul, when,
+    El, Event, Key, Orientation, button, div, each, each_keyed, input, label, li, main, select,
+    span, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
-use hypersig::{Action, Expr, Fragment, NodeRef, Page, Patches, Signals, Stmt};
+use hypersig::{Action, Expr, Fragment, NodeRef, Page, Patches, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -378,6 +379,44 @@ fn table() -> (El<Table>, Table) {
     (el, signals)
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Roving {
+    tab: i32,
+    taken: i32,
+}
+
+/// A tab list whose third tab is disabled and whose last tab takes the right
+/// arrow for itself, and a vertical menu inside it whose items belong to the
+/// menu rather than to the tab list.
+fn roving() -> (El<Roving>, Roving) {
+    let tab = Roving::tab();
+    let taken = Roving::taken();
+    let tab_button = |i: i32| {
+        button()
+            .id(format!("tab{i}"))
+            .bind_attr("tabindex", if_else(tab.equals(i), "0", "-1"))
+            .on(Event::Focus, tab.set(i))
+    };
+    let el = main().child(
+        div()
+            .id("tabs")
+            .roving_focus(Orientation::Horizontal)
+            .child(tab_button(0))
+            .child(tab_button(1))
+            .child(tab_button(2).attr("disabled", ""))
+            .child(tab_button(3).on_key(Key::ArrowRight, taken.set(taken + 1)))
+            .child(
+                div()
+                    .id("menu")
+                    .roving_focus(Orientation::Vertical)
+                    .children(
+                        (0..2).map(|i| button().id(format!("item{i}")).attr("tabindex", "-1")),
+                    ),
+            ),
+    );
+    (el, Roving { tab: 0, taken: 0 })
+}
+
 fn check(name: &str, el: &El<impl Signals>, signals: &impl Serialize) {
     let fixture = json!({ "html": el.render(), "signals": signals });
     write_or_compare(
@@ -501,6 +540,8 @@ fn fixtures_match_the_builder() {
     check("nested", &el, &signals);
     let (el, signals) = table();
     check("table", &el, &signals);
+    let (el, signals) = roving();
+    check("roving", &el, &signals);
     let (el, signals) = todos();
     check_page("todos_page", el, signals);
     let (el, signals) = nested();

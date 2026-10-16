@@ -1280,7 +1280,10 @@ export class Runtime implements Host {
     if (!(target instanceof Element)) return;
     this.#adoptAround(target);
     if (type === "input" || type === "change") this.#readControl(target, type);
-    if (type === "keydown" && event instanceof KeyboardEvent) this.#onKey(target, event);
+    if (type === "keydown" && event instanceof KeyboardEvent) {
+      this.#onKey(target, event);
+      if (!event.defaultPrevented) this.#rove(target, event);
+    }
     const found = this.#closest(target, `data-hs-on-${type}`);
     if (found === null) return;
     if (type === "submit") event.preventDefault();
@@ -1297,6 +1300,30 @@ export class Runtime implements Host {
       event.preventDefault();
       this.#run(stmt, this.#context(handler, this.#scopeOf(handler)));
     }
+  }
+
+  /** Moves focus among the items of the closest `data-hs-roving` element for an arrow key, Home, or End. */
+  #rove(target: Element, event: KeyboardEvent): void {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const found = this.#closest(target, "data-hs-roving");
+    if (found === null) return;
+    const [group, orientation] = found;
+    const items = [...group.querySelectorAll<HTMLElement>("[tabindex]")].filter(
+      (item) => item.closest("[data-hs-roving]") === group && !item.matches(":disabled") && item.getAttribute("aria-disabled") !== "true",
+    );
+    const at = items.findIndex((item) => item.contains(target));
+    if (at < 0) return;
+    // Left and right trade places in a right-to-left layout, as they do for the reader.
+    const rtl = orientation === "horizontal" && getComputedStyle(group).direction === "rtl";
+    const [next, previous] = orientation === "vertical" ? ["ArrowDown", "ArrowUp"] : rtl ? ["ArrowLeft", "ArrowRight"] : ["ArrowRight", "ArrowLeft"];
+    let to: number;
+    if (event.key === next) to = (at + 1) % items.length;
+    else if (event.key === previous) to = (at - 1 + items.length) % items.length;
+    else if (event.key === "Home") to = 0;
+    else if (event.key === "End") to = items.length - 1;
+    else return;
+    event.preventDefault();
+    items[to]!.focus();
   }
 
   #onDirect(type: (typeof DIRECT)[number], event: Event): void {

@@ -280,6 +280,7 @@ pub struct El<S> {
     interval: Option<(u128, Stmt<S>)>,
     on: BTreeMap<Event, Stmt<S>>,
     keys: Vec<(Key, Stmt<S>)>,
+    roving: Option<Orientation>,
     children: Vec<Node<S>>,
 }
 
@@ -530,6 +531,10 @@ pub enum Key {
     ArrowLeft,
     /// Right arrow.
     ArrowRight,
+    /// Home.
+    Home,
+    /// End.
+    End,
     /// A key that produces this character, as `KeyboardEvent.key` reports it.
     Char(char),
 }
@@ -547,7 +552,28 @@ impl Key {
             Self::ArrowDown => "ArrowDown".to_owned(),
             Self::ArrowLeft => "ArrowLeft".to_owned(),
             Self::ArrowRight => "ArrowRight".to_owned(),
+            Self::Home => "Home".to_owned(),
+            Self::End => "End".to_owned(),
             Self::Char(c) => c.to_string(),
+        }
+    }
+}
+
+/// The arrow keys that move focus inside an element marked with [`El::roving_focus`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Orientation {
+    /// Left and right, swapped where the element's `direction` is `rtl`.
+    Horizontal,
+    /// Up and down.
+    Vertical,
+}
+
+impl Orientation {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Horizontal => "horizontal",
+            Self::Vertical => "vertical",
         }
     }
 }
@@ -646,6 +672,7 @@ impl<S> El<S> {
             interval: None,
             on: BTreeMap::new(),
             keys: Vec::new(),
+            roving: None,
             children: Vec::new(),
         }
     }
@@ -1057,6 +1084,51 @@ impl<S> El<S> {
         self
     }
 
+    /// Moves focus between the items inside this element on the arrow keys,
+    /// Home, and End.
+    ///
+    /// An item is an element inside this one that has a `tabindex` attribute
+    /// and is neither disabled nor `aria-disabled="true"`, unless a nearer
+    /// element inside this one is also marked, in which case the item belongs
+    /// to that one. The two arrow keys of `orientation` move to the next and
+    /// the previous item, wrapping at either end, and Home and End move to the
+    /// first and the last. The runtime calls `preventDefault` for a key it
+    /// acts on, and leaves a key alone when a handler from [`El::on_key`]
+    /// already took it or Alt, Control, or Meta is held.
+    ///
+    /// The runtime moves focus and changes nothing else, so each item keeps
+    /// the `tabindex` it is given. A tab list sets `tabindex="0"` on the
+    /// selected tab and `-1` on the others with [`El::bind_attr`], so that Tab
+    /// enters the list at the selected tab, and selects a tab when it gains
+    /// focus with [`Event::Focus`].
+    ///
+    /// ```
+    /// use hypersig::html::{Event, Orientation, button, div};
+    /// use hypersig::{Signals, if_else};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Tabs {
+    ///     tab: i32,
+    /// }
+    ///
+    /// let tab = Tabs::tab();
+    /// let list = div::<Tabs>().attr("role", "tablist").roving_focus(Orientation::Horizontal).children(
+    ///     (0..3).map(|i| {
+    ///         button()
+    ///             .attr("role", "tab")
+    ///             .bind_attr("tabindex", if_else(tab.equals(i), "0", "-1"))
+    ///             .on(Event::Focus, tab.set(i))
+    ///     }),
+    /// );
+    /// assert!(list.render().contains(r#"data-hs-roving="horizontal""#));
+    /// ```
+    #[must_use]
+    pub fn roving_focus(mut self, orientation: Orientation) -> Self {
+        self.roving = Some(orientation);
+        self
+    }
+
     /// Runs `stmt` every `period` while the element is in the document.
     ///
     /// A second call replaces the first.
@@ -1336,6 +1408,9 @@ impl<S> El<S> {
                 .map(|(key, stmt)| (key.name(), stmt.as_json()))
                 .collect();
             write_attr(out, "data-hs-on-key", &json_text(&keys));
+        }
+        if let Some(orientation) = self.roving {
+            write_attr(out, "data-hs-roving", orientation.name());
         }
     }
 
