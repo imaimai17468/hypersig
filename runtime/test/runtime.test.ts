@@ -235,6 +235,26 @@ describe("Runtime", () => {
     expect(count()).toBe("1");
   });
 
+  it("forgets the items of a list that a patch removed after the next frame", async () => {
+    const runtime = mount(
+      `<div id="frag"><ul><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></li></template></ul></div>`,
+      { rows: [1, 2].map((id) => ({ id, label: `r${id}` })) },
+    );
+    await tick();
+    const removed = document.querySelector("#frag li")!;
+    const key = Object.getOwnPropertySymbols(removed).find((symbol) => symbol.description === "hypersig")!;
+    const bound = () => (removed as unknown as Record<symbol, { effects?: unknown[]; watch?: unknown }>)[key]!;
+    expect(bound().effects).toHaveLength(1);
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p>gone</p></div>` }) });
+    expect(removed.isConnected).toBe(false);
+    await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    expect(bound().effects).toBeUndefined();
+    expect(bound().watch).toBeUndefined();
+    runtime.store.set("rows.0.label", "x");
+    await tick();
+    expect(document.getElementById("frag")!.textContent).toBe("gone");
+  });
+
   it("forgets the bindings inside a removed condition after the next frame", async () => {
     const runtime = mount(`<template data-hs-if='["sig","on"]'><b id="b" data-hs-text='["sig","label"]'></b></template>`, { on: true, label: "x" });
     await tick();

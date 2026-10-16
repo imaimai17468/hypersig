@@ -120,7 +120,11 @@ export class Runtime implements Host {
    * item's path is looked up here to reach them.
    */
   readonly #slots = new Map<string, Slot | Slot[]>();
+  /** The root element of the item each slot belongs to. */
+  readonly #owners = new WeakMap<Slot, Element>();
   #nextSlot = 0;
+  /** Whether a patch has replaced elements since the last `#sweep`, which may have taken list items with them. */
+  #patched = false;
   readonly #mounted = new WeakMap<Element, Element>();
   readonly #timers = new WeakMap<Element, Map<string, ReturnType<typeof setTimeout>>>();
   /**
@@ -331,6 +335,8 @@ export class Runtime implements Host {
         const morphed = morph(target, next);
         this.scan(morphed, this.#scopeOf(morphed.parentElement));
         this.#render(new Map());
+        this.#patched = true;
+        this.#sweepLater();
         return;
       }
       default:
@@ -487,6 +493,7 @@ export class Runtime implements Host {
         // A key that read only the item reads it under the item's name, so the item can move without registering it again.
         if (named !== null) keyReads = rebased(keyReads, named, slot.read!);
         instance = { element: proto.cloneNode(true) as Element, slot, scanned: true, key: raw, keyReads, watch: null, local, value: items[index] };
+        this.#owners.set(slot, instance.element);
         state(instance.element).root = true;
         created.add(instance);
         this.#watchKey(instance, list);
@@ -634,6 +641,7 @@ export class Runtime implements Host {
       state(at).root = true;
       const key = at.getAttribute("data-hs-ssr")!;
       const slot: Slot = { path: "", read: `@${this.#nextSlot++}` };
+      this.#owners.set(slot, at);
       adopted.set(key, { element: at, slot, scanned: false, key, keyReads: new Map(), watch: null, local: false, value: undefined });
     }
     return adopted;
@@ -925,7 +933,20 @@ export class Runtime implements Host {
         if (mounted !== undefined) unfile(mounted);
       }
     };
+    if (this.#patched) {
+      this.#patched = false;
+      // A patch removes the elements it replaces without unmounting them, so the items among them are found by their slots.
+      for (const filed of [...this.#slots.values()]) {
+        for (const slot of Array.isArray(filed) ? [...filed] : [filed]) {
+          const owner = this.#owners.get(slot);
+          if (owner === undefined || owner.isConnected) continue;
+          this.#unfile(slot);
+          this.#removed.push(owner);
+        }
+      }
+    }
     for (const root of this.#removed) {
+      forget(root);
       this.#visit(root, forget);
       unfile(root);
     }
