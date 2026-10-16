@@ -19,6 +19,7 @@ mod condition;
 // Written by tests/generate.rs, whose output is kept as it writes it.
 #[rustfmt::skip]
 mod generated;
+pub mod pattern;
 mod sheet;
 mod style;
 mod token;
