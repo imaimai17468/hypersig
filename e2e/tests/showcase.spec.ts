@@ -70,3 +70,40 @@ test("a form derives its total and disables submit while invalid or in flight", 
   await expect(page.locator(".status")).toHaveText("Ordered 3 large, gift wrapped.");
   await expect(page.locator(".place")).toHaveText("Place order");
 });
+
+test("typed styles follow the viewport, a container, tokens a signal switches, and a signal's value", async ({ page }) => {
+  const card = page.locator("#card");
+  const frame = card.locator("..");
+  const widthRatio = async () => {
+    const [c, f] = await Promise.all([card.boundingBox(), frame.boundingBox()]);
+    return Math.round((c!.width / f!.width) * 100);
+  };
+
+  // The breakpoint rule comes after the base rule, so it wins from 48rem.
+  await page.setViewportSize({ width: 600, height: 800 });
+  await expect.poll(widthRatio).toBe(100);
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await expect.poll(widthRatio).toBe(50);
+
+  // The note measures the card, which is narrower on the wider viewport.
+  await expect(card.locator("p")).toHaveCSS("font-weight", "400");
+  await page.setViewportSize({ width: 600, height: 800 });
+  await expect(card.locator("p")).toHaveCSS("font-weight", "700");
+
+  await expect(card).toHaveCSS("background-color", "rgb(246, 246, 246)");
+  await page.locator("#theme").click();
+  await expect(card).toHaveCSS("background-color", "rgb(34, 39, 51)");
+  await expect(card).toHaveCSS("color", "rgb(238, 238, 238)");
+  await page.locator("#theme").click();
+  await expect(card).toHaveCSS("background-color", "rgb(246, 246, 246)");
+
+  const badge = page.locator("#badge");
+  await expect(badge).toHaveCSS("color", "rgb(128, 128, 128)");
+  await page.locator("#loud").click();
+  await expect(badge).toHaveText("LOUD");
+  await expect(badge).toHaveCSS("color", "rgb(220, 20, 60)");
+  await page.locator("#calm").click();
+  await expect(badge).toHaveCSS("color", "rgb(128, 128, 128)");
+
+  await expect(page.locator("#spinner")).toHaveCSS("animation-name", "spin");
+});

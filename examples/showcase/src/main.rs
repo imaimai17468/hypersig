@@ -1,4 +1,5 @@
-//! Components with their own state, intervals, server search, and forms, one section each.
+//! Components with their own state, intervals, server search, forms, and typed
+//! styles, one section each.
 //!
 //! Run with `cargo run -p example-showcase` and open <http://localhost:3003>.
 
@@ -49,6 +50,18 @@ struct Order {
     error: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+enum Tone {
+    Calm,
+    Loud,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Look {
+    dark: bool,
+    tone: Tone,
+}
+
 #[derive(Signals, Serialize, Deserialize)]
 struct Showcase {
     shipping: Disclosure,
@@ -58,6 +71,7 @@ struct Showcase {
     stopwatch: Stopwatch,
     search: Search,
     order: Order,
+    look: Look,
 }
 
 const SEARCH: Action<Showcase, String> = Action::post("/search");
@@ -331,6 +345,150 @@ fn order_form() -> El<Showcase> {
         .child(p().class(class::ERROR).bind_text(order.at(Order::error())))
 }
 
+/// Typed styles: a breakpoint, a container query, tokens a signal switches,
+/// a style per value of a signal, and an animation.
+fn styles() -> El<Showcase> {
+    let look = Showcase::look();
+    let dark = look.at(Look::dark());
+    let tone = look.at(Look::tone());
+    section()
+        .id("styles")
+        .child(h2().text("Typed styles"))
+        .child(
+        div().css_when(look::dark_frame(), dark).child(
+            div()
+                .id("card")
+                .css(look::card())
+                .child(p().css(look::wide_note()).text(
+                    "Half as wide from a 48rem viewport, bold while the card is 24rem or wider.",
+                ))
+                .child(
+                    div()
+                        .css(look::buttons())
+                        .child(
+                            button()
+                                .id("theme")
+                                .on_click(dark.toggle())
+                                .text("Switch theme"),
+                        )
+                        .child(
+                            button()
+                                .id("calm")
+                                .on_click(tone.set(&Tone::Calm))
+                                .text("Calm"),
+                        )
+                        .child(
+                            button()
+                                .id("loud")
+                                .on_click(tone.set(&Tone::Loud))
+                                .text("Loud"),
+                        ),
+                )
+                .child(
+                    span()
+                        .id("badge")
+                        .css(look::badge())
+                        .css_match(
+                            tone,
+                            [(Tone::Calm, look::calm()), (Tone::Loud, look::loud())],
+                        )
+                        .bind_text(if_else(tone.equals(&Tone::Loud), "LOUD", "calm")),
+                )
+                .child(div().id("spinner").css(look::spinner())),
+        ),
+    )
+}
+
+/// The styles of the typed-styles section.
+mod look {
+    use hypersig::style::pattern::{circle, hstack, stack};
+    use hypersig::style::value::{
+        AnimationIterationCount, AnimationTimingFunction, BorderStyle, BoxSizing, Color,
+        ContainerType, FontWeight, Transform, ms, pct, px, raw, rem,
+    };
+    use hypersig::style::{Container, Keyframes, Media, Style, Theme, Token};
+
+    pub fn surface() -> Token<Color> {
+        Token::new("surface", Color::hex(0x00f6_f6f6))
+    }
+
+    pub fn ink() -> Token<Color> {
+        Token::new("ink", Color::hex(0x0022_2222))
+    }
+
+    /// The page's dark values, for a visitor whose system prefers dark.
+    pub fn theme() -> Theme {
+        Theme::new().on(
+            Media::Dark,
+            Theme::new()
+                .set(&surface(), Color::hex(0x0022_2733))
+                .set(&ink(), Color::hex(0x00ee_eeee)),
+        )
+    }
+
+    /// The tokens the theme button switches to, for the card inside.
+    pub fn dark_frame() -> Style {
+        Style::new()
+            .token(&surface(), Color::hex(0x0022_2733))
+            .token(&ink(), Color::hex(0x00ee_eeee))
+    }
+
+    pub fn card() -> Style {
+        stack(rem(0.75))
+            .box_sizing(BoxSizing::BorderBox)
+            .padding(rem(1))
+            .border_radius(px(8))
+            .background_color(surface().var())
+            .color(ink().var())
+            .width(pct(100))
+            .on(Media::Md, Style::new().width(pct(50)))
+            .container_type(ContainerType::InlineSize)
+    }
+
+    pub fn wide_note() -> Style {
+        Style::new()
+            .margin(px(0))
+            .on(Container::Sm, Style::new().font_weight(FontWeight::Bold))
+    }
+
+    pub fn buttons() -> Style {
+        hstack(rem(0.5))
+    }
+
+    pub fn badge() -> Style {
+        Style::new()
+            .padding_inline(rem(0.5))
+            .border_radius(px(4))
+            .border_width(px(1))
+            .border_style(BorderStyle::Solid)
+    }
+
+    pub fn calm() -> Style {
+        Style::new().color(Color::GRAY)
+    }
+
+    pub fn loud() -> Style {
+        Style::new()
+            .color(Color::CRIMSON)
+            .font_weight(FontWeight::Bold)
+    }
+
+    pub fn spinner() -> Style {
+        let spin = Keyframes::new("spin")
+            .at(0, Style::new().transform(Transform::None))
+            .at(100, Style::new().transform(raw("rotate(1turn)")));
+        circle(rem(1.5))
+            .border_width(px(3))
+            .border_style(BorderStyle::Solid)
+            .border_color(Color::GRAY.opacity(30))
+            .border_top_color(Color::GRAY)
+            .keyframes(&spin)
+            .animation_duration(ms(900))
+            .animation_timing_function(AnimationTimingFunction::Linear)
+            .animation_iteration_count(AnimationIterationCount::Infinite)
+    }
+}
+
 async fn index() -> Html<String> {
     let signals = Showcase {
         shipping: Disclosure::default(),
@@ -348,14 +506,20 @@ async fn index() -> Html<String> {
             status: String::new(),
             error: String::new(),
         },
+        look: Look {
+            dark: false,
+            tone: Tone::Calm,
+        },
     };
     let page = Page::new("hypersig showcase", signals)
         .style(STYLE)
+        .theme(look::theme())
         .child(h1().text("hypersig showcase"))
         .child(components())
         .child(stopwatch())
         .child(search())
-        .child(order_form());
+        .child(order_form())
+        .child(styles());
     Html(page.render())
 }
 
