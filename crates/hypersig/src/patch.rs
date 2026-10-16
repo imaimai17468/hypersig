@@ -171,6 +171,11 @@ impl<S: Signals> Patches<S> {
     }
 
     /// Re-renders `fragment` and morphs it into the element with its id.
+    ///
+    /// The fragment is rendered without the signal values, so the text and
+    /// attributes its bindings show are written by the runtime once the patch
+    /// arrives. The items of an `each` inside it are built again, which drops
+    /// the focus and any text being typed in them.
     #[must_use]
     pub fn element<F: Fragment<Signals = S>>(mut self, fragment: &F) -> Self {
         self.events

@@ -232,6 +232,11 @@ impl Number for i32 {}
 impl Number for f64 {}
 
 /// A type the runtime can order with `<` and friends.
+///
+/// The runtime orders strings by UTF-16 code unit and the server by code point, so
+/// two strings holding characters outside the Basic Multilingual Plane can
+/// order differently in the first HTML. The runtime's result replaces the
+/// server's once the page loads.
 pub trait Comparable: sealed::Sealed {}
 impl Comparable for i32 {}
 impl Comparable for f64 {}
@@ -480,6 +485,10 @@ macro_rules! operations {
 
         impl<S, T: Textual $(, $r)?> $ty<S, T $(, $r)?> {
             /// This value as display text.
+            ///
+            /// The server writes a number below `1e-6` or at or above `1e21` in
+            /// the first HTML differently from JavaScript's `String`. The page
+            /// shows the server's text for one frame, until the runtime writes its own.
             #[must_use]
             pub fn to_text(self) -> Expr<S, String> {
                 Expr::unary("str", self.into_expr())

@@ -114,14 +114,14 @@ Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the 
 
 ## Limitations
 
-- Handlers and expressions can use only the operations the library provides. Arbitrary JavaScript, such as `localStorage` or a call into another library, cannot be written.
-- A component's state needs a place prepared for it in the page's signal struct. To add components at run time, make them items of a `Vec`.
-- Arithmetic is limited to `i32` and `f64`, and division to `f64`. A type whose results JavaScript numbers cannot reproduce cannot appear in an expression.
-- `equals` compares the JSON form. It agrees with a derived `PartialEq` and can disagree with a hand-written one.
-- `Page::render` is the only place the server evaluates expressions. A fragment sent with `Patches::element` carries no signal values, so its effects fill in what it shows once it reaches the browser.
-- The server and the browser can disagree on rounding an exact half in `to_fixed`, on formatting numbers below `1e-6` or at or above `1e21`, and on ordering characters outside the Basic Multilingual Plane. After loading, the browser's values replace the server's.
-- Replacing a fragment that contains an `each` with a server patch rebuilds the list items inside it. Their values live in signals, so their contents are kept.
-- Signals cannot use attributes such as `#[serde(rename)]`. The derive rejects them.
+In hypersig the server holds the state. What the browser can do on its own is the set of operations and statements hypersig provides, such as arithmetic on `i32` and `f64`, string and list operations, and focus. Anything else goes through a server action, so it responds a network round trip later.
+
+It does not suit these applications:
+
+- An application that runs a JavaScript library in the browser, such as a map, a chart, or a rich text editor. These have to run inside the browser, and the server cannot stand in for them.
+- An application that works without a connection to the server, such as one used offline.
+
+For now, redrawing a list with a server patch also drops the focus and any text being typed in its items.
 
 ## Development
 
