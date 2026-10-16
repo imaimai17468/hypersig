@@ -1,6 +1,6 @@
 # js-framework-benchmark results
 
-Keyed, headless Chrome 155 on an Apple M4 Max, 10 runs each, medians. Times are in milliseconds, from the click until the browser has painted, with the CPU slowdown the benchmark sets for some operations.
+Keyed, headless Chrome 155 on an Apple M4 Max, 10 runs each, medians. Times are in milliseconds, from the click until the browser has painted, with the CPU slowdown the benchmark sets for some operations. Size and first paint are measured once per framework, because the runner loads each page for them a single time, so first paint can move by 10 ms or more between runs with nothing changed.
 
 | | hypersig | vanillajs | React 19.2 | Vue 3.5 | Solid 1.9 | Leptos 0.7 |
 |---|---|---|---|---|---|---|
