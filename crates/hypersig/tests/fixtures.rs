@@ -8,11 +8,10 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, Property, button, div, each, each_keyed, input, label, li, main, select, span,
-    ul, when,
+    El, Event, Key, button, div, each, each_keyed, input, label, li, main, select, span, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
-use hypersig::style::{Keyframes, Media, PseudoClass, Style};
+use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{Action, Expr, Fragment, NodeRef, Page, Patches, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -27,8 +26,6 @@ mod class {
     pub const COUNT: Class = Class::new("count");
     pub const ON: Class = Class::new("on");
 }
-
-const WIDTH: Property = Property::new("width");
 
 #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
 struct Todo {
@@ -171,7 +168,7 @@ fn controls() -> (El<Controls>, Controls) {
                 .id("buy")
                 .attr_when("disabled", quantity.le(0))
                 .bind_attr("title", (Controls::price() * 2.0).to_fixed(2))
-                .bind_style(WIDTH, quantity.to_text().concat("rem"))
+                .bind_style(Property::Width, quantity.to_text().concat("rem"))
                 .text("Buy"),
         )
         .child(span().id("total").bind_text(hypersig::if_else(

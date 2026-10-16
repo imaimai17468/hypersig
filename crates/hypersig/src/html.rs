@@ -53,7 +53,7 @@ use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
 use crate::signal::{Item, Sig, in_item_scope};
 use crate::ssr::{self, Ctx};
-use crate::style::{Sheet, Style};
+use crate::style::{Property, Sheet, Style, Token, TokenValue};
 
 const RESERVED_PREFIX: &str = "data-hs-";
 
@@ -272,7 +272,7 @@ pub struct El<S> {
     css_when: Vec<(Style, Vec<String>, Expr<S, bool>)>,
     attr_bind: Vec<(&'static str, Expr<S, String>)>,
     attr_when: Vec<(&'static str, Expr<S, bool>)>,
-    style: Vec<(&'static str, Expr<S, String>)>,
+    style: Vec<(String, Expr<S, String>)>,
     key: Option<Value>,
     node_ref: Option<&'static str>,
     effects: Vec<Stmt<S>>,
@@ -454,65 +454,6 @@ impl Class {
                 !bytes[i].is_ascii_whitespace(),
                 "a class name holds no whitespace; declare one `Class` per name"
             );
-            i += 1;
-        }
-        Self(name)
-    }
-}
-
-/// A CSS property that [`El::bind_style`] keeps up to date.
-///
-/// Declare each property once as a `const`, as with [`Class`]. Only the shape
-/// of the name is checked, so a name no browser knows, such as `colr`, is
-/// accepted and the browser ignores it.
-///
-/// ```
-/// use hypersig::html::{Property, div};
-/// use hypersig::Signals;
-/// use serde::{Deserialize, Serialize};
-///
-/// #[derive(Signals, Serialize, Deserialize)]
-/// struct Meter {
-///     level: i32,
-/// }
-///
-/// const WIDTH: Property = Property::new("width");
-/// let bar = div::<Meter>().bind_style(WIDTH, Meter::level().to_text().concat("%"));
-/// assert!(bar.render().contains("data-hs-style"));
-/// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Property(&'static str);
-
-impl Property {
-    /// The property named `name`, written as in a stylesheet.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `name` is neither a custom property (`--` followed by at
-    /// least one character other than whitespace, `:`, and `;`) nor lowercase
-    /// ASCII letters and hyphens. In a `const`, that is a compile error.
-    #[must_use]
-    pub const fn new(name: &'static str) -> Self {
-        // `style.setProperty` silently ignores a camelCase name such as
-        // `fontSize`, and the server writes the name into `style="name: value"`,
-        // where `:` or `;` would start another declaration.
-        let bytes = name.as_bytes();
-        let custom = bytes.len() > 2 && bytes[0] == b'-' && bytes[1] == b'-';
-        assert!(!bytes.is_empty(), "a CSS property name is never empty");
-        let mut i = 0;
-        while i < bytes.len() {
-            let b = bytes[i];
-            if custom {
-                assert!(
-                    !b.is_ascii_whitespace() && b != b':' && b != b';',
-                    "a custom property name holds no whitespace, `:`, or `;`"
-                );
-            } else {
-                assert!(
-                    b.is_ascii_lowercase() || b == b'-',
-                    "a CSS property is written in lowercase and hyphens, as in `font-size`"
-                );
-            }
             i += 1;
         }
         Self(name)
@@ -758,9 +699,43 @@ impl<S> El<S> {
     }
 
     /// Keeps the CSS property `property` equal to `value` as signals change.
+    ///
+    /// The value is a string the browser parses, so nothing checks that it is
+    /// valid for the property. A value the browser rejects leaves the property
+    /// as the element's classes and stylesheets set it. Where the value comes
+    /// from a fixed set, [`El::css_match`] keeps it typed.
+    ///
+    /// ```
+    /// use hypersig::html::div;
+    /// use hypersig::style::Property;
+    /// use hypersig::Signals;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Meter {
+    ///     level: i32,
+    /// }
+    ///
+    /// let bar = div::<Meter>().bind_style(Property::Width, Meter::level().to_text().concat("%"));
+    /// assert!(bar.render().contains("data-hs-style"));
+    /// ```
     #[must_use]
     pub fn bind_style(mut self, property: Property, value: impl IntoExpr<S, String>) -> Self {
-        self.style.push((property.0, value.into_expr()));
+        self.style
+            .push((property.name().to_owned(), value.into_expr()));
+        self
+    }
+
+    /// Keeps `token` equal to `value` on this element and those inside it, as
+    /// signals change. The value is not checked, as for [`El::bind_style`].
+    #[must_use]
+    pub fn bind_token<T: TokenValue>(
+        mut self,
+        token: &Token<T>,
+        value: impl IntoExpr<S, String>,
+    ) -> Self {
+        self.style
+            .push((format!("--{}", token.name()), value.into_expr()));
         self
     }
 
@@ -1317,7 +1292,14 @@ impl<S> El<S> {
         }
         write_pairs(out, "data-hs-attr", &self.attr_bind);
         write_pairs(out, "data-hs-toggle", &self.attr_when);
-        write_pairs(out, "data-hs-style", &self.style);
+        if !self.style.is_empty() {
+            let pairs: Vec<(&str, &Value)> = self
+                .style
+                .iter()
+                .map(|(property, value)| (property.as_str(), value.as_json()))
+                .collect();
+            write_attr(out, "data-hs-style", &json_text(&pairs));
+        }
         if let Some(key) = &self.key {
             write_attr(out, "data-hs-key", &key.to_string());
         }
@@ -1411,8 +1393,9 @@ pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
 
 #[cfg(test)]
 mod tests {
-    use super::{Class, Property, button, div, input, span};
+    use super::{Class, button, div, input, span};
     use crate::_private::sig;
+    use crate::style::Token;
     use crate::{Sig, Stmt};
 
     struct Page;
@@ -1439,9 +1422,8 @@ mod tests {
 
     #[test]
     fn binds_a_custom_property() {
-        let html = div::<Page>()
-            .bind_style(Property::new("--accent"), name())
-            .render();
+        let accent = Token::new("accent", crate::style::value::Color::RED);
+        let html = div::<Page>().bind_token(&accent, name()).render();
         assert!(
             html.contains(r#"data-hs-style="[[&quot;--accent&quot;,"#),
             "{html}"
