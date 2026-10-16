@@ -235,6 +235,59 @@ describe("Runtime", () => {
     expect(count()).toBe("1");
   });
 
+  it("binds an input inside a list item in both directions", async () => {
+    const runtime = mount(
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
+        `<input data-hs-bind='[["item",0,"title"],"text"]'></li></template></ul>`,
+      { rows: [1, 2].map((id) => ({ id, title: `t${id}` })) },
+    );
+    await tick();
+    const inputs = () => [...document.querySelectorAll<HTMLInputElement>("#l input")];
+    expect(inputs().map((input) => input.value)).toEqual(["t1", "t2"]);
+    inputs()[1]!.value = "typed";
+    inputs()[1]!.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(runtime.store.get("rows.1.title")).toBe("typed");
+    runtime.store.set("rows.0.title", "set");
+    await tick();
+    expect(inputs().map((input) => input.value)).toEqual(["set", "typed"]);
+  });
+
+  it("updates the items of a nested list when the enclosing item or a page signal they read changes", async () => {
+    const runtime = mount(
+      `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
+        `<template data-hs-each='[["item",0,"cells"],1]'><span data-hs-text='["concat",["concat",["item",0,"label"],["item",1,""]],["sig","suffix"]]'></span></template>` +
+        `</li></template></ul>`,
+      { rows: [{ id: 1, label: "a", cells: ["x", "y"] }, { id: 2, label: "b", cells: ["z"] }], suffix: "" },
+    );
+    await tick();
+    const texts = () => [...document.querySelectorAll("#l span")].map((span) => span.textContent);
+    expect(texts()).toEqual(["ax", "ay", "bz"]);
+    runtime.store.set("rows.0.label", "A");
+    await tick();
+    expect(texts()).toEqual(["Ax", "Ay", "bz"]);
+    runtime.store.set("suffix", "!");
+    await tick();
+    expect(texts()).toEqual(["Ax!", "Ay!", "bz!"]);
+    runtime.store.set("rows.1.cells.0", "w");
+    await tick();
+    expect(texts()).toEqual(["Ax!", "Ay!", "bw!"]);
+  });
+
+  it("keeps comparing items with a selected signal after a patch registers their list again", async () => {
+    const html =
+      `<div id="frag"><ul><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' ` +
+      `data-hs-class='[["on",["eq",["sig","selected"],["item",0,"id"]]]]'></li></template></ul></div>`;
+    const runtime = mount(html, { rows: [1, 2, 3].map((id) => ({ id })), selected: 1 });
+    await tick();
+    const on = () => [...document.querySelectorAll("#frag li")].map((li) => li.classList.contains("on"));
+    expect(on()).toEqual([true, false, false]);
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html }) });
+    await tick();
+    runtime.store.set("selected", 3);
+    await tick();
+    expect(on()).toEqual([false, false, true]);
+  });
+
   it("forgets the items of a list that a patch removed after the next frame", async () => {
     const runtime = mount(
       `<div id="frag"><ul><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></li></template></ul></div>`,
@@ -243,11 +296,13 @@ describe("Runtime", () => {
     await tick();
     const removed = document.querySelector("#frag li")!;
     const key = Object.getOwnPropertySymbols(removed).find((symbol) => symbol.description === "hypersig")!;
-    const bound = () => (removed as unknown as Record<symbol, { effects?: unknown[]; watch?: unknown }>)[key]!;
-    expect(bound().effects).toHaveLength(1);
+    // An item's bindings live in its row rather than in an `Effect` per binding.
+    const bound = () => (removed as unknown as Record<symbol, { effects?: unknown[]; watch?: unknown; row?: unknown }>)[key]!;
+    expect(bound().row).toBeDefined();
     runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p>gone</p></div>` }) });
     expect(removed.isConnected).toBe(false);
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    expect(bound().row).toBeUndefined();
     expect(bound().effects).toBeUndefined();
     expect(bound().watch).toBeUndefined();
     runtime.store.set("rows.0.label", "x");

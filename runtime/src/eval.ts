@@ -68,6 +68,11 @@ const unary: Record<string, (a: never) => unknown> = {
   len: (a: unknown) => (Array.isArray(a) ? a.length : 0),
 };
 
+/** Whether `op` names an operation that `evaluate` builds through `unary` or `binary`. */
+export function isOperator(op: string, arity: number): boolean {
+  return (arity === 1 && op in unary) || (arity === 2 && op in binary);
+}
+
 export class AstError extends Error {
   constructor(ast: unknown) {
     super(`hypersig: unknown expression ${JSON.stringify(ast)}`);
