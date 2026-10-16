@@ -39,13 +39,17 @@ pub(crate) struct Atom {
 }
 
 impl Atom {
-    /// The class name, from the conditions, the property, and the value.
+    /// The class name, from the conditions, the property, and the value, with
+    /// `when:` in front for a toggled declaration.
     ///
     /// The value is written out where it uses only letters, digits, `.`, `#`,
     /// `%`, and `-`. Any other value is replaced by a 64-bit FNV-1a hash of it,
     /// so two different values never share a name unless their hashes collide.
-    pub(crate) fn class_name(&self) -> String {
+    pub(crate) fn class_name(&self, toggled: bool) -> String {
         let mut name = String::new();
+        if toggled {
+            name.push_str("when:");
+        }
         for m in &self.conditions.media {
             name.push_str(m.name());
             name.push(':');
@@ -171,6 +175,20 @@ impl Style {
 
     /// The class names an element needs for this style.
     pub fn class_names(&self) -> impl Iterator<Item = String> + '_ {
-        self.atoms.iter().map(Atom::class_name)
+        self.atoms.iter().map(|a| a.class_name(false))
+    }
+
+    /// The class names for this style when it is switched on and off at run
+    /// time. Their rules sit in a later cascade layer than those of
+    /// [`Style::class_names`], so while switched on they override the
+    /// element's own declarations for the same property.
+    pub fn toggled_class_names(&self) -> impl Iterator<Item = String> + '_ {
+        self.atoms.iter().map(|a| a.class_name(true))
+    }
+
+    /// Whether the style has no declarations.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.atoms.is_empty()
     }
 }

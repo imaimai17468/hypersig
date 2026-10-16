@@ -9,6 +9,7 @@ use crate::expr::IntoExpr;
 use crate::html::{Node, Stylesheet, escape_into, write_attr};
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
+use crate::style::Sheet;
 
 /// A full HTML document for a page whose signals are `S`.
 ///
@@ -106,6 +107,9 @@ impl<S: Signals> Page<S> {
     }
 
     /// Adds `sheet` to `<head>` as a `<style>` block.
+    ///
+    /// Its rules sit outside any cascade layer, so they override the classes
+    /// of [`El::css`](crate::html::El::css) wherever both set a property.
     #[must_use]
     pub fn style(mut self, sheet: Stylesheet) -> Self {
         self.styles.push(sheet.css());
@@ -145,6 +149,17 @@ impl<S: Signals> Page<S> {
         out.push_str("<title>");
         escape_into(&mut out, &self.title, false);
         out.push_str("</title>");
+        let mut sheet = Sheet::new();
+        for child in &self.body {
+            child.collect_css(&mut sheet);
+        }
+        for bucket in sheet.buckets() {
+            out.push_str("<style");
+            write_attr(&mut out, "data-hs-css", &bucket.sort_key());
+            out.push('>');
+            out.push_str(bucket.css());
+            out.push_str("</style>");
+        }
         for href in &self.stylesheets {
             out.push_str("<link rel=\"stylesheet\"");
             write_attr(&mut out, "href", href);

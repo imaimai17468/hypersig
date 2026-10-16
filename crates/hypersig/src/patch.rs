@@ -6,7 +6,13 @@
 //! | Event | Data |
 //! |---|---|
 //! | `hs-signals` | `{"path": value, ...}`, merged into the signal store |
-//! | `hs-element` | `{"html": "..."}`, morphed into the element with the root's `id` |
+//! | `hs-element` | `{"html": "...", "css": [[sort key, css], ...]}`, morphed into the element with the root's `id` |
+//!
+//! `css` is present when the fragment uses [`El::css`] or [`El::css_when`].
+//! It lists the rule buckets of [`Sheet::buckets`]. The runtime adds each to
+//! the `<style data-hs-css>` with the same sort key, or inserts a new one
+//! before the first whose key sorts after it, so the rules keep the order
+//! the page would have written them in.
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -16,6 +22,7 @@ use serde_json::{Map, Value, json};
 
 use crate::html::El;
 use crate::signal::Signals;
+use crate::style::Sheet;
 
 /// A part of the page the server can re-render and replace on its own.
 ///
@@ -99,21 +106,25 @@ impl<S> fmt::Debug for SignalPatch<S> {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum PatchEvent {
     Signals(Map<String, Value>),
-    Element(String),
+    Element {
+        html: String,
+        css: Vec<(String, String)>,
+    },
 }
 
 impl PatchEvent {
     pub(crate) fn name(&self) -> &'static str {
         match self {
             Self::Signals(_) => "hs-signals",
-            Self::Element(_) => "hs-element",
+            Self::Element { .. } => "hs-element",
         }
     }
 
     pub(crate) fn data(&self) -> String {
         match self {
             Self::Signals(values) => Value::Object(values.clone()).to_string(),
-            Self::Element(html) => json!({ "html": html }).to_string(),
+            Self::Element { html, css } if css.is_empty() => json!({ "html": html }).to_string(),
+            Self::Element { html, css } => json!({ "html": html, "css": css }).to_string(),
         }
     }
 }
@@ -179,8 +190,17 @@ impl<S: Signals> Patches<S> {
     /// being typed in them.
     #[must_use]
     pub fn element<F: Fragment<Signals = S>>(mut self, fragment: &F) -> Self {
-        self.events
-            .push(PatchEvent::Element(self::fragment(fragment).render()));
+        let el = self::fragment(fragment);
+        let mut sheet = Sheet::new();
+        el.collect_css(&mut sheet);
+        let css = sheet
+            .buckets()
+            .map(|bucket| (bucket.sort_key(), bucket.css().to_owned()))
+            .collect();
+        self.events.push(PatchEvent::Element {
+            html: el.render(),
+            css,
+        });
         self
     }
 

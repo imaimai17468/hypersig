@@ -1,0 +1,10 @@
+error[E0599]: no variant, associated function, or constant named `Flx` found for enum `hypersig::hypersig_style::value::Display` in the current scope
+ --> tests/ui/fail/style_misspelled_keyword.rs:7:43
+  |
+7 |     let _ = Style::new().display(Display::Flx);
+  |                                           ^^^ variant, associated function, or constant not found in `hypersig::hypersig_style::value::Display`
+  |
+help: there is a variant with a similar name
+  |
+7 |     let _ = Style::new().display(Display::Flex);
+  |                                             +

@@ -385,6 +385,8 @@ function serve(name: string): void {
   const { document: html } = JSON.parse(readFileSync(path, "utf8")) as { document: string };
   const parsed = new DOMParser().parseFromString(html, "text/html");
   document.body.replaceChildren(...parsed.body.childNodes);
+  for (const old of document.head.querySelectorAll("style[data-hs-css]")) old.remove();
+  document.head.append(...parsed.head.querySelectorAll("style[data-hs-css]"));
   for (const { name } of [...document.body.attributes]) document.body.removeAttribute(name);
   for (const { name, value } of [...parsed.body.attributes]) document.body.setAttribute(name, value);
 }
@@ -495,5 +497,46 @@ describe("computed signals", () => {
     expect(runtime.store.get("sum")).toBe(7);
     expect(written.size).toBe(0);
     observer.disconnect();
+  });
+});
+
+describe("atomic css", () => {
+  /** The one event in a stream fixture written by `Patches::to_event_stream`. */
+  function patch(name: string): { event: string; data: string } {
+    const path = resolve(__dirname, `fixtures/${name}.json`);
+    const { stream } = JSON.parse(readFileSync(path, "utf8")) as { stream: string };
+    const [event, data] = stream.trim().split("\n");
+    return { event: event!.slice("event: ".length), data: data!.slice("data: ".length) };
+  }
+
+  const buckets = () => [...document.head.querySelectorAll<HTMLStyleElement>("style[data-hs-css]")].map((style) => style.dataset.hsCss);
+
+  it("switches a toggled style's classes with its condition", async () => {
+    serve("styled_page");
+    start();
+    const box = $("#box");
+    expect(box.className).toBe("md:width_50%");
+    box.click();
+    await tick();
+    expect(box.classList.contains("when:color_crimson")).toBe(true);
+    box.click();
+    await tick();
+    expect(box.classList.contains("when:color_crimson")).toBe(false);
+  });
+
+  it("puts a patch's rule buckets at their place in the order", async () => {
+    serve("styled_page");
+    const runtime = start();
+    expect(buckets()).toEqual(["0 k01--00", "1 k--00"]);
+    runtime.apply(patch("styled_patch"));
+    await tick();
+    expect(buckets()).toEqual(["0 k--00", "0 k-4019-00", "0 k01--00", "1 k--00"]);
+    expect($("#slot").className).toBe("width_100% padding_4px hover:color_blue");
+    const base = document.head.querySelector<HTMLStyleElement>('style[data-hs-css="0 k--00"]')!;
+    const once = base.textContent;
+    runtime.apply(patch("styled_patch"));
+    await tick();
+    expect(base.textContent).toBe(once);
+    expect(buckets()).toHaveLength(4);
   });
 });

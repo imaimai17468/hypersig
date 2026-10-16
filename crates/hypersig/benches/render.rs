@@ -4,6 +4,8 @@
 
 use divan::{AllocProfiler, Bencher};
 use hypersig::html::{Class, El, Node, each_keyed, input, li, span, ul};
+use hypersig::style::value::{Color, Display, rem};
+use hypersig::style::{Media, PseudoClass, Style};
 use hypersig::{Page, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -62,6 +64,28 @@ fn main() {
 #[divan::bench(args = [100, 1_000, 10_000])]
 fn list_items(bencher: Bencher, len: i32) {
     let page = Page::new("bench", signals(len)).child(ul().child(list(span)));
+    bencher.bench_local(|| page.render());
+}
+
+/// The items of `list_items` with atomic classes: five declarations under three
+/// conditions, and one toggled style.
+#[divan::bench(args = [100, 1_000, 10_000])]
+fn list_items_styled(bencher: Bencher, len: i32) {
+    let item = Style::new()
+        .display(Display::Flex)
+        .padding(rem(1))
+        .color(Color::hex(0x0022_2222))
+        .on(PseudoClass::Hover, Style::new().color(Color::CRIMSON))
+        .on(Media::Md, Style::new().padding(rem(2)));
+    let page = Page::new("bench", signals(len)).child(ul().child(each_keyed(
+        Todos::items(),
+        |todo| todo.at(Todo::id()),
+        |todo| {
+            li().css(item)
+                .css_when(Style::new().color(Color::GRAY), todo.at(Todo::done()))
+                .child(span().bind_text(todo.at(Todo::title())))
+        },
+    )));
     bencher.bench_local(|| page.render());
 }
 

@@ -25,5 +25,5 @@ pub mod value;
 
 pub use condition::{Condition, Media};
 pub use generated::{Property, PseudoClass, PseudoElement};
-pub use sheet::{LAYER, Sheet};
+pub use sheet::{Bucket, LAYER, Sheet, TOGGLED_LAYER};
 pub use style::Style;

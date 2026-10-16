@@ -1,4 +1,5 @@
 import { type Compiled, compile, type Context, evaluate, type Host, resolve, resolveRead, run, type Slot } from "./eval.ts";
+import { addRules } from "./css.ts";
 import { morph } from "./morph.ts";
 import { placeRead, type StaticRead, staticReads } from "./reads.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
@@ -437,7 +438,8 @@ export class Runtime implements Host {
         this.store.merge(JSON.parse(event.data) as Values);
         return;
       case "hs-element": {
-        const { html } = JSON.parse(event.data) as { html: string };
+        const { html, css } = JSON.parse(event.data) as { html: string; css?: [string, string][] };
+        if (css !== undefined) addRules(css);
         const template = document.createElement("template");
         template.innerHTML = html;
         const next = template.content.firstElementChild;

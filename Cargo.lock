@@ -430,6 +430,7 @@ dependencies = [
  "futures",
  "http-body-util",
  "hypersig_proc",
+ "hypersig_style",
  "serde",
  "serde_json",
  "tokio",

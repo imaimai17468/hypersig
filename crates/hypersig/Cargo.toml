@@ -19,6 +19,7 @@ axum = ["dep:axum", "dep:futures"]
 axum = { workspace = true, optional = true }
 futures = { workspace = true, optional = true }
 hypersig_proc.workspace = true
+hypersig_style.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

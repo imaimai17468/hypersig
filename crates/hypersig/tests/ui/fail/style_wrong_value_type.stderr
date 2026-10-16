@@ -1,0 +1,25 @@
+error[E0277]: the trait bound `hypersig::hypersig_style::value::Width: From<hypersig::hypersig_style::value::Color>` is not satisfied
+ --> tests/ui/fail/style_wrong_value_type.rs:7:32
+  |
+7 |     let _ = Style::new().width(Color::RED);
+  |                          ----- ^^^^^^^^^^ the trait `From<hypersig::hypersig_style::value::Color>` is not implemented for `hypersig::hypersig_style::value::Width`
+  |                          |
+  |                          required by a bound introduced by this call
+  |
+help: `hypersig::hypersig_style::value::Width` implements trait `From<T>`
+ --> $WORKSPACE/crates/hypersig_style/src/value/generated.rs
+  |
+  | impl From<Length> for Width {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<hypersig::hypersig_style::value::Length>`
+...
+      | impl From<Percentage> for Width {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<hypersig::hypersig_style::value::Percentage>`
+...
+      | impl From<Raw> for Width {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^ `From<hypersig::hypersig_style::value::Raw>`
+      = note: required for `hypersig::hypersig_style::value::Color` to implement `Into<hypersig::hypersig_style::value::Width>`
+note: required by a bound in `style::generated::<impl hypersig::hypersig_style::Style>::width`
+ --> $WORKSPACE/crates/hypersig_style/src/generated.rs
+  |
+  |     pub fn width(self, value: impl Into<crate::value::Width>) -> Self {
+  |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `style::generated::<impl Style>::width`

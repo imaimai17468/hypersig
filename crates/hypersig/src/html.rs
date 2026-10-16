@@ -53,6 +53,7 @@ use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
 use crate::signal::{Item, Sig, in_item_scope};
 use crate::ssr::{self, Ctx};
+use crate::style::{Sheet, Style};
 
 const RESERVED_PREFIX: &str = "data-hs-";
 
@@ -93,6 +94,17 @@ impl<S> fmt::Debug for Node<S> {
 }
 
 impl<S> Node<S> {
+    /// Adds the rules the elements in this node need to `sheet`.
+    pub(crate) fn collect_css(&self, sheet: &mut Sheet) {
+        match &self.0 {
+            NodeKind::Element(el) => el.collect_css(sheet),
+            NodeKind::Text(_) => {}
+            NodeKind::Each { template, .. } | NodeKind::When { template, .. } => {
+                template.collect_css(sheet);
+            }
+        }
+    }
+
     pub(crate) fn write(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
         match &self.0 {
             NodeKind::Element(el) => el.write(out, ctx, None),
@@ -255,6 +267,9 @@ pub struct El<S> {
     checked: Option<Expr<S, bool>>,
     bind: Option<Value>,
     class_when: Vec<(&'static str, Expr<S, bool>)>,
+    css: Style,
+    css_names: Vec<String>,
+    css_when: Vec<(Style, Vec<String>, Expr<S, bool>)>,
     attr_bind: Vec<(&'static str, Expr<S, String>)>,
     attr_when: Vec<(&'static str, Expr<S, bool>)>,
     style: Vec<(&'static str, Expr<S, String>)>,
@@ -677,6 +692,9 @@ impl<S> El<S> {
             checked: None,
             bind: None,
             class_when: Vec::new(),
+            css: Style::new(),
+            css_names: Vec::new(),
+            css_when: Vec::new(),
             attr_bind: Vec::new(),
             attr_when: Vec::new(),
             style: Vec::new(),
@@ -768,6 +786,68 @@ impl<S> El<S> {
     pub fn class_when(mut self, class: Class, when: impl IntoExpr<S, bool>) -> Self {
         self.class_when.push((class.0, when.into_expr()));
         self
+    }
+
+    /// Adds the declarations of `style` as atomic classes.
+    ///
+    /// The page writes the rules for them into `<head>`, and a patch carries
+    /// the rules for the fragment it sends. A later call wins over an earlier
+    /// one for the same property, as [`Style::merge`] does. A plain stylesheet
+    /// from [`Page::style`](crate::Page::style) sits outside the cascade layers
+    /// these rules are in, so it overrides them.
+    ///
+    /// ```
+    /// use hypersig::html::button;
+    /// use hypersig::style::value::{Color, Cursor, px};
+    /// use hypersig::style::{PseudoClass, Style};
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Shop {}
+    ///
+    /// let html = Page::new("Shop", Shop {})
+    ///     .child(button().css(
+    ///         Style::new()
+    ///             .padding(px(8))
+    ///             .cursor(Cursor::Pointer)
+    ///             .on(PseudoClass::Hover, Style::new().color(Color::CRIMSON)),
+    ///     ))
+    ///     .render();
+    /// assert!(html.contains(r#"<button class="padding_8px cursor_pointer hover:color_crimson">"#));
+    /// assert!(html.contains(".hover\\:color_crimson:hover{color:crimson}"));
+    /// ```
+    #[must_use]
+    pub fn css(mut self, style: Style) -> Self {
+        self.css = std::mem::take(&mut self.css).merge(style);
+        self.css_names = self.css.class_names().collect();
+        self
+    }
+
+    /// Adds the declarations of `style` while `when` is true.
+    ///
+    /// Their rules sit in a cascade layer after those of [`El::css`], so while
+    /// `when` is true they override this element's own declarations for the
+    /// same property. Two styles switched on at once that set the same
+    /// property are not checked against each other: the one whose rule comes
+    /// later in the stylesheet wins, which depends on the conditions and the
+    /// property, not on the order of the calls.
+    #[must_use]
+    pub fn css_when(mut self, style: Style, when: impl IntoExpr<S, bool>) -> Self {
+        let names = style.toggled_class_names().collect();
+        self.css_when.push((style, names, when.into_expr()));
+        self
+    }
+
+    /// Adds the rules this element and the elements inside it need to `sheet`.
+    pub(crate) fn collect_css(&self, sheet: &mut Sheet) {
+        sheet.add(&self.css);
+        for (style, _, _) in &self.css_when {
+            sheet.add_toggled(style);
+        }
+        for child in &self.children {
+            child.collect_css(sheet);
+        }
     }
 
     /// Attaches `node_ref`, so its statements act on this element.
@@ -1039,6 +1119,12 @@ impl<S> El<S> {
                 classes.push(class);
             }
         }
+        classes.extend(self.css_names.iter().map(String::as_str));
+        for (_, names, when) in &self.css_when {
+            if eval_bool(when.as_json()) == Some(true) {
+                classes.extend(names.iter().map(String::as_str));
+            }
+        }
         let mut style: Vec<String> = Vec::new();
         for (property, value) in &self.style {
             if let Some(value) = eval_text(value.as_json()) {
@@ -1165,7 +1251,17 @@ impl<S> El<S> {
         if let Some(bind) = &self.bind {
             write_attr(out, "data-hs-bind", &bind.to_string());
         }
-        write_pairs(out, "data-hs-class", &self.class_when);
+        if !self.class_when.is_empty() || !self.css_when.is_empty() {
+            let mut pairs: Vec<(&str, &Value)> = self
+                .class_when
+                .iter()
+                .map(|(class, when)| (*class, when.as_json()))
+                .collect();
+            for (_, names, when) in &self.css_when {
+                pairs.extend(names.iter().map(|name| (name.as_str(), when.as_json())));
+            }
+            write_attr(out, "data-hs-class", &json_text(&pairs));
+        }
         write_pairs(out, "data-hs-attr", &self.attr_bind);
         write_pairs(out, "data-hs-toggle", &self.attr_when);
         write_pairs(out, "data-hs-style", &self.style);

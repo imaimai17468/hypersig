@@ -4,7 +4,7 @@ error[E0080]: evaluation panicked: a CSS property is written in lowercase and hy
 12 | const FONT_SIZE: Property = Property::new("fontSize");
    |                             ^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `FONT_SIZE` failed inside this call
    |
-note: inside `Property::new`
+note: inside `hypersig::html::Property::new`
   --> $RUST/core/src/panic.rs
    |
    |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));

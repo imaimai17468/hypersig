@@ -67,6 +67,13 @@ pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 
+/// Typed atomic CSS, from the `hypersig_style` crate.
+///
+/// The crate is split off because its code is generated from MDN's CSS data
+/// and is larger than the rest of hypersig. Reach it through this path.
+#[doc(inline)]
+pub use hypersig_style as style;
+
 /// The path [`Page`] loads the runtime from.
 pub const RUNTIME_PATH: &str = "/_hypersig/runtime.js";
 

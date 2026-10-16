@@ -11,7 +11,9 @@ use hypersig::html::{
     El, Event, Key, Property, button, div, each, each_keyed, input, label, li, main, select, span,
     ul, when,
 };
-use hypersig::{Action, Expr, NodeRef, Page, Signals, Stmt};
+use hypersig::style::value::{Color, pct, px};
+use hypersig::style::{Media, PseudoClass, Style};
+use hypersig::{Action, Expr, Fragment, NodeRef, Page, Patches, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -435,6 +437,44 @@ fn computed_page() -> String {
     .render()
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Styled {
+    on: bool,
+}
+
+/// A page whose rules sit in a breakpoint bucket and the toggled layer, with
+/// an empty slot a patch fills.
+fn styled() -> (El<Styled>, Styled) {
+    let el = main()
+        .child(
+            div()
+                .id("box")
+                .css(Style::new().on(Media::Md, Style::new().width(pct(50))))
+                .css_when(Style::new().color(Color::CRIMSON), Styled::on())
+                .on_click(Styled::on().toggle()),
+        )
+        .child(div().id("slot"));
+    (el, Styled { on: false })
+}
+
+/// Fills the slot with rules in two buckets the page does not have: one that
+/// sorts before the page's breakpoint bucket, and one between.
+struct Panel;
+
+impl Fragment for Panel {
+    type Signals = Styled;
+    const ID: &'static str = "slot";
+
+    fn render(&self) -> El<Styled> {
+        div().css(
+            Style::new()
+                .width(pct(100))
+                .padding(px(4))
+                .on(PseudoClass::Hover, Style::new().color(Color::BLUE)),
+        )
+    }
+}
+
 /// Writes the page as `Page::render` serves it, with the server-side values applied.
 fn check_page<S: Signals>(name: &str, el: El<S>, signals: S) {
     let html = Page::new(name, signals).child(el).render();
@@ -465,6 +505,18 @@ fn fixtures_match_the_builder() {
     check_page("nested_page", el, signals);
     let (el, signals) = controls();
     check_page("controls_page", el, signals);
+    let (el, signals) = styled();
+    check_page("styled_page", el, signals);
+    write_or_compare(
+        "styled_patch",
+        &format!(
+            "{}\n",
+            serde_json::to_string_pretty(&json!({
+                "stream": Patches::<Styled>::new().element(&Panel).to_event_stream()
+            }))
+            .expect("fixture JSON")
+        ),
+    );
     let document = computed_page();
     write_or_compare(
         "computed_page",
