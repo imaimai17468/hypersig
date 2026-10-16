@@ -4,17 +4,17 @@ Keyed, headless Chrome 155 on an Apple M4 Max, 10 runs each, medians. Times are 
 
 | | hypersig | vanillajs | React 19.2 | Vue 3.5 | Solid 1.9 | Leptos 0.7 |
 |---|---|---|---|---|---|---|
-| create rows | 28.9 | 21.1 | 23.4 | 24.4 | 22.3 | 25.3 |
-| replace all rows | 30.9 | 22.1 | 29.4 | 26.4 | 23.5 | 28.9 |
-| partial update (4x slowdown) | 20.1 | 9.9 | 14.6 | 13.2 | 10.5 | 11.7 |
-| select row (4x slowdown) | 3.5 | 4.9 | 6.6 | 4.5 | 5.8 | 4.5 |
-| swap rows (4x slowdown) | 14.6 | 12.4 | 89.8 | 14.6 | 12.9 | 12.9 |
-| remove row (2x slowdown) | 15.4 | 10.7 | 14.5 | 14.1 | 12.7 | 12.6 |
-| create many rows | 319.1 | 213.7 | 387.4 | 253.1 | 227.9 | 267.7 |
-| append rows to large table | 31.5 | 23.1 | 27.8 | 26.4 | 24.6 | 27.8 |
-| clear rows (4x slowdown) | 15.6 | 8.8 | 16.1 | 11.9 | 11.4 | 16.4 |
-| ready memory (MB) | 0.65 | 0.56 | 1.17 | 0.85 | 0.59 | 1.71 |
-| run memory (MB) | 5.37 | 1.87 | 4.38 | 3.91 | 2.68 | 5.44 |
-| create/clear 5 times (MB) | 1.47 | 0.62 | 1.97 | 1.17 | 0.77 | 4.58 |
-| size, compressed (KB) | 10.2 | 2.5 | 51.4 | 23.3 | 4.5 | 48.8 |
-| first paint | 62.5 | 78.0 | 277.8 | 168.7 | 99.9 | 296.5 |
+| create rows | 29.3 | 21.1 | 24.2 | 24.6 | 21.9 | 25.1 |
+| replace all rows | 30.7 | 22.1 | 29.4 | 26.8 | 23.7 | 29.2 |
+| partial update (4x slowdown) | 19.1 | 9.9 | 15.1 | 12.7 | 12.3 | 12.1 |
+| select row (4x slowdown) | 4.5 | 7.1 | 5.9 | 3.9 | 5.3 | 5.7 |
+| swap rows (4x slowdown) | 13.2 | 12.8 | 88.2 | 13.0 | 12.4 | 12.4 |
+| remove row (2x slowdown) | 14.3 | 10.6 | 14.8 | 12.4 | 12.1 | 12.5 |
+| create many rows | 313.5 | 208.3 | 409.3 | 247.6 | 224.4 | 261.6 |
+| append rows to large table | 31.0 | 23.1 | 27.8 | 26.3 | 24.1 | 27.8 |
+| clear rows (4x slowdown) | 13.4 | 10.7 | 16.4 | 11.8 | 10.6 | 14.8 |
+| ready memory (MB) | 0.65 | 0.56 | 1.18 | 0.86 | 0.59 | 1.74 |
+| run memory (MB) | 5.27 | 1.87 | 4.41 | 3.91 | 2.68 | 5.44 |
+| create/clear 5 times (MB) | 1.52 | 0.64 | 1.95 | 1.19 | 0.76 | 4.57 |
+| size, compressed (KB) | 10.4 | 2.5 | 51.4 | 23.3 | 4.5 | 48.8 |
+| first paint | 115.3 | 111.3 | 274.0 | 150.5 | 100.7 | 297.4 |
