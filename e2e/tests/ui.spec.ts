@@ -191,3 +191,100 @@ test("a progress bar reports its value", async ({ page }) => {
   for (let i = 0; i < 7; i++) await page.locator("#more").click();
   await expect(bar).toHaveAttribute("aria-valuenow", "100");
 });
+
+test("a listbox takes one Tab stop and selects the option the arrow keys reach", async ({ page }) => {
+  const list = page.getByRole("listbox", { name: "Font" });
+  const sans = list.getByRole("option", { name: "Sans serif" });
+  const serif = list.getByRole("option", { name: "Serif", exact: true });
+  const mono = list.getByRole("option", { name: "Monospace" });
+  await expect(sans).toHaveAttribute("aria-selected", "true");
+  await page.getByLabel("Region").focus();
+  await page.keyboard.press("Tab");
+  await expect(sans).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(serif).toBeFocused();
+  await expect(serif).toHaveAttribute("aria-selected", "true");
+  await expect(sans).toHaveAttribute("aria-selected", "false");
+  await page.keyboard.press("End");
+  await expect(mono).toBeFocused();
+  await expect(mono).toHaveAttribute("tabindex", "0");
+  await expect(serif).toHaveAttribute("tabindex", "-1");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("combobox", { name: "Country" })).toBeFocused();
+});
+
+test("a combobox keeps focus in its field while the arrow keys reach the options it shows", async ({ page }) => {
+  const field = page.getByRole("combobox", { name: "Country" });
+  const list = page.getByRole("listbox", { name: "Suggestions" });
+  await expect(field).toHaveAttribute("aria-expanded", "false");
+  await expect(list).toBeHidden();
+
+  await field.fill("an");
+  await expect(field).toHaveAttribute("aria-expanded", "true");
+  await expect(list.getByRole("option")).toHaveText(["Canada", "France", "Germany", "Japan"]);
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await expect(field).toBeFocused();
+  const france = list.getByRole("option", { name: "France" });
+  await expect(field).toHaveAttribute("aria-activedescendant", (await france.getAttribute("id"))!);
+  await expect(france).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowUp");
+  await expect(list.getByRole("option", { name: "Japan" })).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Enter");
+  await expect(field).toHaveValue("Japan");
+  await expect(field).toHaveAttribute("aria-expanded", "false");
+
+  await page.keyboard.press("Escape");
+  await expect(field).toHaveValue("");
+  await page.keyboard.press("ArrowDown");
+  await list.getByRole("option", { name: "Norway" }).click();
+  await expect(field).toHaveValue("Norway");
+  await expect(field).toBeFocused();
+  await expect(list).toBeHidden();
+
+  await field.fill("zz");
+  await expect(list.getByText("No matches")).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(field).toHaveAttribute("aria-expanded", "false");
+});
+
+test("a slider is a native range with a value text", async ({ page }) => {
+  const slider = page.getByRole("slider", { name: "Volume" });
+  await expect(slider).toHaveValue("40");
+  await slider.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(slider).toHaveValue("45");
+  await expect(slider).toHaveAttribute("aria-valuetext", "45 %");
+  await page.keyboard.press("End");
+  await expect(slider).toHaveValue("100");
+});
+
+test("a tooltip describes its button and opens on hover and focus", async ({ page }) => {
+  const add = page.getByRole("button", { name: "Add item" });
+  const tip = page.getByRole("tooltip");
+  await expect(add).toHaveAccessibleDescription("Adds an empty row at the end");
+  await expect(tip).toBeHidden();
+  await add.hover();
+  await expect(tip).toBeVisible();
+  await tip.hover();
+  await expect(tip).toBeVisible();
+  await page.mouse.move(0, 0);
+  await expect(tip).toBeHidden();
+  await add.focus();
+  await expect(tip).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(tip).toBeHidden();
+});
+
+test("a toast is announced in the notifications region and stays until dismissed", async ({ page }) => {
+  const region = page.getByRole("region", { name: "Notifications" });
+  await expect(region.getByRole("list")).toHaveAttribute("aria-live", "polite");
+  await page.locator("#toast").click();
+  await page.locator("#toast-error").click();
+  await expect(region.getByRole("listitem")).toHaveCount(2);
+  await expect(region.getByRole("listitem").first()).toContainText("Event created");
+  await region.getByRole("listitem").first().getByRole("button", { name: "Dismiss" }).click();
+  await expect(region.getByRole("listitem")).toHaveCount(1);
+  await expect(region.getByRole("listitem")).toContainText("Upload failed");
+});

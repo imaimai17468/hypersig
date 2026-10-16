@@ -1,6 +1,6 @@
 //! The components of `hypersig_ui` on one page: a form whose email the
-//! server checks, toggles, tabs, an accordion, dialogs, a menu, and the
-//! static pieces.
+//! server checks, toggles, pickers, tabs, an accordion, dialogs, a menu,
+//! tooltips, toasts, and the static pieces.
 //!
 //! Run with `cargo run -p example-ui` and open <http://localhost:3005>.
 
@@ -14,11 +14,12 @@ use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
 use hypersig::{Action, Page, Patches, RouterExt, Signals, if_else};
 use hypersig_ui::{
-    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Dialog,
-    InputKind, Level, Menu, MenuItem, Tabs, TextField, alert, alert_description, alert_title,
-    badge, button, card, card_content, card_description, card_footer, card_header, card_title,
-    checkbox, dialog_footer, icon_button, progress, radio_group, select_field, separator, skeleton,
-    submit_button, switch, token,
+    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Combobox,
+    ComboboxState, Dialog, InputKind, Level, Listbox, Menu, MenuItem, Slider, Tabs, TextField,
+    Toast, ToastVariant, Toaster, Tooltip, alert, alert_description, alert_title, badge, button,
+    card, card_content, card_description, card_footer, card_header, card_title, checkbox,
+    dialog_footer, progress, radio_group, select_field, separator, skeleton, submit_button, switch,
+    token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -41,6 +42,13 @@ enum Region {
     Tokyo,
     Frankfurt,
     Virginia,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+enum Font {
+    Sans,
+    Serif,
+    Mono,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
@@ -74,12 +82,19 @@ struct Gallery {
     progress: i32,
     archived: bool,
     status: String,
+    font: Font,
+    country: ComboboxState,
+    volume: i32,
+    toasts: Vec<Toast>,
+    next_toast: i32,
 }
 
 const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
 const EDIT: Dialog<Gallery> = Dialog::new("edit-profile");
 const DELETE: Dialog<Gallery> = Dialog::new("delete-project");
 const ACTIONS: Menu<Gallery> = Menu::new("project-actions");
+const ADD_TIP: Tooltip<Gallery> = Tooltip::new("add-item-tip");
+const COUNTRY: Combobox<Gallery> = Combobox::new("country", "country-options");
 
 /// Checks on the server what the browser cannot: whether the address is
 /// taken. The browser has already checked that it is an email address.
@@ -168,7 +183,12 @@ fn buttons() -> El<Gallery> {
                         .attr("disabled", "")
                         .text("Disabled"),
                 )
-                .child(icon_button(ButtonVariant::Outline, "Add item").text("+")),
+                .child(
+                    ADD_TIP
+                        .icon_trigger(ButtonVariant::Outline, "Add item")
+                        .text("+"),
+                )
+                .child(ADD_TIP.tooltip("Adds an empty row at the end")),
         )
         .child(
             div()
@@ -272,6 +292,39 @@ fn choices() -> El<Gallery> {
                     (Region::Virginia, "Virginia"),
                 ],
             )),
+    )
+}
+
+fn pickers() -> El<Gallery> {
+    let volume = Gallery::volume();
+    panel("Pickers").child(
+        div()
+            .css(grid(1, rem(1.5)).on(Media::Md, grid(2, rem(1.5))))
+            .child(
+                div().id("font").child(
+                    Listbox::new("Font", Gallery::font())
+                        .option(Font::Sans, "Sans serif")
+                        .option(Font::Serif, "Serif")
+                        .option(Font::Mono, "Monospace"),
+                ),
+            )
+            .child(
+                div()
+                    .css(stack(rem(1.5)))
+                    .child(COUNTRY.render(
+                        "Country",
+                        Gallery::country(),
+                        [
+                            "Brazil", "Canada", "France", "Germany", "India", "Japan", "Kenya",
+                            "Mexico", "Norway", "Spain",
+                        ],
+                    ))
+                    .child(
+                        Slider::new("Volume", volume)
+                            .step(5)
+                            .value_text(volume.to_text().concat(" %")),
+                    ),
+            ),
     )
 }
 
@@ -410,6 +463,7 @@ fn feedback() -> El<Gallery> {
                 .child(alert_description().text("The last commit does not compile.")),
         )
         .child(progress("Upload", percent))
+        .child(toasts())
         .child(
             div()
                 .css(wrap(rem(0.5)))
@@ -434,6 +488,37 @@ fn feedback() -> El<Gallery> {
         )
 }
 
+fn toasts() -> El<Gallery> {
+    let toasts = Gallery::toasts();
+    let next = Gallery::next_toast();
+    div()
+        .css(wrap(rem(0.5)))
+        .child(
+            button(ButtonVariant::Outline, ButtonSize::Sm)
+                .id("toast")
+                .on_click(
+                    Toast::new("Event created")
+                        .description("Sunday, December 3 at 9:00")
+                        .push(toasts, next)
+                        .then(next.set(next + 1)),
+                )
+                .text("Show a toast"),
+        )
+        .child(
+            button(ButtonVariant::Outline, ButtonSize::Sm)
+                .id("toast-error")
+                .on_click(
+                    Toast::new("Upload failed")
+                        .description("The file is larger than 10 MB.")
+                        .variant(ToastVariant::Destructive)
+                        .push(toasts, next)
+                        .then(next.set(next + 1)),
+                )
+                .text("Show an error"),
+        )
+        .child(Toaster::new(toasts))
+}
+
 async fn index() -> Html<String> {
     let page = Page::new(
         "hypersig_ui",
@@ -456,6 +541,11 @@ async fn index() -> Html<String> {
             progress: 40,
             archived: false,
             status: String::new(),
+            font: Font::Sans,
+            country: ComboboxState::default(),
+            volume: 40,
+            toasts: Vec::new(),
+            next_toast: 1,
         },
     )
     .global(hypersig_ui::global())
@@ -493,6 +583,7 @@ async fn index() -> Html<String> {
                                 .child(choices()),
                         ),
                     )
+                    .child(pickers())
                     .child(settings())
                     .child(faq())
                     .child(overlays())
