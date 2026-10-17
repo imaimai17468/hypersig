@@ -1179,8 +1179,8 @@ fn component_page(page: Component) -> Page {
         },
         Component::Chart => Page {
             lead: L {
-                en: "Bar, stacked bar, line, and area charts of the rows of a list signal, on a scale the browser fits to the values.",
-                ja: "リストのシグナルの行を、棒、積み上げ棒、折れ線、面で描くチャートです。縦軸の目盛りはブラウザが値に合わせて決めます。",
+                en: "Bar, stacked bar, horizontal bar, line, and area charts of the rows of a list signal, on a scale the browser fits to the values.",
+                ja: "リストのシグナルの行を、棒、積み上げ棒、横棒、折れ線、面で描くチャートです。値の軸の目盛りはブラウザが値に合わせて決めます。",
             },
             demo: Demo::Chart,
             built_on: &[
@@ -1216,6 +1216,14 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "Chart::horizontal_bar",
+                    "hypersig_ui/struct.Chart.html#method.horizontal_bar",
+                    L {
+                        en: "A horizontal bar chart named `label` of `rows`, labeled by `category`.",
+                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける横棒グラフ",
+                    },
+                ),
+                (
                     "Chart::line",
                     "hypersig_ui/struct.Chart.html#method.line",
                     L {
@@ -1243,8 +1251,8 @@ fn component_page(page: Component) -> Page {
                     "max_labels",
                     "hypersig_ui/struct.Chart.html#method.max_labels",
                     L {
-                        en: "Labels at most `count` rows along the horizontal axis, 12 until set.",
-                        ja: "横軸にラベルを付ける行を最大 `count` 個にします。設定するまでは 12 個です。",
+                        en: "Labels at most `count` rows along the axis of the categories, 12 until set.",
+                        ja: "カテゴリの軸にラベルを付ける行を最大 `count` 個にします。設定するまでは 12 個です。",
                     },
                 ),
                 (

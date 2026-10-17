@@ -1,5 +1,5 @@
-//! Charts: bars, stacked bars, lines, or areas drawn from the rows of a
-//! list signal, on a scale the browser fits to the values.
+//! Charts: bars, stacked or horizontal bars, lines, or areas drawn from the
+//! rows of a list signal, on a scale the browser fits to the values.
 
 use std::fmt;
 
@@ -20,6 +20,7 @@ use crate::token;
 enum Kind {
     Bar,
     StackedBar,
+    HorizontalBar,
     Line,
     Area,
 }
@@ -44,11 +45,13 @@ type RowText<S, T> = Box<dyn Fn(Item<S, T>, Option<&NumberFormat>) -> Expr<S, St
 /// than two more, so a scale spans at most five steps.
 const TICKS: i32 = 6;
 
-/// A bar, stacked bar, line, or area chart of the rows of a list signal.
+/// A chart of the rows of a list signal, drawn as bars, lines, or areas.
 ///
-/// Each row is one point along the horizontal axis, labeled by the text
-/// field `category`, and each [`Chart::series`] reads a number field of the
-/// row. The browser fits the vertical scale to the values: it runs from a
+/// Each row is one point along the axis of the categories, labeled by the
+/// text field `category`, and each [`Chart::series`] reads a number field
+/// of the row. The categories run along the bottom, or down the side of a
+/// [`Chart::horizontal_bar`]. The browser fits the scale of the values to
+/// them: it runs from a
 /// round number at or below the smallest value, or 0, to a round number at
 /// or above the largest, or 0, with grid lines on a step of 1, 2, 2.5, or 5
 /// times a power of ten. A patch from the server or a statement in the
@@ -127,6 +130,20 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         Self::new(Kind::StackedBar, label.into(), rows, category)
     }
 
+    /// A horizontal bar chart named `label` of `rows`, labeled by `category`.
+    ///
+    /// Each row is a band down the side, labeled on the left, with one bar
+    /// per series running from 0 along the scale at the bottom. It suits
+    /// categories whose names are too long to sit under a vertical bar.
+    #[must_use]
+    pub fn horizontal_bar(
+        label: impl Into<String>,
+        rows: Sig<S, Vec<T>>,
+        category: Sig<T, String>,
+    ) -> Self {
+        Self::new(Kind::HorizontalBar, label.into(), rows, category)
+    }
+
     /// A line chart named `label` of `rows`, labeled by `category`.
     ///
     /// Each row is a point on the line of each series.
@@ -184,7 +201,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         self
     }
 
-    /// Labels at most `count` rows along the horizontal axis, 12 until set.
+    /// Labels at most `count` rows along the axis of the categories, 12 until set.
     ///
     /// With more rows than that, the axis labels every `n`th row from the
     /// first, for the smallest `n` that keeps to `count`, so the labels do
@@ -217,10 +234,15 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                     .overflow(Overflow::Visible),
             )
             .children((0..TICKS).map(|tick| {
-                let y = self.tick(tick, |value, lo, hi| y_of(value, lo, hi).to_fixed(3));
+                let at = self.tick(tick, |value, lo, hi| self.place(value, lo, hi).to_fixed(3));
+                let (along, across) = if self.horizontal() {
+                    (["y1", "y2"], ["x1", "x2"])
+                } else {
+                    (["x1", "x2"], ["y1", "y2"])
+                };
                 el("line")
-                    .attr("x1", "0")
-                    .attr("x2", "100")
+                    .attr(along[0], "0")
+                    .attr(along[1], "100")
                     .attr("vector-effect", "non-scaling-stroke")
                     .css(
                         Style::new()
@@ -228,8 +250,8 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                             .stroke_width(px(1)),
                     )
                     .show(self.tick_shown(tick))
-                    .bind_attr("y1", y.clone())
-                    .bind_attr("y2", y)
+                    .bind_attr(across[0], at.clone())
+                    .bind_attr(across[1], at)
             }))
             .children(self.marks(&band));
         let visual = div()
@@ -245,7 +267,11 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                     .color(token::muted_foreground().var())
                     .font_size(rem(0.75)),
             )
-            .child(self.y_labels())
+            .child(if self.horizontal() {
+                self.category_labels(band.clone())
+            } else {
+                self.value_labels()
+            })
             .child(
                 div()
                     .css(Style::new().position(Position::Relative))
@@ -253,7 +279,11 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                     .child(self.hover(&band)),
             )
             .child(div())
-            .child(self.x_labels(band));
+            .child(if self.horizontal() {
+                self.value_labels()
+            } else {
+                self.category_labels(band)
+            });
         el("figure")
             .attr("aria-label", self.label.clone())
             .css(
@@ -317,6 +347,22 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         })
     }
 
+    /// Whether the categories run down the side and the scale along the bottom.
+    fn horizontal(&self) -> bool {
+        self.kind == Kind::HorizontalBar
+    }
+
+    /// Where `value` lies along the scale from `lo` to `hi`, in hundredths
+    /// of the drawing: down from the top, or for a horizontal chart, across
+    /// from the left.
+    fn place(&self, value: Expr<S, f64>, lo: Expr<S, f64>, hi: Expr<S, f64>) -> Expr<S, f64> {
+        if self.horizontal() {
+            (value - lo.clone()) / (hi - lo) * 100.0
+        } else {
+            y_of(value, lo, hi)
+        }
+    }
+
     /// The largest and the smallest value the scale reaches, 0 included.
     fn extremes(&self) -> (Expr<S, f64>, Expr<S, f64>) {
         let rows = self.rows;
@@ -365,7 +411,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                 let value = (series.value)(row.into_expr());
                 let x = row.index().to_f64() * band.clone();
                 match self.kind {
-                    Kind::Bar => {
+                    Kind::Bar | Kind::HorizontalBar => {
                         let width = band.clone() * (0.8 / count);
                         #[expect(
                             clippy::cast_precision_loss,
@@ -399,30 +445,36 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         marks
     }
 
-    /// A bar in `color` from the value `start` to the value `end`, `width`
-    /// wide from `left`.
+    /// A bar in `color` from the value `start` to the value `end`, across
+    /// the band from `offset` that is `thickness` wide.
     fn bar_mark(
         &self,
         start: Expr<S, f64>,
         end: Expr<S, f64>,
-        left: Expr<S, f64>,
-        width: Expr<S, f64>,
+        offset: Expr<S, f64>,
+        thickness: Expr<S, f64>,
         color: &Token<Color>,
     ) -> El<S> {
-        let top = self.scaled(|lo, hi, _| {
-            y_of(start.clone(), lo.clone(), hi.clone()).min(y_of(end.clone(), lo, hi))
+        let near = self.scaled(|lo, hi, _| {
+            self.place(start.clone(), lo.clone(), hi.clone())
+                .min(self.place(end.clone(), lo, hi))
         });
-        let height = self.scaled(|lo, hi, _| {
-            let a = y_of(start, lo.clone(), hi.clone());
-            let b = y_of(end, lo, hi);
+        let length = self.scaled(|lo, hi, _| {
+            let a = self.place(start, lo.clone(), hi.clone());
+            let b = self.place(end, lo, hi);
             a.clone().max(b.clone()) - a.min(b)
         });
+        let ([value_at, value_size], [band_at, band_size]) = if self.horizontal() {
+            (["x", "width"], ["y", "height"])
+        } else {
+            (["y", "height"], ["x", "width"])
+        };
         el("rect")
             .css(Style::new().fill(color.var()))
-            .bind_attr("x", left.to_fixed(3))
-            .bind_attr("width", width.to_fixed(3))
-            .bind_attr("y", top.to_fixed(3))
-            .bind_attr("height", height.to_fixed(3))
+            .bind_attr(band_at, offset.to_fixed(3))
+            .bind_attr(band_size, thickness.to_fixed(3))
+            .bind_attr(value_at, near.to_fixed(3))
+            .bind_attr(value_size, length.to_fixed(3))
     }
 
     /// The line in `color` from `value` at `x1` to `next` at `x2`, and for an
@@ -466,36 +518,46 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             .child(line)
     }
 
-    /// The labels of the grid lines, each beside its line.
-    fn y_labels(&self) -> El<S> {
+    /// The labels of the grid lines, each beside its line: to the left of
+    /// the drawing, or for a horizontal chart, under it.
+    fn value_labels(&self) -> El<S> {
         let format = self.format;
-        div()
-            .css(
+        let horizontal = self.horizontal();
+        let (frame, label, side) = if horizontal {
+            (
+                Style::new().position(Position::Relative).height(rem(1)),
+                Style::new().translate(raw("-50% 0")),
+                Property::Left,
+            )
+        } else {
+            (
                 Style::new()
                     .position(Position::Relative)
-                    .min_width(rem(1.5))
+                    .min_width(rem(2.5))
                     .text_align(TextAlign::End),
+                Style::new().right(px(0)).translate(raw("0 -50%")),
+                Property::Top,
             )
-            .children((0..TICKS).map(|tick| {
-                let top = self.tick(tick, |value, lo, hi| {
-                    y_of(value, lo, hi).to_fixed(3).concat("%")
-                });
-                let text = self.tick(tick, |value, _, _| match &format {
-                    Some(format) => value.format(format),
-                    None => value.to_text(),
-                });
-                span()
-                    .css(
-                        Style::new()
-                            .position(Position::Absolute)
-                            .right(px(0))
-                            .translate(raw("0 -50%"))
-                            .white_space(WhiteSpace::Nowrap),
-                    )
-                    .show(self.tick_shown(tick))
-                    .bind_style(Property::Top, top)
-                    .bind_text(text)
-            }))
+        };
+        div().css(frame).children((0..TICKS).map(|tick| {
+            let at = self.tick(tick, |value, lo, hi| {
+                self.place(value, lo, hi).to_fixed(3).concat("%")
+            });
+            let text = self.tick(tick, |value, _, _| match &format {
+                Some(format) => value.format(format),
+                None => value.to_text(),
+            });
+            span()
+                .css(
+                    Style::new()
+                        .position(Position::Absolute)
+                        .white_space(WhiteSpace::Nowrap)
+                        .merge(label.clone()),
+                )
+                .show(self.tick_shown(tick))
+                .bind_style(side, at)
+                .bind_text(text)
+        }))
     }
 
     /// One column per row over the drawing, which shows the row's values
@@ -506,9 +568,22 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         div()
             .css(Style::new().position(Position::Absolute).inset(px(0)))
             .child(each(self.rows, |row| {
-                let left = (row.index().to_f64() * band.clone())
+                let start = (row.index().to_f64() * band.clone())
                     .to_fixed(3)
                     .concat("%");
+                let (place, span_style, across) = if self.horizontal() {
+                    (
+                        Property::Top,
+                        Property::Height,
+                        Style::new().left(px(0)).right(px(0)),
+                    )
+                } else {
+                    (
+                        Property::Left,
+                        Property::Width,
+                        Style::new().top(px(0)).bottom(px(0)),
+                    )
+                };
                 let mut values = div().css(
                     Style::new()
                         .display(Display::Grid)
@@ -534,8 +609,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                     .css(
                         Style::new()
                             .position(Position::Absolute)
-                            .top(px(0))
-                            .bottom(px(0))
+                            .merge(across)
                             .group()
                             .on(
                                 PseudoClass::Hover,
@@ -546,8 +620,8 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                                 )),
                             ),
                     )
-                    .bind_style(Property::Left, left)
-                    .bind_style(Property::Width, band.clone().to_fixed(3).concat("%"))
+                    .bind_style(place, start)
+                    .bind_style(span_style, band.clone().to_fixed(3).concat("%"))
                     .child(
                         div()
                             .css(tooltip_style())
@@ -565,28 +639,43 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             }))
     }
 
-    /// The category of each row, under the middle of its column, for every
-    /// `n`th row that keeps the labels to `max_labels`.
-    fn x_labels(&self, band: Expr<S, f64>) -> El<S> {
+    /// The category of each row beside the middle of its band, under the
+    /// drawing or for a horizontal chart to its left, for every `n`th row
+    /// that keeps the labels to `max_labels`.
+    fn category_labels(&self, band: Expr<S, f64>) -> El<S> {
         let category = self.category;
         let every = (self.rows.len().to_f64() / f64::from(self.max_labels)).ceil();
-        div()
-            .css(Style::new().position(Position::Relative).height(rem(1)))
-            .child(each(self.rows, |row| {
-                let middle = ((row.index().to_f64() + 0.5) * band)
-                    .to_fixed(3)
-                    .concat("%");
-                span()
-                    .css(
-                        Style::new()
-                            .position(Position::Absolute)
-                            .translate(raw("-50% 0"))
-                            .white_space(WhiteSpace::Nowrap),
-                    )
-                    .show((row.index().to_f64() % every.clone()).equals(0.0))
-                    .bind_style(Property::Left, middle)
-                    .bind_text(row.at(category))
-            }))
+        let (frame, label, side) = if self.horizontal() {
+            (
+                Style::new()
+                    .position(Position::Relative)
+                    .min_width(rem(4))
+                    .text_align(TextAlign::End),
+                Style::new().right(px(0)).translate(raw("0 -50%")),
+                Property::Top,
+            )
+        } else {
+            (
+                Style::new().position(Position::Relative).height(rem(1)),
+                Style::new().translate(raw("-50% 0")),
+                Property::Left,
+            )
+        };
+        div().css(frame).child(each(self.rows, |row| {
+            let middle = ((row.index().to_f64() + 0.5) * band)
+                .to_fixed(3)
+                .concat("%");
+            span()
+                .css(
+                    Style::new()
+                        .position(Position::Absolute)
+                        .white_space(WhiteSpace::Nowrap)
+                        .merge(label),
+                )
+                .show((row.index().to_f64() % every.clone()).equals(0.0))
+                .bind_style(side, middle)
+                .bind_text(row.at(category))
+        }))
     }
 
     /// A swatch and the name of each series.

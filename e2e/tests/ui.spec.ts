@@ -497,6 +497,23 @@ test("a chart labels every nth row once the rows outnumber its labels", async ({
   await expect(page.locator("#stacked-chart figure > div > div:last-child span:visible")).toHaveText(["January", "March", "May"]);
 });
 
+test("a horizontal bar chart runs its bars from the left and its scale along the bottom", async ({ page }) => {
+  const january = page.locator("#horizontal-chart svg rect").first();
+  await expect(january).toHaveAttribute("x", "0.000");
+  await expect(january).toHaveAttribute("width", "46.500");
+  await expect(january).toHaveAttribute("y", "1.667");
+  await expect(january).toHaveAttribute("height", "6.667");
+  await expect(page.locator("#horizontal-chart figure > div > div:last-child span:visible")).toHaveText(["0", "100", "200", "300", "400"]);
+  await expect(page.locator("#horizontal-chart figure > div > div:first-child span:visible")).toHaveText([
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+  ]);
+});
+
 test("a line chart joins each row to the next and draws nothing past the last", async ({ page }) => {
   const segments = page.locator("#line-chart svg g");
   await expect(segments).toHaveCount(12);

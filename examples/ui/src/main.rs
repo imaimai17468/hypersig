@@ -663,6 +663,15 @@ fn charts() -> El<Gallery> {
                     ),
                 )
                 .child(
+                    div()
+                        .id("horizontal-chart")
+                        .child(visitors(Chart::horizontal_bar(
+                            "Visitors (horizontal)",
+                            Gallery::months(),
+                            Month::name(),
+                        ))),
+                )
+                .child(
                     div().id("lead-chart").child(
                         Chart::bar("Desktop lead", Gallery::months(), Month::name())
                             .series("Lead", Month::lead(), token::chart_3())
