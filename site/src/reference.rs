@@ -90,8 +90,8 @@ fn overview(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The [complete API documentation](api:hypersig/index.html) is the rustdoc output of the same commit as this site, with every method, its signature, and its examples. The pages here list the items you reach for most, each with the first sentence of its doc comment, shortened where it runs long.",
-                ja: "[API ドキュメントの全体](api:hypersig/index.html)は、このサイトと同じコミットから rustdoc で生成したもので、すべてのメソッドのシグネチャと例を載せています。ここに並べたのはよく使う項目で、それぞれにドキュメントコメントの最初の 1 文の訳を添えています。長い文は短くしています。",
+                en: "The [complete API documentation](api:hypersig/index.html) is the rustdoc output of the same commit as this site, with every method, its signature, and its examples. The pages here list the items used most often, each with the first sentence of its doc comment, shortened where it runs long.",
+                ja: "[API ドキュメントの全体](api:hypersig/index.html)は、このサイトと同じコミットから rustdoc で生成したもので、すべてのメソッドのシグネチャと例を載せています。ここに並べたのはよく使う項目です。各項目にはドキュメントコメントの最初の 1 文を訳して添え、長い文は短くしています。",
             },
         ),
         table_of(
@@ -105,8 +105,8 @@ fn overview(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Styles live in `hypersig::style`, re-exported from the `hypersig_style` crate. See [Styling](learn/styling/) and the [`style` module](api:hypersig/style/index.html).",
-                ja: "スタイルは `hypersig::style` にあり、`hypersig_style` クレートを再エクスポートしています。[スタイル](learn/styling/)と [`style` モジュール](api:hypersig/style/index.html)をご覧ください。",
+                en: "Styles are in `hypersig::style`, a module that re-exports the `hypersig_style` crate. See [Styling](learn/styling/) and the [`style` module](api:hypersig/style/index.html).",
+                ja: "スタイルは `hypersig::style` にあります。これは `hypersig_style` クレートを再エクスポートしたモジュールです。[スタイル](learn/styling/)と [`style` モジュール](api:hypersig/style/index.html)をご覧ください。",
             },
         ),
     ])
@@ -128,8 +128,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                     ja: "Page",
                 },
                 text: L {
-                    en: "`Page::render` evaluates every binding with the initial signals, so the first HTML already shows what the runtime would compute.",
-                    ja: "`Page::render` はすべての束縛をシグナルの初期値で評価します。そのため、最初の HTML にはランタイムが計算するはずの結果がすでに表示されています。",
+                    en: "`Page::render` evaluates every binding with the initial signals, so the first HTML already contains the values the runtime would compute.",
+                    ja: "`Page::render` はすべての束縛をシグナルの初期値で評価します。そのため、最初の HTML には、ランタイムが計算するはずの値がすでに入っています。",
                 },
                 rows: &[
                     (
@@ -225,7 +225,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "constant.RUNTIME_JS.html",
                         L {
                             en: "The browser runtime, built from `runtime/` in the repository.",
-                            ja: "ブラウザのランタイムです。リポジトリの `runtime/` からビルドしたものです。",
+                            ja: "リポジトリの `runtime/` からビルドした、ブラウザのランタイムです。",
                         },
                     ),
                 ],
@@ -280,8 +280,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "href",
                             "html/struct.El.html#method.href",
                             L {
-                                en: "Points the element's `href` at a page the router serves.",
-                                ja: "要素の `href` を、ルーターが配信するページに向けます。",
+                                en: "Makes the element's `href` a link to a page the router serves.",
+                                ja: "要素の `href` を、ルーターが配信するページへのリンクにします。",
                             },
                         ),
                         (
@@ -313,7 +313,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.El.html#method.node_ref",
                             L {
                                 en: "Attaches `node_ref`, so its statements act on this element.",
-                                ja: "`node_ref` を付け、その文がこの要素に作用するようにします。",
+                                ja: "`node_ref` を付け、その文がこの要素を操作するようにします。",
                             },
                         ),
                         (
@@ -332,8 +332,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         ja: "束縛",
                     },
                     text: L {
-                        en: "Each binding takes an expression over the signals and is kept up to date as they change.",
-                        ja: "束縛はどれもシグナルを読む式を受け取り、シグナルが変わるたびに最新の値に更新されます。",
+                        en: "Each binding takes an expression over the signals, and the runtime updates the element with the expression's value whenever a signal changes.",
+                        ja: "束縛はどれもシグナルを読む式を受け取ります。シグナルが変わるたびに、ランタイムがその式の値で要素を更新します。",
                     },
                     rows: &[
                         (
@@ -389,7 +389,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.El.html#method.css_match",
                             L {
                                 en: "Adds the style of the case whose value `value` equals.",
-                                ja: "`value` と等しい値を持つ場合のスタイルを追加します。",
+                                ja: "値が `value` と等しい場合のスタイルを追加します。",
                             },
                         ),
                         (
@@ -413,7 +413,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.El.html#method.bind",
                             L {
                                 en: "Binds a form control to a signal in both directions.",
-                                ja: "フォームの入力部品をシグナルに双方向で束縛します。",
+                                ja: "フォームコントロールをシグナルに双方向で束縛します。",
                             },
                         ),
                         (
@@ -453,8 +453,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "on",
                             "html/struct.El.html#method.on",
                             L {
-                                en: "Runs `stmt` on `event`. A second call for the same event runs after the first.",
-                                ja: "`event` が起きると `stmt` を実行します。同じイベントに 2 回目の呼び出しをすると、その文は 1 回目の後に実行されます。",
+                                en: "Runs `stmt` on `event`. When `on` is called twice for the same event, the second statement runs after the first.",
+                                ja: "`event` が起きると `stmt` を実行します。同じイベントで 2 回呼ぶと、2 回目の文は 1 回目の文の後に実行されます。",
                             },
                         ),
                         (
@@ -486,7 +486,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.El.html#method.on_change",
                             L {
                                 en: "Runs `stmt` on `change`.",
-                                ja: "`change` で `stmt` を実行します。",
+                                ja: "`change` イベントで `stmt` を実行します。",
                             },
                         ),
                         (
@@ -518,7 +518,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.El.html#method.on_debounced",
                             L {
                                 en: "Runs `stmt` once `event` has stopped firing for `quiet`.",
-                                ja: "`event` が `quiet` のあいだ発生しなくなったら `stmt` を実行します。",
+                                ja: "`event` が発生しないまま `quiet` だけ経ったら `stmt` を実行します。",
                             },
                         ),
                     ],
@@ -534,8 +534,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "on_load",
                             "html/struct.El.html#method.on_load",
                             L {
-                                en: "Runs `stmt` once when the element enters the document.",
-                                ja: "要素が文書に入ったときに `stmt` を 1 回実行します。",
+                                en: "Runs `stmt` once when the element is added to the document.",
+                                ja: "要素が文書に追加されたときに `stmt` を 1 回実行します。",
                             },
                         ),
                         (
@@ -550,16 +550,16 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "on_timeout",
                             "html/struct.El.html#method.on_timeout",
                             L {
-                                en: "Runs `stmt` once, `delay` after the element enters the document, if it is still in it then.",
-                                ja: "要素が文書に入ってから `delay` 後に、そのとき要素がまだ文書にあれば `stmt` を 1 回実行します。",
+                                en: "Runs `stmt` once, `delay` after the element is added to the document, if it is still in it then.",
+                                ja: "要素が文書に追加されてから `delay` 後に、要素がまだ文書にあれば `stmt` を 1 回実行します。",
                             },
                         ),
                         (
                             "effect",
                             "html/struct.El.html#method.effect",
                             L {
-                                en: "Runs `stmt` when the element enters the document and whenever a signal it reads changes.",
-                                ja: "要素が文書に入ったときと、`stmt` が読むシグナルが変わるたびに `stmt` を実行します。",
+                                en: "Runs `stmt` when the element is added to the document and whenever a signal `stmt` reads changes.",
+                                ja: "要素が文書に追加されたときと、`stmt` が読むシグナルが変わるたびに `stmt` を実行します。",
                             },
                         ),
                         (
@@ -593,7 +593,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         Reference::Html => (
             L {
                 en: "The `hypersig::html` module builds elements, lists, and conditional parts.",
-                ja: "`hypersig::html` モジュールは、要素、リスト、条件付きで現れる部分を組み立てます。",
+                ja: "`hypersig::html` モジュールは要素、リスト、条件付きで現れる部分を組み立てます。",
             },
             &[
                 Section {
@@ -618,8 +618,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "each",
                             "html/fn.each.html",
                             L {
-                                en: "Renders `render` once per item of `list`, in the browser, kept in step with the list.",
-                                ja: "`list` の項目ごとに `render` をブラウザで 1 回描画し、リストの変化に合わせて保ちます。",
+                                en: "Renders `render` once per item of `list` in the browser, and updates the rendered elements when the list changes.",
+                                ja: "ブラウザで `list` の項目ごとに `render` を 1 回描画し、リストが変わると描画した要素をリストに合わせます。",
                             },
                         ),
                         (
@@ -652,7 +652,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.El.html",
                             L {
                                 en: "An HTML element belonging to a page whose signals are `S`.",
-                                ja: "シグナルが `S` のページに属する HTML 要素です。",
+                                ja: "シグナルが `S` のページに属する HTML 要素",
                             },
                         ),
                         (
@@ -660,7 +660,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.Node.html",
                             L {
                                 en: "A node in the tree: an element, a run of text, or a template the browser expands.",
-                                ja: "木のノードです。要素、ひと続きのテキスト、ブラウザが展開するテンプレートのいずれかです。",
+                                ja: "木のノードで、要素、ひと続きのテキスト、ブラウザが展開するテンプレートのいずれか",
                             },
                         ),
                         (
@@ -668,7 +668,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/enum.Event.html",
                             L {
                                 en: "A DOM event a statement can run on.",
-                                ja: "文を実行するきっかけにできる DOM イベントです。",
+                                ja: "文を実行するきっかけにできる DOM イベント",
                             },
                         ),
                         (
@@ -676,15 +676,15 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/enum.Key.html",
                             L {
                                 en: "A key that `El::on_key` filters `keydown` by.",
-                                ja: "`El::on_key` が `keydown` を絞り込むのに使うキーです。",
+                                ja: "`El::on_key` が `keydown` を絞り込むのに使うキー",
                             },
                         ),
                         (
                             "Orientation",
                             "html/enum.Orientation.html",
                             L {
-                                en: "A horizontal or vertical direction, which `El::roving_focus` reads as its arrow keys.",
-                                ja: "横か縦の向きです。`El::roving_focus` はこれを見て使う矢印キーを決めます。",
+                                en: "A horizontal or vertical direction, which decides the arrow keys `El::roving_focus` uses.",
+                                ja: "`El::roving_focus` が使う矢印キーを決める、横か縦の向き",
                             },
                         ),
                         (
@@ -692,7 +692,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.Stylesheet.html",
                             L {
                                 en: "CSS text whose class selectors `Stylesheet::class` checks at compile time.",
-                                ja: "CSS のテキストです。そのクラスセレクタを `Stylesheet::class` がコンパイル時に検査します。",
+                                ja: "`Stylesheet::class` がコンパイル時にクラスセレクタを検査する、CSS のテキスト",
                             },
                         ),
                         (
@@ -700,7 +700,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.Class.html",
                             L {
                                 en: "A class name that `El::class` and `El::class_when` put on an element.",
-                                ja: "`El::class` と `El::class_when` が要素に付けるクラス名です。",
+                                ja: "`El::class` と `El::class_when` が要素に付けるクラス名",
                             },
                         ),
                     ],
@@ -709,8 +709,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         ),
         Reference::Signals => (
             L {
-                en: "`Signals` marks the page's state struct, and `Sig<S, T>` is a typed reference to one of its fields.",
-                ja: "`Signals` はページの状態を持つ構造体に付けるトレイトで、`Sig<S, T>` はそのフィールドの 1 つを指す型付きの参照です。",
+                en: "`Signals` is the trait the page's state struct implements, and `Sig<S, T>` is a typed reference to one of its fields.",
+                ja: "`Signals` はページの状態を持つ構造体が実装するトレイトで、`Sig<S, T>` はそのフィールドの 1 つを指す型付きの参照です。",
             },
             &[
                 Section {
@@ -725,7 +725,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "trait.Signals.html",
                             L {
                                 en: "A struct whose fields are signals.",
-                                ja: "フィールドがシグナルである構造体です。",
+                                ja: "フィールドがシグナルである構造体",
                             },
                         ),
                         (
@@ -733,7 +733,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html",
                             L {
                                 en: "A typed reference to a signal of type `T` inside the signal struct `S`.",
-                                ja: "シグナル構造体 `S` の中にある、型が `T` のシグナルを指す型付きの参照です。",
+                                ja: "シグナル構造体 `S` の中にある、型が `T` のシグナルを指す型付きの参照",
                             },
                         ),
                         (
@@ -741,23 +741,23 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Item.html",
                             L {
                                 en: "The current item of a list, inside `each` or a list predicate such as `Sig::count`.",
-                                ja: "`each` や `Sig::count` のようなリストの述語の中で、いま扱っているリストの項目です。",
+                                ja: "`each` や `Sig::count` のようなリストの述語の中で、いま扱っているリストの項目",
                             },
                         ),
                         (
                             "Root",
                             "enum.Root.html",
                             L {
-                                en: "Marks a `Sig` rooted at the page's signal struct.",
-                                ja: "ページのシグナル構造体を起点とする `Sig` の印です。",
+                                en: "Marks a `Sig` whose path starts at the page's signal struct.",
+                                ja: "`Sig` のパスがページのシグナル構造体から始まることを表す型",
                             },
                         ),
                         (
                             "Local",
                             "enum.Local.html",
                             L {
-                                en: "Marks a `Sig` rooted at the current item of an `each` or a list predicate.",
-                                ja: "`each` やリストの述語の中で、いま扱っている項目を起点とする `Sig` の印です。",
+                                en: "Marks a `Sig` whose path starts at the current item of an `each` or a list predicate.",
+                                ja: "`Sig` のパスが `each` やリストの述語でいま扱っている項目から始まることを表す型",
                             },
                         ),
                         (
@@ -765,7 +765,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "constant.MAX_DEPTH.html",
                             L {
                                 en: "The deepest chain of fields a `Sig` can name.",
-                                ja: "`Sig` がたどれるフィールドの連なりの最大の深さです。",
+                                ja: "`Sig` が指せるフィールドの連なりの最大の深さ",
                             },
                         ),
                     ],
@@ -785,7 +785,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.at",
                             L {
                                 en: "The field `field` of the struct this signal holds.",
-                                ja: "このシグナルが持つ構造体のフィールド `field` です。",
+                                ja: "このシグナルが持つ構造体のフィールド `field`",
                             },
                         ),
                         (
@@ -793,7 +793,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.set",
                             L {
                                 en: "A statement that assigns `value` to this signal in the browser.",
-                                ja: "ブラウザでこのシグナルに `value` を代入する文です。",
+                                ja: "ブラウザでこのシグナルに `value` を代入する文",
                             },
                         ),
                         (
@@ -801,7 +801,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.toggle",
                             L {
                                 en: "A statement that flips this flag.",
-                                ja: "このフラグを反転する文です。",
+                                ja: "このフラグを反転する文",
                             },
                         ),
                         (
@@ -809,7 +809,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.patch",
                             L {
                                 en: "A patch that sets this signal to `value` when the server sends it.",
-                                ja: "サーバーが送ると、このシグナルを `value` にする差分です。",
+                                ja: "サーバーが送ったときに、このシグナルを `value` にする差分",
                             },
                         ),
                         (
@@ -817,7 +817,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.path",
                             L {
                                 en: "The dotted field path this signal is stored under.",
-                                ja: "このシグナルを格納する、ドットで区切ったフィールドのパスです。",
+                                ja: "このシグナルの格納先を表す、ドットで区切ったフィールドのパス",
                             },
                         ),
                     ],
@@ -837,7 +837,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.push",
                             L {
                                 en: "A statement that appends `value` to this list.",
-                                ja: "このリストに `value` を追加する文です。",
+                                ja: "このリストに `value` を追加する文",
                             },
                         ),
                         (
@@ -845,7 +845,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.extend",
                             L {
                                 en: "A statement that appends `count` items, building each from its position `i`.",
-                                ja: "`count` 個の項目を追加する文です。各項目は位置 `i` から作ります。",
+                                ja: "各項目を位置 `i` から作り、`count` 個の項目を追加する文",
                             },
                         ),
                         (
@@ -853,7 +853,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.remove_at",
                             L {
                                 en: "A statement that removes the item at `index`, if there is one.",
-                                ja: "`index` の位置に項目があれば、それを取り除く文です。",
+                                ja: "`index` の位置に項目があれば、それを取り除く文",
                             },
                         ),
                         (
@@ -861,7 +861,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.clear",
                             L {
                                 en: "A statement that empties this list.",
-                                ja: "このリストを空にする文です。",
+                                ja: "このリストを空にする文",
                             },
                         ),
                         (
@@ -869,7 +869,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.retain",
                             L {
                                 en: "A statement that keeps only the items for which `keep` is true.",
-                                ja: "`keep` が真になる項目だけを残す文です。",
+                                ja: "`keep` が真になる項目だけを残す文",
                             },
                         ),
                         (
@@ -877,7 +877,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.set_all",
                             L {
                                 en: "A statement that sets `field` to `value` on every item.",
-                                ja: "すべての項目で `field` を `value` にする文です。",
+                                ja: "すべての項目で `field` を `value` にする文",
                             },
                         ),
                         (
@@ -885,7 +885,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.update_where",
                             L {
                                 en: "A statement that sets `field` to `value` on the items for which `when` is true.",
-                                ja: "`when` が真になる項目で `field` を `value` にする文です。",
+                                ja: "`when` が真になる項目で `field` を `value` にする文",
                             },
                         ),
                         (
@@ -893,7 +893,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.swap",
                             L {
                                 en: "A statement that exchanges the items at `a` and `b`, if both exist.",
-                                ja: "`a` と `b` の位置に項目が両方あれば、それらを入れ替える文です。",
+                                ja: "`a` と `b` の位置に項目が両方あれば、それらを入れ替える文",
                             },
                         ),
                         (
@@ -901,7 +901,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.sort_by",
                             L {
                                 en: "A statement that orders the items by `key`, ascending, keeping the order of equal keys.",
-                                ja: "項目を `key` の昇順に並べる文です。キーが等しい項目は元の順序を保ちます。",
+                                ja: "キーが等しい項目の順序を保ったまま、項目を `key` の昇順に並べる文",
                             },
                         ),
                         (
@@ -909,7 +909,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Sig.html#method.count",
                             L {
                                 en: "The number of items for which `matches` is true.",
-                                ja: "`matches` が真になる項目の数です。",
+                                ja: "`matches` が真になる項目の数",
                             },
                         ),
                     ],
@@ -926,7 +926,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Item.html#method.at",
                             L {
                                 en: "The field `field` of the item.",
-                                ja: "項目のフィールド `field` です。",
+                                ja: "項目のフィールド `field`",
                             },
                         ),
                         (
@@ -934,7 +934,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Item.html#method.value",
                             L {
                                 en: "The item itself, as a signal that can be read and written.",
-                                ja: "項目そのものです。読み書きできるシグナルとして扱えます。",
+                                ja: "読み書きできるシグナルとしての、項目そのもの",
                             },
                         ),
                         (
@@ -942,7 +942,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Item.html#method.index",
                             L {
                                 en: "The item's position in its list, starting at 0.",
-                                ja: "リストの中での項目の位置です。0 から数えます。",
+                                ja: "0 から数えた、リストの中での項目の位置",
                             },
                         ),
                         (
@@ -950,7 +950,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Item.html#method.remove",
                             L {
                                 en: "A statement that removes this item from its list.",
-                                ja: "この項目をリストから取り除く文です。",
+                                ja: "この項目をリストから取り除く文",
                             },
                         ),
                     ],
@@ -978,7 +978,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.lit",
                             L {
                                 en: "A constant value, serialized to JSON once at render time.",
-                                ja: "定数の値です。描画のときに 1 回だけ JSON にシリアライズします。",
+                                ja: "描画のときに 1 回だけ JSON にシリアライズする定数の値",
                             },
                         ),
                         (
@@ -986,7 +986,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "fn.if_else.html",
                             L {
                                 en: "The expression `then` while `cond` is true, and `otherwise` while it is false.",
-                                ja: "`cond` が真のあいだは式 `then`、偽のあいだは `otherwise` になる式です。",
+                                ja: "`cond` が真のあいだは `then`、偽のあいだは `otherwise` の値になる式",
                             },
                         ),
                         (
@@ -994,7 +994,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.now",
                             L {
                                 en: "The browser's current time, in milliseconds since the Unix epoch.",
-                                ja: "ブラウザの現在時刻です。Unix エポックからのミリ秒で表します。",
+                                ja: "Unix エポックからのミリ秒で表した、ブラウザの現在時刻",
                             },
                         ),
                         (
@@ -1002,7 +1002,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.random_below",
                             L {
                                 en: "A random integer from 0 up to but not including `bound`, drawn in the browser.",
-                                ja: "0 以上 `bound` 未満のランダムな整数で、ブラウザで選びます。",
+                                ja: "ブラウザで選ぶ、0 以上 `bound` 未満のランダムな整数",
                             },
                         ),
                         (
@@ -1010,7 +1010,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.at",
                             L {
                                 en: "The field `field` of the struct this expression evaluates to.",
-                                ja: "この式を評価してできる構造体のフィールド `field` です。",
+                                ja: "この式を評価してできる構造体のフィールド `field`",
                             },
                         ),
                         (
@@ -1018,7 +1018,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.with",
                             L {
                                 en: "A copy of this struct with `field` replaced by `value`.",
-                                ja: "この構造体の `field` を `value` に置き換えた複製です。",
+                                ja: "この構造体の `field` を `value` に置き換えた複製",
                             },
                         ),
                     ],
@@ -1035,7 +1035,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.equals",
                             L {
                                 en: "Whether this value equals `rhs`.",
-                                ja: "この値が `rhs` と等しいかどうかです。",
+                                ja: "この値が `rhs` と等しいかどうか",
                             },
                         ),
                         (
@@ -1043,7 +1043,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.not_equals",
                             L {
                                 en: "Whether this value differs from `rhs`, comparing JSON forms.",
-                                ja: "この値が `rhs` と異なるかどうかです。JSON の形で比べます。",
+                                ja: "JSON の形で比べたときに、この値が `rhs` と異なるかどうか",
                             },
                         ),
                         (
@@ -1051,7 +1051,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.gt",
                             L {
                                 en: "Whether this value is strictly greater than `rhs`.",
-                                ja: "この値が `rhs` より大きいかどうかです。",
+                                ja: "この値が `rhs` より大きいかどうか",
                             },
                         ),
                         (
@@ -1059,7 +1059,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.ge",
                             L {
                                 en: "Whether this value is greater than or equal to `rhs`.",
-                                ja: "この値が `rhs` 以上かどうかです。",
+                                ja: "この値が `rhs` 以上かどうか",
                             },
                         ),
                         (
@@ -1067,7 +1067,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.lt",
                             L {
                                 en: "Whether this value is strictly less than `rhs`.",
-                                ja: "この値が `rhs` より小さいかどうかです。",
+                                ja: "この値が `rhs` より小さいかどうか",
                             },
                         ),
                         (
@@ -1075,7 +1075,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.le",
                             L {
                                 en: "Whether this value is less than or equal to `rhs`.",
-                                ja: "この値が `rhs` 以下かどうかです。",
+                                ja: "この値が `rhs` 以下かどうか",
                             },
                         ),
                         (
@@ -1083,7 +1083,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.and",
                             L {
                                 en: "Whether both this value and `rhs` are true.",
-                                ja: "この値と `rhs` が両方とも真かどうかです。",
+                                ja: "この値と `rhs` が両方とも真かどうか",
                             },
                         ),
                         (
@@ -1091,7 +1091,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.or",
                             L {
                                 en: "Whether this value or `rhs` is true.",
-                                ja: "この値と `rhs` のどちらかが真かどうかです。",
+                                ja: "この値と `rhs` のどちらかが真かどうか",
                             },
                         ),
                     ],
@@ -1108,7 +1108,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.min",
                             L {
                                 en: "The smaller of this value and `rhs`.",
-                                ja: "この値と `rhs` のうち小さいほうです。",
+                                ja: "この値と `rhs` のうち小さいほう",
                             },
                         ),
                         (
@@ -1116,7 +1116,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.max",
                             L {
                                 en: "The larger of this value and `rhs`.",
-                                ja: "この値と `rhs` のうち大きいほうです。",
+                                ja: "この値と `rhs` のうち大きいほう",
                             },
                         ),
                         (
@@ -1124,7 +1124,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.to_f64",
                             L {
                                 en: "This integer as an `f64`, which holds every `i32` exactly.",
-                                ja: "この整数を `f64` にしたものです。`f64` はどの `i32` も正確に表せます。",
+                                ja: "この整数を、どの `i32` も正確に表せる `f64` にした値",
                             },
                         ),
                         (
@@ -1132,7 +1132,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.to_fixed",
                             L {
                                 en: "This number as text with `digits` digits after the point.",
-                                ja: "この数を、小数点以下 `digits` 桁のテキストにしたものです。",
+                                ja: "この数を、小数点以下 `digits` 桁のテキストにしたもの",
                             },
                         ),
                         (
@@ -1140,15 +1140,15 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.to_text",
                             L {
                                 en: "This value as display text.",
-                                ja: "この値を表示用のテキストにしたものです。",
+                                ja: "この値を表示用のテキストにしたもの",
                             },
                         ),
                         (
                             "concat",
                             "struct.Expr.html#method.concat",
                             L {
-                                en: "Appends `rhs` to this string.",
-                                ja: "この文字列の後ろに `rhs` をつなげます。",
+                                en: "This string with `rhs` appended.",
+                                ja: "この文字列の後ろに `rhs` をつなげた文字列",
                             },
                         ),
                         (
@@ -1156,7 +1156,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.trim",
                             L {
                                 en: "This string without leading and trailing whitespace.",
-                                ja: "この文字列から前後の空白を除いたものです。",
+                                ja: "この文字列から前後の空白を除いたもの",
                             },
                         ),
                         (
@@ -1164,7 +1164,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.to_lowercase",
                             L {
                                 en: "This string in lowercase.",
-                                ja: "この文字列を小文字にしたものです。",
+                                ja: "この文字列を小文字にしたもの",
                             },
                         ),
                         (
@@ -1172,7 +1172,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.to_uppercase",
                             L {
                                 en: "This string in uppercase.",
-                                ja: "この文字列を大文字にしたものです。",
+                                ja: "この文字列を大文字にしたもの",
                             },
                         ),
                         (
@@ -1180,7 +1180,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.contains",
                             L {
                                 en: "Whether `needle` occurs in this string.",
-                                ja: "この文字列に `needle` が含まれるかどうかです。",
+                                ja: "この文字列に `needle` が含まれるかどうか",
                             },
                         ),
                         (
@@ -1188,7 +1188,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.starts_with",
                             L {
                                 en: "Whether this string starts with `prefix`.",
-                                ja: "この文字列が `prefix` で始まるかどうかです。",
+                                ja: "この文字列が `prefix` で始まるかどうか",
                             },
                         ),
                         (
@@ -1196,7 +1196,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.char_count",
                             L {
                                 en: "The number of Unicode scalar values, as Rust's `chars().count()`.",
-                                ja: "Unicode スカラー値の数です。Rust の `chars().count()` と同じ数え方です。",
+                                ja: "Rust の `chars().count()` と同じく数えた、Unicode スカラー値の数",
                             },
                         ),
                     ],
@@ -1213,7 +1213,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.len",
                             L {
                                 en: "The number of items.",
-                                ja: "項目の数です。",
+                                ja: "項目の数",
                             },
                         ),
                         (
@@ -1221,7 +1221,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.nth",
                             L {
                                 en: "The item at `index`, or `None` past either end.",
-                                ja: "`index` の位置の項目です。両端より外なら `None` です。",
+                                ja: "`index` の位置の項目で、両端より外なら `None`",
                             },
                         ),
                         (
@@ -1229,7 +1229,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.is_some",
                             L {
                                 en: "Whether this option holds a value.",
-                                ja: "この Option が値を持つかどうかです。",
+                                ja: "この Option が値を持つかどうか",
                             },
                         ),
                         (
@@ -1237,7 +1237,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.is_none",
                             L {
                                 en: "Whether this option is `None`.",
-                                ja: "この Option が `None` かどうかです。",
+                                ja: "この Option が `None` かどうか",
                             },
                         ),
                         (
@@ -1245,7 +1245,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.unwrap_or",
                             L {
                                 en: "The held value, or `default` for `None`.",
-                                ja: "持っている値です。`None` なら `default` です。",
+                                ja: "持っている値で、`None` なら `default`",
                             },
                         ),
                         (
@@ -1253,7 +1253,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.some",
                             L {
                                 en: "This value wrapped in `Some`.",
-                                ja: "この値を `Some` で包んだものです。",
+                                ja: "この値を `Some` で包んだもの",
                             },
                         ),
                     ],
@@ -1320,8 +1320,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         ),
         Reference::NodeRef => (
             L {
-                en: "`NodeRef<S>` names an element on a page whose signals are `S`, for imperative DOM calls.",
-                ja: "`NodeRef<S>` は、シグナルが `S` のページにある要素に名前を付け、その要素へ DOM の命令的な呼び出しをするために使います。",
+                en: "`NodeRef<S>` names an element on a page whose signals are `S`, for calling the element's DOM methods imperatively.",
+                ja: "`NodeRef<S>` は、シグナルが `S` のページにある要素に付ける名前で、その要素の DOM のメソッドを命令的に呼び出すときに使います。",
             },
             &[Section {
                 heading: L {
@@ -1338,7 +1338,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "struct.NodeRef.html#method.new",
                         L {
                             en: "A reference named `name`.",
-                            ja: "`name` という名前の参照です。",
+                            ja: "`name` という名前の参照",
                         },
                     ),
                     (
@@ -1346,7 +1346,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "struct.NodeRef.html#method.focus",
                         L {
                             en: "A statement that focuses the element after the next render.",
-                            ja: "次の描画の後に要素へフォーカスを移す文です。",
+                            ja: "次の描画の後に要素へフォーカスを移す文",
                         },
                     ),
                     (
@@ -1354,7 +1354,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "struct.NodeRef.html#method.blur",
                         L {
                             en: "A statement that removes focus from the element.",
-                            ja: "要素からフォーカスを外す文です。",
+                            ja: "要素からフォーカスを外す文",
                         },
                     ),
                     (
@@ -1362,7 +1362,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "struct.NodeRef.html#method.select",
                         L {
                             en: "A statement that selects the element's text, for an `<input>`.",
-                            ja: "要素のテキストを選択する文です。`<input>` に使います。",
+                            ja: "`<input>` 向けの、要素のテキストを選択する文",
                         },
                     ),
                     (
@@ -1370,7 +1370,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "struct.NodeRef.html#method.scroll_into_view",
                         L {
                             en: "A statement that scrolls the element into view.",
-                            ja: "要素が見える位置までスクロールする文です。",
+                            ja: "要素が見える位置までスクロールする文",
                         },
                     ),
                     (
@@ -1378,7 +1378,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "struct.NodeRef.html#method.show_popover",
                         L {
                             en: "A statement that shows the element if it is a popover that is not open.",
-                            ja: "要素が開いていないポップオーバーなら、それを表示する文です。",
+                            ja: "要素が開いていないポップオーバーなら、それを表示する文",
                         },
                     ),
                     (
@@ -1386,7 +1386,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "struct.NodeRef.html#method.hide_popover",
                         L {
                             en: "A statement that hides the element if it is an open popover.",
-                            ja: "要素が開いているポップオーバーなら、それを隠す文です。",
+                            ja: "要素が開いているポップオーバーなら、それを隠す文",
                         },
                     ),
                 ],
@@ -1413,7 +1413,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Action.html#method.post",
                             L {
                                 en: "An action served on `POST path`.",
-                                ja: "`POST path` で配信するアクションです。",
+                                ja: "`POST path` で配信するアクション",
                             },
                         ),
                         (
@@ -1421,7 +1421,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Action.html#method.get",
                             L {
                                 en: "An action served on `GET path`. Use it for a long-lived stream of patches.",
-                                ja: "`GET path` で配信するアクションです。差分を長く流し続けるストリームに使います。",
+                                ja: "差分を長いあいだ送り続けるストリームに使う、`GET path` で配信するアクション",
                             },
                         ),
                         (
@@ -1429,7 +1429,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Action.html#method.call",
                             L {
                                 en: "A call to this action, which takes no arguments.",
-                                ja: "引数を取らないこのアクションの呼び出しです。",
+                                ja: "引数を取らないこのアクションの呼び出し",
                             },
                         ),
                         (
@@ -1437,7 +1437,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Action.html#method.call_with",
                             L {
                                 en: "A call to this action with `args`.",
-                                ja: "引数 `args` を渡すこのアクションの呼び出しです。",
+                                ja: "引数 `args` を渡す、このアクションの呼び出し",
                             },
                         ),
                         (
@@ -1445,7 +1445,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Action.html#method.path",
                             L {
                                 en: "The path the action is served on.",
-                                ja: "アクションを配信するパスです。",
+                                ja: "アクションを配信するパス",
                             },
                         ),
                         (
@@ -1453,7 +1453,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Action.html#method.method",
                             L {
                                 en: "The method the action is served on.",
-                                ja: "アクションを配信するメソッドです。",
+                                ja: "アクションを配信するメソッド",
                             },
                         ),
                         (
@@ -1461,7 +1461,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "enum.Method.html",
                             L {
                                 en: "The HTTP method an `Action` is served on.",
-                                ja: "`Action` を配信する HTTP メソッドです。",
+                                ja: "`Action` を配信する HTTP メソッド",
                             },
                         ),
                     ],
@@ -1480,7 +1480,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "indicator",
                             "struct.Call.html#method.indicator",
                             L {
-                                en: "Sets `flag` to true while the request is in flight and to false after.",
+                                en: "Sets `flag` to true while the response is awaited and to false after.",
                                 ja: "リクエストの応答を待つあいだ `flag` を真にし、終わったら偽にします。",
                             },
                         ),
@@ -1506,8 +1506,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         ),
         Reference::Patches => (
             L {
-                en: "`Patches<S>` is what a handler answers with: new signal values and re-rendered fragments, applied in order.",
-                ja: "`Patches<S>` はハンドラが返す答えです。シグナルの新しい値と描き直したフラグメントを持ち、ブラウザは順に適用します。",
+                en: "`Patches<S>` is what a handler returns: new signal values and re-rendered fragments, which the browser applies in order.",
+                ja: "`Patches<S>` はハンドラが返す値です。シグナルの新しい値と描き直したフラグメントを持ち、ブラウザはそれらを順に適用します。",
             },
             &[
                 Section {
@@ -1594,8 +1594,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "Fragment",
                             "trait.Fragment.html",
                             L {
-                                en: "A part of the page the server can re-render and replace on its own.",
-                                ja: "サーバーが単独で描き直して置き換えられる、ページの一部分です。",
+                                en: "A part of the page that the server can re-render and replace without the rest of the page.",
+                                ja: "サーバーがその部分だけを描き直して置き換えられる、ページの一部分です。",
                             },
                         ),
                         (
@@ -1628,8 +1628,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         ),
         Reference::Route => (
             L {
-                en: "`Route<P, Q>` is a page served at a path whose parameters are `P`, with search parameters `Q`, and `Link<S>` points to one.",
-                ja: "`Route<P, Q>` は、パスのパラメータが `P`、クエリパラメータが `Q` のパスで配信するページで、`Link<S>` はそのページを指します。",
+                en: "`Route<P, Q>` is a page served at a path, with path parameters `P` and search parameters `Q`. `Link<S>` is a link to that page.",
+                ja: "`Route<P, Q>` はパスで配信するページで、パスのパラメータは `P`、クエリパラメータは `Q` です。`Link<S>` はそのページへのリンクです。",
             },
             &[
                 Section {
@@ -1671,7 +1671,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Route.html#method.url",
                             L {
                                 en: "The URL of this page with the arguments `args`, written on the server.",
-                                ja: "引数 `args` を渡したこのページの URL で、サーバーで書き出します。",
+                                ja: "サーバーで書き出す、引数 `args` を渡したこのページの URL です。",
                             },
                         ),
                         (
@@ -1736,7 +1736,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "derive.Search.html",
                             L {
                                 en: "Checks that each field of a struct can be one value of a query string.",
-                                ja: "構造体の各フィールドがクエリ文字列の値 1 つになれることを検査します。",
+                                ja: "構造体の各フィールドがクエリ文字列の値 1 つとして扱えることを検査します。",
                             },
                         ),
                         (
@@ -1776,7 +1776,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Url.html",
                             L {
                                 en: "The URL of a page, written on the server by `Route::url`.",
-                                ja: "ページの URL で、サーバーで `Route::url` が書き出します。",
+                                ja: "サーバーで `Route::url` が書き出す、ページの URL です。",
                             },
                         ),
                     ],
@@ -1786,7 +1786,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         Reference::RouterExt => (
             L {
                 en: "`RouterExt` adds hypersig routes to an axum `Router`. It needs the `axum` feature, which is on by default.",
-                ja: "`RouterExt` は axum の `Router` に hypersig のルートを足します。`axum` の feature が必要で、この feature は既定で有効です。",
+                ja: "`RouterExt` は axum の `Router` に hypersig のルートを追加します。`axum` の feature が必要で、この feature は既定で有効です。",
             },
             &[Section {
                 heading: L {
@@ -1807,7 +1807,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "action",
                         "trait.RouterExt.html#tymethod.action",
                         L {
-                            en: "Serves `action` with a handler that answers with one batch of patches.",
+                            en: "Serves `action` with a handler that returns one batch of patches.",
                             ja: "差分のまとまりを 1 つ返すハンドラで `action` を配信します。",
                         },
                     ),
@@ -1815,7 +1815,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "stream",
                         "trait.RouterExt.html#tymethod.stream",
                         L {
-                            en: "Serves `action` with a handler that answers with a stream of patches.",
+                            en: "Serves `action` with a handler that returns a stream of patches.",
                             ja: "差分のストリームを返すハンドラで `action` を配信します。",
                         },
                     ),
@@ -1823,8 +1823,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "PageResponse",
                         "struct.PageResponse.html",
                         L {
-                            en: "What a page handler answers with: a page, a redirect, or a 404.",
-                            ja: "ページのハンドラが返す答えです。ページ、リダイレクト、404 のいずれかです。",
+                            en: "What a page handler returns: a page, a redirect, or a 404.",
+                            ja: "ページのハンドラが返す値です。ページ、リダイレクト、404 のいずれかです。",
                         },
                     ),
                     (
