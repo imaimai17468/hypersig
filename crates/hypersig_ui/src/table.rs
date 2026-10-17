@@ -1,19 +1,23 @@
-//! Data tables: rows of a list signal under typed columns, with sorting,
-//! filtering, pagination, and row selection in the browser.
+//! Data tables: rows of a list signal under typed columns, sorted,
+//! filtered, and paged in the browser or on the server.
 
 use std::fmt;
+use std::time::Duration;
 
 use hypersig::html::{
-    El, Node, button, div, each_keyed, input, p, span, table, tbody, td, th, thead, tr,
+    El, Event, Node, button, div, each_keyed, input, p, span, table, tbody, td, th, thead, tr,
 };
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, BorderCollapse, BorderStyle, CaptionSide, Color, Cursor,
-    Display, FontVariantNumeric, FontWeight, JustifyContent, OverflowX, TextAlign, VerticalAlign,
-    WhiteSpace, pct, px, rem,
+    Display, FlexDirection, FontVariantNumeric, FontWeight, JustifyContent, OverflowX, TextAlign,
+    VerticalAlign, WhiteSpace, pct, px, rem,
 };
 use hypersig::style::{PseudoClass, Style};
-use hypersig::{Comparable, Expr, IntoExpr, Item, Number, Sig, Signals, Stmt, Textual, if_else};
+use hypersig::{
+    Comparable, Expr, IntoExpr, IntoStmt, Item, Number, Segment, Sig, Signals, Stmt, Textual,
+    if_else,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::button::{ButtonSize, ButtonVariant, button_style, icon_button};
@@ -22,9 +26,10 @@ use crate::field::field_style;
 use crate::look::{self, icon};
 use crate::token;
 
-/// The signals a [`DataTable`] keeps: its filter text, page, and sort column.
+/// The signals a [`DataTable`] or [`ServerTable`] keeps: filter text, page, and sort.
 ///
-/// Put one in the page's signals for each table.
+/// Put one in the page's signals for each table. A [`ServerTable`] sends it
+/// to the server, which reads the sort with [`TableState::sorting`].
 ///
 /// ```
 /// use hypersig::Signals;
@@ -45,18 +50,75 @@ pub struct TableState {
     pub query: String,
     /// The page shown, counted from 0.
     pub page: i32,
-    /// 0 while unsorted, `n` while sorted ascending by the `n`th column
-    /// counted from 1, and `-n` while sorted descending by it.
-    sort: i32,
+    /// The column sorted by, empty while unsorted. A [`DataTable`] writes
+    /// the column's number counted from 1, and a [`ServerTable`] the
+    /// column's key as a route segment writes it.
+    sort: String,
+    /// Whether the column is sorted descending.
+    descending: bool,
 }
 
-/// One column of a [`DataTable`] whose rows are `T`.
+/// The direction a [`TableState`] sorts its column in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SortOrder {
+    /// Smallest first.
+    Ascending,
+    /// Largest first.
+    Descending,
+}
+
+impl TableState {
+    /// The key of the column a [`ServerTable`] is sorted by, and its order.
+    ///
+    /// Returns `None` while the table is unsorted, and where the sorted
+    /// column is not one of `K`, such as for a state a [`DataTable`] wrote.
+    ///
+    /// ```
+    /// use hypersig::Segment;
+    /// use hypersig_ui::{SortOrder, TableState};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Segment, Serialize, Deserialize, Debug, PartialEq)]
+    /// enum By {
+    ///     Email,
+    ///     Amount,
+    /// }
+    ///
+    /// let state = TableState::default().with_sorting(&By::Amount, SortOrder::Descending);
+    /// assert_eq!(state.sorting::<By>(), Some((By::Amount, SortOrder::Descending)));
+    /// assert_eq!(TableState::default().sorting::<By>(), None);
+    /// ```
+    #[must_use]
+    pub fn sorting<K: Segment>(&self) -> Option<(K, SortOrder)> {
+        if self.sort.is_empty() {
+            return None;
+        }
+        let order = if self.descending {
+            SortOrder::Descending
+        } else {
+            SortOrder::Ascending
+        };
+        Some((K::parse(&self.sort)?, order))
+    }
+
+    /// This state sorted by the [`ServerTable`] column whose key is `key`, in `order`.
+    ///
+    /// Use it for the first state of a page whose server sends the rows
+    /// already sorted, so that the column's header says so.
+    #[must_use]
+    pub fn with_sorting<K: Segment>(mut self, key: &K, order: SortOrder) -> Self {
+        self.sort = key.write();
+        self.descending = order == SortOrder::Descending;
+        self
+    }
+}
+
+/// One column of a [`DataTable`] or a [`ServerTable`] whose rows are `T`.
 ///
 /// A column shows a field of the row with [`Column::text`] or
-/// [`Column::number`], or any element with [`Column::custom`]. A column
-/// sorts only after [`Column::sort_by`] names its key, which the compiler
-/// requires to be a number or a string, because the runtime orders only
-/// those.
+/// [`Column::number`], or any element with [`Column::custom`]. The table
+/// sorts by a column it receives through its `sortable_column`, which takes
+/// the key the way that table sorts.
 ///
 /// ```
 /// use hypersig::Signals;
@@ -74,20 +136,15 @@ pub struct TableState {
 ///     users: Vec<User>,
 /// }
 ///
-/// let email: Column<Users, User> =
-///     Column::text("Email", User::email()).sort_by(|user| user.at(User::email()));
+/// let email: Column<Users, User> = Column::text("Email", User::email());
 /// # let _ = email;
 /// ```
 pub struct Column<S, T> {
     header: String,
     numeric: bool,
     cell: Box<dyn Fn(Item<S, T>) -> El<S>>,
-    sort: Option<Sorter<S, T>>,
     visible: Option<Expr<S, bool>>,
 }
-
-/// Builds the statement that sorts the rows, descending when the `bool` is true.
-type Sorter<S, T> = Box<dyn Fn(Sig<S, Vec<T>>, bool) -> Stmt<S>>;
 
 /// Renders the rows with the row template it receives.
 type Each<S, T> = Box<dyn FnOnce(Box<dyn FnOnce(Item<S, T>) -> El<S>>) -> Node<S>>;
@@ -129,31 +186,8 @@ impl<S: 'static, T: 'static> Column<S, T> {
             header,
             numeric,
             cell: Box::new(cell),
-            sort: None,
             visible: None,
         }
-    }
-
-    /// Makes the header a button that sorts the rows by `key`.
-    ///
-    /// The first press sorts them ascending, and a press on a column sorted
-    /// ascending sorts it descending.
-    /// Sorting reorders the list signal itself, so the order holds until the
-    /// list changes. A list the server patches afterwards arrives in the
-    /// server's order, while the header still marks the last sort.
-    #[must_use]
-    pub fn sort_by<K: Comparable, E: IntoExpr<S, K>>(
-        mut self,
-        key: impl Fn(Item<S, T>) -> E + 'static,
-    ) -> Self {
-        self.sort = Some(Box::new(move |rows, descending| {
-            if descending {
-                rows.sort_by_desc(&key)
-            } else {
-                rows.sort_by(&key)
-            }
-        }));
-        self
     }
 
     /// Shows the column only while `when` is true.
@@ -169,21 +203,42 @@ impl<S, T> fmt::Debug for Column<S, T> {
         f.debug_struct("Column")
             .field("header", &self.header)
             .field("numeric", &self.numeric)
-            .field("sortable", &self.sort.is_some())
             .field("visible", &self.visible)
             .finish_non_exhaustive()
     }
 }
 
-/// A table of the rows of a list signal, under typed [`Column`]s.
+/// A column and, for a sortable one, how its header sorts.
+struct Entry<S, T> {
+    column: Column<S, T>,
+    sort: Option<Sorting<S>>,
+}
+
+/// The text a sortable column writes into [`TableState`], and the
+/// statement that runs after the header writes it.
+struct Sorting<S> {
+    id: String,
+    then: Box<dyn Fn(SortOrder) -> Stmt<S>>,
+}
+
+impl<S, T> fmt::Debug for Entry<S, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Column")
+            .field("header", &self.column.header)
+            .field("sort", &self.sort.as_ref().map(|sort| &sort.id))
+            .finish_non_exhaustive()
+    }
+}
+
+/// A table of the rows of a list signal, sorted, filtered, and paged in the browser.
 ///
 /// Each row is keyed by `key`, as in
 /// [`each_keyed`](hypersig::html::each_keyed), so a row keeps its element,
 /// and its checkbox its focus, when sorting moves it. Everything the table
 /// does runs in the browser on the list signal and the [`TableState`]:
 ///
-/// - A column with [`Column::sort_by`] has a button in its header that
-///   sorts the rows, and the header's `aria-sort` says which way.
+/// - A column added with [`DataTable::sortable_column`] has a button in its
+///   header that sorts the rows, and the header's `aria-sort` says which way.
 /// - [`DataTable::filter`] adds a text field and shows the rows whose text
 ///   contains what the visitor types, ignoring case.
 /// - [`DataTable::paginate`] shows a fixed number of the rows that pass the
@@ -200,8 +255,8 @@ impl<S, T> fmt::Debug for Column<S, T> {
 /// filter or the page hides. Rows are counted on each change of the list,
 /// the filter, or the page, and the work grows with the square of the
 /// number of rows while a filter and pagination are both on, so a list of
-/// thousands of rows is better filtered and paged on the server through a
-/// [`Route`](hypersig::Route) with search parameters.
+/// thousands of rows belongs in a [`ServerTable`], which receives one page
+/// at a time from the server.
 ///
 /// ```
 /// use hypersig::{Page, Signals};
@@ -225,7 +280,7 @@ impl<S, T> fmt::Debug for Column<S, T> {
 ///     .selectable(User::selected())
 ///     .filter("Filter emails", |user| user.at(User::email()))
 ///     .paginate(10)
-///     .column(Column::text("Email", User::email()).sort_by(|user| user.at(User::email())))
+///     .sortable_column(Column::text("Email", User::email()), |user| user.at(User::email()))
 ///     .column(Column::number("Id", User::id()));
 /// let users = vec![User { id: 1, email: "ada@example.com".into(), selected: true }];
 /// let html = Page::new("Users", Users { users, table: TableState::default() })
@@ -239,7 +294,7 @@ pub struct DataTable<S, T> {
     state: Sig<S, TableState>,
     rows: Sig<S, Vec<T>>,
     each: Each<S, T>,
-    columns: Vec<Column<S, T>>,
+    columns: Vec<Entry<S, T>>,
     selected: Option<Sig<T, bool>>,
     filter: Option<(String, RowText<S, T>)>,
     page_size: Option<i32>,
@@ -274,7 +329,39 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
     /// Adds `column` after the columns added so far.
     #[must_use]
     pub fn column(mut self, column: Column<S, T>) -> Self {
-        self.columns.push(column);
+        self.columns.push(Entry { column, sort: None });
+        self
+    }
+
+    /// Adds `column`, whose header sorts the rows by `key`, after the columns added so far.
+    ///
+    /// The compiler requires the key to be a number or a string, because
+    /// the runtime orders only those. The first press on the header sorts
+    /// the rows ascending, and a press on a column sorted ascending sorts
+    /// it descending. Sorting reorders the list signal itself and keeps the
+    /// order of rows with equal keys, so sorting by one column and then by
+    /// another orders the rows by the second and then the first. The order
+    /// holds until the list changes. A list the server patches afterwards
+    /// arrives in the server's order, while the header still marks the
+    /// last sort.
+    #[must_use]
+    pub fn sortable_column<K: Comparable, E: IntoExpr<S, K>>(
+        mut self,
+        column: Column<S, T>,
+        key: impl Fn(Item<S, T>) -> E + 'static,
+    ) -> Self {
+        let rows = self.rows;
+        let sort = Sorting {
+            id: (self.columns.len() + 1).to_string(),
+            then: Box::new(move |order| match order {
+                SortOrder::Ascending => rows.sort_by(&key),
+                SortOrder::Descending => rows.sort_by_desc(&key),
+            }),
+        };
+        self.columns.push(Entry {
+            column,
+            sort: Some(sort),
+        });
         self
     }
 
@@ -354,7 +441,8 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             rows.len()
         };
 
-        let (head, cells) = header_row(columns, rows, selected, state.at(TableState::sort()));
+        let select_head = selected.map(|selected| select_all(rows, selected));
+        let (head, cells) = header_row(columns, select_head, state);
         let width = cells.len() + usize::from(selected.is_some());
 
         let row_shown = move |row: Item<S, T>| -> Expr<S, bool> {
@@ -380,146 +468,29 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
                         .child(check_control(input().attr("aria-label", "Select row"), on)),
                 );
             }
-            for (numeric, cell, visible) in &cells {
-                let mut data = td().css(body_cell(*numeric)).child(cell(row));
-                if let Some(visible) = visible {
-                    data = data.show(visible.clone());
-                }
-                line = line.child(data);
-            }
-            line
+            row_cells(line, &cells, row)
         }));
-        let empty_row = tr().show(shown.clone().equals(0)).child(
-            td().attr("colspan", width.to_string())
-                .css(empty_cell())
-                .text(empty),
-        );
 
         let mut out = div().css(stack(rem(1)));
         if let Some(label) = filter_label {
-            out = out.child(filter_field(label, query, page));
+            out = out.child(filter_field(label, query).on_input(page.set(0)));
         }
-        out = out.child(
-            div().css(frame()).child(
-                table()
-                    .attr("aria-label", label)
-                    .css(table_style())
-                    .child(thead().child(head))
-                    .child(tbody().child(body).child(empty_row)),
-            ),
-        );
+        out = out.child(frame(
+            label,
+            head,
+            body,
+            empty_row(shown.clone().equals(0), width, empty),
+        ));
         if let Some(size) = page_size {
             // The list can shrink from outside the table, through a patch or
             // a statement of the page, and leave the page past its last row.
             let past_end = page.gt(0).and((page * size).ge(shown.clone()));
             out = out
                 .effect(Stmt::when(page.lt(0).or(past_end), page.set(0)))
-                .child(pager(page, shown, size));
+                .child(pager(page, shown, size, None));
         }
         out
     }
-}
-
-/// The header row, and for each column the parts its cells need.
-fn header_row<S: 'static, T: 'static>(
-    columns: Vec<Column<S, T>>,
-    rows: Sig<S, Vec<T>>,
-    selected: Option<Sig<T, bool>>,
-    sort: Sig<S, i32>,
-) -> (El<S>, Vec<Cell<S, T>>) {
-    let mut head = tr();
-    if let Some(selected) = selected {
-        head = head.child(
-            th().attr("scope", "col")
-                .css(select_cell())
-                .child(select_all(rows, selected)),
-        );
-    }
-    let mut cells = Vec::with_capacity(columns.len());
-    let mut code = 0;
-    for column in columns {
-        code += 1;
-        let heading = th().attr("scope", "col").css(head_cell(column.numeric));
-        let mut heading = match column.sort {
-            Some(sorter) => sort_header(
-                heading,
-                column.header,
-                column.numeric,
-                |descending| sorter(rows, descending),
-                sort,
-                code,
-            ),
-            None => heading.text(column.header),
-        };
-        if let Some(visible) = &column.visible {
-            heading = heading.show(visible.clone());
-        }
-        head = head.child(heading);
-        cells.push((column.numeric, column.cell, column.visible));
-    }
-    (head, cells)
-}
-
-/// Whether a column is numeric, how it renders a row, and when it shows.
-type Cell<S, T> = (
-    bool,
-    Box<dyn Fn(Item<S, T>) -> El<S>>,
-    Option<Expr<S, bool>>,
-);
-
-/// The search field named `label` bound to `query`, which returns to the
-/// first page as the visitor types.
-fn filter_field<S>(label: String, query: Sig<S, String>, page: Sig<S, i32>) -> El<S> {
-    input()
-        .attr("type", "search")
-        .attr("aria-label", label.clone())
-        .attr("placeholder", label)
-        .css(field_style().max_width(rem(24)))
-        .bind(query)
-        .on_input(page.set(0))
-}
-
-/// `heading` with a button that sorts by the column numbered `code`, which
-/// `sorter` sorts ascending or descending, and the `aria-sort` that follows
-/// `sort`.
-fn sort_header<S>(
-    heading: El<S>,
-    header: String,
-    numeric: bool,
-    sorter: impl Fn(bool) -> Stmt<S>,
-    sort: Sig<S, i32>,
-    code: i32,
-) -> El<S> {
-    let ascending = sort.equals(code);
-    let descending = sort.equals(-code);
-    let toggle = Stmt::if_else(
-        ascending.clone(),
-        sorter(true).then(sort.set(-code)),
-        sorter(false).then(sort.set(code)),
-    );
-    heading
-        .bind_attr(
-            "aria-sort",
-            if_else(
-                ascending.clone(),
-                "ascending",
-                if_else(descending.clone(), "descending", "none"),
-            ),
-        )
-        .child(
-            button()
-                .attr("type", "button")
-                .css(sort_button(numeric))
-                .on_click(toggle)
-                .child(span().text(header))
-                .child(icon(icon::ARROW_UP, rem(1)).show(ascending.clone()))
-                .child(icon(icon::ARROW_DOWN, rem(1)).show(descending.clone()))
-                .child(
-                    icon(icon::ARROW_UP_DOWN, rem(1))
-                        .show(!ascending.or(descending))
-                        .css(Style::new().color(token::muted_foreground().var())),
-                ),
-        )
 }
 
 impl<S, T> fmt::Debug for DataTable<S, T> {
@@ -546,6 +517,395 @@ impl<S: 'static, T: 'static> From<DataTable<S, T>> for Node<S> {
     fn from(table: DataTable<S, T>) -> Self {
         table.render().into()
     }
+}
+
+/// A table whose rows the server filters, sorts, and pages, one page at a time.
+///
+/// The list signal holds only the rows shown. The filter field, a sortable
+/// header, and the page buttons write the [`TableState`] and then run
+/// `load`, which is a call to an action that receives the state. The
+/// action answers with a patch of the rows and, for a paged table, of the
+/// total. The browser counts no rows, so the browser's work per change
+/// grows with the rows of one page, however many the server holds.
+///
+/// - [`ServerTable::sortable_column`] takes a key the server reads back
+///   with [`TableState::sorting`], so both sides name the column with the
+///   same enum.
+/// - [`ServerTable::filter`] runs `load` once typing pauses for 300 ms, and
+///   returns to the first page.
+/// - [`ServerTable::paginate`] shows the range of rows and moves between
+///   pages, out of the total that the server writes.
+///
+/// What the server does with the state is the application's code, which
+/// the compiler does not check against the table: it answers with the
+/// rows of the page the state names, and a total that counts every row
+/// that passes the filter. A page past the last row shows no rows until
+/// the visitor goes back.
+///
+/// ```
+/// use hypersig::{Action, Page, Patches, Segment, Signals};
+/// use hypersig_ui::{Column, ServerTable, SortOrder, TableState};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize, Clone)]
+/// struct User {
+///     id: i32,
+///     email: String,
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Users {
+///     users: Vec<User>,
+///     total: i32,
+///     table: TableState,
+/// }
+///
+/// #[derive(Segment, Serialize, Deserialize)]
+/// enum By {
+///     Email,
+/// }
+///
+/// const LOAD: Action<Users, TableState> = Action::post("/users");
+///
+/// /// The page of users `state` names, and how many pass its filter.
+/// fn query(all: &[User], state: &TableState) -> (Vec<User>, i32) {
+///     let mut rows: Vec<User> = all
+///         .iter()
+///         .filter(|user| user.email.contains(&state.query.to_lowercase()))
+///         .cloned()
+///         .collect();
+///     if let Some((By::Email, order)) = state.sorting::<By>() {
+///         rows.sort_by(|a, b| a.email.cmp(&b.email));
+///         if order == SortOrder::Descending {
+///             rows.reverse();
+///         }
+///     }
+///     let total = i32::try_from(rows.len()).unwrap_or(i32::MAX);
+///     let start = usize::try_from(state.page * 10).unwrap_or(0);
+///     (rows.into_iter().skip(start).take(10).collect(), total)
+/// }
+///
+/// async fn load((): (), state: TableState) -> Patches<Users> {
+///     let all = vec![User { id: 1, email: "ada@example.com".into() }];
+///     let (rows, total) = query(&all, &state);
+///     Users::users().patch(rows).and(Users::total().patch(total)).into()
+/// }
+///
+/// let table = ServerTable::new(
+///     "Users",
+///     Users::table(),
+///     Users::users(),
+///     |user| user.at(User::id()),
+///     LOAD.call_with(Users::table()),
+/// )
+/// .filter("Filter emails")
+/// .paginate(10, Users::total())
+/// .sortable_column(Column::text("Email", User::email()), &By::Email);
+/// let all = vec![User { id: 1, email: "ada@example.com".into() }];
+/// let (users, total) = query(&all, &TableState::default());
+/// let html = Page::new("Users", Users { users, total, table: TableState::default() })
+///     .child(table)
+///     .render();
+/// assert!(html.contains("1–1 / 1"));
+/// # let _ = load;
+/// ```
+pub struct ServerTable<S, T> {
+    label: String,
+    state: Sig<S, TableState>,
+    rows: Sig<S, Vec<T>>,
+    each: Each<S, T>,
+    load: Stmt<S>,
+    columns: Vec<Entry<S, T>>,
+    filter: Option<String>,
+    pages: Option<(i32, Sig<S, i32>)>,
+    empty: String,
+}
+
+impl<S: 'static, T: 'static> ServerTable<S, T> {
+    /// An empty table named `label`, listing `rows` by `key`, which runs `load` to fetch rows.
+    ///
+    /// `state` holds the filter text, the page, and the sort, and `load`
+    /// runs after the visitor changes one of them.
+    #[must_use]
+    pub fn new<K: 'static, E: IntoExpr<S, K>>(
+        label: impl Into<String>,
+        state: Sig<S, TableState>,
+        rows: Sig<S, Vec<T>>,
+        key: impl FnOnce(Item<S, T>) -> E + 'static,
+        load: impl IntoStmt<S>,
+    ) -> Self {
+        Self {
+            label: label.into(),
+            state,
+            rows,
+            each: Box::new(move |render| each_keyed(rows, key, render)),
+            load: load.into_stmt(),
+            columns: Vec::new(),
+            filter: None,
+            pages: None,
+            empty: "No results.".to_owned(),
+        }
+    }
+
+    /// Adds `column` after the columns added so far.
+    #[must_use]
+    pub fn column(mut self, column: Column<S, T>) -> Self {
+        self.columns.push(Entry { column, sort: None });
+        self
+    }
+
+    /// Adds `column`, whose header asks the server to sort by `key`, after the columns added so far.
+    ///
+    /// The header writes `key` into the [`TableState`], returns to the
+    /// first page, and runs `load`. The server reads the key back with
+    /// [`TableState::sorting`]. An enum with `#[derive(Segment)]` keeps the
+    /// keys of the columns and the server's `match` in one type.
+    #[must_use]
+    pub fn sortable_column<K: Segment>(mut self, column: Column<S, T>, key: &K) -> Self {
+        let page = self.state.at(TableState::page());
+        let load = self.load.clone();
+        let sort = Sorting {
+            id: key.write(),
+            then: Box::new(move |_| page.set(0).then(load.clone())),
+        };
+        self.columns.push(Entry {
+            column,
+            sort: Some(sort),
+        });
+        self
+    }
+
+    /// Adds a field named `label` whose text the server filters the rows by.
+    ///
+    /// The field sits above the table. Once typing pauses for 300 ms, the
+    /// table returns to its first page and runs `load`.
+    #[must_use]
+    pub fn filter(mut self, label: impl Into<String>) -> Self {
+        self.filter = Some(label.into());
+        self
+    }
+
+    /// Shows pages of `size` rows out of `total`, with buttons for the previous and next page.
+    ///
+    /// The server answers each `load` with at most `size` rows and writes
+    /// `total`, the number of rows that pass the filter. Below the table,
+    /// the range of rows shown is written as `11–20 / 42`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `size` is less than 1.
+    #[must_use]
+    pub fn paginate(mut self, size: i32, total: Sig<S, i32>) -> Self {
+        assert!(size >= 1, "a page holds at least one row");
+        self.pages = Some((size, total));
+        self
+    }
+
+    /// Sets the text shown when the server sends no rows.
+    ///
+    /// It is "No results." until set.
+    #[must_use]
+    pub fn empty(mut self, text: impl Into<String>) -> Self {
+        self.empty = text.into();
+        self
+    }
+
+    /// The filter field, the table, and the page buttons, in a `<div>`.
+    #[must_use]
+    pub fn render(self) -> El<S> {
+        let Self {
+            label,
+            state,
+            rows,
+            each,
+            load,
+            columns,
+            filter,
+            pages,
+            empty,
+        } = self;
+        let query = state.at(TableState::query());
+        let page = state.at(TableState::page());
+        let (head, cells) = header_row(columns, None, state);
+        let width = cells.len();
+        let body = each(Box::new(move |row| {
+            row_cells(tr().css(body_row()), &cells, row)
+        }));
+
+        let mut out = div().css(stack(rem(1)));
+        if let Some(label) = filter {
+            out = out.child(filter_field(label, query).on_debounced(
+                Event::Input,
+                Duration::from_millis(300),
+                page.set(0).then(load.clone()),
+            ));
+        }
+        out = out.child(frame(
+            label,
+            head,
+            body,
+            empty_row(rows.is_empty(), width, empty),
+        ));
+        if let Some((size, total)) = pages {
+            out = out.child(pager(page, total.into_expr(), size, Some(&load)));
+        }
+        out
+    }
+}
+
+impl<S, T> fmt::Debug for ServerTable<S, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ServerTable")
+            .field("label", &self.label)
+            .field("state", &self.state)
+            .field("rows", &self.rows)
+            .field("load", &self.load)
+            .field("columns", &self.columns)
+            .field("filter", &self.filter)
+            .field("pages", &self.pages)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<S: 'static, T: 'static> From<ServerTable<S, T>> for El<S> {
+    fn from(table: ServerTable<S, T>) -> Self {
+        table.render()
+    }
+}
+
+impl<S: 'static, T: 'static> From<ServerTable<S, T>> for Node<S> {
+    fn from(table: ServerTable<S, T>) -> Self {
+        table.render().into()
+    }
+}
+
+/// Whether a column is numeric, how it renders a row, and when it shows.
+type Cell<S, T> = (
+    bool,
+    Box<dyn Fn(Item<S, T>) -> El<S>>,
+    Option<Expr<S, bool>>,
+);
+
+/// The header row, after `select_head` where there is one, and for each
+/// column the parts its cells need.
+fn header_row<S: 'static, T: 'static>(
+    columns: Vec<Entry<S, T>>,
+    select_head: Option<El<S>>,
+    state: Sig<S, TableState>,
+) -> (El<S>, Vec<Cell<S, T>>) {
+    let mut head = tr();
+    if let Some(select_head) = select_head {
+        head = head.child(
+            th().attr("scope", "col")
+                .css(select_cell())
+                .child(select_head),
+        );
+    }
+    let mut cells = Vec::with_capacity(columns.len());
+    for Entry { column, sort } in columns {
+        let heading = th().attr("scope", "col").css(head_cell(column.numeric));
+        let mut heading = match sort {
+            Some(sort) => sort_header(heading, column.header, column.numeric, sort, state),
+            None => heading.text(column.header),
+        };
+        if let Some(visible) = &column.visible {
+            heading = heading.show(visible.clone());
+        }
+        head = head.child(heading);
+        cells.push((column.numeric, column.cell, column.visible));
+    }
+    (head, cells)
+}
+
+/// `line` with a cell per column for `row`.
+fn row_cells<S, T>(mut line: El<S>, cells: &[Cell<S, T>], row: Item<S, T>) -> El<S> {
+    for (numeric, cell, visible) in cells {
+        let mut data = td().css(body_cell(*numeric)).child(cell(row));
+        if let Some(visible) = visible {
+            data = data.show(visible.clone());
+        }
+        line = line.child(data);
+    }
+    line
+}
+
+/// The rounded border around the `<table>` named `label`.
+fn frame<S>(label: String, head: El<S>, body: Node<S>, empty_row: El<S>) -> El<S> {
+    div().css(frame_style()).child(
+        table()
+            .attr("aria-label", label)
+            .css(table_style())
+            .child(thead().child(head))
+            .child(tbody().child(body).child(empty_row)),
+    )
+}
+
+/// The row that spans `width` columns and says `text` while `when` is true.
+fn empty_row<S>(when: Expr<S, bool>, width: usize, text: String) -> El<S> {
+    tr().show(when).child(
+        td().attr("colspan", width.to_string())
+            .css(empty_cell())
+            .text(text),
+    )
+}
+
+/// The search field named `label` bound to `query`.
+fn filter_field<S>(label: String, query: Sig<S, String>) -> El<S> {
+    input()
+        .attr("type", "search")
+        .attr("aria-label", label.clone())
+        .attr("placeholder", label)
+        .css(field_style().max_width(rem(24)))
+        .bind(query)
+}
+
+/// `heading` with a button that writes `sort` into `state` and runs its
+/// statement, and the `aria-sort` that follows `state`.
+fn sort_header<S>(
+    heading: El<S>,
+    header: String,
+    numeric: bool,
+    sort: Sorting<S>,
+    state: Sig<S, TableState>,
+) -> El<S> {
+    let column = state.at(TableState::sort());
+    let descending = state.at(TableState::descending());
+    let on = column.equals(sort.id.clone());
+    let up = on.clone().and(!descending);
+    let down = on.and(descending);
+    let toggle = Stmt::if_else(
+        up.clone(),
+        descending
+            .set(true)
+            .then((sort.then)(SortOrder::Descending)),
+        column
+            .set(sort.id)
+            .then(descending.set(false))
+            .then((sort.then)(SortOrder::Ascending)),
+    );
+    heading
+        .bind_attr(
+            "aria-sort",
+            if_else(
+                up.clone(),
+                "ascending",
+                if_else(down.clone(), "descending", "none"),
+            ),
+        )
+        .child(
+            button()
+                .attr("type", "button")
+                .css(sort_button(numeric))
+                .on_click(toggle)
+                .child(span().text(header))
+                .child(icon(icon::ARROW_UP, rem(1)).show(up.clone()))
+                .child(icon(icon::ARROW_DOWN, rem(1)).show(down.clone()))
+                .child(
+                    icon(icon::ARROW_UP_DOWN, rem(1))
+                        .show(!up.or(down))
+                        .css(Style::new().color(token::muted_foreground().var())),
+                ),
+        )
 }
 
 /// The header checkbox: checked while every row is selected, mixed while
@@ -586,12 +946,17 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selected: Sig<T, bool>) -> El<S> {
         .child(mark)
 }
 
-/// The range of rows shown and the buttons that move between pages.
-fn pager<S>(page: Sig<S, i32>, shown: Expr<S, i32>, size: i32) -> El<S> {
+/// The range of rows shown out of `shown`, and the buttons that move
+/// between pages and then run `then`.
+fn pager<S>(page: Sig<S, i32>, shown: Expr<S, i32>, size: i32, then: Option<&Stmt<S>>) -> El<S> {
     let start = page * size;
     let end = (start.clone() + size).min(shown.clone());
     let first = if_else(shown.clone().equals(0), Expr::lit(&0), start.clone() + 1);
     let has_next = (start.clone() + size).lt(shown.clone());
+    let go = |to: Expr<S, i32>| match then {
+        Some(then) => page.set(to).then(then.clone()),
+        None => page.set(to),
+    };
     div()
         .css(
             Style::new()
@@ -621,19 +986,19 @@ fn pager<S>(page: Sig<S, i32>, shown: Expr<S, i32>, size: i32) -> El<S> {
         .child(
             icon_button(ButtonVariant::Outline, "Previous page")
                 .attr_when("disabled", page.le(0))
-                .on_click(page.set(page - 1))
+                .on_click(Stmt::when(page.gt(0), go(page - 1)))
                 .child(icon(icon::CHEVRON_LEFT, rem(1))),
         )
         .child(
             icon_button(ButtonVariant::Outline, "Next page")
                 .attr_when("disabled", !has_next.clone())
-                .on_click(Stmt::when(has_next, page.set(page + 1)))
+                .on_click(Stmt::when(has_next, go(page + 1)))
                 .child(icon(icon::CHEVRON_RIGHT, rem(1))),
         )
 }
 
 /// The rounded border around the table, which scrolls sideways on a narrow screen.
-fn frame() -> Style {
+fn frame_style() -> Style {
     Style::new()
         .overflow_x(OverflowX::Auto)
         .border_width(px(1))
@@ -677,9 +1042,9 @@ fn sort_button(numeric: bool) -> Style {
         .column_gap(rem(0.5))
         .margin_inline(rem(-0.75))
         .flex_direction(if numeric {
-            hypersig::style::value::FlexDirection::RowReverse
+            FlexDirection::RowReverse
         } else {
-            hypersig::style::value::FlexDirection::Row
+            FlexDirection::Row
         })
 }
 

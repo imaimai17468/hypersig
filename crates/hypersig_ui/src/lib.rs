@@ -22,6 +22,7 @@
 //! | [`Tabs`] | the tabs pattern, with roving focus |
 //! | [`Chart`] | an `<svg>` hidden from assistive technology, beside a visually hidden `<table>` of the same rows |
 //! | [`DataTable`] | `<table>` with `<th scope="col">` and `aria-sort`, and a tri-state checkbox for selecting rows |
+//! | [`ServerTable`] | the same `<table>`, whose rows an action sends one page at a time |
 //! | [`Accordion`] | `<details>` and `<summary>` |
 //! | [`Dialog`] | `<dialog>` opened by invoker commands |
 //! | [`Menu`] | the menu button pattern on a `popover` |
@@ -100,7 +101,7 @@ pub use progress::{progress, skeleton};
 pub use select::select_field;
 pub use separator::separator;
 pub use slider::Slider;
-pub use table::{Column, DataTable, TableState};
+pub use table::{Column, DataTable, ServerTable, SortOrder, TableState};
 pub use tabs::Tabs;
 pub use theme::{dark, global, light, theme};
 pub use toast::{Toast, ToastVariant, Toaster};

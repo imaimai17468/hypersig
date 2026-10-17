@@ -291,6 +291,7 @@ test("a toast is announced in the notifications region and stays until dismissed
 });
 
 const payments = (page: import("@playwright/test").Page) => page.getByRole("table", { name: "Payments" });
+const dataTable = (page: import("@playwright/test").Page) => page.locator("section", { has: payments(page) });
 const emails = (page: import("@playwright/test").Page) =>
   payments(page).locator("tbody tr:visible td:nth-child(3)").allTextContents();
 
@@ -323,8 +324,8 @@ test("a data table sorts by a column header, ascending then descending", async (
 test("a data table pages through the rows the filter passes", async ({ page }) => {
   const range = page.getByText("1–5 / 12");
   await expect(range).toBeVisible();
-  const next = page.getByRole("button", { name: "Next page" });
-  const previous = page.getByRole("button", { name: "Previous page" });
+  const next = dataTable(page).getByRole("button", { name: "Next page" });
+  const previous = dataTable(page).getByRole("button", { name: "Previous page" });
   await expect(previous).toBeDisabled();
   await next.click();
   await expect(page.getByText("6–10 / 12")).toBeVisible();
@@ -381,7 +382,7 @@ test("a data table hides a column while its signal is false", async ({ page }) =
 });
 
 test("a data table returns to its first page when the list shrinks past the page shown", async ({ page }) => {
-  const next = page.getByRole("button", { name: "Next page" });
+  const next = dataTable(page).getByRole("button", { name: "Next page" });
   await next.click();
   await next.click();
   await expect(page.getByText("11–12 / 12")).toBeVisible();
@@ -391,6 +392,57 @@ test("a data table returns to its first page when the list shrinks past the page
   await page.getByRole("button", { name: "Delete selected" }).click();
   await expect(page.getByText("1–5 / 10")).toBeVisible();
   expect(await emails(page)).toHaveLength(5);
+});
+
+const orders = (page: import("@playwright/test").Page) => page.locator("section", { has: page.getByRole("heading", { name: "Server table" }) });
+const orderEmails = (page: import("@playwright/test").Page) =>
+  orders(page).locator("tbody tr:visible td:nth-child(2)").allTextContents();
+
+test("a server table asks the server for the next page", async ({ page }) => {
+  await expect(orders(page).getByText("1–5 / 42")).toBeVisible();
+  expect(await orderEmails(page)).toEqual([
+    "customer01@example.com",
+    "customer02@example.com",
+    "customer03@example.com",
+    "customer04@example.com",
+    "customer05@example.com",
+  ]);
+  const previous = orders(page).getByRole("button", { name: "Previous page" });
+  await expect(previous).toBeDisabled();
+  await orders(page).getByRole("button", { name: "Next page" }).click();
+  await expect(orders(page).getByText("6–10 / 42")).toBeVisible();
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(2)").first()).toHaveText("customer06@example.com");
+  await expect(orders(page).locator("tbody tr:visible")).toHaveCount(5);
+  await previous.click();
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(2)").first()).toHaveText("customer01@example.com");
+});
+
+test("a server table sorts on the server and returns to the first page", async ({ page }) => {
+  await orders(page).getByRole("button", { name: "Next page" }).click();
+  await expect(orders(page).getByText("6–10 / 42")).toBeVisible();
+  const amount = orders(page).getByRole("columnheader", { name: "Amount" });
+  await amount.getByRole("button").click();
+  await expect(amount).toHaveAttribute("aria-sort", "ascending");
+  await expect(orders(page).getByText("1–5 / 42")).toBeVisible();
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("30.5");
+  await amount.getByRole("button").click();
+  await expect(amount).toHaveAttribute("aria-sort", "descending");
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("990.5");
+});
+
+test("a server table filters on the server once typing pauses", async ({ page }) => {
+  await orders(page).getByRole("searchbox", { name: "Filter orders" }).fill("customer1");
+  await expect(orders(page).getByText("1–5 / 10")).toBeVisible();
+  expect(await orderEmails(page)).toEqual([
+    "customer10@example.com",
+    "customer11@example.com",
+    "customer12@example.com",
+    "customer13@example.com",
+    "customer14@example.com",
+  ]);
+  await orders(page).getByRole("searchbox", { name: "Filter orders" }).fill("nobody");
+  await expect(orders(page).getByText("No results.")).toBeVisible();
+  await expect(orders(page).getByText("0–0 / 0")).toBeVisible();
 });
 
 const bars = (page: import("@playwright/test").Page) => page.locator("#bar-chart svg rect");

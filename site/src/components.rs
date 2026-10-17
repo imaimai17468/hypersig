@@ -998,8 +998,8 @@ fn component_page(page: Component) -> Page {
         },
         Component::DataTable => Page {
             lead: L {
-                en: "A table of the rows of a list signal under typed columns, which sorts, filters, pages, and selects rows in the browser.",
-                ja: "リストのシグナルの行を、型の付いた列の下に並べる表です。並べ替え、絞り込み、ページ送り、行の選択をブラウザで行います。",
+                en: "A table of the rows of a list signal under typed columns, which sorts, filters, pages, and selects rows in the browser, or asks the server for one page at a time.",
+                ja: "リストのシグナルの行を、型の付いた列の下に並べる表です。並べ替え、絞り込み、ページ送り、行の選択をブラウザで行うほか、1 ページずつサーバーに求めることもできます。",
             },
             demo: Demo::DataTable,
             built_on: &[
@@ -1008,12 +1008,12 @@ fn component_page(page: Component) -> Page {
                     ja: "見出しに `scope=\"col\"` を付けた `<table>` です。並べ替えられる列の見出しはボタンを持ち、その列で昇順か降順に並んでいるか、並んでいないかを `aria-sort` で伝えます。見出しのチェックボックスは `role=\"checkbox\"` のボタンで、一部の行が選ばれている間は `aria-checked` が `mixed` になります。ネイティブのチェックボックスの中間状態はプロパティで、属性からは設定できないためです。",
                 },
                 L {
-                    en: "A column is built from a field of the row type, so a field of another struct does not compile, and a sort key must be a number or a string. The table keeps its filter text, page, and sort column in a `TableState` field of the page's signals, and sorting reorders the list signal itself.",
-                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。並べ替えのキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。",
+                    en: "A column is built from a field of the row type, so a field of another struct does not compile, and the key that `sortable_column` sorts by must be a number or a string. The table keeps its filter text, page, and sort column in a `TableState` field of the page's signals, and sorting reorders the list signal itself.",
+                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。`sortable_column` で並べ替えるキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。",
                 },
                 L {
-                    en: "The browser counts the rows on each change, and with a filter and pagination both on, the work grows with the square of the number of rows. Page a list of thousands of rows on the server, through a `Route` with search parameters.",
-                    ja: "ブラウザは変更のたびに行を数え直し、絞り込みとページ送りを両方使うと、その手間は行数の 2 乗で増えます。数千行のリストは、検索パラメータを持つ `Route` を使ってサーバーでページに分けてください。",
+                    en: "The browser counts the rows on each change, and with a filter and pagination both on, the work grows with the square of the number of rows. A list of thousands of rows belongs in a `ServerTable`. Its filter field, sortable headers, and page buttons write the `TableState` and then call an action with it, and the action answers with a patch of the page's rows and the total. A sortable column takes an enum with `#[derive(Segment)]` as its key, and the server reads it back from the state with `TableState::sorting`. The demo below runs in the browser alone, since this site has no server, and `examples/ui` has a `ServerTable` beside its `DataTable`.",
+                    ja: "ブラウザは変更のたびに行を数え直し、絞り込みとページ送りを両方使うと、その手間は行数の 2 乗で増えます。数千行のリストには `ServerTable` を使ってください。絞り込みの欄、並べ替えの見出し、ページのボタンが `TableState` を書き換えてから、それを引数にアクションを呼びます。アクションは、そのページの行と総数をパッチで返します。並べ替えられる列は `#[derive(Segment)]` を付けた列挙型をキーに取り、サーバーは `TableState::sorting` で状態からキーを読み戻します。このサイトにはサーバーがないので下のデモはブラウザだけで動き、`examples/ui` には `DataTable` と並べて `ServerTable` を置いています。",
                 },
             ],
             keys: &[
@@ -1053,6 +1053,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "Adds `column` after the columns added so far.",
                         ja: "それまでに足した列の後ろに `column` を足します。",
+                    },
+                ),
+                (
+                    "sortable_column",
+                    "hypersig_ui/struct.DataTable.html#method.sortable_column",
+                    L {
+                        en: "Adds `column`, whose header sorts the rows by `key`, after the columns added so far.",
+                        ja: "見出しで行を `key` の順に並べ替える列 `column` を、それまでに足した列の後ろに足します。",
                     },
                 ),
                 (
@@ -1104,14 +1112,6 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
-                    "sort_by",
-                    "hypersig_ui/struct.Column.html#method.sort_by",
-                    L {
-                        en: "Makes the header a button that sorts the rows by `key`.",
-                        ja: "見出しを、行を `key` で並べ替えるボタンにします。",
-                    },
-                ),
-                (
                     "visible",
                     "hypersig_ui/struct.Column.html#method.visible",
                     L {
@@ -1123,8 +1123,48 @@ fn component_page(page: Component) -> Page {
                     "TableState",
                     "hypersig_ui/struct.TableState.html",
                     L {
-                        en: "The signals a `DataTable` keeps: its filter text, page, and sort column.",
-                        ja: "`DataTable` が持つシグナル。絞り込みの文字列、ページ、並べ替えた列",
+                        en: "The signals a `DataTable` or `ServerTable` keeps: filter text, page, and sort.",
+                        ja: "`DataTable` と `ServerTable` が持つシグナル。絞り込みの文字列、ページ、並べ替え",
+                    },
+                ),
+                (
+                    "ServerTable::new",
+                    "hypersig_ui/struct.ServerTable.html#method.new",
+                    L {
+                        en: "An empty table named `label`, listing `rows` by `key`, which runs `load` to fetch rows.",
+                        ja: "`label` を名前に持ち、`rows` を `key` で並べ、行を取りに `load` を実行する空の表",
+                    },
+                ),
+                (
+                    "ServerTable::sortable_column",
+                    "hypersig_ui/struct.ServerTable.html#method.sortable_column",
+                    L {
+                        en: "Adds `column`, whose header asks the server to sort by `key`, after the columns added so far.",
+                        ja: "見出しでサーバーに `key` での並べ替えを求める列 `column` を、それまでに足した列の後ろに足します。",
+                    },
+                ),
+                (
+                    "ServerTable::filter",
+                    "hypersig_ui/struct.ServerTable.html#method.filter",
+                    L {
+                        en: "Adds a field named `label` whose text the server filters the rows by.",
+                        ja: "`label` を名前に持つ欄を足し、サーバーがその文字列で行を絞り込みます。",
+                    },
+                ),
+                (
+                    "ServerTable::paginate",
+                    "hypersig_ui/struct.ServerTable.html#method.paginate",
+                    L {
+                        en: "Shows pages of `size` rows out of `total`, with buttons for the previous and next page.",
+                        ja: "`total` 行のうち `size` 行ずつのページを表示し、前と次のページに移るボタンを置きます。",
+                    },
+                ),
+                (
+                    "TableState::sorting",
+                    "hypersig_ui/struct.TableState.html#method.sorting",
+                    L {
+                        en: "The key of the column a `ServerTable` is sorted by, and its order.",
+                        ja: "`ServerTable` が並べ替えている列のキーと、その向き",
                     },
                 ),
             ],

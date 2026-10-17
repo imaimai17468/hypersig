@@ -62,25 +62,25 @@ pub fn page(site: Site) -> Page<Ledger> {
         en: "No results.",
         ja: "該当する行はありません。",
     }))
-    .column(
+    .sortable_column(
         Column::text(
             site.t(L {
                 en: "Email",
                 ja: "メールアドレス",
             }),
             Payment::email(),
-        )
-        .sort_by(|payment| payment.at(Payment::email())),
+        ),
+        |payment| payment.at(Payment::email()),
     )
-    .column(
+    .sortable_column(
         Column::number(
             site.t(L {
                 en: "Amount",
                 ja: "金額",
             }),
             Payment::amount(),
-        )
-        .sort_by(|payment| payment.at(Payment::amount())),
+        ),
+        |payment| payment.at(Payment::amount()),
     );
     Page::new(
         site.t(L {

@@ -1,6 +1,7 @@
 //! The components of `hypersig_ui` on one page: a form whose email the
 //! server checks, toggles, pickers, tabs, an accordion, dialogs, a menu,
-//! tooltips, toasts, a data table, charts, and the static pieces.
+//! tooltips, toasts, a data table, a table the server pages, charts, and
+//! the static pieces.
 //!
 //! Run with `cargo run -p example-ui` and open <http://localhost:3005>.
 
@@ -10,14 +11,14 @@ use hypersig::style::Media;
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
-use hypersig::{Action, Page, Patches, Route, RouterExt, Signals, if_else};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Segment, Signals, if_else};
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart,
     ChartScale, Column, Combobox, ComboboxState, DataTable, Dialog, InputKind, Level, Listbox,
-    Menu, MenuItem, Slider, TableState, Tabs, TextField, Toast, ToastVariant, Toaster, Tooltip,
-    alert, alert_description, alert_title, badge, button, card, card_content, card_description,
-    card_footer, card_header, card_title, checkbox, dialog_footer, progress, radio_group,
-    select_field, separator, skeleton, submit_button, switch, token,
+    Menu, MenuItem, ServerTable, Slider, SortOrder, TableState, Tabs, TextField, Toast,
+    ToastVariant, Toaster, Tooltip, alert, alert_description, alert_title, badge, button, card,
+    card_content, card_description, card_footer, card_header, card_title, checkbox, dialog_footer,
+    progress, radio_group, select_field, separator, skeleton, submit_button, switch, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -74,6 +75,22 @@ struct Payment {
     selected: bool,
 }
 
+/// One row of the table the server pages.
+#[derive(Signals, Serialize, Deserialize, Clone)]
+struct Order {
+    id: i32,
+    email: String,
+    amount: f64,
+}
+
+/// The columns the server sorts the orders by.
+#[derive(Segment, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+enum OrderBy {
+    Email,
+    Amount,
+}
+
 /// The two toggles, kept together so that both are saved as one value.
 #[derive(Signals, Serialize, Deserialize)]
 struct Preferences {
@@ -106,6 +123,9 @@ struct Gallery {
     payments: Vec<Payment>,
     payments_table: TableState,
     show_status: bool,
+    orders: Vec<Order>,
+    orders_total: i32,
+    orders_table: TableState,
     months: Vec<Month>,
     months_scale: ChartScale,
 }
@@ -117,6 +137,7 @@ hypersig::routes! {
 
 const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
 const NEXT_HALF: Action<Gallery> = Action::post("/next-half");
+const ORDERS: Action<Gallery, TableState> = Action::post("/orders");
 const EDIT: Dialog<Gallery> = Dialog::new("edit-profile");
 const DELETE: Dialog<Gallery> = Dialog::new("delete-project");
 const ACTIONS: Menu<Gallery> = Menu::new("project-actions");
@@ -652,16 +673,16 @@ fn payments() -> El<Gallery> {
             .concat(payment.at(Payment::status()))
     })
     .paginate(5)
-    .column(
-        Column::text("Status", Payment::status())
-            .sort_by(|payment| payment.at(Payment::status()))
-            .visible(Gallery::show_status()),
+    .sortable_column(
+        Column::text("Status", Payment::status()).visible(Gallery::show_status()),
+        |payment| payment.at(Payment::status()),
     )
-    .column(Column::text("Email", Payment::email()).sort_by(|payment| payment.at(Payment::email())))
-    .column(
-        Column::number("Amount", Payment::amount())
-            .sort_by(|payment| payment.at(Payment::amount())),
-    );
+    .sortable_column(Column::text("Email", Payment::email()), |payment| {
+        payment.at(Payment::email())
+    })
+    .sortable_column(Column::number("Amount", Payment::amount()), |payment| {
+        payment.at(Payment::amount())
+    });
     panel("Data table")
         .child(
             div()
@@ -676,6 +697,63 @@ fn payments() -> El<Gallery> {
                 ),
         )
         .child(table)
+}
+
+fn server_table() -> El<Gallery> {
+    panel("Server table").child(
+        ServerTable::new(
+            "Orders",
+            Gallery::orders_table(),
+            Gallery::orders(),
+            |order| order.at(Order::id()),
+            ORDERS.call_with(Gallery::orders_table()),
+        )
+        .filter("Filter orders")
+        .paginate(5, Gallery::orders_total())
+        .column(Column::number("Id", Order::id()))
+        .sortable_column(Column::text("Email", Order::email()), &OrderBy::Email)
+        .sortable_column(Column::number("Amount", Order::amount()), &OrderBy::Amount),
+    )
+}
+
+/// The 42 orders the server holds. The table receives five at a time.
+fn all_orders() -> Vec<Order> {
+    (1..=42)
+        .map(|id| Order {
+            id,
+            email: format!("customer{id:02}@example.com"),
+            amount: f64::from((id * 37) % 100 * 10) + 0.5,
+        })
+        .collect()
+}
+
+/// The page of orders `state` names, and how many pass its filter.
+fn query_orders(state: &TableState) -> (Vec<Order>, i32) {
+    let query = state.query.trim().to_lowercase();
+    let mut rows: Vec<Order> = all_orders()
+        .into_iter()
+        .filter(|order| order.email.contains(&query))
+        .collect();
+    if let Some((by, order)) = state.sorting::<OrderBy>() {
+        match by {
+            OrderBy::Email => rows.sort_by(|a, b| a.email.cmp(&b.email)),
+            OrderBy::Amount => rows.sort_by(|a, b| a.amount.total_cmp(&b.amount)),
+        }
+        if order == SortOrder::Descending {
+            rows.reverse();
+        }
+    }
+    let total = i32::try_from(rows.len()).unwrap_or(i32::MAX);
+    let start = usize::try_from(state.page * 5).unwrap_or(0);
+    (rows.into_iter().skip(start).take(5).collect(), total)
+}
+
+async fn load_orders((): (), state: TableState) -> Patches<Gallery> {
+    let (rows, total) = query_orders(&state);
+    Gallery::orders()
+        .patch(rows)
+        .and(Gallery::orders_total().patch(total))
+        .into()
 }
 
 /// Twelve payments, enough for three pages of five.
@@ -708,6 +786,7 @@ fn sample_payments() -> Vec<Payment> {
 }
 
 async fn index((): (), (): ()) -> Page<Gallery> {
+    let (orders, orders_total) = query_orders(&TableState::default());
     Page::new(
         "hypersig_ui",
         Gallery {
@@ -737,6 +816,9 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             payments: sample_payments(),
             payments_table: TableState::default(),
             show_status: true,
+            orders,
+            orders_total,
+            orders_table: TableState::default(),
             months_scale: bar_chart().scale(&first_half()),
             months: first_half(),
         },
@@ -781,6 +863,7 @@ async fn index((): (), (): ()) -> Page<Gallery> {
                     .child(faq())
                     .child(overlays())
                     .child(payments())
+                    .child(server_table())
                     .child(charts())
                     .child(feedback()),
             ),
@@ -792,7 +875,8 @@ async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
         .action(SAVE, save)
-        .action(NEXT_HALF, next_half);
+        .action(NEXT_HALF, next_half)
+        .action(ORDERS, load_orders);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3005".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");
