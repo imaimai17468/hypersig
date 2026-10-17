@@ -1,6 +1,6 @@
 //! The components of `hypersig_ui` on one page: a form whose email the
 //! server checks, toggles, pickers, tabs, an accordion, dialogs, a menu,
-//! tooltips, toasts, and the static pieces.
+//! tooltips, toasts, a data table, and the static pieces.
 //!
 //! Run with `cargo run -p example-ui` and open <http://localhost:3005>.
 
@@ -12,12 +12,12 @@ use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
 use hypersig::{Action, Page, Patches, Route, RouterExt, Signals, if_else};
 use hypersig_ui::{
-    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Combobox,
-    ComboboxState, Dialog, InputKind, Level, Listbox, Menu, MenuItem, Slider, Tabs, TextField,
-    Toast, ToastVariant, Toaster, Tooltip, alert, alert_description, alert_title, badge, button,
-    card, card_content, card_description, card_footer, card_header, card_title, checkbox,
-    dialog_footer, progress, radio_group, select_field, separator, skeleton, submit_button, switch,
-    token,
+    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Column,
+    Combobox, ComboboxState, DataTable, Dialog, InputKind, Level, Listbox, Menu, MenuItem, Slider,
+    TableState, Tabs, TextField, Toast, ToastVariant, Toaster, Tooltip, alert, alert_description,
+    alert_title, badge, button, card, card_content, card_description, card_footer, card_header,
+    card_title, checkbox, dialog_footer, progress, radio_group, select_field, separator, skeleton,
+    submit_button, switch, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -56,6 +56,16 @@ enum Section {
     Billing,
 }
 
+/// One row of the data table.
+#[derive(Signals, Serialize, Deserialize)]
+struct Payment {
+    id: i32,
+    email: String,
+    status: String,
+    amount: f64,
+    selected: bool,
+}
+
 /// The two toggles, kept together so that both are saved as one value.
 #[derive(Signals, Serialize, Deserialize)]
 struct Preferences {
@@ -85,6 +95,9 @@ struct Gallery {
     volume: i32,
     toasts: Vec<Toast>,
     next_toast: i32,
+    payments: Vec<Payment>,
+    payments_table: TableState,
+    show_status: bool,
 }
 
 hypersig::routes! {
@@ -522,6 +535,65 @@ fn toasts() -> El<Gallery> {
         .child(Toaster::new(toasts))
 }
 
+fn payments() -> El<Gallery> {
+    let table = DataTable::new(
+        "Payments",
+        Gallery::payments_table(),
+        Gallery::payments(),
+        |payment| payment.at(Payment::id()),
+    )
+    .selectable(Payment::selected())
+    .filter("Filter payments", |payment| {
+        payment
+            .at(Payment::email())
+            .concat(" ")
+            .concat(payment.at(Payment::status()))
+    })
+    .paginate(5)
+    .column(
+        Column::text("Status", Payment::status())
+            .sort_by(|payment| payment.at(Payment::status()))
+            .visible(Gallery::show_status()),
+    )
+    .column(Column::text("Email", Payment::email()).sort_by(|payment| payment.at(Payment::email())))
+    .column(
+        Column::number("Amount", Payment::amount())
+            .sort_by(|payment| payment.at(Payment::amount())),
+    );
+    panel("Data table")
+        .child(switch("Show the status column", Gallery::show_status()))
+        .child(table)
+}
+
+/// Twelve payments, enough for three pages of five.
+fn sample_payments() -> Vec<Payment> {
+    let people = [
+        ("ken99@example.com", "success", 316.0),
+        ("abe45@example.com", "success", 242.0),
+        ("monserrat44@example.com", "processing", 837.0),
+        ("silas22@example.com", "success", 874.0),
+        ("carmella@example.com", "failed", 721.0),
+        ("jason78@example.com", "pending", 450.0),
+        ("sarah23@example.com", "processing", 120.5),
+        ("olivia56@example.com", "success", 980.0),
+        ("liam34@example.com", "failed", 65.25),
+        ("emma12@example.com", "pending", 310.0),
+        ("noah90@example.com", "success", 555.0),
+        ("ava67@example.com", "processing", 199.99),
+    ];
+    people
+        .into_iter()
+        .zip(1..)
+        .map(|((email, status, amount), id)| Payment {
+            id,
+            email: email.to_owned(),
+            status: status.to_owned(),
+            amount,
+            selected: false,
+        })
+        .collect()
+}
+
 async fn index((): (), (): ()) -> Page<Gallery> {
     Page::new(
         "hypersig_ui",
@@ -549,6 +621,9 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             volume: 40,
             toasts: Vec::new(),
             next_toast: 1,
+            payments: sample_payments(),
+            payments_table: TableState::default(),
+            show_status: true,
         },
     )
     .global(hypersig_ui::global())
@@ -590,6 +665,7 @@ async fn index((): (), (): ()) -> Page<Gallery> {
                     .child(settings())
                     .child(faq())
                     .child(overlays())
+                    .child(payments())
                     .child(feedback()),
             ),
     )

@@ -67,8 +67,15 @@ pub(crate) fn small_text() -> Style {
 /// The paths of the icons the components draw, from Lucide (ISC license),
 /// on a 24 by 24 grid.
 pub(crate) mod icon {
+    pub(crate) const ARROW_DOWN: &[&str] = &["M12 5v14", "m19 12-7 7-7-7"];
+    pub(crate) const ARROW_UP: &[&str] = &["m5 12 7-7 7 7", "M12 19V5"];
+    pub(crate) const ARROW_UP_DOWN: &[&str] =
+        &["m21 16-4 4-4-4", "M17 20V4", "m3 8 4-4 4 4", "M7 4v16"];
     pub(crate) const CHECK: &[&str] = &["M20 6 9 17l-5-5"];
     pub(crate) const CHEVRON_DOWN: &[&str] = &["m6 9 6 6 6-6"];
+    pub(crate) const CHEVRON_LEFT: &[&str] = &["m15 18-6-6 6-6"];
+    pub(crate) const CHEVRON_RIGHT: &[&str] = &["m9 18 6-6-6-6"];
+    pub(crate) const MINUS: &[&str] = &["M5 12h14"];
     pub(crate) const X: &[&str] = &["M18 6 6 18", "m6 6 12 12"];
 }
 

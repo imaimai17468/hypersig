@@ -84,47 +84,53 @@ fn row<S>(text: String) -> (El<S>, El<S>) {
 /// ```
 #[must_use]
 pub fn checkbox<S, R>(text: impl Into<String>, checked: Sig<S, bool, R>) -> El<S> {
-    let size = rem(1);
     let (wrapper, text) = row(text.into());
+    wrapper.child(check_control(input(), checked)).child(text)
+}
+
+/// The box of a checkbox with `input` laid over it, bound to `checked`.
+///
+/// `input` comes from the caller, which names it where no `<label>` holds it.
+pub(crate) fn check_control<S, R>(input: El<S>, checked: Sig<S, bool, R>) -> El<S> {
     let mark = span()
         .attr("aria-hidden", "true")
-        .css(
-            Style::new()
-                .display(Display::InlineFlex)
-                .align_items(hypersig::style::value::AlignItems::Center)
-                .justify_content(hypersig::style::value::JustifyContent::Center)
-                .width(rem(1))
-                .height(rem(1))
-                .border_width(px(1))
-                .border_style(BorderStyle::Solid)
-                .border_color(token::input().var())
-                .border_radius(px(4))
-                .color(Color::TRANSPARENT)
-                .merge(look::transition())
-                .on(
-                    Condition::Peer(PseudoClass::Checked),
-                    Style::new()
-                        .border_color(token::primary().var())
-                        .background_color(token::primary().var())
-                        .color(token::primary_foreground().var()),
-                )
-                .merge(look::peer_focus_ring())
-                .merge(peer_disabled()),
-        )
+        .css(check_box().on(Condition::Peer(PseudoClass::Checked), check_box_checked()))
         .child(icon(icon::CHECK, rem(0.875)));
-    wrapper
+    span()
+        .css(holder(rem(1)))
         .child(
-            span()
-                .css(holder(size))
-                .child(
-                    input()
-                        .attr("type", "checkbox")
-                        .css(hidden_input())
-                        .bind(checked),
-                )
-                .child(mark),
+            input
+                .attr("type", "checkbox")
+                .css(hidden_input())
+                .bind(checked),
         )
-        .child(text)
+        .child(mark)
+}
+
+/// The drawn box of an unchecked checkbox.
+pub(crate) fn check_box() -> Style {
+    Style::new()
+        .display(Display::InlineFlex)
+        .align_items(hypersig::style::value::AlignItems::Center)
+        .justify_content(hypersig::style::value::JustifyContent::Center)
+        .width(rem(1))
+        .height(rem(1))
+        .border_width(px(1))
+        .border_style(BorderStyle::Solid)
+        .border_color(token::input().var())
+        .border_radius(px(4))
+        .color(Color::TRANSPARENT)
+        .merge(look::transition())
+        .merge(look::peer_focus_ring())
+        .merge(peer_disabled())
+}
+
+/// The colors the box takes once checked.
+pub(crate) fn check_box_checked() -> Style {
+    Style::new()
+        .border_color(token::primary().var())
+        .background_color(token::primary().var())
+        .color(token::primary_foreground().var())
 }
 
 /// An on and off switch labeled `text`, bound to `on`.

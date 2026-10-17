@@ -20,6 +20,7 @@
 //! | [`Listbox`] | the listbox pattern, with roving focus |
 //! | [`Combobox`] | the combobox pattern with list autocomplete and `aria-activedescendant` |
 //! | [`Tabs`] | the tabs pattern, with roving focus |
+//! | [`DataTable`] | `<table>` with `<th scope="col">` and `aria-sort`, and a tri-state checkbox for selecting rows |
 //! | [`Accordion`] | `<details>` and `<summary>` |
 //! | [`Dialog`] | `<dialog>` opened by invoker commands |
 //! | [`Menu`] | the menu button pattern on a `popover` |
@@ -74,6 +75,7 @@ mod progress;
 mod select;
 mod separator;
 mod slider;
+mod table;
 mod tabs;
 mod theme;
 mod toast;
@@ -95,6 +97,7 @@ pub use progress::{progress, skeleton};
 pub use select::select_field;
 pub use separator::separator;
 pub use slider::Slider;
+pub use table::{Column, DataTable, TableState};
 pub use tabs::Tabs;
 pub use theme::{dark, global, light, theme};
 pub use toast::{Toast, ToastVariant, Toaster};

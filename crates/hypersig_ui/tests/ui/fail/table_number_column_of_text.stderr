@@ -1,0 +1,44 @@
+error[E0277]: the browser does not do arithmetic on `String`
+  --> tests/ui/fail/table_number_column_of_text.rs:16:58
+   |
+16 |     let _: Column<Board, Task> = Column::number("Title", Task::title());
+   |                                  --------------          ^^^^^^^^^^^^^ the trait `hypersig::Number` is not implemented for `String`
+   |                                  |
+   |                                  required by a bound introduced by this call
+   |
+   = note: arithmetic is supported on `i32` and `f64`, and division on `f64` only
+help: the following other types implement trait `hypersig::Number`
+  --> $WORKSPACE/crates/hypersig/src/expr.rs
+   |
+   | impl Number for i32 {}
+   | ^^^^^^^^^^^^^^^^^^^ `i32`
+   | impl Number for f64 {}
+   | ^^^^^^^^^^^^^^^^^^^ `f64`
+note: required by a bound in `hypersig_ui::Column::<S, T>::number`
+  --> src/table.rs
+   |
+   |     pub fn number<U: Number + Textual + 'static>(
+   |                      ^^^^^^ required by this bound in `Column::<S, T>::number`
+
+error[E0277]: the trait bound `String: Textual` is not satisfied
+  --> tests/ui/fail/table_number_column_of_text.rs:16:58
+   |
+16 |     let _: Column<Board, Task> = Column::number("Title", Task::title());
+   |                                  --------------          ^^^^^^^^^^^^^ the trait `Textual` is not implemented for `String`
+   |                                  |
+   |                                  required by a bound introduced by this call
+   |
+help: the following other types implement trait `Textual`
+  --> $WORKSPACE/crates/hypersig/src/expr.rs
+   |
+   | impl Textual for i32 {}
+   | ^^^^^^^^^^^^^^^^^^^^ `i32`
+   | impl Textual for f64 {}
+   | ^^^^^^^^^^^^^^^^^^^^ `f64`
+   | impl Textual for bool {}
+   | ^^^^^^^^^^^^^^^^^^^^^ `bool`
+note: required by a bound in `hypersig_ui::Column::<S, T>::number`
+  --> src/table.rs
+   |
+   |     pub fn number<U: Number + Textual + 'static>(
+   |                               ^^^^^^^ required by this bound in `Column::<S, T>::number`

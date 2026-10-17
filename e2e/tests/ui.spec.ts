@@ -289,3 +289,93 @@ test("a toast is announced in the notifications region and stays until dismissed
   await expect(region.getByRole("listitem")).toHaveCount(1);
   await expect(region.getByRole("listitem")).toContainText("Upload failed");
 });
+
+const payments = (page: import("@playwright/test").Page) => page.getByRole("table", { name: "Payments" });
+const emails = (page: import("@playwright/test").Page) =>
+  payments(page).locator("tbody tr:visible td:nth-child(3)").allTextContents();
+
+test("a data table sorts by a column header, ascending then descending", async ({ page }) => {
+  const header = payments(page).getByRole("columnheader", { name: "Email" });
+  await expect(header).toHaveAttribute("aria-sort", "none");
+  await expect(header.locator("svg:visible")).toHaveCount(1);
+  await header.getByRole("button").click();
+  await expect(header).toHaveAttribute("aria-sort", "ascending");
+  await expect(header.locator("svg:visible")).toHaveCount(1);
+  await expect(header.locator("svg:visible path").first()).toHaveAttribute("d", "m5 12 7-7 7 7");
+  expect(await emails(page)).toEqual([
+    "abe45@example.com",
+    "ava67@example.com",
+    "carmella@example.com",
+    "emma12@example.com",
+    "jason78@example.com",
+  ]);
+  await header.getByRole("button").click();
+  await expect(header).toHaveAttribute("aria-sort", "descending");
+  expect((await emails(page))[0]).toBe("silas22@example.com");
+
+  const amount = payments(page).getByRole("columnheader", { name: "Amount" });
+  await amount.getByRole("button").click();
+  await expect(amount).toHaveAttribute("aria-sort", "ascending");
+  await expect(header).toHaveAttribute("aria-sort", "none");
+  expect((await emails(page))[0]).toBe("liam34@example.com");
+});
+
+test("a data table pages through the rows the filter passes", async ({ page }) => {
+  const range = page.getByText("1–5 / 12");
+  await expect(range).toBeVisible();
+  const next = page.getByRole("button", { name: "Next page" });
+  const previous = page.getByRole("button", { name: "Previous page" });
+  await expect(previous).toBeDisabled();
+  await next.click();
+  await expect(page.getByText("6–10 / 12")).toBeVisible();
+  expect(await emails(page)).toHaveLength(5);
+  await next.click();
+  await expect(page.getByText("11–12 / 12")).toBeVisible();
+  expect(await emails(page)).toEqual(["noah90@example.com", "ava67@example.com"]);
+  await expect(next).toBeDisabled();
+
+  const filter = page.getByRole("searchbox", { name: "Filter payments" });
+  await filter.fill("s");
+  await expect(page.getByText("1–5 / 9")).toBeVisible();
+  await next.click();
+  await expect(page.getByText("6–9 / 9")).toBeVisible();
+  expect(await emails(page)).toEqual([
+    "sarah23@example.com",
+    "olivia56@example.com",
+    "noah90@example.com",
+    "ava67@example.com",
+  ]);
+
+  await filter.fill("LI");
+  await expect(page.getByText("1–2 / 2")).toBeVisible();
+  expect(await emails(page)).toEqual(["olivia56@example.com", "liam34@example.com"]);
+  await filter.fill("zzz");
+  await expect(payments(page).getByText("No results.")).toBeVisible();
+  await expect(page.getByText("0–0 / 0")).toBeVisible();
+});
+
+test("a data table selects rows under a tri-state header checkbox", async ({ page }) => {
+  const all = payments(page).getByRole("checkbox", { name: "Select all rows" });
+  const rows = payments(page).getByRole("checkbox", { name: "Select row" });
+  await expect(all).toHaveAttribute("aria-checked", "false");
+  await all.click();
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await expect(rows.first()).toBeChecked();
+  await payments(page).locator("tbody tr:visible").first().locator("label, span").first().click();
+  await expect(rows.first()).not.toBeChecked();
+  await expect(all).toHaveAttribute("aria-checked", "mixed");
+  await all.click();
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await all.focus();
+  await page.keyboard.press("Space");
+  await expect(all).toHaveAttribute("aria-checked", "false");
+  await expect(rows.first()).not.toBeChecked();
+});
+
+test("a data table hides a column while its signal is false", async ({ page }) => {
+  const status = payments(page).getByRole("columnheader", { name: "Status" });
+  await expect(status).toBeVisible();
+  await page.getByRole("switch", { name: "Show the status column" }).click({ force: true });
+  await expect(status).toBeHidden();
+  await expect(payments(page).locator("tbody tr:visible").first().locator("td:visible")).toHaveCount(3);
+});

@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/table_column_from_other_row.rs:24:38
+   |
+24 |         .column(Column::text("Name", User::name()));
+   |                 ------------         ^^^^^^^^^^^^ expected `Sig<Task, String>`, found `Sig<User, String>`
+   |                 |
+   |                 arguments to this function are incorrect
+   |
+   = note: expected struct `Sig<Task, String>`
+              found struct `Sig<User, String>`
+note: associated function defined here
+  --> src/table.rs
+   |
+   |     pub fn text(header: impl Into<String>, field: Sig<T, String>) -> Self {
+   |            ^^^^
