@@ -7,7 +7,7 @@
 
 use crate::Site;
 use crate::doc::{Doc, Reference};
-use crate::lang::L;
+use crate::lang::{L, Text};
 use crate::prose::{Part, heading, lead, para, parts, table_of, title};
 
 /// One item: its name, its rustdoc page and anchor, and its summary.
@@ -55,7 +55,7 @@ pub fn content(site: Site, page: Reference) -> Part {
                 en: &["Item", "Summary"],
                 ja: &["項目", "概要"],
             },
-            rows.as_slice(),
+            Text::Chosen(rows.as_slice()),
         ));
     }
     parts(children)
@@ -100,7 +100,7 @@ fn overview(site: Site) -> Part {
                 en: &["Page", "What it covers"],
                 ja: &["ページ", "扱う内容"],
             },
-            rows.as_slice(),
+            Text::Chosen(rows.as_slice()),
         ),
         para(
             site,

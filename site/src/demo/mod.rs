@@ -181,20 +181,23 @@ pub fn show(site: Site, demo: Demo) -> Part {
 /// replaced by the value for `lang`, and the lines that only serve the
 /// translation removed, so the code reads as an application would write it.
 fn shown_source(source: &str, lang: crate::Lang) -> String {
-    const PICK: &str = "site.t(L {";
     let mut out = String::with_capacity(source.len());
     let mut rest = source;
-    while let Some(at) = rest.find(PICK) {
+    while let Some((at, inside)) = find_pick(rest) {
         out.push_str(&rest[..at]);
-        let inside = &rest[at + PICK.len()..];
+        let inside = &rest[inside..];
         let end = closing(inside, '}').expect("a `site.t(L {` is closed");
         let fields = &inside[..end];
         let value = field(fields, "en:")
             .zip(field(fields, "ja:"))
             .map(|(en, ja)| if lang == crate::Lang::Ja { ja } else { en })
             .expect("an `L` has `en` and `ja`");
-        out.push_str(value.trim());
-        rest = inside[end + 1..]
+        out.push_str(value.trim().trim_end_matches(','));
+        let after = inside[end + 1..].trim_start();
+        rest = after
+            .strip_prefix(',')
+            .unwrap_or(after)
+            .trim_start()
             .strip_prefix(')')
             .expect("`site.t(L { .. })` ends with `)`");
     }
@@ -205,6 +208,29 @@ fn shown_source(source: &str, lang: crate::Lang) -> String {
         .collect::<Vec<_>>()
         .join("\n")
         .replace("\n\n\n", "\n\n")
+}
+
+/// The start of the first `site.t(L {` in `text`, rustfmt's line breaks
+/// between its tokens included, and the index just past its `{`.
+fn find_pick(text: &str) -> Option<(usize, usize)> {
+    let mut from = 0;
+    while let Some(found) = text[from..].find("site") {
+        let start = from + found;
+        let mut rest = &text[start + "site".len()..];
+        let tokens = [".t(", "L", "{"];
+        let matched = tokens.iter().all(|token| {
+            rest = rest.trim_start();
+            rest.strip_prefix(token).is_some_and(|after| {
+                rest = after;
+                true
+            })
+        });
+        if matched {
+            return Some((start, text.len() - rest.len()));
+        }
+        from = start + "site".len();
+    }
+    None
 }
 
 /// The expression after `name` in the fields of a struct literal, up to its top-level `,`.
@@ -254,6 +280,15 @@ mod tests {
         assert!(
             shown_source(source, crate::Lang::Ja)
                 .contains("p().text(format!(\"{}、こんにちは\", x))")
+        );
+    }
+
+    #[test]
+    fn the_shown_source_finds_a_pick_that_rustfmt_split() {
+        let source = "title: site\n    .t(L {\n        en: \"Read\",\n        ja: \"読む\",\n    })\n    .into(),\nb.text(site.t(\n    L {\n        en: \"Add\",\n        ja: \"追加\",\n    },\n));";
+        assert_eq!(
+            shown_source(source, crate::Lang::En),
+            "title: \"Read\"\n    .into(),\nb.text(\"Add\");"
         );
     }
 }

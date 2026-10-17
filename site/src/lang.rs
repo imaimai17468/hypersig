@@ -56,14 +56,17 @@ impl Lang {
     }
 }
 
-/// A text of a page: its translations, or its English alone until the page is translated.
+/// A text of a page, with its translations.
 ///
 /// `T` is `str` for one text, `[&str]` for a list, and `[&[&str]]` for the
-/// rows of a table.
+/// rows of a table. There is no way to make one from English alone, so a
+/// text without its translation fails to compile.
 #[derive(Debug)]
 pub enum Text<'a, T: ?Sized> {
     Translated(L<&'a T>),
-    English(&'a T),
+    /// A value already in the page's language, such as the rows of a table
+    /// whose cells were each picked with `Site::t`.
+    Chosen(&'a T),
 }
 
 impl<T: ?Sized> Clone for Text<'_, T> {
@@ -80,32 +83,27 @@ impl<'a, T: ?Sized> Text<'a, T> {
     pub fn get(self, lang: Lang) -> &'a T {
         match self {
             Self::Translated(text) => lang.pick(text),
-            Self::English(text) => text,
+            Self::Chosen(text) => text,
         }
     }
 
     /// The English text, which a heading's id is made from in every language.
+    ///
+    /// # Panics
+    ///
+    /// Panics for a [`Text::Chosen`] value, which holds one language only.
     #[must_use]
     pub fn english(self) -> &'a T {
-        self.get(Lang::En)
+        match self {
+            Self::Translated(text) => text.en,
+            Self::Chosen(_) => panic!("a heading is written with its translations"),
+        }
     }
 }
 
 impl<'a, T: ?Sized> From<L<&'a T>> for Text<'a, T> {
     fn from(text: L<&'a T>) -> Self {
         Self::Translated(text)
-    }
-}
-
-impl<'a, T: ?Sized> From<&'a T> for Text<'a, T> {
-    fn from(text: &'a T) -> Self {
-        Self::English(text)
-    }
-}
-
-impl<'a, T, const N: usize> From<&'a [T; N]> for Text<'a, [T]> {
-    fn from(items: &'a [T; N]) -> Self {
-        Self::English(items)
     }
 }
 

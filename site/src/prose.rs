@@ -312,7 +312,7 @@ mod tests {
         let site = Site::new("/hypersig");
         let html = para(
             site,
-            "Call `Sig::set`, **then** read [Signals](learn/signals/).",
+            Text::Chosen("Call `Sig::set`, **then** read [Signals](learn/signals/)."),
         )
         .render();
         assert!(html.contains(">Sig::set</code>"), "{html}");
@@ -326,14 +326,14 @@ mod tests {
     #[test]
     fn a_bracket_without_a_target_stays_text() {
         let site = Site::new("");
-        let html = para(site, "A `Vec` reads as [T] here.").render();
+        let html = para(site, Text::Chosen("A `Vec` reads as [T] here.")).render();
         assert!(html.contains("as [T] here."), "{html}");
     }
 
     #[test]
     fn a_lone_star_stays_text() {
         let site = Site::new("");
-        let html = para(site, "2 * 3").render();
+        let html = para(site, Text::Chosen("2 * 3")).render();
         assert!(html.contains(">2 * 3</p>"), "{html}");
     }
 

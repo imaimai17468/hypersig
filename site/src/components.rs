@@ -9,7 +9,7 @@ use crate::Site;
 use crate::code::{self, Lang};
 use crate::demo::{self, Demo};
 use crate::doc::{Component, Doc};
-use crate::lang::L;
+use crate::lang::{L, Text};
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
@@ -64,7 +64,7 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
                 en: &["Key", "What it does"],
                 ja: &["キー", "動作"],
             },
-            rows.as_slice(),
+            Text::Chosen(rows.as_slice()),
         ));
     }
     children.push(heading(
@@ -95,7 +95,7 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
             en: &["Item", "Summary"],
             ja: &["項目", "概要"],
         },
-        rows.as_slice(),
+        Text::Chosen(rows.as_slice()),
     ));
     parts(children)
 }

@@ -6,7 +6,7 @@ use crate::Site;
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Library};
 use crate::landing::{self, features, hero, titled, two_cards};
-use crate::lang::L;
+use crate::lang::{L, Text};
 use crate::prose::{Part, para, table_of};
 
 pub fn render(site: Site) -> String {
@@ -315,6 +315,16 @@ fn comparison(site: Site) -> Part {
 
 /// The README's benchmark, with its numbers unchanged.
 fn benchmarks(site: Site) -> Part {
+    let header = &[
+        "",
+        "hypersig",
+        "Leptos",
+        "React",
+        "Next.js",
+        "TanStack Start",
+        "Nuxt",
+        "htmx",
+    ];
     titled(
         site,
         L {
@@ -331,17 +341,13 @@ fn benchmarks(site: Site) -> Part {
             ),
             table_of(
                 site,
-                &[
-                    "",
-                    "hypersig",
-                    "Leptos",
-                    "React",
-                    "Next.js",
-                    "TanStack Start",
-                    "Nuxt",
-                    "htmx",
-                ],
-                &[
+                L {
+                    en: header,
+                    ja: header,
+                },
+                // The numbers read the same in both languages, and the first
+                // cell of each row is picked with `site.t`.
+                Text::Chosen::<[&[&str; 8]]>(&[
                     &[
                         site.t(L {
                             en: "JS (gzip)",
@@ -385,7 +391,7 @@ fn benchmarks(site: Site) -> Part {
                         "16 ms",
                         "16 ms",
                     ],
-                ],
+                ]),
             ),
         ],
     )
