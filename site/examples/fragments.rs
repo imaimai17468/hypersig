@@ -1,0 +1,76 @@
+//! A search whose results the server renders as a fragment, for the page on
+//! talking to the server.
+
+use std::time::Duration;
+
+use axum::{Router, response::Html, routing::get};
+use hypersig::html::{El, Event, input, li, ul};
+use hypersig::{Action, Fragment, Page, Patches, RouterExt, Signals, fragment};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Search {
+    query: String,
+}
+
+const FRUITS: &[&str] = &[
+    "apple", "apricot", "banana", "cherry", "grape", "melon", "peach",
+];
+
+struct Results {
+    query: String,
+}
+
+impl Fragment for Results {
+    type Signals = Search;
+    const ID: &'static str = "results";
+
+    fn render(&self) -> El<Search> {
+        ul().children(
+            FRUITS
+                .iter()
+                .filter(|fruit| fruit.contains(self.query.as_str()))
+                .map(|fruit| li().text(*fruit)),
+        )
+    }
+}
+
+const SEARCH: Action<Search, String> = Action::post("/search");
+
+async fn index() -> Html<String> {
+    let query = Search::query();
+    let page = Page::new(
+        "Search",
+        Search {
+            query: String::new(),
+        },
+    )
+    .child(
+        input()
+            .attr("aria-label", "Search fruit")
+            .bind(query)
+            .on_debounced(
+                Event::Input,
+                Duration::from_millis(200),
+                SEARCH.call_with(query),
+            ),
+    )
+    .child(fragment(&Results {
+        query: String::new(),
+    }));
+    Html(page.render())
+}
+
+async fn search((): (), query: String) -> Patches<Search> {
+    Patches::new().element(&Results { query })
+}
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    let app = Router::new()
+        .route("/", get(index))
+        .hypersig_runtime()
+        .action(SEARCH, search);
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    axum::serve(listener, app).await
+}
