@@ -4,6 +4,7 @@ mod basics;
 mod server;
 pub mod snippet;
 mod state;
+mod why;
 
 use crate::Site;
 use crate::code::{self, Lang};
@@ -13,6 +14,7 @@ use crate::prose::Part;
 /// The article of `page`.
 pub fn content(site: Site, page: Learn) -> Part {
     match page {
+        Learn::Why => why::why(site),
         Learn::QuickStart => basics::quick_start(site),
         Learn::DescribingThePage => basics::describing_the_page(site),
         Learn::Signals => state::signals(site),

@@ -17,6 +17,8 @@ pub enum Lang {
     Rust,
     Toml,
     Shell,
+    /// HTML, shown without colors.
+    Html,
 }
 
 /// The kinds of token the tokenizer colors.
@@ -119,6 +121,9 @@ pub fn without_header(source: &str) -> &str {
 
 /// `source` as text nodes and colored spans.
 fn highlight(lang: Lang, source: &str) -> Vec<Node<Docs>> {
+    if lang == Lang::Html {
+        return vec![source.into()];
+    }
     tokens(lang, source)
         .into_iter()
         .map(|(kind, text)| match color(kind) {

@@ -24,6 +24,7 @@ pub enum Doc {
 /// The pages of the Learn section, a guide read from top to bottom.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Learn {
+    Why,
     QuickStart,
     DescribingThePage,
     Signals,
@@ -158,7 +159,7 @@ pub struct Group {
 pub const LEARN: &[Group] = &[
     Group {
         title: "Get started",
-        docs: &[Doc::Learn(Learn::QuickStart)],
+        docs: &[Doc::Learn(Learn::Why), Doc::Learn(Learn::QuickStart)],
     },
     Group {
         title: "Learn hypersig",
@@ -298,6 +299,7 @@ impl Doc {
         Self::Home,
         Self::StyleHome,
         Self::ComponentsHome,
+        Self::Learn(Learn::Why),
         Self::Learn(Learn::QuickStart),
         Self::Learn(Learn::DescribingThePage),
         Self::Learn(Learn::Signals),
@@ -375,6 +377,7 @@ impl Doc {
             Self::StyleHome => "hypersig style",
             Self::ComponentsHome => "hypersig components",
             Self::Learn(page) => match page {
+                Learn::Why => "Why hypersig",
                 Learn::QuickStart => "Quick start",
                 Learn::DescribingThePage => "Describing the page",
                 Learn::Signals => "Signals",
@@ -497,6 +500,7 @@ impl Doc {
 impl Learn {
     fn slug(self) -> &'static str {
         match self {
+            Self::Why => "why",
             Self::QuickStart => "",
             Self::DescribingThePage => "describing-the-page",
             Self::Signals => "signals",

@@ -20,7 +20,8 @@ pub fn render(site: Site) -> String {
                 "`cargo build` builds it, with no Node and no wasm, and a mismatch between the page and the server is a compile error.",
                 &[
                     ("Get started", "learn/", ButtonVariant::Default),
-                    ("Reference", "reference/", ButtonVariant::Outline),
+                    ("Why hypersig", "learn/why/", ButtonVariant::Outline),
+                    ("Reference", "reference/", ButtonVariant::Ghost),
                 ],
             ),
             features(

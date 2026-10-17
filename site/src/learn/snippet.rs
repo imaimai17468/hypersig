@@ -42,6 +42,7 @@ snippets! {
     Nested => "nested.rs";
     Operators => "operators.rs";
     WrongType => "wrong_type.rs", "compile_fail,E0277";
+    WhyCounter => "why_counter.rs";
     Statements => "statements.rs";
     Events => "events.rs";
     Each => "each.rs";
