@@ -148,7 +148,7 @@ pub fn show(site: Site, demo: Demo) -> Part {
             )
             .child(
                 el("iframe")
-                    .attr("src", site.url(&demo.path()))
+                    .attr("src", site.page_url(&demo.path()))
                     .attr(
                         "title",
                         format!("The {} demo, running", demo.name().replace('_', " ")),

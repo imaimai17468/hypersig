@@ -11,6 +11,7 @@ use hypersig_ui::{ButtonSize, ButtonVariant, button_style, token};
 
 use crate::demo::{self, Demo};
 use crate::doc::{COMPONENTS, Doc, Library};
+use crate::lang::{L, Text};
 use crate::prose::{Part, href, inline, para};
 use crate::{Site, layout, prose};
 
@@ -107,12 +108,17 @@ pub fn features(site: Site, cards: &[(&str, &str)]) -> Part {
         }))
 }
 
-/// A titled section of a landing page.
-pub fn titled(heading: &str, children: impl IntoIterator<Item = Part>) -> Part {
+/// A titled section of a landing page, whose id comes from the English heading.
+pub fn titled<'a>(
+    site: Site,
+    heading: impl Into<Text<'a, str>>,
+    children: impl IntoIterator<Item = Part>,
+) -> Part {
+    let heading = heading.into();
     section()
         .css(Style::new().margin_top(rem(5)))
         .child(
-            h2().id(prose::anchor(heading))
+            h2().id(prose::anchor(heading.english()))
                 .css(
                     Style::new()
                         .font_size(rem(1.875))
@@ -120,7 +126,7 @@ pub fn titled(heading: &str, children: impl IntoIterator<Item = Part>) -> Part {
                         .font_weight(FontWeight::Number(700.0))
                         .letter_spacing(rem(-0.025)),
                 )
-                .text(heading),
+                .text(heading.get(site.lang())),
         )
         .children(children)
 }
@@ -142,7 +148,7 @@ pub fn library_card(site: Site, library: Library, krate: &str, text: &str) -> Pa
                             .font_size(rem(1.25))
                             .font_weight(FontWeight::Number(600.0)),
                     )
-                    .text(library.name()),
+                    .text(library.name(site)),
                 )
                 .child(prose::inline_code(krate)),
         )
@@ -154,7 +160,10 @@ pub fn library_card(site: Site, library: Library, krate: &str, text: &str) -> Pa
                         .font_size(rem(0.875))
                         .font_weight(FontWeight::Number(500.0)),
                 )
-                .text(format!("Explore {} →", library.name())),
+                .text(site.t(L {
+                    en: format!("Explore {} →", library.name(site)),
+                    ja: format!("{}を見る →", library.name(site)),
+                })),
         )
 }
 
@@ -213,6 +222,7 @@ pub fn style(site: Site) -> String {
                 ],
             ),
             titled(
+                site,
                 "A token from a signal",
                 [
                     para(
@@ -223,6 +233,7 @@ pub fn style(site: Site) -> String {
                 ],
             ),
             titled(
+                site,
                 "Part of hypersig",
                 [
                     para(
@@ -288,6 +299,7 @@ pub fn components(site: Site) -> String {
                 ],
             ),
             titled(
+                site,
                 "A dialog in a few lines",
                 [
                     para(
@@ -297,8 +309,9 @@ pub fn components(site: Site) -> String {
                     demo::show(site, Demo::Dialog),
                 ],
             ),
-            titled("Every component", [catalog(site)]),
+            titled(site, "Every component", [catalog(site)]),
             titled(
+                site,
                 "Part of hypersig",
                 [two_cards(
                     site,
@@ -334,13 +347,13 @@ fn catalog(site: Site) -> Part {
         .children(
             COMPONENTS
                 .iter()
-                .filter(|group| group.title != "Get started")
+                .filter(|group| group.title.en != "Get started")
                 .map(|group| {
                     div()
                         .css(stack(rem(0.5)))
                         .child(
                             h3().css(Style::new().font_weight(FontWeight::Number(600.0)))
-                                .text(group.title),
+                                .text(site.t(group.title)),
                         )
                         .children(group.docs.iter().map(|&doc| {
                             a().attr("href", doc.url(site))
@@ -348,7 +361,7 @@ fn catalog(site: Site) -> Part {
                                     PseudoClass::Hover,
                                     Style::new().color(token::foreground().var()),
                                 ))
-                                .text(doc.title())
+                                .text(doc.title(site))
                         }))
                 }),
         )
@@ -382,7 +395,7 @@ mod tests {
         let html = catalog(Site::new("")).render();
         for group in COMPONENTS
             .iter()
-            .filter(|group| group.title != "Get started")
+            .filter(|group| group.title.en != "Get started")
         {
             for doc in group.docs {
                 assert!(html.contains(&doc.url(Site::new(""))), "{doc:?}");

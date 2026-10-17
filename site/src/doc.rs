@@ -1,5 +1,6 @@
 //! The pages of the site, their paths, and the order the sidebar lists them in.
 
+use crate::lang::L;
 use crate::{Site, components, home, landing, layout, learn, reference, style};
 
 /// One page of the site.
@@ -109,12 +110,21 @@ impl Library {
     pub const ALL: [Self; 3] = [Self::Framework, Self::Style, Self::Components];
 
     /// The name the header and the switcher show.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Framework => "Framework",
-            Self::Style => "Style",
-            Self::Components => "Components",
-        }
+    pub fn name(self, site: Site) -> &'static str {
+        site.t(match self {
+            Self::Framework => L {
+                en: "Framework",
+                ja: "フレームワーク",
+            },
+            Self::Style => L {
+                en: "Style",
+                ja: "スタイル",
+            },
+            Self::Components => L {
+                en: "Components",
+                ja: "コンポーネント",
+            },
+        })
     }
 
     /// The library's landing page.
@@ -127,14 +137,26 @@ impl Library {
     }
 
     /// The sections the header links to, each with its first page.
-    pub fn sections(self) -> &'static [(&'static str, Doc)] {
+    pub fn sections(self) -> &'static [(L<&'static str>, Doc)] {
+        const LEARN: L<&str> = L {
+            en: "Learn",
+            ja: "学ぶ",
+        };
+        const REFERENCE: L<&str> = L {
+            en: "Reference",
+            ja: "リファレンス",
+        };
+        const DOCS: L<&str> = L {
+            en: "Docs",
+            ja: "ドキュメント",
+        };
         match self {
             Self::Framework => &[
-                ("Learn", Doc::Learn(Learn::QuickStart)),
-                ("Reference", Doc::Reference(Reference::Overview)),
+                (LEARN, Doc::Learn(Learn::QuickStart)),
+                (REFERENCE, Doc::Reference(Reference::Overview)),
             ],
-            Self::Style => &[("Docs", Doc::Style(StylePage::Overview))],
-            Self::Components => &[("Docs", Doc::Components(Component::Installation))],
+            Self::Style => &[(DOCS, Doc::Style(StylePage::Overview))],
+            Self::Components => &[(DOCS, Doc::Components(Component::Installation))],
         }
     }
 
@@ -151,18 +173,24 @@ impl Library {
 /// A titled run of pages in a sidebar.
 #[derive(Debug)]
 pub struct Group {
-    pub title: &'static str,
+    pub title: L<&'static str>,
     pub docs: &'static [Doc],
 }
 
 /// The sidebar of the Learn section.
 pub const LEARN: &[Group] = &[
     Group {
-        title: "Get started",
+        title: L {
+            en: "Get started",
+            ja: "はじめに",
+        },
         docs: &[Doc::Learn(Learn::Why), Doc::Learn(Learn::QuickStart)],
     },
     Group {
-        title: "Learn hypersig",
+        title: L {
+            en: "Learn hypersig",
+            ja: "hypersig を学ぶ",
+        },
         docs: &[
             Doc::Learn(Learn::DescribingThePage),
             Doc::Learn(Learn::Signals),
@@ -179,11 +207,17 @@ pub const LEARN: &[Group] = &[
 /// The sidebar of the Reference section.
 pub const REFERENCE: &[Group] = &[
     Group {
-        title: "Reference",
+        title: L {
+            en: "Reference",
+            ja: "リファレンス",
+        },
         docs: &[Doc::Reference(Reference::Overview)],
     },
     Group {
-        title: "The page",
+        title: L {
+            en: "The page",
+            ja: "ページ",
+        },
         docs: &[
             Doc::Reference(Reference::Page),
             Doc::Reference(Reference::El),
@@ -191,7 +225,10 @@ pub const REFERENCE: &[Group] = &[
         ],
     },
     Group {
-        title: "State",
+        title: L {
+            en: "State",
+            ja: "状態",
+        },
         docs: &[
             Doc::Reference(Reference::Signals),
             Doc::Reference(Reference::Expr),
@@ -200,7 +237,10 @@ pub const REFERENCE: &[Group] = &[
         ],
     },
     Group {
-        title: "The server",
+        title: L {
+            en: "The server",
+            ja: "サーバー",
+        },
         docs: &[
             Doc::Reference(Reference::Action),
             Doc::Reference(Reference::Patches),
@@ -213,14 +253,20 @@ pub const REFERENCE: &[Group] = &[
 /// The sidebar of the Components section.
 pub const COMPONENTS: &[Group] = &[
     Group {
-        title: "Get started",
+        title: L {
+            en: "Get started",
+            ja: "はじめに",
+        },
         docs: &[
             Doc::Components(Component::Installation),
             Doc::Components(Component::Theming),
         ],
     },
     Group {
-        title: "Forms",
+        title: L {
+            en: "Forms",
+            ja: "フォーム",
+        },
         docs: &[
             Doc::Components(Component::Button),
             Doc::Components(Component::TextField),
@@ -231,14 +277,20 @@ pub const COMPONENTS: &[Group] = &[
         ],
     },
     Group {
-        title: "Pickers",
+        title: L {
+            en: "Pickers",
+            ja: "選択",
+        },
         docs: &[
             Doc::Components(Component::Listbox),
             Doc::Components(Component::Combobox),
         ],
     },
     Group {
-        title: "Layout",
+        title: L {
+            en: "Layout",
+            ja: "レイアウト",
+        },
         docs: &[
             Doc::Components(Component::Tabs),
             Doc::Components(Component::Accordion),
@@ -247,7 +299,10 @@ pub const COMPONENTS: &[Group] = &[
         ],
     },
     Group {
-        title: "Overlays",
+        title: L {
+            en: "Overlays",
+            ja: "重ねて出すもの",
+        },
         docs: &[
             Doc::Components(Component::Dialog),
             Doc::Components(Component::Menu),
@@ -256,7 +311,10 @@ pub const COMPONENTS: &[Group] = &[
         ],
     },
     Group {
-        title: "Feedback",
+        title: L {
+            en: "Feedback",
+            ja: "フィードバック",
+        },
         docs: &[
             Doc::Components(Component::Alert),
             Doc::Components(Component::Badge),
@@ -268,11 +326,17 @@ pub const COMPONENTS: &[Group] = &[
 /// The sidebar of the Style section.
 pub const STYLE: &[Group] = &[
     Group {
-        title: "Get started",
+        title: L {
+            en: "Get started",
+            ja: "はじめに",
+        },
         docs: &[Doc::Style(StylePage::Overview)],
     },
     Group {
-        title: "Writing styles",
+        title: L {
+            en: "Writing styles",
+            ja: "スタイルを書く",
+        },
         docs: &[
             Doc::Style(StylePage::Values),
             Doc::Style(StylePage::Conditions),
@@ -280,7 +344,10 @@ pub const STYLE: &[Group] = &[
         ],
     },
     Group {
-        title: "The page",
+        title: L {
+            en: "The page",
+            ja: "ページ",
+        },
         docs: &[
             Doc::Style(StylePage::Global),
             Doc::Style(StylePage::Patterns),
@@ -288,7 +355,10 @@ pub const STYLE: &[Group] = &[
         ],
     },
     Group {
-        title: "Escape hatches",
+        title: L {
+            en: "Escape hatches",
+            ja: "避難ハッチ",
+        },
         docs: &[Doc::Style(StylePage::Unchecked)],
     },
 ];
@@ -371,71 +441,77 @@ impl Doc {
 
     /// The page's title, as the sidebar and the browser tab show it.
     #[must_use]
-    pub fn title(self) -> &'static str {
-        match self {
-            Self::Home => "hypersig",
-            Self::StyleHome => "hypersig style",
-            Self::ComponentsHome => "hypersig components",
+    pub fn title(self, site: Site) -> &'static str {
+        site.t(self.titles())
+    }
+
+    /// The page's title in each language.
+    fn titles(self) -> L<&'static str> {
+        let (en, ja) = match self {
+            Self::Home => ("hypersig", "hypersig"),
+            Self::StyleHome => ("hypersig style", "hypersig style"),
+            Self::ComponentsHome => ("hypersig components", "hypersig components"),
             Self::Learn(page) => match page {
-                Learn::Why => "Why hypersig",
-                Learn::QuickStart => "Quick start",
-                Learn::DescribingThePage => "Describing the page",
-                Learn::Signals => "Signals",
-                Learn::Expressions => "Expressions and statements",
-                Learn::Lists => "Lists",
-                Learn::Server => "Talking to the server",
-                Learn::Pages => "Pages and links",
-                Learn::Styling => "Styling",
-                Learn::EscapeHatches => "Escape hatches",
+                Learn::Why => ("Why hypersig", "hypersig を選ぶ理由"),
+                Learn::QuickStart => ("Quick start", "クイックスタート"),
+                Learn::DescribingThePage => ("Describing the page", "ページを組み立てる"),
+                Learn::Signals => ("Signals", "シグナル"),
+                Learn::Expressions => ("Expressions and statements", "式と文"),
+                Learn::Lists => ("Lists", "リスト"),
+                Learn::Server => ("Talking to the server", "サーバーとのやり取り"),
+                Learn::Pages => ("Pages and links", "ページとリンク"),
+                Learn::Styling => ("Styling", "スタイル"),
+                Learn::EscapeHatches => ("Escape hatches", "避難ハッチ"),
             },
             Self::Reference(page) => match page {
-                Reference::Overview => "API reference",
-                Reference::Page => "Page",
-                Reference::El => "El",
-                Reference::Html => "html functions",
-                Reference::Signals => "Signals and Sig",
-                Reference::Expr => "Expr",
-                Reference::Stmt => "Stmt",
-                Reference::Action => "Action and Call",
-                Reference::Patches => "Patches and Fragment",
-                Reference::Route => "Route and Link",
-                Reference::NodeRef => "NodeRef",
-                Reference::RouterExt => "RouterExt",
+                Reference::Overview => ("API reference", "API リファレンス"),
+                Reference::Page => ("Page", "Page"),
+                Reference::El => ("El", "El"),
+                Reference::Html => ("html functions", "html の関数"),
+                Reference::Signals => ("Signals and Sig", "Signals と Sig"),
+                Reference::Expr => ("Expr", "Expr"),
+                Reference::Stmt => ("Stmt", "Stmt"),
+                Reference::Action => ("Action and Call", "Action と Call"),
+                Reference::Patches => ("Patches and Fragment", "Patches と Fragment"),
+                Reference::Route => ("Route and Link", "Route と Link"),
+                Reference::NodeRef => ("NodeRef", "NodeRef"),
+                Reference::RouterExt => ("RouterExt", "RouterExt"),
             },
             Self::Components(page) => match page {
-                Component::Installation => "Installation",
-                Component::Theming => "Theming",
-                Component::Button => "Button",
-                Component::TextField => "Text field",
-                Component::Checkbox => "Checkbox and switch",
-                Component::RadioGroup => "Radio group",
-                Component::Select => "Select",
-                Component::Slider => "Slider",
-                Component::Listbox => "Listbox",
-                Component::Combobox => "Combobox",
-                Component::Tabs => "Tabs",
-                Component::Accordion => "Accordion",
-                Component::Card => "Card",
-                Component::Separator => "Separator",
-                Component::Dialog => "Dialog",
-                Component::Menu => "Menu",
-                Component::Tooltip => "Tooltip",
-                Component::Toast => "Toast",
-                Component::Alert => "Alert",
-                Component::Badge => "Badge",
-                Component::Progress => "Progress and skeleton",
+                Component::Installation => ("Installation", "インストール"),
+                Component::Theming => ("Theming", "テーマ"),
+                Component::Button => ("Button", "ボタン"),
+                Component::TextField => ("Text field", "テキストフィールド"),
+                Component::Checkbox => ("Checkbox and switch", "チェックボックスとスイッチ"),
+                Component::RadioGroup => ("Radio group", "ラジオグループ"),
+                Component::Select => ("Select", "セレクト"),
+                Component::Slider => ("Slider", "スライダー"),
+                Component::Listbox => ("Listbox", "リストボックス"),
+                Component::Combobox => ("Combobox", "コンボボックス"),
+                Component::Tabs => ("Tabs", "タブ"),
+                Component::Accordion => ("Accordion", "アコーディオン"),
+                Component::Card => ("Card", "カード"),
+                Component::Separator => ("Separator", "区切り線"),
+                Component::Dialog => ("Dialog", "ダイアログ"),
+                Component::Menu => ("Menu", "メニュー"),
+                Component::Tooltip => ("Tooltip", "ツールチップ"),
+                Component::Toast => ("Toast", "トースト"),
+                Component::Alert => ("Alert", "アラート"),
+                Component::Badge => ("Badge", "バッジ"),
+                Component::Progress => ("Progress and skeleton", "プログレスとスケルトン"),
             },
             Self::Style(page) => match page {
-                StylePage::Overview => "Overview",
-                StylePage::Values => "Properties and values",
-                StylePage::Conditions => "Conditions",
-                StylePage::Tokens => "Tokens and themes",
-                StylePage::Global => "Global styles",
-                StylePage::Patterns => "Layout patterns",
-                StylePage::Animation => "Animation",
-                StylePage::Unchecked => "Unchecked values",
+                StylePage::Overview => ("Overview", "概要"),
+                StylePage::Values => ("Properties and values", "プロパティと値"),
+                StylePage::Conditions => ("Conditions", "条件"),
+                StylePage::Tokens => ("Tokens and themes", "トークンとテーマ"),
+                StylePage::Global => ("Global styles", "グローバルスタイル"),
+                StylePage::Patterns => ("Layout patterns", "レイアウトのパターン"),
+                StylePage::Animation => ("Animation", "アニメーション"),
+                StylePage::Unchecked => ("Unchecked values", "検査しない値"),
             },
-        }
+        };
+        L { en, ja }
     }
 
     /// The library whose docs the page belongs to.
@@ -454,7 +530,7 @@ impl Doc {
 
     /// The URL of the page.
     pub(crate) fn url(self, site: Site) -> String {
-        site.url(&self.path())
+        site.page_url(&self.path())
     }
 
     /// The sidebar the page is listed in.

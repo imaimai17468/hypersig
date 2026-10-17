@@ -7,6 +7,7 @@ publish = false
 
 [dependencies]
 hypersig.workspace = true
+hypersig_i18n.workspace = true
 hypersig_ui.workspace = true
 serde.workspace = true
 

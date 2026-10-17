@@ -38,12 +38,12 @@ pub fn content(site: Site, page: Component) -> Part {
 
 fn component(site: Site, page: Component, content: &Page) -> Part {
     let mut children = vec![
-        title(Doc::Components(page).title()),
+        title(Doc::Components(page).title(site)),
         lead(site, content.lead),
         demo::show(site, content.demo),
-        heading("Accessibility"),
+        heading(site, "Accessibility"),
     ];
-    children.extend(content.built_on.iter().map(|text| para(site, text)));
+    children.extend(content.built_on.iter().map(|&text| para(site, text)));
     if !content.keys.is_empty() {
         let rows: Vec<[&str; 2]> = content
             .keys
@@ -51,9 +51,9 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
             .map(|&(key, action)| [key, action])
             .collect();
         let rows: Vec<&[&str]> = rows.iter().map(<[&str; 2]>::as_slice).collect();
-        children.push(table_of(site, &["Key", "What it does"], &rows));
+        children.push(table_of(site, &["Key", "What it does"], rows.as_slice()));
     }
-    children.push(heading("API"));
+    children.push(heading(site, "API"));
     let cells: Vec<[String; 2]> = content
         .items
         .iter()
@@ -64,18 +64,18 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
         .map(|[name, summary]| vec![name.as_str(), summary.as_str()])
         .collect();
     let rows: Vec<&[&str]> = rows.iter().map(Vec::as_slice).collect();
-    children.push(table_of(site, &["Item", "Summary"], &rows));
+    children.push(table_of(site, &["Item", "Summary"], rows.as_slice()));
     parts(children)
 }
 
 fn installation(site: Site) -> Part {
     parts([
-        title(Doc::Components(Component::Installation).title()),
+        title(Doc::Components(Component::Installation).title(site)),
         lead(
             site,
             "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
         ),
-        heading("Add the crate"),
+        heading(site, "Add the crate"),
         para(
             site,
             "It lives in the hypersig repository and is not on crates.io yet. Add it next to `hypersig`:",
@@ -87,13 +87,13 @@ fn installation(site: Site) -> Part {
 hypersig = { git = "https://github.com/imaimai17468/hypersig" }
 hypersig_ui = { git = "https://github.com/imaimai17468/hypersig" }"#,
         ),
-        heading("Add the theme to the page"),
+        heading(site, "Add the theme to the page"),
         para(
             site,
             "Add `hypersig_ui::global()` and `hypersig_ui::theme()` to the page once. `global` is a small reset with the font and the page colors, and `theme` switches the color tokens to their dark values for a visitor whose system prefers dark.",
         ),
         show(Snippet::UiSetup),
-        heading("How the components are built"),
+        heading(site, "How the components are built"),
         bullets(
             site,
             &[
@@ -112,18 +112,18 @@ hypersig_ui = { git = "https://github.com/imaimai17468/hypersig" }"#,
 
 fn theming(site: Site) -> Part {
     parts([
-        title(Doc::Components(Component::Theming).title()),
+        title(Doc::Components(Component::Theming).title(site)),
         lead(
             site,
             "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
         ),
-        heading("Tokens"),
+        heading(site, "Tokens"),
         para(
             site,
             "The [`token`](api:hypersig_ui/token/index.html) module has one function per token, named as in shadcn/ui: `background`, `foreground`, `primary`, `muted`, `border`, `ring`, `radius`, and the rest. Each returns a `Token`, which is a CSS custom property with a typed default. A page that sets nothing gets the light values.",
         ),
         show(Snippet::UiTheme),
-        heading("Light and dark"),
+        heading(site, "Light and dark"),
         para(
             site,
             "`hypersig_ui::theme()` sets the dark values under `prefers-color-scheme: dark`. To let a signal pick the scheme instead, put `hypersig_ui::dark()` or `hypersig_ui::light()` on an element with `css_when` or `css_match`. Each sets every color token for the element and those inside it, and `color-scheme` with them, so native controls such as a scrollbar follow.",

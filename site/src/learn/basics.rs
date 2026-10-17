@@ -10,12 +10,12 @@ use crate::prose::{Part, bullets, heading, lead, note, para, parts, title};
 
 pub fn quick_start(site: Site) -> Part {
     parts([
-        title(Doc::Learn(Learn::QuickStart).title()),
+        title(Doc::Learn(Learn::QuickStart).title(site)),
         lead(
             site,
             "Build a counter that counts in the browser and resets on the server, in one Rust file.",
         ),
-        heading("Add the dependencies"),
+        heading(site, "Add the dependencies"),
         para(
             site,
             "hypersig is not on crates.io yet, so it comes from Git. Add it to `Cargo.toml` with axum, serde, and tokio:",
@@ -29,19 +29,19 @@ axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         ),
-        heading("Write the server"),
+        heading(site, "Write the server"),
         para(
             site,
             "Write `src/main.rs`. It holds the page, the handler that answers the reset button, and the router that serves both.",
         ),
         program(Program::QuickStart),
-        heading("Run it"),
+        heading(site, "Run it"),
         code::block(Lang::Shell, None, "cargo run"),
         para(
             site,
             "Open `http://127.0.0.1:3000`. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime from the crate, so no Node or JavaScript build is involved.",
         ),
-        heading("What each part does"),
+        heading(site, "What each part does"),
         bullets(
             site,
             &[
@@ -53,7 +53,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                 "The handler returns `Counter::count().patch(0)`. The server sends it as a Server-Sent Event, and the runtime writes the value into the signal, which rewrites the text.",
             ],
         ),
-        heading("Try it here"),
+        heading(site, "Try it here"),
         para(
             site,
             "The counter below runs the browser half of the program on this page. It uses buttons from `hypersig_ui`, the component crate in the same repository.",
@@ -72,12 +72,12 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
 
 pub fn describing_the_page(site: Site) -> Part {
     parts([
-        title(Doc::Learn(Learn::DescribingThePage).title()),
+        title(Doc::Learn(Learn::DescribingThePage).title(site)),
         lead(
             site,
             "A page is a tree of `El` values built with Rust functions and rendered to HTML on the server.",
         ),
-        heading("Elements"),
+        heading(site, "Elements"),
         para(
             site,
             "The [`html`](api:hypersig/html/index.html) module has one function per common tag, such as `div()`, `p()`, and `button()`, and `el(\"tag\")` for any other. Each returns an `El<S>`, where `S` is the page's signal struct, and its methods return the element, so a tree is one expression.",
@@ -87,12 +87,12 @@ pub fn describing_the_page(site: Site) -> Part {
             site,
             "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. `id` and `class` have their own methods, and `attr` panics on them and on names starting with `data-hs-`, which only the typed methods write.",
         ),
-        heading("The page"),
+        heading(site, "The page"),
         para(
             site,
             "[`Page`](api:hypersig/struct.Page.html) wraps the tree in a full document. `Page::new` takes the title and the initial values of the signals, `child` appends to `<body>`, and `render` returns the HTML a handler sends. The document loads the runtime from `/_hypersig/runtime.js`, which `RouterExt::hypersig_runtime` serves.",
         ),
-        heading("Values that follow the signals"),
+        heading(site, "Values that follow the signals"),
         para(
             site,
             "An element can show a value that changes in the browser. Each binding takes an expression over the signals and is rendered with the initial values first, so the HTML shows what the runtime would compute.",
@@ -112,7 +112,7 @@ pub fn describing_the_page(site: Site) -> Part {
             "The demo binds a text field to `name` and shows one of two paragraphs depending on whether it is empty.",
         ),
         demo::show(site, Demo::Greeting),
-        heading("Components"),
+        heading(site, "Components"),
         para(
             site,
             "A component is a Rust function that returns an `El<S>`. Make it generic over `S` and take the signals it reads as arguments, and it works on any page.",

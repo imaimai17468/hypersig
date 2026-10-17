@@ -746,6 +746,7 @@ dependencies = [
  "axum",
  "futures",
  "hypersig",
+ "hypersig_i18n",
  "hypersig_ui",
  "serde",
  "tokio",

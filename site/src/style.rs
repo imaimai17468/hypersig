@@ -8,7 +8,7 @@ use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, ti
 
 /// The article of `page`.
 pub fn content(site: Site, page: StylePage) -> Part {
-    let head = title(Doc::Style(page).title());
+    let head = title(Doc::Style(page).title(site));
     match page {
         StylePage::Overview => overview(site, head),
         StylePage::Values => values(site, head),
@@ -28,7 +28,7 @@ fn overview(site: Site, head: Part) -> Part {
             site,
             "`hypersig::style` is typed atomic CSS. A misspelled property or keyword, or a value of the wrong type, is a compile error, and each declaration becomes one class.",
         ),
-        heading("A style is a Rust value"),
+        heading(site, "A style is a Rust value"),
         para(
             site,
             "[`Style`](api:hypersig_style/struct.Style.html) has one method per standard CSS property, and per anchor positioning property. The property list, each property's keywords, the pseudo-classes, the pseudo-elements, and the named colors are generated from MDN's CSS data (`mdn-data` 2.37.2). `El::css` adds a style to an element.",
@@ -38,7 +38,7 @@ fn overview(site: Site, head: Part) -> Part {
             site,
             "A later call for the same property under the same conditions replaces the earlier value, as it would later in a rule. `merge` adds the declarations of another style, which win over the first one's.",
         ),
-        heading("One class per declaration"),
+        heading(site, "One class per declaration"),
         para(
             site,
             "Each declaration becomes one class named after it, such as `cursor_pointer` or `hover:color_crimson`, as in the atomic CSS of Panda CSS and Tailwind CSS. A value with characters other than letters, digits, `.`, `#`, `%`, and `-` is named by a hash of it. Two elements with the same declaration share the class, so the stylesheet grows with the number of distinct declarations, not with the number of elements.",
@@ -47,7 +47,7 @@ fn overview(site: Site, head: Part) -> Part {
             site,
             "The page collects the styles its elements use and writes each rule once into `<head>`. A patch that brings new elements brings their rules, placed so that a breakpoint still overrides the base value.",
         ),
-        heading("Styles that follow a signal"),
+        heading(site, "Styles that follow a signal"),
         para(
             site,
             "`css_when(style, cond)` adds a style while a signal condition holds, and `css_match(value, cases)` picks one style per value of a signal, the variants of a Panda CSS recipe. Their rules sit in a later cascade layer than those of `css`, so while switched on they override the element's own declarations for the same property.",
@@ -82,7 +82,7 @@ fn values(site: Site, head: Part) -> Part {
             site,
             "Each property method takes its own value type, which lists the property's keywords and accepts the units it allows.",
         ),
-        heading("Typed values"),
+        heading(site, "Typed values"),
         para(
             site,
             "Where a property accepts one keyword or one value of a type in [`value`](api:hypersig_style/value/index.html), that value is typed. `display` takes a `Display`, whose variants are its keywords. `width` takes a `Width`, which converts from a length or a percentage.",
@@ -112,7 +112,7 @@ fn values(site: Site, head: Part) -> Part {
                 ],
             ],
         ),
-        heading("What does not compile"),
+        heading(site, "What does not compile"),
         para(
             site,
             "A misspelled property has no method, a misspelled keyword has no variant, and a value of the wrong type has no conversion:",
@@ -132,7 +132,7 @@ fn conditions(site: Site, head: Part) -> Part {
             site,
             "`Style::on` applies part of a style under a condition: a pseudo-class, a media feature, a container width, or the state of a marked ancestor or sibling.",
         ),
-        heading("Pseudo-classes, media, and containers"),
+        heading(site, "Pseudo-classes, media, and containers"),
         show(Snippet::Conditions),
         bullets(
             site,
@@ -144,7 +144,7 @@ fn conditions(site: Site, head: Part) -> Part {
                 "Conditions nest: a style passed to `on` may use `on` itself, and its declarations then apply under both.",
             ],
         ),
-        heading("Group and peer"),
+        heading(site, "Group and peer"),
         para(
             site,
             "`Style::group` marks an ancestor, and `Condition::Group(PseudoClass::Hover)` applies a style while that ancestor is hovered. `Style::peer` marks an earlier sibling, and `Condition::Peer(PseudoClass::Checked)` applies a style while that sibling is checked. They work like the `group` and `peer` of Tailwind CSS and Panda CSS.",
@@ -161,7 +161,7 @@ fn tokens(site: Site, head: Part) -> Part {
             site,
             "A token is a named value written as a CSS custom property, which a theme sets for the page and a style sets for one element.",
         ),
-        heading("Tokens"),
+        heading(site, "Tokens"),
         para(
             site,
             "[`Token::new(name, default)`](api:hypersig_style/struct.Token.html) creates a token of a value type: `Color`, `Length`, `Percentage`, `Time`, or `Angle`. `var()` reads it as `var(--name, default)`, so a page that sets nothing shows the default, and it is accepted wherever a value of that type is.",
@@ -194,7 +194,7 @@ fn global(site: Site, head: Part) -> Part {
             site,
             "A `Global` holds rules for elements by their tag, a small reset, and the fonts the page loads.",
         ),
-        heading("Rules by tag"),
+        heading(site, "Rules by tag"),
         para(
             site,
             "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) adds a style for every element a selector matches: an `Element` by its tag, `Selector::Root`, or `Selector::Everything`. The rules sit in the base cascade layer, before the classes of `El::css`, so an element's own style overrides them. Conditions in a rule's style apply to the selector as they do to a class.",
@@ -267,14 +267,14 @@ fn animation(site: Site, head: Part) -> Part {
             site,
             "Keyframes are Rust values too, and an element that uses them carries their rule to the page.",
         ),
-        heading("Keyframes"),
+        heading(site, "Keyframes"),
         para(
             site,
             "[`Keyframes::new(name)`](api:hypersig_style/struct.Keyframes.html) starts an animation, and `at(percent, style)` adds a step. `Style::keyframes` sets an element's `animation-name` and carries the `@keyframes` rule with it, so the page or the patch that brings the element also brings the rule. A keyframe writes only the unconditioned declarations of its style, because a keyframe takes no selector or media query.",
         ),
         show(Snippet::Animation),
         demo::show(site, Demo::Spinner),
-        heading("Motion and the visitor"),
+        heading(site, "Motion and the visitor"),
         para(
             site,
             "`Media::ReducedMotion` applies a style for a visitor who asks for reduced motion. The components of `hypersig_ui` make their color transitions instant there.",

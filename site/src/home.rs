@@ -6,6 +6,7 @@ use crate::Site;
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Library};
 use crate::landing::{self, features, hero, titled, two_cards};
+use crate::lang::L;
 use crate::prose::{Part, para, table_of};
 
 pub fn render(site: Site) -> String {
@@ -15,38 +16,93 @@ pub fn render(site: Site) -> String {
         [
             hero(
                 site,
-                "A web framework on axum",
-                "The page, its behavior, and the server, all in Rust",
-                "`cargo build` builds it, with no Node and no wasm, and a mismatch between the page and the server is a compile error.",
+                site.t(L {
+                    en: "A web framework on axum",
+                    ja: "axum の上で動く Web フレームワーク",
+                }),
+                site.t(L {
+                    en: "The page, its behavior, and the server, all in Rust",
+                    ja: "画面もその動きもサーバーも、すべて Rust で",
+                }),
+                site.t(L {
+                    en: "`cargo build` builds it, with no Node and no wasm, and a mismatch between the page and the server is a compile error.",
+                    ja: "`cargo build` だけでビルドでき、Node も wasm も要りません。画面とサーバーの食い違いはコンパイルエラーになります。",
+                }),
                 &[
-                    ("Get started", "learn/", ButtonVariant::Default),
-                    ("Why hypersig", "learn/why/", ButtonVariant::Outline),
-                    ("Reference", "reference/", ButtonVariant::Ghost),
+                    (
+                        site.t(L {
+                            en: "Get started",
+                            ja: "はじめる",
+                        }),
+                        "learn/",
+                        ButtonVariant::Default,
+                    ),
+                    (
+                        site.t(L {
+                            en: "Why hypersig",
+                            ja: "hypersig を選ぶ理由",
+                        }),
+                        "learn/why/",
+                        ButtonVariant::Outline,
+                    ),
+                    (
+                        site.t(L {
+                            en: "Reference",
+                            ja: "リファレンス",
+                        }),
+                        "reference/",
+                        ButtonVariant::Ghost,
+                    ),
                 ],
             ),
             features(
                 site,
                 &[
                     (
-                        "No browser build",
-                        "`cargo build` builds it, with no Node and no wasm. The crate embeds a prebuilt runtime of about 14 KB gzipped.",
+                        site.t(L {
+                            en: "No browser build",
+                            ja: "ブラウザ向けのビルドが不要",
+                        }),
+                        site.t(L {
+                            en: "`cargo build` builds it, with no Node and no wasm. The crate embeds a prebuilt runtime of about 14 KB gzipped.",
+                            ja: "`cargo build` だけでビルドでき、Node も wasm も要りません。gzip で約 14 KB のランタイムをビルド済みの状態でクレートに埋め込んでいます。",
+                        }),
                     ),
                     (
-                        "Typed from page to server",
-                        "Signal names, expressions, actions, and links come from Rust types. A link whose page has no handler, or whose path parameters or query do not fit the page, is a compile error, as is any other mismatch between the page and the server.",
+                        site.t(L {
+                            en: "Typed from page to server",
+                            ja: "画面からサーバーまで型で検査",
+                        }),
+                        site.t(L {
+                            en: "Signal names, expressions, actions, and links come from Rust types. A link whose page has no handler, or whose path parameters or query do not fit the page, is a compile error, as is any other mismatch between the page and the server.",
+                            ja: "シグナルの名前、式、アクション、リンクは Rust の型から作られます。ハンドラのないページへのリンクや、パスのパラメータやクエリがページに合わないリンクは、画面とサーバーのほかの食い違いと同じくコンパイルエラーになります。",
+                        }),
                     ),
                     (
-                        "Optimistic updates for free",
-                        "A statement changes the page in the browser, and an action call sent with it reaches the server after. Changing the page before the server answers takes no extra code.",
+                        site.t(L {
+                            en: "Optimistic updates for free",
+                            ja: "楽観的更新に追加のコードが要らない",
+                        }),
+                        site.t(L {
+                            en: "A statement changes the page in the browser, and an action call sent with it reaches the server after. Changing the page before the server answers takes no extra code.",
+                            ja: "文はブラウザの中で画面を変え、一緒に送ったアクションの呼び出しはそのあとでサーバーに届きます。サーバーの応答を待たずに画面を変える処理を、追加のコードなしで書けます。",
+                        }),
                     ),
                 ],
             ),
             titled(
-                "Styles and components, too",
+                site,
+                L {
+                    en: "Styles and components, too",
+                    ja: "スタイルとコンポーネントも",
+                },
                 [
                     para(
                         site,
-                        "hypersig is the framework. Two crates in the same repository add typed styles and a set of accessible components, each with docs of its own.",
+                        L {
+                            en: "hypersig is the framework. Two crates in the same repository add typed styles and a set of accessible components, each with docs of its own.",
+                            ja: "hypersig はフレームワーク本体です。同じリポジトリにある 2 つのクレートが、型付きのスタイルとアクセシブルなコンポーネントを足します。それぞれにドキュメントがあります。",
+                        },
                     ),
                     two_cards(
                         site,
@@ -54,23 +110,36 @@ pub fn render(site: Site) -> String {
                             (
                                 Library::Style,
                                 "hypersig_style",
-                                "Typed atomic CSS: every property a method and every keyword a variant, with tokens, themes, and conditions. Reached as `hypersig::style`.",
+                                site.t(L {
+                                    en: "Typed atomic CSS: every property a method and every keyword a variant, with tokens, themes, and conditions. Reached as `hypersig::style`.",
+                                    ja: "型付きの atomic CSS です。プロパティはすべてメソッド、キーワードはすべてバリアントで、トークン、テーマ、条件も書けます。`hypersig::style` から使います。",
+                                }),
                             ),
                             (
                                 Library::Components,
                                 "hypersig_ui",
-                                "Accessible components styled after shadcn/ui, on native elements and the WAI-ARIA Authoring Practices.",
+                                site.t(L {
+                                    en: "Accessible components styled after shadcn/ui, on native elements and the WAI-ARIA Authoring Practices.",
+                                    ja: "shadcn/ui の見た目を持つアクセシブルなコンポーネントです。ネイティブ要素と WAI-ARIA Authoring Practices の上に作っています。",
+                                }),
                             ),
                         ],
                     ),
                 ],
             ),
             titled(
-                "Write the page in Rust",
+                site,
+                L {
+                    en: "Write the page in Rust",
+                    ja: "ページを Rust で書く",
+                },
                 [
                     para(
                         site,
-                        "The signal struct holds the page's state. `Counter::count()` is a typed reference to its field, and `count.set(count + 1)` is a statement the browser runs on a click without asking the server. The page renders on the server with the count already in place, so it shows before the runtime loads.",
+                        L {
+                            en: "The signal struct holds the page's state. `Counter::count()` is a typed reference to its field, and `count.set(count + 1)` is a statement the browser runs on a click without asking the server. The page renders on the server with the count already in place, so it shows before the runtime loads.",
+                            ja: "ページの状態はシグナル構造体が持ちます。`Counter::count()` はそのフィールドへの型付きの参照で、`count.set(count + 1)` はクリックのたびにブラウザがサーバーに問い合わせずに実行する文です。ページはカウントを埋めた状態でサーバーが描くので、ランタイムを読み込む前から表示されます。",
+                        },
                     ),
                     demo::show(site, Demo::Counter),
                 ],
@@ -83,87 +152,162 @@ pub fn render(site: Site) -> String {
 
 /// The README's comparison with other frameworks.
 fn comparison(site: Site) -> Part {
+    let header = &[
+        "",
+        "hypersig",
+        "Leptos",
+        "React",
+        "Next.js",
+        "TanStack Start",
+        "Nuxt",
+        "htmx",
+    ];
     titled(
-        "How it compares",
+        site,
+        L {
+            en: "How it compares",
+            ja: "フレームワークの比較",
+        },
         [
             para(
                 site,
-                "Adding a page to a Rust server leaves two choices today. Leptos type-checks what passes between the page and the server, and needs wasm and its build. htmx needs no build, but the URLs and expressions written in its attributes are not type-checked.",
+                L {
+                    en: "Adding a page to a Rust server leaves two choices today. Leptos type-checks what passes between the page and the server, and needs wasm and its build. htmx needs no build, but the URLs and expressions written in its attributes are not type-checked.",
+                    ja: "Rust のサーバーに画面を付けようとすると、今は 2 通りの選び方になります。Leptos なら画面とサーバーの間で型が検査される代わりに、wasm とそのビルドが要ります。htmx ならビルドは要りませんが、属性に書く URL や式は型で検査されません。",
+                },
             ),
             table_of(
                 site,
-                &[
-                    "",
-                    "hypersig",
-                    "Leptos",
-                    "React",
-                    "Next.js",
-                    "TanStack Start",
-                    "Nuxt",
-                    "htmx",
-                ],
-                &[
-                    &[
-                        "Page written in",
-                        "Rust",
-                        "Rust",
-                        "TypeScript",
-                        "TypeScript",
-                        "TypeScript",
-                        "TypeScript and Vue templates",
-                        "HTML attributes",
+                L {
+                    en: header,
+                    ja: header,
+                },
+                L {
+                    en: &[
+                        &[
+                            "Page written in",
+                            "Rust",
+                            "Rust",
+                            "TypeScript",
+                            "TypeScript",
+                            "TypeScript",
+                            "TypeScript and Vue templates",
+                            "HTML attributes",
+                        ],
+                        &[
+                            "Server written in",
+                            "Rust",
+                            "Rust",
+                            "Any",
+                            "TypeScript",
+                            "TypeScript",
+                            "TypeScript",
+                            "Any",
+                        ],
+                        &[
+                            "No browser build",
+                            "Yes",
+                            "No (wasm and cargo-leptos)",
+                            "No (Vite)",
+                            "No (Node bundler)",
+                            "No (Vite)",
+                            "No (Vite)",
+                            "Yes",
+                        ],
+                        &[
+                            "Request types checked at compile time",
+                            "Yes",
+                            "Yes",
+                            "No",
+                            "Yes",
+                            "Yes",
+                            "No",
+                            "No",
+                        ],
+                        &[
+                            "Links checked against routes at compile time",
+                            "Yes",
+                            "No (`href` takes a string)",
+                            "No (no router)",
+                            "Opt-in (`typedRoutes`)",
+                            "Yes",
+                            "Experimental (`typedPages`)",
+                            "No",
+                        ],
+                        &[
+                            "State kept in the browser",
+                            "Yes",
+                            "Yes",
+                            "Yes",
+                            "Yes",
+                            "Yes",
+                            "Yes",
+                            "No",
+                        ],
                     ],
-                    &[
-                        "Server written in",
-                        "Rust",
-                        "Rust",
-                        "Any",
-                        "TypeScript",
-                        "TypeScript",
-                        "TypeScript",
-                        "Any",
+                    ja: &[
+                        &[
+                            "画面を書く言語",
+                            "Rust",
+                            "Rust",
+                            "TypeScript",
+                            "TypeScript",
+                            "TypeScript",
+                            "TypeScript と Vue のテンプレート",
+                            "HTML の属性",
+                        ],
+                        &[
+                            "サーバーを書く言語",
+                            "Rust",
+                            "Rust",
+                            "任意",
+                            "TypeScript",
+                            "TypeScript",
+                            "TypeScript",
+                            "任意",
+                        ],
+                        &[
+                            "ブラウザ向けのビルドが不要",
+                            "はい",
+                            "いいえ（wasm と cargo-leptos）",
+                            "いいえ（Vite）",
+                            "いいえ（Node のバンドラー）",
+                            "いいえ（Vite）",
+                            "いいえ（Vite）",
+                            "はい",
+                        ],
+                        &[
+                            "送る値の型をコンパイル時に検査",
+                            "はい",
+                            "はい",
+                            "いいえ",
+                            "はい",
+                            "はい",
+                            "いいえ",
+                            "いいえ",
+                        ],
+                        &[
+                            "リンクの行き先をコンパイル時に検査",
+                            "はい",
+                            "いいえ（`href` は文字列）",
+                            "いいえ（ルーターなし）",
+                            "設定で有効化（`typedRoutes`）",
+                            "はい",
+                            "実験的（`typedPages`）",
+                            "いいえ",
+                        ],
+                        &[
+                            "ブラウザの中で状態を持てる",
+                            "はい",
+                            "はい",
+                            "はい",
+                            "はい",
+                            "はい",
+                            "はい",
+                            "いいえ",
+                        ],
                     ],
-                    &[
-                        "No browser build",
-                        "Yes",
-                        "No (wasm and cargo-leptos)",
-                        "No (Vite)",
-                        "No (Node bundler)",
-                        "No (Vite)",
-                        "No (Vite)",
-                        "Yes",
-                    ],
-                    &[
-                        "Request types checked at compile time",
-                        "Yes",
-                        "Yes",
-                        "No",
-                        "Yes",
-                        "Yes",
-                        "No",
-                        "No",
-                    ],
-                    &[
-                        "Links checked against routes at compile time",
-                        "Yes",
-                        "No (`href` takes a string)",
-                        "No (no router)",
-                        "Opt-in (`typedRoutes`)",
-                        "Yes",
-                        "Experimental (`typedPages`)",
-                        "No",
-                    ],
-                    &[
-                        "State kept in the browser",
-                        "Yes",
-                        "Yes",
-                        "Yes",
-                        "Yes",
-                        "Yes",
-                        "Yes",
-                        "No",
-                    ],
-                ],
+                },
             ),
         ],
     )
@@ -172,11 +316,18 @@ fn comparison(site: Site) -> Part {
 /// The README's benchmark, with its numbers unchanged.
 fn benchmarks(site: Site) -> Part {
     titled(
-        "Benchmarks",
+        site,
+        L {
+            en: "Benchmarks",
+            ja: "ベンチマーク",
+        },
         [
             para(
                 site,
-                "A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request. The apps and the harness are in [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare).",
+                L {
+                    en: "A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request. The apps and the harness are in [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare).",
+                    ja: "追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。測ったアプリと計測の仕組みは [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にあります。",
+                },
             ),
             table_of(
                 site,
@@ -192,7 +343,10 @@ fn benchmarks(site: Site) -> Part {
                 ],
                 &[
                     &[
-                        "JS (gzip)",
+                        site.t(L {
+                            en: "JS (gzip)",
+                            ja: "JS（gzip）",
+                        }),
                         "13.4 KB",
                         "140.5 KB",
                         "67.1 KB",

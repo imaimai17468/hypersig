@@ -12,8 +12,10 @@ use hypersig::{Page, if_else};
 use hypersig_ui::{ButtonVariant, icon_button, token};
 
 use crate::doc::{Doc, Library};
+use crate::lang::{L, Lang};
 use crate::prose::{Docs, Part, href};
 use crate::{Site, code};
+use hypersig_i18n::Locale as _;
 
 /// The repository the header links to.
 pub const REPOSITORY: &str = "https://github.com/imaimai17468/hypersig";
@@ -24,11 +26,12 @@ const SIDEBAR: &str = "sidebar";
 /// A page of `doc` with the header and `body` below it, full width.
 pub fn document(site: Site, doc: Doc, body: Part) -> String {
     let title = if doc.is_landing() {
-        doc.title().to_owned()
+        doc.title(site).to_owned()
     } else {
-        format!("{} | {}", doc.title(), doc.library().home().title())
+        format!("{} | {}", doc.title(site), doc.library().home().title(site))
     };
     Page::new(title, Docs::default())
+        .lang(site.lang().tag())
         .runtime_src(site.runtime())
         .global(hypersig_ui::global())
         .global(
@@ -101,11 +104,17 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                         .height(rem(3.5))
                         .on(Media::Md, Style::new().gap(rem(1.5))),
                 )
-                .children(has_sidebar.then(menu_button))
+                .children(has_sidebar.then(|| menu_button(site)))
                 .child(brand(site, library))
                 .child(
                     nav()
-                        .attr("aria-label", "Sections")
+                        .attr(
+                            "aria-label",
+                            site.t(L {
+                                en: "Sections",
+                                ja: "セクション",
+                            }),
+                        )
                         .css(
                             hstack(rem(1))
                                 .on(Media::Md, Style::new().gap(rem(1.25)))
@@ -125,7 +134,7 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                             let current = in_section(doc, target);
                             mark_section(a().attr("href", target.url(site)), current)
                                 .css(nav_link_style(current))
-                                .text(label)
+                                .text(site.t(label))
                         }))
                         .child(
                             a().attr("href", href(site, library.api()))
@@ -141,6 +150,7 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                             ),
                         )
                         .child(switcher(site, library))
+                        .child(languages(site, doc))
                         .child(
                             a().attr("href", REPOSITORY)
                                 .css(nav_link_style(false).font_size(rem(0.875)))
@@ -173,7 +183,7 @@ fn brand(site: Site, library: Library) -> Part {
         .children((library != Library::Framework).then(|| {
             a().attr("href", library.home().url(site))
                 .css(name.font_weight(FontWeight::Number(500.0)))
-                .text(library.name())
+                .text(library.name(site))
         }))
 }
 
@@ -181,7 +191,13 @@ fn brand(site: Site, library: Library) -> Part {
 /// group.
 fn switcher(site: Site, current: Library) -> Part {
     nav()
-        .attr("aria-label", "Libraries")
+        .attr(
+            "aria-label",
+            site.t(L {
+                en: "Libraries",
+                ja: "ライブラリ",
+            }),
+        )
         .css(
             hstack(px(2))
                 .padding(px(2))
@@ -205,7 +221,29 @@ fn switcher(site: Site, current: Library) -> Part {
                         Style::new()
                     }),
             );
-            mark_section(link, here).text(library.name())
+            mark_section(link, here).text(library.name(site))
+        }))
+}
+
+/// Links to `doc` in each language, the current one marked, for the header.
+fn languages(site: Site, doc: Doc) -> Part {
+    nav()
+        .attr(
+            "aria-label",
+            site.t(L {
+                en: "Languages",
+                ja: "言語",
+            }),
+        )
+        .css(hstack(rem(0.75)).font_size(rem(0.875)))
+        .children(Lang::ALL.iter().map(|&lang| {
+            let here = lang == site.lang();
+            let link = a()
+                .attr("href", doc.url(site.with_lang(lang)))
+                .attr("hreflang", lang.tag())
+                .attr("lang", lang.tag())
+                .css(nav_link_style(here));
+            mark_current(link, here).text(lang.name())
         }))
 }
 
@@ -261,38 +299,50 @@ fn nav_link_style(current: bool) -> Style {
     }
 }
 
-fn menu_button() -> Part {
+fn menu_button(site: Site) -> Part {
     let menu = Docs::menu();
-    icon_button(ButtonVariant::Ghost, "Menu")
-        .attr("aria-controls", SIDEBAR)
-        .bind_attr("aria-expanded", if_else(menu, "true", "false"))
-        .on_click(menu.toggle())
-        .css(
-            Style::new()
-                .margin_left(rem(-0.5))
-                .on(Media::Md, Style::new().display(Display::None)),
-        )
-        .child(
-            el("svg")
-                .attr("viewBox", "0 0 24 24")
-                .attr("fill", "none")
-                .attr("stroke", "currentColor")
-                .attr("stroke-width", "2")
-                .attr("stroke-linecap", "round")
-                .attr("aria-hidden", "true")
-                .css(Style::new().width(rem(1.25)).height(rem(1.25)))
-                .children(
-                    ["M4 6h16", "M4 12h16", "M4 18h16"]
-                        .into_iter()
-                        .map(|d| el("path").attr("d", d)),
-                ),
-        )
+    icon_button(
+        ButtonVariant::Ghost,
+        site.t(L {
+            en: "Menu",
+            ja: "メニュー",
+        }),
+    )
+    .attr("aria-controls", SIDEBAR)
+    .bind_attr("aria-expanded", if_else(menu, "true", "false"))
+    .on_click(menu.toggle())
+    .css(
+        Style::new()
+            .margin_left(rem(-0.5))
+            .on(Media::Md, Style::new().display(Display::None)),
+    )
+    .child(
+        el("svg")
+            .attr("viewBox", "0 0 24 24")
+            .attr("fill", "none")
+            .attr("stroke", "currentColor")
+            .attr("stroke-width", "2")
+            .attr("stroke-linecap", "round")
+            .attr("aria-hidden", "true")
+            .css(Style::new().width(rem(1.25)).height(rem(1.25)))
+            .children(
+                ["M4 6h16", "M4 12h16", "M4 18h16"]
+                    .into_iter()
+                    .map(|d| el("path").attr("d", d)),
+            ),
+    )
 }
 
 fn sidebar(site: Site, doc: Doc) -> Part {
     nav()
         .id(SIDEBAR)
-        .attr("aria-label", "Pages")
+        .attr(
+            "aria-label",
+            site.t(L {
+                en: "Pages",
+                ja: "ページ",
+            }),
+        )
         .css(
             Style::new()
                 .display(Display::None)
@@ -327,7 +377,7 @@ fn sidebar(site: Site, doc: Doc) -> Part {
                                     .font_size(rem(0.875))
                                     .font_weight(FontWeight::Number(600.0)),
                             )
-                            .text(group.title),
+                            .text(site.t(group.title)),
                         )
                         .child(
                             div()
@@ -336,7 +386,7 @@ fn sidebar(site: Site, doc: Doc) -> Part {
                                     let current = target == doc;
                                     mark_current(a().attr("href", target.url(site)), current)
                                         .css(sidebar_link_style(current))
-                                        .text(target.title())
+                                        .text(target.title(site))
                                 })),
                         )
                 })),
@@ -360,7 +410,7 @@ fn phone_sections(site: Site, doc: Doc) -> Part {
             let current = in_section(doc, target);
             mark_section(a().attr("href", target.url(site)), current)
                 .css(sidebar_link_style(current))
-                .text(label)
+                .text(site.t(label))
         }))
         .child(
             a().attr("href", href(site, library.api()))
@@ -374,7 +424,10 @@ fn phone_sections(site: Site, doc: Doc) -> Part {
                 .map(|other| {
                     a().attr("href", other.home().url(site))
                         .css(sidebar_link_style(false))
-                        .text(format!("{} docs", other.name()))
+                        .text(site.t(L {
+                            en: format!("{} docs", other.name(site)),
+                            ja: format!("{}のドキュメント", other.name(site)),
+                        }))
                 }),
         )
         .child(
@@ -442,11 +495,17 @@ fn pager(site: Site, before: Option<Doc>, after: Option<Doc>) -> Part {
             .child(
                 span()
                     .css(Style::new().font_weight(FontWeight::Number(500.0)))
-                    .text(doc.title()),
+                    .text(doc.title(site)),
             )
     };
     nav()
-        .attr("aria-label", "Previous and next page")
+        .attr(
+            "aria-label",
+            site.t(L {
+                en: "Previous and next page",
+                ja: "前後のページ",
+            }),
+        )
         .css(
             Style::new()
                 .display(Display::Grid)
@@ -454,8 +513,26 @@ fn pager(site: Site, before: Option<Doc>, after: Option<Doc>) -> Part {
                 .gap(rem(1))
                 .margin_top(rem(4)),
         )
-        .children(before.map(|doc| card(doc, "Previous", false)))
-        .children(after.map(|doc| card(doc, "Next", true)))
+        .children(before.map(|doc| {
+            card(
+                doc,
+                site.t(L {
+                    en: "Previous",
+                    ja: "前へ",
+                }),
+                false,
+            )
+        }))
+        .children(after.map(|doc| {
+            card(
+                doc,
+                site.t(L {
+                    en: "Next",
+                    ja: "次へ",
+                }),
+                true,
+            )
+        }))
 }
 
 /// The line at the bottom of every page, with the links the header hides on
@@ -478,10 +555,16 @@ pub fn page_footer(site: Site) -> Part {
         )
         .child(p().children(crate::prose::inline(
             site,
-            "Built with hypersig and `hypersig_ui`, and served as static files.",
+            site.t(L {
+                en: "Built with hypersig and `hypersig_ui`, and served as static files.",
+                ja: "hypersig と `hypersig_ui` で作り、静的ファイルとして配信しています。",
+            }),
         )))
         .child(p().children(crate::prose::inline(
             site,
-            "[Framework](), [Style](style/), [Components](components/), [GitHub](https://github.com/imaimai17468/hypersig), MIT License",
+            site.t(L {
+                en: "[Framework](), [Style](style/), [Components](components/), [GitHub](https://github.com/imaimai17468/hypersig), MIT License",
+                ja: "[フレームワーク](), [スタイル](style/), [コンポーネント](components/), [GitHub](https://github.com/imaimai17468/hypersig), MIT License",
+            }),
         )))
 }

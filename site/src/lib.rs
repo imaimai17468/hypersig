@@ -5,12 +5,18 @@
 //! that [`render`] writes. The binary in `main.rs` writes the files for
 //! GitHub Pages.
 
+#![expect(
+    clippy::too_many_lines,
+    reason = "a page's content function holds its text in each language, so its length follows the page's text"
+)]
+
 mod code;
 mod components;
 mod demo;
 mod doc;
 mod home;
 mod landing;
+mod lang;
 mod layout;
 mod learn;
 mod prose;
@@ -20,13 +26,18 @@ mod style;
 use std::collections::BTreeSet;
 use std::path::Path;
 
+use hypersig_i18n::Locale as _;
+
 pub use doc::Doc;
+pub use lang::Lang;
+use lang::{L, Text};
 
 /// Where the site is served from.
 #[derive(Debug, Clone, Copy)]
 pub struct Site {
     base: &'static str,
     runtime: &'static str,
+    lang: Lang,
 }
 
 impl Site {
@@ -46,12 +57,45 @@ impl Site {
         // `Page::runtime_src` keeps the URL for as long as the page lives,
         // and the generator builds one `Site` per run.
         let runtime = String::leak(format!("{base}/{RUNTIME_FILE}"));
-        Self { base, runtime }
+        Self {
+            base,
+            runtime,
+            lang: Lang::En,
+        }
     }
 
-    /// The URL of `path`, a path inside the site without a leading `/`.
+    /// The same site, rendering its pages in `lang`.
+    #[must_use]
+    pub fn with_lang(self, lang: Lang) -> Self {
+        Self { lang, ..self }
+    }
+
+    /// The language the pages are rendered in.
+    #[must_use]
+    pub fn lang(self) -> Lang {
+        self.lang
+    }
+
+    /// `text` in the language the pages are rendered in.
+    fn t<T>(self, text: L<T>) -> T {
+        self.lang.pick(text)
+    }
+
+    /// `text` in the language the pages are rendered in, translated or not.
+    fn text<'a, T: ?Sized>(self, text: impl Into<Text<'a, T>>) -> &'a T {
+        text.into().get(self.lang)
+    }
+
+    /// The URL of `path`, a file inside the site without a leading `/` that
+    /// every language shares, such as the runtime or the rustdoc output.
     fn url(self, path: &str) -> String {
         format!("{}/{path}", self.base)
+    }
+
+    /// The URL of the page at `path`, a page's directory inside the site, in
+    /// the language the pages are rendered in.
+    fn page_url(self, path: &str) -> String {
+        format!("{}/{}{path}", self.base, self.lang.dir())
     }
 
     /// The URL the pages load the runtime from.
@@ -78,17 +122,18 @@ pub const API_DIR: &str = "api";
 /// Every file of the site: the pages, the live demos, and the runtime.
 #[must_use]
 pub fn render(site: Site) -> Vec<File> {
-    let mut files: Vec<File> = Doc::ALL
-        .iter()
-        .map(|&doc| File {
-            path: format!("{}index.html", doc.path()),
+    let mut files = Vec::new();
+    for &lang in Lang::ALL {
+        let site = site.with_lang(lang);
+        files.extend(Doc::ALL.iter().map(|&doc| File {
+            path: format!("{}{}index.html", lang.dir(), doc.path()),
             contents: doc.render(site),
-        })
-        .collect();
-    files.extend(demo::Demo::ALL.iter().map(|&demo| File {
-        path: format!("{}index.html", demo.path()),
-        contents: demo.render(site),
-    }));
+        }));
+        files.extend(demo::Demo::ALL.iter().map(|&demo| File {
+            path: format!("{}{}index.html", lang.dir(), demo.path()),
+            contents: demo.render(site),
+        }));
+    }
     files.push(File {
         path: RUNTIME_FILE.to_owned(),
         contents: hypersig::RUNTIME_JS.to_owned(),
@@ -212,7 +257,10 @@ mod tests {
         for &doc in Doc::ALL {
             let html = doc.render(site);
             assert!(html.contains(r#"src="/hypersig/hypersig.js""#), "{doc:?}");
-            assert!(html.contains(&format!("<title>{}", doc.title())), "{doc:?}");
+            assert!(
+                html.contains(&format!("<title>{}", doc.title(site))),
+                "{doc:?}"
+            );
         }
     }
 }

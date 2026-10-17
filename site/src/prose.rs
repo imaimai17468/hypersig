@@ -19,6 +19,7 @@ use hypersig_ui::token;
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
+use crate::lang::Text;
 
 /// The signals of a documentation page.
 #[derive(Signals, Serialize, Deserialize, Default)]
@@ -43,7 +44,8 @@ pub fn title(text: &str) -> Part {
 }
 
 /// The paragraph under the title that says what the page covers.
-pub fn lead(site: Site, text: &str) -> Part {
+pub fn lead<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+    let text = site.text(text);
     p().css(
         Style::new()
             .margin_top(rem(0.75))
@@ -54,9 +56,11 @@ pub fn lead(site: Site, text: &str) -> Part {
     .children(inline(site, text))
 }
 
-/// A section heading, with an id made from its text so it can be linked to.
-pub fn heading(text: &str) -> Part {
-    h2().id(anchor(text))
+/// A section heading, with an id made from its English text so it can be
+/// linked to, and so the same section has the same id in every language.
+pub fn heading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+    let text = text.into();
+    h2().id(anchor(text.english()))
         .css(
             Style::new()
                 .margin_top(rem(2.5))
@@ -69,12 +73,13 @@ pub fn heading(text: &str) -> Part {
                 .font_weight(FontWeight::Number(600.0))
                 .letter_spacing(rem(-0.0125)),
         )
-        .text(text)
+        .text(text.get(site.lang()))
 }
 
-/// A heading inside a section.
-pub fn subheading(text: &str) -> Part {
-    h3().id(anchor(text))
+/// A heading inside a section, with an id made from its English text.
+pub fn subheading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+    let text = text.into();
+    h3().id(anchor(text.english()))
         .css(
             Style::new()
                 .margin_top(rem(2))
@@ -82,31 +87,38 @@ pub fn subheading(text: &str) -> Part {
                 .line_height(LineHeight::Length(rem(1.75)))
                 .font_weight(FontWeight::Number(600.0)),
         )
-        .text(text)
+        .text(text.get(site.lang()))
 }
 
 /// A paragraph.
-pub fn para(site: Site, text: &str) -> Part {
+pub fn para<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+    let text = site.text(text);
     p().css(body_text().margin_top(rem(1.25)))
         .children(inline(site, text))
 }
 
 /// A bulleted list, one item per entry of `items`.
-pub fn bullets(site: Site, items: &[&str]) -> Part {
+pub fn bullets<'a, I: Into<Text<'a, str>> + Copy>(site: Site, items: &[I]) -> Part {
     ul().css(
         body_text()
             .margin_top(rem(1.25))
             .padding_left(rem(1.5))
             .list_style_type(hypersig::style::value::raw("disc")),
     )
-    .children(items.iter().map(|item| {
+    .children(items.iter().map(|&item| {
         li().css(Style::new().margin_top(rem(0.5)))
-            .children(inline(site, item))
+            .children(inline(site, site.text(item)))
     }))
 }
 
 /// A table with a header row and one row per entry of `rows`.
-pub fn table_of(site: Site, header: &[&str], rows: &[&[&str]]) -> Part {
+pub fn table_of<'a, R: AsRef<[&'a str]> + 'a>(
+    site: Site,
+    header: impl Into<Text<'a, [&'a str]>>,
+    rows: impl Into<Text<'a, [R]>>,
+) -> Part {
+    let header = site.text(header);
+    let rows = site.text(rows);
     let cell = || {
         Style::new()
             .padding_block(rem(0.5))
@@ -143,7 +155,8 @@ pub fn table_of(site: Site, header: &[&str], rows: &[&[&str]]) -> Part {
                 })))
                 .children(rows.iter().map(|row| {
                     tr().children(
-                        row.iter()
+                        row.as_ref()
+                            .iter()
                             .map(|text| td().css(cell()).children(inline(site, text))),
                     )
                 })),
@@ -151,7 +164,8 @@ pub fn table_of(site: Site, header: &[&str], rows: &[&[&str]]) -> Part {
 }
 
 /// A boxed note beside the text, for a fact the reader should not miss.
-pub fn note(site: Site, text: &str) -> Part {
+pub fn note<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+    let text = site.text(text);
     div()
         .attr("role", "note")
         .css(
@@ -280,7 +294,7 @@ pub fn href(site: Site, target: &str) -> String {
     } else if let Some(item) = target.strip_prefix("api:") {
         site.url(&format!("{}/{item}", crate::API_DIR))
     } else {
-        site.url(target)
+        site.page_url(target)
     }
 }
 

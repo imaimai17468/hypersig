@@ -5,6 +5,7 @@ use super::snippet::{Snippet, show};
 use crate::Site;
 use crate::code::{self, Lang};
 use crate::doc::{Doc, Learn};
+use crate::lang::L;
 use crate::prose::{Part, bullets, heading, lead, para, parts, title};
 
 /// The body of the page that `Snippet::WhyCounter` renders, with the HTML
@@ -34,85 +35,160 @@ pub fn why(site: Site) -> Part {
 
 fn intro(site: Site) -> [Part; 2] {
     [
-        title(Doc::Learn(Learn::Why).title()),
+        title(Doc::Learn(Learn::Why).title(site)),
         lead(
             site,
-            "hypersig renders the page on the server and writes its behavior into the HTML. Every string the browser acts on comes from a Rust type, so the page needs no browser build, no hydration, and no string typed by hand.",
+            L {
+                en: "hypersig renders the page on the server and writes its behavior into the HTML. Every string the browser acts on comes from a Rust type, so the page needs no browser build, no hydration, and no string typed by hand.",
+                ja: "hypersig はページをサーバーで描き、その動きを HTML に書き込みます。ブラウザが扱う文字列はすべて Rust の型から作られるので、ブラウザ向けのビルドもハイドレーションも要らず、手で書く文字列もありません。",
+            },
         ),
     ]
 }
 
 fn halves(site: Site) -> [Part; 4] {
     [
-        heading("Two halves of one page"),
+        heading(
+            site,
+            L {
+                en: "Two halves of one page",
+                ja: "1 つのページの 2 つの半分",
+            },
+        ),
         para(
             site,
-            "A page served by a Rust server has two halves. The server half builds the HTML and answers requests. The browser half reacts to clicks and typing, and the browser runs only JavaScript or wasm. Two designs are common today, and each gives up something.",
+            L {
+                en: "A page served by a Rust server has two halves. The server half builds the HTML and answers requests. The browser half reacts to clicks and typing, and the browser runs only JavaScript or wasm. Two designs are common today, and each gives up something.",
+                ja: "Rust のサーバーが配信するページには、2 つの半分があります。サーバー側の半分は HTML を組み立ててリクエストに答えます。ブラウザ側の半分はクリックや入力に反応し、ブラウザが実行できるのは JavaScript か wasm だけです。今よく使われる作り方は 2 つあり、どちらも何かを手放しています。",
+            },
         ),
         bullets(
             site,
             &[
-                "Compile the browser half from Rust to wasm, as Leptos does. The page and the server share types, so a mismatch between them is a compile error. The browser downloads the wasm and hydrates: it runs the page's components again to attach listeners and to rebuild the state the server already had, and the build needs `cargo-leptos`.",
-                "Send HTML and describe the behavior in attributes, as htmx does. Nothing is built for the browser and nothing hydrates. The URLs, the target selectors, and the expressions in the attributes are strings, so a typo in one shows up when someone clicks.",
+                L {
+                    en: "Compile the browser half from Rust to wasm, as Leptos does. The page and the server share types, so a mismatch between them is a compile error. The browser downloads the wasm and hydrates: it runs the page's components again to attach listeners and to rebuild the state the server already had, and the build needs `cargo-leptos`.",
+                    ja: "Leptos のように、ブラウザ側の半分を Rust から wasm にコンパイルする作り方です。画面とサーバーが型を共有するので、両者の食い違いはコンパイルエラーになります。ブラウザは wasm をダウンロードしてハイドレーションします。つまり、ページのコンポーネントをもう一度実行してリスナーを付け直し、サーバーがすでに持っていた状態を組み立て直します。ビルドには `cargo-leptos` が要ります。",
+                },
+                L {
+                    en: "Send HTML and describe the behavior in attributes, as htmx does. Nothing is built for the browser and nothing hydrates. The URLs, the target selectors, and the expressions in the attributes are strings, so a typo in one shows up when someone clicks.",
+                    ja: "htmx のように、HTML を送って動きを属性に書く作り方です。ブラウザ向けには何もビルドせず、ハイドレーションもありません。ただ、属性に書く URL、対象のセレクタ、式は文字列なので、どれかに打ち間違いがあっても、誰かがクリックするまで分かりません。",
+                },
             ],
         ),
         para(
             site,
-            "hypersig takes the shape of the second design and the checks of the first. The page is HTML with attributes, and Rust writes every attribute from a typed value.",
+            L {
+                en: "hypersig takes the shape of the second design and the checks of the first. The page is HTML with attributes, and Rust writes every attribute from a typed value.",
+                ja: "hypersig は 2 つ目の作り方の形をとり、1 つ目の作り方の検査を取り入れます。ページは属性付きの HTML で、Rust がすべての属性を型の付いた値から書きます。",
+            },
         ),
     ]
 }
 
 fn html(site: Site) -> [Part; 6] {
     [
-        heading("The HTML carries the behavior"),
+        heading(
+            site,
+            L {
+                en: "The HTML carries the behavior",
+                ja: "HTML がページの動きを運ぶ",
+            },
+        ),
         para(
             site,
-            "Here is the counter from the [Quick start](learn/), with a link added. `HISTORY` is a page whose path holds the count.",
+            L {
+                en: "Here is the counter from the [Quick start](learn/), with a link added. `HISTORY` is a page whose path holds the count.",
+                ja: "[クイックスタート](learn/) のカウンターに、リンクを 1 つ足したものです。`HISTORY` は、パスにカウントを持つページです。",
+            },
         ),
         show(Snippet::WhyCounter),
         para(
             site,
-            "`Page::render` writes this body, shown here with the HTML entities decoded:",
+            L {
+                en: "`Page::render` writes this body, shown here with the HTML entities decoded:",
+                ja: "`Page::render` は次の body を書きます。読みやすいように、HTML の文字参照を元の文字に戻して示します。",
+            },
         ),
         code::block(Lang::Html, None, COUNTER_HTML),
         para(
             site,
-            "Each attribute comes from one value in the Rust code. `data-hs-signals` is the `Counter` struct, serialized. `data-hs-on-click` is the statement `count.set(count + 1)` as JSON, and `count` in it is the path `Counter::count()` names. `/reset` is the path of `RESET`, and the `href` comes from `HISTORY`. A misspelled field, a value of the wrong type, or a link with a parameter its route does not take fails to compile before any of this is written.",
+            L {
+                en: "Each attribute comes from one value in the Rust code. `data-hs-signals` is the `Counter` struct, serialized. `data-hs-on-click` is the statement `count.set(count + 1)` as JSON, and `count` in it is the path `Counter::count()` names. `/reset` is the path of `RESET`, and the `href` comes from `HISTORY`. A misspelled field, a value of the wrong type, or a link with a parameter its route does not take fails to compile before any of this is written.",
+                ja: "それぞれの属性は、Rust のコードの値 1 つから作られます。`data-hs-signals` は `Counter` 構造体をシリアライズしたものです。`data-hs-on-click` は文 `count.set(count + 1)` を JSON にしたもので、その中の `count` は `Counter::count()` が指すパスです。`/reset` は `RESET` のパスで、`href` は `HISTORY` から作られます。フィールド名の打ち間違い、型の違う値、ルートが受け取らないパラメータを渡すリンクは、この HTML が書かれる前にコンパイルエラーになります。",
+            },
         ),
     ]
 }
 
 fn hydration(site: Site) -> [Part; 3] {
     [
-        heading("No hydration"),
-        para(
+        heading(
             site,
-            "The page's code is Rust and stays on the server. When the page loads, the runtime reads the state from `data-hs-signals` into a store, adds one listener per event type on `<body>`, and reads the `data-hs-*` attributes. It downloads no component code and runs no component again, because the attributes already hold every expression and statement the browser runs. Like Qwik's resumability, the state and the listeners travel in the HTML.",
+            L {
+                en: "No hydration",
+                ja: "ハイドレーションがない",
+            },
         ),
         para(
             site,
-            "`Page::render` also evaluates each binding with the initial values, so the HTML already shows `0` and the link already points to `/history/0`. The page reads correctly before the runtime arrives, and the runtime is the same file for every page: about 42 KB, or about 14 KB gzipped, embedded in the crate.",
+            L {
+                en: "The page's code is Rust and stays on the server. When the page loads, the runtime reads the state from `data-hs-signals` into a store, adds one listener per event type on `<body>`, and reads the `data-hs-*` attributes. It downloads no component code and runs no component again, because the attributes already hold every expression and statement the browser runs. Like Qwik's resumability, the state and the listeners travel in the HTML.",
+                ja: "ページのコードは Rust で書かれ、サーバーにとどまります。ページを読み込むと、ランタイムは `data-hs-signals` から状態を読んでストアに入れ、`<body>` にイベントの種類ごとに 1 つのリスナーを付け、`data-hs-*` 属性を読みます。ブラウザが実行する式と文はすべて属性に入っているので、コンポーネントのコードをダウンロードすることも、コンポーネントを実行し直すこともありません。Qwik の resumability と同じく、状態とリスナーは HTML に載って届きます。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`Page::render` also evaluates each binding with the initial values, so the HTML already shows `0` and the link already points to `/history/0`. The page reads correctly before the runtime arrives, and the runtime is the same file for every page: about 42 KB, or about 14 KB gzipped, embedded in the crate.",
+                ja: "`Page::render` は束縛も初期値で評価するので、HTML の時点で `0` が表示され、リンクも `/history/0` を指しています。ランタイムが届く前からページは正しく読め、ランタイムはどのページでも同じファイルです。大きさは約 42 KB（gzip で約 14 KB）で、クレートに埋め込まれています。",
+            },
         ),
     ]
 }
 
 fn typed(site: Site) -> [Part; 4] {
     [
-        heading("Typed from page to server"),
+        heading(
+            site,
+            L {
+                en: "Typed from page to server",
+                ja: "画面からサーバーまで型で検査",
+            },
+        ),
         para(
             site,
-            "The rule that keeps the attributes correct is that the browser never receives a string written by hand. Each kind of string has a type that produces it:",
+            L {
+                en: "The rule that keeps the attributes correct is that the browser never receives a string written by hand. Each kind of string has a type that produces it:",
+                ja: "属性を正しく保つ決まりは、手で書いた文字列をブラウザに渡さないことです。文字列の種類ごとに、それを作る型があります。",
+            },
         ),
         bullets(
             site,
             &[
-                "Signal names come from `#[derive(Signals)]`, which adds one typed accessor per field.",
-                "Expressions and statements are `Expr` and `Stmt` values, whose operators check the types of both sides.",
-                "Action URLs come from `Action<S, A>`, which also fixes the page an action belongs to and the type of its arguments.",
-                "Page links come from `Route<P, Q>`, declared in `routes!` with the handler that serves it, so a link carries the right path parameters and query.",
-                "Patch targets come from `Fragment::ID`, which the page and the patch read from the same constant.",
-                "Element names for DOM calls come from `NodeRef`.",
+                L {
+                    en: "Signal names come from `#[derive(Signals)]`, which adds one typed accessor per field.",
+                    ja: "シグナルの名前は `#[derive(Signals)]` から作られます。この derive はフィールドごとに型付きのアクセサを 1 つ足します。",
+                },
+                L {
+                    en: "Expressions and statements are `Expr` and `Stmt` values, whose operators check the types of both sides.",
+                    ja: "式と文は `Expr` と `Stmt` の値で、その演算子は両辺の型を検査します。",
+                },
+                L {
+                    en: "Action URLs come from `Action<S, A>`, which also fixes the page an action belongs to and the type of its arguments.",
+                    ja: "アクションの URL は `Action<S, A>` から作られます。この型は、アクションが属するページと引数の型も決めます。",
+                },
+                L {
+                    en: "Page links come from `Route<P, Q>`, declared in `routes!` with the handler that serves it, so a link carries the right path parameters and query.",
+                    ja: "ページへのリンクは `Route<P, Q>` から作られます。ルートは配信するハンドラと一緒に `routes!` で宣言するので、リンクは正しいパスのパラメータとクエリを持ちます。",
+                },
+                L {
+                    en: "Patch targets come from `Fragment::ID`, which the page and the patch read from the same constant.",
+                    ja: "差分を当てる先は `Fragment::ID` から作られます。ページと差分は同じ定数を読みます。",
+                },
+                L {
+                    en: "Element names for DOM calls come from `NodeRef`.",
+                    ja: "DOM を呼ぶ要素の名前は `NodeRef` から作られます。",
+                },
             ],
         ),
         show(Snippet::WrongType),
@@ -121,29 +197,59 @@ fn typed(site: Site) -> [Part; 4] {
 
 fn state(site: Site) -> [Part; 2] {
     [
-        heading("The server owns the state"),
+        heading(
+            site,
+            L {
+                en: "The server owns the state",
+                ja: "状態はサーバーが持つ",
+            },
+        ),
         para(
             site,
-            "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML to morph into the page. A statement runs in the browser at once, and an action call sent with it reaches the server after, so the page changes before the server answers without extra code. [Talking to the server](learn/server/) covers actions, patches, and streams.",
+            L {
+                en: "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML to morph into the page. A statement runs in the browser at once, and an action call sent with it reaches the server after, so the page changes before the server answers without extra code. [Talking to the server](learn/server/) covers actions, patches, and streams.",
+                ja: "ブラウザはページの上で変わるものをシグナルとして持ち、データはサーバーが持ちます。アクションは Server-Sent Events で差分を返します。差分は、シグナルの新しい値か、ページの要素と差し替える HTML の断片です。文はブラウザでただちに実行され、一緒に送ったアクションの呼び出しはそのあとでサーバーに届くので、サーバーの応答を待たずに画面が変わります。そのための追加のコードは要りません。アクション、差分、ストリームは [サーバーとのやり取り](learn/server/) で説明します。",
+            },
         ),
     ]
 }
 
 fn costs(site: Site) -> [Part; 3] {
     [
-        heading("What it costs"),
+        heading(
+            site,
+            L {
+                en: "What it costs",
+                ja: "代わりに手放すもの",
+            },
+        ),
         bullets(
             site,
             &[
-                "The browser runs only what `Expr` and `Stmt` express: arithmetic, comparisons, text, lists, conditions, and calls to the server and the DOM. A computation outside that set runs on the server, or in JavaScript through an [escape hatch](learn/escape-hatches/).",
-                "Signal values cross as JSON, so a signal's type implements serde's traits, and an `i64` past 2^53 loses precision in the browser.",
-                "Following a link loads the next page from the server. There is no client-side navigation that keeps the current page on screen.",
-                "Pages are served through axum, and hypersig is not on crates.io yet.",
+                L {
+                    en: "The browser runs only what `Expr` and `Stmt` express: arithmetic, comparisons, text, lists, conditions, and calls to the server and the DOM. A computation outside that set runs on the server, or in JavaScript through an [escape hatch](learn/escape-hatches/).",
+                    ja: "ブラウザで実行できるのは、`Expr` と `Stmt` で書けることだけです。四則演算、比較、テキスト、リスト、条件、サーバーと DOM の呼び出しが書けます。それ以外の計算はサーバーで実行するか、[避難ハッチ](learn/escape-hatches/) を通して JavaScript で書きます。",
+                },
+                L {
+                    en: "Signal values cross as JSON, so a signal's type implements serde's traits, and an `i64` past 2^53 loses precision in the browser.",
+                    ja: "シグナルの値は JSON で送るので、シグナルの型は serde のトレイトを実装します。`i64` は 2^53 を超えると、ブラウザで精度が落ちます。",
+                },
+                L {
+                    en: "Following a link loads the next page from the server. There is no client-side navigation that keeps the current page on screen.",
+                    ja: "リンクをたどると、次のページをサーバーから読み込みます。今のページを画面に残したまま移るクライアント側の遷移はありません。",
+                },
+                L {
+                    en: "Pages are served through axum, and hypersig is not on crates.io yet.",
+                    ja: "ページは axum で配信し、hypersig はまだ crates.io にありません。",
+                },
             ],
         ),
         para(
             site,
-            "Next, the [Quick start](learn/) builds the counter and runs it.",
+            L {
+                en: "Next, the [Quick start](learn/) builds the counter and runs it.",
+                ja: "次は [クイックスタート](learn/) で、このカウンターを作って動かします。",
+            },
         ),
     ]
 }

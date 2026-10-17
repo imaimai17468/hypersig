@@ -27,9 +27,9 @@ pub fn content(site: Site, page: Reference) -> Part {
         return overview(site);
     }
     let (summary, sections) = page_items(page);
-    let mut children = vec![title(doc.title()), lead(site, summary)];
+    let mut children = vec![title(doc.title(site)), lead(site, summary)];
     for section in sections {
-        children.push(heading(section.heading));
+        children.push(heading(site, section.heading));
         if !section.text.is_empty() {
             children.push(para(site, section.text));
         }
@@ -48,7 +48,7 @@ pub fn content(site: Site, page: Reference) -> Part {
             .map(|[name, summary]| vec![name.as_str(), summary.as_str()])
             .collect();
         let rows: Vec<&[&str]> = rows.iter().map(Vec::as_slice).collect();
-        children.push(table_of(site, &["Item", "Summary"], &rows));
+        children.push(table_of(site, &["Item", "Summary"], rows.as_slice()));
     }
     parts(children)
 }
@@ -59,7 +59,7 @@ fn overview(site: Site) -> Part {
         .flat_map(|group| group.docs.iter())
         .filter_map(|&doc| match doc {
             Doc::Reference(page) if page != Reference::Overview => Some([
-                format!("[{}]({})", doc.title(), doc.path()),
+                format!("[{}]({})", doc.title(site), doc.path()),
                 page_items(page).0.to_owned(),
             ]),
             _ => None,
@@ -71,7 +71,7 @@ fn overview(site: Site) -> Part {
         .collect();
     let rows: Vec<&[&str]> = rows.iter().map(Vec::as_slice).collect();
     parts([
-        title(Doc::Reference(Reference::Overview).title()),
+        title(Doc::Reference(Reference::Overview).title(site)),
         lead(
             site,
             "The items of the `hypersig` crate, grouped by what they build. Each name links to its full documentation.",
@@ -80,7 +80,7 @@ fn overview(site: Site) -> Part {
             site,
             "The [complete API documentation](api:hypersig/index.html) is the rustdoc output of the same commit as this site, with every method, its signature, and its examples. The pages here list the items you reach for most, each with the first sentence of its doc comment, shortened where it runs long.",
         ),
-        table_of(site, &["Page", "What it covers"], &rows),
+        table_of(site, &["Page", "What it covers"], rows.as_slice()),
         para(
             site,
             "Styles live in `hypersig::style`, re-exported from the `hypersig_style` crate. See [Styling](learn/styling/) and the [`style` module](api:hypersig/style/index.html).",

@@ -8,12 +8,12 @@ use crate::prose::{Part, heading, lead, note, para, parts, subheading, table_of,
 
 pub fn signals(site: Site) -> Part {
     parts([
-        title(Doc::Learn(Learn::Signals).title()),
+        title(Doc::Learn(Learn::Signals).title(site)),
         lead(
             site,
             "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
         ),
-        heading("The signal struct"),
+        heading(site, "The signal struct"),
         para(
             site,
             "Derive `Signals` next to serde's `Serialize` and `Deserialize`. The derive adds one function per field, named after the field, that returns a [`Sig`](api:hypersig/struct.Sig.html). `Sig<Counter, i32>` reads: an `i32` inside the signal struct `Counter`.",
@@ -28,7 +28,7 @@ pub fn signals(site: Site) -> Part {
             site,
             "The `S` in `Sig<S, T>` also stops a signal of one page from being used on another. An element of a `Counter` page is an `El<Counter>`, and it accepts only expressions over `Counter`.",
         ),
-        heading("Fields inside fields"),
+        heading(site, "Fields inside fields"),
         para(
             site,
             "A field may itself be a `Signals` struct. `at` reaches into it, and the result is a `Sig` like any other. A path is at most 8 fields deep.",
@@ -38,12 +38,12 @@ pub fn signals(site: Site) -> Part {
             site,
             "A `Vec` of values or of structs is a list, which [Lists](learn/lists/) covers. An `Option` field has `is_some`, `is_none`, and `unwrap_or`.",
         ),
-        heading("The first render"),
+        heading(site, "The first render"),
         para(
             site,
             "`Page::new` takes the initial values, and `Page::render` evaluates every binding with them. Text, visibility, classes, attributes, form values, and list items are in the HTML before the runtime loads, and the runtime adopts those elements rather than building them again. The browser fetches nothing to show the page, because the data is the signal struct's JSON on `<body>`.",
         ),
-        heading("Computed signals"),
+        heading(site, "Computed signals"),
         para(
             site,
             "`Page::computed(signal, value)` keeps a field equal to an expression over other fields. Bindings read it like any field and run again only when its value changes, rather than each evaluating the expression. Computed signals are evaluated in the order they are declared, so one may read an earlier one.",
@@ -58,12 +58,12 @@ pub fn signals(site: Site) -> Part {
 
 pub fn expressions(site: Site) -> Part {
     parts([
-        title(Doc::Learn(Learn::Expressions).title()),
+        title(Doc::Learn(Learn::Expressions).title(site)),
         lead(
             site,
             "An expression computes a value from the signals, and a statement changes them. Both are Rust values that the browser receives as JSON.",
         ),
-        heading("Expressions"),
+        heading(site, "Expressions"),
         para(
             site,
             "An [`Expr<S, T>`](api:hypersig/struct.Expr.html) evaluates to a `T` in the browser. A `Sig` is an expression, and the operators and methods build larger ones. The server evaluates the same expressions for the first HTML.",
@@ -101,13 +101,13 @@ pub fn expressions(site: Site) -> Part {
             "`Expr::lit(&value)` turns a Rust value into a constant expression, and most methods accept a plain `&value` where they take an expression. An expression of the wrong type is a compile error, with a message that names the type the place expects:",
         ),
         show(Snippet::WrongType),
-        heading("Statements"),
+        heading(site, "Statements"),
         para(
             site,
             "A [`Stmt<S>`](api:hypersig/struct.Stmt.html) runs in the browser on an event. `sig.set(value)` assigns, `flag.toggle()` flips a `bool`, and `then` runs one statement after another. `Stmt::when` and `Stmt::if_else` branch on a condition.",
         ),
         show(Snippet::Statements),
-        heading("Events"),
+        heading(site, "Events"),
         para(
             site,
             "`on_click`, `on_input`, `on_submit`, `on_change`, and `on_blur` run a statement on their event, and `on(Event::Focus, ...)` covers the rest of [`Event`](api:hypersig/html/enum.Event.html). `on_key` filters `keydown` by a [`Key`](api:hypersig/html/enum.Key.html), and `on_debounced` waits until the event has stopped firing for a given time.",
@@ -131,12 +131,12 @@ pub fn expressions(site: Site) -> Part {
 
 pub fn lists(site: Site) -> Part {
     parts([
-        title(Doc::Learn(Learn::Lists).title()),
+        title(Doc::Learn(Learn::Lists).title(site)),
         lead(
             site,
             "A `Vec` field is a list. `each` renders an element per item in the browser, and list statements change it without a request.",
         ),
-        heading("Rendering a list"),
+        heading(site, "Rendering a list"),
         para(
             site,
             "[`each`](api:hypersig/html/fn.each.html) takes the list and a function that builds the element for one item. The function runs once on the server to build a template, receiving an [`Item`](api:hypersig/struct.Item.html) that stands for whichever item the browser is rendering. `item.at(field)` reads a field of the item, `item.index()` its position, and `item.value()` the item itself.",
@@ -146,7 +146,7 @@ pub fn lists(site: Site) -> Part {
             site,
             "`each` matches items to elements by position. [`each_keyed`](api:hypersig/html/fn.each_keyed.html) matches them by a key, so an item keeps its element when the list is reordered or an item before it is removed, and focus and the state of its inputs move with it.",
         ),
-        heading("Changing a list"),
+        heading(site, "Changing a list"),
         show(Snippet::ListStatements),
         table_of(
             site,
@@ -163,12 +163,12 @@ pub fn lists(site: Site) -> Part {
                 ],
             ],
         ),
-        subheading("Item signals stay in the browser"),
+        subheading(site, "Item signals stay in the browser"),
         para(
             site,
             "A field of an item is a `Sig<S, T, Local>`, whose path is resolved per item in the browser. It has no `patch` method, so the server cannot address one item's field by position. The server replaces the whole list with a patch of the list field, or re-renders a part of the page as a fragment, which [Talking to the server](learn/server/) covers.",
         ),
-        heading("A to-do list"),
+        heading(site, "A to-do list"),
         para(
             site,
             "The demo builds a new item with `Expr::lit(&blank).with(...)`, which copies a constant struct and replaces two fields with expressions. The count of open items is an expression over the list.",
