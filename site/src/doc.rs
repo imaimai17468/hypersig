@@ -1,7 +1,7 @@
 //! The pages of the site, their paths, and the order the sidebar lists them in.
 
 use crate::lang::L;
-use crate::{Site, components, home, landing, layout, learn, reference, style};
+use crate::{Site, components, home, i18n, landing, layout, learn, reference, style};
 
 /// One page of the site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,6 +20,10 @@ pub enum Doc {
     Components(Component),
     /// A page of the Style section, about `hypersig::style`.
     Style(StylePage),
+    /// The landing page of the i18n docs.
+    I18nHome,
+    /// A page of the i18n section, about `hypersig_i18n`.
+    I18n(I18nPage),
 }
 
 /// The pages of the Learn section, a guide read from top to bottom.
@@ -93,7 +97,15 @@ pub enum StylePage {
     Unchecked,
 }
 
-/// One of the three sets of docs, each with its own header and landing
+/// The pages of the i18n section.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum I18nPage {
+    Overview,
+    Pages,
+    Negotiation,
+}
+
+/// One of the sets of docs, each with its own header and landing
 /// page, as the libraries of `TanStack` share one site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Library {
@@ -103,11 +115,13 @@ pub enum Library {
     Style,
     /// The `hypersig_ui` crate.
     Components,
+    /// The `hypersig_i18n` crate.
+    I18n,
 }
 
 impl Library {
     /// Every library, in the order the switcher lists them.
-    pub const ALL: [Self; 3] = [Self::Framework, Self::Style, Self::Components];
+    pub const ALL: [Self; 4] = [Self::Framework, Self::Style, Self::Components, Self::I18n];
 
     /// The name the header and the switcher show.
     pub fn name(self, site: Site) -> &'static str {
@@ -124,6 +138,10 @@ impl Library {
                 en: "Components",
                 ja: "コンポーネント",
             },
+            Self::I18n => L {
+                en: "i18n",
+                ja: "多言語化",
+            },
         })
     }
 
@@ -133,6 +151,7 @@ impl Library {
             Self::Framework => Doc::Home,
             Self::Style => Doc::StyleHome,
             Self::Components => Doc::ComponentsHome,
+            Self::I18n => Doc::I18nHome,
         }
     }
 
@@ -157,6 +176,7 @@ impl Library {
             ],
             Self::Style => &[(DOCS, Doc::Style(StylePage::Overview))],
             Self::Components => &[(DOCS, Doc::Components(Component::Installation))],
+            Self::I18n => &[(DOCS, Doc::I18n(I18nPage::Overview))],
         }
     }
 
@@ -166,6 +186,7 @@ impl Library {
             Self::Framework => "api:hypersig/index.html",
             Self::Style => "api:hypersig_style/index.html",
             Self::Components => "api:hypersig_ui/index.html",
+            Self::I18n => "api:hypersig_i18n/index.html",
         }
     }
 }
@@ -363,6 +384,24 @@ pub const STYLE: &[Group] = &[
     },
 ];
 
+/// The sidebar of the i18n section.
+pub const I18N: &[Group] = &[
+    Group {
+        title: L {
+            en: "Get started",
+            ja: "はじめに",
+        },
+        docs: &[Doc::I18n(I18nPage::Overview)],
+    },
+    Group {
+        title: L {
+            en: "Guides",
+            ja: "ガイド",
+        },
+        docs: &[Doc::I18n(I18nPage::Pages), Doc::I18n(I18nPage::Negotiation)],
+    },
+];
+
 impl Doc {
     /// Every page, in the order the site lists them.
     pub const ALL: &[Self] = &[
@@ -420,6 +459,10 @@ impl Doc {
         Self::Style(StylePage::Patterns),
         Self::Style(StylePage::Animation),
         Self::Style(StylePage::Unchecked),
+        Self::I18nHome,
+        Self::I18n(I18nPage::Overview),
+        Self::I18n(I18nPage::Pages),
+        Self::I18n(I18nPage::Negotiation),
     ];
 
     /// The page's directory inside the site, ending in `/`, or `""` for the
@@ -436,6 +479,8 @@ impl Doc {
             Self::Reference(page) => format!("reference/{}/", page.slug()),
             Self::Components(page) => format!("components/{}/", page.slug()),
             Self::Style(page) => format!("style/{}/", page.slug()),
+            Self::I18nHome => "i18n/".to_owned(),
+            Self::I18n(page) => format!("i18n/{}/", page.slug()),
         }
     }
 
@@ -450,6 +495,12 @@ impl Doc {
         let (en, ja) = match self {
             Self::Home => ("hypersig", "hypersig"),
             Self::StyleHome => ("hypersig style", "hypersig style"),
+            Self::I18nHome => ("hypersig i18n", "hypersig i18n"),
+            Self::I18n(page) => match page {
+                I18nPage::Overview => ("Overview", "概要"),
+                I18nPage::Pages => ("Pages in each language", "言語ごとのページ"),
+                I18nPage::Negotiation => ("Choosing the language", "言語の選び方"),
+            },
             Self::ComponentsHome => ("hypersig components", "hypersig components"),
             Self::Learn(page) => match page {
                 Learn::Why => ("Why hypersig", "hypersig を選ぶ理由"),
@@ -519,6 +570,7 @@ impl Doc {
         match self {
             Self::Home | Self::Learn(_) | Self::Reference(_) => Library::Framework,
             Self::StyleHome | Self::Style(_) => Library::Style,
+            Self::I18nHome | Self::I18n(_) => Library::I18n,
             Self::ComponentsHome | Self::Components(_) => Library::Components,
         }
     }
@@ -536,11 +588,12 @@ impl Doc {
     /// The sidebar the page is listed in.
     pub(crate) fn groups(self) -> &'static [Group] {
         match self {
-            Self::Home | Self::StyleHome | Self::ComponentsHome => &[],
+            Self::Home | Self::StyleHome | Self::ComponentsHome | Self::I18nHome => &[],
             Self::Learn(_) => LEARN,
             Self::Reference(_) => REFERENCE,
             Self::Components(_) => COMPONENTS,
             Self::Style(_) => STYLE,
+            Self::I18n(_) => I18N,
         }
     }
 
@@ -565,10 +618,22 @@ impl Doc {
             Self::Home => home::render(site),
             Self::StyleHome => landing::style(site),
             Self::ComponentsHome => landing::components(site),
+            Self::I18nHome => landing::i18n(site),
             Self::Learn(page) => layout::article(site, self, learn::content(site, page)),
             Self::Reference(page) => layout::article(site, self, reference::content(site, page)),
             Self::Components(page) => layout::article(site, self, components::content(site, page)),
             Self::Style(page) => layout::article(site, self, style::content(site, page)),
+            Self::I18n(page) => layout::article(site, self, i18n::content(site, page)),
+        }
+    }
+}
+
+impl I18nPage {
+    fn slug(self) -> &'static str {
+        match self {
+            Self::Overview => "overview",
+            Self::Pages => "pages",
+            Self::Negotiation => "negotiation",
         }
     }
 }

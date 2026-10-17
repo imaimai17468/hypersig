@@ -5,7 +5,7 @@ use hypersig_ui::ButtonVariant;
 use crate::Site;
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Library};
-use crate::landing::{self, features, hero, titled, two_cards};
+use crate::landing::{self, features, hero, library_cards, titled};
 use crate::lang::{L, Text};
 use crate::prose::{Part, para, table_of};
 
@@ -93,18 +93,18 @@ pub fn render(site: Site) -> String {
             titled(
                 site,
                 L {
-                    en: "Styles and components, too",
-                    ja: "スタイルとコンポーネントも",
+                    en: "Styles, components, and translations, too",
+                    ja: "スタイル、コンポーネント、翻訳も",
                 },
                 [
                     para(
                         site,
                         L {
-                            en: "hypersig is the framework. Two crates in the same repository add typed styles and a set of accessible components, each with docs of its own.",
-                            ja: "hypersig はフレームワーク本体です。同じリポジトリにある 2 つのクレートが、型付きのスタイルとアクセシブルなコンポーネントを足します。それぞれにドキュメントがあります。",
+                            en: "hypersig is the framework. Three crates in the same repository add typed styles, a set of accessible components, and typed translations, each with docs of its own.",
+                            ja: "hypersig はフレームワーク本体です。同じリポジトリにある 3 つのクレートが、型付きのスタイル、アクセシブルなコンポーネント、型で検査する翻訳を足します。それぞれにドキュメントがあります。",
                         },
                     ),
-                    two_cards(
+                    library_cards(
                         site,
                         [
                             (
@@ -121,6 +121,14 @@ pub fn render(site: Site) -> String {
                                 site.t(L {
                                     en: "Accessible components styled after shadcn/ui, on native elements and the WAI-ARIA Authoring Practices.",
                                     ja: "shadcn/ui の見た目を持つアクセシブルなコンポーネントです。ネイティブ要素と WAI-ARIA Authoring Practices の上に作っています。",
+                                }),
+                            ),
+                            (
+                                Library::I18n,
+                                "hypersig_i18n",
+                                site.t(L {
+                                    en: "Typed translations: a text without one of its translations fails to compile, and the language is part of each page's route.",
+                                    ja: "型で検査する翻訳です。どれかの訳が欠けた文はコンパイルエラーになり、言語は各ページのルートの一部です。",
                                 }),
                             ),
                         ],

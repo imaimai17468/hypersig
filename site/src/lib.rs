@@ -15,6 +15,7 @@ mod components;
 mod demo;
 mod doc;
 mod home;
+mod i18n;
 mod landing;
 mod lang;
 mod layout;

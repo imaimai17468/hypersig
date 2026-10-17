@@ -12,6 +12,7 @@ use hypersig_ui::{ButtonSize, ButtonVariant, button_style, token};
 use crate::demo::{self, Demo};
 use crate::doc::{COMPONENTS, Doc, Library};
 use crate::lang::{L, Text};
+use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, href, inline, para};
 use crate::{Site, layout, prose};
 
@@ -261,6 +262,131 @@ pub fn style(site: Site) -> String {
     )
 }
 
+/// The landing page of the i18n docs.
+pub fn i18n(site: Site) -> String {
+    page(
+        site,
+        Doc::I18nHome,
+        [
+            hero(
+                site,
+                site.t(L {
+                    en: "The `hypersig_i18n` crate",
+                    ja: "`hypersig_i18n` クレート",
+                }),
+                site.t(L {
+                    en: "Translations the compiler checks",
+                    ja: "コンパイラが検査する翻訳",
+                }),
+                site.t(L {
+                    en: "Each text holds its translations in one value, so a text without one of them fails to compile. The language is part of each page's route, and `/` sends the visitor to the language their browser asks for.",
+                    ja: "1 つの文はその訳を 1 つの値にまとめて持つので、どれかの訳が欠けた文はコンパイルエラーになります。言語は各ページのルートの一部で、`/` は訪問者を、ブラウザが求める言語のページへ送ります。",
+                }),
+                &[
+                    (
+                        site.t(L {
+                            en: "Get started",
+                            ja: "はじめる",
+                        }),
+                        "i18n/overview/",
+                        ButtonVariant::Default,
+                    ),
+                    ("API", "api:hypersig_i18n/index.html", ButtonVariant::Outline),
+                ],
+            ),
+            features(
+                site,
+                &[
+                    (
+                        site.t(L {
+                            en: "A missing translation fails to compile",
+                            ja: "訳の欠けはコンパイルエラー",
+                        }),
+                        site.t(L {
+                            en: "A text is a struct with one field per language, so a text without its Japanese, or a language added without its texts, is a compile error.",
+                            ja: "文は言語ごとに 1 つのフィールドを持つ構造体なので、日本語の訳がない文や、文を書かずに足した言語はコンパイルエラーになります。",
+                        }),
+                    ),
+                    (
+                        site.t(L {
+                            en: "The language is in the route",
+                            ja: "言語はルートの一部",
+                        }),
+                        site.t(L {
+                            en: "A locale is the first segment of a page's route, so the link to the page in another language is checked like any other link.",
+                            ja: "言語はページのルートの最初のセグメントなので、別の言語のページへのリンクも、ほかのリンクと同じく検査されます。",
+                        }),
+                    ),
+                    (
+                        site.t(L {
+                            en: "No macro",
+                            ja: "マクロを使わない",
+                        }),
+                        site.t(L {
+                            en: "The texts are plain struct literals and the languages a plain enum, so the compiler's own checks find what is missing.",
+                            ja: "文はただの構造体のリテラルで、言語はただの enum です。欠けているものは、コンパイラの通常の検査が見つけます。",
+                        }),
+                    ),
+                ],
+            ),
+            titled(
+                site,
+                L {
+                    en: "A text without its translation",
+                    ja: "訳のない文",
+                },
+                [
+                    para(
+                        site,
+                        L {
+                            en: "Leaving out the Japanese of a text stops the build at that line. [Overview](i18n/overview/) shows how the languages are declared.",
+                            ja: "文の日本語を書き忘れると、その行でビルドが止まります。言語の宣言のしかたは [概要](i18n/overview/) で説明します。",
+                        },
+                    ),
+                    show(Snippet::I18nMissing),
+                ],
+            ),
+            titled(
+                site,
+                L {
+                    en: "Part of hypersig",
+                    ja: "hypersig の一部",
+                },
+                [
+                    para(
+                        site,
+                        L {
+                            en: "This site is translated with it: every page is rendered once per language from the same Rust function.",
+                            ja: "このサイトも、このクレートで翻訳しています。どのページも、同じ Rust の関数から言語ごとに 1 回ずつ描いています。",
+                        },
+                    ),
+                    two_cards(
+                        site,
+                        [
+                            (
+                                Library::Framework,
+                                "hypersig",
+                                site.t(L {
+                                    en: "The framework the routes and pages come from.",
+                                    ja: "ルートとページを提供するフレームワーク本体です。",
+                                }),
+                            ),
+                            (
+                                Library::Components,
+                                "hypersig_ui",
+                                site.t(L {
+                                    en: "Accessible components, whose labels the pages translate.",
+                                    ja: "アクセシブルなコンポーネントです。ラベルはページの側で訳します。",
+                                }),
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+}
+
 /// The landing page of the Components docs.
 pub fn components(site: Site) -> String {
     page(
@@ -370,13 +496,22 @@ fn catalog(site: Site) -> Part {
 /// Cards for two libraries, side by side, each with its crate's name and a
 /// line of text.
 pub fn two_cards(site: Site, cards: [(Library, &str, &str); 2]) -> Part {
+    library_cards(site, cards)
+}
+
+/// Cards that link to the landing pages of other libraries, `N` to a row on
+/// a wide screen.
+pub fn library_cards<const N: usize>(site: Site, cards: [(Library, &str, &str); N]) -> Part {
     div()
         .css(
             stack(rem(1)).margin_top(rem(1.5)).on(
                 Media::Md,
                 Style::new()
                     .display(hypersig::style::value::Display::Grid)
-                    .grid_template_columns(raw("repeat(2, minmax(0, 1fr))")),
+                    .grid_template_columns(raw(match N {
+                        3 => "repeat(3, minmax(0, 1fr))",
+                        _ => "repeat(2, minmax(0, 1fr))",
+                    })),
             ),
         )
         .children(
