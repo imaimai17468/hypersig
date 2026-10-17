@@ -60,8 +60,8 @@ const TICKS: i32 = 6;
 ///
 /// Each bar, point, and grid line computes the scale from every row, so a
 /// change to the rows costs time that grows with the square of their
-/// number. A chart of a few hundred rows stays fast, and a longer series
-/// is better summed on the server first.
+/// number. This crate has not measured where that becomes slow. A long
+/// series can be summed into fewer rows on the server first.
 ///
 /// The drawing, the axis labels, the legend, and the box that shows a row's
 /// values under the pointer are hidden from assistive technology. A screen

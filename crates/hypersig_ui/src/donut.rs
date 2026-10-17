@@ -42,8 +42,7 @@ fn palette() -> [Token<Color>; 5] {
 /// ring, and the legend names each row with its value.
 ///
 /// Each slice sums the rows before it, so a change to the rows costs time
-/// that grows with the square of their number, which a donut of a dozen
-/// slices does not notice.
+/// that grows with the square of their number.
 ///
 /// The ring and the legend are hidden from assistive technology, and a
 /// screen reader reads a visually hidden table of the same rows instead,
