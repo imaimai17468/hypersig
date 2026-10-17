@@ -29,6 +29,7 @@ pub struct Page<S> {
     computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
     runtime: &'static str,
+    lang: Option<String>,
 }
 
 impl<S> fmt::Debug for Page<S> {
@@ -53,7 +54,29 @@ impl<S: Signals> Page<S> {
             computed: Vec::new(),
             body: Vec::new(),
             runtime: crate::RUNTIME_PATH,
+            lang: None,
         }
+    }
+
+    /// Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.
+    ///
+    /// The browser reads it for hyphenation, the voice of a screen reader,
+    /// and the fonts it picks for the text. A page without it has no `lang`.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Note {}
+    ///
+    /// let html = Page::new("ノート", Note {}).lang("ja").render();
+    /// assert!(html.starts_with(r#"<!doctype html><html lang="ja">"#));
+    /// ```
+    #[must_use]
+    pub fn lang(mut self, tag: impl Into<String>) -> Self {
+        self.lang = Some(tag.into());
+        self
     }
 
     /// Keeps `signal` equal to `value`, recomputed when a signal `value` reads changes.
@@ -199,7 +222,11 @@ impl<S: Signals> Page<S> {
                 root = ssr::set_path(&root, path, value);
             }
         }
-        let mut out = String::from("<!doctype html><html><head><meta charset=\"utf-8\">");
+        let mut out = String::from("<!doctype html><html");
+        if let Some(lang) = &self.lang {
+            write_attr(&mut out, "lang", lang);
+        }
+        out.push_str("><head><meta charset=\"utf-8\">");
         out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
         out.push_str("<link rel=\"icon\" href=\"data:,\">");
         out.push_str("<title>");

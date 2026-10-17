@@ -135,6 +135,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                         "Adds a `<link rel=\"stylesheet\">` for the file at `href` to `<head>`.",
                     ),
                     (
+                        "lang",
+                        "struct.Page.html#method.lang",
+                        "Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.",
+                    ),
+                    (
                         "runtime_src",
                         "struct.Page.html#method.runtime_src",
                         "Loads the runtime from `src` instead of `RUNTIME_PATH`, for a page served as a static file.",
