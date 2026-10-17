@@ -192,11 +192,11 @@ pub fn style(site: Site) -> String {
         [
             hero(
                 site,
-                "`hypersig::style`, from the `hypersig_style` crate",
-                "Typed atomic CSS, written in Rust",
-                "Every standard CSS property is a method, and every keyword a variant. A misspelled property or a value of the wrong type is a compile error, and each declaration becomes one class.",
+                site.t(L { en: "`hypersig::style`, from the `hypersig_style` crate", ja: "`hypersig_style` クレートの `hypersig::style`" }),
+                site.t(L { en: "Typed atomic CSS, written in Rust", ja: "Rust で書く、型付きの atomic CSS" }),
+                site.t(L { en: "Every standard CSS property is a method, and every keyword a variant. A misspelled property or a value of the wrong type is a compile error, and each declaration becomes one class.", ja: "標準の CSS プロパティはすべてメソッドで、キーワードはすべてバリアントです。プロパティの打ち間違いや型の違う値はコンパイルエラーになり、宣言 1 つが 1 つのクラスになります。" }),
                 &[
-                    ("Get started", "style/overview/", ButtonVariant::Default),
+                    (site.t(L { en: "Get started", ja: "はじめる" }), "style/overview/", ButtonVariant::Default),
                     (
                         "API",
                         "api:hypersig_style/index.html",
@@ -208,37 +208,37 @@ pub fn style(site: Site) -> String {
                 site,
                 &[
                     (
-                        "Generated from MDN",
-                        "The properties, their keywords, the pseudo-classes, and the named colors come from MDN's CSS data, so the methods follow the standard.",
+                        site.t(L { en: "Generated from MDN", ja: "MDN のデータから生成" }),
+                        site.t(L { en: "The properties, their keywords, the pseudo-classes, and the named colors come from MDN's CSS data, so the methods follow the standard.", ja: "プロパティ、そのキーワード、擬似クラス、名前付きの色は MDN の CSS データから作るので、メソッドは標準に沿います。" }),
                     ),
                     (
-                        "One class per declaration",
-                        "As in Panda CSS and Tailwind CSS, each declaration is one class, and the page writes only the rules its elements use.",
+                        site.t(L { en: "One class per declaration", ja: "宣言 1 つにクラス 1 つ" }),
+                        site.t(L { en: "As in Panda CSS and Tailwind CSS, each declaration is one class, and the page writes only the rules its elements use.", ja: "Panda CSS や Tailwind CSS と同じく、宣言 1 つが 1 つのクラスになり、ページは要素が使うルールだけを書き出します。" }),
                     ),
                     (
-                        "Follows the signals",
-                        "`css_when` and `css_match` switch styles with the page's signals, and a patch brings the rules of the elements it adds.",
+                        site.t(L { en: "Follows the signals", ja: "シグナルに合わせて変わる" }),
+                        site.t(L { en: "`css_when` and `css_match` switch styles with the page's signals, and a patch brings the rules of the elements it adds.", ja: "`css_when` と `css_match` はページのシグナルに合わせてスタイルを切り替えます。差分は、足す要素のルールも一緒に運びます。" }),
                     ),
                 ],
             ),
             titled(
                 site,
-                "A token from a signal",
+                L { en: "A token from a signal", ja: "シグナルから決まるトークン" },
                 [
                     para(
                         site,
-                        "The swatches read one token, and `bind_token` sets it from the radio group's signal. [Tokens and themes](style/tokens/) explains it.",
+                        L { en: "The swatches read one token, and `bind_token` sets it from the radio group's signal. [Tokens and themes](style/tokens/) explains it.", ja: "色見本は 1 つのトークンを読み、`bind_token` がラジオグループのシグナルからそのトークンを設定します。詳しくは [トークンとテーマ](style/tokens/) で説明します。" },
                     ),
                     demo::show(site, Demo::Accent),
                 ],
             ),
             titled(
                 site,
-                "Part of hypersig",
+                L { en: "Part of hypersig", ja: "hypersig の一部" },
                 [
                     para(
                         site,
-                        "The crate is reached as `hypersig::style`, and an `El` takes a `Style` with `css`. The components of `hypersig_ui` are styled with it.",
+                        L { en: "The crate is reached as `hypersig::style`, and an `El` takes a `Style` with `css`. The components of `hypersig_ui` are styled with it.", ja: "このクレートは `hypersig::style` から使い、`El` は `css` で `Style` を受け取ります。`hypersig_ui` のコンポーネントも、これでスタイルを付けています。" },
                     ),
                     two_cards(
                         site,
@@ -246,12 +246,12 @@ pub fn style(site: Site) -> String {
                             (
                                 Library::Framework,
                                 "hypersig",
-                                "The framework: the page, its behavior, and the server, all in Rust.",
+                                site.t(L { en: "The framework: the page, its behavior, and the server, all in Rust.", ja: "フレームワーク本体です。画面もその動きもサーバーも、すべて Rust で書きます。" }),
                             ),
                             (
                                 Library::Components,
                                 "hypersig_ui",
-                                "Accessible components styled after shadcn/ui, built with these styles.",
+                                site.t(L { en: "Accessible components styled after shadcn/ui, built with these styles.", ja: "shadcn/ui の見た目を持つアクセシブルなコンポーネントです。このスタイルで作っています。" }),
                             ),
                         ],
                     ),
