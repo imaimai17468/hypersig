@@ -8,7 +8,7 @@ use std::fmt;
 
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::{Query, RawPathParams, State};
+use axum::extract::{MatchedPath, Query, RawPathParams, State};
 use axum::http::{StatusCode, header};
 use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
 use axum::response::{Html, IntoResponse, Response};
@@ -33,6 +33,12 @@ pub trait RouterExt<St>: Sized {
     /// The handler receives the router state and the path's parameters,
     /// already parsed. A path whose segments do not parse into the
     /// parameter types, or a handler that answers `None`, gets a 404.
+    ///
+    /// Register the page on the router the application serves, never on one
+    /// passed to [`Router::nest`]. Its links point to `route`'s path, and a
+    /// nested router would serve the page under a longer one, so such a page
+    /// answers every request with a 500 that names the two paths. Write a page
+    /// under another with [`Route::child`] instead.
     ///
     /// ```
     /// use axum::Router;
@@ -114,16 +120,25 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         Fut: Future<Output = R> + Send + 'static,
         R: Into<Option<Page<S>>>,
     {
-        let route_handler = move |State(state): State<St>, params: RawPathParams| {
+        let path = route.path();
+        let route_handler = move |State(state): State<St>,
+                                  matched: MatchedPath,
+                                  params: RawPathParams| {
             let handler = handler.clone();
-            // A router nested under a path with parameters puts the outer
-            // ones first, so the route's own are the last `P::COUNT`.
+            let nested = matched.as_str() != path;
             let segments: Vec<&str> = params.iter().map(|(_, value)| value).collect();
-            let params = segments
-                .len()
-                .checked_sub(P::COUNT)
-                .and_then(|start| P::from_segments(&segments[start..]));
+            let params = P::from_segments(&segments);
+            let served_at = matched.as_str().to_owned();
             async move {
+                if nested {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!(
+                            "the page at `{path}` is registered on a nested router, which serves it at `{served_at}`"
+                        ),
+                    )
+                        .into_response();
+                }
                 let Some(params) = params else {
                     return StatusCode::NOT_FOUND.into_response();
                 };

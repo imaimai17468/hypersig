@@ -79,6 +79,33 @@ impl<P: Params> Route<P> {
         self.path
     }
 
+    /// A page under this one, served at the whole path `path`.
+    ///
+    /// `path` repeats this route's path and continues it after a `/`, and
+    /// `Q` repeats this route's parameters and may add more after them, so a
+    /// link to the child needs every value its path holds.
+    ///
+    /// ```
+    /// use hypersig::Route;
+    ///
+    /// const ORG: Route<String> = Route::new("/orgs/{org}");
+    /// const MEMBER: Route<(String, i32)> = ORG.child("/orgs/{org}/members/{id}");
+    /// assert_eq!(MEMBER.path(), "/orgs/{org}/members/{id}");
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `path` does not continue this route's path, and for every
+    /// reason [`Route::new`] does. In a `const`, each of these is a compile error.
+    #[must_use]
+    pub const fn child<Q: Params + Extends<P>>(&self, path: &'static str) -> Route<Q> {
+        assert!(
+            continues(path, self.path),
+            "a child route's path is its parent's path followed by `/` and more segments"
+        );
+        Route::new(path)
+    }
+
     /// A link to this page with the parameters `params`.
     ///
     /// `params` can be literals, which give a fixed link, or expressions such
@@ -160,6 +187,22 @@ const fn count_params(path: &str) -> usize {
         i += 1;
     }
     count
+}
+
+/// Whether `path` is `parent` followed by one or more segments.
+const fn continues(path: &str, parent: &str) -> bool {
+    let (path, parent) = (path.as_bytes(), parent.as_bytes());
+    if path.len() <= parent.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i < parent.len() {
+        if path[i] != parent[i] {
+            return false;
+        }
+        i += 1;
+    }
+    parent[parent.len() - 1] == b'/' || path[parent.len()] == b'/'
 }
 
 /// The parts of `path` around its parameters: one more than there are parameters.
@@ -332,6 +375,27 @@ impl<A: Segment, B: Segment, C: Segment> Params for (A, B, C) {
     }
 }
 
+/// Parameters that start with the parameters `P` of a parent [`Route`].
+///
+/// [`Route::child`] requires it, so that a child's parameters repeat its
+/// parent's in the same order and may add more after them.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` does not start with `{P}`, the parameters of the parent route",
+    note = "a child route's parameters repeat its parent's, in order, and may add more after them"
+)]
+pub trait Extends<P>: Params {}
+
+impl Extends<()> for () {}
+impl<A: Segment> Extends<()> for A {}
+impl<A: Segment> Extends<A> for A {}
+impl<A: Segment, B: Segment> Extends<()> for (A, B) {}
+impl<A: Segment, B: Segment> Extends<A> for (A, B) {}
+impl<A: Segment, B: Segment> Extends<(A, B)> for (A, B) {}
+impl<A: Segment, B: Segment, C: Segment> Extends<()> for (A, B, C) {}
+impl<A: Segment, B: Segment, C: Segment> Extends<A> for (A, B, C) {}
+impl<A: Segment, B: Segment, C: Segment> Extends<(A, B)> for (A, B, C) {}
+impl<A: Segment, B: Segment, C: Segment> Extends<(A, B, C)> for (A, B, C) {}
+
 mod sealed {
     pub trait Sealed {}
     impl Sealed for () {}
@@ -365,6 +429,15 @@ mod tests {
     #[should_panic(expected = "no `{`, `/`, or `*` inside")]
     fn rejects_a_wildcard() {
         let _ = count_params("/files/{*rest}");
+    }
+
+    #[test]
+    fn a_child_continues_its_parent_after_a_slash() {
+        assert!(continues("/orgs/{org}/members", "/orgs/{org}"));
+        assert!(continues("/members", "/"));
+        assert!(!continues("/orgs/{org}x", "/orgs/{org}"));
+        assert!(!continues("/orgs/{org}", "/orgs/{org}"));
+        assert!(!continues("/teams/{org}/members", "/orgs/{org}"));
     }
 
     #[test]

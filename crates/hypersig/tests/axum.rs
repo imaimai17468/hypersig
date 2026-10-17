@@ -18,6 +18,8 @@ const ADD: Action<Counter, (i32, i32)> = Action::post("/add");
 const PEEK: Action<Counter, i32> = Action::get("/peek");
 const HOME: Route = Route::new("/");
 const MEMBER: Route<(String, i32)> = Route::new("/teams/{team}/members/{id}");
+const ORG: Route<String> = Route::new("/orgs/{org}");
+const ORG_MEMBER: Route<(String, i32)> = ORG.child("/orgs/{org}/members/{id}");
 const NESTED: Route<i32> = Route::new("/members/{id}");
 
 fn member_page(team: &str, id: i32) -> Page<Counter> {
@@ -38,12 +40,19 @@ fn app() -> Router {
         .page(HOME, |(), ()| async {
             Page::new("Home", Counter { count: 0 })
                 .child(a().href(MEMBER.link_with(("red team", 2))).text("Member"))
+                .child(
+                    a().href(ORG_MEMBER.link_with(("acme", 9)))
+                        .text("Org member"),
+                )
         })
         .page(MEMBER, |(), (team, id): (String, i32)| async move {
             (id >= 0).then(|| member_page(&team, id))
         })
+        .page(ORG_MEMBER, |(), (org, id): (String, i32)| async move {
+            member_page(&org, id)
+        })
         .nest(
-            "/orgs/{org}",
+            "/legacy",
             Router::new().page(
                 NESTED,
                 |(), id: i32| async move { member_page("nested", id) },
@@ -176,7 +185,9 @@ async fn a_handler_that_answers_none_gets_404() {
 }
 
 #[tokio::test]
-async fn a_nested_page_reads_its_own_parameters() {
+async fn a_child_page_is_served_where_its_link_points() {
+    let (_, home) = send(Request::get("/").body(Body::empty()).expect("request")).await;
+    assert!(home.contains(r#"href="/orgs/acme/members/9""#), "{home}");
     let (status, body) = send(
         Request::get("/orgs/acme/members/9")
             .body(Body::empty())
@@ -184,5 +195,17 @@ async fn a_nested_page_reads_its_own_parameters() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body.contains("nested #9"), "{body}");
+    assert!(body.contains("acme #9"), "{body}");
+}
+
+#[tokio::test]
+async fn a_page_on_a_nested_router_answers_with_a_500() {
+    let (status, body) = send(
+        Request::get("/legacy/members/9")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+    assert!(body.contains("`/legacy/members/{id}`"), "{body}");
 }

@@ -1018,6 +1018,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                             "A page served at `path`, whose `{name}` segments take the values of `P`.",
                         ),
                         (
+                            "child",
+                            "struct.Route.html#method.child",
+                            "A page under this one, served at the whole path `path`.",
+                        ),
+                        (
                             "link",
                             "struct.Route.html#method.link",
                             "A link to this page, which has no parameters.",
@@ -1047,6 +1052,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                             "Segment",
                             "trait.Segment.html",
                             "A type one `{name}` segment of a `Route` holds.",
+                        ),
+                        (
+                            "Extends",
+                            "trait.Extends.html",
+                            "Parameters that start with the parameters `P` of a parent `Route`.",
                         ),
                         (
                             "Link",

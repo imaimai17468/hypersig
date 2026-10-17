@@ -87,6 +87,16 @@ pub fn pages(site: Site) -> Part {
             "`El::href` takes a [`Link`](api:hypersig/struct.Link.html), which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
         ),
         show(Snippet::Links),
+        heading("Pages under a page"),
+        para(
+            site,
+            "`child` declares a route under another. Its path is the parent's path followed by more segments, and its parameters are the parent's followed by its own, so a link to the child needs the parent's values too. A path that does not continue the parent's, or parameters that do not start with the parent's, fail to compile.",
+        ),
+        show(Snippet::ChildRoutes),
+        para(
+            site,
+            "Register a child with `RouterExt::page` on the same router as every other page. A page registered on a router passed to axum's `nest` is served under a longer path than its links point to, so it answers every request with a 500 that names both paths.",
+        ),
         heading("What routes leave unchecked"),
         bullets(
             site,

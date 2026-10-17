@@ -1,0 +1,21 @@
+error[E0277]: `(i32, i32)` does not start with `String`, the parameters of the parent route
+ --> tests/ui/fail/route_child_params.rs:6:39
+  |
+6 | const MEMBER: Route<(i32, i32)> = ORG.child("/orgs/{org}/members/{id}");
+  |                                       ^^^^^ the trait `Extends<String>` is not implemented for `(i32, i32)`
+  |
+  = note: a child route's parameters repeat its parent's, in order, and may add more after them
+  = help: the following other types implement trait `Extends<P>`:
+            `()` implements `Extends<()>`
+            `(A, B)` implements `Extends<()>`
+            `(A, B)` implements `Extends<(A, B)>`
+            `(A, B)` implements `Extends<A>`
+            `(A, B, C)` implements `Extends<()>`
+            `(A, B, C)` implements `Extends<(A, B)>`
+            `(A, B, C)` implements `Extends<(A, B, C)>`
+            `(A, B, C)` implements `Extends<A>`
+note: required by a bound in `Route::<P>::child`
+ --> src/route.rs
+  |
+  |     pub const fn child<Q: Params + Extends<P>>(&self, path: &'static str) -> Route<Q> {
+  |                                    ^^^^^^^^^^ required by this bound in `Route::<P>::child`

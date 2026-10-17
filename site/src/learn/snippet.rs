@@ -49,6 +49,7 @@ snippets! {
     Patches => "patches.rs";
     Links => "links.rs";
     WrongRoute => "wrong_route.rs", "compile_fail,E0080";
+    ChildRoutes => "child_routes.rs";
     Styles => "styles.rs";
     Effects => "effects.rs";
     StaticPage => "static_page.rs";
