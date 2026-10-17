@@ -15,6 +15,7 @@ include = ["src/**/*.rs"]
 [dependencies]
 hypersig = { path = "../hypersig", version = "=0.1.0", default-features = false }
 serde.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 # The doc samples declare pages with `routes!`, which needs the `axum` feature.

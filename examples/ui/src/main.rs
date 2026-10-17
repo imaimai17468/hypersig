@@ -1,6 +1,6 @@
 //! The components of `hypersig_ui` on one page: a form whose email the
 //! server checks, toggles, pickers, tabs, an accordion, dialogs, a menu,
-//! tooltips, toasts, a data table, and the static pieces.
+//! tooltips, toasts, a data table, charts, and the static pieces.
 //!
 //! Run with `cargo run -p example-ui` and open <http://localhost:3005>.
 
@@ -12,12 +12,12 @@ use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
 use hypersig::{Action, Page, Patches, Route, RouterExt, Signals, if_else};
 use hypersig_ui::{
-    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Column,
-    Combobox, ComboboxState, DataTable, Dialog, InputKind, Level, Listbox, Menu, MenuItem, Slider,
-    TableState, Tabs, TextField, Toast, ToastVariant, Toaster, Tooltip, alert, alert_description,
-    alert_title, badge, button, card, card_content, card_description, card_footer, card_header,
-    card_title, checkbox, dialog_footer, progress, radio_group, select_field, separator, skeleton,
-    submit_button, switch, token,
+    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart,
+    ChartScale, Column, Combobox, ComboboxState, DataTable, Dialog, InputKind, Level, Listbox,
+    Menu, MenuItem, Slider, TableState, Tabs, TextField, Toast, ToastVariant, Toaster, Tooltip,
+    alert, alert_description, alert_title, badge, button, card, card_content, card_description,
+    card_footer, card_header, card_title, checkbox, dialog_footer, progress, radio_group,
+    select_field, separator, skeleton, submit_button, switch, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -54,6 +54,14 @@ enum Section {
     Account,
     Password,
     Billing,
+}
+
+/// One month of the charts.
+#[derive(Signals, Serialize, Deserialize)]
+struct Month {
+    name: String,
+    desktop: i32,
+    mobile: i32,
 }
 
 /// One row of the data table.
@@ -98,6 +106,8 @@ struct Gallery {
     payments: Vec<Payment>,
     payments_table: TableState,
     show_status: bool,
+    months: Vec<Month>,
+    months_scale: ChartScale,
 }
 
 hypersig::routes! {
@@ -106,6 +116,7 @@ hypersig::routes! {
 }
 
 const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
+const NEXT_HALF: Action<Gallery> = Action::post("/next-half");
 const EDIT: Dialog<Gallery> = Dialog::new("edit-profile");
 const DELETE: Dialog<Gallery> = Dialog::new("delete-project");
 const ACTIONS: Menu<Gallery> = Menu::new("project-actions");
@@ -535,6 +546,97 @@ fn toasts() -> El<Gallery> {
         .child(Toaster::new(toasts))
 }
 
+/// The desktop and mobile visitors of each month, on `chart`.
+fn visitors(chart: Chart<Gallery, Month>) -> Chart<Gallery, Month> {
+    chart
+        .series("Desktop", Month::desktop(), token::chart_1())
+        .series("Mobile", Month::mobile(), token::chart_2())
+}
+
+fn bar_chart() -> Chart<Gallery, Month> {
+    visitors(Chart::bar(
+        "Visitors (bars)",
+        Gallery::months(),
+        Gallery::months_scale(),
+        Month::name(),
+    ))
+}
+
+fn first_half() -> Vec<Month> {
+    months([
+        ("January", 186, 80),
+        ("February", 305, 200),
+        ("March", 237, 120),
+        ("April", 73, 190),
+        ("May", 209, 130),
+        ("June", 214, 140),
+    ])
+}
+
+fn months<const N: usize>(rows: [(&str, i32, i32); N]) -> Vec<Month> {
+    rows.into_iter()
+        .map(|(name, desktop, mobile)| Month {
+            name: name.to_owned(),
+            desktop,
+            mobile,
+        })
+        .collect()
+}
+
+/// Replaces the months with the second half of the year, on a scale
+/// fitted to them.
+async fn next_half((): (), (): ()) -> Patches<Gallery> {
+    let rows = months([
+        ("July", 520, 310),
+        ("August", 610, 420),
+        ("September", 480, 390),
+        ("October", 700, 450),
+        ("November", 655, 500),
+        ("December", 820, 610),
+    ]);
+    bar_chart().patch(rows).into()
+}
+
+fn charts() -> El<Gallery> {
+    let first_desktop = Gallery::months().update_where(
+        |month| month.index().equals(0),
+        Month::desktop(),
+        |month| month.at(Month::desktop()) + 50,
+    );
+    panel("Charts")
+        .child(
+            div()
+                .css(wrap(rem(0.5)))
+                .child(
+                    button(ButtonVariant::Outline, ButtonSize::Sm)
+                        .on_click(first_desktop)
+                        .text("Add 50 desktop visitors in the first month"),
+                )
+                .child(
+                    button(ButtonVariant::Outline, ButtonSize::Sm)
+                        .on_click(NEXT_HALF.call())
+                        .text("Show the second half"),
+                ),
+        )
+        .child(
+            div()
+                .css(grid(1, rem(1.5)).on(Media::Md, grid(2, rem(1.5))))
+                .child(div().id("bar-chart").child(bar_chart()))
+                .child(div().id("line-chart").child(visitors(Chart::line(
+                    "Visitors (line)",
+                    Gallery::months(),
+                    Gallery::months_scale(),
+                    Month::name(),
+                ))))
+                .child(div().id("area-chart").child(visitors(Chart::area(
+                    "Visitors (area)",
+                    Gallery::months(),
+                    Gallery::months_scale(),
+                    Month::name(),
+                )))),
+        )
+}
+
 fn payments() -> El<Gallery> {
     let table = DataTable::new(
         "Payments",
@@ -635,6 +737,8 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             payments: sample_payments(),
             payments_table: TableState::default(),
             show_status: true,
+            months_scale: bar_chart().scale(&first_half()),
+            months: first_half(),
         },
     )
     .global(hypersig_ui::global())
@@ -677,6 +781,7 @@ async fn index((): (), (): ()) -> Page<Gallery> {
                     .child(faq())
                     .child(overlays())
                     .child(payments())
+                    .child(charts())
                     .child(feedback()),
             ),
     )
@@ -684,7 +789,10 @@ async fn index((): (), (): ()) -> Page<Gallery> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = pages(Router::new()).hypersig_runtime().action(SAVE, save);
+    let app = pages(Router::new())
+        .hypersig_runtime()
+        .action(SAVE, save)
+        .action(NEXT_HALF, next_half);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3005".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

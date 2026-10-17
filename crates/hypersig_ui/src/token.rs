@@ -85,6 +85,17 @@ colors! {
     input => "input", 0x008b_8b94, 0x0070_707a;
     /// The focus outline.
     ring => "ring", 0x0018_181b, 0x00d4_d4d8;
+    /// The first series of a chart. The five chart colors keep 3:1 or more
+    /// on [`background`], [`card`], and [`muted`] in both themes.
+    chart_1 => "chart-1", 0x0015_5dfc, 0x0051_a2ff;
+    /// The second series of a chart.
+    chart_2 => "chart-2", 0x0000_9689, 0x0000_d5be;
+    /// The third series of a chart.
+    chart_3 => "chart-3", 0x00f5_4900, 0x00ff_8904;
+    /// The fourth series of a chart.
+    chart_4 => "chart-4", 0x0098_10fa, 0x00c2_7aff;
+    /// The fifth series of a chart.
+    chart_5 => "chart-5", 0x00bb_4d00, 0x00ff_d230;
 }
 
 /// The corner radius of a card, a dialog, and a menu.

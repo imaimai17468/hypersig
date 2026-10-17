@@ -20,6 +20,7 @@
 //! | [`Listbox`] | the listbox pattern, with roving focus |
 //! | [`Combobox`] | the combobox pattern with list autocomplete and `aria-activedescendant` |
 //! | [`Tabs`] | the tabs pattern, with roving focus |
+//! | [`Chart`] | an `<svg>` hidden from assistive technology, beside a visually hidden `<table>` of the same rows |
 //! | [`DataTable`] | `<table>` with `<th scope="col">` and `aria-sort`, and a tri-state checkbox for selecting rows |
 //! | [`Accordion`] | `<details>` and `<summary>` |
 //! | [`Dialog`] | `<dialog>` opened by invoker commands |
@@ -63,6 +64,7 @@ mod alert;
 mod badge;
 mod button;
 mod card;
+mod chart;
 mod choice;
 mod combobox;
 mod dialog;
@@ -87,6 +89,7 @@ pub use alert::{AlertVariant, alert, alert_description, alert_title};
 pub use badge::{BadgeVariant, badge};
 pub use button::{ButtonSize, ButtonVariant, button, button_style, icon_button, submit_button};
 pub use card::{Level, card, card_content, card_description, card_footer, card_header, card_title};
+pub use chart::{Chart, ChartScale};
 pub use choice::{checkbox, radio_group, switch};
 pub use combobox::{Combobox, ComboboxState};
 pub use dialog::{Dialog, dialog_footer};

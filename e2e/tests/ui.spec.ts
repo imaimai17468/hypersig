@@ -392,3 +392,44 @@ test("a data table returns to its first page when the list shrinks past the page
   await expect(page.getByText("1–5 / 10")).toBeVisible();
   expect(await emails(page)).toHaveLength(5);
 });
+
+const bars = (page: import("@playwright/test").Page) => page.locator("#bar-chart svg rect");
+
+test("a bar chart draws a bar per row and series, and a statement moves one", async ({ page }) => {
+  await expect(bars(page)).toHaveCount(12);
+  const january = bars(page).first();
+  await expect(january).toHaveAttribute("height", "46.500");
+  await page.getByRole("button", { name: "Add 50 desktop visitors in the first month" }).click();
+  await expect(january).toHaveAttribute("height", "59.000");
+  await expect(page.getByRole("table", { name: "Visitors (bars)" }).getByRole("row", { name: /January/ })).toContainText("236");
+});
+
+test("a chart takes new rows and a new scale from one server patch", async ({ page }) => {
+  const ticks = () => page.locator("#bar-chart figure > div > div:first-child span").allTextContents();
+  expect(await ticks()).toEqual(["0", "100", "200", "300", "400"]);
+  await page.getByRole("button", { name: "Show the second half" }).click();
+  await expect(page.getByRole("table", { name: "Visitors (bars)" }).getByRole("rowheader")).toHaveText([
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ]);
+  expect(await ticks()).toEqual(["0", "250", "500", "750", "1000"]);
+  await expect(bars(page).first()).toHaveAttribute("height", "52.000");
+});
+
+test("a line chart joins each row to the next and draws nothing past the last", async ({ page }) => {
+  const segments = page.locator("#line-chart svg g");
+  await expect(segments).toHaveCount(12);
+  await expect(page.locator("#line-chart svg g:visible")).toHaveCount(10);
+  await expect(page.locator("#area-chart svg polygon:visible")).toHaveCount(10);
+});
+
+test("a chart shows a row's values under the pointer", async ({ page }) => {
+  const plot = page.locator("#bar-chart svg");
+  const box = (await plot.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.6);
+  await expect(page.locator("#bar-chart").locator("div:visible", { hasText: /^February/ }).first()).toContainText("Desktop305");
+});
