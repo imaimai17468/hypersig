@@ -21,6 +21,9 @@ jobs:
       - run: cargo doc --workspace --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
+      # Renders the documentation site and checks its links into the rustdoc
+      # output above, which the Pages workflow publishes on main.
+      - run: cargo run -p site -- --out target/site --rustdoc target/doc
 
   runtime:
     runs-on: ubuntu-latest
