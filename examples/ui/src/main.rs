@@ -131,6 +131,7 @@ struct Gallery {
     payments: Vec<Payment>,
     payments_table: TableState,
     chosen_payments: Vec<i32>,
+    open_payments: Vec<i32>,
     show_status: bool,
     orders: Vec<Order>,
     orders_total: i32,
@@ -706,6 +707,19 @@ fn payments() -> El<Gallery> {
     .selectable(Gallery::chosen_payments(), |payment| {
         payment.at(Payment::id())
     })
+    .expandable(
+        Gallery::open_payments(),
+        |payment| payment.at(Payment::id()),
+        |payment| {
+            p().text("Payment ")
+                .child(span().bind_text(payment.at(Payment::id()).to_text()))
+                .text(" from ")
+                .child(span().bind_text(payment.at(Payment::email())))
+                .text(" is ")
+                .child(span().bind_text(payment.at(Payment::status())))
+                .text(".")
+        },
+    )
     .filter("Filter payments", |payment| {
         payment
             .at(Payment::email())
@@ -872,6 +886,7 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             payments: sample_payments(),
             payments_table: TableState::default(),
             chosen_payments: Vec::new(),
+            open_payments: Vec::new(),
             show_status: true,
             orders,
             orders_total,

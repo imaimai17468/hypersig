@@ -293,7 +293,7 @@ test("a toast is announced in the notifications region and stays until dismissed
 const payments = (page: import("@playwright/test").Page) => page.getByRole("table", { name: "Payments" });
 const dataTable = (page: import("@playwright/test").Page) => page.locator("section", { has: payments(page) });
 const emails = (page: import("@playwright/test").Page) =>
-  payments(page).locator("tbody tr:visible td:nth-child(3)").allTextContents();
+  payments(page).locator("tbody tr:visible td:nth-child(4)").allTextContents();
 
 test("a data table sorts by a column header, ascending then descending", async ({ page }) => {
   const header = payments(page).getByRole("columnheader", { name: "Email" });
@@ -373,12 +373,31 @@ test("a data table selects rows under a tri-state header checkbox", async ({ pag
   await expect(rows.first()).not.toBeChecked();
 });
 
+test("a data table shows a row's details under it and keeps them with the row when sorting", async ({ page }) => {
+  const toggle = payments(page).getByRole("button", { name: "Show row details" }).first();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  const details = payments(page).getByText("Payment 1 from ken99@example.com is success.");
+  await expect(details).toBeHidden();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(details).toBeVisible();
+  // Sorted by email, ken99 is the sixth row, the first of the second page.
+  await payments(page).getByRole("columnheader", { name: "Email" }).getByRole("button").click();
+  await expect(details).toBeHidden();
+  await dataTable(page).getByRole("button", { name: "Next page" }).click();
+  const group = payments(page).locator("tbody", { hasText: "ken99@example.com" }).first();
+  await expect(group.locator("tr").nth(1)).toHaveText("Payment 1 from ken99@example.com is success.");
+  await expect(details).toBeVisible();
+  await group.getByRole("button", { name: "Show row details" }).click();
+  await expect(details).toBeHidden();
+});
+
 test("a data table hides a column while its signal is false", async ({ page }) => {
   const status = payments(page).getByRole("columnheader", { name: "Status" });
   await expect(status).toBeVisible();
   await page.getByRole("switch", { name: "Show the status column" }).click({ force: true });
   await expect(status).toBeHidden();
-  await expect(payments(page).locator("tbody tr:visible").first().locator("td:visible")).toHaveCount(3);
+  await expect(payments(page).locator("tbody tr:visible").first().locator("td:visible")).toHaveCount(4);
 });
 
 test("a data table returns to its first page when the list shrinks past the page shown", async ({ page }) => {
@@ -428,7 +447,7 @@ test("a server table sorts on the server and returns to the first page", async (
   await amount.getByRole("button").click();
   await expect(amount).toHaveAttribute("aria-sort", "descending");
   await expect(orders(page).locator("tbody tr:visible td:nth-child(4)").first()).toHaveText("$990.50");
-  await expect(payments(page).locator("tbody tr:visible td:nth-child(4)").first()).toHaveText("$316.00");
+  await expect(payments(page).locator("tbody tr:visible td:nth-child(5)").first()).toHaveText("$316.00");
 });
 
 test("a server table keeps the selected keys while the visitor moves between pages", async ({ page }) => {

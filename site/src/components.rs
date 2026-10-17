@@ -1033,8 +1033,8 @@ fn component_page(page: Component) -> Page {
                         ja: "Enter、Space",
                     },
                     L {
-                        en: "On a column header, sorts the rows by that column.",
-                        ja: "列の見出しで押すと、その列で行を並べ替えます。",
+                        en: "On a column header, sorts the rows by that column. On the button at the start of a row, shows or hides the row's details.",
+                        ja: "列の見出しで押すと、その列で行を並べ替えます。行の先頭のボタンで押すと、その行の詳細を開閉します。",
                     },
                 ),
             ],
@@ -1069,6 +1069,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.",
                         ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に足します。",
+                    },
+                ),
+                (
+                    "expandable",
+                    "hypersig_ui/struct.DataTable.html#method.expandable",
+                    L {
+                        en: "Adds a first column of buttons that show `details` of a row under it, keeping the `key` of each open row in `expanded`.",
+                        ja: "行の下に `details` を開閉するボタンの列を先頭に足し、開いている行の `key` を `expanded` に持ちます。",
                     },
                 ),
                 (

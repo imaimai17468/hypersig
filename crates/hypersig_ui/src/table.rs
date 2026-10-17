@@ -73,6 +73,7 @@ pub struct TableState {
 ///     select_all: "すべての行を選ぶ".into(),
 ///     previous_page: "前のページ".into(),
 ///     next_page: "次のページ".into(),
+///     expand_row: "行の詳細を表示".into(),
 /// };
 /// assert_ne!(japanese, TableText::default());
 /// ```
@@ -88,6 +89,8 @@ pub struct TableText {
     pub previous_page: String,
     /// The name of the button that goes forward a page, "Next page".
     pub next_page: String,
+    /// The name of the button that shows or hides a row's details, "Show row details".
+    pub expand_row: String,
 }
 
 impl Default for TableText {
@@ -98,6 +101,7 @@ impl Default for TableText {
             select_all: "Select all rows".to_owned(),
             previous_page: "Previous page".to_owned(),
             next_page: "Next page".to_owned(),
+            expand_row: "Show row details".to_owned(),
         }
     }
 }
@@ -195,6 +199,12 @@ type Each<S, T> = Box<dyn FnOnce(Box<dyn FnOnce(Item<S, T>) -> El<S>>) -> Node<S
 
 /// Whether a row has some property, such as being selected.
 type RowTest<S, T> = Box<dyn Fn(Item<S, T>) -> Expr<S, bool>>;
+
+/// A statement about a row, such as the one that selects it.
+type RowStmt<S, T> = Box<dyn Fn(Item<S, T>) -> Stmt<S>>;
+
+/// An element built from a row.
+type RowEl<S, T> = Box<dyn Fn(Item<S, T>) -> El<S>>;
 
 /// The key of a row, shared by the closures that read it.
 type RowKey<S, T, K> = Rc<dyn Fn(Item<S, T>) -> Expr<S, K>>;
@@ -381,6 +391,7 @@ pub struct DataTable<S, T> {
     each: Each<S, T>,
     columns: Vec<Entry<S, T>>,
     selection: Option<Selection<S, T>>,
+    expansion: Option<Expansion<S, T>>,
     filter: Option<(String, RowText<S, T>)>,
     page_size: Option<i32>,
     text: TableText,
@@ -406,6 +417,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             each: Box::new(move |render| each_keyed(rows, key, render)),
             columns: Vec::new(),
             selection: None,
+            expansion: None,
             filter: None,
             page_size: None,
             text: TableText::default(),
@@ -463,7 +475,31 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         selected: Sig<S, Vec<K>>,
         key: impl Fn(Item<S, T>) -> E + 'static,
     ) -> Self {
-        self.selection = Some(Selection::new(self.rows, selected, key));
+        self.selection = Some(Selection::new(
+            self.rows,
+            selected,
+            Rc::new(move |row| key(row).into_expr()),
+        ));
+        self
+    }
+
+    /// Adds a first column of buttons that show `details` of a row under it, keeping the `key` of each open row in `expanded`.
+    ///
+    /// The button carries `aria-expanded`, as the WAI-ARIA disclosure
+    /// pattern asks, and the details fill a row of their own under the row,
+    /// across every column. Each row and its details are a `<tbody>` of
+    /// their own, so the two move together when the rows are sorted.
+    #[must_use]
+    pub fn expandable<K: PartialEq + 'static, E: IntoExpr<S, K>>(
+        mut self,
+        expanded: Sig<S, Vec<K>>,
+        key: impl Fn(Item<S, T>) -> E + 'static,
+        details: impl Fn(Item<S, T>) -> El<S> + 'static,
+    ) -> Self {
+        self.expansion = Some(Expansion {
+            keys: KeySet::new(expanded, Rc::new(move |row| key(row).into_expr())),
+            details: Box::new(details),
+        });
         self
     }
 
@@ -519,6 +555,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             each,
             columns,
             selection,
+            expansion,
             filter,
             page_size,
             text,
@@ -542,11 +579,15 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             rows.len()
         };
 
-        let select_head = selection
-            .as_ref()
-            .map(|selection| select_all(rows, selection, &text.select_all));
-        let (head, cells) = header_row(columns, select_head, state);
-        let width = cells.len() + usize::from(selection.is_some());
+        let lead = lead_heads(rows, selection.as_ref(), expansion.is_some(), &text);
+        let (head, cells) = header_row(columns, lead, state);
+        let body = Body {
+            cells,
+            selection,
+            expansion,
+            text: text.clone(),
+        };
+        let (width, grouped) = (body.width(), body.expansion.is_some());
 
         let row_shown = move |row: Item<S, T>| -> Expr<S, bool> {
             let Some(size) = page_size else {
@@ -562,12 +603,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
                 .and(rank.clone().ge(start.clone()))
                 .and(rank.lt(start + size))
         };
-        let select_row = text.select_row.clone();
-        let body = each(Box::new(move |row| {
-            let line = tr().show(row_shown(row)).css(body_row());
-            let line = select_cell_of(line, selection.as_ref(), row, select_row);
-            row_cells(line, &cells, row)
-        }));
+        let body = each(Box::new(move |row| body.row(row, Some(row_shown(row)))));
 
         let mut out = div().css(stack(rem(1)));
         if let Some(label) = filter_label {
@@ -576,6 +612,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         out = out.child(frame(
             label,
             max_height,
+            grouped,
             head,
             body,
             empty_row(shown.clone().equals(0), width, text.empty.clone()),
@@ -600,6 +637,7 @@ impl<S, T> fmt::Debug for DataTable<S, T> {
             .field("rows", &self.rows)
             .field("columns", &self.columns)
             .field("selectable", &self.selection.is_some())
+            .field("expandable", &self.expansion.is_some())
             .field("filter", &self.filter.as_ref().map(|(label, _)| label))
             .field("page_size", &self.page_size)
             .field("max_height", &self.max_height)
@@ -717,6 +755,7 @@ pub struct ServerTable<S, T> {
     load: Stmt<S>,
     columns: Vec<Entry<S, T>>,
     selection: Option<Selection<S, T>>,
+    expansion: Option<Expansion<S, T>>,
     filter: Option<String>,
     pages: Option<(i32, Sig<S, i32>)>,
     text: TableText,
@@ -744,6 +783,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             load: load.into_stmt(),
             columns: Vec::new(),
             selection: None,
+            expansion: None,
             filter: None,
             pages: None,
             text: TableText::default(),
@@ -791,7 +831,31 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         selected: Sig<S, Vec<K>>,
         key: impl Fn(Item<S, T>) -> E + 'static,
     ) -> Self {
-        self.selection = Some(Selection::new(self.rows, selected, key));
+        self.selection = Some(Selection::new(
+            self.rows,
+            selected,
+            Rc::new(move |row| key(row).into_expr()),
+        ));
+        self
+    }
+
+    /// Adds a first column of buttons that show `details` of a row under it, keeping the `key` of each open row in `expanded`.
+    ///
+    /// The button carries `aria-expanded`, as the WAI-ARIA disclosure
+    /// pattern asks, and the details fill a row of their own under the row,
+    /// across every column. Each row and its details are a `<tbody>` of
+    /// their own, so the two move together when the rows are sorted.
+    #[must_use]
+    pub fn expandable<K: PartialEq + 'static, E: IntoExpr<S, K>>(
+        mut self,
+        expanded: Sig<S, Vec<K>>,
+        key: impl Fn(Item<S, T>) -> E + 'static,
+        details: impl Fn(Item<S, T>) -> El<S> + 'static,
+    ) -> Self {
+        self.expansion = Some(Expansion {
+            keys: KeySet::new(expanded, Rc::new(move |row| key(row).into_expr())),
+            details: Box::new(details),
+        });
         self
     }
 
@@ -846,6 +910,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             load,
             columns,
             selection,
+            expansion,
             filter,
             pages,
             text,
@@ -853,16 +918,16 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         } = self;
         let query = state.at(TableState::query());
         let page = state.at(TableState::page());
-        let select_head = selection
-            .as_ref()
-            .map(|selection| select_all(rows, selection, &text.select_all));
-        let (head, cells) = header_row(columns, select_head, state);
-        let width = cells.len() + usize::from(selection.is_some());
-        let select_row = text.select_row.clone();
-        let body = each(Box::new(move |row| {
-            let line = select_cell_of(tr().css(body_row()), selection.as_ref(), row, select_row);
-            row_cells(line, &cells, row)
-        }));
+        let lead = lead_heads(rows, selection.as_ref(), expansion.is_some(), &text);
+        let (head, cells) = header_row(columns, lead, state);
+        let body = Body {
+            cells,
+            selection,
+            expansion,
+            text: text.clone(),
+        };
+        let (width, grouped) = (body.width(), body.expansion.is_some());
+        let body = each(Box::new(move |row| body.row(row, None)));
 
         let mut out = div().css(stack(rem(1)));
         if let Some(label) = filter {
@@ -875,6 +940,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         out = out.child(frame(
             label,
             max_height,
+            grouped,
             head,
             body,
             empty_row(rows.is_empty(), width, text.empty.clone()),
@@ -895,6 +961,7 @@ impl<S, T> fmt::Debug for ServerTable<S, T> {
             .field("load", &self.load)
             .field("columns", &self.columns)
             .field("selectable", &self.selection.is_some())
+            .field("expandable", &self.expansion.is_some())
             .field("filter", &self.filter)
             .field("pages", &self.pages)
             .field("max_height", &self.max_height)
@@ -921,21 +988,14 @@ type Cell<S, T> = (
     Option<Expr<S, bool>>,
 );
 
-/// The header row, after `select_head` where there is one, and for each
-/// column the parts its cells need.
+/// The header row, after the cells of `lead`, and for each column the
+/// parts its cells need.
 fn header_row<S: 'static, T: 'static>(
     columns: Vec<Entry<S, T>>,
-    select_head: Option<El<S>>,
+    lead: Vec<El<S>>,
     state: Sig<S, TableState>,
 ) -> (El<S>, Vec<Cell<S, T>>) {
-    let mut head = tr();
-    if let Some(select_head) = select_head {
-        head = head.child(
-            th().attr("scope", "col")
-                .css(select_cell())
-                .child(select_head),
-        );
-    }
+    let mut head = tr().children(lead);
     let mut cells = Vec::with_capacity(columns.len());
     for Entry { column, sort } in columns {
         let heading = th().attr("scope", "col").css(head_cell(column.numeric));
@@ -968,9 +1028,13 @@ fn row_cells<S, T>(mut line: El<S>, cells: &[Cell<S, T>], row: Item<S, T>) -> El
 ///
 /// With a `max_height`, the border scrolls the rows and the header sticks
 /// to its top.
+///
+/// Where the rows are `grouped`, each is a `<tbody>` of its own, and the
+/// empty row gets one too.
 fn frame<S>(
     label: String,
     max_height: Option<Length>,
+    grouped: bool,
     head: El<S>,
     body: Node<S>,
     empty_row: El<S>,
@@ -990,13 +1054,15 @@ fn frame<S>(
                 .box_shadow(raw(format!("inset 0 -1px 0 {}", token::border().var()))),
         );
     }
-    border.child(
-        table()
-            .attr("aria-label", label)
-            .css(table_style())
-            .child(header.child(head))
-            .child(tbody().child(body).child(empty_row)),
-    )
+    let table = table()
+        .attr("aria-label", label)
+        .css(table_style())
+        .child(header.child(head));
+    border.child(if grouped {
+        table.child(body).child(tbody().child(empty_row))
+    } else {
+        table.child(tbody().child(body).child(empty_row))
+    })
 }
 
 /// The row that spans `width` columns and says `text` while `when` is true.
@@ -1067,42 +1133,50 @@ fn sort_header<S>(
         )
 }
 
-/// Which rows are selected, kept as a list of their keys, and the
-/// statements that change it.
+/// A list of row keys in a signal: whether a row's key is in it, and the
+/// statement that puts the key in or takes it out.
+struct KeySet<S, T> {
+    has: RowTest<S, T>,
+    toggle: RowStmt<S, T>,
+}
+
+impl<S: 'static, T: 'static> KeySet<S, T> {
+    fn new<K: PartialEq + 'static>(list: Sig<S, Vec<K>>, key: RowKey<S, T, K>) -> Self {
+        let has = {
+            let key = Rc::clone(&key);
+            move |row: Item<S, T>| list.count(|kept| kept.value().equals(key(row))).gt(0)
+        };
+        let toggle = {
+            let has = has.clone();
+            move |row: Item<S, T>| {
+                Stmt::if_else(
+                    has(row),
+                    list.retain(|kept| kept.value().not_equals(key(row))),
+                    list.push(key(row)),
+                )
+            }
+        };
+        Self {
+            has: Box::new(has),
+            toggle: Box::new(toggle),
+        }
+    }
+}
+
+/// Which rows are selected, and the statements of the header checkbox.
 struct Selection<S, T> {
-    checked: RowTest<S, T>,
-    toggle: Box<dyn Fn(Item<S, T>) -> Stmt<S>>,
+    keys: KeySet<S, T>,
     select_all: Stmt<S>,
     clear_all: Stmt<S>,
 }
 
 impl<S: 'static, T: 'static> Selection<S, T> {
     /// The selection of `rows` by `key`, kept in `selected`.
-    fn new<K: PartialEq + 'static, E: IntoExpr<S, K>>(
+    fn new<K: PartialEq + 'static>(
         rows: Sig<S, Vec<T>>,
         selected: Sig<S, Vec<K>>,
-        key: impl Fn(Item<S, T>) -> E + 'static,
+        key: RowKey<S, T, K>,
     ) -> Self {
-        let key: RowKey<S, T, K> = Rc::new(move |row| key(row).into_expr());
-        let checked = {
-            let key = Rc::clone(&key);
-            move |row: Item<S, T>| {
-                selected
-                    .count(|chosen| chosen.value().equals(key(row)))
-                    .gt(0)
-            }
-        };
-        let toggle = {
-            let key = Rc::clone(&key);
-            let checked = checked.clone();
-            move |row: Item<S, T>| {
-                Stmt::if_else(
-                    checked(row),
-                    selected.retain(|chosen| chosen.value().not_equals(key(row))),
-                    selected.push(key(row)),
-                )
-            }
-        };
         // Keeps the keys of rows outside `rows`, such as another page's.
         let clear_all =
             selected.retain(|chosen| rows.count(|row| key(row).equals(chosen.value())).equals(0));
@@ -1110,42 +1184,112 @@ impl<S: 'static, T: 'static> Selection<S, T> {
             .clone()
             .then(selected.append(rows.map(|row| key(row))));
         Self {
-            checked: Box::new(checked),
-            toggle: Box::new(toggle),
+            keys: KeySet::new(selected, key),
             select_all,
             clear_all,
         }
     }
 }
 
-/// `line` with a first cell holding the checkbox of `row`, and the look of
-/// a selected row while it is checked, where the table has a selection.
-/// The checkbox is named `label`.
-fn select_cell_of<S, T>(
-    line: El<S>,
+/// Which rows show their details, and how the details of a row look.
+struct Expansion<S, T> {
+    keys: KeySet<S, T>,
+    details: RowEl<S, T>,
+}
+
+/// The parts a row of the body is built from, which both tables share.
+struct Body<S, T> {
+    cells: Vec<Cell<S, T>>,
+    selection: Option<Selection<S, T>>,
+    expansion: Option<Expansion<S, T>>,
+    text: TableText,
+}
+
+impl<S, T> Body<S, T> {
+    /// The number of columns, those of the buttons and the checkboxes included.
+    fn width(&self) -> usize {
+        self.cells.len()
+            + usize::from(self.selection.is_some())
+            + usize::from(self.expansion.is_some())
+    }
+
+    /// The row of `row`, shown while `shown` is true where there is one,
+    /// with its details under it where the table expands rows.
+    fn row(&self, row: Item<S, T>, shown: Option<Expr<S, bool>>) -> El<S> {
+        let mut line = tr().css(body_row());
+        if let Some(expansion) = &self.expansion {
+            let open = (expansion.keys.has)(row);
+            line = line.child(
+                td().css(select_cell()).child(
+                    icon_button(ButtonVariant::Ghost, self.text.expand_row.clone())
+                        .bind_attr("aria-expanded", if_else(open.clone(), "true", "false"))
+                        .on_click((expansion.keys.toggle)(row))
+                        .child(
+                            icon(icon::CHEVRON_RIGHT, rem(1))
+                                .css(look::transition())
+                                .css_when(Style::new().rotate(raw("90deg")), open),
+                        ),
+                ),
+            );
+        }
+        if let Some(selection) = &self.selection {
+            let checked = (selection.keys.has)(row);
+            line = line.css_when(selected_row(), checked.clone()).child(
+                td().css(select_cell()).child(check_mark(
+                    input()
+                        .attr("aria-label", self.text.select_row.clone())
+                        .bind_checked(checked)
+                        .on_change((selection.keys.toggle)(row)),
+                )),
+            );
+        }
+        let line = row_cells(line, &self.cells, row);
+        let Some(expansion) = &self.expansion else {
+            return match shown {
+                Some(shown) => line.show(shown),
+                None => line,
+            };
+        };
+        let details = tr().show((expansion.keys.has)(row)).child(
+            td().attr("colspan", self.width().to_string())
+                .css(details_cell())
+                .child((expansion.details)(row)),
+        );
+        let group = tbody().child(line).child(details);
+        match shown {
+            Some(shown) => group.show(shown),
+            None => group,
+        }
+    }
+}
+
+/// The header cells before the columns: an empty one over the buttons
+/// that expand rows, and the checkbox over those that select them.
+fn lead_heads<S, T>(
+    rows: Sig<S, Vec<T>>,
     selection: Option<&Selection<S, T>>,
-    row: Item<S, T>,
-    label: String,
-) -> El<S> {
-    let Some(selection) = selection else {
-        return line;
-    };
-    let checked = (selection.checked)(row);
-    line.css_when(selected_row(), checked.clone()).child(
-        td().css(select_cell()).child(check_mark(
-            input()
-                .attr("aria-label", label)
-                .bind_checked(checked)
-                .on_change((selection.toggle)(row)),
-        )),
-    )
+    expandable: bool,
+    text: &TableText,
+) -> Vec<El<S>> {
+    let mut lead = Vec::new();
+    if expandable {
+        lead.push(td().css(select_cell()));
+    }
+    if let Some(selection) = selection {
+        lead.push(
+            th().attr("scope", "col")
+                .css(select_cell())
+                .child(select_all(rows, selection, &text.select_all)),
+        );
+    }
+    lead
 }
 
 /// The header checkbox: checked while every row of `rows` is selected,
 /// mixed while some are, and a press selects every row unless all are
 /// selected already.
 fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>, label: &str) -> El<S> {
-    let count = rows.count(|row| (selection.checked)(row));
+    let count = rows.count(|row| (selection.keys.has)(row));
     let all = count.clone().equals(rows.len()).and(rows.len().gt(0));
     let some = count.gt(0);
     let mark = span()
@@ -1293,6 +1437,13 @@ fn body_row() -> Style {
         PseudoClass::Hover,
         Style::new().background_color(token::muted().var()),
     )
+}
+
+/// The cell that holds a row's details, under the row.
+fn details_cell() -> Style {
+    row_line()
+        .padding(rem(1))
+        .background_color(token::muted().var().opacity(50))
 }
 
 fn selected_row() -> Style {

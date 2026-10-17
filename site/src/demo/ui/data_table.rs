@@ -88,6 +88,12 @@ pub fn page(site: Site) -> Page<Ledger> {
                 ja: "次のページ",
             })
             .to_owned(),
+        expand_row: site
+            .t(L {
+                en: "Show row details",
+                ja: "行の詳細を表示",
+            })
+            .to_owned(),
     })
     .sortable_column(
         Column::text(
