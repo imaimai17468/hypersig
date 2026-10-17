@@ -16,17 +16,42 @@ struct Counter {
 
 const ADD: Action<Counter, (i32, i32)> = Action::post("/add");
 const PEEK: Action<Counter, i32> = Action::get("/peek");
-const HOME: Route = Route::new("/");
-const MEMBER: Route<(String, i32)> = Route::new("/teams/{team}/members/{id}");
-const ORG: Route<String> = Route::new("/orgs/{org}");
-const ORG_MEMBER: Route<(String, i32)> = ORG.child("/orgs/{org}/members/{id}");
-const NESTED: Route<i32> = Route::new("/members/{id}");
-const OLD_MEMBER: Route<i32> = Route::new("/people/{id}");
 const MOVE: Action<Counter, i32> = Action::post("/move");
-const TEAM: Route<String, Filter> = Route::new("/teams/{team}");
-const FIND: Route<(), Filter> = Route::new("/find");
-const TAB: Route<(String, Tab)> = Route::new("/tabs/{team}/{tab}");
-const DEEP: Route<(i32, i32, i32, i32, i32, String)> = Route::new("/{a}/{b}/{c}/{d}/{e}/{f}");
+
+hypersig::routes! {
+    fn pages(Router<()>);
+    const HOME: Route = "/" => |(), ()| async {
+        Page::new("Home", Counter { count: 0 })
+            .child(a().href(MEMBER.link_with(("red team", 2))).text("Member"))
+            .child(a().href(ORG_MEMBER.link_with(("acme", 9))).text("Org member"))
+    };
+    const MEMBER: Route<(String, i32)> = "/teams/{team}/members/{id}" =>
+        |(), (team, id): (String, i32)| async move { (id >= 0).then(|| member_page(&team, id)) };
+    const ORG: Route<String> = "/orgs/{org}" => |(), org: String| async move { member_page(&org, 0) };
+    const ORG_MEMBER: Route<(String, i32)> = "/orgs/{org}/members/{id}" in ORG =>
+        |(), (org, id): (String, i32)| async move { member_page(&org, id) };
+    const OLD_MEMBER: Route<i32> = "/people/{id}" => |(), id: i32| async move {
+        PageResponse::redirect(MEMBER.url(("old team".to_owned(), id)))
+    };
+    const TEAM: Route<String, Filter> = "/teams/{team}" =>
+        |(), (team, filter): (String, Filter)| async move {
+            member_page(&format!("{team} {} {} {:?}", filter.q, filter.page, filter.tag), 0)
+        };
+    const FIND: Route<(), Filter> = "/find" => |(), filter: Filter| async move {
+        PageResponse::redirect(TEAM.url(("red team".to_owned(), filter)))
+    };
+    const TAB: Route<(String, Tab)> = "/tabs/{team}/{tab}" =>
+        |(), (team, tab): (String, Tab)| async move { member_page(&format!("{team} {tab:?}"), 0) };
+    const DEEP: Route<(i32, i32, i32, i32, i32, String)> = "/{a}/{b}/{c}/{d}/{e}/{f}" =>
+        |(), (a, b, c, d, e, f): (i32, i32, i32, i32, i32, String)| async move {
+            member_page(&f, a + b + c + d + e)
+        };
+}
+
+hypersig::routes! {
+    fn legacy_pages(Router<()>);
+    const NESTED: Route<i32> = "/members/{id}" => |(), id: i32| async move { member_page("nested", id) };
+}
 
 #[derive(Segment, Serialize, Deserialize, Debug)]
 enum Tab {
@@ -48,7 +73,7 @@ fn member_page(team: &str, id: i32) -> Page<Counter> {
 }
 
 fn app() -> Router {
-    Router::new()
+    pages(Router::new())
         .hypersig_runtime()
         .action(ADD, |(), (count, by): (i32, i32)| async move {
             Patches::from(Counter::count().patch(count + by))
@@ -56,52 +81,11 @@ fn app() -> Router {
         .action(PEEK, |(), count: i32| async move {
             Patches::from(Counter::count().patch(count))
         })
-        .page(HOME, |(), ()| async {
-            Page::new("Home", Counter { count: 0 })
-                .child(a().href(MEMBER.link_with(("red team", 2))).text("Member"))
-                .child(
-                    a().href(ORG_MEMBER.link_with(("acme", 9)))
-                        .text("Org member"),
-                )
-        })
-        .page(MEMBER, |(), (team, id): (String, i32)| async move {
-            (id >= 0).then(|| member_page(&team, id))
-        })
-        .page(TEAM, |(), (team, filter): (String, Filter)| async move {
-            member_page(
-                &format!("{team} {} {} {:?}", filter.q, filter.page, filter.tag),
-                0,
-            )
-        })
-        .page(FIND, |(), filter: Filter| async move {
-            PageResponse::redirect(TEAM.url(("red team".to_owned(), filter)))
-        })
-        .page(TAB, |(), (team, tab): (String, Tab)| async move {
-            member_page(&format!("{team} {tab:?}"), 0)
-        })
-        .page(
-            DEEP,
-            |(), (a, b, c, d, e, f): (i32, i32, i32, i32, i32, String)| async move {
-                member_page(&f, a + b + c + d + e)
-            },
-        )
-        .page(OLD_MEMBER, |(), id: i32| async move {
-            PageResponse::redirect(MEMBER.url(("old team".to_owned(), id)))
-        })
         .action(MOVE, |(), id: i32| async move {
             Patches::from(Counter::count().patch(id))
                 .navigate(ORG_MEMBER.url(("acme".to_owned(), id)))
         })
-        .page(ORG_MEMBER, |(), (org, id): (String, i32)| async move {
-            member_page(&org, id)
-        })
-        .nest(
-            "/legacy",
-            Router::new().page(
-                NESTED,
-                |(), id: i32| async move { member_page("nested", id) },
-            ),
-        )
+        .nest("/legacy", legacy_pages(Router::new()))
 }
 
 async fn send(request: Request<Body>) -> (StatusCode, String) {

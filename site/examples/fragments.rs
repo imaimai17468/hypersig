@@ -35,7 +35,11 @@ impl Fragment for Results {
     }
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const INDEX: Route = "/" => index;
+}
+
 const SEARCH: Action<Search, String> = Action::post("/search");
 
 async fn index((): (), (): ()) -> Page<Search> {
@@ -67,8 +71,7 @@ async fn search((): (), query: String) -> Patches<Search> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
+    let app = pages(Router::new())
         .hypersig_runtime()
         .action(SEARCH, search);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;

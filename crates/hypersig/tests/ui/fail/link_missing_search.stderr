@@ -1,7 +1,7 @@
 error[E0277]: `&str` is not an expression of type `(String, Filter)` on the page whose signals are `_`
-  --> tests/ui/fail/link_missing_search.rs:15:47
+  --> tests/ui/fail/link_missing_search.rs:23:47
    |
-15 |     let _ = a::<Filter>().href(TEAM.link_with("red"));
+23 |     let _ = a::<Filter>().href(TEAM.link_with("red"));
    |                                     --------- ^^^^^ the trait `IntoExpr<_, (String, Filter)>` is not implemented for `&str`
    |                                     |
    |                                     required by a bound introduced by this call

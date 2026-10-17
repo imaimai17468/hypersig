@@ -17,7 +17,11 @@ struct Counter {
     status: String,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<AppState>);
+    const INDEX: Route = "/" => index;
+}
+
 const SAVE: Action<Counter, (i32, String)> = Action::post("/save");
 const RESET: Action<Counter> = Action::post("/reset");
 
@@ -123,8 +127,7 @@ async fn reset(state: AppState, (): ()) -> Patches<Counter> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
+    let app = pages(Router::new())
         .hypersig_runtime()
         .action(SAVE, save)
         .action(RESET, reset)

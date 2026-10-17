@@ -11,7 +11,11 @@ struct Counter {
     count: i32,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const INDEX: Route = "/" => index;
+}
+
 const RESET: Action<Counter> = Action::post("/reset");
 
 async fn index((): (), (): ()) -> Page<Counter> {
@@ -30,10 +34,7 @@ async fn reset((): (), (): ()) -> Patches<Counter> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
-        .hypersig_runtime()
-        .action(RESET, reset);
+    let app = pages(Router::new()).hypersig_runtime().action(RESET, reset);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     axum::serve(listener, app).await
 }

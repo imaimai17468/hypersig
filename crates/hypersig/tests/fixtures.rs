@@ -603,10 +603,21 @@ struct Roster {
     filter: Filter,
 }
 
-const HOME: Route = Route::new("/");
-const MEMBER: Route<(String, i32)> = Route::new("/teams/{team}/members/{id}");
-const FIND: Route<(), Filter> = Route::new("/search");
-const TEAM_SEARCH: Route<String, Filter> = Route::new("/teams/{team}");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const HOME: Route = "/" => no_page;
+    const MEMBER: Route<(String, i32)> = "/teams/{team}/members/{id}" => no_page;
+    const FIND: Route<(), Filter> = "/search" => no_page;
+    const TEAM_SEARCH: Route<String, Filter> = "/teams/{team}" => no_page;
+}
+
+#[expect(
+    dead_code,
+    reason = "the fixtures link to these pages and never serve them"
+)]
+async fn no_page<A>((): (), _: A) -> Option<Page<Roster>> {
+    None
+}
 
 /// Links whose parameters need percent-encoding, so the server's encoding
 /// and the browser's `encodeURIComponent` are compared on the same values.

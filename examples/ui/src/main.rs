@@ -87,7 +87,11 @@ struct Gallery {
     next_toast: i32,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const INDEX: Route = "/" => index;
+}
+
 const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
 const EDIT: Dialog<Gallery> = Dialog::new("edit-profile");
 const DELETE: Dialog<Gallery> = Dialog::new("delete-project");
@@ -593,10 +597,7 @@ async fn index((): (), (): ()) -> Page<Gallery> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
-        .hypersig_runtime()
-        .action(SAVE, save);
+    let app = pages(Router::new()).hypersig_runtime().action(SAVE, save);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3005".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

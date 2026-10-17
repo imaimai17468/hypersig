@@ -36,8 +36,9 @@
 //! assert!(reply.to_event_stream().starts_with("event: hs-signals"));
 //! ```
 //!
-//! With the `axum` feature (on by default), `RouterExt` serves the runtime,
-//! the pages at their [`Route`]s, and the actions.
+//! With the `axum` feature (on by default), [`routes!`] declares the pages
+//! at their [`Route`]s together with their handlers, and `RouterExt` serves
+//! the runtime and the actions.
 
 extern crate self as hypersig;
 
@@ -85,8 +86,27 @@ pub const RUNTIME_JS: &str = include_str!("../assets/hypersig.js");
 
 #[doc(hidden)]
 pub mod _private {
+    #[cfg(feature = "axum")]
+    pub use ::axum::Router;
+
     pub use crate::route::sealed::Sealed;
+    use crate::route::{Extends, Params, Route, Search};
     use crate::signal::{Path, Sig};
+
+    /// Called by `routes!` for a page at `path`.
+    #[must_use]
+    pub const fn route<P: Params, Q: Search>(path: &'static str) -> Route<P, Q> {
+        Route::new(path)
+    }
+
+    /// Called by `routes!` for a page at `path` under `parent`.
+    #[must_use]
+    pub const fn child<P: Params, Q: Search, C: Params + Extends<P>, R: Search>(
+        parent: &Route<P, Q>,
+        path: &'static str,
+    ) -> Route<C, R> {
+        parent.child(path)
+    }
 
     /// Called by `#[derive(Signals)]` with a field name of `S`.
     #[must_use]

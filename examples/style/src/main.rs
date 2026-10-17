@@ -28,7 +28,11 @@ struct Gallery {
     tone: Tone,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const INDEX: Route = "/" => index;
+}
+
 const MORE: Action<Gallery> = Action::post("/more");
 
 /// Cards the server sends on request. Their widths use the `md` breakpoint,
@@ -379,10 +383,7 @@ mod look {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
-        .hypersig_runtime()
-        .action(MORE, more);
+    let app = pages(Router::new()).hypersig_runtime().action(MORE, more);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3004".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

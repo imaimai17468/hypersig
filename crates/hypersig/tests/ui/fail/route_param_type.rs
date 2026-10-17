@@ -1,5 +1,18 @@
-use hypersig::Route;
+use hypersig::{Page, Route, Signals};
+use serde::{Deserialize, Serialize};
 
-const PRICE: Route<f64> = Route::new("/prices/{amount}");
+#[derive(Signals, Serialize, Deserialize)]
+struct Blank {}
 
-fn main() {}
+hypersig::routes! {
+    fn pages(Router<()>);
+    const PRICE: Route<f64> = "/prices/{amount}" => no_page;
+}
+
+async fn no_page<A>((): (), _: A) -> Option<Page<Blank>> {
+    None
+}
+
+fn main() {
+    let _ = pages;
+}

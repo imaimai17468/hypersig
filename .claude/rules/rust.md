@@ -43,9 +43,9 @@ The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, wi
 
 ## Macros
 
-**Write a macro only after the language runs out** (M-MACRO-LAST-RESORT). `#[derive(Signals)]` exists because a field name cannot become a value any other way, and `#[derive(Segment)]` because a variant name cannot. Actions, fragments, and patches are plain types and traits, and they stay that way.
+**Write a macro only after the language runs out** (M-MACRO-LAST-RESORT). `#[derive(Signals)]` exists because a field name cannot become a value any other way, and `#[derive(Segment)]` because a variant name cannot. `routes!` exists because a program's constants cannot be enumerated at compile time, so declaring each `Route` on the line that names its handler is the only way to keep a route without a handler from existing. Actions, fragments, and patches are plain types and traits, and they stay that way.
 
-**A macro emits nothing the reader cannot predict from the input** (M-MACROS-DONT-LIE, M-PROC-IMPLIED-ITEMS). `#[derive(Signals)]` adds one `impl Signals` and one associated function per field, named after the field. `#[derive(Segment)]` adds `impl Segment` and the impl of its seal. Neither defines a new type, public or private.
+**A macro emits nothing the reader cannot predict from the input** (M-MACROS-DONT-LIE, M-PROC-IMPLIED-ITEMS). `#[derive(Signals)]` adds one `impl Signals` and one associated function per field, named after the field. `#[derive(Segment)]` adds `impl Segment` and the impl of its seal. Neither defines a new type, public or private. `routes!` emits the constants and the one function its input names, and nothing else.
 
 **The logic lives in `hypersig_proc_impl` with snapshot tests, and `hypersig_proc` only forwards** (M-PROC-IMPL). Generated code names items through `::hypersig::_private` (M-MACRO-HELPERS, M-MACRO-MAIN-CRATE), and `hypersig` pins `hypersig_proc` with `=` (M-MACRO-VERSION-PIN).
 

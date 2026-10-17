@@ -1,7 +1,19 @@
-use hypersig::Route;
+use hypersig::{Page, Route, Signals};
+use serde::{Deserialize, Serialize};
 
-const MEMBER: Route<i32> = Route::new("/members");
+#[derive(Signals, Serialize, Deserialize)]
+struct Blank {}
+
+hypersig::routes! {
+    fn pages(Router<()>);
+    const MEMBER: Route<i32> = "/members" => no_page;
+}
+
+async fn no_page<A>((): (), _: A) -> Option<Page<Blank>> {
+    None
+}
 
 fn main() {
+    let _ = pages;
     let _ = MEMBER.path();
 }

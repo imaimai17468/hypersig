@@ -1,0 +1,10 @@
+error[E0624]: associated function `new` is private
+ --> tests/ui/fail/route_new_is_private.rs:5:30
+  |
+5 | const ORPHAN: Route = Route::new("/orphan");
+  |                              ^^^ private associated function
+  |
+ ::: src/route.rs
+  |
+  |     pub(crate) const fn new(path: &'static str) -> Self {
+  |     --------------------------------------------------- private associated function defined here

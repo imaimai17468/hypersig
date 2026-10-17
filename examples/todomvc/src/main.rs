@@ -41,7 +41,11 @@ struct TodoMvc {
     completed: i32,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<AppState>);
+    const INDEX: Route = "/" => index;
+}
+
 const SAVE: Action<TodoMvc, Vec<Todo>> = Action::post("/save");
 const EDIT: NodeRef<TodoMvc> = NodeRef::new("edit");
 
@@ -468,8 +472,7 @@ mod styles {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
+    let app = pages(Router::new())
         .hypersig_runtime()
         .action(SAVE, save)
         .with_state(AppState::default());

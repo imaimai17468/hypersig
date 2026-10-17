@@ -18,7 +18,11 @@ struct Profile {
     likes: i32,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<Likes>);
+    const INDEX: Route = "/" => index;
+}
+
 const SAVE: Action<Profile, String> = Action::post("/save");
 const LIKE: Action<Profile> = Action::post("/like");
 
@@ -74,8 +78,7 @@ async fn like(likes: Likes, (): ()) -> Patches<Profile> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
+    let app = pages(Router::new())
         .hypersig_runtime()
         .action(SAVE, save)
         .action(LIKE, like)

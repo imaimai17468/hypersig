@@ -1015,17 +1015,12 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
             &[
                 Section {
                     heading: "Route",
-                    text: "Declare one as a `const` and use the same value in the router and in the links to the page.",
+                    text: "Declare one in `routes!` with its handler, and use the same value in the links to the page.",
                     rows: &[
                         (
-                            "Route::new",
-                            "struct.Route.html#method.new",
-                            "A page served at `path`, whose `{name}` segments take the values of `P`.",
-                        ),
-                        (
-                            "child",
-                            "struct.Route.html#method.child",
-                            "A page under this one, served at the whole path `path`.",
+                            "routes!",
+                            "macro.routes.html",
+                            "Declares the pages of an application and the function that serves them.",
                         ),
                         (
                             "link",
@@ -1107,11 +1102,6 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                         "hypersig_runtime",
                         "trait.RouterExt.html#tymethod.hypersig_runtime",
                         "Serves the browser runtime at `RUNTIME_PATH`.",
-                    ),
-                    (
-                        "page",
-                        "trait.RouterExt.html#tymethod.page",
-                        "Serves the page at `route` on `GET`, with a handler that builds it.",
                     ),
                     (
                         "action",

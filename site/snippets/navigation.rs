@@ -8,8 +8,13 @@ struct Draft {
     saving: bool,
 }
 
-const POST: Route<i32> = Route::new("/posts/{id}");
-const OLD_POST: Route<i32> = Route::new("/p/{id}");
+# async fn post((): (), _: i32) -> Option<hypersig::Page<Draft>> { None }
+hypersig::routes! {
+    fn pages(Router<()>);
+    const POST: Route<i32> = "/posts/{id}" => post;
+    const OLD_POST: Route<i32> = "/p/{id}" => old_post;
+}
+
 const PUBLISH: Action<Draft> = Action::post("/publish");
 
 // A page handler answers an old address with a redirect.
@@ -25,4 +30,4 @@ async fn publish((): (), (): ()) -> Patches<Draft> {
 
 // A button leaves the page after setting a signal.
 let _back = button::<Draft>().on_click(Draft::saving().set(false).then(POST.link_with(&1).navigate()));
-# let _ = (OLD_POST, PUBLISH, old_post, publish);
+# let _ = (pages, PUBLISH, publish);

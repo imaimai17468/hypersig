@@ -28,45 +28,8 @@ pub trait RouterExt<St>: Sized {
     #[must_use]
     fn hypersig_runtime(self) -> Self;
 
-    /// Serves the page at `route` on `GET`, with a handler that builds it.
-    ///
-    /// The handler receives the router state and the route's arguments,
-    /// already parsed, and answers with a [`Page`], an `Option<Page>`, or a
-    /// [`PageResponse`]. The arguments are the path's parameters, or for a
-    /// route with search parameters, the tuple of both as
-    /// [`Route::link_with`] takes them. A path whose segments do not parse
-    /// into the parameter types, or a handler that answers `None`, gets a
-    /// 404, and a query string that does not deserialize into the search
-    /// parameters gets a 400.
-    ///
-    /// Register the page on the router the application serves, never on one
-    /// passed to [`Router::nest`]. Its links point to `route`'s path, and a
-    /// nested router would serve the page under a longer one, so such a page
-    /// answers every request with a 500 that names the two paths. Write a page
-    /// under another with [`Route::child`] instead.
-    ///
-    /// ```
-    /// use axum::Router;
-    /// use hypersig::html::{a, h1};
-    /// use hypersig::{Page, Route, RouterExt, Signals};
-    /// use serde::{Deserialize, Serialize};
-    ///
-    /// #[derive(Signals, Serialize, Deserialize)]
-    /// struct Profile {
-    ///     name: String,
-    /// }
-    ///
-    /// const HOME: Route = Route::new("/");
-    /// const MEMBER: Route<i32> = Route::new("/members/{id}");
-    ///
-    /// async fn member((): (), id: i32) -> Option<Page<Profile>> {
-    ///     let name = ["Ada", "Grace"].get(usize::try_from(id).ok()?)?;
-    ///     let signals = Profile { name: (*name).to_owned() };
-    ///     Some(Page::new(*name, signals).child(h1().text(*name)).child(a().href(HOME.link()).text("Home")))
-    /// }
-    ///
-    /// let _app: Router = Router::new().page(MEMBER, member);
-    /// ```
+    /// Serves the page at `route` on `GET`. `routes!` calls it for each page it declares.
+    #[doc(hidden)]
     #[must_use]
     fn page<P, Q, H, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
     where
@@ -233,7 +196,11 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
 ///     name: String,
 /// }
 ///
-/// const LOGIN: Route = Route::new("/login");
+/// # async fn login((): (), (): ()) -> Option<Page<Profile>> { None }
+/// hypersig::routes! {
+///     fn pages(Router<()>);
+///     const LOGIN: Route = "/login" => login;
+/// }
 ///
 /// fn profile(signed_in: bool) -> PageResponse {
 ///     if !signed_in {
@@ -242,7 +209,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
 ///     let signals = Profile { name: "Ada".to_owned() };
 ///     Page::new("Profile", signals).child(h1().bind_text(Profile::name())).into()
 /// }
-/// # let _ = profile(true);
+/// # let _ = (profile(true), pages);
 /// ```
 #[derive(Debug)]
 pub struct PageResponse(PageKind);

@@ -1,25 +1,44 @@
 error[E0080]: evaluation panicked: the route's `{name}` segments differ in number from the values of its parameter type
- --> tests/ui/fail/route_params_mismatch.rs:3:28
-  |
-3 | const MEMBER: Route<i32> = Route::new("/members");
-  |                            ^^^^^^^^^^^^^^^^^^^^^^ evaluation of `MEMBER` failed inside this call
-  |
+  --> tests/ui/fail/route_params_mismatch.rs:7:1
+   |
+ 7 | / hypersig::routes! {
+ 8 | |     fn pages(Router<()>);
+ 9 | |     const MEMBER: Route<i32> = "/members" => no_page;
+10 | | }
+   | |_^ evaluation of `MEMBER` failed inside this call
+   |
+note: inside `hypersig::_private::route::<i32, ()>`
+  --> src/lib.rs
+   |
+   |         Route::new(path)
+   |         ^^^^^^^^^^^^^^^^
 note: inside `Route::<i32>::new`
- --> $RUST/core/src/panic.rs
-  |
-  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
-  |
- ::: src/route.rs
-  |
-  | /         assert!(
-  | |             count_params(path) == P::COUNT,
-  | |             "the route's `{{name}}` segments differ in number from the values of its parameter type"
-  | |         );
-  | |_________- in this macro invocation
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: src/route.rs
+   |
+   | /         assert!(
+   | |             count_params(path) == P::COUNT,
+   | |             "the route's `{{name}}` segments differ in number from the values of its parameter type"
+   | |         );
+   | |_________- in this macro invocation
 
 note: erroneous constant encountered
- --> tests/ui/fail/route_params_mismatch.rs:6:13
-  |
-6 |     let _ = MEMBER.path();
-  |             ^^^^^^
+  --> tests/ui/fail/route_params_mismatch.rs:7:1
+   |
+ 7 | / hypersig::routes! {
+ 8 | |     fn pages(Router<()>);
+ 9 | |     const MEMBER: Route<i32> = "/members" => no_page;
+10 | | }
+   | |_^
+   |
+   = note: this note originates in the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+note: erroneous constant encountered
+  --> tests/ui/fail/route_params_mismatch.rs:18:13
+   |
+18 |     let _ = MEMBER.path();
+   |             ^^^^^^

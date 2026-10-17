@@ -10,11 +10,11 @@ use crate::signal::Signals;
 
 /// A page served at a path whose parameters are `P`, with search parameters `Q`.
 ///
-/// Declare one as a `const` and use the same value on both sides: the router
-/// serves the page with `RouterExt::page`, and an element links to it with
-/// [`El::href`](crate::html::El::href) and [`Route::link`] or
-/// [`Route::link_with`]. Both sides then agree on the path and on the type
-/// of each parameter in it.
+/// Declare one in [`routes!`](crate::routes), which names the handler that
+/// serves it, and link to it with [`El::href`](crate::html::El::href) and
+/// [`Route::link`] or [`Route::link_with`]. The router and the links then
+/// agree on the path and on the type of each parameter in it, and a route
+/// without a handler cannot be declared.
 ///
 /// A parameter is a whole segment written `{name}`, as in axum. `P` is `()`
 /// for a path without one, a [`Segment`] type for one, and a tuple for two to
@@ -27,7 +27,7 @@ use crate::signal::Signals;
 ///
 /// ```
 /// use hypersig::html::a;
-/// use hypersig::{Route, Signals};
+/// use hypersig::{Page, Route, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -35,9 +35,13 @@ use crate::signal::Signals;
 ///     lead: i32,
 /// }
 ///
-/// const HOME: Route = Route::new("/");
-/// const MEMBER: Route<i32> = Route::new("/members/{id}");
-/// const POST: Route<(String, i32)> = Route::new("/blog/{slug}/comments/{id}");
+/// # async fn page<P>((): (), _: P) -> Option<Page<Team>> { None }
+/// hypersig::routes! {
+///     fn pages(Router<()>);
+///     const HOME: Route = "/" => page;
+///     const MEMBER: Route<i32> = "/members/{id}" => page;
+///     const POST: Route<(String, i32)> = "/blog/{slug}/comments/{id}" => page;
+/// }
 ///
 /// let home = a::<Team>().href(HOME.link()).render();
 /// assert!(home.contains(r#"href="/""#));
@@ -47,6 +51,7 @@ use crate::signal::Signals;
 ///
 /// let comment = a::<Team>().href(POST.link_with(("hello world", 3))).render();
 /// assert!(comment.contains(r#"href="/blog/hello%20world/comments/3""#));
+/// # let _ = pages;
 /// ```
 pub struct Route<P = (), Q = ()> {
     path: &'static str,
@@ -56,14 +61,12 @@ pub struct Route<P = (), Q = ()> {
 impl<P: Params, Q: Search> Route<P, Q> {
     /// A page served at `path`, whose `{name}` segments take the values of `P`.
     ///
-    /// # Panics
-    ///
     /// Panics if `path` does not start with `/`, if a `{` or `}` does not
     /// enclose a whole segment with a name, or if the number of such segments
-    /// differs from the number of values in `P`. In a `const`, each of these is
-    /// a compile error.
+    /// differs from the number of values in `P`. `routes!` calls it in a
+    /// `const`, where each of these is a compile error.
     #[must_use]
-    pub const fn new(path: &'static str) -> Self {
+    pub(crate) const fn new(path: &'static str) -> Self {
         assert!(
             !path.is_empty() && path.as_bytes()[0] == b'/',
             "a route path starts with `/`"
@@ -89,22 +92,10 @@ impl<P: Params, Q: Search> Route<P, Q> {
     /// `path` repeats this route's path and continues it after a `/`, and
     /// `C` repeats this route's parameters and may add more after them, so a
     /// link to the child needs every value its path holds. The child's
-    /// search parameters `R` are its own.
-    ///
-    /// ```
-    /// use hypersig::Route;
-    ///
-    /// const ORG: Route<String> = Route::new("/orgs/{org}");
-    /// const MEMBER: Route<(String, i32)> = ORG.child("/orgs/{org}/members/{id}");
-    /// assert_eq!(MEMBER.path(), "/orgs/{org}/members/{id}");
-    /// ```
-    ///
-    /// # Panics
-    ///
-    /// Panics if `path` does not continue this route's path, and for every
-    /// reason [`Route::new`] does. In a `const`, each of these is a compile error.
+    /// search parameters `R` are its own. Panics where either does not hold,
+    /// and for every reason `new` does.
     #[must_use]
-    pub const fn child<C: Params + Extends<P>, R: Search>(
+    pub(crate) const fn child<C: Params + Extends<P>, R: Search>(
         &self,
         path: &'static str,
     ) -> Route<C, R> {
@@ -150,10 +141,17 @@ impl<P: Params, Q: Search> Route<P, Q> {
     /// percent-encoded as there.
     ///
     /// ```
-    /// use hypersig::Route;
+    /// # use hypersig::{Page, Route, Signals};
+    /// # #[derive(Signals, serde::Serialize, serde::Deserialize)]
+    /// # struct Blog {}
+    /// # async fn post((): (), _: (String, i32)) -> Option<Page<Blog>> { None }
+    /// hypersig::routes! {
+    ///     fn pages(Router<()>);
+    ///     const POST: Route<(String, i32)> = "/blog/{slug}/comments/{id}" => post;
+    /// }
     ///
-    /// const POST: Route<(String, i32)> = Route::new("/blog/{slug}/comments/{id}");
     /// assert_eq!(POST.url(("hello world".to_owned(), 3)).as_str(), "/blog/hello%20world/comments/3");
+    /// # let _ = pages;
     /// ```
     #[must_use]
     pub fn url(&self, args: Q::Args<P>) -> Url {
@@ -175,6 +173,128 @@ impl Route<(), ()> {
     pub fn link<S>(&self) -> Link<S> {
         Link::new(self.path, Vec::new(), None)
     }
+}
+
+/// Declares the pages of an application and the function that serves them.
+///
+/// The first line names the function and the router state its handlers
+/// take. Each line after it declares a [`Route`] constant with its path and
+/// the handler that builds the page, so every route has a handler. The
+/// generated function registers each route with its handler on `GET`. Add
+/// `in PARENT` after the path to declare a page under another page of an
+/// earlier line: its path continues the parent's and its parameters start
+/// with the parent's.
+///
+/// ```
+/// use axum::Router;
+/// use hypersig::html::{a, h1};
+/// use hypersig::{Page, Route, RouterExt, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Profile {
+///     name: String,
+/// }
+///
+/// hypersig::routes! {
+///     /// Serves every page of the application.
+///     fn pages(Router<()>);
+///     const HOME: Route = "/" => home;
+///     const ORG: Route<String> = "/orgs/{org}" => org;
+///     const MEMBER: Route<(String, i32)> = "/orgs/{org}/members/{id}" in ORG => member;
+/// }
+///
+/// async fn home((): (), (): ()) -> Page<Profile> {
+///     let signals = Profile { name: "Ada".to_owned() };
+///     Page::new("Home", signals).child(a().href(MEMBER.link_with(("acme", 1))).text("Ada"))
+/// }
+///
+/// async fn org((): (), org: String) -> Page<Profile> {
+///     Page::new(org.clone(), Profile { name: org }).child(h1().bind_text(Profile::name()))
+/// }
+///
+/// async fn member((): (), (_org, id): (String, i32)) -> Option<Page<Profile>> {
+///     let name = ["Ada", "Grace"].get(usize::try_from(id).ok()?)?;
+///     let signals = Profile { name: (*name).to_owned() };
+///     Some(Page::new(*name, signals).child(a().href(HOME.link()).text("Home")))
+/// }
+///
+/// let _app: Router = pages(Router::new()).hypersig_runtime();
+/// ```
+///
+/// A handler receives the router state and the route's arguments, already
+/// parsed, and answers with a [`Page`](crate::Page), an `Option<Page>`, or a
+/// [`PageResponse`](crate::PageResponse). A path whose segments do not parse
+/// into the parameter types, or a handler that answers `None`, gets a 404,
+/// and a query string that does not deserialize into the search parameters
+/// gets a 400.
+///
+/// # What stays unchecked
+///
+/// The macro guarantees that each route has a handler, and nothing checks
+/// that the generated function is called. A function that is never called
+/// leaves every page of its block answering 404. rustc's `dead_code` lint
+/// does not report the function, because it comes from the macro, but it
+/// does report a handler `fn` that only the function names as never used.
+/// A closure written as the handler gets no such warning. Each `routes!`
+/// block is its own function, so an application with several blocks calls
+/// each of them.
+///
+/// Call the function on the router the application serves, never on one
+/// passed to `Router::nest`. The links point to each route's path, and a
+/// nested router would serve the pages under a longer one, so such a page
+/// answers every request with a 500 that names the two paths.
+///
+/// A parent after `in` is a page itself. A path prefix that has no page of
+/// its own cannot be a parent.
+///
+/// # Compile errors
+///
+/// A line without `=> handler`, a path that does not start with `/`, a `{`
+/// or `}` that does not enclose a whole named segment, a path whose
+/// segments differ in number from the route's parameters, and a child whose
+/// path or parameters do not continue its parent's.
+///
+/// This macro needs the `axum` feature.
+#[cfg(feature = "axum")]
+#[macro_export]
+macro_rules! routes {
+    (@route $path:literal) => {
+        $crate::_private::route($path)
+    };
+    (@route $path:literal, $parent:ident) => {
+        $crate::_private::child(&$parent, $path)
+    };
+    (
+        $(#[$fn_attr:meta])*
+        $fn_vis:vis fn $fn_name:ident(Router<$state:ty>);
+        $(
+            $(#[$attr:meta])*
+            $vis:vis const $name:ident: $ty:ty = $path:literal $(in $parent:ident)? => $handler:expr;
+        )+
+    ) => {
+        $(
+            $(#[$attr])*
+            $vis const $name: $ty = $crate::routes!(@route $path $(, $parent)?);
+        )+
+
+        $(#[$fn_attr])*
+        $fn_vis fn $fn_name(
+            router: $crate::_private::Router<$state>,
+        ) -> $crate::_private::Router<$state> {
+            $(
+                let router = <$crate::_private::Router<$state> as $crate::RouterExt<$state>>::page(
+                    router, $name, $handler,
+                );
+            )+
+            router
+        }
+    };
+    ($($input:tt)*) => {
+        ::core::compile_error!(
+            "`routes!` takes `fn NAME(Router<STATE>);`, then one `const NAME: Route<..> = \"/path\" => handler;` per page, each naming its handler after `=>`"
+        );
+    };
 }
 
 /// The parts of a tuple expression, or an `nth` expression for each where it is not one.
@@ -345,8 +465,14 @@ impl<S> Link<S> {
     ///     id: i32,
     /// }
     ///
-    /// const MEMBER: Route<i32> = Route::new("/members/{id}");
+    /// # async fn member((): (), _: i32) -> Option<hypersig::Page<Search>> { None }
+    /// hypersig::routes! {
+    ///     fn pages(Router<()>);
+    ///     const MEMBER: Route<i32> = "/members/{id}" => member;
+    /// }
+    ///
     /// let _open = button().on_click(MEMBER.link_with(Search::id()).navigate()).text("Open");
+    /// # let _ = pages;
     /// ```
     #[must_use]
     pub fn navigate(self) -> Stmt<S> {
@@ -425,7 +551,7 @@ pub(crate) fn query_string(value: &Value) -> String {
 /// and its variants, because a rename would make the two disagree.
 ///
 /// ```
-/// use hypersig::{Route, Segment};
+/// use hypersig::{Page, Route, Segment, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Segment, Serialize, Deserialize)]
@@ -434,8 +560,17 @@ pub(crate) fn query_string(value: &Value) -> String {
 ///     Settings,
 /// }
 ///
-/// const TAB: Route<(String, Tab)> = Route::new("/teams/{team}/{tab}");
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Team {}
+///
+/// # async fn tab((): (), _: (String, Tab)) -> Option<Page<Team>> { None }
+/// hypersig::routes! {
+///     fn pages(Router<()>);
+///     const TAB: Route<(String, Tab)> = "/teams/{team}/{tab}" => tab;
+/// }
+///
 /// assert_eq!(TAB.url(("red".to_owned(), Tab::Settings)).as_str(), "/teams/red/Settings");
+/// # let _ = pages;
 /// ```
 pub trait Segment: sealed::Sealed + Sized {
     /// Reads the value from a percent-decoded segment, or `None` if it is not one.
@@ -670,8 +805,9 @@ impl<Q: Signals> Search for Q {
 
 /// Parameters that start with the parameters `P` of a parent [`Route`].
 ///
-/// [`Route::child`] requires it, so that a child's parameters repeat its
-/// parent's in the same order and may add more after them.
+/// A page declared with `in PARENT` in [`routes!`](crate::routes) requires
+/// it, so that a child's parameters repeat its parent's in the same order and
+/// may add more after them.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` does not start with `{P}`, the parameters of the parent route",
     note = "a child route's parameters repeat its parent's, in order, and may add more after them"

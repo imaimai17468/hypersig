@@ -74,12 +74,12 @@ pub fn pages(site: Site) -> Part {
             heading("Routes"),
             para(
                 site,
-                "A [`Route<P>`](api:hypersig/struct.Route.html) is a path whose parameters are `P`. A parameter is a whole segment written `{name}`, as in axum, and `P` is `()` for a path without one, one [`Segment`](api:hypersig/trait.Segment.html) for one, and a tuple for two to six, in path order. A `Segment` is an integer, a `String`, or an enum whose variants have no fields with `#[derive(Segment)]`, whose segment is the variant's name. Declare it as a `const`: `Route::new` counts the segments, so a path whose count differs from `P` fails to compile.",
+                "A [`Route<P>`](api:hypersig/struct.Route.html) is a path whose parameters are `P`. A parameter is a whole segment written `{name}`, as in axum, and `P` is `()` for a path without one, one [`Segment`](api:hypersig/trait.Segment.html) for one, and a tuple for two to six, in path order. A `Segment` is an integer, a `String`, or an enum whose variants have no fields with `#[derive(Segment)]`, whose segment is the variant's name. Declare it in [`routes!`](api:hypersig/macro.routes.html), on a line that names the handler serving it, so a route without a handler cannot be declared. The macro counts the segments, so a path whose count differs from `P` fails to compile.",
             ),
             show(Snippet::WrongRoute),
             para(
                 site,
-                "`RouterExt::page` serves a route on `GET` with a handler that receives the router state and the parameters, already parsed, and returns the `Page`. A path whose segments do not parse into the parameter types gets a 404, and so does a handler that returns `None`, as `member` does below for an id it does not know.",
+                "The first line of `routes!` names a function and the router state, and the function registers each route on `GET` with its handler. A handler receives the router state and the parameters, already parsed, and returns the `Page`. A path whose segments do not parse into the parameter types gets a 404, and so does a handler that returns `None`, as `member` does below for an id it does not know.",
             ),
             program(Program::Pages),
             heading("Links"),
@@ -91,12 +91,12 @@ pub fn pages(site: Site) -> Part {
             heading("Pages under a page"),
             para(
                 site,
-                "`child` declares a route under another. Its path is the parent's path followed by more segments, and its parameters are the parent's followed by its own, so a link to the child needs the parent's values too. A path that does not continue the parent's, or parameters that do not start with the parent's, fail to compile.",
+                "`in PARENT` after the path declares a route under the page of an earlier line. Its path is the parent's path followed by more segments, and its parameters are the parent's followed by its own, so a link to the child needs the parent's values too. A path that does not continue the parent's, or parameters that do not start with the parent's, fail to compile.",
             ),
             show(Snippet::ChildRoutes),
             para(
                 site,
-                "Register a child with `RouterExt::page` on the same router as every other page. A page registered on a router passed to axum's `nest` is served under a longer path than its links point to, so it answers every request with a 500 that names both paths.",
+                "Call the function `routes!` writes on the router the application serves. Called on a router passed to axum's `nest`, it serves the pages under a longer path than their links point to, so each of them answers every request with a 500 that names both paths.",
             ),
         ]
         .into_iter()
@@ -121,7 +121,8 @@ pub fn pages(site: Site) -> Part {
             bullets(
                 site,
                 &[
-                    "Nothing checks that a route you link to is registered with `RouterExt::page`. A route that is not answers 404.",
+                    "Nothing checks that the function `routes!` writes is called. A block whose function is never called answers 404 on every page, and rustc reports its handler functions as never used, though not the function itself or a handler written as a closure.",
+                    "A parent after `in` is a page itself, so a path prefix with no page of its own cannot be one.",
                     "A link is a plain `<a href>`, so following it loads the next page from the server, and the signals of the page you leave are gone.",
                     "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
                 ],

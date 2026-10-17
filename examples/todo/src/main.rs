@@ -27,8 +27,12 @@ struct TodoDetail {
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 struct TodoId(u64);
 
-const INDEX: Route = Route::new("/");
-const TODO: Route<u64> = Route::new("/todos/{id}");
+hypersig::routes! {
+    fn pages(Router<AppState>);
+    const INDEX: Route = "/" => index;
+    const TODO: Route<u64> = "/todos/{id}" => todo;
+}
+
 const ADD: Action<TodoPage, String> = Action::post("/todos");
 const TOGGLE: Action<TodoPage, TodoId> = Action::post("/todos/toggle");
 const REMOVE: Action<TodoPage, TodoId> = Action::post("/todos/remove");
@@ -306,9 +310,7 @@ async fn main() -> std::io::Result<()> {
         todos: Arc::default(),
         changed,
     };
-    let app = Router::new()
-        .page(INDEX, index)
-        .page(TODO, todo)
+    let app = pages(Router::new())
         .hypersig_runtime()
         .action(ADD, add)
         .action(TOGGLE, toggle)

@@ -82,7 +82,11 @@ struct Counter {
     count: i32,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const INDEX: Route = "/" => index;
+}
+
 const RESET: Action<Counter> = Action::post("/reset");
 
 async fn index((): (), (): ()) -> Page<Counter> {
@@ -101,8 +105,7 @@ async fn reset((): (), (): ()) -> Patches<Counter> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
+    let app = pages(Router::new())
         .hypersig_runtime()
         .action(RESET, reset);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
@@ -110,15 +113,15 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Run `cargo run` and open <http://127.0.0.1:3000>. `.page(INDEX, index)` serves the page at `/`. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime, and no Node or JavaScript build is involved.
+Run `cargo run` and open <http://127.0.0.1:3000>. `routes!` declares the page at `/` with its handler `index`, and the function `pages` it writes serves it. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime, and no Node or JavaScript build is involved.
 
 ## Pages and links
 
-A page is a `Route`, declared as a `const` like an action. `RouterExt::page` serves it, and `El::href` links to it from the same value. A parameter is a `{name}` segment, and the route's type gives each one a type, so a link whose parameters do not fit the route, or a path with more or fewer `{name}` segments than the type has values, is a compile error. A path segment that does not parse into its type gets a 404 before the handler runs.
+A page is a `Route`, declared in `routes!` together with the handler that serves it, so a route without a handler cannot be declared. `El::href` links to it from the same value. A parameter is a `{name}` segment, and the route's type gives each one a type, so a link whose parameters do not fit the route, or a path with more or fewer `{name}` segments than the type has values, is a compile error. A path segment that does not parse into its type gets a 404 before the handler runs.
 
 ```rust
 use hypersig::html::{a, each, li, ul};
-use hypersig::{Route, Signals};
+use hypersig::{Page, Route, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -132,9 +135,15 @@ struct Team {
     members: Vec<Member>,
 }
 
-const MEMBER: Route<i32> = Route::new("/members/{id}");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const MEMBER: Route<i32> = "/members/{id}" => member;
+}
 
-// Served with `.page(MEMBER, |state, id: i32| async move { ... })`.
+async fn member((): (), id: i32) -> Option<Page<Team>> {
+    (id > 0).then(|| Page::new("Member", Team { members: Vec::new() }))
+}
+
 let list = ul::<Team>().child(each(Team::members(), |member| {
     li().child(
         a().href(MEMBER.link_with(member.at(Member::id())))

@@ -1,7 +1,7 @@
 error[E0277]: `&str` is not an expression of type `i32` on the page whose signals are `_`
-  --> tests/ui/fail/link_wrong_param_type.rs:13:47
+  --> tests/ui/fail/link_wrong_param_type.rs:21:47
    |
-13 |     let _ = a::<Team>().href(MEMBER.link_with("ada"));
+21 |     let _ = a::<Team>().href(MEMBER.link_with("ada"));
    |                                     --------- ^^^^^ the trait `IntoExpr<_, i32>` is not implemented for `&str`
    |                                     |
    |                                     required by a bound introduced by this call

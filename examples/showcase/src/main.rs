@@ -74,7 +74,11 @@ struct Showcase {
     look: Look,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const INDEX: Route = "/" => index;
+}
+
 const SEARCH: Action<Showcase, String> = Action::post("/search");
 const ORDER: Action<Showcase, (i32, Size, bool)> = Action::post("/order");
 const SEARCH_FIELD: NodeRef<Showcase> = NodeRef::new("search");
@@ -594,8 +598,7 @@ textarea { font: inherit; min-height: 3rem; }
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
+    let app = pages(Router::new())
         .hypersig_runtime()
         .action(SEARCH, search_fruit)
         .action(ORDER, order);

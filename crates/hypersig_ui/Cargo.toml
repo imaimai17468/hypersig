@@ -17,6 +17,8 @@ hypersig = { path = "../hypersig", version = "=0.1.0", default-features = false 
 serde.workspace = true
 
 [dev-dependencies]
+# The doc samples declare pages with `routes!`, which needs the `axum` feature.
+hypersig = { path = "../hypersig", features = ["axum"] }
 trybuild.workspace = true
 
 [lints]

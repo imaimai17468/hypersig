@@ -21,8 +21,11 @@ struct Profile {
     name: String,
 }
 
-const TEAM: Route = Route::new("/");
-const MEMBER: Route<i32> = Route::new("/members/{id}");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const TEAM: Route = "/" => team;
+    const MEMBER: Route<i32> = "/members/{id}" => member;
+}
 
 fn members() -> Vec<Member> {
     vec![
@@ -59,10 +62,7 @@ async fn member((): (), id: i32) -> Option<Page<Profile>> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(TEAM, team)
-        .page(MEMBER, member)
-        .hypersig_runtime();
+    let app = pages(Router::new()).hypersig_runtime();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     axum::serve(listener, app).await
 }

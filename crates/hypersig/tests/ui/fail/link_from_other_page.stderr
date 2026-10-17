@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
-  --> tests/ui/fail/link_from_other_page.rs:18:30
+  --> tests/ui/fail/link_from_other_page.rs:26:30
    |
-18 |     let _ = a::<Team>().href(MEMBER.link_with(Other::id()));
+26 |     let _ = a::<Team>().href(MEMBER.link_with(Other::id()));
    |                         ---- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Link<Team>`, found `Link<Other>`
    |                         |
    |                         arguments to this method are incorrect

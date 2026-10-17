@@ -5,7 +5,11 @@
 use hypersig::Route;
 use hypersig::html::{a, div, h1, p};
 
-const ADA: Route = Route::new("/ada");
+# async fn ada((): (), (): ()) -> Option<hypersig::Page<Profile>> { None }
+hypersig::routes! {
+    fn pages(Router<()>);
+    const ADA: Route = "/ada" => ada;
+}
 
 let card = div::<Profile>()
     .id("ada")
@@ -19,3 +23,4 @@ assert_eq!(
     card.render(),
     r#"<div id="ada"><h1>Ada Lovelace</h1><p>Wrote the first program. <a href="/ada">Read more</a></p></div>"#,
 );
+# let _ = pages;

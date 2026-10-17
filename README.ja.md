@@ -82,7 +82,11 @@ struct Counter {
     count: i32,
 }
 
-const INDEX: Route = Route::new("/");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const INDEX: Route = "/" => index;
+}
+
 const RESET: Action<Counter> = Action::post("/reset");
 
 async fn index((): (), (): ()) -> Page<Counter> {
@@ -101,8 +105,7 @@ async fn reset((): (), (): ()) -> Patches<Counter> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
-        .page(INDEX, index)
+    let app = pages(Router::new())
         .hypersig_runtime()
         .action(RESET, reset);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
@@ -110,15 +113,15 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`/` のページは `.page(INDEX, index)` が配信します。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。ブラウザ用のランタイムは `hypersig_runtime()` が配信するので、Node も JavaScript のビルドも要りません。
+`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`routes!` が `/` のページをハンドラ `index` と一緒に宣言し、生成した関数 `pages` がそのページを配信します。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。ブラウザ用のランタイムは `hypersig_runtime()` が配信するので、Node も JavaScript のビルドも要りません。
 
 ## ページとリンク
 
-ページはアクションと同じく `const` で宣言する `Route` です。`RouterExt::page` がそれを配信し、`El::href` が同じ値からリンクを張ります。パラメータは `{name}` の形のセグメントで、ルートの型がそれぞれの型を決めます。ルートに合わないパラメータを渡すリンクや、`{name}` のセグメントの数が型の持つ値の数と食い違うパスは、コンパイルエラーになります。型に変換できないセグメントを持つリクエストには、ハンドラを呼ぶ前に 404 を返します。
+ページは `Route` で、配信するハンドラと一緒に `routes!` で宣言します。ハンドラのないルートは宣言できません。`El::href` は同じ値からリンクを張ります。パラメータは `{name}` の形のセグメントで、ルートの型がそれぞれの型を決めます。ルートに合わないパラメータを渡すリンクや、`{name}` のセグメントの数が型の持つ値の数と食い違うパスは、コンパイルエラーになります。型に変換できないセグメントを持つリクエストには、ハンドラを呼ぶ前に 404 を返します。
 
 ```rust
 use hypersig::html::{a, each, li, ul};
-use hypersig::{Route, Signals};
+use hypersig::{Page, Route, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -132,9 +135,15 @@ struct Team {
     members: Vec<Member>,
 }
 
-const MEMBER: Route<i32> = Route::new("/members/{id}");
+hypersig::routes! {
+    fn pages(Router<()>);
+    const MEMBER: Route<i32> = "/members/{id}" => member;
+}
 
-// Served with `.page(MEMBER, |state, id: i32| async move { ... })`.
+async fn member((): (), id: i32) -> Option<Page<Team>> {
+    (id > 0).then(|| Page::new("Member", Team { members: Vec::new() }))
+}
+
 let list = ul::<Team>().child(each(Team::members(), |member| {
     li().child(
         a().href(MEMBER.link_with(member.at(Member::id())))
