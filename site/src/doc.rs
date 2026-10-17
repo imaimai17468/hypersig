@@ -74,6 +74,7 @@ pub enum Component {
     Tabs,
     Accordion,
     DataTable,
+    Chart,
     Card,
     Separator,
     Dialog,
@@ -325,7 +326,10 @@ pub const COMPONENTS: &[Group] = &[
             en: "Data",
             ja: "データ",
         },
-        docs: &[Doc::Components(Component::DataTable)],
+        docs: &[
+            Doc::Components(Component::DataTable),
+            Doc::Components(Component::Chart),
+        ],
     },
     Group {
         title: L {
@@ -453,6 +457,7 @@ impl Doc {
         Self::Components(Component::Card),
         Self::Components(Component::Separator),
         Self::Components(Component::DataTable),
+        Self::Components(Component::Chart),
         Self::Components(Component::Dialog),
         Self::Components(Component::Menu),
         Self::Components(Component::Tooltip),
@@ -556,6 +561,7 @@ impl Doc {
                 Component::Card => ("Card", "カード"),
                 Component::Separator => ("Separator", "区切り線"),
                 Component::DataTable => ("Data table", "データテーブル"),
+                Component::Chart => ("Chart", "チャート"),
                 Component::Dialog => ("Dialog", "ダイアログ"),
                 Component::Menu => ("Menu", "メニュー"),
                 Component::Tooltip => ("Tooltip", "ツールチップ"),
@@ -705,6 +711,7 @@ impl Component {
             Self::Card => "card",
             Self::Separator => "separator",
             Self::DataTable => "data-table",
+            Self::Chart => "chart",
             Self::Dialog => "dialog",
             Self::Menu => "menu",
             Self::Tooltip => "tooltip",

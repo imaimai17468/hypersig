@@ -1129,6 +1129,94 @@ fn component_page(page: Component) -> Page {
                 ),
             ],
         },
+        Component::Chart => Page {
+            lead: L {
+                en: "Bar, line, and area charts of the rows of a list signal, on a scale the server fits to the values.",
+                ja: "リストのシグナルの行を、棒、折れ線、面で描くチャートです。縦軸の目盛りはサーバーが値に合わせて決めます。",
+            },
+            demo: Demo::Chart,
+            built_on: &[
+                L {
+                    en: "The drawing is an `<svg>` with `viewBox=\"0 0 100 100\"` and `preserveAspectRatio=\"none\"`, so it stretches to its box, and its lines keep their width with `vector-effect=\"non-scaling-stroke\"`. The axis labels, the legend, and the box that shows a row's values under the pointer are HTML, which does not stretch.",
+                    ja: "描画は `viewBox=\"0 0 100 100\"` と `preserveAspectRatio=\"none\"` を持つ `<svg>` で、枠に合わせて伸び縮みします。線は `vector-effect=\"non-scaling-stroke\"` で太さを保ちます。軸のラベル、凡例、ポインタの下に出る行の値は、伸び縮みしない HTML で置きます。",
+                },
+                L {
+                    en: "The drawing is hidden from assistive technology. A screen reader reads a visually hidden `<table>` of the same rows, captioned with the chart's name, and the values under the pointer have no keyboard equivalent beyond that table.",
+                    ja: "描画は支援技術から隠します。スクリーンリーダーは、チャートの名前をキャプションに持つ、視覚的に隠した同じ行の `<table>` を読みます。ポインタの下に出る値をキーボードで見る手段は、この表のほかにありません。",
+                },
+                L {
+                    en: "A series reads a number field of the row type, so a field of another struct or a text field does not compile. The browser cannot round a maximum, so `ChartScale::fit` picks the scale on the server, and `Chart::patch` sends the rows and their scale in one patch. A value that a statement in the browser raises above the maximum is drawn at the maximum until the next patch.",
+                    ja: "系列は行の型の数値のフィールドを読むので、別の構造体のフィールドや文字列のフィールドを渡すとコンパイルエラーになります。ブラウザでは最大値を丸められないので、目盛りはサーバーの `ChartScale::fit` が決め、`Chart::patch` が行とその目盛りを 1 つのパッチで送ります。ブラウザの文で最大値を超えた値は、次のパッチまで最大値の高さで描かれます。",
+                },
+            ],
+            keys: &[],
+            items: &[
+                (
+                    "Chart::bar",
+                    "hypersig_ui/struct.Chart.html#method.bar",
+                    L {
+                        en: "A bar chart named `label` of `rows` on `scale`, labeled by `category`.",
+                        ja: "`label` を名前に持ち、`rows` を `scale` の上に描き、`category` でラベルを付ける棒グラフ",
+                    },
+                ),
+                (
+                    "Chart::line",
+                    "hypersig_ui/struct.Chart.html#method.line",
+                    L {
+                        en: "A line chart named `label` of `rows` on `scale`, labeled by `category`.",
+                        ja: "`label` を名前に持ち、`rows` を `scale` の上に描き、`category` でラベルを付ける折れ線グラフ",
+                    },
+                ),
+                (
+                    "Chart::area",
+                    "hypersig_ui/struct.Chart.html#method.area",
+                    L {
+                        en: "An area chart named `label` of `rows` on `scale`, labeled by `category`.",
+                        ja: "`label` を名前に持ち、`rows` を `scale` の上に描き、`category` でラベルを付ける面グラフ",
+                    },
+                ),
+                (
+                    "series",
+                    "hypersig_ui/struct.Chart.html#method.series",
+                    L {
+                        en: "Adds a series named `name` that draws the number field `field` in `color`.",
+                        ja: "数値のフィールド `field` を `color` で描く、`name` という名前の系列を足します。",
+                    },
+                ),
+                (
+                    "scale",
+                    "hypersig_ui/struct.Chart.html#method.scale",
+                    L {
+                        en: "The scale fitted to the values of every series in `rows`.",
+                        ja: "`rows` にあるすべての系列の値に合わせた目盛り",
+                    },
+                ),
+                (
+                    "patch",
+                    "hypersig_ui/struct.Chart.html#method.patch",
+                    L {
+                        en: "A patch that sets the rows to `rows` and the scale fitted to them.",
+                        ja: "行を `rows` にし、目盛りをその行に合わせたものにするパッチ",
+                    },
+                ),
+                (
+                    "ChartScale::fit",
+                    "hypersig_ui/struct.ChartScale.html#method.fit",
+                    L {
+                        en: "The scale from 0 to a round number at or above the largest of `values`.",
+                        ja: "0 から、`values` の最大値以上の切りのよい数までの目盛り",
+                    },
+                ),
+                (
+                    "token::chart_1",
+                    "hypersig_ui/token/fn.chart_1.html",
+                    L {
+                        en: "The first series of a chart.",
+                        ja: "チャートの 1 つめの系列の色",
+                    },
+                ),
+            ],
+        },
         Component::Dialog => Page {
             lead: L {
                 en: "A modal dialog, and an alert dialog that asks the visitor to confirm.",
