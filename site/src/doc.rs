@@ -1,12 +1,16 @@
 //! The pages of the site, their paths, and the order the sidebar lists them in.
 
-use crate::{Site, components, home, layout, learn, reference, style};
+use crate::{Site, components, home, landing, layout, learn, reference, style};
 
 /// One page of the site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Doc {
-    /// The landing page.
+    /// The landing page of hypersig, the framework.
     Home,
+    /// The landing page of the Style docs.
+    StyleHome,
+    /// The landing page of the Components docs.
+    ComponentsHome,
     /// A page of the Learn section.
     Learn(Learn),
     /// A page of the Reference section.
@@ -83,6 +87,62 @@ pub enum StylePage {
     Patterns,
     Animation,
     Unchecked,
+}
+
+/// One of the three sets of docs, each with its own header and landing
+/// page, as the libraries of `TanStack` share one site.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Library {
+    /// hypersig itself.
+    Framework,
+    /// `hypersig::style`, from the `hypersig_style` crate.
+    Style,
+    /// The `hypersig_ui` crate.
+    Components,
+}
+
+impl Library {
+    /// Every library, in the order the switcher lists them.
+    pub const ALL: [Self; 3] = [Self::Framework, Self::Style, Self::Components];
+
+    /// The name the header and the switcher show.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Framework => "Framework",
+            Self::Style => "Style",
+            Self::Components => "Components",
+        }
+    }
+
+    /// The library's landing page.
+    pub fn home(self) -> Doc {
+        match self {
+            Self::Framework => Doc::Home,
+            Self::Style => Doc::StyleHome,
+            Self::Components => Doc::ComponentsHome,
+        }
+    }
+
+    /// The sections the header links to, each with its first page.
+    pub fn sections(self) -> &'static [(&'static str, Doc)] {
+        match self {
+            Self::Framework => &[
+                ("Learn", Doc::Learn(Learn::QuickStart)),
+                ("Reference", Doc::Reference(Reference::Overview)),
+            ],
+            Self::Style => &[("Docs", Doc::Style(StylePage::Overview))],
+            Self::Components => &[("Docs", Doc::Components(Component::Installation))],
+        }
+    }
+
+    /// The front page of the library's rustdoc output, as a link target.
+    pub fn api(self) -> &'static str {
+        match self {
+            Self::Framework => "api:hypersig/index.html",
+            Self::Style => "api:hypersig_style/index.html",
+            Self::Components => "api:hypersig_ui/index.html",
+        }
+    }
 }
 
 /// A titled run of pages in a sidebar.
@@ -232,6 +292,8 @@ impl Doc {
     /// Every page, in the order the site lists them.
     pub const ALL: &[Self] = &[
         Self::Home,
+        Self::StyleHome,
+        Self::ComponentsHome,
         Self::Learn(Learn::QuickStart),
         Self::Learn(Learn::DescribingThePage),
         Self::Learn(Learn::Signals),
@@ -288,13 +350,13 @@ impl Doc {
     pub fn path(self) -> String {
         match self {
             Self::Home => String::new(),
+            Self::StyleHome => "style/".to_owned(),
+            Self::ComponentsHome => "components/".to_owned(),
             Self::Learn(Learn::QuickStart) => "learn/".to_owned(),
             Self::Reference(Reference::Overview) => "reference/".to_owned(),
             Self::Learn(page) => format!("learn/{}/", page.slug()),
             Self::Reference(page) => format!("reference/{}/", page.slug()),
-            Self::Components(Component::Installation) => "components/".to_owned(),
             Self::Components(page) => format!("components/{}/", page.slug()),
-            Self::Style(StylePage::Overview) => "style/".to_owned(),
             Self::Style(page) => format!("style/{}/", page.slug()),
         }
     }
@@ -304,6 +366,8 @@ impl Doc {
     pub fn title(self) -> &'static str {
         match self {
             Self::Home => "hypersig",
+            Self::StyleHome => "hypersig style",
+            Self::ComponentsHome => "hypersig components",
             Self::Learn(page) => match page {
                 Learn::QuickStart => "Quick start",
                 Learn::DescribingThePage => "Describing the page",
@@ -351,7 +415,7 @@ impl Doc {
                 Component::Progress => "Progress and skeleton",
             },
             Self::Style(page) => match page {
-                StylePage::Overview => "Style",
+                StylePage::Overview => "Overview",
                 StylePage::Values => "Properties and values",
                 StylePage::Conditions => "Conditions",
                 StylePage::Tokens => "Tokens and themes",
@@ -363,6 +427,20 @@ impl Doc {
         }
     }
 
+    /// The library whose docs the page belongs to.
+    pub(crate) fn library(self) -> Library {
+        match self {
+            Self::Home | Self::Learn(_) | Self::Reference(_) => Library::Framework,
+            Self::StyleHome | Self::Style(_) => Library::Style,
+            Self::ComponentsHome | Self::Components(_) => Library::Components,
+        }
+    }
+
+    /// Whether the page is a library's landing page, which has no sidebar.
+    pub(crate) fn is_landing(self) -> bool {
+        self == self.library().home()
+    }
+
     /// The URL of the page.
     pub(crate) fn url(self, site: Site) -> String {
         site.url(&self.path())
@@ -371,7 +449,7 @@ impl Doc {
     /// The sidebar the page is listed in.
     pub(crate) fn groups(self) -> &'static [Group] {
         match self {
-            Self::Home => &[],
+            Self::Home | Self::StyleHome | Self::ComponentsHome => &[],
             Self::Learn(_) => LEARN,
             Self::Reference(_) => REFERENCE,
             Self::Components(_) => COMPONENTS,
@@ -398,6 +476,8 @@ impl Doc {
     pub fn render(self, site: Site) -> String {
         match self {
             Self::Home => home::render(site),
+            Self::StyleHome => landing::style(site),
+            Self::ComponentsHome => landing::components(site),
             Self::Learn(page) => layout::article(site, self, learn::content(site, page)),
             Self::Reference(page) => layout::article(site, self, reference::content(site, page)),
             Self::Components(page) => layout::article(site, self, components::content(site, page)),
@@ -442,7 +522,7 @@ impl Reference {
 impl Component {
     fn slug(self) -> &'static str {
         match self {
-            Self::Installation => "",
+            Self::Installation => "installation",
             Self::Theming => "theming",
             Self::Button => "button",
             Self::TextField => "text-field",
@@ -470,7 +550,7 @@ impl Component {
 impl StylePage {
     fn slug(self) -> &'static str {
         match self {
-            Self::Overview => "",
+            Self::Overview => "overview",
             Self::Values => "values",
             Self::Conditions => "conditions",
             Self::Tokens => "tokens",
@@ -495,10 +575,18 @@ mod tests {
     }
 
     #[test]
-    fn every_page_but_the_landing_page_is_in_a_sidebar() {
+    fn every_page_but_the_landing_pages_is_in_a_sidebar() {
         for &doc in Doc::ALL {
             let listed = doc.groups().iter().any(|group| group.docs.contains(&doc));
-            assert_eq!(listed, doc != Doc::Home, "{doc:?}");
+            assert_eq!(listed, !doc.is_landing(), "{doc:?}");
+        }
+    }
+
+    #[test]
+    fn every_library_has_a_landing_page_of_its_own() {
+        for library in Library::ALL {
+            assert_eq!(library.home().library(), library);
+            assert!(library.home().is_landing());
         }
     }
 }

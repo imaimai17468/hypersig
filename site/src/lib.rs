@@ -10,6 +10,7 @@ mod components;
 mod demo;
 mod doc;
 mod home;
+mod landing;
 mod layout;
 mod learn;
 mod prose;
