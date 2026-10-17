@@ -9,8 +9,8 @@ use hypersig::html::{
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, BorderCollapse, BorderStyle, CaptionSide, Color, Cursor,
-    Display, FontVariantNumeric, FontWeight, JustifyContent, Length, OverflowX, TextAlign,
-    VerticalAlign, WhiteSpace, pct, px, rem,
+    Display, FontVariantNumeric, FontWeight, JustifyContent, OverflowX, TextAlign, VerticalAlign,
+    WhiteSpace, pct, px, rem,
 };
 use hypersig::style::{PseudoClass, Style};
 use hypersig::{Comparable, Expr, IntoExpr, Item, Number, Sig, Signals, Stmt, Textual, if_else};
@@ -512,10 +512,11 @@ fn sort_header<S>(
                 .css(sort_button(numeric))
                 .on_click(toggle)
                 .child(span().text(header))
-                .child(shown_icon(icon::ARROW_UP, rem(1), ascending.clone()))
-                .child(shown_icon(icon::ARROW_DOWN, rem(1), descending.clone()))
+                .child(icon(icon::ARROW_UP, rem(1)).show(ascending.clone()))
+                .child(icon(icon::ARROW_DOWN, rem(1)).show(descending.clone()))
                 .child(
-                    shown_icon(icon::ARROW_UP_DOWN, rem(1), !ascending.or(descending))
+                    icon(icon::ARROW_UP_DOWN, rem(1))
+                        .show(!ascending.or(descending))
                         .css(Style::new().color(token::muted_foreground().var())),
                 ),
         )
@@ -557,12 +558,8 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selected: Sig<T, bool>) -> El<S> {
         .attr("aria-hidden", "true")
         .css(check_box())
         .css_when(check_box_checked(), some.clone())
-        .child(shown_icon(icon::CHECK, rem(0.875), all.clone()))
-        .child(shown_icon(
-            icon::MINUS,
-            rem(0.875),
-            some.clone().and(!all.clone()),
-        ));
+        .child(icon(icon::CHECK, rem(0.875)).show(all.clone()))
+        .child(icon(icon::MINUS, rem(0.875)).show(some.clone().and(!all.clone())));
     button()
         .attr("type", "button")
         .attr("role", "checkbox")
@@ -587,16 +584,6 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selected: Sig<T, bool>) -> El<S> {
                 .merge(look::focus_ring()),
         )
         .child(mark)
-}
-
-/// An icon in a `<span>` shown while `when` is true. The span carries the
-/// condition because the runtime shows and hides HTML elements only, and an
-/// icon is an `<svg>`.
-fn shown_icon<S>(paths: &[&str], size: Length, when: Expr<S, bool>) -> El<S> {
-    span()
-        .css(Style::new().display(Display::InlineFlex))
-        .show(when)
-        .child(icon(paths, size))
 }
 
 /// The range of rows shown and the buttons that move between pages.
