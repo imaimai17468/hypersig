@@ -143,7 +143,7 @@ pub fn expressions(site: Site) -> Part {
                 en: &[
                     &[
                         "`i32` and `f64`",
-                        "`+`, `-`, `*`, `%`, `min`, `max`, `to_fixed`, and `/` on `f64`. `to_f64` turns an `i32` into an `f64`.",
+                        "`+`, `-`, `*`, `%`, `min`, `max`, `to_fixed`, and `/` on `f64`. `to_f64` turns an `i32` into an `f64`, and `format` writes a number in a `NumberFormat`, with grouped digits and affixes.",
                     ],
                     &[
                         "`String`",
@@ -166,7 +166,7 @@ pub fn expressions(site: Site) -> Part {
                 ja: &[
                     &[
                         "`i32` と `f64`",
-                        "`+`、`-`、`*`、`%`、`min`、`max`、`to_fixed`、`f64` の `/`。`to_f64` は `i32` を `f64` に変えます。",
+                        "`+`、`-`、`*`、`%`、`min`、`max`、`to_fixed`、`f64` の `/`。`to_f64` は `i32` を `f64` に変えます。`format` は数を `NumberFormat` に従い、桁を区切って前後に文字を付けたテキストにします。",
                     ],
                     &[
                         "`String`",

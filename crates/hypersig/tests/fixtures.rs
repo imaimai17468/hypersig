@@ -174,6 +174,12 @@ fn controls() -> (El<Controls>, Controls) {
                 .bind_style(Property::Width, quantity.to_text().concat("rem"))
                 .text("Buy"),
         )
+        .child(
+            span().id("price-label").bind_text(
+                (Controls::price() * 1000.0)
+                    .format(&hypersig::NumberFormat::new().digits(2).prefix("$")),
+            ),
+        )
         .child(span().id("total").bind_text(hypersig::if_else(
             size.equals(&Size::Large),
             "large",

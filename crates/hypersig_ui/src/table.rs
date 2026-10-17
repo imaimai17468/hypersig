@@ -15,8 +15,8 @@ use hypersig::style::value::{
 };
 use hypersig::style::{PseudoClass, Style};
 use hypersig::{
-    Comparable, Expr, IntoExpr, IntoStmt, Item, Number, Segment, Sig, Signals, Stmt, Textual,
-    if_else,
+    Comparable, Expr, IntoExpr, IntoStmt, Item, Number, NumberFormat, Segment, Sig, Signals, Stmt,
+    Textual, if_else,
 };
 use serde::{Deserialize, Serialize};
 
@@ -169,6 +169,38 @@ impl<S: 'static, T: 'static> Column<S, T> {
     ) -> Self {
         Self::new(header.into(), true, move |row| {
             span().bind_text(row.at(field).to_text())
+        })
+    }
+
+    /// A column headed `header` that shows the number field `field` written in `format`.
+    ///
+    /// ```
+    /// use hypersig::{NumberFormat, Signals};
+    /// use hypersig_ui::Column;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Payment {
+    ///     amount: f64,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Ledger {
+    ///     payments: Vec<Payment>,
+    /// }
+    ///
+    /// const DOLLARS: NumberFormat = NumberFormat::new().digits(2).prefix("$");
+    /// let amount: Column<Ledger, Payment> = Column::formatted("Amount", Payment::amount(), DOLLARS);
+    /// # let _ = amount;
+    /// ```
+    #[must_use]
+    pub fn formatted<U: Number + 'static>(
+        header: impl Into<String>,
+        field: Sig<T, U>,
+        format: NumberFormat,
+    ) -> Self {
+        Self::new(header.into(), true, move |row| {
+            span().bind_text(row.at(field).format(&format))
         })
     }
 

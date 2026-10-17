@@ -1104,6 +1104,14 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "Column::formatted",
+                    "hypersig_ui/struct.Column.html#method.formatted",
+                    L {
+                        en: "A column headed `header` that shows the number field `field` written in `format`.",
+                        ja: "見出しが `header` で、数値のフィールド `field` を `format` の形で表示する列",
+                    },
+                ),
+                (
                     "Column::custom",
                     "hypersig_ui/struct.Column.html#method.custom",
                     L {
@@ -1221,6 +1229,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "Adds a series named `name` that draws the number field `field` in `color`.",
                         ja: "数値のフィールド `field` を `color` で描く、`name` という名前の系列を足します。",
+                    },
+                ),
+                (
+                    "format",
+                    "hypersig_ui/struct.Chart.html#method.format",
+                    L {
+                        en: "Writes the values and the axis labels in `format`.",
+                        ja: "値と軸のラベルを `format` の形で書きます。",
                     },
                 ),
                 (

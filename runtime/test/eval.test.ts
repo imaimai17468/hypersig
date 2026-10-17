@@ -32,7 +32,22 @@ describe("evaluate", () => {
     expect(evaluate(["chars", ["lit", "a😀"]], ctx)).toBe(2);
     expect(evaluate(["if", ["eq", ["sig", "filter"], ["lit", "Active"]], ["lit", "a"], ["lit", "b"]], ctx)).toBe("a");
     expect(evaluate(["fixed", ["lit", 2.5], 2], ctx)).toBe("2.50");
+    expect(evaluate(["fixed", ["lit", 2.5], 0], ctx)).toBe("3");
     expect(evaluate(["or_else", ["lit", null], ["lit", 4]], ctx)).toBe(4);
+  });
+
+  it("formats numbers as ssr.rs does", () => {
+    const plain = (value: number) => evaluate(["format", ["lit", value], 0, ",", ".", "", ""], ctx);
+    expect(plain(0)).toBe("0");
+    expect(plain(999)).toBe("999");
+    expect(plain(1000)).toBe("1,000");
+    expect(plain(-1234567)).toBe("-1,234,567");
+    expect(plain(-0.4)).toBe("0");
+    expect(evaluate(["format", ["lit", -1234.5], 2, ",", ".", "$", ""], ctx)).toBe("-$1,234.50");
+    expect(evaluate(["format", ["lit", 1234567.891], 2, ".", ",", "", " €"], ctx)).toBe("1.234.567,89 €");
+    expect(evaluate(["format", ["lit", 12345], 0, "", ".", "", "%"], ctx)).toBe("12345%");
+    expect(evaluate(["format", ["lit", Number.NaN], 0, ",", ".", "¥", ""], ctx)).toBe("¥NaN");
+    expect(evaluate(["format", ["lit", 2e21], 0, ",", ".", "", ""], ctx)).toBe("2e+21");
   });
 
   it("builds a tuple into an array, as serde writes one", () => {

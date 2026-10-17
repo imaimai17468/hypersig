@@ -1,6 +1,6 @@
 //! A data table, for the data table page.
 
-use hypersig::{Page, Signals};
+use hypersig::{NumberFormat, Page, Signals};
 use hypersig_ui::{Column, DataTable, TableState};
 use serde::{Deserialize, Serialize};
 
@@ -73,12 +73,13 @@ pub fn page(site: Site) -> Page<Ledger> {
         |payment| payment.at(Payment::email()),
     )
     .sortable_column(
-        Column::number(
+        Column::formatted(
             site.t(L {
                 en: "Amount",
                 ja: "金額",
             }),
             Payment::amount(),
+            NumberFormat::new().digits(2).prefix("$"),
         ),
         |payment| payment.at(Payment::amount()),
     );

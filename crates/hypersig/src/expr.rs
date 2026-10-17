@@ -19,6 +19,7 @@
 //! | `if_else(c, a, b)` | `["if",c,a,b]` |
 //! | `(a, b)`, `(a, b, c)` | `["tuple",a,b]`, `["tuple",a,b,c]` |
 //! | `a.to_text()`, `a.to_fixed(n)` | `["str",a]`, `["fixed",a,n]` |
+//! | `a.format(&f)` | `["format",a,digits,group,point,prefix,suffix]` |
 //! | `a.concat(b)`, `trim`, `to_lowercase`, `to_uppercase` | `["concat",a,b]`, `["trim",a]`, `["lower",a]`, `["upper",a]` |
 //! | `a.contains(b)`, `a.starts_with(b)`, `a.char_count()` | `["contains",a,b]`, `["starts",a,b]`, `["chars",a]` |
 //! | `list.len()`, `list.nth(i)` | `["len",a]`, `["nth",a,i]` |
@@ -321,6 +322,33 @@ macro_rules! operations {
                 Expr::binary("max", self.into_expr(), rhs.into_expr())
             }
 
+            /// This number as text in `format`, with its digits grouped and its affixes.
+            ///
+            /// ```
+            /// use hypersig::{NumberFormat, Signals};
+            /// use serde::{Deserialize, Serialize};
+            ///
+            /// #[derive(Signals, Serialize, Deserialize)]
+            /// struct Cart {
+            ///     total: f64,
+            /// }
+            ///
+            /// const YEN: NumberFormat = NumberFormat::new().prefix("¥");
+            /// let _label = Cart::total().format(&YEN);
+            /// ```
+            #[must_use]
+            pub fn format(self, format: &NumberFormat) -> Expr<S, String> {
+                Expr::from_json(json!([
+                    "format",
+                    self.into_expr().ast,
+                    format.digits,
+                    format.group,
+                    format.point,
+                    format.prefix,
+                    format.suffix
+                ]))
+            }
+
             /// This number as an `f64`, which holds every `i32` exactly.
             ///
             /// The browser keeps both as a JavaScript number, so the value
@@ -335,8 +363,9 @@ macro_rules! operations {
         impl<S $(, $r)?> $ty<S, f64 $(, $r)?> {
             /// This number as text with `digits` digits after the point.
             ///
-            /// The runtime uses `Number.prototype.toFixed`, which can round a
-            /// halfway value differently from Rust's `format!("{:.n}")`.
+            /// The runtime uses `Number.prototype.toFixed`, which rounds a
+            /// halfway value away from zero where Rust's `format!("{:.n}")`
+            /// rounds it to even. The first HTML follows the runtime.
             #[must_use]
             pub fn to_fixed(self, digits: u8) -> Expr<S, String> {
                 Expr::from_json(json!(["fixed", self.into_expr().ast, digits]))
@@ -491,11 +520,7 @@ macro_rules! operations {
         }
 
         impl<S, T: Textual $(, $r)?> $ty<S, T $(, $r)?> {
-            /// This value as display text.
-            ///
-            /// The server writes a number below `1e-6` or at or above `1e21` in
-            /// the first HTML differently from JavaScript's `String`. The page
-            /// shows the server's text for one frame, until the runtime writes its own.
+            /// This value as display text, as JavaScript's `String` writes it.
             #[must_use]
             pub fn to_text(self) -> Expr<S, String> {
                 Expr::unary("str", self.into_expr())
@@ -525,6 +550,120 @@ macro_rules! operations {
 
 operations!(Expr);
 operations!(Sig, R);
+
+/// How [`format`](Expr::format) writes a number: decimals, separators, and affixes.
+///
+/// Build one in a `const` and share it between the pages that show the
+/// same kind of number. The browser and the first HTML write the same text,
+/// with no dependence on the visitor's locale:
+///
+/// 1. the number rounded to [`digits`](NumberFormat::digits) places, as
+///    `Number.prototype.toFixed` rounds it, with halves away from zero;
+/// 2. its whole part split into groups of three digits by
+///    [`group`](NumberFormat::group), and its fraction after
+///    [`point`](NumberFormat::point);
+/// 3. a minus sign for a negative number that does not round to zero,
+///    then [`prefix`](NumberFormat::prefix), the digits, and
+///    [`suffix`](NumberFormat::suffix).
+///
+/// A number at or above `1e21` keeps JavaScript's exponent form without
+/// groups, and a value that is not finite is written as `NaN` or
+/// `Infinity` between the affixes.
+///
+/// ```
+/// use hypersig::NumberFormat;
+///
+/// const DOLLARS: NumberFormat = NumberFormat::new().digits(2).prefix("$");
+/// const PERCENT: NumberFormat = NumberFormat::new().digits(1).suffix("%");
+/// const EURO: NumberFormat = NumberFormat::new().digits(2).group(".").point(",").suffix(" €");
+/// assert_eq!(DOLLARS.write(-1234.5), "-$1,234.50");
+/// assert_eq!(PERCENT.write(12.25), "12.3%");
+/// assert_eq!(EURO.write(1234567.891), "1.234.567,89 €");
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct NumberFormat {
+    digits: u8,
+    group: &'static str,
+    point: &'static str,
+    prefix: &'static str,
+    suffix: &'static str,
+}
+
+impl NumberFormat {
+    /// Whole numbers in groups of three split by `,`, with no affixes.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            digits: 0,
+            group: ",",
+            point: ".",
+            prefix: "",
+            suffix: "",
+        }
+    }
+
+    /// Writes `digits` digits after the point, 0 until set.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `digits` is above 100, the most `toFixed` takes. In a
+    /// `const`, that is a compile error.
+    #[must_use]
+    pub const fn digits(mut self, digits: u8) -> Self {
+        assert!(digits <= 100, "toFixed takes at most 100 digits");
+        self.digits = digits;
+        self
+    }
+
+    /// Splits the whole part into groups of three with `separator`, `,` until set.
+    ///
+    /// An empty separator leaves the digits ungrouped.
+    #[must_use]
+    pub const fn group(mut self, separator: &'static str) -> Self {
+        self.group = separator;
+        self
+    }
+
+    /// Writes `point` between the whole part and the fraction, `.` until set.
+    #[must_use]
+    pub const fn point(mut self, point: &'static str) -> Self {
+        self.point = point;
+        self
+    }
+
+    /// Writes `prefix` before the digits and after any minus sign.
+    #[must_use]
+    pub const fn prefix(mut self, prefix: &'static str) -> Self {
+        self.prefix = prefix;
+        self
+    }
+
+    /// Writes `suffix` after the digits.
+    #[must_use]
+    pub const fn suffix(mut self, suffix: &'static str) -> Self {
+        self.suffix = suffix;
+        self
+    }
+
+    /// `value` written in this format, as the browser writes it.
+    #[must_use]
+    pub fn write(&self, value: f64) -> String {
+        crate::ssr::format_number(
+            value,
+            self.digits,
+            self.group,
+            self.point,
+            self.prefix,
+            self.suffix,
+        )
+    }
+}
+
+impl Default for NumberFormat {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// A statement over the signals of `S` that the browser runs on an event.
 pub struct Stmt<S> {

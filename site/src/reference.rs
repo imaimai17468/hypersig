@@ -1144,11 +1144,27 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "format",
+                            "struct.Expr.html#method.format",
+                            L {
+                                en: "This number as text in `format`, with its digits grouped and its affixes.",
+                                ja: "この数を `format` に従って、桁を区切り、前後に文字を付けたテキストにしたもの",
+                            },
+                        ),
+                        (
+                            "NumberFormat",
+                            "struct.NumberFormat.html",
+                            L {
+                                en: "How `format` writes a number: decimals, separators, and affixes.",
+                                ja: "`format` が数を書く形。小数の桁数、区切り文字、前後に付ける文字",
+                            },
+                        ),
+                        (
                             "to_text",
                             "struct.Expr.html#method.to_text",
                             L {
-                                en: "This value as display text.",
-                                ja: "この値を表示用のテキストにしたもの",
+                                en: "This value as display text, as JavaScript's `String` writes it.",
+                                ja: "この値を、JavaScript の `String` と同じ書き方で表示用のテキストにしたもの",
                             },
                         ),
                         (

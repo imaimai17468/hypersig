@@ -424,10 +424,11 @@ test("a server table sorts on the server and returns to the first page", async (
   await amount.getByRole("button").click();
   await expect(amount).toHaveAttribute("aria-sort", "ascending");
   await expect(orders(page).getByText("1–5 / 42")).toBeVisible();
-  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("30.5");
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("$30.50");
   await amount.getByRole("button").click();
   await expect(amount).toHaveAttribute("aria-sort", "descending");
-  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("990.5");
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("$990.50");
+  await expect(payments(page).locator("tbody tr:visible td:nth-child(4)").first()).toHaveText("$316.00");
 });
 
 test("a server table filters on the server once typing pauses", async ({ page }) => {
@@ -468,7 +469,7 @@ test("a chart takes new rows and a new scale from one server patch", async ({ pa
     "November",
     "December",
   ]);
-  expect(await ticks()).toEqual(["0", "250", "500", "750", "1000"]);
+  expect(await ticks()).toEqual(["0", "250", "500", "750", "1,000"]);
   await expect(bars(page).first()).toHaveAttribute("height", "52.000");
 });
 

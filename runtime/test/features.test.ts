@@ -157,6 +157,8 @@ describe("controls", () => {
     expect(runtime.store.get("quantity")).toBe(3);
     type($<HTMLInputElement>("#price"), "1.25");
     expect(runtime.store.get("price")).toBe(1.25);
+    await tick();
+    expect($("#price-label").textContent).toBe("$1,250.00");
 
     type($<HTMLSelectElement>("#size"), '"Large"', "change");
     await tick();
@@ -618,6 +620,7 @@ describe("server rendering", () => {
     expect($("#buy").getAttribute("title")).toBe("5.00");
     expect($("#buy").style.getPropertyValue("width")).toBe("1rem");
     expect($("#total").textContent).toBe("small");
+    expect($("#price-label").textContent).toBe("$2,500.00");
   });
 });
 

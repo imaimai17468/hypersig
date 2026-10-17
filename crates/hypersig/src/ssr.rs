@@ -4,9 +4,7 @@
 //! This mirrors `evaluate` in `runtime/src/eval.ts`. Where the two disagree,
 //! the runtime wins: it re-evaluates every binding when the page loads, so a
 //! difference shows for one frame and is then corrected. The known
-//! differences are halfway rounding in `to_fixed`, numbers below `1e-6` or at
-//! or above `1e21` in `to_text`, and string ordering outside the Basic
-//! Multilingual Plane.
+//! difference is string ordering outside the Basic Multilingual Plane.
 
 use std::borrow::Cow;
 
@@ -140,10 +138,83 @@ fn js_number(value: f64) -> String {
         "NaN".to_owned()
     } else if value.is_infinite() {
         if value > 0.0 { "Infinity" } else { "-Infinity" }.to_owned()
-    } else if value.fract() == 0.0 && value.abs() < 1e21 {
-        format!("{value:.0}").replace("-0", "0")
+    } else if value != 0.0 && (value.abs() >= 1e21 || value.abs() < 1e-6) {
+        // JavaScript writes these with an exponent, and a `+` before a
+        // positive one. Both sides write the shortest digits that read back
+        // as the same double.
+        let text = format!("{value:e}");
+        match text.split_once('e') {
+            Some((digits, exponent)) if !exponent.starts_with('-') => {
+                format!("{digits}e+{exponent}")
+            }
+            _ => text,
+        }
+    } else if value == 0.0 {
+        "0".to_owned()
     } else {
         format!("{value}")
+    }
+}
+
+/// `value.toFixed(digits)` in JavaScript, for `digits` up to 100.
+///
+/// Both round the exact value of the double to `digits` places, and differ
+/// only on an exact halfway value, which Rust rounds to even and
+/// JavaScript away from zero. A halfway value is `m / 2^(digits + 1)` for
+/// an odd `m`, so it is found exactly by scaling by that power of two,
+/// and the next double up rounds the way JavaScript does.
+pub(crate) fn js_fixed(value: f64, digits: u8) -> String {
+    if !value.is_finite() || value.abs() >= 1e21 {
+        return js_number(value);
+    }
+    let magnitude = value.abs();
+    // Doubling is exact, where `powi` may round.
+    let scaled = (0..=digits).fold(magnitude, |scaled, _| scaled * 2.0);
+    let halfway = scaled.fract() == 0.0 && (scaled / 2.0).fract() != 0.0;
+    let rounded = if halfway {
+        magnitude.next_up()
+    } else {
+        magnitude
+    };
+    let text = format!("{:.*}", usize::from(digits), rounded);
+    // `(-0.001).toFixed(2)` is "-0.00", and `(-0).toFixed(2)` is "0.00".
+    if value < 0.0 {
+        format!("-{text}")
+    } else {
+        text
+    }
+}
+
+/// `value` written as `format` in `runtime/src/eval.ts` writes it.
+pub(crate) fn format_number(
+    value: f64,
+    digits: u8,
+    group: &str,
+    point: &str,
+    prefix: &str,
+    suffix: &str,
+) -> String {
+    if !value.is_finite() {
+        return format!("{prefix}{}{suffix}", js_number(value));
+    }
+    let fixed = js_fixed(value.abs(), digits);
+    let negative = value < 0.0 && fixed.bytes().any(|byte| matches!(byte, b'1'..=b'9'));
+    let sign = if negative { "-" } else { "" };
+    if fixed.contains('e') {
+        return format!("{sign}{prefix}{fixed}{suffix}");
+    }
+    let (whole, fraction) = fixed.split_once('.').unwrap_or((&fixed, ""));
+    let mut grouped = String::with_capacity(whole.len() + whole.len() / 3 * group.len());
+    for (index, digit) in whole.chars().enumerate() {
+        if index > 0 && (whole.len() - index) % 3 == 0 {
+            grouped.push_str(group);
+        }
+        grouped.push(digit);
+    }
+    if fraction.is_empty() {
+        format!("{sign}{prefix}{grouped}{suffix}")
+    } else {
+        format!("{sign}{prefix}{grouped}{point}{fraction}{suffix}")
     }
 }
 
@@ -263,8 +334,19 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "uri_path" => Value::from(encode_uri_path(&js_string(&*eval(1)?))),
         "query" => Value::from(query_string(&*eval(1)?)),
         "fixed" => {
-            let digits = usize::try_from(arg(2)?.as_u64()?).ok()?;
-            Value::from(format!("{:.*}", digits, f(&*eval(1)?)?))
+            let digits = u8::try_from(arg(2)?.as_u64()?).ok()?;
+            Value::from(js_fixed(f(&*eval(1)?)?, digits))
+        }
+        "format" => {
+            let digits = u8::try_from(arg(2)?.as_u64()?).ok()?;
+            Value::from(format_number(
+                f(&*eval(1)?)?,
+                digits,
+                arg(3)?.as_str()?,
+                arg(4)?.as_str()?,
+                arg(5)?.as_str()?,
+                arg(6)?.as_str()?,
+            ))
         }
         "with" => set_path(&*eval(1)?, arg(2)?.as_str()?, eval(3)?.into_owned()),
         "count" => {
@@ -329,7 +411,7 @@ fn arithmetic(op: &str, a: f64, b: f64) -> Value {
 mod tests {
     use serde_json::json;
 
-    use super::{Ctx, evaluate, js_json, js_string};
+    use super::{Ctx, evaluate, format_number, js_fixed, js_json, js_string};
 
     fn eval(ast: &serde_json::Value, root: &serde_json::Value) -> serde_json::Value {
         evaluate(
@@ -384,10 +466,48 @@ mod tests {
     }
 
     #[test]
+    fn rounds_halfway_values_away_from_zero_as_to_fixed_does() {
+        assert_eq!(js_fixed(2.5, 0), "3");
+        assert_eq!(js_fixed(0.125, 2), "0.13");
+        assert_eq!(js_fixed(-0.125, 2), "-0.13");
+        // 1.005 is stored just below the halfway value, so both round down.
+        assert_eq!(js_fixed(1.005, 2), "1.00");
+        assert_eq!(js_fixed(-0.001, 2), "-0.00");
+        assert_eq!(js_fixed(-0.0, 2), "0.00");
+        assert_eq!(js_fixed(1e21, 2), "1e+21");
+    }
+
+    #[test]
+    fn formats_numbers_as_the_runtime_does() {
+        let plain = |value| format_number(value, 0, ",", ".", "", "");
+        assert_eq!(plain(0.0), "0");
+        assert_eq!(plain(999.0), "999");
+        assert_eq!(plain(1000.0), "1,000");
+        assert_eq!(plain(-1_234_567.0), "-1,234,567");
+        assert_eq!(plain(-0.4), "0");
+        assert_eq!(format_number(-1234.5, 2, ",", ".", "$", ""), "-$1,234.50");
+        assert_eq!(
+            format_number(1_234_567.891, 2, ".", ",", "", " €"),
+            "1.234.567,89 €"
+        );
+        assert_eq!(format_number(12345.0, 0, "", ".", "", "%"), "12345%");
+        assert_eq!(format_number(f64::NAN, 0, ",", ".", "¥", ""), "¥NaN");
+        assert_eq!(format_number(2e21, 0, ",", ".", "", ""), "2e+21");
+    }
+
+    #[test]
     fn writes_numbers_as_javascript_does() {
         assert_eq!(js_string(&json!(3.0)), "3");
         assert_eq!(js_string(&json!(0.5)), "0.5");
         assert_eq!(js_string(&json!(-0.0)), "0");
+        assert_eq!(js_string(&json!(1e21)), "1e+21");
+        assert_eq!(js_string(&json!(-1.5e22)), "-1.5e+22");
+        assert_eq!(js_string(&json!(1e-7)), "1e-7");
+        assert_eq!(js_string(&json!(0.000_001)), "0.000001");
+        assert_eq!(
+            js_string(&json!(123_456_789_012_345_680_000.0)),
+            "123456789012345680000"
+        );
         assert_eq!(
             js_json(&json!({ "id": 1.0, "t": "a\"b" })),
             r#"{"id":1,"t":"a\"b"}"#

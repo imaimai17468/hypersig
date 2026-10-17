@@ -73,6 +73,20 @@ function queryString(value: unknown): string {
   return pairs.length === 0 ? "" : `?${pairs.join("&")}`;
 }
 
+/**
+ * A number written as `format_number` in `crates/hypersig/src/ssr.rs` writes it: rounded by `toFixed`,
+ * its whole part grouped by threes, a minus sign only where a digit is not zero, then the affixes.
+ */
+function formatNumber(value: number, digits: number, group: string, point: string, prefix: string, suffix: string): string {
+  if (!Number.isFinite(value)) return `${prefix}${String(value)}${suffix}`;
+  const fixed = Math.abs(value).toFixed(digits);
+  const sign = value < 0 && /[1-9]/.test(fixed) ? "-" : "";
+  if (fixed.includes("e")) return `${sign}${prefix}${fixed}${suffix}`;
+  const [whole = "", fraction = ""] = fixed.split(".");
+  const grouped = whole.replace(/\B(?=(\d{3})+$)/g, () => group);
+  return `${sign}${prefix}${grouped}${fraction === "" ? "" : point + fraction}${suffix}`;
+}
+
 const unary: Record<string, (a: never) => unknown> = {
   not: (a: unknown) => !a,
   str: (a: unknown) => String(a),
@@ -231,6 +245,11 @@ function build(ast: Ast): Compiled {
     case "fixed": {
       const [value, digits] = [compile(rest[0]), rest[1] as number];
       return (ctx) => (value(ctx) as number).toFixed(digits);
+    }
+    case "format": {
+      const value = compile(rest[0]);
+      const [digits, group, point, prefix, suffix] = rest.slice(1) as [number, string, string, string, string];
+      return (ctx) => formatNumber(value(ctx) as number, digits, group, point, prefix, suffix);
     }
     case "get": {
       const [value, path] = [compile(rest[0]), rest[1] as string];

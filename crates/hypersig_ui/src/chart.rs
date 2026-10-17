@@ -9,7 +9,7 @@ use hypersig::style::value::{
     PointerEvents, Position, TextAlign, WhiteSpace, ZIndex, pct, px, raw, rem,
 };
 use hypersig::style::{Condition, Property, PseudoClass, Style, Token};
-use hypersig::{Expr, IntoExpr, Item, Number, Sig, SignalPatch, Signals, Textual};
+use hypersig::{Expr, IntoExpr, Item, Number, NumberFormat, Sig, SignalPatch, Signals, Textual};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -104,8 +104,8 @@ struct Series<S, T> {
 /// A row's value of one series, as a number for drawing.
 type RowValue<S, T> = Box<dyn Fn(Expr<S, T>) -> Expr<S, f64>>;
 
-/// How a row's value of one series reads as text.
-type RowText<S, T> = Box<dyn Fn(Item<S, T>) -> Expr<S, String>>;
+/// How a row's value of one series reads as text, in the format where there is one.
+type RowText<S, T> = Box<dyn Fn(Item<S, T>, Option<&NumberFormat>) -> Expr<S, String>>;
 
 /// A bar, line, or area chart of the rows of a list signal.
 ///
@@ -162,6 +162,7 @@ pub struct Chart<S, T> {
     scale: Sig<S, ChartScale>,
     category: Sig<T, String>,
     series: Vec<Series<S, T>>,
+    format: Option<NumberFormat>,
 }
 
 impl<S: 'static, T: 'static> Chart<S, T> {
@@ -218,6 +219,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             scale,
             category,
             series: Vec::new(),
+            format: None,
         }
     }
 
@@ -234,8 +236,20 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             color,
             path: field.path(),
             value: Box::new(move |row| row.at(field).to_f64()),
-            text: Box::new(move |row| row.at(field).to_text()),
+            text: Box::new(move |row, format| match format {
+                Some(format) => row.at(field).format(format),
+                None => row.at(field).to_text(),
+            }),
         });
+        self
+    }
+
+    /// Writes the values and the axis labels in `format`.
+    ///
+    /// Until set, they are written as JavaScript's `String` writes a number.
+    #[must_use]
+    pub fn format(mut self, format: NumberFormat) -> Self {
+        self.format = Some(format);
         self
     }
 
@@ -319,7 +333,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                     .color(token::muted_foreground().var())
                     .font_size(rem(0.75)),
             )
-            .child(y_labels(ticks, max))
+            .child(y_labels(ticks, max, self.format))
             .child(
                 div()
                     .css(Style::new().position(Position::Relative))
@@ -447,7 +461,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                                         .font_weight(FontWeight::Number(500.0))
                                         .color(token::popover_foreground().var()),
                                 )
-                                .bind_text((series.text)(row)),
+                                .bind_text((series.text)(row, self.format.as_ref())),
                         );
                 }
                 div()
@@ -547,7 +561,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             .child(tbody().child(each(self.rows, |row| {
                 let mut line = tr().child(th().attr("scope", "row").bind_text(row.at(category)));
                 for series in series {
-                    line = line.child(td().bind_text((series.text)(row)));
+                    line = line.child(td().bind_text((series.text)(row, self.format.as_ref())));
                 }
                 line
             })))
@@ -562,6 +576,7 @@ impl<S, T> fmt::Debug for Chart<S, T> {
             .field("rows", &self.rows)
             .field("scale", &self.scale)
             .field("category", &self.category)
+            .field("format", &self.format)
             .field(
                 "series",
                 &self
@@ -598,7 +613,7 @@ fn height_of<S>(value: Expr<S, f64>, max: Sig<S, f64>) -> Expr<S, f64> {
 }
 
 /// The labels of the grid lines, each beside its line.
-fn y_labels<S>(ticks: Sig<S, Vec<f64>>, max: Sig<S, f64>) -> El<S> {
+fn y_labels<S>(ticks: Sig<S, Vec<f64>>, max: Sig<S, f64>, format: Option<NumberFormat>) -> El<S> {
     div()
         .css(
             Style::new()
@@ -619,7 +634,10 @@ fn y_labels<S>(ticks: Sig<S, Vec<f64>>, max: Sig<S, f64>) -> El<S> {
                         .white_space(WhiteSpace::Nowrap),
                 )
                 .bind_style(Property::Top, top)
-                .bind_text(tick.value().to_text())
+                .bind_text(match &format {
+                    Some(format) => tick.value().format(format),
+                    None => tick.value().to_text(),
+                })
         }))
 }
 

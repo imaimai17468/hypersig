@@ -11,7 +11,7 @@ use hypersig::style::Media;
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
-use hypersig::{Action, Page, Patches, Route, RouterExt, Segment, Signals, if_else};
+use hypersig::{Action, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals, if_else};
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart,
     ChartScale, Column, Combobox, ComboboxState, DataTable, Dialog, InputKind, Level, Listbox,
@@ -138,6 +138,7 @@ hypersig::routes! {
 const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
 const NEXT_HALF: Action<Gallery> = Action::post("/next-half");
 const ORDERS: Action<Gallery, TableState> = Action::post("/orders");
+const DOLLARS: NumberFormat = NumberFormat::new().digits(2).prefix("$");
 const EDIT: Dialog<Gallery> = Dialog::new("edit-profile");
 const DELETE: Dialog<Gallery> = Dialog::new("delete-project");
 const ACTIONS: Menu<Gallery> = Menu::new("project-actions");
@@ -572,6 +573,7 @@ fn visitors(chart: Chart<Gallery, Month>) -> Chart<Gallery, Month> {
     chart
         .series("Desktop", Month::desktop(), token::chart_1())
         .series("Mobile", Month::mobile(), token::chart_2())
+        .format(NumberFormat::new())
 }
 
 fn bar_chart() -> Chart<Gallery, Month> {
@@ -680,9 +682,10 @@ fn payments() -> El<Gallery> {
     .sortable_column(Column::text("Email", Payment::email()), |payment| {
         payment.at(Payment::email())
     })
-    .sortable_column(Column::number("Amount", Payment::amount()), |payment| {
-        payment.at(Payment::amount())
-    });
+    .sortable_column(
+        Column::formatted("Amount", Payment::amount(), DOLLARS),
+        |payment| payment.at(Payment::amount()),
+    );
     panel("Data table")
         .child(
             div()
@@ -712,7 +715,10 @@ fn server_table() -> El<Gallery> {
         .paginate(5, Gallery::orders_total())
         .column(Column::number("Id", Order::id()))
         .sortable_column(Column::text("Email", Order::email()), &OrderBy::Email)
-        .sortable_column(Column::number("Amount", Order::amount()), &OrderBy::Amount),
+        .sortable_column(
+            Column::formatted("Amount", Order::amount(), DOLLARS),
+            &OrderBy::Amount,
+        ),
     )
 }
 
