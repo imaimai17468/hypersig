@@ -1,6 +1,6 @@
 # hypersig
 
-[English](README.md) | [ドキュメント（英語）](https://imaimai17468.github.io/hypersig/)
+[English](README.md) | [ドキュメント](https://imaimai17468.github.io/hypersig/ja/)
 
 axum の上で動き、画面もブラウザでの動きもサーバーの処理も Rust で書く Web フレームワークです。
 
@@ -205,7 +205,7 @@ assert!(page.render().contains("hover:color_crimson"));
 
 ## 翻訳
 
-`hypersig_i18n` クレートは、1 つの文とその訳を 1 つの値にまとめて持ちます。アプリは対応する言語を `#[derive(Segment)]` を付けた enum に並べ、その enum に `Locale` を実装します。そのとき、`ByLang { en: "Hello", ja: "こんにちは" }` のように言語ごとに 1 つのフィールドを持つ構造体を指定します。どれかの言語の訳が欠けた文はコンパイルエラーになり、enum に言語を足したときも、その言語の訳がない文はコンパイルエラーになります。言語は `"/{lang}/members/{id}"` のように各ページのルートの最初のセグメントに置くので、同じページの別の言語へのリンクは、言語だけを変えた同じルートへのリンクです。`Page::lang` は言語のタグを `<html lang>` に書き、`redirect_to_locale` は `/` へのリクエストを、ブラウザの `Accept-Language` が求める言語のページへリダイレクトします。
+`hypersig_i18n` クレートは、1 つの文とその訳を 1 つの値にまとめて持ちます。アプリは対応する言語を `#[derive(Segment)]` を付けた enum に並べ、その enum に `Locale` を実装します。そのとき、`ByLang { en: "Hello", ja: "こんにちは" }` のように言語ごとに 1 つのフィールドを持つ構造体を指定します。どれかの言語の訳が欠けた文はコンパイルエラーになり、enum に言語を足したときも、その言語の訳がない文はコンパイルエラーになります。言語は `"/{lang}/members/{id}"` のように各ページのルートの最初のセグメントに置くので、同じページの別の言語へのリンクは、言語だけを変えた同じルートへのリンクです。`Page::lang` は言語のタグを `<html lang>` に書き、`redirect_to_locale` は `/` へのリクエストを、ブラウザの `Accept-Language` が求める言語のページへリダイレクトします。詳しくは [多言語化のドキュメント](https://imaimai17468.github.io/hypersig/ja/i18n/) で説明しています。
 
 ## 制限事項
 

@@ -205,7 +205,7 @@ The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 
 
 ## Translations
 
-The `hypersig_i18n` crate keeps each text with its translations in one value. An application lists its locales in an enum with `#[derive(Segment)]` and implements `Locale` for it, naming a struct with one field per locale, such as `ByLang { en: "Hello", ja: "こんにちは" }`. A text without one of its translations fails to compile, and so does a text once a locale is added to the enum. The locale is the first segment of each page's route, as in `"/{lang}/members/{id}"`, so the link to the same page in another language is the same route with another locale. `Page::lang` writes the locale's tag into `<html lang>`, and `redirect_to_locale` answers `/` with a redirect to the language the browser's `Accept-Language` asks for.
+The `hypersig_i18n` crate keeps each text with its translations in one value. An application lists its locales in an enum with `#[derive(Segment)]` and implements `Locale` for it, naming a struct with one field per locale, such as `ByLang { en: "Hello", ja: "こんにちは" }`. A text without one of its translations fails to compile, and so does a text once a locale is added to the enum. The locale is the first segment of each page's route, as in `"/{lang}/members/{id}"`, so the link to the same page in another language is the same route with another locale. `Page::lang` writes the locale's tag into `<html lang>`, and `redirect_to_locale` answers `/` with a redirect to the language the browser's `Accept-Language` asks for. The [i18n docs](https://imaimai17468.github.io/hypersig/i18n/) cover it in full.
 
 ## Limitations
 
