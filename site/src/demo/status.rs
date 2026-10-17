@@ -8,6 +8,9 @@ use hypersig::{Page, Signals, if_else};
 use hypersig_ui::{ButtonSize, ButtonVariant, button};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Status {
     Idle,
@@ -20,7 +23,7 @@ pub struct Build {
     status: Status,
 }
 
-pub fn page() -> Page<Build> {
+pub fn page(site: Site) -> Page<Build> {
     let status = Build::status();
     let done = Token::new("done", Color::hex(0x0015_803d));
     let badge = span()
@@ -49,8 +52,21 @@ pub fn page() -> Page<Build> {
         )
         .bind_text(if_else(
             status.equals(&Status::Idle),
-            "Idle",
-            if_else(status.equals(&Status::Busy), "Building", "Done"),
+            site.t(L {
+                en: "Idle",
+                ja: "待機中",
+            }),
+            if_else(
+                status.equals(&Status::Busy),
+                site.t(L {
+                    en: "Building",
+                    ja: "ビルド中",
+                }),
+                site.t(L {
+                    en: "Done",
+                    ja: "完了",
+                }),
+            ),
         ));
     let set = |value: Status, label: &str| {
         button(ButtonVariant::Outline, ButtonSize::Sm)
@@ -58,7 +74,10 @@ pub fn page() -> Page<Build> {
             .text(label)
     };
     Page::new(
-        "Build",
+        site.t(L {
+            en: "Build",
+            ja: "ビルド",
+        }),
         Build {
             status: Status::Idle,
         },
@@ -71,9 +90,27 @@ pub fn page() -> Page<Build> {
         div().css(stack(rem(1))).child(badge).child(
             div()
                 .css(hstack(rem(0.5)))
-                .child(set(Status::Idle, "Idle"))
-                .child(set(Status::Busy, "Busy"))
-                .child(set(Status::Done, "Done")),
+                .child(set(
+                    Status::Idle,
+                    site.t(L {
+                        en: "Idle",
+                        ja: "待機中",
+                    }),
+                ))
+                .child(set(
+                    Status::Busy,
+                    site.t(L {
+                        en: "Busy",
+                        ja: "ビルド中",
+                    }),
+                ))
+                .child(set(
+                    Status::Done,
+                    site.t(L {
+                        en: "Done",
+                        ja: "完了",
+                    }),
+                )),
         ),
     )
 }

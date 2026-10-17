@@ -13,6 +13,7 @@ use hypersig_ui::token;
 
 use crate::Site;
 use crate::code::{self, Lang};
+use crate::lang::L;
 use crate::prose::{Part, parts};
 
 /// Declares each demo: its variant, its module and file, and the height of
@@ -58,7 +59,7 @@ macro_rules! demos {
             /// The demo's page as an HTML document.
             pub fn render(self, site: Site) -> String {
                 match self {
-                    $(Self::$variant => frame_page(site, $module::page()),)*
+                    $(Self::$variant => frame_page(site, $module::page),)*
                 }
             }
         }
@@ -106,9 +107,38 @@ impl Demo {
     }
 }
 
-/// `page` with the components' theme and room around its content.
-fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
-    page.runtime_src(site.runtime())
+/// The function that builds a demo's page: `fn page() -> Page<S>` for a demo
+/// whose texts are the same in every language, or `fn page(site: Site) ->
+/// Page<S>` for one that writes its texts in the site's language.
+///
+/// `M` tells the two implementations apart, since a function item implements
+/// only one of them.
+trait DemoPage<M> {
+    type Signals: Signals;
+
+    fn page(self, site: Site) -> Page<Self::Signals>;
+}
+
+impl<S: Signals, F: FnOnce() -> Page<S>> DemoPage<fn() -> S> for F {
+    type Signals = S;
+
+    fn page(self, _site: Site) -> Page<S> {
+        self()
+    }
+}
+
+impl<S: Signals, F: FnOnce(Site) -> Page<S>> DemoPage<fn(Site) -> S> for F {
+    type Signals = S;
+
+    fn page(self, site: Site) -> Page<S> {
+        self(site)
+    }
+}
+
+/// The page `page` builds, with the components' theme and room around its content.
+fn frame_page<M>(site: Site, page: impl DemoPage<M>) -> String {
+    page.page(site)
+        .runtime_src(site.runtime())
         .global(hypersig_ui::global())
         .global(
             Global::new()
@@ -144,14 +174,20 @@ pub fn show(site: Site, demo: Demo) -> Part {
                         .font_weight(FontWeight::Number(500.0))
                         .color(token::muted_foreground().var()),
                 )
-                .text("Result"),
+                .text(site.t(L {
+                    en: "Result",
+                    ja: "実行結果",
+                })),
             )
             .child(
                 el("iframe")
                     .attr("src", site.page_url(&demo.path()))
                     .attr(
                         "title",
-                        format!("The {} demo, running", demo.name().replace('_', " ")),
+                        site.t(L {
+                            en: format!("The {} demo, running", demo.name().replace('_', " ")),
+                            ja: format!("{} のデモの実行結果", demo.name().replace('_', " ")),
+                        }),
                     )
                     .attr("loading", "lazy")
                     .css(
@@ -165,7 +201,88 @@ pub fn show(site: Site, demo: Demo) -> Part {
         code::block(
             Lang::Rust,
             Some(&format!("{}.rs", demo.name())),
-            demo.source(),
+            &shown_source(demo.source(), site.lang()),
         ),
     ])
+}
+
+/// `source` as the article shows it in `lang`: each `site.t(L { en, ja })`
+/// replaced by the value for `lang`, and the lines that only serve the
+/// translation removed, so the code reads as an application would write it.
+fn shown_source(source: &str, lang: crate::Lang) -> String {
+    const PICK: &str = "site.t(L {";
+    let mut out = String::with_capacity(source.len());
+    let mut rest = source;
+    while let Some(at) = rest.find(PICK) {
+        out.push_str(&rest[..at]);
+        let inside = &rest[at + PICK.len()..];
+        let end = closing(inside, '}').expect("a `site.t(L {` is closed");
+        let fields = &inside[..end];
+        let value = field(fields, "en:")
+            .zip(field(fields, "ja:"))
+            .map(|(en, ja)| if lang == crate::Lang::Ja { ja } else { en })
+            .expect("an `L` has `en` and `ja`");
+        out.push_str(value.trim());
+        rest = inside[end + 1..]
+            .strip_prefix(')')
+            .expect("`site.t(L { .. })` ends with `)`");
+    }
+    out.push_str(rest);
+    out.lines()
+        .filter(|line| !matches!(line.trim(), "use crate::Site;" | "use crate::lang::L;"))
+        .map(|line| line.replace("(site: Site)", "()"))
+        .collect::<Vec<_>>()
+        .join("\n")
+        .replace("\n\n\n", "\n\n")
+}
+
+/// The expression after `name` in the fields of a struct literal, up to its top-level `,`.
+fn field<'a>(fields: &'a str, name: &str) -> Option<&'a str> {
+    let start = fields.find(name)? + name.len();
+    let value = &fields[start..];
+    Some(&value[..closing(value, ',').unwrap_or(value.len())])
+}
+
+/// The byte index of the first `stop` in `text` outside brackets and string literals.
+fn closing(text: &str, stop: char) -> Option<usize> {
+    let mut depth = 0_usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for (i, c) in text.char_indices() {
+        if in_string {
+            match c {
+                _ if escaped => escaped = false,
+                '\\' => escaped = true,
+                '"' => in_string = false,
+                _ => {}
+            }
+            continue;
+        }
+        match c {
+            '"' => in_string = true,
+            c if c == stop && depth == 0 => return Some(i),
+            '(' | '[' | '{' => depth += 1,
+            ')' | ']' | '}' => depth = depth.checked_sub(1)?,
+            _ => {}
+        }
+    }
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_shown_source_keeps_the_text_of_one_language() {
+        let source = "use crate::Site;\nuse crate::lang::L;\n\npub fn page(site: Site) -> Page<S> {\n    p().text(site.t(L {\n        en: \"Hello, {name}\",\n        ja: format!(\"{}、こんにちは\", x),\n    }))\n}\n";
+        assert_eq!(
+            shown_source(source, crate::Lang::En),
+            "\npub fn page() -> Page<S> {\n    p().text(\"Hello, {name}\")\n}"
+        );
+        assert!(
+            shown_source(source, crate::Lang::Ja)
+                .contains("p().text(format!(\"{}、こんにちは\", x))")
+        );
+    }
 }

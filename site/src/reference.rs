@@ -1629,7 +1629,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         Reference::Route => (
             L {
                 en: "`Route<P, Q>` is a page served at a path whose parameters are `P`, with search parameters `Q`, and `Link<S>` points to one.",
-                ja: "`Route<P, Q>` は、パスのパラメータが `P`、検索パラメータが `Q` のパスで配信するページで、`Link<S>` はそのページを指します。",
+                ja: "`Route<P, Q>` は、パスのパラメータが `P`、クエリパラメータが `Q` のパスで配信するページで、`Link<S>` はそのページを指します。",
             },
             &[
                 Section {
@@ -1720,7 +1720,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "trait.Search.html",
                             L {
                                 en: "The search parameters of a `Route`: `()`, or a struct with `#[derive(Signals, Search)]`.",
-                                ja: "`Route` の検索パラメータです。`()` か、`#[derive(Signals, Search)]` を付けた構造体です。",
+                                ja: "`Route` のクエリパラメータです。`()` か、`#[derive(Signals, Search)]` を付けた構造体です。",
                             },
                         ),
                         (

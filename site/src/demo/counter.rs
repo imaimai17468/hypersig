@@ -9,14 +9,24 @@ use hypersig::{Page, Signals};
 use hypersig_ui::{ButtonSize, ButtonVariant, button};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Counter {
     count: i32,
 }
 
-pub fn page() -> Page<Counter> {
+pub fn page(site: Site) -> Page<Counter> {
     let count = Counter::count();
-    Page::new("Counter", Counter { count: 0 }).child(
+    Page::new(
+        site.t(L {
+            en: "Counter",
+            ja: "カウンター",
+        }),
+        Counter { count: 0 },
+    )
+    .child(
         div()
             .css(hstack(rem(1)))
             .child(

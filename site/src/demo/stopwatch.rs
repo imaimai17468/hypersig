@@ -10,6 +10,9 @@ use hypersig::{NodeRef, Page, Signals, Stmt, if_else};
 use hypersig_ui::{ButtonSize, ButtonVariant, button};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Stopwatch {
     running: bool,
@@ -18,12 +21,15 @@ pub struct Stopwatch {
 
 const START: NodeRef<Stopwatch> = NodeRef::new("start");
 
-pub fn page() -> Page<Stopwatch> {
+pub fn page(site: Site) -> Page<Stopwatch> {
     let running = Stopwatch::running();
     let tenths = Stopwatch::tenths();
     let seconds = tenths.to_f64() / 10.0;
     Page::new(
-        "Stopwatch",
+        site.t(L {
+            en: "Stopwatch",
+            ja: "ストップウォッチ",
+        }),
         Stopwatch {
             running: false,
             tenths: 0,
@@ -50,12 +56,25 @@ pub fn page() -> Page<Stopwatch> {
                 button(ButtonVariant::Default, ButtonSize::Default)
                     .node_ref(START)
                     .on_click(running.toggle())
-                    .bind_text(if_else(running, "Stop", "Start")),
+                    .bind_text(if_else(
+                        running,
+                        site.t(L {
+                            en: "Stop",
+                            ja: "ストップ",
+                        }),
+                        site.t(L {
+                            en: "Start",
+                            ja: "スタート",
+                        }),
+                    )),
             )
             .child(
                 button(ButtonVariant::Outline, ButtonSize::Default)
                     .on_click(running.set(false).then(tenths.set(0)).then(START.focus()))
-                    .text("Reset"),
+                    .text(site.t(L {
+                        en: "Reset",
+                        ja: "リセット",
+                    })),
             ),
     )
 }

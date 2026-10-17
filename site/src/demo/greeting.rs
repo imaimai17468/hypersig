@@ -9,16 +9,22 @@ use hypersig::{Page, Signals};
 use hypersig_ui::TextField;
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Greeting {
     name: String,
 }
 
-pub fn page() -> Page<Greeting> {
+pub fn page(site: Site) -> Page<Greeting> {
     let name = Greeting::name();
     let typed = !name.trim().is_empty();
     Page::new(
-        "Greeting",
+        site.t(L {
+            en: "Greeting",
+            ja: "あいさつ",
+        }),
         Greeting {
             name: String::new(),
         },
@@ -26,18 +32,36 @@ pub fn page() -> Page<Greeting> {
     .child(
         div()
             .css(stack(rem(1)).max_width(rem(20)))
-            .child(TextField::new("Your name", name))
-            .child(p().show(!typed.clone()).text("Type your name above."))
+            .child(TextField::new(
+                site.t(L {
+                    en: "Your name",
+                    ja: "名前",
+                }),
+                name,
+            ))
+            .child(p().show(!typed.clone()).text(site.t(L {
+                en: "Type your name above.",
+                ja: "上の欄に名前を入力してください。",
+            })))
             .child(
                 p().show(typed)
-                    .text("Hello, ")
+                    .text(site.t(L {
+                        en: "Hello, ",
+                        ja: "こんにちは、",
+                    }))
                     .child(span().bind_text(name.trim()))
-                    .text("!"),
+                    .text(site.t(L {
+                        en: "!",
+                        ja: "さん。",
+                    })),
             )
             .child(
                 p().css(Style::new().font_size(rem(0.875)))
                     .show(name.char_count().gt(12))
-                    .text("That is a long name."),
+                    .text(site.t(L {
+                        en: "That is a long name.",
+                        ja: "長い名前です。",
+                    })),
             ),
     )
 }

@@ -8,39 +8,67 @@ use hypersig::{Page, Signals, if_else};
 use hypersig_ui::{ButtonSize, ButtonVariant, button, token};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Weather {
     celsius: f64,
 }
 
-pub fn page() -> Page<Weather> {
+pub fn page(site: Site) -> Page<Weather> {
     let celsius = Weather::celsius();
     let fahrenheit = celsius * 1.8 + 32.0;
-    Page::new("Weather", Weather { celsius: 21.0 }).child(
+    Page::new(
+        site.t(L {
+            en: "Weather",
+            ja: "気温",
+        }),
+        Weather { celsius: 21.0 },
+    )
+    .child(
         div()
             .css(stack(rem(0.75)))
             .child(
-                label().css(hstack(rem(0.5))).text("Celsius").child(
-                    input().attr("type", "number").bind(celsius).css(
-                        Style::new()
-                            .width(rem(6))
-                            .padding_inline(rem(0.5))
-                            .border_width(px(1))
-                            .border_style(BorderStyle::Solid)
-                            .border_color(token::input().var())
-                            .border_radius(px(6)),
+                label()
+                    .css(hstack(rem(0.5)))
+                    .text(site.t(L {
+                        en: "Celsius",
+                        ja: "摂氏",
+                    }))
+                    .child(
+                        input().attr("type", "number").bind(celsius).css(
+                            Style::new()
+                                .width(rem(6))
+                                .padding_inline(rem(0.5))
+                                .border_width(px(1))
+                                .border_style(BorderStyle::Solid)
+                                .border_color(token::input().var())
+                                .border_radius(px(6)),
+                        ),
                     ),
-                ),
             )
             .child(
-                p().text("That is ")
-                    .child(span().bind_text(fahrenheit.to_fixed(1)))
-                    .text(" °F, ")
-                    .child(span().bind_text(if_else(
-                        celsius.le(0.0),
-                        "freezing.",
-                        "above freezing.",
-                    ))),
+                p().text(site.t(L {
+                    en: "That is ",
+                    ja: "華氏では ",
+                }))
+                .child(span().bind_text(fahrenheit.to_fixed(1)))
+                .text(site.t(L {
+                    en: " °F, ",
+                    ja: " °F で、",
+                }))
+                .child(span().bind_text(if_else(
+                    celsius.le(0.0),
+                    site.t(L {
+                        en: "freezing.",
+                        ja: "水が凍る温度です。",
+                    }),
+                    site.t(L {
+                        en: "above freezing.",
+                        ja: "水が凍らない温度です。",
+                    }),
+                ))),
             )
             .child(
                 div()
@@ -58,7 +86,10 @@ pub fn page() -> Page<Weather> {
                     .child(
                         button(ButtonVariant::Ghost, ButtonSize::Sm)
                             .on_click(celsius.set(0.0))
-                            .text("Reset"),
+                            .text(site.t(L {
+                                en: "Reset",
+                                ja: "リセット",
+                            })),
                     ),
             ),
     )

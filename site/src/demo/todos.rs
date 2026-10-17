@@ -8,6 +8,9 @@ use hypersig::{Expr, Page, Signals, Stmt};
 use hypersig_ui::{ButtonSize, ButtonVariant, TextField, button, submit_button};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Todo {
     id: i32,
@@ -22,7 +25,7 @@ pub struct Todos {
     items: Vec<Todo>,
 }
 
-pub fn page() -> Page<Todos> {
+pub fn page(site: Site) -> Page<Todos> {
     let draft = Todos::draft();
     let next_id = Todos::next_id();
     let items = Todos::items();
@@ -46,29 +49,55 @@ pub fn page() -> Page<Todos> {
         items: vec![
             Todo {
                 id: 0,
-                title: "Read the guide".into(),
+                title: site
+                    .t(L {
+                        en: "Read the guide",
+                        ja: "ガイドを読む",
+                    })
+                    .into(),
                 done: true,
             },
             Todo {
                 id: 1,
-                title: "Write a page".into(),
+                title: site
+                    .t(L {
+                        en: "Write a page",
+                        ja: "ページを書く",
+                    })
+                    .into(),
                 done: false,
             },
         ],
     };
-    Page::new("Todos", initial).child(
+    Page::new(
+        site.t(L {
+            en: "Todos",
+            ja: "やること",
+        }),
+        initial,
+    )
+    .child(
         div()
             .css(stack(rem(1)).max_width(rem(24)))
             .child(
                 form()
                     .on_submit(Stmt::when(!draft.trim().is_empty(), add))
                     .css(hstack(rem(0.5)).align_items(AlignItems::End))
+                    .child(div().css(Style::new().flex_grow(1.0)).child(TextField::new(
+                        site.t(L {
+                            en: "New item",
+                            ja: "新しい項目",
+                        }),
+                        draft,
+                    )))
                     .child(
-                        div()
-                            .css(Style::new().flex_grow(1.0))
-                            .child(TextField::new("New item", draft)),
-                    )
-                    .child(submit_button(ButtonVariant::Default, ButtonSize::Default).text("Add")),
+                        submit_button(ButtonVariant::Default, ButtonSize::Default).text(site.t(
+                            L {
+                                en: "Add",
+                                ja: "追加",
+                            },
+                        )),
+                    ),
             )
             .child(ul().css(stack(rem(0.25))).child(each_keyed(
                 items,
@@ -84,7 +113,10 @@ pub fn page() -> Page<Todos> {
                         .child(
                             button(ButtonVariant::Ghost, ButtonSize::Sm)
                                 .on_click(todo.remove())
-                                .text("Remove"),
+                                .text(site.t(L {
+                                    en: "Remove",
+                                    ja: "削除",
+                                })),
                         )
                 },
             )))
@@ -97,17 +129,20 @@ pub fn page() -> Page<Todos> {
                             .align_items(AlignItems::Center),
                     )
                     .child(
-                        p().bind_text(
-                            items
-                                .count(|todo| !todo.at(Todo::done()))
-                                .to_text()
-                                .concat(" left"),
-                        ),
+                        p().bind_text(items.count(|todo| !todo.at(Todo::done())).to_text().concat(
+                            site.t(L {
+                                en: " left",
+                                ja: " 件が未完了",
+                            }),
+                        )),
                     )
                     .child(
                         button(ButtonVariant::Outline, ButtonSize::Sm)
                             .on_click(items.retain(|todo| !todo.at(Todo::done())))
-                            .text("Clear done"),
+                            .text(site.t(L {
+                                en: "Clear done",
+                                ja: "完了した項目を消す",
+                            })),
                     ),
             ),
     )
