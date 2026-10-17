@@ -1,0 +1,21 @@
+{
+  "html": "<main><button id=\"mark\" data-hs-on-click=\"[&quot;set&quot;,&quot;marked&quot;,[&quot;not&quot;,[&quot;sig&quot;,&quot;marked&quot;]]]\"></button><svg id=\"plot\" viewBox=\"0 0 100 100\"><rect id=\"frame\" width=\"100\" height=\"100\" data-hs-show=\"[&quot;sig&quot;,&quot;marked&quot;]\"></rect><template data-hs-each=\"[&quot;bars&quot;,0]\"><g data-hs-key=\"[&quot;item&quot;,0,&quot;id&quot;]\"><rect width=\"5\" data-hs-attr=\"[[&quot;height&quot;,[&quot;str&quot;,[&quot;item&quot;,0,&quot;height&quot;]]]]\"></rect><template data-hs-each=\"[[&quot;item&quot;,0,&quot;marks&quot;],1]\"><line data-hs-attr=\"[[&quot;y1&quot;,[&quot;str&quot;,[&quot;item&quot;,1,&quot;&quot;]]]]\"></line></template></g></template><template data-hs-if=\"[&quot;sig&quot;,&quot;marked&quot;]\"><circle id=\"dot\" r=\"2\"></circle></template></svg></main>",
+  "signals": {
+    "bars": [
+      {
+        "height": 10,
+        "id": 1,
+        "marks": [
+          1,
+          2
+        ]
+      },
+      {
+        "height": 20,
+        "id": 2,
+        "marks": []
+      }
+    ],
+    "marked": false
+  }
+}

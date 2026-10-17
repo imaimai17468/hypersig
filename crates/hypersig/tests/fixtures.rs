@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, Orientation, a, button, div, each, each_keyed, input, label, li, main, select,
-    span, ul, when,
+    El, Event, Key, Orientation, a, button, div, each, each_keyed, el, input, label, li, main,
+    select, span, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
@@ -491,6 +491,70 @@ fn combo() -> (El<Combo>, Combo) {
     (el, signals)
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Bar {
+    id: i32,
+    height: i32,
+    marks: Vec<i32>,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Plot {
+    bars: Vec<Bar>,
+    marked: bool,
+}
+
+/// A list, a nested list, a condition, and a `show` inside an `<svg>`,
+/// where the parser reads `<template>` as an SVG element.
+fn plot() -> (El<Plot>, Plot) {
+    let el = main()
+        .child(button().id("mark").on_click(Plot::marked().toggle()))
+        .child(
+            el("svg")
+                .id("plot")
+                .attr("viewBox", "0 0 100 100")
+                .child(
+                    el("rect")
+                        .id("frame")
+                        .attr("width", "100")
+                        .attr("height", "100")
+                        .show(Plot::marked()),
+                )
+                .child(each_keyed(
+                    Plot::bars(),
+                    |bar| bar.at(Bar::id()),
+                    |bar| {
+                        el("g")
+                            .child(
+                                el("rect")
+                                    .attr("width", "5")
+                                    .bind_attr("height", bar.at(Bar::height()).to_text()),
+                            )
+                            .child(each(bar.at(Bar::marks()), |mark| {
+                                el("line").bind_attr("y1", mark.value().to_text())
+                            }))
+                    },
+                ))
+                .child(when(Plot::marked(), el("circle").id("dot").attr("r", "2"))),
+        );
+    let signals = Plot {
+        bars: vec![
+            Bar {
+                id: 1,
+                height: 10,
+                marks: vec![1, 2],
+            },
+            Bar {
+                id: 2,
+                height: 20,
+                marks: Vec::new(),
+            },
+        ],
+        marked: false,
+    };
+    (el, signals)
+}
+
 fn check(name: &str, el: &El<impl Signals>, signals: &impl Serialize) {
     let fixture = json!({ "html": el.render(), "signals": signals });
     write_or_compare(
@@ -707,6 +771,10 @@ fn fixtures_match_the_builder() {
     check("table", &el, &signals);
     let (el, signals) = roving();
     check("roving", &el, &signals);
+    let (el, signals) = plot();
+    check("plot", &el, &signals);
+    let (el, signals) = plot();
+    check_page("plot_page", el, signals);
     let (el, signals) = combo();
     check("combo", &el, &signals);
     let (el, signals) = links();
