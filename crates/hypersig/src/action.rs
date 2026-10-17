@@ -12,9 +12,9 @@ use crate::signal::Sig;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Method {
-    /// `GET`. Signals and arguments travel in the query string.
+    /// `GET`. The arguments travel as JSON in the `args` query parameter.
     Get,
-    /// `POST`. Signals travel in the JSON body and arguments in the query string.
+    /// `POST`. The arguments travel as the JSON body.
     Post,
 }
 

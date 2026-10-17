@@ -30,9 +30,10 @@ use crate::patch::SignalPatch;
 /// assert_eq!(count.path(), "count");
 /// ```
 ///
-/// A page has one signal struct, which the browser keeps as one JSON object
-/// and sends with every action. A field may itself be a `Signals` struct or a
-/// `Vec` of one; [`Sig::at`] reaches into it.
+/// A page has one signal struct, which the browser keeps as one JSON object.
+/// An action receives only the arguments its call passes, so a handler that
+/// needs a signal's value takes it as an argument. A field may itself be a
+/// `Signals` struct or a `Vec` of one; [`Sig::at`] reaches into it.
 pub trait Signals: Serialize + DeserializeOwned + Send + 'static {}
 
 /// The deepest chain of fields a [`Sig`] can name.
