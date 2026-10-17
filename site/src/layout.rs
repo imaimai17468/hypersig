@@ -156,8 +156,30 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                                 .css(nav_link_style(false).font_size(rem(0.875)))
                                 .text("GitHub"),
                         ),
-                ),
+                )
+                .child(other_language(site, doc)),
         )
+}
+
+/// A link to `doc` in the other language, at the right of the header on a
+/// phone, where the group with the language links is hidden.
+fn other_language(site: Site, doc: Doc) -> Part {
+    let other = if site.lang() == Lang::En {
+        Lang::Ja
+    } else {
+        Lang::En
+    };
+    a().attr("href", doc.url(site.with_lang(other)))
+        .attr("hreflang", other.tag())
+        .attr("lang", other.tag())
+        .css(
+            nav_link_style(false)
+                .margin_left(raw("auto"))
+                .font_size(rem(0.875))
+                .white_space(hypersig::style::value::WhiteSpace::Nowrap)
+                .on(Media::Md, Style::new().display(Display::None)),
+        )
+        .text(other.name())
 }
 
 /// The name in the corner of the header: hypersig, followed by the library
