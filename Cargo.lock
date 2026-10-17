@@ -503,7 +503,6 @@ version = "0.1.0"
 dependencies = [
  "hypersig",
  "serde",
- "serde_json",
  "trybuild",
 ]
 

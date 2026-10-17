@@ -1,5 +1,5 @@
 use hypersig::Signals;
-use hypersig_ui::{Chart, ChartScale, token};
+use hypersig_ui::{Chart, token};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -16,10 +16,9 @@ struct Store {
 #[derive(Signals, Serialize, Deserialize)]
 struct Traffic {
     months: Vec<Month>,
-    scale: ChartScale,
 }
 
 fn main() {
-    let _ = Chart::bar("Visits", Traffic::months(), Traffic::scale(), Month::name())
+    let _ = Chart::bar("Visits", Traffic::months(), Month::name())
         .series("Sales", Store::sales(), token::chart_1());
 }

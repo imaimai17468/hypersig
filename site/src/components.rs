@@ -1179,8 +1179,8 @@ fn component_page(page: Component) -> Page {
         },
         Component::Chart => Page {
             lead: L {
-                en: "Bar, line, and area charts of the rows of a list signal, on a scale the server fits to the values.",
-                ja: "リストのシグナルの行を、棒、折れ線、面で描くチャートです。縦軸の目盛りはサーバーが値に合わせて決めます。",
+                en: "Bar, line, and area charts of the rows of a list signal, on a scale the browser fits to the values.",
+                ja: "リストのシグナルの行を、棒、折れ線、面で描くチャートです。縦軸の目盛りはブラウザが値に合わせて決めます。",
             },
             demo: Demo::Chart,
             built_on: &[
@@ -1193,8 +1193,8 @@ fn component_page(page: Component) -> Page {
                     ja: "描画は支援技術から隠します。スクリーンリーダーは、チャートの名前をキャプションに持つ、視覚的に隠した同じ行の `<table>` を読みます。ポインタの下に出る値をキーボードで見る手段は、この表のほかにありません。",
                 },
                 L {
-                    en: "A series reads a number field of the row type, so a field of another struct or a text field does not compile. The browser cannot round a maximum, so `ChartScale::fit` picks the scale on the server, and `Chart::patch` sends the rows and their scale in one patch. A value that a statement in the browser raises above the maximum is drawn at the maximum until the next patch.",
-                    ja: "系列は行の型の数値のフィールドを読むので、別の構造体のフィールドや文字列のフィールドを渡すとコンパイルエラーになります。ブラウザでは最大値を丸められないので、目盛りはサーバーの `ChartScale::fit` が決め、`Chart::patch` が行とその目盛りを 1 つのパッチで送ります。ブラウザの文で最大値を超えた値は、次のパッチまで最大値の高さで描かれます。",
+                    en: "A series reads a number field of the row type, so a field of another struct or a text field does not compile. The scale runs from a round number at or below the smallest value, or 0, to one at or above the largest, with grid lines on a step of 1, 2, 2.5, or 5 times a power of ten. The browser computes it with `max_of`, `min_of`, and `let_in`, so a statement or a patch that changes the rows refits it, and a negative value draws its bar down from the line at 0. Each bar and grid line computes the scale from every row, so the work of a change grows with the square of the number of rows.",
+                    ja: "系列は行の型の数値のフィールドを読むので、別の構造体のフィールドや文字列のフィールドを渡すとコンパイルエラーになります。目盛りは、最小値か 0 の小さいほう以下の切りのよい数から、最大値以上の切りのよい数までで、刻み幅は 10 の累乗の 1、2、2.5、5 倍です。ブラウザが `max_of`、`min_of`、`let_in` で計算するので、文やパッチで行が変わると目盛りも合わせ直され、負の値の棒は 0 の線から下に伸びます。棒や目盛りの線はそれぞれ全行から目盛りを計算するので、変更 1 回の手間は行数の 2 乗で増えます。",
                 },
             ],
             keys: &[],
@@ -1203,24 +1203,24 @@ fn component_page(page: Component) -> Page {
                     "Chart::bar",
                     "hypersig_ui/struct.Chart.html#method.bar",
                     L {
-                        en: "A bar chart named `label` of `rows` on `scale`, labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` を `scale` の上に描き、`category` でラベルを付ける棒グラフ",
+                        en: "A bar chart named `label` of `rows`, labeled by `category`.",
+                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける棒グラフ",
                     },
                 ),
                 (
                     "Chart::line",
                     "hypersig_ui/struct.Chart.html#method.line",
                     L {
-                        en: "A line chart named `label` of `rows` on `scale`, labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` を `scale` の上に描き、`category` でラベルを付ける折れ線グラフ",
+                        en: "A line chart named `label` of `rows`, labeled by `category`.",
+                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける折れ線グラフ",
                     },
                 ),
                 (
                     "Chart::area",
                     "hypersig_ui/struct.Chart.html#method.area",
                     L {
-                        en: "An area chart named `label` of `rows` on `scale`, labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` を `scale` の上に描き、`category` でラベルを付ける面グラフ",
+                        en: "An area chart named `label` of `rows`, labeled by `category`.",
+                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける面グラフ",
                     },
                 ),
                 (
@@ -1237,30 +1237,6 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "Writes the values and the axis labels in `format`.",
                         ja: "値と軸のラベルを `format` の形で書きます。",
-                    },
-                ),
-                (
-                    "scale",
-                    "hypersig_ui/struct.Chart.html#method.scale",
-                    L {
-                        en: "The scale fitted to the values of every series in `rows`.",
-                        ja: "`rows` にあるすべての系列の値に合わせた目盛り",
-                    },
-                ),
-                (
-                    "patch",
-                    "hypersig_ui/struct.Chart.html#method.patch",
-                    L {
-                        en: "A patch that sets the rows to `rows` and the scale fitted to them.",
-                        ja: "行を `rows` にし、目盛りをその行に合わせたものにするパッチ",
-                    },
-                ),
-                (
-                    "ChartScale::fit",
-                    "hypersig_ui/struct.ChartScale.html#method.fit",
-                    L {
-                        en: "The scale from 0 to a round number at or above the largest of `values`.",
-                        ja: "0 から、`values` の最大値以上の切りのよい数までの目盛り",
                     },
                 ),
                 (

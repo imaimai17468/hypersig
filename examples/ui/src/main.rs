@@ -13,12 +13,12 @@ use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
 use hypersig::{Action, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals, if_else};
 use hypersig_ui::{
-    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart,
-    ChartScale, Column, Combobox, ComboboxState, DataTable, Dialog, InputKind, Level, Listbox,
-    Menu, MenuItem, ServerTable, Slider, SortOrder, TableState, Tabs, TextField, Toast,
-    ToastVariant, Toaster, Tooltip, alert, alert_description, alert_title, badge, button, card,
-    card_content, card_description, card_footer, card_header, card_title, checkbox, dialog_footer,
-    progress, radio_group, select_field, separator, skeleton, submit_button, switch, token,
+    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart, Column,
+    Combobox, ComboboxState, DataTable, Dialog, InputKind, Level, Listbox, Menu, MenuItem,
+    ServerTable, Slider, SortOrder, TableState, Tabs, TextField, Toast, ToastVariant, Toaster,
+    Tooltip, alert, alert_description, alert_title, badge, button, card, card_content,
+    card_description, card_footer, card_header, card_title, checkbox, dialog_footer, progress,
+    radio_group, select_field, separator, skeleton, submit_button, switch, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -63,6 +63,8 @@ struct Month {
     name: String,
     desktop: i32,
     mobile: i32,
+    /// Desktop visitors less mobile ones, negative where mobile led.
+    lead: i32,
 }
 
 /// One row of the data table.
@@ -127,7 +129,6 @@ struct Gallery {
     orders_total: i32,
     orders_table: TableState,
     months: Vec<Month>,
-    months_scale: ChartScale,
 }
 
 hypersig::routes! {
@@ -576,15 +577,6 @@ fn visitors(chart: Chart<Gallery, Month>) -> Chart<Gallery, Month> {
         .format(NumberFormat::new())
 }
 
-fn bar_chart() -> Chart<Gallery, Month> {
-    visitors(Chart::bar(
-        "Visitors (bars)",
-        Gallery::months(),
-        Gallery::months_scale(),
-        Month::name(),
-    ))
-}
-
 fn first_half() -> Vec<Month> {
     months([
         ("January", 186, 80),
@@ -602,12 +594,13 @@ fn months<const N: usize>(rows: [(&str, i32, i32); N]) -> Vec<Month> {
             name: name.to_owned(),
             desktop,
             mobile,
+            lead: desktop - mobile,
         })
         .collect()
 }
 
-/// Replaces the months with the second half of the year, on a scale
-/// fitted to them.
+/// Replaces the months with the second half of the year. The charts fit
+/// their scales to the new rows.
 async fn next_half((): (), (): ()) -> Patches<Gallery> {
     let rows = months([
         ("July", 520, 310),
@@ -617,7 +610,7 @@ async fn next_half((): (), (): ()) -> Patches<Gallery> {
         ("November", 655, 500),
         ("December", 820, 610),
     ]);
-    bar_chart().patch(rows).into()
+    Gallery::months().patch(rows).into()
 }
 
 fn charts() -> El<Gallery> {
@@ -644,19 +637,28 @@ fn charts() -> El<Gallery> {
         .child(
             div()
                 .css(grid(1, rem(1.5)).on(Media::Md, grid(2, rem(1.5))))
-                .child(div().id("bar-chart").child(bar_chart()))
+                .child(div().id("bar-chart").child(visitors(Chart::bar(
+                    "Visitors (bars)",
+                    Gallery::months(),
+                    Month::name(),
+                ))))
                 .child(div().id("line-chart").child(visitors(Chart::line(
                     "Visitors (line)",
                     Gallery::months(),
-                    Gallery::months_scale(),
                     Month::name(),
                 ))))
                 .child(div().id("area-chart").child(visitors(Chart::area(
                     "Visitors (area)",
                     Gallery::months(),
-                    Gallery::months_scale(),
                     Month::name(),
-                )))),
+                ))))
+                .child(
+                    div().id("lead-chart").child(
+                        Chart::bar("Desktop lead", Gallery::months(), Month::name())
+                            .series("Lead", Month::lead(), token::chart_3())
+                            .format(NumberFormat::new()),
+                    ),
+                ),
         )
 }
 
@@ -825,7 +827,6 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             orders,
             orders_total,
             orders_table: TableState::default(),
-            months_scale: bar_chart().scale(&first_half()),
             months: first_half(),
         },
     )

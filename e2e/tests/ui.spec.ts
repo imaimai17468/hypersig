@@ -457,8 +457,8 @@ test("a bar chart draws a bar per row and series, and a statement moves one", as
   await expect(page.getByRole("table", { name: "Visitors (bars)" }).getByRole("row", { name: /January/ })).toContainText("236");
 });
 
-test("a chart takes new rows and a new scale from one server patch", async ({ page }) => {
-  const ticks = () => page.locator("#bar-chart figure > div > div:first-child span").allTextContents();
+test("a chart refits its scale to the rows a server patch sends", async ({ page }) => {
+  const ticks = () => page.locator("#bar-chart figure > div > div:first-child span:visible").allTextContents();
   expect(await ticks()).toEqual(["0", "100", "200", "300", "400"]);
   await page.getByRole("button", { name: "Show the second half" }).click();
   await expect(page.getByRole("table", { name: "Visitors (bars)" }).getByRole("rowheader")).toHaveText([
@@ -471,6 +471,16 @@ test("a chart takes new rows and a new scale from one server patch", async ({ pa
   ]);
   expect(await ticks()).toEqual(["0", "250", "500", "750", "1,000"]);
   await expect(bars(page).first()).toHaveAttribute("height", "52.000");
+});
+
+test("a bar chart draws a negative value down from the line at 0", async ({ page }) => {
+  const ticks = page.locator("#lead-chart figure > div > div:first-child span:visible");
+  await expect(ticks).toHaveText(["-200", "-100", "0", "100", "200"]);
+  const lead = page.locator("#lead-chart svg rect");
+  await expect(lead.nth(0)).toHaveAttribute("y", "23.500");
+  await expect(lead.nth(0)).toHaveAttribute("height", "26.500");
+  await expect(lead.nth(3)).toHaveAttribute("y", "50.000");
+  await expect(lead.nth(3)).toHaveAttribute("height", "29.250");
 });
 
 test("a line chart joins each row to the next and draws nothing past the last", async ({ page }) => {

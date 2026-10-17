@@ -4,7 +4,7 @@ use hypersig::html::div;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
-use hypersig_ui::{ButtonSize, ButtonVariant, Chart, ChartScale, button, token};
+use hypersig_ui::{ButtonSize, ButtonVariant, Chart, button, token};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
@@ -20,7 +20,6 @@ pub struct Month {
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Traffic {
     months: Vec<Month>,
-    scale: ChartScale,
 }
 
 pub fn page(site: Site) -> Page<Traffic> {
@@ -30,7 +29,6 @@ pub fn page(site: Site) -> Page<Traffic> {
             ja: "訪問者数",
         }),
         Traffic::months(),
-        Traffic::scale(),
         Month::name(),
     )
     .series(
@@ -66,7 +64,6 @@ pub fn page(site: Site) -> Page<Traffic> {
             mobile,
         })
         .collect();
-    let scale = chart.scale(&months);
     let grow = Traffic::months().update_where(
         |month| month.index().equals(3),
         Month::desktop(),
@@ -77,7 +74,7 @@ pub fn page(site: Site) -> Page<Traffic> {
             en: "Visitors",
             ja: "訪問者数",
         }),
-        Traffic { months, scale },
+        Traffic { months },
     )
     .child(
         div()

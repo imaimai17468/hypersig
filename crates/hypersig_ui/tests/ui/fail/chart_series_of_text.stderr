@@ -1,7 +1,7 @@
 error[E0277]: the browser does not do arithmetic on `String`
-  --> tests/ui/fail/chart_series_of_text.rs:20:25
+  --> tests/ui/fail/chart_series_of_text.rs:19:25
    |
-20 |         .series("Note", Month::note(), token::chart_1());
+19 |         .series("Note", Month::note(), token::chart_1());
    |          ------         ^^^^^^^^^^^^^ the trait `hypersig::Number` is not implemented for `String`
    |          |
    |          required by a bound introduced by this call
@@ -21,9 +21,9 @@ note: required by a bound in `Chart::<S, T>::series`
    |                      ^^^^^^ required by this bound in `Chart::<S, T>::series`
 
 error[E0277]: the trait bound `String: Textual` is not satisfied
-  --> tests/ui/fail/chart_series_of_text.rs:20:25
+  --> tests/ui/fail/chart_series_of_text.rs:19:25
    |
-20 |         .series("Note", Month::note(), token::chart_1());
+19 |         .series("Note", Month::note(), token::chart_1());
    |          ------         ^^^^^^^^^^^^^ the trait `Textual` is not implemented for `String`
    |          |
    |          required by a bound introduced by this call

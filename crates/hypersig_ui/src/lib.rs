@@ -90,7 +90,7 @@ pub use alert::{AlertVariant, alert, alert_description, alert_title};
 pub use badge::{BadgeVariant, badge};
 pub use button::{ButtonSize, ButtonVariant, button, button_style, icon_button, submit_button};
 pub use card::{Level, card, card_content, card_description, card_footer, card_header, card_title};
-pub use chart::{Chart, ChartScale};
+pub use chart::Chart;
 pub use choice::{checkbox, radio_group, switch};
 pub use combobox::{Combobox, ComboboxState};
 pub use dialog::{Dialog, dialog_footer};
