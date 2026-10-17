@@ -378,6 +378,11 @@ fn table() -> (El<Table>, Table) {
         )
         .child(
             button()
+                .id("sort-desc")
+                .on_click(lines.sort_by_desc(|line| line.at(Line::id()))),
+        )
+        .child(
+            button()
                 .id("stamp")
                 .on_click(Table::stamp().set(Expr::now())),
         )

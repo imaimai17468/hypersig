@@ -98,8 +98,12 @@ describe("run", () => {
     expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([4, 2, 3, 1]);
     await run(["swap", "rows", ["lit", 0], ["lit", 9]], ctx, h);
     expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([4, 2, 3, 1]);
-    await run(["sort", "rows", 0, ["item", 0, "id"]], ctx, h);
+    await run(["sort", "rows", 0, ["item", 0, "id"], false], ctx, h);
     expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([1, 2, 3, 4]);
+    await run(["sort", "rows", 0, ["item", 0, "id"], true], ctx, h);
+    expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([4, 3, 2, 1]);
+    await run(["sort", "rows", 0, ["chars", ["item", 0, "label"]], true], ctx, h);
+    expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([3, 1, 4, 2]);
   });
 
   it("edits lists", async () => {

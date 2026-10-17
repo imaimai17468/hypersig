@@ -340,7 +340,8 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
         at(index);
         return key(itemCtx) as number | string;
       });
-      const order = items.map((_, index) => index).sort((a, b) => (keys[a]! < keys[b]! ? -1 : keys[a]! > keys[b]! ? 1 : a - b));
+      const sign = rest[3] === true ? -1 : 1;
+      const order = items.map((_, index) => index).sort((a, b) => (keys[a]! < keys[b]! ? -sign : keys[a]! > keys[b]! ? sign : a - b));
       if (order.some((at, index) => at !== index)) store.set(path, order.map((at) => items[at]));
       return;
     }

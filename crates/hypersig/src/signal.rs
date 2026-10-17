@@ -369,11 +369,35 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
         self,
         key: impl FnOnce(Item<S, T>) -> E,
     ) -> Stmt<S> {
+        self.sort(key, false)
+    }
+
+    /// A statement that orders the items by `key`, descending, keeping the
+    /// order of items with equal keys.
+    #[must_use]
+    pub fn sort_by_desc<K: Comparable, E: IntoExpr<S, K>>(
+        self,
+        key: impl FnOnce(Item<S, T>) -> E,
+    ) -> Stmt<S> {
+        self.sort(key, true)
+    }
+
+    fn sort<K: Comparable, E: IntoExpr<S, K>>(
+        self,
+        key: impl FnOnce(Item<S, T>) -> E,
+        descending: bool,
+    ) -> Stmt<S> {
         let (depth, key) = in_item_scope(|depth| {
             let item = Item::new(self.path, depth);
             (depth, key(item).into_expr().into_json())
         });
-        Stmt::new(json!(["sort", self.path.place_json(), depth, key]))
+        Stmt::new(json!([
+            "sort",
+            self.path.place_json(),
+            depth,
+            key,
+            descending
+        ]))
     }
 
     fn predicate<P: IntoExpr<S, bool>>(self, build: impl FnOnce(Item<S, T>) -> P) -> (u8, Value) {

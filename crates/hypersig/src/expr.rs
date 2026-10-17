@@ -31,7 +31,8 @@
 //! | `list.retain(\|item\| p)`, `list.set_all(f, e)` | `["retain",place,depth,p]`, `["set_all",place,"path",e]` |
 //! | `list.extend(n, \|i\| e)` | `["extend",place,n,depth,e]` |
 //! | `list.update_where(\|item\| p, f, \|item\| e)` | `["update",place,depth,p,"path",e]` |
-//! | `list.swap(i, j)`, `list.sort_by(\|item\| k)` | `["swap",place,i,j]`, `["sort",place,depth,k]` |
+//! | `list.swap(i, j)` | `["swap",place,i,j]` |
+//! | `list.sort_by(\|item\| k)`, `list.sort_by_desc(\|item\| k)` | `["sort",place,depth,k,false]`, `["sort",place,depth,k,true]` |
 //! | `Stmt::when(c, s)`, `Stmt::if_else(c, s, t)` | `["if",c,s,t]` |
 //! | `route.link_with(p)` for `"/users/{id}"` | `["concat",["lit","/users/"],["uri",p]]` |
 //! | `route.link_with((p, q))` with search parameters | `["concat",path,["query",q]]` |

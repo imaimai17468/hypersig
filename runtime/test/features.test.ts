@@ -394,6 +394,12 @@ describe("list statements and browser values", () => {
     await tick();
     expect(ids()).toEqual([1, 2, 3]);
     expect($$("#lines li")).toEqual(rows);
+    $("#sort-desc").click();
+    await tick();
+    expect(ids()).toEqual([3, 2, 1]);
+    expect($$("#lines li")).toEqual([rows[2], rows[1], rows[0]]);
+    $("#sort").click();
+    await tick();
 
     const lines = Array.from({ length: 10 }, (_, index) => ({ id: index + 1, label: "a" }));
     runtime.store.set("lines", lines);

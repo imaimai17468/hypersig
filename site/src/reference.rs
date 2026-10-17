@@ -905,6 +905,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "sort_by_desc",
+                            "struct.Sig.html#method.sort_by_desc",
+                            L {
+                                en: "A statement that orders the items by `key`, descending, keeping the order of equal keys.",
+                                ja: "キーが等しい項目の順序を保ったまま、項目を `key` の降順に並べる文",
+                            },
+                        ),
+                        (
                             "count",
                             "struct.Sig.html#method.count",
                             L {
