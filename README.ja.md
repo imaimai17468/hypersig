@@ -1,6 +1,6 @@
 # hypersig
 
-[English](README.md)
+[English](README.md) | [ドキュメント（英語）](https://imaimai17468.github.io/hypersig/)
 
 axum の上で動き、画面もブラウザでの動きもサーバーの処理も Rust で書く Web フレームワークです。
 

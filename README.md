@@ -1,6 +1,6 @@
 # hypersig
 
-[日本語](README.ja.md)
+[日本語](README.ja.md) | [Documentation](https://imaimai17468.github.io/hypersig/)
 
 A web framework on axum where the page, its behavior in the browser, and the server handlers are all written in Rust.
 
