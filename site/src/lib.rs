@@ -93,12 +93,6 @@ pub fn render(site: Site) -> Vec<File> {
         path: RUNTIME_FILE.to_owned(),
         contents: hypersig::RUNTIME_JS.to_owned(),
     });
-    // GitHub Pages runs Jekyll on a branch it publishes, which skips a few
-    // file names. The empty file turns it off.
-    files.push(File {
-        path: ".nojekyll".to_owned(),
-        contents: String::new(),
-    });
     files
 }
 

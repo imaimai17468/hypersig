@@ -20,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.99
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc -p hypersig -p hypersig_style -p hypersig_proc -p hypersig_ui --no-deps
@@ -29,7 +29,7 @@ jobs:
       # Fails on a link inside the site, or into the rustdoc output, that
       # reaches no file.
       - run: cargo run -p site -- --out _site --base /hypersig --rustdoc target/doc
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -41,4 +41,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
