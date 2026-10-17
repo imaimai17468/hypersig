@@ -1,4 +1,5 @@
-//! A stopwatch driven by an interval, for the page on escape hatches.
+//! A stopwatch driven by an interval, for the page on what bindings and
+//! statements do not cover.
 
 use std::time::Duration;
 
