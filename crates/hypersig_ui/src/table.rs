@@ -22,8 +22,7 @@ use crate::field::field_style;
 use crate::look::{self, icon};
 use crate::token;
 
-/// The signals a [`DataTable`] keeps: the filter text, the page shown, and
-/// which column the rows are sorted by.
+/// The signals a [`DataTable`] keeps: its filter text, page, and sort column.
 ///
 /// Put one in the page's signals for each table.
 ///
@@ -51,7 +50,7 @@ pub struct TableState {
     sort: i32,
 }
 
-/// One column of a [`DataTable`] whose rows are `T`, on a page whose signals are `S`.
+/// One column of a [`DataTable`] whose rows are `T`.
 ///
 /// A column shows a field of the row with [`Column::text`] or
 /// [`Column::number`], or any element with [`Column::custom`]. A column
@@ -105,8 +104,7 @@ impl<S: 'static, T: 'static> Column<S, T> {
         })
     }
 
-    /// A column headed `header` that shows the number field `field` of each
-    /// row, aligned to the end.
+    /// A column headed `header` that shows the number field `field`, aligned to the end.
     #[must_use]
     pub fn number<U: Number + Textual + 'static>(
         header: impl Into<String>,
@@ -117,8 +115,7 @@ impl<S: 'static, T: 'static> Column<S, T> {
         })
     }
 
-    /// A column headed `header` whose cell in each row holds what `render`
-    /// returns for that row.
+    /// A column headed `header` whose cells hold what `render` returns for each row.
     #[must_use]
     pub fn custom(
         header: impl Into<String>,
@@ -137,9 +134,10 @@ impl<S: 'static, T: 'static> Column<S, T> {
         }
     }
 
-    /// Makes the header a button that sorts the rows by `key`, ascending
-    /// first and descending when pressed again.
+    /// Makes the header a button that sorts the rows by `key`.
     ///
+    /// The first press sorts them ascending, and a press on a column sorted
+    /// ascending sorts it descending.
     /// Sorting reorders the list signal itself, so the order holds until the
     /// list changes. A list the server patches afterwards arrives in the
     /// server's order, while the header still marks the last sort.
@@ -177,8 +175,7 @@ impl<S, T> fmt::Debug for Column<S, T> {
     }
 }
 
-/// A table named `label` that lists the rows of a list signal under
-/// [`Column`]s, on a page whose signals are `S`.
+/// A table of the rows of a list signal, under typed [`Column`]s.
 ///
 /// Each row is keyed by `key`, as in
 /// [`each_keyed`](hypersig::html::each_keyed), so a row keeps its element,
@@ -247,8 +244,10 @@ pub struct DataTable<S, T> {
 }
 
 impl<S: 'static, T: 'static> DataTable<S, T> {
-    /// A table named `label` for assistive technology, with no columns,
-    /// listing `rows` keyed by `key` and keeping its state in `state`.
+    /// An empty table named `label`, listing `rows` by `key`, with its state in `state`.
+    ///
+    /// The name is for assistive technology, and the table has no columns
+    /// until [`DataTable::column`] adds them.
     #[must_use]
     pub fn new<K: 'static, E: IntoExpr<S, K>>(
         label: impl Into<String>,
@@ -283,10 +282,10 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Adds a text field named `label` above the table, which shows only the
-    /// rows whose `text` contains what the visitor types, ignoring case.
+    /// Adds a field named `label` that shows the rows whose `text` contains its text.
     ///
-    /// Typing returns the table to its first page.
+    /// The field sits above the table. The match ignores case, and typing
+    /// returns the table to its first page.
     #[must_use]
     pub fn filter<E: IntoExpr<S, String>>(
         mut self,
@@ -297,8 +296,9 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Shows `size` rows at a time, with buttons below the table for the
-    /// previous and the next page.
+    /// Shows `size` rows at a time, with buttons for the previous and next page.
+    ///
+    /// Below the table, the range of rows shown is written as `1–5 / 12`.
     ///
     /// # Panics
     ///
@@ -310,8 +310,9 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Sets the text of the row shown when no row passes the filter, which
-    /// is "No results." until set.
+    /// Sets the text shown when no row passes the filter.
+    ///
+    /// It is "No results." until set.
     #[must_use]
     pub fn empty(mut self, text: impl Into<String>) -> Self {
         self.empty = text.into();

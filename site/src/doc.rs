@@ -73,6 +73,7 @@ pub enum Component {
     Combobox,
     Tabs,
     Accordion,
+    DataTable,
     Card,
     Separator,
     Dialog,
@@ -321,6 +322,13 @@ pub const COMPONENTS: &[Group] = &[
     },
     Group {
         title: L {
+            en: "Data",
+            ja: "データ",
+        },
+        docs: &[Doc::Components(Component::DataTable)],
+    },
+    Group {
+        title: L {
             en: "Overlays",
             ja: "オーバーレイ",
         },
@@ -444,6 +452,7 @@ impl Doc {
         Self::Components(Component::Accordion),
         Self::Components(Component::Card),
         Self::Components(Component::Separator),
+        Self::Components(Component::DataTable),
         Self::Components(Component::Dialog),
         Self::Components(Component::Menu),
         Self::Components(Component::Tooltip),
@@ -546,6 +555,7 @@ impl Doc {
                 Component::Accordion => ("Accordion", "アコーディオン"),
                 Component::Card => ("Card", "カード"),
                 Component::Separator => ("Separator", "区切り線"),
+                Component::DataTable => ("Data table", "データテーブル"),
                 Component::Dialog => ("Dialog", "ダイアログ"),
                 Component::Menu => ("Menu", "メニュー"),
                 Component::Tooltip => ("Tooltip", "ツールチップ"),
@@ -694,6 +704,7 @@ impl Component {
             Self::Accordion => "accordion",
             Self::Card => "card",
             Self::Separator => "separator",
+            Self::DataTable => "data-table",
             Self::Dialog => "dialog",
             Self::Menu => "menu",
             Self::Tooltip => "tooltip",

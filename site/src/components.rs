@@ -996,6 +996,139 @@ fn component_page(page: Component) -> Page {
                 },
             )],
         },
+        Component::DataTable => Page {
+            lead: L {
+                en: "A table of the rows of a list signal under typed columns, which sorts, filters, pages, and selects rows in the browser.",
+                ja: "リストのシグナルの行を、型の付いた列の下に並べる表です。並べ替え、絞り込み、ページ送り、行の選択をブラウザで行います。",
+            },
+            demo: Demo::DataTable,
+            built_on: &[
+                L {
+                    en: "It is a `<table>` whose headers have `scope=\"col\"`. A sortable column's header holds a button and carries `aria-sort`, which says whether the rows are sorted ascending, descending, or not by it. The header checkbox is a button with `role=\"checkbox\"` whose `aria-checked` is `mixed` while some rows are selected, since a native checkbox's indeterminate state is a property no attribute sets.",
+                    ja: "見出しに `scope=\"col\"` を付けた `<table>` です。並べ替えられる列の見出しはボタンを持ち、その列で昇順か降順に並んでいるか、並んでいないかを `aria-sort` で伝えます。見出しのチェックボックスは `role=\"checkbox\"` のボタンで、一部の行が選ばれている間は `aria-checked` が `mixed` になります。ネイティブのチェックボックスの中間状態はプロパティで、属性からは設定できないためです。",
+                },
+                L {
+                    en: "A column is built from a field of the row type, so a field of another struct does not compile, and a sort key must be a number or a string. The table keeps its filter text, page, and sort column in a `TableState` field of the page's signals, and sorting reorders the list signal itself.",
+                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。並べ替えのキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。",
+                },
+                L {
+                    en: "The browser counts the rows on each change, and with a filter and pagination both on, the work grows with the square of the number of rows. Page a list of thousands of rows on the server, through a `Route` with search parameters.",
+                    ja: "ブラウザは変更のたびに行を数え直し、絞り込みとページ送りを両方使うと、その手間は行数の 2 乗で増えます。数千行のリストは、検索パラメータを持つ `Route` を使ってサーバーでページに分けてください。",
+                },
+            ],
+            keys: &[
+                (
+                    L {
+                        en: "Space",
+                        ja: "Space",
+                    },
+                    L {
+                        en: "Toggles the focused checkbox. On the header checkbox, selects every row, or clears them once all are selected.",
+                        ja: "フォーカスのあるチェックボックスを切り替えます。見出しのチェックボックスでは、すべての行を選び、すべて選ばれていれば選択を外します。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Enter, Space",
+                        ja: "Enter、Space",
+                    },
+                    L {
+                        en: "On a column header, sorts the rows by that column.",
+                        ja: "列の見出しで押すと、その列で行を並べ替えます。",
+                    },
+                ),
+            ],
+            items: &[
+                (
+                    "DataTable::new",
+                    "hypersig_ui/struct.DataTable.html#method.new",
+                    L {
+                        en: "An empty table named `label`, listing `rows` by `key`, with its state in `state`.",
+                        ja: "`label` を名前に持ち、`rows` を `key` で並べ、状態を `state` に持つ空の表",
+                    },
+                ),
+                (
+                    "column",
+                    "hypersig_ui/struct.DataTable.html#method.column",
+                    L {
+                        en: "Adds `column` after the columns added so far.",
+                        ja: "それまでに足した列の後ろに `column` を足します。",
+                    },
+                ),
+                (
+                    "selectable",
+                    "hypersig_ui/struct.DataTable.html#method.selectable",
+                    L {
+                        en: "Adds a first column of checkboxes bound to the field `selected` of each row.",
+                        ja: "各行のフィールド `selected` に結び付いたチェックボックスの列を先頭に足します。",
+                    },
+                ),
+                (
+                    "filter",
+                    "hypersig_ui/struct.DataTable.html#method.filter",
+                    L {
+                        en: "Adds a field named `label` that shows the rows whose `text` contains its text.",
+                        ja: "`label` を名前に持つ欄を足し、`text` がその欄の文字列を含む行だけを表示します。",
+                    },
+                ),
+                (
+                    "paginate",
+                    "hypersig_ui/struct.DataTable.html#method.paginate",
+                    L {
+                        en: "Shows `size` rows at a time, with buttons for the previous and next page.",
+                        ja: "一度に `size` 行を表示し、前と次のページに移るボタンを置きます。",
+                    },
+                ),
+                (
+                    "Column::text",
+                    "hypersig_ui/struct.Column.html#method.text",
+                    L {
+                        en: "A column headed `header` that shows the text field `field` of each row.",
+                        ja: "見出しが `header` で、各行の文字列のフィールド `field` を表示する列",
+                    },
+                ),
+                (
+                    "Column::number",
+                    "hypersig_ui/struct.Column.html#method.number",
+                    L {
+                        en: "A column headed `header` that shows the number field `field`, aligned to the end.",
+                        ja: "見出しが `header` で、数値のフィールド `field` を行末に揃えて表示する列",
+                    },
+                ),
+                (
+                    "Column::custom",
+                    "hypersig_ui/struct.Column.html#method.custom",
+                    L {
+                        en: "A column headed `header` whose cells hold what `render` returns for each row.",
+                        ja: "見出しが `header` で、各行に対して `render` が返す要素をセルに入れる列",
+                    },
+                ),
+                (
+                    "sort_by",
+                    "hypersig_ui/struct.Column.html#method.sort_by",
+                    L {
+                        en: "Makes the header a button that sorts the rows by `key`.",
+                        ja: "見出しを、行を `key` で並べ替えるボタンにします。",
+                    },
+                ),
+                (
+                    "visible",
+                    "hypersig_ui/struct.Column.html#method.visible",
+                    L {
+                        en: "Shows the column only while `when` is true.",
+                        ja: "`when` が真の間だけ列を表示します。",
+                    },
+                ),
+                (
+                    "TableState",
+                    "hypersig_ui/struct.TableState.html",
+                    L {
+                        en: "The signals a `DataTable` keeps: its filter text, page, and sort column.",
+                        ja: "`DataTable` が持つシグナル。絞り込みの文字列、ページ、並べ替えた列",
+                    },
+                ),
+            ],
+        },
         Component::Dialog => Page {
             lead: L {
                 en: "A modal dialog, and an alert dialog that asks the visitor to confirm.",

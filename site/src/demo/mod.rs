@@ -94,6 +94,7 @@ demos! {
     Badge => badge, "ui/badge.rs", "8rem";
     Progress => progress, "ui/progress.rs", "10.5rem";
     Separator => separator, "ui/separator.rs", "12.5rem";
+    DataTable => data_table, "ui/data_table.rs", "25rem";
     Hover => hover, "style/hover.rs", "12rem";
     Accent => accent, "style/accent.rs", "15rem";
     Layout => layout, "style/layout.rs", "14rem";
