@@ -9,6 +9,7 @@ error[E0277]: `(i32, i32, i32, i32, i32, i32, i32)` cannot be the parameters of 
    |
    = note: a route takes `()`, one `Segment` (an integer, `String`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them
    = help: the following other types implement trait `Segment`:
+             Rest
              String
              i32
              i64
@@ -36,6 +37,7 @@ error[E0277]: `(i32, i32, i32, i32, i32, i32, i32)` cannot be the parameters of 
    |
    = note: a route takes `()`, one `Segment` (an integer, `String`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them
    = help: the following other types implement trait `Segment`:
+             Rest
              String
              i32
              i64

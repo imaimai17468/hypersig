@@ -1079,6 +1079,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                             "Checks that each field of a struct can be one value of a query string.",
                         ),
                         (
+                            "Rest",
+                            "struct.Rest.html",
+                            "The rest of a path, from a `{*name}` segment at its end, which may hold `/`.",
+                        ),
+                        (
                             "Extends",
                             "trait.Extends.html",
                             "Parameters that start with the parameters `P` of a parent `Route`.",

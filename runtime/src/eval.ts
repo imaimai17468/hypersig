@@ -77,6 +77,7 @@ const unary: Record<string, (a: never) => unknown> = {
   not: (a: unknown) => !a,
   str: (a: unknown) => String(a),
   uri: (a: unknown) => encodeURIComponent(String(a)),
+  uri_path: (a: unknown) => String(a).split("/").map(encodeURIComponent).join("/"),
   query: queryString,
   trim: (a: string) => a.trim(),
   lower: (a: string) => a.toLowerCase(),

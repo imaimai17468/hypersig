@@ -6,6 +6,7 @@ error[E0277]: `Vec<String>` cannot be a field of search parameters
   |
   = note: a search field is a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` of one, because the query string holds one text value per field
   = help: the following other types implement trait `Segment`:
+            Rest
             String
             i32
             i64

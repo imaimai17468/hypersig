@@ -628,6 +628,8 @@ describe("links", () => {
       "/teams/caf%C3%A9%2F%C3%BC%3F%26%23?open=true&page=-2&q=a%20b%26c%3Dd%23%C3%A9",
       "/search?open=true&page=2&q=a%20b%26c%3Dd%23%C3%A9",
       "/search?open=true&page=2&q=a%20b%26c%3Dd%23%C3%A9&tag=a%2Bb",
+      "/files/docs/a%20b/%C3%BC%3F.md",
+      "/files/docs/a%20b/%C3%BC%3F.md",
     ]);
 
     const runtime = mount("links");
@@ -640,6 +642,9 @@ describe("links", () => {
     expect($$("#members a")[0]!.getAttribute("href")).toBe("/teams/blue/members/1");
     expect($$("#members a")[1]!.getAttribute("href")).toBe("/teams/blue?open=true&page=1&q=a%20b%26c%3Dd%23%C3%A9");
     expect($("#search-bound").getAttribute("href")).toBe("/search?open=true&page=3&q=a%20b%26c%3Dd%23%C3%A9");
+    runtime.store.set("file", "x/y z/");
+    await tick();
+    expect($("#file-bound").getAttribute("href")).toBe("/files/x/y%20z/");
 
     const assign = vi.spyOn(location, "assign").mockImplementation(() => {});
     ($$("#members button")[1] as HTMLButtonElement).click();

@@ -5,7 +5,9 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt as _;
 use hypersig::html::{a, p};
-use hypersig::{Action, Page, PageResponse, Patches, Route, RouterExt, Search, Segment, Signals};
+use hypersig::{
+    Action, Page, PageResponse, Patches, Rest, Route, RouterExt, Search, Segment, Signals,
+};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -42,6 +44,8 @@ hypersig::routes! {
     };
     const TAB: Route<(String, Tab)> = "/tabs/{team}/{tab}" =>
         |(), (team, tab): (String, Tab)| async move { member_page(&format!("{team} {tab:?}"), 0) };
+    const FILE: Route<(String, Rest)> = "/repos/{repo}/files/{*path}" =>
+        |(), (repo, path): (String, Rest)| async move { member_page(&format!("{repo}:{path}"), 0) };
     const DEEP: Route<(i32, i32, i32, i32, i32, String)> = "/{a}/{b}/{c}/{d}/{e}/{f}" =>
         |(), (a, b, c, d, e, f): (i32, i32, i32, i32, i32, String)| async move {
             member_page(&f, a + b + c + d + e)
@@ -344,4 +348,21 @@ async fn a_route_takes_six_parameters() {
     .await;
     assert_eq!(status, StatusCode::OK);
     assert!(body.contains("six #15"), "{body}");
+}
+
+#[tokio::test]
+async fn a_rest_segment_reads_the_rest_of_the_path() {
+    let (status, body) = send(
+        Request::get("/repos/web/files/docs/a%20b/c.md")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("web:docs/a b/c.md"), "{body}");
+    assert_eq!(
+        FILE.url(("web".to_owned(), Rest::new("docs/a b/c.md")))
+            .as_str(),
+        "/repos/web/files/docs/a%20b/c.md"
+    );
 }

@@ -115,6 +115,10 @@ describe("run", () => {
     expect(ctx.store.get("todos")).toEqual([{ t: "c", done: true }]);
   });
 
+  it("encodes each part of a rest of a path and keeps its slashes", () => {
+    expect(evaluate(["uri_path", ["lit", "a b/c?/d"]], context({}))).toBe("a%20b/c%3F/d");
+  });
+
   it("hands the evaluated URL to the host to navigate", async () => {
     const h = host();
     await run(["navigate", ["concat", ["lit", "/members/"], ["uri", ["sig", "id"]]]], context({ id: "a b" }), h);

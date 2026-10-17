@@ -21,7 +21,9 @@ use crate::signal::Signals;
 /// A parameter is a whole segment written `{name}`, as in axum. `P` is `()`
 /// for a path without one, a [`Segment`] type for one, and a tuple for two to
 /// six, in the order they appear. The name inside the braces is for the
-/// reader and axum, and the position decides which value fills it.
+/// reader and axum, and the position decides which value fills it. A last
+/// segment written `{*name}` takes the rest of the path, `/`s included, and
+/// its value is a [`Rest`].
 ///
 /// `Q` is `()` for a page without a query string, or a struct with
 /// `#[derive(Signals)]` whose fields the query string holds. [`Search`] says
@@ -76,6 +78,14 @@ impl<P: Params, Q: Search> Route<P, Q> {
         assert!(
             count_params(path) == P::COUNT,
             "the route's `{{name}}` segments differ in number from the values of its parameter type"
+        );
+        assert!(
+            P::REST_COUNT == P::REST_LAST as usize,
+            "only the last value of a route's parameters can be `Rest`"
+        );
+        assert!(
+            ends_in_wildcard(path) == P::REST_LAST,
+            "a `{{*name}}` segment and a last parameter of type `Rest` go together"
         );
         Self {
             path,
@@ -132,7 +142,7 @@ impl<P: Params, Q: Search> Route<P, Q> {
             1 => vec![params],
             count => split_tuple(params, count),
         };
-        Link::new(self.path, values, search)
+        Link::new(self.path, values, search, P::REST_LAST)
     }
 
     /// The URL of this page with the arguments `args`, written on the server.
@@ -160,8 +170,12 @@ impl<P: Params, Q: Search> Route<P, Q> {
         let (params, search) = Q::split(args);
         let parts = literal_parts(self.path);
         let mut url = parts[0].to_owned();
-        for (segment, part) in params.segments().iter().zip(&parts[1..]) {
-            url.push_str(&encode_uri_component(segment));
+        let segments = params.segments();
+        for (index, (segment, part)) in segments.iter().zip(&parts[1..]).enumerate() {
+            url.push_str(&encode_segment(
+                segment,
+                P::REST_LAST && index + 1 == segments.len(),
+            ));
             url.push_str(part);
         }
         url.push_str(&search.query());
@@ -173,7 +187,7 @@ impl Route<(), ()> {
     /// A link to this page, which has no parameters.
     #[must_use]
     pub fn link<S>(&self) -> Link<S> {
-        Link::new(self.path, Vec::new(), None)
+        Link::new(self.path, Vec::new(), None, false)
     }
 }
 
@@ -254,8 +268,9 @@ impl Route<(), ()> {
 ///
 /// A line without `=> handler`, a path that does not start with `/`, a `{`
 /// or `}` that does not enclose a whole named segment, a path whose
-/// segments differ in number from the route's parameters, and a child whose
-/// path or parameters do not continue its parent's.
+/// segments differ in number from the route's parameters, a `{*name}`
+/// segment that is not last or whose value is not a [`Rest`], and a child
+/// whose path or parameters do not continue its parent's.
 ///
 /// This macro needs the `axum` feature.
 #[cfg(feature = "axum")]
@@ -358,12 +373,13 @@ const fn count_params(path: &str) -> usize {
                     bytes[i - 1] == b'/',
                     "a route parameter is a whole segment, so `{{` follows `/`"
                 );
-                let start = i + 1;
+                let wildcard = i + 1 < bytes.len() && bytes[i + 1] == b'*';
+                let start = if wildcard { i + 2 } else { i + 1 };
                 i = start;
                 while i < bytes.len() && bytes[i] != b'}' {
                     assert!(
                         bytes[i] != b'{' && bytes[i] != b'/' && bytes[i] != b'*',
-                        "a route parameter is `{{name}}`, with no `{{`, `/`, or `*` inside"
+                        "a route parameter is `{{name}}` or `{{*name}}`, with no `{{`, `/`, or `*` inside the name"
                     );
                     i += 1;
                 }
@@ -373,6 +389,10 @@ const fn count_params(path: &str) -> usize {
                     i + 1 == bytes.len() || bytes[i + 1] == b'/',
                     "a route parameter is a whole segment, so `}}` ends it"
                 );
+                assert!(
+                    !wildcard || i + 1 == bytes.len(),
+                    "a `{{*name}}` parameter is the last segment of the path"
+                );
                 count += 1;
             }
             b'}' => panic!("a route path has a `}}` with no `{{`"),
@@ -381,6 +401,16 @@ const fn count_params(path: &str) -> usize {
         i += 1;
     }
     count
+}
+
+/// Whether the last segment of `path` is a `{*name}` parameter.
+const fn ends_in_wildcard(path: &str) -> bool {
+    let bytes = path.as_bytes();
+    let mut i = bytes.len();
+    while i > 0 && bytes[i - 1] != b'/' {
+        i -= 1;
+    }
+    i + 1 < bytes.len() && bytes[i] == b'{' && bytes[i + 1] == b'*'
 }
 
 /// Whether `path` is `parent` followed by one or more segments.
@@ -423,7 +453,9 @@ enum LinkKind<S> {
 }
 
 impl<S> Link<S> {
-    fn new(path: &'static str, values: Vec<Value>, search: Option<Value>) -> Self {
+    fn new(path: &'static str, values: Vec<Value>, search: Option<Value>, rest_last: bool) -> Self {
+        let count = values.len();
+        let is_rest = |index: usize| rest_last && index + 1 == count;
         let parts = literal_parts(path);
         let literal = |value: &Value| match value.as_array().map(Vec::as_slice) {
             Some([op, literal]) if op == "lit" => Some(literal.clone()),
@@ -433,8 +465,11 @@ impl<S> Link<S> {
         let search_literal = search.as_ref().map(literal);
         if let (Some(literals), None | Some(Some(_))) = (literals, &search_literal) {
             let mut url = parts[0].to_owned();
-            for (literal, part) in literals.iter().zip(&parts[1..]) {
-                url.push_str(&encode_uri_component(&crate::ssr::js_string(literal)));
+            for (index, (literal, part)) in literals.iter().zip(&parts[1..]).enumerate() {
+                url.push_str(&encode_segment(
+                    &crate::ssr::js_string(literal),
+                    is_rest(index),
+                ));
                 url.push_str(part);
             }
             if let Some(Some(search)) = &search_literal {
@@ -443,8 +478,9 @@ impl<S> Link<S> {
             return Self(LinkKind::Fixed(url));
         }
         let mut ast = json!(["lit", parts[0]]);
-        for (value, part) in values.into_iter().zip(&parts[1..]) {
-            ast = json!(["concat", ast, ["uri", value]]);
+        for (index, (value, part)) in values.into_iter().zip(&parts[1..]).enumerate() {
+            let op = if is_rest(index) { "uri_path" } else { "uri" };
+            ast = json!(["concat", ast, [op, value]]);
             if !part.is_empty() {
                 ast = json!(["concat", ast, ["lit", part]]);
             }
@@ -501,6 +537,23 @@ impl<S> fmt::Debug for Link<S> {
             LinkKind::Bound(expr) => f.debug_tuple("Link").field(expr).finish(),
         }
     }
+}
+
+/// Percent-encodes one segment's value, keeping the `/`s of a [`Rest`] value.
+fn encode_segment(text: &str, rest: bool) -> String {
+    if rest {
+        encode_uri_path(text)
+    } else {
+        encode_uri_component(text)
+    }
+}
+
+/// Percent-encodes each `/`-separated part of `text` as `encodeURIComponent` does, keeping the `/`s.
+pub(crate) fn encode_uri_path(text: &str) -> String {
+    text.split('/')
+        .map(encode_uri_component)
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 /// Percent-encodes `text` as JavaScript's `encodeURIComponent` does.
@@ -582,6 +635,69 @@ pub trait Segment: sealed::Sealed + Sized {
     /// Writes the value as the browser's `String` would, before percent-encoding.
     #[doc(hidden)]
     fn write(&self) -> String;
+
+    /// Whether the value fills a `{*name}` segment, which may hold `/`.
+    #[doc(hidden)]
+    const REST: bool = false;
+}
+
+/// The rest of a path, from a `{*name}` segment at its end, which may hold `/`.
+///
+/// It is the last value of a route's parameters, and only there, as axum's
+/// wildcard is the last segment. Each `/`-separated part is percent-encoded
+/// in a link, and the `/`s between them stay as they are. axum does not
+/// match a wildcard against an empty rest, so `"/files/"` answers 404.
+///
+/// ```
+/// use hypersig::{Page, Rest, Route, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct File {}
+///
+/// # async fn file((): (), _: Rest) -> Option<Page<File>> { None }
+/// hypersig::routes! {
+///     fn pages(Router<()>);
+///     const FILE: Route<Rest> = "/files/{*path}" => file;
+/// }
+///
+/// assert_eq!(FILE.url(Rest::new("docs/a b.md")).as_str(), "/files/docs/a%20b.md");
+/// # let _ = pages;
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(transparent)]
+pub struct Rest(String);
+
+impl Rest {
+    /// The rest of a path, with its `/`s and before percent-encoding.
+    #[must_use]
+    pub fn new(path: impl Into<String>) -> Self {
+        Self(path.into())
+    }
+
+    /// The rest of the path as text, percent-decoded.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for Rest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl Segment for Rest {
+    const REST: bool = true;
+
+    fn parse(segment: &str) -> Option<Self> {
+        Some(Self(segment.to_owned()))
+    }
+
+    fn write(&self) -> String {
+        self.0.clone()
+    }
 }
 
 macro_rules! integer_segment {
@@ -628,6 +744,14 @@ pub trait Params: sealed::Sealed + Sized {
     #[doc(hidden)]
     fn segments(&self) -> Vec<String>;
 
+    /// Whether the last value is a [`Rest`].
+    #[doc(hidden)]
+    const REST_LAST: bool;
+
+    /// How many of the values are a [`Rest`].
+    #[doc(hidden)]
+    const REST_COUNT: usize;
+
     /// The arguments of a route with these parameters and search parameters `Q`.
     #[doc(hidden)]
     type With<Q>;
@@ -641,6 +765,8 @@ pub trait Params: sealed::Sealed + Sized {
 
 impl Params for () {
     const COUNT: usize = 0;
+    const REST_LAST: bool = false;
+    const REST_COUNT: usize = 0;
 
     fn from_segments(_: &[&str]) -> Option<Self> {
         Some(())
@@ -663,6 +789,8 @@ impl Params for () {
 
 impl<T: Segment> Params for T {
     const COUNT: usize = 1;
+    const REST_LAST: bool = T::REST;
+    const REST_COUNT: usize = T::REST as usize;
 
     fn from_segments(segments: &[&str]) -> Option<Self> {
         match segments {
@@ -688,11 +816,13 @@ impl<T: Segment> Params for T {
 
 /// Implements `Params` and the seal for a tuple of `Segment`s.
 macro_rules! tuple_params {
-    ($count:literal: $($ty:ident $var:ident $index:tt),+) => {
+    ($count:literal: $($ty:ident $var:ident $index:tt),+; last $last:ident) => {
         impl<$($ty: Segment),+> sealed::Sealed for ($($ty,)+) {}
 
         impl<$($ty: Segment),+> Params for ($($ty,)+) {
             const COUNT: usize = $count;
+            const REST_LAST: bool = $last::REST;
+            const REST_COUNT: usize = 0 $(+ $ty::REST as usize)+;
 
             fn from_segments(segments: &[&str]) -> Option<Self> {
                 match segments {
@@ -718,11 +848,11 @@ macro_rules! tuple_params {
     };
 }
 
-tuple_params!(2: A a 0, B b 1);
-tuple_params!(3: A a 0, B b 1, C c 2);
-tuple_params!(4: A a 0, B b 1, C c 2, D d 3);
-tuple_params!(5: A a 0, B b 1, C c 2, D d 3, E e 4);
-tuple_params!(6: A a 0, B b 1, C c 2, D d 3, E e 4, F f 5);
+tuple_params!(2: A a 0, B b 1; last B);
+tuple_params!(3: A a 0, B b 1, C c 2; last C);
+tuple_params!(4: A a 0, B b 1, C c 2, D d 3; last D);
+tuple_params!(5: A a 0, B b 1, C c 2, D d 3, E e 4; last E);
+tuple_params!(6: A a 0, B b 1, C c 2, D d 3, E e 4, F f 5; last F);
 
 /// The search parameters of a [`Route`]: `()`, or a struct with `#[derive(Signals, Search)]`.
 ///
@@ -889,6 +1019,7 @@ pub(crate) mod sealed {
     impl Sealed for u32 {}
     impl Sealed for u64 {}
     impl Sealed for String {}
+    impl Sealed for super::Rest {}
 }
 
 #[cfg(test)]
@@ -909,9 +1040,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "no `{`, `/`, or `*` inside")]
-    fn rejects_a_wildcard() {
-        let _ = count_params("/files/{*rest}");
+    fn counts_a_wildcard_at_the_end() {
+        assert_eq!(count_params("/files/{*rest}"), 1);
+        assert!(ends_in_wildcard("/files/{*rest}"));
+        assert!(!ends_in_wildcard("/files/{rest}"));
+    }
+
+    #[test]
+    #[should_panic(expected = "the last segment of the path")]
+    fn rejects_a_wildcard_before_the_end() {
+        let _ = count_params("/files/{*rest}/raw");
+    }
+
+    #[test]
+    fn keeps_the_slashes_of_a_rest() {
+        assert_eq!(encode_uri_path("a b/c?/d"), "a%20b/c%3F/d");
     }
 
     #[test]

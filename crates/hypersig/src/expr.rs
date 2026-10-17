@@ -35,6 +35,7 @@
 //! | `Stmt::when(c, s)`, `Stmt::if_else(c, s, t)` | `["if",c,s,t]` |
 //! | `route.link_with(p)` for `"/users/{id}"` | `["concat",["lit","/users/"],["uri",p]]` |
 //! | `route.link_with((p, q))` with search parameters | `["concat",path,["query",q]]` |
+//! | `route.link_with(rest)` for `"/files/{*path}"` | `["concat",["lit","/files/"],["uri_path",rest]]` |
 //! | `action.call()` | `["call",method,path,args,indicator,error]` |
 //! | `node_ref.focus()` | `["dom","focus",name]` |
 //! | `link.navigate()` | `["navigate",url]` |

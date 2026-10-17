@@ -14,7 +14,7 @@ use hypersig::html::{
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
-    Action, Expr, Fragment, NodeRef, Page, Patches, Route, Search, Signals, Stmt, if_else,
+    Action, Expr, Fragment, NodeRef, Page, Patches, Rest, Route, Search, Signals, Stmt, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -603,6 +603,7 @@ struct Filter {
 struct Roster {
     members: Vec<Member>,
     filter: Filter,
+    file: Rest,
 }
 
 hypersig::routes! {
@@ -611,6 +612,7 @@ hypersig::routes! {
     const MEMBER: Route<(String, i32)> = "/teams/{team}/members/{id}" => no_page;
     const FIND: Route<(), Filter> = "/search" => no_page;
     const TEAM_SEARCH: Route<String, Filter> = "/teams/{team}" => no_page;
+    const FILE: Route<Rest> = "/files/{*path}" => no_page;
 }
 
 #[expect(
@@ -637,7 +639,12 @@ fn links() -> (El<Roster>, Roster) {
         .child(
             a().id("search-bound")
                 .href(FIND.link_with(Roster::filter())),
-        );
+        )
+        .child(
+            a().id("file-fixed")
+                .href(FILE.link_with(&Rest::new("docs/a b/ü?.md"))),
+        )
+        .child(a().id("file-bound").href(FILE.link_with(Roster::file())));
     let signals = Roster {
         members: vec![
             Member {
@@ -653,6 +660,7 @@ fn links() -> (El<Roster>, Roster) {
             tag: Some("a+b".to_owned()),
             ..filter()
         },
+        file: Rest::new("docs/a b/ü?.md"),
     };
     (el, signals)
 }
