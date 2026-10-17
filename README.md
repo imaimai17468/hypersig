@@ -5,7 +5,7 @@
 A web framework on axum where the page, its behavior in the browser, and the server handlers are all written in Rust.
 
 - `cargo build` builds it, with no Node and no wasm.
-- A mismatch between the page and the server is a compile error.
+- A mismatch between the page and the server is a compile error, and so is a link whose page, path parameters, or query do not fit a route.
 - Changing the page before the server answers (an optimistic update) takes no extra code.
 
 ## Framework comparison
@@ -18,6 +18,7 @@ Adding a page to a Rust server leaves two choices today. Leptos type-checks what
 | Server written in | Rust | Rust | Any | TypeScript | TypeScript | TypeScript | Any |
 | No browser build | Yes | No (wasm and cargo-leptos) | No (Vite) | No (Node bundler) | No (Vite) | No (Vite) | Yes |
 | Request types checked at compile time | Yes | Yes | No | Yes | Yes | No | No |
+| Links checked against routes at compile time | Yes | No (`href` takes a string) | No (no router) | Opt-in (`typedRoutes`) | Yes | Experimental (`typedPages`) | No |
 | State kept in the browser | Yes | Yes | Yes | Yes | Yes | Yes | No |
 
 ## Benchmarks

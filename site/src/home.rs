@@ -32,7 +32,7 @@ pub fn render(site: Site) -> String {
                     ),
                     (
                         "Typed from page to server",
-                        "Signal names, expressions, the paths of actions and pages, and their arguments come from Rust types, so a mismatch between the page and the server is a compile error.",
+                        "Signal names, expressions, actions, and links come from Rust types. A link whose page has no handler, or whose path parameters or query do not fit the page, is a compile error, as is any other mismatch between the page and the server.",
                     ),
                     (
                         "Optimistic updates for free",
@@ -140,6 +140,16 @@ fn comparison(site: Site) -> Part {
                         "Yes",
                         "Yes",
                         "No",
+                        "No",
+                    ],
+                    &[
+                        "Links checked against routes at compile time",
+                        "Yes",
+                        "No (`href` takes a string)",
+                        "No (no router)",
+                        "Opt-in (`typedRoutes`)",
+                        "Yes",
+                        "Experimental (`typedPages`)",
                         "No",
                     ],
                     &[
