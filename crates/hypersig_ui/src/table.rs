@@ -59,6 +59,49 @@ pub struct TableState {
     descending: bool,
 }
 
+/// The words a [`DataTable`] or [`ServerTable`] shows or names its controls with.
+///
+/// They are English until replaced, so a page in another language passes
+/// its own:
+///
+/// ```
+/// use hypersig_ui::TableText;
+///
+/// let japanese = TableText {
+///     empty: "該当する行はありません。".into(),
+///     select_row: "行を選ぶ".into(),
+///     select_all: "すべての行を選ぶ".into(),
+///     previous_page: "前のページ".into(),
+///     next_page: "次のページ".into(),
+/// };
+/// assert_ne!(japanese, TableText::default());
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableText {
+    /// Shown in place of the rows when there are none, "No results.".
+    pub empty: String,
+    /// The name of the checkbox of a row, "Select row".
+    pub select_row: String,
+    /// The name of the checkbox in the header, "Select all rows".
+    pub select_all: String,
+    /// The name of the button that goes back a page, "Previous page".
+    pub previous_page: String,
+    /// The name of the button that goes forward a page, "Next page".
+    pub next_page: String,
+}
+
+impl Default for TableText {
+    fn default() -> Self {
+        Self {
+            empty: "No results.".to_owned(),
+            select_row: "Select row".to_owned(),
+            select_all: "Select all rows".to_owned(),
+            previous_page: "Previous page".to_owned(),
+            next_page: "Next page".to_owned(),
+        }
+    }
+}
+
 /// The direction a [`TableState`] sorts its column in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SortOrder {
@@ -340,7 +383,7 @@ pub struct DataTable<S, T> {
     selection: Option<Selection<S, T>>,
     filter: Option<(String, RowText<S, T>)>,
     page_size: Option<i32>,
-    empty: String,
+    text: TableText,
 }
 
 impl<S: 'static, T: 'static> DataTable<S, T> {
@@ -364,7 +407,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             selection: None,
             filter: None,
             page_size: None,
-            empty: "No results.".to_owned(),
+            text: TableText::default(),
         }
     }
 
@@ -450,12 +493,10 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Sets the text shown when no row passes the filter.
-    ///
-    /// It is "No results." until set.
+    /// Replaces the words the table shows and names its controls with, English until set.
     #[must_use]
-    pub fn empty(mut self, text: impl Into<String>) -> Self {
-        self.empty = text.into();
+    pub fn text(mut self, text: TableText) -> Self {
+        self.text = text;
         self
     }
 
@@ -471,15 +512,15 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             selection,
             filter,
             page_size,
-            empty,
+            text,
         } = self;
         let query = state.at(TableState::query());
         let page = state.at(TableState::page());
-        let (filter_label, text) = filter.unzip();
-        let filtered = text.is_some();
+        let (filter_label, row_text) = filter.unzip();
+        let filtered = row_text.is_some();
         let matches = move |row: Item<S, T>| -> Expr<S, bool> {
-            match &text {
-                Some(text) => text(row)
+            match &row_text {
+                Some(row_text) => row_text(row)
                     .to_lowercase()
                     .contains(query.trim().to_lowercase()),
                 None => Expr::lit(&true),
@@ -493,7 +534,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
 
         let select_head = selection
             .as_ref()
-            .map(|selection| select_all(rows, selection));
+            .map(|selection| select_all(rows, selection, &text.select_all));
         let (head, cells) = header_row(columns, select_head, state);
         let width = cells.len() + usize::from(selection.is_some());
 
@@ -511,9 +552,11 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
                 .and(rank.clone().ge(start.clone()))
                 .and(rank.lt(start + size))
         };
+        let select_row = text.select_row.clone();
         let body = each(Box::new(move |row| {
             let line = tr().show(row_shown(row)).css(body_row());
-            row_cells(select_cell_of(line, selection.as_ref(), row), &cells, row)
+            let line = select_cell_of(line, selection.as_ref(), row, select_row);
+            row_cells(line, &cells, row)
         }));
 
         let mut out = div().css(stack(rem(1)));
@@ -524,7 +567,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             label,
             head,
             body,
-            empty_row(shown.clone().equals(0), width, empty),
+            empty_row(shown.clone().equals(0), width, text.empty.clone()),
         ));
         if let Some(size) = page_size {
             // The list can shrink from outside the table, through a patch or
@@ -532,7 +575,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             let past_end = page.gt(0).and((page * size).ge(shown.clone()));
             out = out
                 .effect(Stmt::when(page.lt(0).or(past_end), page.set(0)))
-                .child(pager(page, shown, size, None));
+                .child(pager(page, shown, size, None, &text));
         }
         out
     }
@@ -664,7 +707,7 @@ pub struct ServerTable<S, T> {
     selection: Option<Selection<S, T>>,
     filter: Option<String>,
     pages: Option<(i32, Sig<S, i32>)>,
-    empty: String,
+    text: TableText,
 }
 
 impl<S: 'static, T: 'static> ServerTable<S, T> {
@@ -690,7 +733,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             selection: None,
             filter: None,
             pages: None,
-            empty: "No results.".to_owned(),
+            text: TableText::default(),
         }
     }
 
@@ -764,12 +807,10 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         self
     }
 
-    /// Sets the text shown when the server sends no rows.
-    ///
-    /// It is "No results." until set.
+    /// Replaces the words the table shows and names its controls with, English until set.
     #[must_use]
-    pub fn empty(mut self, text: impl Into<String>) -> Self {
-        self.empty = text.into();
+    pub fn text(mut self, text: TableText) -> Self {
+        self.text = text;
         self
     }
 
@@ -786,17 +827,18 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             selection,
             filter,
             pages,
-            empty,
+            text,
         } = self;
         let query = state.at(TableState::query());
         let page = state.at(TableState::page());
         let select_head = selection
             .as_ref()
-            .map(|selection| select_all(rows, selection));
+            .map(|selection| select_all(rows, selection, &text.select_all));
         let (head, cells) = header_row(columns, select_head, state);
         let width = cells.len() + usize::from(selection.is_some());
+        let select_row = text.select_row.clone();
         let body = each(Box::new(move |row| {
-            let line = select_cell_of(tr().css(body_row()), selection.as_ref(), row);
+            let line = select_cell_of(tr().css(body_row()), selection.as_ref(), row, select_row);
             row_cells(line, &cells, row)
         }));
 
@@ -812,10 +854,10 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             label,
             head,
             body,
-            empty_row(rows.is_empty(), width, empty),
+            empty_row(rows.is_empty(), width, text.empty.clone()),
         ));
         if let Some((size, total)) = pages {
-            out = out.child(pager(page, total.into_expr(), size, Some(&load)));
+            out = out.child(pager(page, total.into_expr(), size, Some(&load), &text));
         }
         out
     }
@@ -1030,10 +1072,12 @@ impl<S: 'static, T: 'static> Selection<S, T> {
 
 /// `line` with a first cell holding the checkbox of `row`, and the look of
 /// a selected row while it is checked, where the table has a selection.
+/// The checkbox is named `label`.
 fn select_cell_of<S, T>(
     line: El<S>,
     selection: Option<&Selection<S, T>>,
     row: Item<S, T>,
+    label: String,
 ) -> El<S> {
     let Some(selection) = selection else {
         return line;
@@ -1042,7 +1086,7 @@ fn select_cell_of<S, T>(
     line.css_when(selected_row(), checked.clone()).child(
         td().css(select_cell()).child(check_mark(
             input()
-                .attr("aria-label", "Select row")
+                .attr("aria-label", label)
                 .bind_checked(checked)
                 .on_change((selection.toggle)(row)),
         )),
@@ -1052,7 +1096,7 @@ fn select_cell_of<S, T>(
 /// The header checkbox: checked while every row of `rows` is selected,
 /// mixed while some are, and a press selects every row unless all are
 /// selected already.
-fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>) -> El<S> {
+fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>, label: &str) -> El<S> {
     let count = rows.count(|row| (selection.checked)(row));
     let all = count.clone().equals(rows.len()).and(rows.len().gt(0));
     let some = count.gt(0);
@@ -1065,7 +1109,7 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>) -> El<S> 
     button()
         .attr("type", "button")
         .attr("role", "checkbox")
-        .attr("aria-label", "Select all rows")
+        .attr("aria-label", label)
         .bind_attr(
             "aria-checked",
             if_else(all.clone(), "true", if_else(some, "mixed", "false")),
@@ -1090,7 +1134,13 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>) -> El<S> 
 
 /// The range of rows shown out of `shown`, and the buttons that move
 /// between pages and then run `then`.
-fn pager<S>(page: Sig<S, i32>, shown: Expr<S, i32>, size: i32, then: Option<&Stmt<S>>) -> El<S> {
+fn pager<S>(
+    page: Sig<S, i32>,
+    shown: Expr<S, i32>,
+    size: i32,
+    then: Option<&Stmt<S>>,
+    text: &TableText,
+) -> El<S> {
     let start = page * size;
     let end = (start.clone() + size).min(shown.clone());
     let first = if_else(shown.clone().equals(0), Expr::lit(&0), start.clone() + 1);
@@ -1126,13 +1176,13 @@ fn pager<S>(page: Sig<S, i32>, shown: Expr<S, i32>, size: i32, then: Option<&Stm
             ),
         )
         .child(
-            icon_button(ButtonVariant::Outline, "Previous page")
+            icon_button(ButtonVariant::Outline, text.previous_page.clone())
                 .attr_when("disabled", page.le(0))
                 .on_click(Stmt::when(page.gt(0), go(page - 1)))
                 .child(icon(icon::CHEVRON_LEFT, rem(1))),
         )
         .child(
-            icon_button(ButtonVariant::Outline, "Next page")
+            icon_button(ButtonVariant::Outline, text.next_page.clone())
                 .attr_when("disabled", !has_next.clone())
                 .on_click(Stmt::when(has_next, go(page + 1)))
                 .child(icon(icon::CHEVRON_RIGHT, rem(1))),

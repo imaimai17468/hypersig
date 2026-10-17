@@ -104,7 +104,7 @@ pub use progress::{progress, skeleton};
 pub use select::select_field;
 pub use separator::separator;
 pub use slider::Slider;
-pub use table::{Column, DataTable, ServerTable, SortOrder, TableState};
+pub use table::{Column, DataTable, ServerTable, SortOrder, TableState, TableText};
 pub use tabs::Tabs;
 pub use theme::{dark, global, light, theme};
 pub use toast::{Toast, ToastVariant, Toaster};

@@ -1136,6 +1136,14 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "TableText",
+                    "hypersig_ui/struct.TableText.html",
+                    L {
+                        en: "The words a `DataTable` or `ServerTable` shows or names its controls with.",
+                        ja: "`DataTable` と `ServerTable` が表示する言葉と、操作部品に付ける名前",
+                    },
+                ),
+                (
                     "ServerTable::new",
                     "hypersig_ui/struct.ServerTable.html#method.new",
                     L {

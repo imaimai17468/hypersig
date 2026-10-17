@@ -1,7 +1,7 @@
 //! A data table, for the data table page.
 
 use hypersig::{NumberFormat, Page, Signals};
-use hypersig_ui::{Column, DataTable, TableState};
+use hypersig_ui::{Column, DataTable, TableState, TableText};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
@@ -57,10 +57,38 @@ pub fn page(site: Site) -> Page<Ledger> {
         |payment| payment.at(Payment::email()),
     )
     .paginate(5)
-    .empty(site.t(L {
-        en: "No results.",
-        ja: "該当する行はありません。",
-    }))
+    .text(TableText {
+        empty: site
+            .t(L {
+                en: "No results.",
+                ja: "該当する行はありません。",
+            })
+            .to_owned(),
+        select_row: site
+            .t(L {
+                en: "Select row",
+                ja: "行を選ぶ",
+            })
+            .to_owned(),
+        select_all: site
+            .t(L {
+                en: "Select all rows",
+                ja: "すべての行を選ぶ",
+            })
+            .to_owned(),
+        previous_page: site
+            .t(L {
+                en: "Previous page",
+                ja: "前のページ",
+            })
+            .to_owned(),
+        next_page: site
+            .t(L {
+                en: "Next page",
+                ja: "次のページ",
+            })
+            .to_owned(),
+    })
     .sortable_column(
         Column::text(
             site.t(L {
