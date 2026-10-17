@@ -1,4 +1,4 @@
-//! The quick start and the page on describing the page.
+//! The quick start and the page on building the page.
 
 use super::snippet::{Snippet, show};
 use super::{Program, program};
@@ -52,8 +52,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "Write `src/main.rs`. It holds the page, the handler that answers the reset button, and the router that serves both.",
-                ja: "`src/main.rs` を書きます。このファイルには、ページ、リセットボタンに答えるハンドラ、その 2 つを配信するルーターが入ります。",
+                en: "Write `src/main.rs`. It holds the page, the handler that answers calls from the reset button, and the router that serves both.",
+                ja: "`src/main.rs` を書きます。このファイルにはページ、リセットボタンからの呼び出しに答えるハンドラ、その 2 つを配信するルーターが入ります。",
             },
         ),
         program(Program::QuickStart),
@@ -92,7 +92,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                 },
                 L {
                     en: "`span().bind_text(count.to_text())` keeps the text equal to the count. `Page::render` evaluates it with the initial values, so the HTML already shows `0`.",
-                    ja: "`span().bind_text(count.to_text())` は、テキストをカウントの値に合わせ続けます。`Page::render` が初期値でこの式を評価するので、HTML の時点で `0` が表示されています。",
+                    ja: "`span().bind_text(count.to_text())` はテキストをカウントの値に合わせ続けます。`Page::render` が初期値でこの式を評価するので、HTML の時点で `0` が表示されています。",
                 },
                 L {
                     en: "`INDEX` is a `Route`, the page at `/`. `routes!` declares it together with its handler `index`, the function `pages` it writes serves it, and a link to it is `INDEX.link()`. [Pages and links](learn/pages/) covers routes with parameters.",
@@ -118,8 +118,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "The counter below runs the browser half of the program on this page. It uses buttons from `hypersig_ui`, the component crate in the same repository.",
-                ja: "下のカウンターは、このプログラムのブラウザ側の半分をこのページで動かしています。ボタンには、同じリポジトリにあるコンポーネントのクレート `hypersig_ui` のものを使っています。",
+                en: "The counter below runs the browser side of the program on this page. It uses buttons from `hypersig_ui`, the component crate in the same repository.",
+                ja: "下のカウンターはこのプログラムのブラウザ側をこのページで動かしています。ボタンには同じリポジトリにあるコンポーネントのクレート `hypersig_ui` のものを使っています。",
             },
         ),
         demo::show(site, Demo::Counter),
@@ -133,8 +133,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "Next, [Describing the page](learn/describing-the-page/) shows how the HTML is built.",
-                ja: "HTML の組み立て方は、次の [ページを組み立てる](learn/describing-the-page/) で説明します。",
+                en: "Next, [Building the page](learn/describing-the-page/) shows how the HTML is built.",
+                ja: "HTML の組み立て方は次の [ページを組み立てる](learn/describing-the-page/) で説明します。",
             },
         ),
     ])
@@ -161,7 +161,7 @@ pub fn describing_the_page(site: Site) -> Part {
             site,
             L {
                 en: "The [`html`](api:hypersig/html/index.html) module has one function per common tag, such as `div()`, `p()`, and `button()`, and `el(\"tag\")` for any other. Each returns an `El<S>`, where `S` is the page's signal struct, and its methods return the element, so a tree is one expression.",
-                ja: "[`html`](api:hypersig/html/index.html) モジュールには、`div()`、`p()`、`button()` のようによく使うタグごとの関数と、それ以外のタグに使う `el(\"tag\")` があります。どれも `El<S>` を返します。`S` はページのシグナル構造体です。`El` のメソッドは要素そのものを返すので、木全体を 1 つの式で書けます。",
+                ja: "[`html`](api:hypersig/html/index.html) モジュールには `div()`、`p()`、`button()` のようによく使うタグごとの関数と、それ以外のタグに使う `el(\"tag\")` があります。どれも `El<S>` を返します。`S` はページのシグナル構造体です。`El` のメソッドは要素そのものを返すので、木全体を 1 つの式で書けます。",
             },
         ),
         show(Snippet::Elements),
@@ -197,7 +197,7 @@ pub fn describing_the_page(site: Site) -> Part {
             site,
             L {
                 en: "An element can show a value that changes in the browser. Each binding takes an expression over the signals and is rendered with the initial values first, so the HTML shows what the runtime would compute.",
-                ja: "要素には、ブラウザで変わる値を表示できます。束縛はそれぞれシグナルを使った式を受け取り、最初は初期値で描画されるので、HTML にはランタイムが計算するのと同じ値が入っています。",
+                ja: "ブラウザで変わる値を要素に表示できます。束縛はそれぞれシグナルを使った式を受け取り、最初は初期値で描画されるので、HTML にはランタイムが計算するのと同じ値が入っています。",
             },
         ),
         show(Snippet::Bindings),
@@ -214,7 +214,7 @@ pub fn describing_the_page(site: Site) -> Part {
                 },
                 L {
                     en: "`show` hides the element while a condition is false. `when(cond, el)` removes it instead, so its `on_load` runs again and its inputs start empty each time it returns.",
-                    ja: "`show` は条件が偽の間、要素を隠します。`when(cond, el)` は要素を取り除くので、要素が戻るたびに `on_load` がもう一度走り、入力欄は空から始まります。",
+                    ja: "`show` は条件が偽の間、要素を隠します。`when(cond, el)` は要素を取り除くので、要素が戻るたびに `on_load` がもう一度実行され、入力欄は空から始まります。",
                 },
                 L {
                     en: "`class_when` and `css_when` add a class or a style while a condition holds. [Styling](learn/styling/) covers them.",
@@ -249,7 +249,7 @@ pub fn describing_the_page(site: Site) -> Part {
             site,
             L {
                 en: "`hypersig_ui` is a set of such functions styled after shadcn/ui. The demos on this site use its buttons and text fields.",
-                ja: "`hypersig_ui` は、shadcn/ui に倣った見た目のこうした関数を集めたクレートです。このサイトのデモは、そのボタンとテキスト欄を使っています。",
+                ja: "`hypersig_ui` は shadcn/ui に倣った見た目のこうした関数を集めたクレートです。このサイトのデモはそのボタンとテキスト欄を使っています。",
             },
         ),
     ])

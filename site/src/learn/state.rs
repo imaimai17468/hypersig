@@ -28,7 +28,7 @@ pub fn signals(site: Site) -> Part {
             site,
             L {
                 en: "Derive `Signals` next to serde's `Serialize` and `Deserialize`. The derive adds one function per field, named after the field, that returns a [`Sig`](api:hypersig/struct.Sig.html). `Sig<Counter, i32>` reads: an `i32` inside the signal struct `Counter`.",
-                ja: "serde の `Serialize` と `Deserialize` と並べて `Signals` を derive します。この derive は、フィールドごとにそのフィールドと同じ名前で [`Sig`](api:hypersig/struct.Sig.html) を返す関数を追加します。`Sig<Counter, i32>` は「シグナル構造体 `Counter` の中の `i32`」と読みます。",
+                ja: "serde の `Serialize` と `Deserialize` と並べて `Signals` を derive します。この derive はフィールドごとにそのフィールドと同じ名前で [`Sig`](api:hypersig/struct.Sig.html) を返す関数を追加します。`Sig<Counter, i32>` は「シグナル構造体 `Counter` の中の `i32`」と読みます。",
             },
         ),
         show(Snippet::SignalPaths),
@@ -44,7 +44,7 @@ pub fn signals(site: Site) -> Part {
             site,
             L {
                 en: "The `S` in `Sig<S, T>` also stops a signal of one page from being used on another. An element of a `Counter` page is an `El<Counter>`, and it accepts only expressions over `Counter`.",
-                ja: "`Sig<S, T>` の `S` は、あるページのシグナルを別のページで使うことも防ぎます。`Counter` のページの要素は `El<Counter>` で、`Counter` のシグナルを使った式しか受け取りません。",
+                ja: "`Sig<S, T>` の `S` はあるページのシグナルを別のページで使うことも防ぎます。`Counter` のページの要素は `El<Counter>` で、`Counter` のシグナルを使った式しか受け取りません。",
             },
         ),
         heading(
@@ -79,8 +79,8 @@ pub fn signals(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Page::new` takes the initial values, and `Page::render` evaluates every binding with them. Text, visibility, classes, attributes, form values, and list items are in the HTML before the runtime loads, and the runtime adopts those elements rather than building them again. The browser fetches nothing to show the page, because the data is the signal struct's JSON on `<body>`.",
-                ja: "`Page::new` が初期値を受け取り、`Page::render` がその値ですべての束縛を評価します。テキスト、表示と非表示、クラス、属性、フォームの値、リストの項目は、ランタイムを読み込む前から HTML に入っています。ランタイムはそれらの要素を作り直さず、そのまま引き継ぎます。データは `<body>` に置いたシグナル構造体の JSON なので、ブラウザはページを表示するために何も取得しません。",
+                en: "`Page::new` takes the initial values, and `Page::render` evaluates every binding with them. Text, visibility, classes, attributes, form values, and list items are in the HTML before the runtime loads, and the runtime uses those elements as they are rather than building them again. The browser fetches nothing to show the page, because the data is the signal struct's JSON on `<body>`.",
+                ja: "`Page::new` が初期値を受け取り、`Page::render` がその値ですべての束縛を評価します。テキスト、表示と非表示、クラス、属性、フォームの値、リストの項目は、ランタイムを読み込む前から HTML に入っています。ランタイムはそれらの要素を作り直さず、そのまま使います。データは `<body>` に置いたシグナル構造体の JSON なので、ブラウザはページを表示するために何も取得しません。",
             },
         ),
         heading(
@@ -222,14 +222,14 @@ pub fn expressions(site: Site) -> Part {
             site,
             L {
                 en: "`on_click`, `on_input`, `on_submit`, `on_change`, and `on_blur` run a statement on their event, and `on(Event::Focus, ...)` covers the rest of [`Event`](api:hypersig/html/enum.Event.html). `on_key` filters `keydown` by a [`Key`](api:hypersig/html/enum.Key.html), and `on_debounced` waits until the event has stopped firing for a given time.",
-                ja: "`on_click`、`on_input`、`on_submit`、`on_change`、`on_blur` は、それぞれのイベントで文を実行します。[`Event`](api:hypersig/html/enum.Event.html) のほかのイベントには `on(Event::Focus, ...)` を使います。`on_key` は `keydown` を [`Key`](api:hypersig/html/enum.Key.html) で絞り込み、`on_debounced` はイベントが指定した時間だけ止むまで待ちます。",
+                ja: "`on_click`、`on_input`、`on_submit`、`on_change`、`on_blur` は、それぞれのイベントで文を実行します。[`Event`](api:hypersig/html/enum.Event.html) のほかのイベントには `on(Event::Focus, ...)` を使います。`on_key` は `keydown` を [`Key`](api:hypersig/html/enum.Key.html) で絞り込み、`on_debounced` はイベントが指定した時間続けて起きなくなるまで待ちます。",
             },
         ),
         para(
             site,
             L {
                 en: "`bind` ties a text field, a checkbox, or a number field to a signal in both directions. `bind_radio` and `bind_select` do the same for radio buttons and a `<select>`.",
-                ja: "`bind` は、テキスト欄、チェックボックス、数値の欄をシグナルと双方向に結び付けます。ラジオボタンと `<select>` には、`bind_radio` と `bind_select` で同じことをします。",
+                ja: "`bind` は、テキスト欄、チェックボックス、数値の欄をシグナルと双方向に結び付けます。ラジオボタンと `<select>` には `bind_radio` と `bind_select` で同じことをします。",
             },
         ),
         show(Snippet::Events),
@@ -237,14 +237,14 @@ pub fn expressions(site: Site) -> Part {
             site,
             L {
                 en: "The converter below computes Fahrenheit and a description from one `f64`, and each button is one statement.",
-                ja: "下の変換器は、1 つの `f64` から華氏の値と説明文を計算します。ボタンはそれぞれ 1 つの文です。",
+                ja: "下の変換器は 1 つの `f64` から華氏の値と説明文を計算します。ボタンはそれぞれ 1 つの文です。",
             },
         ),
         demo::show(site, Demo::Temperature),
         note(
             site,
             L {
-                en: "The browser runs only the operations hypersig provides. Anything else, such as formatting a date or calling a JavaScript library, goes through an action to the server and responds a network round trip later.",
+                en: "The browser runs only the operations hypersig provides. Anything else, such as formatting a date or calling a JavaScript library, goes through an action to the server, and its result comes back one network round trip later.",
                 ja: "ブラウザが実行できるのは hypersig が用意した操作だけです。日付の整形や JavaScript ライブラリの呼び出しのような、それ以外の処理はアクションでサーバーに任せることになり、結果はネットワークの往復 1 回分だけ遅れて返ります。",
             },
         ),
@@ -330,21 +330,21 @@ pub fn lists(site: Site) -> Part {
             site,
             L {
                 en: "A field of an item is a `Sig<S, T, Local>`, whose path is resolved per item in the browser. It has no `patch` method, so the server cannot address one item's field by position. The server replaces the whole list with a patch of the list field, or re-renders a part of the page as a fragment, which [Talking to the server](learn/server/) covers.",
-                ja: "項目のフィールドは `Sig<S, T, Local>` で、そのパスはブラウザで項目ごとに解決されます。`patch` メソッドがないので、サーバーは位置を指定して 1 つの項目のフィールドを書き換えられません。サーバーは、リストのフィールドの差分でリスト全体を置き換えるか、ページの一部をフラグメントとして描画し直します。これは [サーバーとのやり取り](learn/server/) で説明します。",
+                ja: "項目のフィールドは `Sig<S, T, Local>` で、そのパスはブラウザで項目ごとに解決されます。`patch` メソッドがないので、サーバーは位置を指定して 1 つの項目のフィールドを書き換えられません。サーバーはリストのフィールドの差分でリスト全体を置き換えるか、ページの一部をフラグメントとして描画し直します。これは [サーバーとのやり取り](learn/server/) で説明します。",
             },
         ),
         heading(
             site,
             L {
                 en: "A to-do list",
-                ja: "やることリスト",
+                ja: "ToDo リスト",
             },
         ),
         para(
             site,
             L {
                 en: "The demo builds a new item with `Expr::lit(&blank).with(...)`, which copies a constant struct and replaces two fields with expressions. The count of open items is an expression over the list.",
-                ja: "このデモは `Expr::lit(&blank).with(...)` で新しい項目を作ります。この式は定数の構造体を複製し、2 つのフィールドを式で置き換えます。未完了の項目の数は、リストを使った式です。",
+                ja: "このデモは `Expr::lit(&blank).with(...)` で新しい項目を作ります。この式は定数の構造体を複製し、2 つのフィールドを式で置き換えます。未完了の項目の数はリストを使った式です。",
             },
         ),
         demo::show(site, Demo::Todos),

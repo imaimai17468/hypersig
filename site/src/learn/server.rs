@@ -1,4 +1,5 @@
-//! The pages on talking to the server, styling, and escape hatches.
+//! The pages on talking to the server, styling, and what to use when bindings
+//! and statements are not enough.
 
 use super::snippet::{Snippet, show};
 use super::{Program, program};
@@ -50,8 +51,8 @@ pub fn server(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`indicator(flag)` sets a `bool` signal while the request is in flight, which the example uses to disable the button. `error(message)` sets a `String` signal to the error text when the call fails, which is a network error or a response that is not a success, and to `\"\"` when it succeeds.",
-                ja: "`indicator(flag)` は、リクエストの応答を待つ間 `bool` のシグナルを真にします。この例では、それを使ってボタンを無効にしています。`error(message)` は、呼び出しが失敗したときに `String` のシグナルへエラーの文を入れ、成功したときに `\"\"` を入れます。失敗とは、ネットワークのエラーか、成功ではない応答のことです。",
+                en: "`indicator(flag)` sets a `bool` signal to true while the request waits for its response, which the example uses to disable the button. `error(message)` sets a `String` signal to the error text when the call fails, which is a network error or a response that is not a success, and to `\"\"` when it succeeds.",
+                ja: "`indicator(flag)` は、リクエストの応答を待つ間 `bool` のシグナルを真にします。この例ではそれを使ってボタンを無効にしています。`error(message)` は、呼び出しが失敗したときに `String` のシグナルへエラーの文を入れ、成功したときに `\"\"` を入れます。失敗とはネットワークのエラーか、成功ではない応答のことです。",
             },
         ),
         subheading(
@@ -65,7 +66,7 @@ pub fn server(site: Site) -> Part {
             site,
             L {
                 en: "A statement before the call changes the page at once, and the request follows: `count.set(count + 1).then(LIKE.call())`. The handler's patch then sets the count the server stored. When the server answers with an error, the change stays in the browser. `error` can show the failure, but nothing rolls the value back.",
-                ja: "呼び出しの前に文を置くと、ページがすぐに変わり、そのあとにリクエストが送られます。`count.set(count + 1).then(LIKE.call())` のように書きます。続いて、ハンドラの差分がサーバーに保存したカウントを設定します。サーバーがエラーで答えた場合、変更はブラウザに残ります。`error` で失敗を表示できますが、値を元に戻す仕組みはありません。",
+                ja: "呼び出しの前に文を置くと、ページがすぐに変わり、そのあとにリクエストが送られます。`count.set(count + 1).then(LIKE.call())` のように書きます。続いて、ハンドラの差分がサーバーに保存したカウントを設定します。サーバーがエラーで答えた場合、変更はブラウザに残ります。`error` で失敗を表示できますが、値を元に戻す処理はありません。",
             },
         ),
         heading(
@@ -86,7 +87,7 @@ pub fn server(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Each patch travels as one Server-Sent Event. `to_event_stream` returns the body for a server that does not use axum.",
+                en: "Each patch is sent as one Server-Sent Event. `to_event_stream` returns the body for a server that does not use axum.",
                 ja: "差分は 1 つずつ Server-Sent Event として送られます。axum を使わないサーバーには、`to_event_stream` がレスポンスの本文を返します。",
             },
         ),
@@ -100,8 +101,8 @@ pub fn server(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A [`Fragment`](api:hypersig/trait.Fragment.html) is a part of the page the server can render again on its own. It owns its element id, so the id in the first page and the id in a later patch cannot drift apart. `fragment(&value)` renders it in the page, and `Patches::new().element(&value)` sends it again, which the runtime morphs into the element with that id. A patch carries the CSS rules its elements use.",
-                ja: "[`Fragment`](api:hypersig/trait.Fragment.html) は、サーバーが単独で描画し直せるページの一部です。フラグメントが要素の id を持つので、最初のページの id とあとの差分の id が食い違うことはありません。`fragment(&value)` はページの中にフラグメントを描画し、`Patches::new().element(&value)` はそれをもう一度送ります。ランタイムは、送られた HTML とその id の要素を突き合わせ、違う部分だけを書き換えます。差分は、その要素が使う CSS のルールも一緒に運びます。",
+                en: "A [`Fragment`](api:hypersig/trait.Fragment.html) is a part of the page the server can render again on its own. It owns its element id, so the id in the first page and the id in a later patch cannot differ. `fragment(&value)` renders it in the page, and `Patches::new().element(&value)` sends it again. The runtime compares the HTML it receives with the element that has that id and rewrites only the parts that differ. A patch includes the CSS rules its elements use.",
+                ja: "[`Fragment`](api:hypersig/trait.Fragment.html) は、サーバーが単独で描画し直せるページの一部です。フラグメントが要素の id を持つので、最初のページの id とあとの差分の id が食い違うことはありません。`fragment(&value)` はページの中にフラグメントを描画し、`Patches::new().element(&value)` はそれをもう一度送ります。ランタイムは送られた HTML とその id の要素を突き合わせ、違う部分だけを書き換えます。差分にはその要素が使う CSS のルールも含まれます。",
             },
         ),
         program(Program::Fragments),
@@ -115,8 +116,8 @@ pub fn server(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Action::get` with `RouterExt::stream` serves a handler that returns a stream of patches. The response stays open until the stream ends or the browser leaves the page. Call it from `on_load` to push changes made elsewhere, such as by other users.",
-                ja: "`Action::get` と `RouterExt::stream` を使うと、差分のストリームを返すハンドラを配信できます。レスポンスは、ストリームが終わるかブラウザがページを離れるまで開いたままです。ほかのユーザーなど別の場所で起きた変更を送り届けるには、`on_load` から呼び出してください。",
+                en: "`Action::get` with `RouterExt::stream` serves a handler that returns a stream of patches. The response stays open until the stream ends or the browser leaves the page. Call it from `on_load` to send changes made elsewhere, such as by other users.",
+                ja: "`Action::get` と `RouterExt::stream` を使うと、差分のストリームを返すハンドラを配信できます。レスポンスは、ストリームが終わるかブラウザがページを離れるまで開いたままです。ほかのユーザーなど別の場所で起きた変更を送るには、`on_load` から呼び出してください。",
             },
         ),
         program(Program::Streams),
@@ -160,7 +161,7 @@ pub fn pages(site: Site) -> Part {
                 site,
                 L {
                     en: "The first line of `routes!` names a function and the router state, and the function registers each route on `GET` with its handler. A handler receives the router state and the parameters, already parsed, and returns the `Page`. A path whose segments do not parse into the parameter types gets a 404, and so does a handler that returns `None`, as `member` does below for an id it does not know.",
-                    ja: "`routes!` の 1 行目には関数の名前とルーターの状態を書き、その関数が各ルートをハンドラと一緒に `GET` に登録します。ハンドラはルーターの状態と解析済みのパラメータを受け取り、`Page` を返します。セグメントをパラメータの型に解析できないパスには 404 を返し、`None` を返したハンドラにも 404 を返します。下の `member` は、知らない id に対して `None` を返します。",
+                    ja: "`routes!` の 1 行目には関数の名前とルーターの状態を書き、その関数が各ルートをハンドラと一緒に `GET` に登録します。ハンドラはルーターの状態と解析済みのパラメータを受け取り、`Page` を返します。セグメントをパラメータの型に解析できないパスには 404 を返し、`None` を返したハンドラにも 404 を返します。下の `member` は知らない id に対して `None` を返します。",
                 },
             ),
             program(Program::Pages),
@@ -230,7 +231,7 @@ pub fn pages(site: Site) -> Part {
                 site,
                 L {
                     en: "The server writes a page's URL with `url(params)`, which takes the route's parameter values themselves and encodes them as a link does. A page handler that sends the browser elsewhere returns a [`PageResponse`](api:hypersig/struct.PageResponse.html), built with `PageResponse::redirect(url)` or converted from a `Page`. An action does the same with `Patches::navigate(url)`, which the browser follows once the patches before it are applied.",
-                    ja: "サーバーは `url(params)` でページの URL を書きます。`url` はルートのパラメータの値そのものを受け取り、リンクと同じ方法でエンコードします。ブラウザを別のページへ送るページのハンドラは、[`PageResponse`](api:hypersig/struct.PageResponse.html) を返します。`PageResponse` は `PageResponse::redirect(url)` で作るか、`Page` から変換します。アクションでは `Patches::navigate(url)` が同じ役目をし、ブラウザはそれより前の差分を適用してから移動します。",
+                    ja: "サーバーは `url(params)` でページの URL を書きます。`url` はルートのパラメータの値そのものを受け取り、リンクと同じ方法でエンコードします。ブラウザを別のページへ送るページのハンドラは、[`PageResponse`](api:hypersig/struct.PageResponse.html) を返します。`PageResponse` は `PageResponse::redirect(url)` で作るか、`Page` から変換します。アクションでは `Patches::navigate(url)` で同じことをし、ブラウザはそれより前の差分を適用してから移動します。",
                 },
             ),
             para(
@@ -293,8 +294,8 @@ pub fn styling(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`Style`](api:hypersig/style/struct.Style.html) has one method per standard CSS property, generated from MDN's CSS data. `El::css` adds each declaration as one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. The page writes the rules its elements use into `<head>`, and a patch that brings new elements brings their rules.",
-                ja: "[`Style`](api:hypersig/style/struct.Style.html) には、標準の CSS プロパティごとに 1 つずつメソッドがあり、MDN の CSS データから生成しています。`El::css` は、Panda CSS や Tailwind CSS のアトミック CSS と同じく、宣言ごとにその宣言にちなんだ名前のクラスを 1 つ付けます。ページは要素が使うルールを `<head>` に書き、新しい要素を運ぶ差分はそのルールも一緒に運びます。",
+                en: "[`Style`](api:hypersig/style/struct.Style.html) has one method per standard CSS property, generated from MDN's CSS data. `El::css` adds each declaration as one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. The page writes the rules its elements use into `<head>`, and a patch that contains new elements includes their rules.",
+                ja: "[`Style`](api:hypersig/style/struct.Style.html) には、標準の CSS プロパティごとに 1 つずつメソッドがあり、MDN の CSS データから生成しています。`El::css` は、Panda CSS や Tailwind CSS のアトミック CSS と同じく、宣言ごとにその宣言にちなんだ名前のクラスを 1 つ付けます。ページは要素が使うルールを `<head>` に書き、新しい要素を含む差分には、その要素のルールも含まれます。",
             },
         ),
         show(Snippet::Styles),
@@ -303,7 +304,7 @@ pub fn styling(site: Site) -> Part {
             &[
                 L {
                     en: "`on(PseudoClass::Hover, ...)` and `on(Media::Md, ...)` apply a style under a condition. Conditions cover pseudo-classes and pseudo-elements, media features, container sizes, and the state of a marked ancestor or sibling (`group` and `peer`).",
-                    ja: "`on(PseudoClass::Hover, ...)` や `on(Media::Md, ...)` は、条件付きでスタイルを当てます。条件には、疑似クラスと疑似要素、メディア特性、コンテナのサイズ、印を付けた祖先や兄弟の状態（`group` と `peer`）があります。",
+                    ja: "`on(PseudoClass::Hover, ...)` や `on(Media::Md, ...)` は条件付きでスタイルを適用します。条件には、疑似クラスと疑似要素、メディア特性、コンテナのサイズ、印を付けた祖先や兄弟の状態（`group` と `peer`）があります。",
                 },
                 L {
                     en: "`css_when(style, cond)` adds a style while a signal condition holds, and `css_match(value, cases)` picks one style per value of a signal.",
@@ -311,11 +312,11 @@ pub fn styling(site: Site) -> Part {
                 },
                 L {
                     en: "A `Token` is a CSS custom property with a typed value. `Page::theme` sets tokens for the page, for example under `Media::Dark`.",
-                    ja: "`Token` は、型の付いた値を持つ CSS カスタムプロパティです。`Page::theme` は、たとえば `Media::Dark` のもとでのトークンをページに設定します。",
+                    ja: "`Token` は型の付いた値を持つ CSS カスタムプロパティです。`Page::theme` は、たとえば `Media::Dark` のもとでのトークンをページに設定します。",
                 },
                 L {
                     en: "`Global` holds rules for elements by tag with a small reset, `@font-face`, and `@keyframes`. `hypersig::style::pattern` has layouts such as `stack` and `grid`.",
-                    ja: "`Global` は、タグで指定する要素のルールを、小さなリセット、`@font-face`、`@keyframes` と一緒に持ちます。`hypersig::style::pattern` には `stack` や `grid` のようなレイアウトがあります。",
+                    ja: "`Global` はタグで指定する要素のルールを、小さなリセット、`@font-face`、`@keyframes` と一緒に持ちます。`hypersig::style::pattern` には `stack` や `grid` のようなレイアウトがあります。",
                 },
             ],
         ),
@@ -323,7 +324,7 @@ pub fn styling(site: Site) -> Part {
             site,
             L {
                 en: "The badge below takes its color from `css_match` over an enum, and the green comes from a token with a dark value.",
-                ja: "下のバッジは、列挙型に対する `css_match` で色が決まります。緑は、ダークモード用の値を持つトークンの色です。",
+                ja: "下のバッジは、列挙型に対する `css_match` で色が決まります。緑はダークモード用の値を持つトークンの色です。",
             },
         ),
         demo::show(site, Demo::Status),
@@ -344,8 +345,8 @@ pub fn styling(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The [`style`](https://github.com/imaimai17468/hypersig/tree/main/examples/style) example in the repository puts each feature on one page, and the [`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) example shows the components of `hypersig_ui`, which are built with it.",
-                ja: "リポジトリの [`style`](https://github.com/imaimai17468/hypersig/tree/main/examples/style) の例は、それぞれの機能を 1 つのページにまとめています。[`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) の例は、この仕組みで作った `hypersig_ui` のコンポーネントを示します。",
+                en: "The [`style`](https://github.com/imaimai17468/hypersig/tree/main/examples/style) example in the repository puts each feature on one page, and the [`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) example shows the components of `hypersig_ui`, which are built with these features.",
+                ja: "リポジトリの [`style`](https://github.com/imaimai17468/hypersig/tree/main/examples/style) の例はそれぞれの機能を 1 つのページにまとめています。[`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) の例は、これらの機能を使って作った `hypersig_ui` のコンポーネントを示します。",
             },
         ),
     ])
@@ -403,8 +404,8 @@ pub fn escape_hatches(site: Site) -> Part {
                     ja: "`on_signal_change(sig, stmt)` は、シグナルかその中のフィールドが変わるたびに、何が変えたかにかかわらず実行します。",
                 },
                 L {
-                    en: "`Expr::now()` reads the browser's clock, and `Expr::random_below(n)` draws a random integer.",
-                    ja: "`Expr::now()` はブラウザの時計を読み、`Expr::random_below(n)` は乱数の整数を引きます。",
+                    en: "`Expr::now()` reads the browser's clock, and `Expr::random_below(n)` returns a random integer.",
+                    ja: "`Expr::now()` はブラウザの時計を読み、`Expr::random_below(n)` はランダムな整数を返します。",
                 },
             ],
         ),
@@ -419,8 +420,8 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`roving_focus` moves focus between the items inside an element with the arrow keys, Home, and End, as a tab list or a menu needs. `active_descendant` keeps focus on a text field while the up and down arrows move through the options of a listbox, as a combobox needs. `hypersig_ui` builds its tabs, menus, listbox, and combobox on them.",
-                ja: "`roving_focus` は、タブの一覧やメニューに要るように、矢印キーと Home、End で要素の中の項目間にフォーカスを動かします。`active_descendant` は、コンボボックスに要るように、フォーカスをテキスト欄に置いたまま上下の矢印キーでリストボックスの選択肢を移動させます。`hypersig_ui` のタブ、メニュー、リストボックス、コンボボックスは、この 2 つの上に作っています。",
+                en: "`roving_focus` moves focus between the items inside an element with the arrow keys, Home, and End, as a tab list or a menu needs. `active_descendant` keeps focus on a text field while the up and down arrows move through the options of a listbox, as a combobox needs. `hypersig_ui` builds its tabs, menus, listbox, and combobox with them.",
+                ja: "`roving_focus` は、タブの一覧やメニューに要るように、矢印キーと Home、End で要素の中の項目間にフォーカスを動かします。`active_descendant` は、コンボボックスに要るように、フォーカスをテキスト欄に置いたまま上下の矢印キーでリストボックスの選択肢を移動させます。`hypersig_ui` のタブ、メニュー、リストボックス、コンボボックスは、この 2 つを使って作っています。",
             },
         ),
         heading(
@@ -470,8 +471,8 @@ pub fn escape_hatches(site: Site) -> Part {
             site,
             &[
                 L {
-                    en: "An application that runs a JavaScript library in the browser, such as a map, a chart, or a rich text editor. These have to run inside the browser, and the server cannot stand in for them.",
-                    ja: "地図、グラフ、リッチテキストエディタのように、ブラウザで JavaScript のライブラリを動かすアプリケーション。これらはブラウザの中で動く必要があり、サーバーでは代わりが務まりません。",
+                    en: "An application that runs a JavaScript library in the browser, such as a map, a chart, or a rich text editor. These have to run inside the browser, and the server cannot run them instead.",
+                    ja: "地図、グラフ、リッチテキストエディタのように、ブラウザで JavaScript のライブラリを動かすアプリケーション。これらはブラウザの中で動く必要があり、サーバーで代わりに動かすことはできません。",
                 },
                 L {
                     en: "An application that works without a connection to the server, such as one used offline.",
