@@ -28,8 +28,8 @@ fn overview(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "`hypersig::style` is typed atomic CSS. A misspelled property or keyword, or a value of the wrong type, is a compile error, and each declaration becomes one class.",
-                ja: "`hypersig::style` は型の付いた atomic CSS です。プロパティやキーワードの綴り違いと型の違う値はコンパイルエラーになり、宣言 1 つがクラス 1 つになります。",
+                en: "`hypersig::style` is typed atomic CSS. A misspelled property name or keyword, or a value of the wrong type, is a compile error. Each declaration becomes one class.",
+                ja: "`hypersig::style` は型の付いた atomic CSS です。プロパティ名やキーワードの綴りを間違えたり、型の違う値を渡したりするとコンパイルエラーになります。宣言は 1 つごとに 1 つのクラスになります。",
             },
         ),
         heading(
@@ -50,43 +50,43 @@ fn overview(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "A later call for the same property under the same conditions replaces the earlier value, as it would later in a rule. `merge` adds the declarations of another style, which win over the first one's.",
-                ja: "同じ条件で同じプロパティをもう一度呼ぶと、ルールの後ろに書いた宣言と同じく、後の値が前の値を置き換えます。`merge` は別のスタイルの宣言を足し、足した側の宣言が元の宣言に勝ちます。",
+                en: "A second call to the same property's method under the same conditions replaces the earlier value, as a later declaration does in a CSS rule. `merge` adds the declarations of another style, and the added declarations override the original ones.",
+                ja: "同じ条件の下で同じプロパティのメソッドをもう一度呼ぶと、CSS のルールで後に書いた宣言と同じく、後の値が前の値を置き換えます。`merge` は別のスタイルの宣言を足し、足した側の宣言が元の宣言を上書きします。",
             },
         ),
         heading(
             site,
             L {
                 en: "One class per declaration",
-                ja: "宣言 1 つにクラス 1 つ",
+                ja: "宣言ごとに 1 つのクラス",
             },
         ),
         para(
             site,
             L {
-                en: "Each declaration becomes one class named after it, such as `cursor_pointer` or `hover:color_crimson`, as in the atomic CSS of Panda CSS and Tailwind CSS. A value with characters other than letters, digits, `.`, `#`, `%`, and `-` is named by a hash of it. Two elements with the same declaration share the class, so the stylesheet grows with the number of distinct declarations, not with the number of elements.",
-                ja: "宣言はそれぞれ、`cursor_pointer` や `hover:color_crimson` のように宣言から名前の決まるクラス 1 つになります。Panda CSS や Tailwind CSS の atomic CSS と同じ作りです。英字、数字、`.`、`#`、`%`、`-` 以外の文字を含む値には、値のハッシュから名前を付けます。同じ宣言を持つ 2 つの要素は同じクラスを使うので、スタイルシートの大きさは要素の数ではなく、異なる宣言の数に比例します。",
+                en: "Each declaration becomes one class, whose name comes from the declaration, such as `cursor_pointer` or `hover:color_crimson`. Panda CSS and Tailwind CSS do the same in their atomic CSS. For a value with characters other than letters, digits, `.`, `#`, `%`, and `-`, the class name uses a hash of the value. Two elements with the same declaration use the same class, so the stylesheet grows with the number of distinct declarations rather than the number of elements.",
+                ja: "宣言はそれぞれ 1 つのクラスになり、クラス名は `cursor_pointer` や `hover:color_crimson` のように宣言から決まります。Panda CSS や Tailwind CSS の atomic CSS と同じ方式です。英字、数字、`.`、`#`、`%`、`-` 以外の文字を含む値では、値のハッシュをクラス名に使います。同じ宣言を持つ 2 つの要素は同じクラスを使うので、スタイルシートは要素の数ではなく異なる宣言の数に応じて大きくなります。",
             },
         ),
         para(
             site,
             L {
-                en: "The page collects the styles its elements use and writes each rule once into `<head>`. A patch that brings new elements brings their rules, placed so that a breakpoint still overrides the base value.",
-                ja: "ページは要素が使うスタイルを集め、ルールを 1 回ずつ `<head>` に書きます。新しい要素を運ぶパッチはそのルールも運び、ブレークポイントの値が引き続き基本の値に勝つ位置に置きます。",
+                en: "The page collects the styles its elements use and writes each rule once into `<head>`. A patch that contains new elements also contains their rules, inserted where a breakpoint value still overrides the base value.",
+                ja: "ページは要素が使うスタイルを集め、各ルールを 1 回だけ `<head>` に書きます。新しい要素を含むパッチにはその要素のルールも含まれ、ルールはブレークポイントの値が引き続き基本の値を上書きする位置に入ります。",
             },
         ),
         heading(
             site,
             L {
-                en: "Styles that follow a signal",
-                ja: "シグナルに従うスタイル",
+                en: "Styles switched by a signal",
+                ja: "シグナルで切り替わるスタイル",
             },
         ),
         para(
             site,
             L {
-                en: "`css_when(style, cond)` adds a style while a signal condition holds, and `css_match(value, cases)` picks one style per value of a signal, the variants of a Panda CSS recipe. Their rules sit in a later cascade layer than those of `css`, so while switched on they override the element's own declarations for the same property.",
-                ja: "`css_when(style, cond)` はシグナルの条件が成り立つ間だけスタイルを足し、`css_match(value, cases)` はシグナルの値ごとにスタイルを 1 つ選びます（Panda CSS の recipe の variants に当たります）。これらのルールは `css` のルールより後ろのカスケードレイヤーに入るので、有効な間は、同じプロパティについて要素自身の宣言に勝ちます。",
+                en: "`css_when(style, cond)` adds a style while a signal condition holds, and `css_match(value, cases)` picks one style per value of a signal, like the variants of a Panda CSS recipe. Their rules are in a later cascade layer than those of `css`, so while switched on they override the element's own declarations for the same property.",
+                ja: "`css_when(style, cond)` はシグナルの条件が成り立つ間だけスタイルを足し、`css_match(value, cases)` はシグナルの値ごとにスタイルを 1 つ選びます（Panda CSS の recipe の variants に当たります）。これらのルールは `css` のルールより後ろのカスケードレイヤーに入るので、有効な間は同じプロパティについて要素自身の宣言を上書きします。",
             },
         ),
         table_of(
@@ -122,8 +122,8 @@ fn overview(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "The layers come in that order, so an element's classes override the global rules, and a switched-on style overrides both. A stylesheet added with `Page::style` sits outside any layer and overrides all four.",
-                ja: "レイヤーはこの順に並ぶので、要素のクラスはグローバルなルールに勝ち、有効になったスタイルはその両方に勝ちます。`Page::style` で足したスタイルシートはどのレイヤーにも入らず、4 つすべてに勝ちます。",
+                en: "The layers come in that order, so an element's classes override the global rules, and a switched-on style overrides both. A stylesheet added with `Page::style` is in no layer and overrides all four layers.",
+                ja: "レイヤーはこの順に並ぶので、要素のクラスはグローバルなルールを上書きし、有効になったスタイルはその両方を上書きします。`Page::style` で足したスタイルシートはどのレイヤーにも入らず、4 つのレイヤーすべてを上書きします。",
             },
         ),
     ])
@@ -135,8 +135,8 @@ fn values(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "Each property method takes its own value type, which lists the property's keywords and accepts the units it allows.",
-                ja: "プロパティのメソッドはそれぞれ専用の値の型を受け取ります。その型はプロパティのキーワードを並べ、プロパティが認める単位を受け付けます。",
+                en: "Each property method takes its own value type, which has the property's keywords and accepts values in the units the property allows.",
+                ja: "プロパティのメソッドはそれぞれ専用の値の型を受け取ります。その型はプロパティのキーワードを持ち、プロパティで使える単位の値を受け付けます。",
             },
         ),
         heading(
@@ -218,8 +218,8 @@ fn values(site: Site, head: Part) -> Part {
         note(
             site,
             L {
-                en: "Ranges are not checked, so a negative width compiles and the browser drops it. A value with several parts, such as `margin: 0 auto`, goes through `raw`, which [Unchecked values](style/unchecked/) covers.",
-                ja: "値の範囲は検査しないので、負の幅もコンパイルでき、ブラウザがその宣言を捨てます。`margin: 0 auto` のように複数の部分からなる値は `raw` を通します。`raw` は[検査しない値](style/unchecked/)で説明しています。",
+                en: "Ranges are not checked, so a negative width compiles and the browser ignores the declaration. A value with several parts, such as `margin: 0 auto`, is written with `raw`, which [Unchecked values](style/unchecked/) covers.",
+                ja: "値の範囲は検査しないので、負の幅もコンパイルが通り、ブラウザはその宣言を無視します。`margin: 0 auto` のように複数の部分からなる値は `raw` で書きます。`raw` は[検査しない値](style/unchecked/)で説明しています。",
             },
         ),
     ])
@@ -231,8 +231,8 @@ fn conditions(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "`Style::on` applies part of a style under a condition: a pseudo-class, a media feature, a container width, or the state of a marked ancestor or sibling.",
-                ja: "`Style::on` は、スタイルの一部を条件の下でだけ適用します。条件には、擬似クラス、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態を使えます。",
+                en: "`Style::on` applies part of a style only under a condition. The condition can be a pseudo-class, a media feature, a container width, or the state of a marked ancestor or sibling.",
+                ja: "`Style::on` はスタイルの一部を条件の下でだけ適用します。条件には擬似クラス、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態を使えます。",
             },
         ),
         heading(
@@ -247,12 +247,12 @@ fn conditions(site: Site, head: Part) -> Part {
             site,
             &[
                 L {
-                    en: "[`PseudoClass`](api:hypersig_style/enum.PseudoClass.html) and [`PseudoElement`](api:hypersig_style/enum.PseudoElement.html) are generated from MDN's data. `pseudo` puts declarations on a pseudo-element, and a pseudo-class inside it applies to the element, so `pseudo(Before, Style::new().on(Hover, ..))` is written `:hover::before`.",
-                    ja: "[`PseudoClass`](api:hypersig_style/enum.PseudoClass.html) と [`PseudoElement`](api:hypersig_style/enum.PseudoElement.html) は MDN のデータから生成しています。`pseudo` は擬似要素に宣言を置きます。その中の擬似クラスは要素の側に掛かるので、`pseudo(Before, Style::new().on(Hover, ..))` は `:hover::before` と書かれます。",
+                    en: "[`PseudoClass`](api:hypersig_style/enum.PseudoClass.html) and [`PseudoElement`](api:hypersig_style/enum.PseudoElement.html) are generated from MDN's data. `pseudo` puts declarations on a pseudo-element. A pseudo-class written inside it applies to the element itself, so `pseudo(Before, Style::new().on(Hover, ..))` becomes `:hover::before`.",
+                    ja: "[`PseudoClass`](api:hypersig_style/enum.PseudoClass.html) と [`PseudoElement`](api:hypersig_style/enum.PseudoElement.html) は MDN のデータから生成しています。`pseudo` は擬似要素に宣言を付けます。その中に書いた擬似クラスは元の要素に対して適用されるので、`pseudo(Before, Style::new().on(Hover, ..))` は `:hover::before` になります。",
                 },
                 L {
-                    en: "The user-action pseudo-classes are written in a fixed order, so `:active` wins over `:hover` while a button is pressed, and `:disabled` wins over all of them.",
-                    ja: "ユーザー操作の擬似クラスは決まった順に書かれるので、ボタンを押している間は `:active` が `:hover` に勝ち、`:disabled` はそのどれにも勝ちます。",
+                    en: "The user-action pseudo-classes are written to the stylesheet in a fixed order. As a result, `:active` takes precedence over `:hover` while a button is pressed, and `:disabled` takes precedence over all of them.",
+                    ja: "ユーザー操作の擬似クラスは決まった順でスタイルシートに書かれます。そのため、ボタンを押している間は `:active` が `:hover` より優先され、`:disabled` はそのどれよりも優先されます。",
                 },
                 L {
                     en: "[`Media`](api:hypersig_style/enum.Media.html) has the breakpoints `Sm`, `Md`, `Lg`, `Xl`, and `Xxl`, min-width queries at 40, 48, 64, 80, and 96rem, the widths Tailwind CSS and Panda CSS use. It also has `Dark`, `Light`, `ReducedMotion`, `Print`, `Landscape`, `Portrait`, `CanHover`, `CoarsePointer`, `ForcedColors`, and `MoreContrast`.",
@@ -263,8 +263,8 @@ fn conditions(site: Site, head: Part) -> Part {
                     ja: "[`Container`](api:hypersig_style/enum.Container.html) には、Panda CSS と同じ 16rem から 90rem までのコンテナの大きさがあります。祖先は `container_type` でクエリコンテナになります。そうした祖先がなければ、条件は一度も当てはまりません。",
                 },
                 L {
-                    en: "Conditions nest: a style passed to `on` may use `on` itself, and its declarations then apply under both.",
-                    ja: "条件は入れ子にできます。`on` に渡すスタイルの中でも `on` を使え、その宣言は両方の条件の下で適用されます。",
+                    en: "Conditions can be nested. A style passed to `on` can use `on` itself, and the inner declarations then apply when both conditions hold.",
+                    ja: "条件は入れ子にできます。`on` に渡すスタイルの中でも `on` を使えます。その場合、内側の宣言は両方の条件が成り立つときに適用されます。",
                 },
             ],
         ),
@@ -278,8 +278,8 @@ fn conditions(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "`Style::group` marks an ancestor, and `Condition::Group(PseudoClass::Hover)` applies a style while that ancestor is hovered. `Style::peer` marks an earlier sibling, and `Condition::Peer(PseudoClass::Checked)` applies a style while that sibling is checked. They work like the `group` and `peer` of Tailwind CSS and Panda CSS.",
-                ja: "`Style::group` は祖先に印を付け、`Condition::Group(PseudoClass::Hover)` はその祖先にポインターが乗っている間だけスタイルを適用します。`Style::peer` は前にある兄弟に印を付け、`Condition::Peer(PseudoClass::Checked)` はその兄弟がチェックされている間だけスタイルを適用します。どちらも Tailwind CSS や Panda CSS の `group` と `peer` と同じように動きます。",
+                en: "`Style::group` marks an ancestor, and `Condition::Group(PseudoClass::Hover)` applies a style only while that ancestor is hovered. `Style::peer` marks an earlier sibling, and `Condition::Peer(PseudoClass::Checked)` applies a style only while that sibling is checked. Both work like the `group` and `peer` of Tailwind CSS and Panda CSS.",
+                ja: "`Style::group` は祖先に印を付け、`Condition::Group(PseudoClass::Hover)` はその祖先がホバーされている間だけスタイルを適用します。`Style::peer` は前にある兄弟に印を付け、`Condition::Peer(PseudoClass::Checked)` はその兄弟がチェックされている間だけスタイルを適用します。どちらも Tailwind CSS や Panda CSS の `group` と `peer` と同じように動きます。",
             },
         ),
         show(Snippet::GroupPeer),
@@ -293,8 +293,8 @@ fn tokens(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "A token is a named value written as a CSS custom property, which a theme sets for the page and a style sets for one element.",
-                ja: "トークンは、CSS のカスタムプロパティとして書かれる名前付きの値です。テーマはページ全体に、スタイルは 1 つの要素にトークンの値を設定します。",
+                en: "A token is a named value written as a CSS custom property. A theme sets its value for the whole page, and a style sets it for one element.",
+                ja: "トークンは CSS のカスタムプロパティとして書かれる名前付きの値です。テーマはページ全体に、スタイルは 1 つの要素にトークンの値を設定します。",
             },
         ),
         heading(
@@ -307,8 +307,8 @@ fn tokens(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`Token::new(name, default)`](api:hypersig_style/struct.Token.html) creates a token of a value type: `Color`, `Length`, `Percentage`, `Time`, or `Angle`. `var()` reads it as `var(--name, default)`, so a page that sets nothing shows the default, and it is accepted wherever a value of that type is.",
-                ja: "[`Token::new(name, default)`](api:hypersig_style/struct.Token.html) は、`Color`、`Length`、`Percentage`、`Time`、`Angle` のどれかの型のトークンを作ります。`var()` はトークンを `var(--name, default)` として読むので、何も設定しないページには既定値が表示されます。`var()` の結果は、その型の値を受け取る場所ならどこにでも渡せます。",
+                en: "[`Token::new(name, default)`](api:hypersig_style/struct.Token.html) creates a token of a value type: `Color`, `Length`, `Percentage`, `Time`, or `Angle`. `var()` refers to the token as `var(--name, default)`, so a page that sets no value uses the default. The result of `var()` can be passed anywhere a value of that type is accepted.",
+                ja: "[`Token::new(name, default)`](api:hypersig_style/struct.Token.html) は、`Color`、`Length`、`Percentage`、`Time`、`Angle` のどれかの型のトークンを作ります。`var()` はトークンを `var(--name, default)` の形で参照するので、値を何も設定しないページでは既定値が使われます。`var()` の結果はその型の値を受け取る場所ならどこにでも渡せます。",
             },
         ),
         show(Snippet::Tokens),
@@ -324,24 +324,24 @@ fn tokens(site: Site, head: Part) -> Part {
                     ja: "`Style::token` は 1 つの要素とその内側の要素にトークンを設定し、既定値とページのテーマの値を置き換えます。",
                 },
                 L {
-                    en: "`El::bind_token` keeps a token equal to a string expression over the signals. The value is not checked, as for `El::bind_style`.",
-                    ja: "`El::bind_token` は、シグナルから作る文字列の式にトークンの値を合わせ続けます。`El::bind_style` と同じく、値は検査しません。",
+                    en: "`El::bind_token` keeps a token's value equal to the value of a string expression over the signals. As with `El::bind_style`, the value is not checked.",
+                    ja: "`El::bind_token` は、トークンの値をシグナルから作る文字列の式の値と常に同じにします。`El::bind_style` と同じく、値は検査しません。",
                 },
             ],
         ),
         para(
             site,
             L {
-                en: "The swatches and the button below read one token, which `bind_token` sets from the radio group's signal.",
-                ja: "下の色見本とボタンは同じトークンを読み、そのトークンは `bind_token` がラジオグループのシグナルから設定します。",
+                en: "The swatches and the button below read the same token. `bind_token` sets that token's value from the radio group's signal.",
+                ja: "下の色見本とボタンは同じトークンを読みます。このトークンの値は、`bind_token` がラジオグループのシグナルから設定します。",
             },
         ),
         demo::show(site, Demo::Accent),
         note(
             site,
             L {
-                en: "Two tokens with the same name are one custom property to the browser, and nothing checks that each name is used once. The components of `hypersig_ui` read the tokens in its [`token`](api:hypersig_ui/token/index.html) module, which [Theming](components/theming/) covers.",
-                ja: "同じ名前の 2 つのトークンは、ブラウザにとっては 1 つのカスタムプロパティです。名前が 1 回ずつしか使われていないかは、どこも検査しません。`hypersig_ui` のコンポーネントは、その [`token`](api:hypersig_ui/token/index.html) モジュールにあるトークンを読みます。このモジュールは[テーマ](components/theming/)で説明しています。",
+                en: "Two tokens with the same name are one custom property to the browser. Duplicate names are not checked. The components of `hypersig_ui` read the tokens in the same crate's [`token`](api:hypersig_ui/token/index.html) module, which [Theming](components/theming/) covers.",
+                ja: "同じ名前の 2 つのトークンは、ブラウザにとっては 1 つのカスタムプロパティです。名前が重複していないかは検査されません。`hypersig_ui` のコンポーネントは同じクレートの [`token`](api:hypersig_ui/token/index.html) モジュールにあるトークンを読みます。このモジュールは[テーマ](components/theming/)で説明しています。",
             },
         ),
     ])
@@ -353,8 +353,8 @@ fn global(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "A `Global` holds rules for elements by their tag, a small reset, and the fonts the page loads.",
-                ja: "`Global` には、タグごとの要素へのルール、小さなリセット、ページが読み込むフォントが入ります。",
+                en: "A `Global` holds rules that select elements by tag, a small reset, and the fonts the page loads.",
+                ja: "`Global` には、タグで要素を選ぶルール、小さなリセット、ページが読み込むフォントが入ります。",
             },
         ),
         heading(
@@ -367,8 +367,8 @@ fn global(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) adds a style for every element a selector matches: an `Element` by its tag, `Selector::Root`, or `Selector::Everything`. The rules sit in the base cascade layer, before the classes of `El::css`, so an element's own style overrides them. Conditions in a rule's style apply to the selector as they do to a class.",
-                ja: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) は、セレクタに当てはまるすべての要素にスタイルを足します。セレクタには、タグで選ぶ `Element`、`Selector::Root`、`Selector::Everything` を使えます。これらのルールは `El::css` のクラスより前の base のカスケードレイヤーに入るので、要素自身のスタイルがルールに勝ちます。ルールのスタイルにある条件は、クラスの場合と同じようにセレクタに掛かります。",
+                en: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) adds a style to every element a selector matches. The selector can be an `Element`, which selects by tag, `Selector::Root`, or `Selector::Everything`. The rules are in the base cascade layer, before the classes of `El::css`, so an element's own style overrides them. Conditions in a rule's style apply to the selector as they do to a class.",
+                ja: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) はセレクタに当てはまるすべての要素にスタイルを足します。セレクタにはタグで選ぶ `Element`、`Selector::Root`、`Selector::Everything` を使えます。これらのルールは `El::css` のクラスより前の base のカスケードレイヤーに入るので、要素自身のスタイルがこれらのルールを上書きします。ルールのスタイルにある条件は、クラスの場合と同じようにセレクタに対して適用されます。",
             },
         ),
         show(Snippet::GlobalRules),
@@ -376,16 +376,16 @@ fn global(site: Site, head: Part) -> Part {
             site,
             &[
                 L {
-                    en: "`Global::preflight()` starts from a small reset: `border-box` sizing everywhere, no default margins, form controls in the page's font, and media that shrinks to its box.",
-                    ja: "`Global::preflight()` は小さなリセットから始めます。すべての要素の大きさを `border-box` で測り、既定のマージンを消し、フォームのコントロールにページのフォントを使わせ、画像や動画を枠に収まるまで縮めます。",
+                    en: "A `Global` made with `Global::preflight()` starts with a small reset. The reset sizes every element with `border-box`, removes default margins, makes form controls use the page's font, and shrinks images and videos to fit their box.",
+                    ja: "`Global::preflight()` で作った `Global` には、最初から小さなリセットが入っています。このリセットは、すべての要素の大きさを `border-box` で測り、既定のマージンを消し、フォームのコントロールにページのフォントを使わせ、画像や動画を枠に収まるまで縮めます。",
                 },
                 L {
                     en: "`FontFace::new(family, url(..))` loads a font as `@font-face`, with `weights` for a variable font and `italic` for an italic face. `family()` returns the value `font-family` takes.",
                     ja: "`FontFace::new(family, url(..))` はフォントを `@font-face` として読み込みます。可変フォントには `weights` を、イタリック体には `italic` を使います。`family()` は `font-family` に渡す値を返します。",
                 },
                 L {
-                    en: "`Page::global` adds the rules, and a later call adds to the earlier ones. `hypersig_ui::global()` is a `Global` built this way.",
-                    ja: "`Page::global` はルールを足し、後から呼ぶと前のルールに足されます。`hypersig_ui::global()` は、このようにして組み立てた `Global` です。",
+                    en: "`Page::global` adds the rules to the page. A later call adds to the earlier rules. `hypersig_ui::global()` is a `Global` built this way.",
+                    ja: "`Page::global` はルールをページに足します。後からもう一度呼ぶと、前のルールに追加されます。`hypersig_ui::global()` は、このようにして組み立てた `Global` です。",
                 },
             ],
         ),
@@ -398,8 +398,8 @@ fn patterns(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) has functions that return the styles of common layouts, which you merge with your own.",
-                ja: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) には、よく使うレイアウトのスタイルを返す関数があります。返ったスタイルは自分のスタイルと `merge` して使います。",
+                en: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) has functions that return the styles of common layouts. Merge the returned style with your own.",
+                ja: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) には、よく使うレイアウトのスタイルを返す関数があります。返されたスタイルは自分のスタイルと `merge` して使います。",
             },
         ),
         show(Snippet::Patterns),
@@ -494,8 +494,8 @@ fn animation(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "Keyframes are Rust values too, and an element that uses them carries their rule to the page.",
-                ja: "キーフレームも Rust の値です。キーフレームを使う要素は、そのルールをページまで運びます。",
+                en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element.",
+                ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。",
             },
         ),
         heading(
@@ -508,8 +508,8 @@ fn animation(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`Keyframes::new(name)`](api:hypersig_style/struct.Keyframes.html) starts an animation, and `at(percent, style)` adds a step. `Style::keyframes` sets an element's `animation-name` and carries the `@keyframes` rule with it, so the page or the patch that brings the element also brings the rule. A keyframe writes only the unconditioned declarations of its style, because a keyframe takes no selector or media query.",
-                ja: "[`Keyframes::new(name)`](api:hypersig_style/struct.Keyframes.html) でアニメーションを作り始め、`at(percent, style)` で段階を 1 つ足します。`Style::keyframes` は要素の `animation-name` を設定し、`@keyframes` のルールも一緒に運びます。そのため、要素を運ぶページやパッチがルールも運びます。キーフレームにはセレクタもメディアクエリも書けないので、キーフレームに書かれるのはスタイルのうち条件の付かない宣言だけです。",
+                en: "[`Keyframes::new(name)`](api:hypersig_style/struct.Keyframes.html) creates an animation, and `at(percent, style)` adds a step. `Style::keyframes` sets an element's `animation-name` and includes the `@keyframes` rule in the style, so the page or patch that contains the element also contains the rule. A keyframe writes only the unconditioned declarations of its style, because a keyframe takes no selector or media query.",
+                ja: "[`Keyframes::new(name)`](api:hypersig_style/struct.Keyframes.html) でアニメーションを作り、`at(percent, style)` で段階を 1 つ足します。`Style::keyframes` は要素の `animation-name` を設定し、`@keyframes` のルールもスタイルに含めます。そのため、要素を含むページやパッチには、そのルールも含まれます。キーフレームにはセレクタもメディアクエリも書けないので、キーフレームに書かれるのはスタイルのうち条件の付かない宣言だけです。",
             },
         ),
         show(Snippet::Animation),
@@ -517,22 +517,22 @@ fn animation(site: Site, head: Part) -> Part {
         heading(
             site,
             L {
-                en: "Motion and the visitor",
-                ja: "動きと訪問者",
+                en: "Reduced motion",
+                ja: "動きを減らす設定",
             },
         ),
         para(
             site,
             L {
-                en: "`Media::ReducedMotion` applies a style for a visitor who asks for reduced motion. The components of `hypersig_ui` make their color transitions instant there.",
-                ja: "`Media::ReducedMotion` は、動きを減らすよう求める訪問者にだけスタイルを適用します。`hypersig_ui` のコンポーネントは、その場合に色のトランジションを一瞬で終わらせます。",
+                en: "`Media::ReducedMotion` applies a style for a visitor who asks for reduced motion. In that case the components of `hypersig_ui` change colors without a transition.",
+                ja: "`Media::ReducedMotion` は、動きを減らすよう求める訪問者にだけスタイルを適用します。`hypersig_ui` のコンポーネントはその場合に色をトランジションなしで切り替えます。",
             },
         ),
         note(
             site,
             L {
-                en: "Two `Keyframes` with the same name are one rule to the browser, and the later one in the stylesheet wins. Nothing checks that each name is used once.",
-                ja: "同じ名前の 2 つの `Keyframes` は、ブラウザにとっては 1 つのルールで、スタイルシートで後にある方が勝ちます。名前が 1 回ずつしか使われていないかは、どこも検査しません。",
+                en: "Two `Keyframes` with the same name are treated as one rule by the browser, and the one later in the stylesheet is used. Duplicate names are not checked.",
+                ja: "同じ名前の 2 つの `Keyframes` は、ブラウザにとっては 1 つのルールとして扱われ、スタイルシートで後にある方が使われます。名前が重複していないかは検査されません。",
             },
         ),
     ])
@@ -544,8 +544,8 @@ fn unchecked(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "A few forms go to the browser without a check. Each is named, so a search for it finds every place that relies on one.",
-                ja: "いくつかの書き方は、検査を通らずにブラウザへ渡ります。どれにも名前があるので、その名前で検索すれば、検査なしの値に頼る箇所をすべて見つけられます。",
+                en: "A few forms reach the browser without a check. Each has its own name, so searching for that name finds every place that uses an unchecked value.",
+                ja: "いくつかの書き方は検査を受けずにブラウザへ渡ります。どの書き方にも決まった名前があるので、その名前で検索すれば、検査なしの値を使う箇所をすべて見つけられます。",
             },
         ),
         show(Snippet::Unchecked),
@@ -553,16 +553,16 @@ fn unchecked(site: Site, head: Part) -> Part {
             site,
             &[
                 L {
-                    en: "`raw(css)` writes a value as given, for the forms a property's generated type leaves out, such as `margin: 0 auto`, a shadow, or a `calc()`. A value the browser rejects drops the declaration. `raw` panics on `;`, `{`, `}`, and `<`, which would end the declaration or the rule, or close the `<style>` element.",
-                    ja: "`raw(css)` は値を渡されたとおりに書きます。`margin: 0 auto`、影、`calc()` のように、プロパティの生成された型に含まれない書き方に使います。ブラウザが受け付けない値なら、その宣言は捨てられます。`;`、`{`、`}`、`<` は宣言やルールを終わらせたり `<style>` 要素を閉じたりするので、`raw` はこれらを受け取るとパニックします。",
+                    en: "`raw(css)` writes a value as given, for the forms a property's generated type leaves out, such as `margin: 0 auto`, a shadow, or a `calc()`. If the browser rejects the value, it ignores the declaration. `raw` panics on `;`, `{`, `}`, and `<`, which would end the declaration or the rule, or close the `<style>` element.",
+                    ja: "`raw(css)` は値を渡されたとおりに書きます。`margin: 0 auto`、影、`calc()` のように、プロパティの生成された型に含まれない書き方に使います。ブラウザが受け付けない値なら、ブラウザはその宣言を無視します。`;`、`{`、`}`、`<` は宣言やルールを終わらせたり `<style>` 要素を閉じたりするので、`raw` はこれらを受け取るとパニックします。",
                 },
                 L {
-                    en: "`Stylesheet::new(css)` wraps CSS you already have, and `Page::style` adds it to the page. `Stylesheet::class(\"name\")` checks at compile time that the CSS has a selector for the class, and `Class::new` names a class without that check.",
-                    ja: "`Stylesheet::new(css)` は手元にある CSS を包み、`Page::style` がそれをページに足します。`Stylesheet::class(\"name\")` は、その CSS にクラスのセレクタがあるかをコンパイル時に確かめます。`Class::new` はその確認なしにクラスを名指しします。",
+                    en: "`Stylesheet::new(css)` makes a `Stylesheet` from CSS you already have, and `Page::style` adds it to the page. `Stylesheet::class(\"name\")` checks at compile time that the CSS has a selector for the class, and `Class::new` refers to a class by name without that check.",
+                    ja: "`Stylesheet::new(css)` は手元にある CSS から `Stylesheet` を作り、`Page::style` でそれをページに足します。`Stylesheet::class(\"name\")` は、その CSS にクラスのセレクタがあるかをコンパイル時に確かめます。`Class::new` はその確認をせずにクラス名を指定します。",
                 },
                 L {
-                    en: "`El::bind_style` and `El::bind_token` set a property from a string expression over the signals, which nothing checks.",
-                    ja: "`El::bind_style` と `El::bind_token` は、シグナルから作る文字列の式でプロパティを設定します。この式はどこも検査しません。",
+                    en: "`El::bind_style` and `El::bind_token` set a property from a string expression over the signals. The expression is not checked.",
+                    ja: "`El::bind_style` と `El::bind_token` はシグナルから作る文字列の式でプロパティを設定します。この式は検査されません。",
                 },
             ],
         ),

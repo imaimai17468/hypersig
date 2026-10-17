@@ -23,8 +23,8 @@ fn overview(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "`hypersig_i18n` keeps each text with its translations in one value, so a text without one of its translations fails to compile.",
-                ja: "`hypersig_i18n` は、1 つの文とその訳を 1 つの値にまとめて持ちます。どれかの言語の訳が欠けた文は、コンパイルエラーになります。",
+                en: "`hypersig_i18n` keeps a text and its translations together in one value, so a text missing a translation into any language fails to compile.",
+                ja: "`hypersig_i18n` は 1 つの文とその訳を 1 つの値にまとめて持ちます。そのため、どれかの言語の訳が欠けた文はコンパイルエラーになります。",
             },
         ),
         heading(
@@ -37,8 +37,8 @@ fn overview(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "The crate lives in the hypersig repository and is not on crates.io yet. Add it next to `hypersig` from Git. Its `axum` feature, on by default, adds the redirect from `/` that [Choosing the language](i18n/negotiation/) describes.",
-                ja: "このクレートは hypersig のリポジトリにあり、まだ crates.io には公開していません。`hypersig` と並べて Git から追加します。既定で有効な `axum` の feature は、[言語の選び方](i18n/negotiation/) で説明する `/` からのリダイレクトを足します。",
+                en: "The crate is in the hypersig repository and is not published on crates.io yet. Add it next to `hypersig` from Git. Its `axum` feature, on by default, adds the redirect from `/` that [Choosing the language](i18n/negotiation/) describes.",
+                ja: "このクレートは hypersig のリポジトリにあり、まだ crates.io には公開していません。`hypersig` と並べて Git から追加します。既定で有効な `axum` の feature は、[言語の選び方](i18n/negotiation/) で説明する `/` からのリダイレクトを追加します。",
             },
         ),
         code::block(
@@ -58,23 +58,23 @@ hypersig_i18n = { git = "https://github.com/imaimai17468/hypersig" }"#,
         para(
             site,
             L {
-                en: "List the languages in an enum with `#[derive(Segment)]`, and implement [`Locale`](api:hypersig_i18n/trait.Locale.html) for it. `Locale::Text` names a struct with one field per language, and `pick` returns the field of the language. The string serde writes for a variant is its BCP 47 tag, which `tag` returns, so `#[serde(rename_all = \"lowercase\")]` gives `en` and `ja`.",
-                ja: "言語を `#[derive(Segment)]` を付けた enum に並べ、その enum に [`Locale`](api:hypersig_i18n/trait.Locale.html) を実装します。`Locale::Text` には言語ごとに 1 つのフィールドを持つ構造体を指定し、`pick` はその言語のフィールドを返します。serde がバリアントに書く文字列がその言語の BCP 47 のタグで、`tag` はその文字列を返します。そのため `#[serde(rename_all = \"lowercase\")]` を付けると、タグは `en` と `ja` になります。",
+                en: "List the languages in an enum with `#[derive(Segment)]`, and implement [`Locale`](api:hypersig_i18n/trait.Locale.html) for it. `Locale::Text` names a struct with one field per language, and `pick` returns the field of the language. serde serializes each variant to the language's BCP 47 tag, which `tag` returns, so with `#[serde(rename_all = \"lowercase\")]` the tags are `en` and `ja`.",
+                ja: "言語を `#[derive(Segment)]` を付けた enum に並べ、その enum に [`Locale`](api:hypersig_i18n/trait.Locale.html) を実装します。`Locale::Text` には言語ごとに 1 つのフィールドを持つ構造体を指定し、`pick` はその言語のフィールドを返します。serde がバリアントをシリアライズした文字列がその言語の BCP 47 のタグになり、`tag` はその文字列を返します。そのため `#[serde(rename_all = \"lowercase\")]` を付けると、タグは `en` と `ja` になります。",
             },
         ),
         show(Snippet::I18nLocale),
         heading(
             site,
             L {
-                en: "A missing translation is a compile error",
-                ja: "訳の欠けはコンパイルエラーになる",
+                en: "A missing translation fails to compile",
+                ja: "訳が欠けるとコンパイルエラーになる",
             },
         ),
         para(
             site,
             L {
-                en: "A text is a struct literal, and Rust requires every field of one, so a text without its Japanese fails to compile. A language added to the enum fails to compile in two places until it is handled: the `match` in `pick`, and the struct, whose new field every text then has to give.",
-                ja: "文は構造体のリテラルで、Rust はリテラルにすべてのフィールドを求めます。そのため、日本語の訳がない文はコンパイルエラーになります。enum に言語を足したときも、2 か所がコンパイルエラーになります。1 つは `pick` の `match` で、もう 1 つは構造体です。構造体にフィールドを足すと、すべての文がそのフィールドを書く必要があります。",
+                en: "A text is a struct literal, and Rust requires a literal to give every field, so a text without its Japanese fails to compile. A language added to the enum also causes compile errors in two places until it is handled. One is the `match` in `pick`, and the other is the struct. Every text has to give the field added to the struct.",
+                ja: "文は構造体のリテラルで、Rust はリテラルにすべてのフィールドを書くよう求めます。そのため、日本語の訳がない文はコンパイルエラーになります。enum に言語を足したときも、その言語への対応を書くまで 2 か所がコンパイルエラーになります。1 つは `pick` の `match` で、もう 1 つは構造体です。構造体に足したフィールドは、すべての文で書く必要があります。",
             },
         ),
         show(Snippet::I18nMissing),
@@ -89,15 +89,15 @@ hypersig_i18n = { git = "https://github.com/imaimai17468/hypersig" }"#,
             site,
             &[
                 L {
-                    en: "`Locale::ALL` lists the languages for `negotiate`, and the compiler does not check that it lists every variant. A variant left out of it is never chosen.",
-                    ja: "`Locale::ALL` は `negotiate` が選ぶ言語の一覧で、すべてのバリアントが並んでいるかはコンパイラが検査しません。一覧から漏れたバリアントは、選ばれることがありません。",
+                    en: "`Locale::ALL` lists the languages for `negotiate`, and the compiler does not check that it lists every variant. A variant missing from it is never chosen.",
+                    ja: "`Locale::ALL` は `negotiate` が選ぶ言語の一覧で、すべてのバリアントが並んでいるかはコンパイラが検査しません。一覧にないバリアントが選ばれることはありません。",
                 },
                 L {
-                    en: "A translation is checked to exist, and not to be correct. A Japanese field that holds English compiles.",
+                    en: "The check is that a translation exists, not that it is correct. A Japanese field that holds English compiles.",
                     ja: "検査するのは訳があることで、訳が正しいことではありません。日本語のフィールドに英語を書いても、コンパイルは通ります。",
                 },
                 L {
-                    en: "Plural rules and the formats of numbers and dates are left to the application, or to a library such as ICU4X.",
+                    en: "Plural rules and the formats of numbers and dates are not handled. Write them in the application, or use a library such as ICU4X.",
                     ja: "複数形の規則や、数値と日付の書式は扱いません。アプリで書くか、ICU4X のようなライブラリを使ってください。",
                 },
             ],
@@ -105,8 +105,8 @@ hypersig_i18n = { git = "https://github.com/imaimai17468/hypersig" }"#,
         note(
             site,
             L {
-                en: "This site is built the same way: every page is one Rust function, rendered once in English and once in Japanese, and each of its texts is an `L { en, ja }`.",
-                ja: "このサイトも同じ作りです。どのページも 1 つの Rust の関数で、英語と日本語で 1 回ずつ描き、文はどれも `L { en, ja }` で書いています。",
+                en: "This site is built the same way. Every page is one Rust function, rendered once in English and once in Japanese, and each of its texts is written as an `L { en, ja }`.",
+                ja: "このサイトも同じ方法で作っています。どのページも 1 つの Rust の関数で、英語と日本語で 1 回ずつ描画し、文はどれも `L { en, ja }` で書いています。",
             },
         ),
     ])
@@ -118,8 +118,8 @@ fn pages(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "The language is the first segment of each page's route, so a page in another language is the same route with another locale.",
-                ja: "言語は各ページのルートの最初のセグメントに置きます。そのため、別の言語のページは、言語だけを変えた同じルートです。",
+                en: "The language is the first segment of each page's route, so the page in another language is the same route with only the language changed.",
+                ja: "言語は各ページのルートの最初のセグメントに置きます。そのため、別の言語のページは言語だけを変えた同じルートになります。",
             },
         ),
         heading(
@@ -147,8 +147,8 @@ fn pages(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "A link to the same page in another language is `link_with` with the other locale and the same parameters, so the route checks it as it checks every link. A switcher lists `Locale::ALL` and links each language to the page the reader is on.",
-                ja: "同じページの別の言語へのリンクは、言語だけを変え、ほかのパラメータはそのまま渡した `link_with` です。そのため、ほかのリンクと同じくルートがそのリンクを検査します。言語の切り替えは `Locale::ALL` を並べ、それぞれの言語で今のページへリンクします。",
+                en: "A link to the same page in another language is made by passing `link_with` the other language with the same remaining parameters, so the route checks it as it checks other links. A language switcher lists `Locale::ALL` and links, in each language, to the page the reader is on.",
+                ja: "同じページの別の言語へのリンクは、`link_with` に別の言語とそのほかの同じパラメータを渡して作ります。そのため、ほかのリンクと同じくルートがこのリンクを検査します。言語を切り替える UI は `Locale::ALL` を並べ、言語ごとに読者が今いるページへリンクします。",
             },
         ),
         heading(
@@ -161,7 +161,7 @@ fn pages(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) writes the tag into `<html lang>`. The browser reads it for hyphenation, for the voice a screen reader uses, and for the fonts it picks, so Japanese text set with `lang=\"ja\"` gets Japanese glyphs.",
+                en: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) writes the tag into `<html lang>`. The browser uses it to decide hyphenation, the voice a screen reader uses, and the fonts, so Japanese text set with `lang=\"ja\"` gets Japanese glyphs.",
                 ja: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) はタグを `<html lang>` に書きます。ブラウザはこの属性を見て、ハイフネーション、スクリーンリーダーの読み上げの声、使うフォントを決めます。そのため、`lang=\"ja\"` の付いた日本語の文は日本語の字形で表示されます。",
             },
         ),
@@ -174,8 +174,8 @@ fn negotiation(site: Site, head: Part) -> Part {
         lead(
             site,
             L {
-                en: "A visitor who opens `/` is sent to the page in the language their browser asks for.",
-                ja: "`/` を開いた訪問者を、ブラウザが求める言語のページへ送ります。",
+                en: "A visitor who opens `/` is redirected to the page in the language their browser asks for.",
+                ja: "`/` を開いた訪問者を、ブラウザが求める言語のページへリダイレクトします。",
             },
         ),
         heading(
@@ -188,8 +188,8 @@ fn negotiation(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`negotiate`](api:hypersig_i18n/fn.negotiate.html) reads an `Accept-Language` value and returns the best language of `Locale::ALL`. It tries the ranges from the highest `q` to the lowest, and in the order written where two weigh the same. A range matches a tag that equals it, ignoring case, then a tag that equals it once its last subtags are dropped, so `ja-JP` matches `ja`, and then a tag that starts with it, so `en` matches `en-US`. `*`, an empty header, and a header with no match give the first language of `Locale::ALL`.",
-                ja: "[`negotiate`](api:hypersig_i18n/fn.negotiate.html) は `Accept-Language` の値を読み、`Locale::ALL` の中から最も合う言語を返します。範囲は `q` の大きい順に試し、同じ重みのものは書かれた順に試します。範囲は、まず大文字と小文字を区別せずに同じタグと一致し、次に後ろのサブタグを削った形で一致します。そのため `ja-JP` は `ja` と一致します。最後に、その範囲で始まるタグと一致するので、`en` は `en-US` と一致します。`*`、空のヘッダー、一致する言語のないヘッダーには、`Locale::ALL` の最初の言語を返します。",
+                en: "[`negotiate`](api:hypersig_i18n/fn.negotiate.html) reads an `Accept-Language` value and returns the best language of `Locale::ALL`. It tries the ranges from the highest `q` to the lowest, and in the order written where two have the same `q`. A range first matches a tag equal to it, ignoring case. Next it matches a tag equal to the range with its last subtags dropped, so `ja-JP` matches `ja`. Last it matches a tag that starts with the range, so `en` matches `en-US`. `*`, an empty header, and a header with no match give the first language of `Locale::ALL`.",
+                ja: "[`negotiate`](api:hypersig_i18n/fn.negotiate.html) は `Accept-Language` の値を読み、`Locale::ALL` の中から最も合う言語を返します。範囲は `q` の大きい順に試し、`q` が同じものは書かれた順に試します。範囲はまず、大文字と小文字を区別せずに範囲と等しいタグに一致します。次に、範囲の後ろのサブタグを削った形と等しいタグに一致するので、`ja-JP` は `ja` に一致します。最後に、範囲で始まるタグに一致するので、`en` は `en-US` に一致します。`*`、空のヘッダー、一致する言語のないヘッダーには、`Locale::ALL` の最初の言語を返します。",
             },
         ),
         heading(
@@ -202,16 +202,16 @@ fn negotiation(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "With the `axum` feature, [`redirect_to_locale`](api:hypersig_i18n/trait.LocaleRouterExt.html#tymethod.redirect_to_locale) answers `GET /` with a `307 Temporary Redirect` to a route whose only parameter is the language. The response carries `Vary: Accept-Language`, because another browser may be sent to another language.",
-                ja: "`axum` の feature を有効にすると、[`redirect_to_locale`](api:hypersig_i18n/trait.LocaleRouterExt.html#tymethod.redirect_to_locale) は `GET /` に、言語だけをパラメータに持つルートへの `307 Temporary Redirect` で答えます。別のブラウザは別の言語へ送られることがあるので、レスポンスには `Vary: Accept-Language` を付けます。",
+                en: "With the `axum` feature, [`redirect_to_locale`](api:hypersig_i18n/trait.LocaleRouterExt.html#tymethod.redirect_to_locale) responds to `GET /` with a `307 Temporary Redirect` to a route whose only parameter is the language. The response includes `Vary: Accept-Language`, because the language redirected to can differ between browsers.",
+                ja: "`axum` の feature を有効にすると、[`redirect_to_locale`](api:hypersig_i18n/trait.LocaleRouterExt.html#tymethod.redirect_to_locale) は `GET /` に対して、言語だけをパラメータに持つルートへの `307 Temporary Redirect` を返します。ブラウザによってリダイレクト先の言語が変わることがあるので、レスポンスには `Vary: Accept-Language` を付けます。",
             },
         ),
         show(Snippet::I18nNegotiate),
         note(
             site,
             L {
-                en: "A site served as static files, such as this one, has no server to read `Accept-Language`. It puts its default language at the root and links to the others from the header.",
-                ja: "このサイトのように静的ファイルとして配信するサイトには、`Accept-Language` を読むサーバーがありません。既定の言語をルートに置き、ほかの言語へはヘッダーからリンクします。",
+                en: "A site served as static files, such as this one, has no server to read `Accept-Language`. Such a site puts its default language at the root and links to the others from the header.",
+                ja: "このサイトのように静的ファイルとして配信するサイトには、`Accept-Language` を読むサーバーがありません。こうしたサイトでは既定の言語をルートに置き、ほかの言語へはヘッダーからリンクします。",
             },
         ),
     ])
