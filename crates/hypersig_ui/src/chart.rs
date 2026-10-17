@@ -1,5 +1,5 @@
-//! Charts: bars, lines, or areas drawn from the rows of a list signal, on a
-//! scale the browser fits to the values.
+//! Charts: bars, stacked bars, lines, or areas drawn from the rows of a
+//! list signal, on a scale the browser fits to the values.
 
 use std::fmt;
 
@@ -19,6 +19,7 @@ use crate::token;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Bar,
+    StackedBar,
     Line,
     Area,
 }
@@ -43,7 +44,7 @@ type RowText<S, T> = Box<dyn Fn(Item<S, T>, Option<&NumberFormat>) -> Expr<S, St
 /// than two more, so a scale spans at most five steps.
 const TICKS: i32 = 6;
 
-/// A bar, line, or area chart of the rows of a list signal.
+/// A bar, stacked bar, line, or area chart of the rows of a list signal.
 ///
 /// Each row is one point along the horizontal axis, labeled by the text
 /// field `category`, and each [`Chart::series`] reads a number field of the
@@ -99,6 +100,7 @@ pub struct Chart<S, T> {
     category: Sig<T, String>,
     series: Vec<Series<S, T>>,
     format: Option<NumberFormat>,
+    max_labels: u32,
 }
 
 impl<S: 'static, T: 'static> Chart<S, T> {
@@ -108,6 +110,21 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     #[must_use]
     pub fn bar(label: impl Into<String>, rows: Sig<S, Vec<T>>, category: Sig<T, String>) -> Self {
         Self::new(Kind::Bar, label.into(), rows, category)
+    }
+
+    /// A stacked bar chart named `label` of `rows`, labeled by `category`.
+    ///
+    /// Each row has one bar, in which each series stacks on the ones added
+    /// before it. Positive values stack up from 0 and negative ones down
+    /// from it, so the scale reaches the largest sum of a row's positive
+    /// values and the smallest sum of its negative ones.
+    #[must_use]
+    pub fn stacked_bar(
+        label: impl Into<String>,
+        rows: Sig<S, Vec<T>>,
+        category: Sig<T, String>,
+    ) -> Self {
+        Self::new(Kind::StackedBar, label.into(), rows, category)
     }
 
     /// A line chart named `label` of `rows`, labeled by `category`.
@@ -134,6 +151,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             category,
             series: Vec::new(),
             format: None,
+            max_labels: 12,
         }
     }
 
@@ -163,6 +181,23 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     #[must_use]
     pub fn format(mut self, format: NumberFormat) -> Self {
         self.format = Some(format);
+        self
+    }
+
+    /// Labels at most `count` rows along the horizontal axis, 12 until set.
+    ///
+    /// With more rows than that, the axis labels every `n`th row from the
+    /// first, for the smallest `n` that keeps to `count`, so the labels do
+    /// not run into each other. The box under the pointer and the table a
+    /// screen reader reads still name every row.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `count` is 0.
+    #[must_use]
+    pub fn max_labels(mut self, count: u32) -> Self {
+        assert!(count >= 1, "a chart labels at least one row");
+        self.max_labels = count;
         self
     }
 
@@ -239,21 +274,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         &self,
         body: impl FnOnce(Expr<S, f64>, Expr<S, f64>, Expr<S, f64>) -> Expr<S, U>,
     ) -> Expr<S, U> {
-        let mut top = Expr::lit(&0.0);
-        let mut bottom = Expr::lit(&0.0);
-        for series in &self.series {
-            let value = &series.value;
-            top = top.max(
-                self.rows
-                    .max_of(|row| value(row.into_expr()))
-                    .unwrap_or(0.0),
-            );
-            bottom = bottom.min(
-                self.rows
-                    .min_of(|row| value(row.into_expr()))
-                    .unwrap_or(0.0),
-            );
-        }
+        let (top, bottom) = self.extremes();
         bottom.let_in(|bottom| {
             // With every value 0, or no rows, the scale runs from 0 to 1.
             let top = if_else(top.clone().gt(bottom.clone()), top, bottom.clone() + 1.0);
@@ -296,6 +317,25 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         })
     }
 
+    /// The largest and the smallest value the scale reaches, 0 included.
+    fn extremes(&self) -> (Expr<S, f64>, Expr<S, f64>) {
+        let rows = self.rows;
+        if self.kind == Kind::StackedBar {
+            let sum = |row: Item<S, T>, positive: bool| stack(&self.series, row, positive);
+            let top = rows.max_of(|row| sum(row, true)).unwrap_or(0.0);
+            let bottom = rows.min_of(|row| sum(row, false)).unwrap_or(0.0);
+            return (top.max(0.0), bottom.min(0.0));
+        }
+        let mut top = Expr::lit(&0.0);
+        let mut bottom = Expr::lit(&0.0);
+        for series in &self.series {
+            let value = &series.value;
+            top = top.max(rows.max_of(|row| value(row.into_expr())).unwrap_or(0.0));
+            bottom = bottom.min(rows.min_of(|row| value(row.into_expr())).unwrap_or(0.0));
+        }
+        (top, bottom)
+    }
+
     /// The expression `body` builds from the value of the grid line numbered
     /// `tick` from the bottom and the ends of the scale.
     fn tick<U>(
@@ -318,88 +358,112 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     fn marks(&self, band: &Expr<S, f64>) -> Vec<Node<S>> {
         let count: f64 = self.series.iter().map(|_| 1.0).sum();
         let mut marks = Vec::with_capacity(self.series.len());
-        let mut position = 0.0;
-        for series in &self.series {
-            let color = series.color.clone();
-            let band = band.clone();
-            let rows = self.rows;
-            let kind = self.kind;
-            let mark = each(rows, |row| {
-                let value = || (series.value)(row.into_expr());
+        for (index, series) in self.series.iter().enumerate() {
+            let earlier = &self.series[..index];
+            let color = &series.color;
+            let mark = each(self.rows, |row| {
+                let value = (series.value)(row.into_expr());
                 let x = row.index().to_f64() * band.clone();
-                match kind {
+                match self.kind {
                     Kind::Bar => {
                         let width = band.clone() * (0.8 / count);
-                        let left = x + band.clone() * 0.1 + width.clone() * position;
-                        let top = self.scaled(|lo, hi, _| {
-                            y_of(value(), lo.clone(), hi.clone()).min(y_of(Expr::lit(&0.0), lo, hi))
-                        });
-                        let height = self.scaled(|lo, hi, _| {
-                            let y = y_of(value(), lo.clone(), hi.clone());
-                            let zero = y_of(Expr::lit(&0.0), lo, hi);
-                            y.clone().max(zero.clone()) - y.min(zero)
-                        });
-                        el("rect")
-                            .css(Style::new().fill(color.var()))
-                            .bind_attr("x", left.to_fixed(3))
-                            .bind_attr("width", width.to_fixed(3))
-                            .bind_attr("y", top.to_fixed(3))
-                            .bind_attr("height", height.to_fixed(3))
+                        #[expect(
+                            clippy::cast_precision_loss,
+                            reason = "a chart has far fewer than 2^52 series"
+                        )]
+                        let left = x + band.clone() * 0.1 + width.clone() * (index as f64);
+                        self.bar_mark(Expr::lit(&0.0), value, left, width, color)
+                    }
+                    Kind::StackedBar => {
+                        let start = if_else(
+                            value.clone().ge(0.0),
+                            stack(earlier, row, true),
+                            stack(earlier, row, false),
+                        );
+                        let end = start.clone() + value;
+                        let left = x + band.clone() * 0.1;
+                        self.bar_mark(start, end, left, band.clone() * 0.8, color)
                     }
                     Kind::Line | Kind::Area => {
                         let next =
-                            || (series.value)(rows.nth(row.index() + 1).unwrap_or(row.value()));
+                            (series.value)(self.rows.nth(row.index() + 1).unwrap_or(row.value()));
                         let x1 = x + band.clone() * 0.5;
                         let x2 = x1.clone() + band.clone();
-                        let y1 = self.scaled(|lo, hi, _| y_of(value(), lo, hi).to_fixed(3));
-                        let y2 = self.scaled(|lo, hi, _| y_of(next(), lo, hi).to_fixed(3));
-                        let has_next = rows.len().gt(row.index() + 1);
-                        let line = el("line")
-                            .attr("vector-effect", "non-scaling-stroke")
-                            .attr("stroke-linecap", "round")
-                            .css(Style::new().stroke(color.var()).stroke_width(px(2)))
-                            .bind_attr("x1", x1.clone().to_fixed(3))
-                            .bind_attr("x2", x2.clone().to_fixed(3))
-                            .bind_attr("y1", y1.clone())
-                            .bind_attr("y2", y2.clone());
-                        let group = el("g").show(has_next);
-                        if kind == Kind::Area {
-                            let base =
-                                self.scaled(|lo, hi, _| y_of(Expr::lit(&0.0), lo, hi).to_fixed(3));
-                            let points = x1
-                                .clone()
-                                .to_fixed(3)
-                                .concat(",")
-                                .concat(base.clone())
-                                .concat(" ")
-                                .concat(x1.to_fixed(3))
-                                .concat(",")
-                                .concat(y1)
-                                .concat(" ")
-                                .concat(x2.clone().to_fixed(3))
-                                .concat(",")
-                                .concat(y2)
-                                .concat(" ")
-                                .concat(x2.to_fixed(3))
-                                .concat(",")
-                                .concat(base);
-                            group
-                                .child(
-                                    el("polygon")
-                                        .css(Style::new().fill(color.var()).fill_opacity(0.25))
-                                        .bind_attr("points", points),
-                                )
-                                .child(line)
-                        } else {
-                            group.child(line)
-                        }
+                        self.segment(value, next, x1, x2, color)
+                            .show(self.rows.len().gt(row.index() + 1))
                     }
                 }
             });
             marks.push(mark);
-            position += 1.0;
         }
         marks
+    }
+
+    /// A bar in `color` from the value `start` to the value `end`, `width`
+    /// wide from `left`.
+    fn bar_mark(
+        &self,
+        start: Expr<S, f64>,
+        end: Expr<S, f64>,
+        left: Expr<S, f64>,
+        width: Expr<S, f64>,
+        color: &Token<Color>,
+    ) -> El<S> {
+        let top = self.scaled(|lo, hi, _| {
+            y_of(start.clone(), lo.clone(), hi.clone()).min(y_of(end.clone(), lo, hi))
+        });
+        let height = self.scaled(|lo, hi, _| {
+            let a = y_of(start, lo.clone(), hi.clone());
+            let b = y_of(end, lo, hi);
+            a.clone().max(b.clone()) - a.min(b)
+        });
+        el("rect")
+            .css(Style::new().fill(color.var()))
+            .bind_attr("x", left.to_fixed(3))
+            .bind_attr("width", width.to_fixed(3))
+            .bind_attr("y", top.to_fixed(3))
+            .bind_attr("height", height.to_fixed(3))
+    }
+
+    /// The line in `color` from `value` at `x1` to `next` at `x2`, and for an
+    /// area chart the region between that line and 0.
+    fn segment(
+        &self,
+        value: Expr<S, f64>,
+        next: Expr<S, f64>,
+        x1: Expr<S, f64>,
+        x2: Expr<S, f64>,
+        color: &Token<Color>,
+    ) -> El<S> {
+        let y1 = self.scaled(|lo, hi, _| y_of(value, lo, hi).to_fixed(3));
+        let y2 = self.scaled(|lo, hi, _| y_of(next, lo, hi).to_fixed(3));
+        let line = el("line")
+            .attr("vector-effect", "non-scaling-stroke")
+            .attr("stroke-linecap", "round")
+            .css(Style::new().stroke(color.var()).stroke_width(px(2)))
+            .bind_attr("x1", x1.clone().to_fixed(3))
+            .bind_attr("x2", x2.clone().to_fixed(3))
+            .bind_attr("y1", y1.clone())
+            .bind_attr("y2", y2.clone());
+        if self.kind != Kind::Area {
+            return el("g").child(line);
+        }
+        let base = self.scaled(|lo, hi, _| y_of(Expr::lit(&0.0), lo, hi).to_fixed(3));
+        let point = |x: Expr<S, f64>, y: Expr<S, String>| x.to_fixed(3).concat(",").concat(y);
+        let points = point(x1.clone(), base.clone())
+            .concat(" ")
+            .concat(point(x1, y1))
+            .concat(" ")
+            .concat(point(x2.clone(), y2))
+            .concat(" ")
+            .concat(point(x2, base));
+        el("g")
+            .child(
+                el("polygon")
+                    .css(Style::new().fill(color.var()).fill_opacity(0.25))
+                    .bind_attr("points", points),
+            )
+            .child(line)
     }
 
     /// The labels of the grid lines, each beside its line.
@@ -501,9 +565,11 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             }))
     }
 
-    /// The category of each row, under the middle of its column.
+    /// The category of each row, under the middle of its column, for every
+    /// `n`th row that keeps the labels to `max_labels`.
     fn x_labels(&self, band: Expr<S, f64>) -> El<S> {
         let category = self.category;
+        let every = (self.rows.len().to_f64() / f64::from(self.max_labels)).ceil();
         div()
             .css(Style::new().position(Position::Relative).height(rem(1)))
             .child(each(self.rows, |row| {
@@ -517,6 +583,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                             .translate(raw("-50% 0"))
                             .white_space(WhiteSpace::Nowrap),
                     )
+                    .show((row.index().to_f64() % every.clone()).equals(0.0))
                     .bind_style(Property::Left, middle)
                     .bind_text(row.at(category))
             }))
@@ -578,6 +645,7 @@ impl<S, T> fmt::Debug for Chart<S, T> {
             .field("rows", &self.rows)
             .field("category", &self.category)
             .field("format", &self.format)
+            .field("max_labels", &self.max_labels)
             .field(
                 "series",
                 &self
@@ -600,6 +668,19 @@ impl<S: 'static, T: 'static> From<Chart<S, T>> for Node<S> {
     fn from(chart: Chart<S, T>) -> Self {
         chart.render().into()
     }
+}
+
+/// The sum of the positive values of `series` in `row`, or of the negative
+/// ones where `positive` is false, which is where the next series stacks.
+fn stack<S, T>(series: &[Series<S, T>], row: Item<S, T>, positive: bool) -> Expr<S, f64> {
+    series.iter().fold(Expr::lit(&0.0), |sum, series| {
+        let value = (series.value)(row.into_expr());
+        sum + if positive {
+            value.max(0.0)
+        } else {
+            value.min(0.0)
+        }
+    })
 }
 
 /// The distance from the top of the drawing to `value`, in hundredths of

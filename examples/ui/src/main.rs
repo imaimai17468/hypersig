@@ -653,6 +653,16 @@ fn charts() -> El<Gallery> {
                     Month::name(),
                 ))))
                 .child(
+                    div().id("stacked-chart").child(
+                        visitors(Chart::stacked_bar(
+                            "Visitors (stacked)",
+                            Gallery::months(),
+                            Month::name(),
+                        ))
+                        .max_labels(3),
+                    ),
+                )
+                .child(
                     div().id("lead-chart").child(
                         Chart::bar("Desktop lead", Gallery::months(), Month::name())
                             .series("Lead", Month::lead(), token::chart_3())

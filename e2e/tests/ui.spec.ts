@@ -483,6 +483,20 @@ test("a bar chart draws a negative value down from the line at 0", async ({ page
   await expect(lead.nth(3)).toHaveAttribute("height", "29.250");
 });
 
+test("a stacked bar chart puts each series on the ones before it", async ({ page }) => {
+  const rects = page.locator("#stacked-chart svg rect");
+  await expect(rects).toHaveCount(12);
+  await expect(rects.nth(0)).toHaveAttribute("y", "69.000");
+  await expect(rects.nth(0)).toHaveAttribute("height", "31.000");
+  await expect(rects.nth(6)).toHaveAttribute("y", "55.667");
+  await expect(rects.nth(6)).toHaveAttribute("height", "13.333");
+  await expect(rects.nth(6)).toHaveAttribute("x", await rects.nth(0).getAttribute("x") ?? "");
+});
+
+test("a chart labels every nth row once the rows outnumber its labels", async ({ page }) => {
+  await expect(page.locator("#stacked-chart figure > div > div:last-child span:visible")).toHaveText(["January", "March", "May"]);
+});
+
 test("a line chart joins each row to the next and draws nothing past the last", async ({ page }) => {
   const segments = page.locator("#line-chart svg g");
   await expect(segments).toHaveCount(12);
