@@ -453,6 +453,18 @@ test("a server table keeps the selected keys while the visitor moves between pag
   await expect(count).toHaveText("1 selected");
 });
 
+test("a table with a maximum height scrolls its rows under a header that stays in place", async ({ page }) => {
+  const frame = orders(page).locator("div:has(> table)");
+  const scrolled = await frame.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    return element.scrollTop;
+  });
+  expect(scrolled).toBeGreaterThan(0);
+  const head = (await orders(page).locator("thead").boundingBox())!;
+  const box = (await frame.boundingBox())!;
+  expect(Math.abs(head.y - box.y)).toBeLessThan(2);
+});
+
 test("a server table filters on the server once typing pauses", async ({ page }) => {
   await orders(page).getByRole("searchbox", { name: "Filter orders" }).fill("customer1");
   await expect(orders(page).getByText("1–5 / 10")).toBeVisible();

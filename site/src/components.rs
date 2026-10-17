@@ -1088,6 +1088,14 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "max_height",
+                    "hypersig_ui/struct.DataTable.html#method.max_height",
+                    L {
+                        en: "Keeps the table at most `height` high, scrolling its rows under a header that stays in place.",
+                        ja: "表の高さを `height` までに抑え、見出しを止めたまま行をスクロールさせます。",
+                    },
+                ),
+                (
                     "Column::text",
                     "hypersig_ui/struct.Column.html#method.text",
                     L {

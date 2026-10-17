@@ -11,8 +11,8 @@ use hypersig::html::{
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, BorderCollapse, BorderStyle, CaptionSide, Color, Cursor,
-    Display, FlexDirection, FontVariantNumeric, FontWeight, JustifyContent, OverflowX, TextAlign,
-    VerticalAlign, WhiteSpace, pct, px, rem,
+    Display, FlexDirection, FontVariantNumeric, FontWeight, JustifyContent, Length, OverflowX,
+    OverflowY, Position, TextAlign, VerticalAlign, WhiteSpace, ZIndex, pct, px, raw, rem,
 };
 use hypersig::style::{PseudoClass, Style};
 use hypersig::{
@@ -384,6 +384,7 @@ pub struct DataTable<S, T> {
     filter: Option<(String, RowText<S, T>)>,
     page_size: Option<i32>,
     text: TableText,
+    max_height: Option<Length>,
 }
 
 impl<S: 'static, T: 'static> DataTable<S, T> {
@@ -408,6 +409,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             filter: None,
             page_size: None,
             text: TableText::default(),
+            max_height: None,
         }
     }
 
@@ -500,6 +502,13 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
+    /// Keeps the table at most `height` high, scrolling its rows under a header that stays in place.
+    #[must_use]
+    pub fn max_height(mut self, height: Length) -> Self {
+        self.max_height = Some(height);
+        self
+    }
+
     /// The filter field, the table, and the page buttons, in a `<div>`.
     #[must_use]
     pub fn render(self) -> El<S> {
@@ -513,6 +522,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             filter,
             page_size,
             text,
+            max_height,
         } = self;
         let query = state.at(TableState::query());
         let page = state.at(TableState::page());
@@ -565,6 +575,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         }
         out = out.child(frame(
             label,
+            max_height,
             head,
             body,
             empty_row(shown.clone().equals(0), width, text.empty.clone()),
@@ -591,6 +602,7 @@ impl<S, T> fmt::Debug for DataTable<S, T> {
             .field("selectable", &self.selection.is_some())
             .field("filter", &self.filter.as_ref().map(|(label, _)| label))
             .field("page_size", &self.page_size)
+            .field("max_height", &self.max_height)
             .finish_non_exhaustive()
     }
 }
@@ -708,6 +720,7 @@ pub struct ServerTable<S, T> {
     filter: Option<String>,
     pages: Option<(i32, Sig<S, i32>)>,
     text: TableText,
+    max_height: Option<Length>,
 }
 
 impl<S: 'static, T: 'static> ServerTable<S, T> {
@@ -734,6 +747,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             filter: None,
             pages: None,
             text: TableText::default(),
+            max_height: None,
         }
     }
 
@@ -814,6 +828,13 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         self
     }
 
+    /// Keeps the table at most `height` high, scrolling its rows under a header that stays in place.
+    #[must_use]
+    pub fn max_height(mut self, height: Length) -> Self {
+        self.max_height = Some(height);
+        self
+    }
+
     /// The filter field, the table, and the page buttons, in a `<div>`.
     #[must_use]
     pub fn render(self) -> El<S> {
@@ -828,6 +849,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             filter,
             pages,
             text,
+            max_height,
         } = self;
         let query = state.at(TableState::query());
         let page = state.at(TableState::page());
@@ -852,6 +874,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         }
         out = out.child(frame(
             label,
+            max_height,
             head,
             body,
             empty_row(rows.is_empty(), width, text.empty.clone()),
@@ -874,6 +897,7 @@ impl<S, T> fmt::Debug for ServerTable<S, T> {
             .field("selectable", &self.selection.is_some())
             .field("filter", &self.filter)
             .field("pages", &self.pages)
+            .field("max_height", &self.max_height)
             .finish_non_exhaustive()
     }
 }
@@ -941,12 +965,36 @@ fn row_cells<S, T>(mut line: El<S>, cells: &[Cell<S, T>], row: Item<S, T>) -> El
 }
 
 /// The rounded border around the `<table>` named `label`.
-fn frame<S>(label: String, head: El<S>, body: Node<S>, empty_row: El<S>) -> El<S> {
-    div().css(frame_style()).child(
+///
+/// With a `max_height`, the border scrolls the rows and the header sticks
+/// to its top.
+fn frame<S>(
+    label: String,
+    max_height: Option<Length>,
+    head: El<S>,
+    body: Node<S>,
+    empty_row: El<S>,
+) -> El<S> {
+    let mut border = div().css(frame_style());
+    let mut header = thead();
+    if let Some(height) = max_height {
+        border = border.css(Style::new().max_height(height).overflow_y(OverflowY::Auto));
+        header = header.css(
+            Style::new()
+                .position(Position::Sticky)
+                .top(px(0))
+                .z_index(ZIndex::Integer(1))
+                .background_color(token::background().var())
+                // The border of a collapsed table stays with the scrolled
+                // rows, so the line under the header is a shadow.
+                .box_shadow(raw(format!("inset 0 -1px 0 {}", token::border().var()))),
+        );
+    }
+    border.child(
         table()
             .attr("aria-label", label)
             .css(table_style())
-            .child(thead().child(head))
+            .child(header.child(head))
             .child(tbody().child(body).child(empty_row)),
     )
 }

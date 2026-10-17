@@ -762,6 +762,7 @@ fn server_table() -> El<Gallery> {
             )
             .selectable(Gallery::chosen_orders(), |order| order.at(Order::id()))
             .filter("Filter orders")
+            .max_height(rem(11))
             .paginate(5, Gallery::orders_total())
             .column(Column::number("Id", Order::id()))
             .sortable_column(Column::text("Email", Order::email()), &OrderBy::Email)
