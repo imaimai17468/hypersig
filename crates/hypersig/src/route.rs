@@ -15,6 +15,8 @@ use crate::signal::Signals;
 /// [`Route::link`] or [`Route::link_with`]. The router and the links then
 /// agree on the path and on the type of each parameter in it, and a route
 /// without a handler cannot be declared.
+/// `routes!` needs the `axum` feature, so a build without it declares no
+/// routes and its pages link with `attr("href", ...)`.
 ///
 /// A parameter is a whole segment written `{name}`, as in axum. `P` is `()`
 /// for a path without one, a [`Segment`] type for one, and a tuple for two to
