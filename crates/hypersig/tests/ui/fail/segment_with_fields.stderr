@@ -1,0 +1,5 @@
+error: a `Segment` variant has no fields, because the segment is the variant's name
+ --> tests/ui/fail/segment_with_fields.rs:8:11
+  |
+8 |     Member(i32),
+  |           ^^^^^

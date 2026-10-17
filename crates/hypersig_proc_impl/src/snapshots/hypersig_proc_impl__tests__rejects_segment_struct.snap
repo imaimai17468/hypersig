@@ -1,0 +1,7 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_segment(quote! { struct S; })"
+---
+::core::compile_error! {
+    "`Segment` can only be derived for an enum whose variants have no fields"
+}

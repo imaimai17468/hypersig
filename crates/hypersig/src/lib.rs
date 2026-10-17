@@ -64,7 +64,7 @@ pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]
 pub use axum::{PageResponse, RequestError, RouterExt};
 pub use expr::{Comparable, Expr, IntoExpr, IntoStmt, Number, Stmt, Textual, if_else};
-pub use hypersig_proc::Signals;
+pub use hypersig_proc::{Segment, Signals};
 pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};
 pub use route::{Extends, Link, Params, Route, Search, Segment, Url};
@@ -85,6 +85,7 @@ pub const RUNTIME_JS: &str = include_str!("../assets/hypersig.js");
 
 #[doc(hidden)]
 pub mod _private {
+    pub use crate::route::sealed::Sealed;
     use crate::signal::{Path, Sig};
 
     /// Called by `#[derive(Signals)]` with a field name of `S`.

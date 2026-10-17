@@ -1,0 +1,7 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_segment(quote! { enum E { A, B(i32) } })"
+---
+::core::compile_error! {
+    "a `Segment` variant has no fields, because the segment is the variant's name"
+}

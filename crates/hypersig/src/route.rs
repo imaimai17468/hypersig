@@ -17,8 +17,8 @@ use crate::signal::Signals;
 /// of each parameter in it.
 ///
 /// A parameter is a whole segment written `{name}`, as in axum. `P` is `()`
-/// for a path without one, a [`Segment`] type for one, and a tuple for two or
-/// three, in the order they appear. The name inside the braces is for the
+/// for a path without one, a [`Segment`] type for one, and a tuple for two to
+/// six, in the order they appear. The name inside the braces is for the
 /// reader and axum, and the position decides which value fills it.
 ///
 /// `Q` is `()` for a page without a query string, or a struct with
@@ -417,6 +417,26 @@ pub(crate) fn query_string(value: &Value) -> String {
 /// It is implemented for `String` and the integer types, whose text the
 /// browser's `String` and the server write the same way. An `i64` or `u64`
 /// past 2^53 loses precision in the browser, as it does in any signal.
+///
+/// `#[derive(Segment)]` implements it for an enum whose variants have no
+/// fields. The segment is the variant's name, which is also the string serde
+/// writes for the variant, so a link that reads the enum from a signal and the
+/// server write the same URL. The derive rejects `#[serde(...)]` on the enum
+/// and its variants, because a rename would make the two disagree.
+///
+/// ```
+/// use hypersig::{Route, Segment};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Segment, Serialize, Deserialize)]
+/// enum Tab {
+///     Overview,
+///     Settings,
+/// }
+///
+/// const TAB: Route<(String, Tab)> = Route::new("/teams/{team}/{tab}");
+/// assert_eq!(TAB.url(("red".to_owned(), Tab::Settings)).as_str(), "/teams/red/Settings");
+/// ```
 pub trait Segment: sealed::Sealed + Sized {
     /// Reads the value from a percent-decoded segment, or `None` if it is not one.
     #[doc(hidden)]
@@ -453,10 +473,10 @@ impl Segment for String {
     }
 }
 
-/// The parameters of a [`Route`]: `()`, one [`Segment`], or a tuple of two or three.
+/// The parameters of a [`Route`]: `()`, one [`Segment`], or a tuple of two to six.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` cannot be the parameters of a route",
-    note = "a route takes `()`, one integer or `String`, or a tuple of two or three of them"
+    note = "a route takes `()`, one `Segment` (an integer, `String`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them"
 )]
 pub trait Params: sealed::Sealed + Sized {
     /// The number of `{name}` segments the path has.
@@ -529,55 +549,43 @@ impl<T: Segment> Params for T {
     }
 }
 
-impl<A: Segment, B: Segment> Params for (A, B) {
-    const COUNT: usize = 2;
+/// Implements `Params` and the seal for a tuple of `Segment`s.
+macro_rules! tuple_params {
+    ($count:literal: $($ty:ident $var:ident $index:tt),+) => {
+        impl<$($ty: Segment),+> sealed::Sealed for ($($ty,)+) {}
 
-    fn from_segments(segments: &[&str]) -> Option<Self> {
-        match segments {
-            [a, b] => Some((A::parse(a)?, B::parse(b)?)),
-            _ => None,
+        impl<$($ty: Segment),+> Params for ($($ty,)+) {
+            const COUNT: usize = $count;
+
+            fn from_segments(segments: &[&str]) -> Option<Self> {
+                match segments {
+                    [$($var),+] => Some(($($ty::parse($var)?,)+)),
+                    _ => None,
+                }
+            }
+
+            fn segments(&self) -> Vec<String> {
+                vec![$(self.$index.write()),+]
+            }
+
+            type With<Q> = (Self, Q);
+
+            fn join<Q>(self, search: Q) -> (Self, Q) {
+                (self, search)
+            }
+
+            fn split<Q>(args: (Self, Q)) -> (Self, Q) {
+                args
+            }
         }
-    }
-
-    fn segments(&self) -> Vec<String> {
-        vec![self.0.write(), self.1.write()]
-    }
-
-    type With<Q> = (Self, Q);
-
-    fn join<Q>(self, search: Q) -> (Self, Q) {
-        (self, search)
-    }
-
-    fn split<Q>(args: (Self, Q)) -> (Self, Q) {
-        args
-    }
+    };
 }
 
-impl<A: Segment, B: Segment, C: Segment> Params for (A, B, C) {
-    const COUNT: usize = 3;
-
-    fn from_segments(segments: &[&str]) -> Option<Self> {
-        match segments {
-            [a, b, c] => Some((A::parse(a)?, B::parse(b)?, C::parse(c)?)),
-            _ => None,
-        }
-    }
-
-    fn segments(&self) -> Vec<String> {
-        vec![self.0.write(), self.1.write(), self.2.write()]
-    }
-
-    type With<Q> = (Self, Q);
-
-    fn join<Q>(self, search: Q) -> (Self, Q) {
-        (self, search)
-    }
-
-    fn split<Q>(args: (Self, Q)) -> (Self, Q) {
-        args
-    }
-}
+tuple_params!(2: A a 0, B b 1);
+tuple_params!(3: A a 0, B b 1, C c 2);
+tuple_params!(4: A a 0, B b 1, C c 2, D d 3);
+tuple_params!(5: A a 0, B b 1, C c 2, D d 3, E e 4);
+tuple_params!(6: A a 0, B b 1, C c 2, D d 3, E e 4, F f 5);
 
 /// The search parameters of a [`Route`]: `()`, or a struct with `#[derive(Signals)]`.
 ///
@@ -670,18 +678,26 @@ impl<Q: Signals> Search for Q {
 )]
 pub trait Extends<P>: Params {}
 
+/// Implements `Extends` for the tuple `$tuple` of the `Segment`s `$ty`, once per prefix.
+macro_rules! extends {
+    ($tuple:ty; $generics:tt => $($prefix:ty),+) => {
+        $(extends!(@one $tuple; $generics; $prefix);)+
+    };
+    (@one $tuple:ty; [$($ty:ident),+]; $prefix:ty) => {
+        impl<$($ty: Segment),+> Extends<$prefix> for $tuple {}
+    };
+}
+
 impl Extends<()> for () {}
 impl<A: Segment> Extends<()> for A {}
 impl<A: Segment> Extends<A> for A {}
-impl<A: Segment, B: Segment> Extends<()> for (A, B) {}
-impl<A: Segment, B: Segment> Extends<A> for (A, B) {}
-impl<A: Segment, B: Segment> Extends<(A, B)> for (A, B) {}
-impl<A: Segment, B: Segment, C: Segment> Extends<()> for (A, B, C) {}
-impl<A: Segment, B: Segment, C: Segment> Extends<A> for (A, B, C) {}
-impl<A: Segment, B: Segment, C: Segment> Extends<(A, B)> for (A, B, C) {}
-impl<A: Segment, B: Segment, C: Segment> Extends<(A, B, C)> for (A, B, C) {}
+extends!((A, B); [A, B] => (), A, (A, B));
+extends!((A, B, C); [A, B, C] => (), A, (A, B), (A, B, C));
+extends!((A, B, C, D); [A, B, C, D] => (), A, (A, B), (A, B, C), (A, B, C, D));
+extends!((A, B, C, D, E); [A, B, C, D, E] => (), A, (A, B), (A, B, C), (A, B, C, D), (A, B, C, D, E));
+extends!((A, B, C, D, E, F); [A, B, C, D, E, F] => (), A, (A, B), (A, B, C), (A, B, C, D), (A, B, C, D, E), (A, B, C, D, E, F));
 
-mod sealed {
+pub(crate) mod sealed {
     pub trait SealedSearch {}
     impl SealedSearch for () {}
     impl<Q: crate::signal::Signals> SealedSearch for Q {}
@@ -693,8 +709,6 @@ mod sealed {
     impl Sealed for u32 {}
     impl Sealed for u64 {}
     impl Sealed for String {}
-    impl<A: super::Segment, B: super::Segment> Sealed for (A, B) {}
-    impl<A: super::Segment, B: super::Segment, C: super::Segment> Sealed for (A, B, C) {}
 }
 
 #[cfg(test)]

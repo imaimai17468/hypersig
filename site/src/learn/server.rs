@@ -74,7 +74,7 @@ pub fn pages(site: Site) -> Part {
             heading("Routes"),
             para(
                 site,
-                "A [`Route<P>`](api:hypersig/struct.Route.html) is a path whose parameters are `P`. A parameter is a whole segment written `{name}`, as in axum, and `P` is `()` for a path without one, an integer or `String` for one, and a tuple for two or three, in path order. Declare it as a `const`: `Route::new` counts the segments, so a path whose count differs from `P` fails to compile.",
+                "A [`Route<P>`](api:hypersig/struct.Route.html) is a path whose parameters are `P`. A parameter is a whole segment written `{name}`, as in axum, and `P` is `()` for a path without one, one [`Segment`](api:hypersig/trait.Segment.html) for one, and a tuple for two to six, in path order. A `Segment` is an integer, a `String`, or an enum whose variants have no fields with `#[derive(Segment)]`, whose segment is the variant's name. Declare it as a `const`: `Route::new` counts the segments, so a path whose count differs from `P` fails to compile.",
             ),
             show(Snippet::WrongRoute),
             para(

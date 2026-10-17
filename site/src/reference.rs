@@ -1056,12 +1056,17 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                         (
                             "Params",
                             "trait.Params.html",
-                            "The parameters of a `Route`: `()`, one `Segment`, or a tuple of two or three.",
+                            "The parameters of a `Route`: `()`, one `Segment`, or a tuple of two to six.",
                         ),
                         (
                             "Segment",
                             "trait.Segment.html",
                             "A type one `{name}` segment of a `Route` holds.",
+                        ),
+                        (
+                            "derive(Segment)",
+                            "derive.Segment.html",
+                            "Implements `hypersig::Segment` for an enum whose variants have no fields.",
                         ),
                         (
                             "Search",

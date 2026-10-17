@@ -1,0 +1,7 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_segment(quote! { #[serde(rename_all = \"kebab-case\")] enum E { A } })"
+---
+::core::compile_error! {
+    "`#[serde(...)]` is not supported on a `Segment` enum, because the segment must equal the variant's name"
+}

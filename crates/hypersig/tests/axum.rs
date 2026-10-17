@@ -5,7 +5,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt as _;
 use hypersig::html::{a, p};
-use hypersig::{Action, Page, PageResponse, Patches, Route, RouterExt, Signals};
+use hypersig::{Action, Page, PageResponse, Patches, Route, RouterExt, Segment, Signals};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -25,6 +25,14 @@ const OLD_MEMBER: Route<i32> = Route::new("/people/{id}");
 const MOVE: Action<Counter, i32> = Action::post("/move");
 const TEAM: Route<String, Filter> = Route::new("/teams/{team}");
 const FIND: Route<(), Filter> = Route::new("/find");
+const TAB: Route<(String, Tab)> = Route::new("/tabs/{team}/{tab}");
+const DEEP: Route<(i32, i32, i32, i32, i32, String)> = Route::new("/{a}/{b}/{c}/{d}/{e}/{f}");
+
+#[derive(Segment, Serialize, Deserialize, Debug)]
+enum Tab {
+    Overview,
+    Settings,
+}
 
 #[derive(Signals, Serialize, Deserialize)]
 struct Filter {
@@ -68,6 +76,15 @@ fn app() -> Router {
         .page(FIND, |(), filter: Filter| async move {
             PageResponse::redirect(TEAM.url(("red team".to_owned(), filter)))
         })
+        .page(TAB, |(), (team, tab): (String, Tab)| async move {
+            member_page(&format!("{team} {tab:?}"), 0)
+        })
+        .page(
+            DEEP,
+            |(), (a, b, c, d, e, f): (i32, i32, i32, i32, i32, String)| async move {
+                member_page(&f, a + b + c + d + e)
+            },
+        )
         .page(OLD_MEMBER, |(), id: i32| async move {
             PageResponse::redirect(MEMBER.url(("old team".to_owned(), id)))
         })
@@ -308,4 +325,39 @@ async fn a_redirect_writes_the_search_parameters_and_leaves_out_none() {
         response.headers()["location"],
         "/teams/red%20team?page=1&q=%C3%A9"
     );
+}
+
+#[tokio::test]
+async fn an_enum_segment_parses_by_variant_name() {
+    let (status, body) = send(
+        Request::get("/tabs/red/Settings")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("red Settings"), "{body}");
+    let (status, _) = send(
+        Request::get("/tabs/red/settings")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(
+        TAB.url(("red".to_owned(), Tab::Overview)).as_str(),
+        "/tabs/red/Overview"
+    );
+}
+
+#[tokio::test]
+async fn a_route_takes_six_parameters() {
+    let (status, body) = send(
+        Request::get("/1/2/3/4/5/six")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("six #15"), "{body}");
 }

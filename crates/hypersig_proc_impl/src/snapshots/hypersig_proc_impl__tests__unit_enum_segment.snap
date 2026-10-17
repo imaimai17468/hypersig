@@ -1,0 +1,26 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_segment(quote! { pub enum Color { Red, Green, r#Type } })"
+---
+#[automatically_derived]
+impl ::hypersig::_private::Sealed for Color {}
+#[automatically_derived]
+impl ::hypersig::Segment for Color {
+    fn parse(segment: &str) -> ::core::option::Option<Self> {
+        match segment {
+            "Red" => ::core::option::Option::Some(Self::Red),
+            "Green" => ::core::option::Option::Some(Self::Green),
+            "Type" => ::core::option::Option::Some(Self::r#Type),
+            _ => ::core::option::Option::None,
+        }
+    }
+    fn write(&self) -> ::std::string::String {
+        ::std::string::String::from(
+            match self {
+                Self::Red => "Red",
+                Self::Green => "Green",
+                Self::r#Type => "Type",
+            },
+        )
+    }
+}
