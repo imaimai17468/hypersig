@@ -1,8 +1,8 @@
 # use hypersig::html::a;
 # use serde::{Deserialize, Serialize};
-use hypersig::{Expr, Route, Signals};
+use hypersig::{Expr, Route, Search, Signals};
 
-#[derive(Signals, Serialize, Deserialize)]
+#[derive(Signals, Search, Serialize, Deserialize)]
 struct Filter {
     q: String,
     page: i32,

@@ -1,11 +1,12 @@
-//! Token transformations behind `#[derive(Signals)]` and `#[derive(Segment)]`.
+//! Token transformations behind `#[derive(Signals)]`, `#[derive(Segment)]`, and `#[derive(Search)]`.
 //!
 //! This crate is a regular library so the expansion can be unit tested. The
 //! `hypersig_proc` crate forwards to it, and users reach both through `hypersig`.
 
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, quote_spanned};
 use syn::ext::IdentExt as _;
+use syn::spanned::Spanned as _;
 use syn::{Data, DeriveInput, Fields};
 
 /// Expands `#[derive(Signals)]` for the struct in `input`.
@@ -90,6 +91,65 @@ fn expand(input: TokenStream) -> syn::Result<TokenStream> {
         impl #name {
             #(#accessors)*
         }
+    })
+}
+
+/// Expands `#[derive(Search)]` for the struct in `input`.
+///
+/// The expansion implements `hypersig::_private::SearchFields` for the
+/// struct, with one bound per field that the field's type implements
+/// `hypersig::SearchValue`. A field of any other type fails that bound at the
+/// field's type. It defines no other item.
+///
+/// Rejected inputs, each with a compile error at the offending span: enums,
+/// unions, tuple and unit structs, and generic structs.
+#[must_use]
+pub fn derive_search(input: TokenStream) -> TokenStream {
+    match expand_search(input) {
+        Ok(tokens) => tokens,
+        Err(error) => error.to_compile_error(),
+    }
+}
+
+fn expand_search(input: TokenStream) -> syn::Result<TokenStream> {
+    let input: DeriveInput = syn::parse2(input)?;
+    if !input.generics.params.is_empty() {
+        return Err(syn::Error::new_spanned(
+            &input.generics,
+            "`Search` cannot be derived for a generic struct",
+        ));
+    }
+    let named = match &input.data {
+        Data::Struct(data) => match &data.fields {
+            Fields::Named(named) => named,
+            other => {
+                return Err(syn::Error::new_spanned(
+                    other,
+                    "`Search` needs a struct with named fields, because each field name becomes a query parameter",
+                ));
+            }
+        },
+        Data::Enum(data) => {
+            return Err(syn::Error::new_spanned(
+                data.enum_token,
+                "`Search` can only be derived for a struct",
+            ));
+        }
+        Data::Union(data) => {
+            return Err(syn::Error::new_spanned(
+                data.union_token,
+                "`Search` can only be derived for a struct",
+            ));
+        }
+    };
+    let bounds = named.named.iter().map(|field| {
+        let ty = &field.ty;
+        quote_spanned! {ty.span()=> #ty: ::hypersig::SearchValue}
+    });
+    let name = &input.ident;
+    Ok(quote! {
+        #[automatically_derived]
+        impl ::hypersig::_private::SearchFields for #name where #(#bounds,)* {}
     })
 }
 
@@ -200,7 +260,7 @@ const SEGMENT_SERDE: &str = "`#[serde(...)]` is not supported on a `Segment` enu
 
 #[cfg(test)]
 mod tests {
-    use super::{derive_segment, derive_signals};
+    use super::{derive_search, derive_segment, derive_signals};
     use quote::quote;
 
     fn expand(input: proc_macro2::TokenStream) -> String {
@@ -209,6 +269,10 @@ mod tests {
 
     fn expand_segment(input: proc_macro2::TokenStream) -> String {
         unparse(derive_segment(input))
+    }
+
+    fn expand_search(input: proc_macro2::TokenStream) -> String {
+        unparse(derive_search(input))
     }
 
     fn unparse(output: proc_macro2::TokenStream) -> String {
@@ -275,5 +339,17 @@ mod tests {
             #[serde(rename_all = "kebab-case")]
             enum E { A }
         }));
+    }
+
+    #[test]
+    fn named_struct_search() {
+        insta::assert_snapshot!(expand_search(quote! {
+            pub struct Filter { q: String, page: Option<i32> }
+        }));
+    }
+
+    #[test]
+    fn rejects_search_enum() {
+        insta::assert_snapshot!(expand_search(quote! { enum E { A } }));
     }
 }

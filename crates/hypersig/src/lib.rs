@@ -65,10 +65,10 @@ pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]
 pub use axum::{PageResponse, RequestError, RouterExt};
 pub use expr::{Comparable, Expr, IntoExpr, IntoStmt, Number, Stmt, Textual, if_else};
-pub use hypersig_proc::{Segment, Signals};
+pub use hypersig_proc::{Search, Segment, Signals};
 pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};
-pub use route::{Extends, Link, Params, Route, Search, Segment, Url};
+pub use route::{Extends, Link, Params, Route, Search, SearchValue, Segment, Url};
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 
 /// Typed atomic CSS, from the `hypersig_style` crate.
@@ -89,6 +89,7 @@ pub mod _private {
     #[cfg(feature = "axum")]
     pub use ::axum::Router;
 
+    pub use crate::route::SearchFields;
     pub use crate::route::sealed::Sealed;
     use crate::route::{Extends, Params, Route, Search};
     use crate::signal::{Path, Sig};

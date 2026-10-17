@@ -1,5 +1,5 @@
 error[E0277]: `Filter` cannot be the search parameters of a route
-  --> tests/ui/fail/search_not_signals.rs:14:1
+  --> tests/ui/fail/search_without_derive.rs:14:1
    |
 14 | / hypersig::routes! {
 15 | |     fn pages(Router<()>);
@@ -7,27 +7,27 @@ error[E0277]: `Filter` cannot be the search parameters of a route
 17 | | }
    | |_^ unsatisfied trait bound
    |
-help: the trait `Signals` is not implemented for `Filter`
-  --> tests/ui/fail/search_not_signals.rs:7:1
+help: the trait `hypersig::_private::SearchFields` is not implemented for `Filter`
+  --> tests/ui/fail/search_without_derive.rs:7:1
    |
  7 | struct Filter {
    | ^^^^^^^^^^^^^
-   = note: a route's search parameters are `()` or a struct with `#[derive(Signals)]`
-help: the trait `Signals` is implemented for `Blank`
-  --> tests/ui/fail/search_not_signals.rs:11:10
+   = note: a route's search parameters are `()` or a struct with `#[derive(Signals, Search)]`
+help: the trait `hypersig::Search` is implemented for `()`
+  --> src/route.rs
    |
-11 | #[derive(Signals, Serialize, Deserialize)]
-   |          ^^^^^^^
+   | impl Search for () {
+   | ^^^^^^^^^^^^^^^^^^
    = note: required for `Filter` to implement `hypersig::Search`
 note: required by a bound in `hypersig::_private::route`
   --> src/lib.rs
    |
    |     pub const fn route<P: Params, Q: Search>(path: &'static str) -> Route<P, Q> {
    |                                      ^^^^^^ required by this bound in `route`
-   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the derive macro `Signals` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0277]: `Filter` cannot be the search parameters of a route
-  --> tests/ui/fail/search_not_signals.rs:14:1
+  --> tests/ui/fail/search_without_derive.rs:14:1
    |
 14 | / hypersig::routes! {
 15 | |     fn pages(Router<()>);
@@ -38,17 +38,17 @@ error[E0277]: `Filter` cannot be the search parameters of a route
    | |_unsatisfied trait bound
    |   required by a bound introduced by this call
    |
-help: the trait `Signals` is not implemented for `Filter`
-  --> tests/ui/fail/search_not_signals.rs:7:1
+help: the trait `hypersig::_private::SearchFields` is not implemented for `Filter`
+  --> tests/ui/fail/search_without_derive.rs:7:1
    |
  7 | struct Filter {
    | ^^^^^^^^^^^^^
-   = note: a route's search parameters are `()` or a struct with `#[derive(Signals)]`
-help: the trait `Signals` is implemented for `Blank`
-  --> tests/ui/fail/search_not_signals.rs:11:10
+   = note: a route's search parameters are `()` or a struct with `#[derive(Signals, Search)]`
+help: the trait `hypersig::Search` is implemented for `()`
+  --> src/route.rs
    |
-11 | #[derive(Signals, Serialize, Deserialize)]
-   |          ^^^^^^^
+   | impl Search for () {
+   | ^^^^^^^^^^^^^^^^^^
    = note: required for `Filter` to implement `hypersig::Search`
 note: required by a bound in `hypersig::RouterExt::page`
   --> src/axum.rs
@@ -58,22 +58,22 @@ note: required by a bound in `hypersig::RouterExt::page`
 ...
    |         Q: Search + DeserializeOwned + Send + 'static,
    |            ^^^^^^ required by this bound in `RouterExt::page`
-   = note: this error originates in the macro `hypersig::routes` which comes from the expansion of the derive macro `Signals` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0599]: the method `path` exists for struct `Route<(), Filter>`, but its trait bounds were not satisfied
-  --> tests/ui/fail/search_not_signals.rs:25:18
+  --> tests/ui/fail/search_without_derive.rs:25:18
    |
  7 | struct Filter {
-   | ------------- doesn't satisfy `Filter: Signals` or `Filter: hypersig::Search`
+   | ------------- doesn't satisfy `Filter: hypersig::Search` or `Filter: hypersig::_private::SearchFields`
 ...
 25 |     let _ = FIND.path();
    |                  ^^^^ private field, not a method
    |
    = note: the following trait bounds were not satisfied:
-           `Filter: Signals`
+           `Filter: hypersig::_private::SearchFields`
            which is required by `Filter: hypersig::Search`
-note: the trait `Signals` must be implemented
-  --> src/signal.rs
+note: the trait `hypersig::_private::SearchFields` must be implemented
+  --> src/route.rs
    |
-   | pub trait Signals: Serialize + DeserializeOwned + Send + 'static {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | pub trait SearchFields: Signals {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

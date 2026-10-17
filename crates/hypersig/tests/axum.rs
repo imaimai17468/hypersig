@@ -5,7 +5,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt as _;
 use hypersig::html::{a, p};
-use hypersig::{Action, Page, PageResponse, Patches, Route, RouterExt, Segment, Signals};
+use hypersig::{Action, Page, PageResponse, Patches, Route, RouterExt, Search, Segment, Signals};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -59,7 +59,7 @@ enum Tab {
     Settings,
 }
 
-#[derive(Signals, Serialize, Deserialize)]
+#[derive(Signals, Search, Serialize, Deserialize)]
 struct Filter {
     q: String,
     page: i32,

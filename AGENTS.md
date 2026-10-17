@@ -9,7 +9,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | Path | What lives there |
 |---|---|
 | `crates/hypersig` | The library: `Signals`, `Sig`, `Expr`, `Stmt`, the HTML builder, `Action`, `Route`, `Fragment`, `Patches`, the axum integration, and the embedded runtime |
-| `crates/hypersig_proc` | `#[derive(Signals)]` and `#[derive(Segment)]` as a thin `proc-macro = true` shim |
+| `crates/hypersig_proc` | `#[derive(Signals)]`, `#[derive(Segment)]`, and `#[derive(Search)]` as a thin `proc-macro = true` shim |
 | `crates/hypersig_proc_impl` | The token transformations behind the derives, with their snapshot tests |
 | `crates/hypersig_style` | Typed atomic CSS: `Style`, `Sheet`, the value types, and the code `tests/generate.rs` writes from the MDN data in `data/`. Regenerate it with `HYPERSIG_GENERATE=overwrite cargo test -p hypersig_style --test generate` |
 | `crates/hypersig_ui` | Components styled after shadcn/ui on native elements and the WAI-ARIA patterns, with trybuild cases under `tests/ui/fail` |

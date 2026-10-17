@@ -1066,7 +1066,17 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                         (
                             "Search",
                             "trait.Search.html",
-                            "The search parameters of a `Route`: `()`, or a struct with `#[derive(Signals)]`.",
+                            "The search parameters of a `Route`: `()`, or a struct with `#[derive(Signals, Search)]`.",
+                        ),
+                        (
+                            "SearchValue",
+                            "trait.SearchValue.html",
+                            "A type one field of `Search` parameters holds: one value of the query string.",
+                        ),
+                        (
+                            "derive(Search)",
+                            "derive.Search.html",
+                            "Checks that each field of a struct can be one value of a query string.",
                         ),
                         (
                             "Extends",

@@ -153,7 +153,7 @@ let list = ul::<Team>().child(each(Team::members(), |member| {
 assert!(list.render().contains("/members/"));
 ```
 
-The second type of `Route<P, Q>` types the query string: `Q` is a struct with `#[derive(Signals)]`, and the links and the handler take `(P, Q)`. Following a link loads the next page from the server. A link to another site still goes through `attr("href", ...)`, unchecked.
+The second type of `Route<P, Q>` types the query string: `Q` is a struct with `#[derive(Signals, Search)]`, whose fields are each a string, a number, a `bool`, or an `Option` of one, and the links and the handler take `(P, Q)`. Following a link loads the next page from the server. A link to another site still goes through `attr("href", ...)`, unchecked.
 
 ## Styling
 

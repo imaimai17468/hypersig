@@ -724,20 +724,34 @@ tuple_params!(4: A a 0, B b 1, C c 2, D d 3);
 tuple_params!(5: A a 0, B b 1, C c 2, D d 3, E e 4);
 tuple_params!(6: A a 0, B b 1, C c 2, D d 3, E e 4, F f 5);
 
-/// The search parameters of a [`Route`]: `()`, or a struct with `#[derive(Signals)]`.
+/// The search parameters of a [`Route`]: `()`, or a struct with `#[derive(Signals, Search)]`.
 ///
 /// A struct's fields are written into the query string in the order of
 /// their names, as `?name=value&...`, and a field that is `None` is left
-/// out. A value is written as JavaScript's `String` writes it, so a field is
-/// a string, a number, a `bool`, or an `Option` of one. axum's `Query`
-/// reads the struct back on the server and answers 400 where it cannot.
+/// out. A value is written as JavaScript's `String` writes it.
+/// `#[derive(Search)]` requires each field's type to implement
+/// [`SearchValue`], so a field holds one value of the query string, and a
+/// list or a struct in a field is a compile error. axum's `Query` reads the
+/// struct back on the server and answers 400 where it cannot, such as for a
+/// value a field's `Deserialize` rejects.
+///
+/// ```
+/// use hypersig::{Search, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Search, Serialize, Deserialize)]
+/// struct Filter {
+///     q: String,
+///     page: Option<i32>,
+/// }
+/// ```
 ///
 /// The server and the browser compare field names by their UTF-8 bytes and
 /// UTF-16 units, which agree for ASCII names. A `#[serde(rename)]` to a name
 /// outside ASCII can put two fields in a different order on the two sides.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` cannot be the search parameters of a route",
-    note = "a route's search parameters are `()` or a struct with `#[derive(Signals)]`"
+    note = "a route's search parameters are `()` or a struct with `#[derive(Signals, Search)]`"
 )]
 pub trait Search: sealed::SealedSearch + Sized {
     /// Whether the route has a query string.
@@ -784,7 +798,7 @@ impl Search for () {
     }
 }
 
-impl<Q: Signals> Search for Q {
+impl<Q: SearchFields> Search for Q {
     const TYPED: bool = true;
     type Args<P: Params> = P::With<Q>;
 
@@ -804,6 +818,34 @@ impl<Q: Signals> Search for Q {
         query_string(&serde_json::to_value(self).expect("a Signals struct serializes to JSON"))
     }
 }
+
+/// A struct whose fields are each a [`SearchValue`], implemented by `#[derive(Search)]`.
+#[doc(hidden)]
+pub trait SearchFields: Signals {}
+
+/// A type one field of [`Search`] parameters holds: one value of the query string.
+///
+/// It is implemented for every [`Segment`] (the integers, `String`, and an
+/// enum with `#[derive(Segment)]`), for `f64`, `f32`, and `bool`, and for an
+/// `Option` of any of them, which the query string leaves out when it is
+/// `None`.
+///
+/// Implement it for your own type only where serde writes the type as one of
+/// these, such as a newtype with `#[serde(try_from = "i32", into = "i32")]`
+/// that checks its value when the server reads it. The compiler does not
+/// check that claim, and a type that serde writes as a list or an object
+/// gives links whose query string the server answers with 400.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot be a field of search parameters",
+    note = "a search field is a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` of one, because the query string holds one text value per field"
+)]
+pub trait SearchValue {}
+
+impl<T: Segment> SearchValue for T {}
+impl SearchValue for f64 {}
+impl SearchValue for f32 {}
+impl SearchValue for bool {}
+impl<T: SearchValue> SearchValue for Option<T> {}
 
 /// Parameters that start with the parameters `P` of a parent [`Route`].
 ///
@@ -838,7 +880,7 @@ extends!((A, B, C, D, E, F); [A, B, C, D, E, F] => (), A, (A, B), (A, B, C), (A,
 pub(crate) mod sealed {
     pub trait SealedSearch {}
     impl SealedSearch for () {}
-    impl<Q: crate::signal::Signals> SealedSearch for Q {}
+    impl<Q: super::SearchFields> SealedSearch for Q {}
 
     pub trait Sealed {}
     impl Sealed for () {}

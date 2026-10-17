@@ -104,7 +104,7 @@ pub fn pages(site: Site) -> Part {
             heading("Search parameters"),
             para(
                 site,
-                "A route's second type, `Route<P, Q>`, types its query string. `Q` is a struct with `#[derive(Signals)]`, and a link and the handler then take `(P, Q)`, or `Q` alone for a path without parameters. A field is a string, a number, a `bool`, or an `Option` of one. The query string lists the fields in the order of their names and leaves out a field that is `None`, on the server and in the browser alike. A query string that does not deserialize into `Q` gets a 400.",
+                "A route's second type, `Route<P, Q>`, types its query string. `Q` is a struct with `#[derive(Signals, Search)]`, and a link and the handler then take `(P, Q)`, or `Q` alone for a path without parameters. `#[derive(Search)]` requires each field to be a [`SearchValue`](api:hypersig/trait.SearchValue.html): a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` of one, so a list in a field is a compile error. A field whose type checks its value in `Deserialize`, such as a newtype with `#[serde(try_from = \"i32\")]`, validates the query string, and an `Option` field with `unwrap_or` in the handler gives a default. The query string lists the fields in the order of their names and leaves out a field that is `None`, on the server and in the browser alike. A query string that does not deserialize into `Q` gets a 400.",
             ),
             show(Snippet::SearchParams),
             heading("Redirects and navigation"),

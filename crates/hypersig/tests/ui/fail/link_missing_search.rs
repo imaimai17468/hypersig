@@ -1,10 +1,10 @@
 //! A link to a route with search parameters that passes only the path's.
 
 use hypersig::html::a;
-use hypersig::{Page, Route, Signals};
+use hypersig::{Page, Route, Search, Signals};
 use serde::{Deserialize, Serialize};
 
-#[derive(Signals, Serialize, Deserialize)]
+#[derive(Signals, Search, Serialize, Deserialize)]
 struct Filter {
     page: i32,
 }

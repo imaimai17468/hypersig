@@ -1,0 +1,10 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_search(quote! { pub struct Filter { q: String, page: Option<i32> } })"
+---
+#[automatically_derived]
+impl ::hypersig::_private::SearchFields for Filter
+where
+    String: ::hypersig::SearchValue,
+    Option<i32>: ::hypersig::SearchValue,
+{}

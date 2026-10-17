@@ -13,7 +13,9 @@ use hypersig::html::{
 };
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
-use hypersig::{Action, Expr, Fragment, NodeRef, Page, Patches, Route, Signals, Stmt, if_else};
+use hypersig::{
+    Action, Expr, Fragment, NodeRef, Page, Patches, Route, Search, Signals, Stmt, if_else,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -589,7 +591,7 @@ struct Member {
     id: i32,
 }
 
-#[derive(Signals, Serialize, Deserialize, Clone)]
+#[derive(Signals, Search, Serialize, Deserialize, Clone)]
 struct Filter {
     q: String,
     page: i32,

@@ -1,4 +1,4 @@
-//! Search parameters that are not a `#[derive(Signals)]` struct.
+//! Search parameters without `#[derive(Signals, Search)]`.
 
 use hypersig::{Page, Route, Signals};
 use serde::{Deserialize, Serialize};
