@@ -217,8 +217,8 @@ pub fn style(site: Site) -> String {
                         site.t(L { en: "As in Panda CSS and Tailwind CSS, each declaration is one class, and the page writes only the rules its elements use.", ja: "Panda CSS や Tailwind CSS と同じく、宣言 1 つが 1 つのクラスになり、ページは要素が使うルールだけを書き出します。" }),
                     ),
                     (
-                        site.t(L { en: "Follows the signals", ja: "シグナルに合わせて変わる" }),
-                        site.t(L { en: "`css_when` and `css_match` switch styles with the page's signals, and a patch brings the rules of the elements it adds.", ja: "`css_when` と `css_match` はページのシグナルに合わせてスタイルを切り替えます。差分は、足す要素のルールも一緒に運びます。" }),
+                        site.t(L { en: "Changes with the signals", ja: "シグナルに合わせて変わる" }),
+                        site.t(L { en: "`css_when` and `css_match` switch styles with the page's signals, and a patch includes the rules of the elements it adds.", ja: "`css_when` と `css_match` はページのシグナルに合わせてスタイルを切り替えます。差分には足す要素のルールも含まれます。" }),
                     ),
                 ],
             ),
@@ -239,7 +239,7 @@ pub fn style(site: Site) -> String {
                 [
                     para(
                         site,
-                        L { en: "The crate is reached as `hypersig::style`, and an `El` takes a `Style` with `css`. The components of `hypersig_ui` are styled with it.", ja: "このクレートは `hypersig::style` から使い、`El` は `css` で `Style` を受け取ります。`hypersig_ui` のコンポーネントも、これでスタイルを付けています。" },
+                        L { en: "The crate is reached as `hypersig::style`, and an `El` takes a `Style` with `css`. The components of `hypersig_ui` are styled with it.", ja: "このクレートは `hypersig::style` から使い、`El` は `css` で `Style` を受け取ります。`hypersig_ui` のコンポーネントもこれでスタイルを付けています。" },
                     ),
                     two_cards(
                         site,
@@ -279,8 +279,8 @@ pub fn i18n(site: Site) -> String {
                     ja: "コンパイラが検査する翻訳",
                 }),
                 site.t(L {
-                    en: "Each text holds its translations in one value, so a text without one of them fails to compile. The language is part of each page's route, and `/` sends the visitor to the language their browser asks for.",
-                    ja: "1 つの文はその訳を 1 つの値にまとめて持つので、どれかの訳が欠けた文はコンパイルエラーになります。言語は各ページのルートの一部で、`/` は訪問者を、ブラウザが求める言語のページへ送ります。",
+                    en: "Each text holds its translations in one value, so a text without one of them fails to compile. The language is part of each page's route, and `/` redirects to the page in the language the browser asks for.",
+                    ja: "1 つの文はその訳を 1 つの値にまとめて持つので、どれかの訳が欠けた文はコンパイルエラーになります。言語は各ページのルートの一部で、`/` はブラウザが求める言語のページへリダイレクトします。",
                 }),
                 &[
                     (
@@ -339,8 +339,8 @@ pub fn i18n(site: Site) -> String {
                     para(
                         site,
                         L {
-                            en: "Leaving out the Japanese of a text stops the build at that line. [Overview](i18n/overview/) shows how the languages are declared.",
-                            ja: "文の日本語を書き忘れると、その行でビルドが止まります。言語の宣言のしかたは [概要](i18n/overview/) で説明します。",
+                            en: "A text without its Japanese is a compile error at that line. [Overview](i18n/overview/) shows how the languages are declared.",
+                            ja: "文の日本語を書き忘れると、その行がコンパイルエラーになります。言語の宣言のしかたは [概要](i18n/overview/) で説明します。",
                         },
                     ),
                     show(Snippet::I18nMissing),
@@ -357,7 +357,7 @@ pub fn i18n(site: Site) -> String {
                         site,
                         L {
                             en: "This site is translated with it: every page is rendered once per language from the same Rust function.",
-                            ja: "このサイトも、このクレートで翻訳しています。どのページも、同じ Rust の関数から言語ごとに 1 回ずつ描いています。",
+                            ja: "このサイトもこのクレートで翻訳しています。どのページも同じ Rust の関数から言語ごとに 1 回ずつレンダリングしています。",
                         },
                     ),
                     two_cards(
@@ -367,7 +367,7 @@ pub fn i18n(site: Site) -> String {
                                 Library::Framework,
                                 "hypersig",
                                 site.t(L {
-                                    en: "The framework the routes and pages come from.",
+                                    en: "The framework that provides the routes and pages.",
                                     ja: "ルートとページを提供するフレームワーク本体です。",
                                 }),
                             ),
@@ -397,7 +397,7 @@ pub fn components(site: Site) -> String {
                 site,
                 site.t(L { en: "The `hypersig_ui` crate", ja: "`hypersig_ui` クレート" }),
                 site.t(L { en: "Accessible components, styled after shadcn/ui", ja: "shadcn/ui の見た目を持つ、アクセシブルなコンポーネント" }),
-                site.t(L { en: "Buttons, fields, pickers, tabs, dialogs, menus, tooltips, and toasts on the browser's native elements and the WAI-ARIA Authoring Practices. Each returns an `El`, so it takes handlers and children like any other element.", ja: "ボタン、入力欄、選択、タブ、ダイアログ、メニュー、ツールチップ、トーストを、ブラウザのネイティブ要素と WAI-ARIA Authoring Practices の上に作っています。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を足せます。" }),
+                site.t(L { en: "Buttons, fields, pickers, tabs, dialogs, menus, tooltips, and toasts, built on the browser's native elements and following the WAI-ARIA Authoring Practices. Each returns an `El`, so it takes handlers and children like any other element.", ja: "ボタン、入力欄、選択、タブ、ダイアログ、メニュー、ツールチップ、トーストを、ブラウザのネイティブ要素を使い、WAI-ARIA Authoring Practices に沿って作っています。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を足せます。" }),
                 &[
                     (
                         site.t(L { en: "Get started", ja: "はじめる" }),
@@ -412,14 +412,14 @@ pub fn components(site: Site) -> String {
                 &[
                     (
                         site.t(L { en: "Native elements first", ja: "ネイティブ要素を先に使う" }),
-                        site.t(L { en: "A `<button>`, a `<select>`, a `<details>`, a `<dialog>`, and `popover` carry the behavior the browser already has.", ja: "`<button>`、`<select>`、`<details>`、`<dialog>`、`popover` が、ブラウザにもともとある振る舞いを受け持ちます。" }),
+                        site.t(L { en: "The browser already gives `<button>`, `<select>`, `<details>`, `<dialog>`, and `popover` their behavior, and the components use it as it is.", ja: "`<button>`、`<select>`、`<details>`、`<dialog>`、`popover` にはブラウザがもともと持つ振る舞いがあり、コンポーネントはそれをそのまま使います。" }),
                     ),
                     (
-                        site.t(L { en: "The keyboard of WAI-ARIA", ja: "WAI-ARIA のキーボード操作" }),
+                        site.t(L { en: "WAI-ARIA keyboard interaction", ja: "WAI-ARIA のキーボード操作" }),
                         site.t(L { en: "Tabs, listbox options, and menu items move with the arrow keys, Home, and End, and a combobox keeps focus in its text field.", ja: "タブ、リストボックスの選択肢、メニューの項目の間は、矢印キー、Home、End で移ります。コンボボックスはフォーカスをテキスト欄に置いたままにします。" }),
                     ),
                     (
-                        site.t(L { en: "Contrast for WCAG 2.2 AA", ja: "WCAG 2.2 AA を満たすコントラスト" }),
+                        site.t(L { en: "Contrast that meets WCAG 2.2 AA", ja: "WCAG 2.2 AA を満たすコントラスト" }),
                         site.t(L { en: "shadcn/ui's zinc theme, with a control's border at 3:1, secondary text at 4.5:1, and focus drawn as a solid outline.", ja: "shadcn/ui の zinc テーマをもとに、コントロールの境界線を 3:1、補足のテキストを 4.5:1 にし、フォーカスを単色の outline で描きます。" }),
                     ),
                 ],
@@ -430,7 +430,7 @@ pub fn components(site: Site) -> String {
                 [
                     para(
                         site,
-                        L { en: "A `const` handle ties the dialog to the buttons that open and close it, and the browser opens it as a modal through invoker commands.", ja: "`const` のハンドルが、ダイアログとそれを開閉するボタンを結び付けます。ブラウザは invoker commands を通して、ダイアログをモーダルとして開きます。" },
+                        L { en: "A `const` handle connects the dialog with the buttons that open and close it, and the browser opens it as a modal through invoker commands.", ja: "`const` のハンドルで、ダイアログとそれを開閉するボタンを対応付けます。ブラウザは invoker commands を通して、ダイアログをモーダルとして開きます。" },
                     ),
                     demo::show(site, Demo::Dialog),
                 ],
@@ -450,7 +450,7 @@ pub fn components(site: Site) -> String {
                         (
                             Library::Style,
                             "hypersig_style",
-                            site.t(L { en: "The typed styles the components are built with, which restyle them too.", ja: "コンポーネントを作っている型付きのスタイルです。コンポーネントの見た目を変えるのにも使えます。" }),
+                            site.t(L { en: "The typed styles the components are built with, which can also change how they look.", ja: "コンポーネントを作っている型付きのスタイルです。コンポーネントの見た目を変えるのにも使えます。" }),
                         ),
                     ],
                 )],

@@ -21,7 +21,7 @@ pub fn page(site: Site) -> Page<Weather> {
     let fahrenheit = celsius * 1.8 + 32.0;
     Page::new(
         site.t(L {
-            en: "Weather",
+            en: "Temperature",
             ja: "気温",
         }),
         Weather { celsius: 21.0 },

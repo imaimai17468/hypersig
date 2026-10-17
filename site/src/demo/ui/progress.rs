@@ -59,7 +59,7 @@ pub fn page(site: Site) -> Page<Upload> {
                             .on_click(loading.toggle())
                             .text(site.t(L {
                                 en: "Toggle loading",
-                                ja: "読み込み中を切り替える",
+                                ja: "読み込み中の表示を切り替える",
                             })),
                     ),
             )

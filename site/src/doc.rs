@@ -322,7 +322,7 @@ pub const COMPONENTS: &[Group] = &[
     Group {
         title: L {
             en: "Overlays",
-            ja: "重ねて出すもの",
+            ja: "オーバーレイ",
         },
         docs: &[
             Doc::Components(Component::Dialog),
@@ -377,8 +377,8 @@ pub const STYLE: &[Group] = &[
     },
     Group {
         title: L {
-            en: "Escape hatches",
-            ja: "避難ハッチ",
+            en: "Opting out of type checks",
+            ja: "型の検査を外す",
         },
         docs: &[Doc::Style(StylePage::Unchecked)],
     },
@@ -505,14 +505,17 @@ impl Doc {
             Self::Learn(page) => match page {
                 Learn::Why => ("Why hypersig", "hypersig を選ぶ理由"),
                 Learn::QuickStart => ("Quick start", "クイックスタート"),
-                Learn::DescribingThePage => ("Describing the page", "ページを組み立てる"),
+                Learn::DescribingThePage => ("Building the page", "ページを組み立てる"),
                 Learn::Signals => ("Signals", "シグナル"),
                 Learn::Expressions => ("Expressions and statements", "式と文"),
                 Learn::Lists => ("Lists", "リスト"),
                 Learn::Server => ("Talking to the server", "サーバーとのやり取り"),
                 Learn::Pages => ("Pages and links", "ページとリンク"),
                 Learn::Styling => ("Styling", "スタイル"),
-                Learn::EscapeHatches => ("Escape hatches", "避難ハッチ"),
+                Learn::EscapeHatches => (
+                    "When bindings and statements are not enough",
+                    "束縛と文で足りないとき",
+                ),
             },
             Self::Reference(page) => match page {
                 Reference::Overview => ("API reference", "API リファレンス"),

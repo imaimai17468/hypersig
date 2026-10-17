@@ -80,7 +80,7 @@ pub fn render(site: Site) -> String {
                     ),
                     (
                         site.t(L {
-                            en: "Optimistic updates for free",
+                            en: "Optimistic updates with no extra code",
                             ja: "楽観的更新に追加のコードが要らない",
                         }),
                         site.t(L {
@@ -119,8 +119,8 @@ pub fn render(site: Site) -> String {
                                 Library::Components,
                                 "hypersig_ui",
                                 site.t(L {
-                                    en: "Accessible components styled after shadcn/ui, on native elements and the WAI-ARIA Authoring Practices.",
-                                    ja: "shadcn/ui の見た目を持つアクセシブルなコンポーネントです。ネイティブ要素と WAI-ARIA Authoring Practices の上に作っています。",
+                                    en: "Accessible components styled after shadcn/ui, built on native elements and following the WAI-ARIA Authoring Practices.",
+                                    ja: "shadcn/ui の見た目を持つアクセシブルなコンポーネントです。ネイティブ要素を使い、WAI-ARIA Authoring Practices に沿って作っています。",
                                 }),
                             ),
                             (
@@ -145,8 +145,8 @@ pub fn render(site: Site) -> String {
                     para(
                         site,
                         L {
-                            en: "The signal struct holds the page's state. `Counter::count()` is a typed reference to its field, and `count.set(count + 1)` is a statement the browser runs on a click without asking the server. The page renders on the server with the count already in place, so it shows before the runtime loads.",
-                            ja: "ページの状態はシグナル構造体が持ちます。`Counter::count()` はそのフィールドへの型付きの参照で、`count.set(count + 1)` はクリックのたびにブラウザがサーバーに問い合わせずに実行する文です。ページはカウントを埋めた状態でサーバーが描くので、ランタイムを読み込む前から表示されます。",
+                            en: "The signal struct holds the page's state. `Counter::count()` is a typed reference to its field, and `count.set(count + 1)` is a statement the browser runs on a click without asking the server. The server renders the page with the count already filled in, so the page shows before the runtime loads.",
+                            ja: "ページの状態はシグナル構造体が持ちます。`Counter::count()` はそのフィールドへの型付きの参照で、`count.set(count + 1)` はクリックのたびにブラウザがサーバーに問い合わせずに実行する文です。サーバーがカウントを入れた状態でページをレンダリングするので、ページはランタイムを読み込む前から表示されます。",
                         },
                     ),
                     demo::show(site, Demo::Counter),
@@ -180,8 +180,8 @@ fn comparison(site: Site) -> Part {
             para(
                 site,
                 L {
-                    en: "Adding a page to a Rust server leaves two choices today. Leptos type-checks what passes between the page and the server, and needs wasm and its build. htmx needs no build, but the URLs and expressions written in its attributes are not type-checked.",
-                    ja: "Rust のサーバーに画面を付けようとすると、今は 2 通りの選び方になります。Leptos なら画面とサーバーの間で型が検査される代わりに、wasm とそのビルドが要ります。htmx ならビルドは要りませんが、属性に書く URL や式は型で検査されません。",
+                    en: "There are two ways today to add a page to a Rust server. Leptos type-checks what passes between the page and the server, and needs wasm and its build. htmx needs no build, but the URLs and expressions written in its attributes are not type-checked.",
+                    ja: "Rust のサーバーに画面を付けるには、今は 2 通りの選び方があります。Leptos なら画面とサーバーの間で型が検査される代わりに、wasm とそのビルドが要ります。htmx ならビルドは要りませんが、属性に書く URL や式は型で検査されません。",
                 },
             ),
             table_of(

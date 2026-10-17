@@ -45,21 +45,21 @@ pub fn page(site: Site) -> Page<Billing> {
                         Plan::Hobby,
                         site.t(L {
                             en: "Hobby",
-                            ja: "ホビー",
+                            ja: "Hobby",
                         }),
                     ),
                     (
                         Plan::Pro,
                         site.t(L {
                             en: "Pro",
-                            ja: "プロ",
+                            ja: "Pro",
                         }),
                     ),
                     (
                         Plan::Team,
                         site.t(L {
                             en: "Team",
-                            ja: "チーム",
+                            ja: "Team",
                         }),
                     ),
                 ],
