@@ -193,6 +193,9 @@ impl<S, T> fmt::Debug for Column<S, T> {
 ///   them. The header follows the WAI-ARIA checkbox pattern with
 ///   `aria-checked="mixed"` while some rows are selected.
 ///
+/// A page past the last row, which the list reaches by shrinking from
+/// outside the table, returns the table to its first page.
+///
 /// The header checkbox selects every row of the list, including rows the
 /// filter or the page hides. Rows are counted on each change of the list,
 /// the filter, or the page, and the work grows with the square of the
@@ -406,7 +409,12 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             ),
         );
         if let Some(size) = page_size {
-            out = out.child(pager(page, shown, size));
+            // The list can shrink from outside the table, through a patch or
+            // a statement of the page, and leave the page past its last row.
+            let past_end = page.gt(0).and((page * size).ge(shown.clone()));
+            out = out
+                .effect(Stmt::when(page.lt(0).or(past_end), page.set(0)))
+                .child(pager(page, shown, size));
         }
         out
     }

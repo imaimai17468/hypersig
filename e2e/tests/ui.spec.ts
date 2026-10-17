@@ -379,3 +379,16 @@ test("a data table hides a column while its signal is false", async ({ page }) =
   await expect(status).toBeHidden();
   await expect(payments(page).locator("tbody tr:visible").first().locator("td:visible")).toHaveCount(3);
 });
+
+test("a data table returns to its first page when the list shrinks past the page shown", async ({ page }) => {
+  const next = page.getByRole("button", { name: "Next page" });
+  await next.click();
+  await next.click();
+  await expect(page.getByText("11–12 / 12")).toBeVisible();
+  for (const row of await payments(page).getByRole("checkbox", { name: "Select row" }).all()) {
+    if (await row.isVisible()) await row.check({ force: true });
+  }
+  await page.getByRole("button", { name: "Delete selected" }).click();
+  await expect(page.getByText("1–5 / 10")).toBeVisible();
+  expect(await emails(page)).toHaveLength(5);
+});

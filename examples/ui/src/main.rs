@@ -561,7 +561,18 @@ fn payments() -> El<Gallery> {
             .sort_by(|payment| payment.at(Payment::amount())),
     );
     panel("Data table")
-        .child(switch("Show the status column", Gallery::show_status()))
+        .child(
+            div()
+                .css(wrap(rem(1)))
+                .child(switch("Show the status column", Gallery::show_status()))
+                .child(
+                    button(ButtonVariant::Outline, ButtonSize::Sm)
+                        .on_click(
+                            Gallery::payments().retain(|payment| !payment.at(Payment::selected())),
+                        )
+                        .text("Delete selected"),
+                ),
+        )
         .child(table)
 }
 
