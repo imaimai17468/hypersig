@@ -92,18 +92,19 @@ pub fn checkbox<S, R>(text: impl Into<String>, checked: Sig<S, bool, R>) -> El<S
 ///
 /// `input` comes from the caller, which names it where no `<label>` holds it.
 pub(crate) fn check_control<S, R>(input: El<S>, checked: Sig<S, bool, R>) -> El<S> {
+    check_mark(input.bind(checked))
+}
+
+/// `input` as a checkbox under a drawn box, for an input whose checked
+/// state its caller binds.
+pub(crate) fn check_mark<S>(input: El<S>) -> El<S> {
     let mark = span()
         .attr("aria-hidden", "true")
         .css(check_box().on(Condition::Peer(PseudoClass::Checked), check_box_checked()))
         .child(icon(icon::CHECK, rem(0.875)));
     span()
         .css(holder(rem(1)))
-        .child(
-            input
-                .attr("type", "checkbox")
-                .css(hidden_input())
-                .bind(checked),
-        )
+        .child(input.attr("type", "checkbox").css(hidden_input()))
         .child(mark)
 }
 

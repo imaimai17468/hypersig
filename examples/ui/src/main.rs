@@ -81,7 +81,6 @@ struct Payment {
     email: String,
     status: String,
     amount: f64,
-    selected: bool,
 }
 
 /// One row of the table the server pages.
@@ -131,10 +130,12 @@ struct Gallery {
     next_toast: i32,
     payments: Vec<Payment>,
     payments_table: TableState,
+    chosen_payments: Vec<i32>,
     show_status: bool,
     orders: Vec<Order>,
     orders_total: i32,
     orders_table: TableState,
+    chosen_orders: Vec<i32>,
     months: Vec<Month>,
     browsers: Vec<Browser>,
 }
@@ -702,7 +703,9 @@ fn payments() -> El<Gallery> {
         Gallery::payments(),
         |payment| payment.at(Payment::id()),
     )
-    .selectable(Payment::selected())
+    .selectable(Gallery::chosen_payments(), |payment| {
+        payment.at(Payment::id())
+    })
     .filter("Filter payments", |payment| {
         payment
             .at(Payment::email())
@@ -729,7 +732,13 @@ fn payments() -> El<Gallery> {
                 .child(
                     button(ButtonVariant::Outline, ButtonSize::Sm)
                         .on_click(
-                            Gallery::payments().retain(|payment| !payment.at(Payment::selected())),
+                            Gallery::payments()
+                                .retain(|payment| {
+                                    Gallery::chosen_payments()
+                                        .count(|id| id.value().equals(payment.at(Payment::id())))
+                                        .equals(0)
+                                })
+                                .then(Gallery::chosen_payments().clear()),
                         )
                         .text("Delete selected"),
                 ),
@@ -738,23 +747,29 @@ fn payments() -> El<Gallery> {
 }
 
 fn server_table() -> El<Gallery> {
-    panel("Server table").child(
-        ServerTable::new(
-            "Orders",
-            Gallery::orders_table(),
-            Gallery::orders(),
-            |order| order.at(Order::id()),
-            ORDERS.call_with(Gallery::orders_table()),
+    panel("Server table")
+        .child(
+            p().id("chosen-orders")
+                .bind_text(Gallery::chosen_orders().len().to_text().concat(" selected")),
         )
-        .filter("Filter orders")
-        .paginate(5, Gallery::orders_total())
-        .column(Column::number("Id", Order::id()))
-        .sortable_column(Column::text("Email", Order::email()), &OrderBy::Email)
-        .sortable_column(
-            Column::formatted("Amount", Order::amount(), DOLLARS),
-            &OrderBy::Amount,
-        ),
-    )
+        .child(
+            ServerTable::new(
+                "Orders",
+                Gallery::orders_table(),
+                Gallery::orders(),
+                |order| order.at(Order::id()),
+                ORDERS.call_with(Gallery::orders_table()),
+            )
+            .selectable(Gallery::chosen_orders(), |order| order.at(Order::id()))
+            .filter("Filter orders")
+            .paginate(5, Gallery::orders_total())
+            .column(Column::number("Id", Order::id()))
+            .sortable_column(Column::text("Email", Order::email()), &OrderBy::Email)
+            .sortable_column(
+                Column::formatted("Amount", Order::amount(), DOLLARS),
+                &OrderBy::Amount,
+            ),
+        )
 }
 
 /// The 42 orders the server holds. The table receives five at a time.
@@ -821,7 +836,6 @@ fn sample_payments() -> Vec<Payment> {
             email: email.to_owned(),
             status: status.to_owned(),
             amount,
-            selected: false,
         })
         .collect()
 }
@@ -856,10 +870,12 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             next_toast: 1,
             payments: sample_payments(),
             payments_table: TableState::default(),
+            chosen_payments: Vec::new(),
             show_status: true,
             orders,
             orders_total,
             orders_table: TableState::default(),
+            chosen_orders: Vec::new(),
             months: first_half(),
             browsers: [
                 ("Chrome", 275),

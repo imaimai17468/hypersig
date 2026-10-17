@@ -1008,8 +1008,8 @@ fn component_page(page: Component) -> Page {
                     ja: "見出しに `scope=\"col\"` を付けた `<table>` です。並べ替えられる列の見出しはボタンを持ち、その列で昇順か降順に並んでいるか、並んでいないかを `aria-sort` で伝えます。見出しのチェックボックスは `role=\"checkbox\"` のボタンで、一部の行が選ばれている間は `aria-checked` が `mixed` になります。ネイティブのチェックボックスの中間状態はプロパティで、属性からは設定できないためです。",
                 },
                 L {
-                    en: "A column is built from a field of the row type, so a field of another struct does not compile, and the key that `sortable_column` sorts by must be a number or a string. The table keeps its filter text, page, and sort column in a `TableState` field of the page's signals, and sorting reorders the list signal itself.",
-                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。`sortable_column` で並べ替えるキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。",
+                    en: "A column is built from a field of the row type, so a field of another struct does not compile, and the key that `sortable_column` sorts by must be a number or a string. The table keeps its filter text, page, and sort column in a `TableState` field of the page's signals, and sorting reorders the list signal itself. The selection is a list of the selected rows' keys in another signal of the page, so the row type holds no field for it and a `ServerTable` keeps it across pages.",
+                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。`sortable_column` で並べ替えるキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。選択は、選んだ行のキーのリストとしてページの別のシグナルに持つので、行の型に選択用のフィールドは要りません。`ServerTable` ではページを移っても選択が残ります。",
                 },
                 L {
                     en: "The browser counts the rows on each change, and with a filter and pagination both on, the work grows with the square of the number of rows. A list of thousands of rows belongs in a `ServerTable`. Its filter field, sortable headers, and page buttons write the `TableState` and then call an action with it, and the action answers with a patch of the page's rows and the total. A sortable column takes an enum with `#[derive(Segment)]` as its key, and the server reads it back from the state with `TableState::sorting`. The demo below runs in the browser alone, since this site has no server, and `examples/ui` has a `ServerTable` beside its `DataTable`.",
@@ -1067,8 +1067,8 @@ fn component_page(page: Component) -> Page {
                     "selectable",
                     "hypersig_ui/struct.DataTable.html#method.selectable",
                     L {
-                        en: "Adds a first column of checkboxes bound to the field `selected` of each row.",
-                        ja: "各行のフィールド `selected` に結び付いたチェックボックスの列を先頭に足します。",
+                        en: "Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.",
+                        ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に足します。",
                     },
                 ),
                 (
@@ -1149,6 +1149,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "Adds `column`, whose header asks the server to sort by `key`, after the columns added so far.",
                         ja: "見出しでサーバーに `key` での並べ替えを求める列 `column` を、それまでに足した列の後ろに足します。",
+                    },
+                ),
+                (
+                    "ServerTable::selectable",
+                    "hypersig_ui/struct.ServerTable.html#method.selectable",
+                    L {
+                        en: "Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.",
+                        ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に足します。",
                     },
                 ),
                 (

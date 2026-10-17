@@ -396,7 +396,7 @@ test("a data table returns to its first page when the list shrinks past the page
 
 const orders = (page: import("@playwright/test").Page) => page.locator("section", { has: page.getByRole("heading", { name: "Server table" }) });
 const orderEmails = (page: import("@playwright/test").Page) =>
-  orders(page).locator("tbody tr:visible td:nth-child(2)").allTextContents();
+  orders(page).locator("tbody tr:visible td:nth-child(3)").allTextContents();
 
 test("a server table asks the server for the next page", async ({ page }) => {
   await expect(orders(page).getByText("1–5 / 42")).toBeVisible();
@@ -411,10 +411,10 @@ test("a server table asks the server for the next page", async ({ page }) => {
   await expect(previous).toBeDisabled();
   await orders(page).getByRole("button", { name: "Next page" }).click();
   await expect(orders(page).getByText("6–10 / 42")).toBeVisible();
-  await expect(orders(page).locator("tbody tr:visible td:nth-child(2)").first()).toHaveText("customer06@example.com");
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("customer06@example.com");
   await expect(orders(page).locator("tbody tr:visible")).toHaveCount(5);
   await previous.click();
-  await expect(orders(page).locator("tbody tr:visible td:nth-child(2)").first()).toHaveText("customer01@example.com");
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("customer01@example.com");
 });
 
 test("a server table sorts on the server and returns to the first page", async ({ page }) => {
@@ -424,11 +424,33 @@ test("a server table sorts on the server and returns to the first page", async (
   await amount.getByRole("button").click();
   await expect(amount).toHaveAttribute("aria-sort", "ascending");
   await expect(orders(page).getByText("1–5 / 42")).toBeVisible();
-  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("$30.50");
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(4)").first()).toHaveText("$30.50");
   await amount.getByRole("button").click();
   await expect(amount).toHaveAttribute("aria-sort", "descending");
-  await expect(orders(page).locator("tbody tr:visible td:nth-child(3)").first()).toHaveText("$990.50");
+  await expect(orders(page).locator("tbody tr:visible td:nth-child(4)").first()).toHaveText("$990.50");
   await expect(payments(page).locator("tbody tr:visible td:nth-child(4)").first()).toHaveText("$316.00");
+});
+
+test("a server table keeps the selected keys while the visitor moves between pages", async ({ page }) => {
+  const all = orders(page).getByRole("checkbox", { name: "Select all rows" });
+  const rows = orders(page).getByRole("checkbox", { name: "Select row" });
+  const count = orders(page).locator("#chosen-orders");
+  await rows.first().check({ force: true });
+  await expect(count).toHaveText("1 selected");
+  await expect(all).toHaveAttribute("aria-checked", "mixed");
+  await orders(page).getByRole("button", { name: "Next page" }).click();
+  await expect(orders(page).getByText("6–10 / 42")).toBeVisible();
+  await expect(all).toHaveAttribute("aria-checked", "false");
+  await all.click();
+  await expect(count).toHaveText("6 selected");
+  await expect(all).toHaveAttribute("aria-checked", "true");
+  await orders(page).getByRole("button", { name: "Previous page" }).click();
+  await expect(orders(page).getByText("1–5 / 42")).toBeVisible();
+  await expect(rows.first()).toBeChecked();
+  await expect(all).toHaveAttribute("aria-checked", "mixed");
+  await orders(page).getByRole("button", { name: "Next page" }).click();
+  await all.click();
+  await expect(count).toHaveText("1 selected");
 });
 
 test("a server table filters on the server once typing pauses", async ({ page }) => {

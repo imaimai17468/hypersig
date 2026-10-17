@@ -12,12 +12,12 @@ pub struct Payment {
     id: i32,
     email: String,
     amount: f64,
-    selected: bool,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Ledger {
     payments: Vec<Payment>,
+    chosen: Vec<i32>,
     table: TableState,
 }
 
@@ -37,7 +37,6 @@ pub fn page(site: Site) -> Page<Ledger> {
         id,
         email: email.to_owned(),
         amount,
-        selected: false,
     })
     .collect();
     let table = DataTable::new(
@@ -49,7 +48,7 @@ pub fn page(site: Site) -> Page<Ledger> {
         Ledger::payments(),
         |payment| payment.at(Payment::id()),
     )
-    .selectable(Payment::selected())
+    .selectable(Ledger::chosen(), |payment| payment.at(Payment::id()))
     .filter(
         site.t(L {
             en: "Filter emails",
@@ -90,6 +89,7 @@ pub fn page(site: Site) -> Page<Ledger> {
         }),
         Ledger {
             payments,
+            chosen: Vec::new(),
             table: TableState::default(),
         },
     )

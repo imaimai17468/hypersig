@@ -2,6 +2,7 @@
 //! filtered, and paged in the browser or on the server.
 
 use std::fmt;
+use std::rc::Rc;
 use std::time::Duration;
 
 use hypersig::html::{
@@ -21,7 +22,7 @@ use hypersig::{
 use serde::{Deserialize, Serialize};
 
 use crate::button::{ButtonSize, ButtonVariant, button_style, icon_button};
-use crate::choice::{check_box, check_box_checked, check_control};
+use crate::choice::{check_box, check_box_checked, check_mark};
 use crate::field::field_style;
 use crate::look::{self, icon};
 use crate::token;
@@ -149,6 +150,12 @@ pub struct Column<S, T> {
 /// Renders the rows with the row template it receives.
 type Each<S, T> = Box<dyn FnOnce(Box<dyn FnOnce(Item<S, T>) -> El<S>>) -> Node<S>>;
 
+/// Whether a row has some property, such as being selected.
+type RowTest<S, T> = Box<dyn Fn(Item<S, T>) -> Expr<S, bool>>;
+
+/// The key of a row, shared by the closures that read it.
+type RowKey<S, T, K> = Rc<dyn Fn(Item<S, T>) -> Expr<S, K>>;
+
 /// The text of a row that the filter searches.
 type RowText<S, T> = Box<dyn Fn(Item<S, T>) -> Expr<S, String>>;
 
@@ -275,16 +282,19 @@ impl<S, T> fmt::Debug for Entry<S, T> {
 ///   contains what the visitor types, ignoring case.
 /// - [`DataTable::paginate`] shows a fixed number of the rows that pass the
 ///   filter, with buttons for the previous and the next page.
-/// - [`DataTable::selectable`] adds a column of checkboxes bound to a field
-///   of each row, under a header checkbox that selects or clears all of
-///   them. The header follows the WAI-ARIA checkbox pattern with
-///   `aria-checked="mixed"` while some rows are selected.
+/// - [`DataTable::selectable`] adds a column of checkboxes that keep the
+///   keys of the selected rows in a list signal, under a header checkbox
+///   that selects or clears all of them. The header follows the WAI-ARIA
+///   checkbox pattern with `aria-checked="mixed"` while some rows are
+///   selected.
 ///
 /// A page past the last row, which the list reaches by shrinking from
 /// outside the table, returns the table to its first page.
 ///
 /// The header checkbox selects every row of the list, including rows the
-/// filter or the page hides. Rows are counted on each change of the list,
+/// filter or the page hides. A selected key stays in the list after its
+/// row leaves the table, until the header clears the selection or the
+/// page removes the key. Rows are counted on each change of the list,
 /// the filter, or the page, and the work grows with the square of the
 /// number of rows while a filter and pagination are both on, so a list of
 /// thousands of rows belongs in a [`ServerTable`], which receives one page
@@ -299,23 +309,23 @@ impl<S, T> fmt::Debug for Entry<S, T> {
 /// struct User {
 ///     id: i32,
 ///     email: String,
-///     selected: bool,
 /// }
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
 /// struct Users {
 ///     users: Vec<User>,
+///     chosen: Vec<i32>,
 ///     table: TableState,
 /// }
 ///
 /// let table = DataTable::new("Users", Users::table(), Users::users(), |user| user.at(User::id()))
-///     .selectable(User::selected())
+///     .selectable(Users::chosen(), |user| user.at(User::id()))
 ///     .filter("Filter emails", |user| user.at(User::email()))
 ///     .paginate(10)
 ///     .sortable_column(Column::text("Email", User::email()), |user| user.at(User::email()))
 ///     .column(Column::number("Id", User::id()));
-/// let users = vec![User { id: 1, email: "ada@example.com".into(), selected: true }];
-/// let html = Page::new("Users", Users { users, table: TableState::default() })
+/// let users = vec![User { id: 1, email: "ada@example.com".into() }];
+/// let html = Page::new("Users", Users { users, chosen: vec![1], table: TableState::default() })
 ///     .child(table)
 ///     .render();
 /// assert!(html.contains(r#"aria-sort="none""#));
@@ -327,7 +337,7 @@ pub struct DataTable<S, T> {
     rows: Sig<S, Vec<T>>,
     each: Each<S, T>,
     columns: Vec<Entry<S, T>>,
-    selected: Option<Sig<T, bool>>,
+    selection: Option<Selection<S, T>>,
     filter: Option<(String, RowText<S, T>)>,
     page_size: Option<i32>,
     empty: String,
@@ -351,7 +361,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             rows,
             each: Box::new(move |render| each_keyed(rows, key, render)),
             columns: Vec::new(),
-            selected: None,
+            selection: None,
             filter: None,
             page_size: None,
             empty: "No results.".to_owned(),
@@ -397,10 +407,18 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Adds a first column of checkboxes bound to the field `selected` of each row.
+    /// Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.
+    ///
+    /// The keys live in a signal of the page, apart from the rows, so a
+    /// selection needs no field in the row type and outlasts a patch of the
+    /// rows. The keys are compared as JSON, as `each_keyed` compares them.
     #[must_use]
-    pub fn selectable(mut self, selected: Sig<T, bool>) -> Self {
-        self.selected = Some(selected);
+    pub fn selectable<K: PartialEq + 'static, E: IntoExpr<S, K>>(
+        mut self,
+        selected: Sig<S, Vec<K>>,
+        key: impl Fn(Item<S, T>) -> E + 'static,
+    ) -> Self {
+        self.selection = Some(Selection::new(self.rows, selected, key));
         self
     }
 
@@ -450,7 +468,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             rows,
             each,
             columns,
-            selected,
+            selection,
             filter,
             page_size,
             empty,
@@ -473,9 +491,11 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             rows.len()
         };
 
-        let select_head = selected.map(|selected| select_all(rows, selected));
+        let select_head = selection
+            .as_ref()
+            .map(|selection| select_all(rows, selection));
         let (head, cells) = header_row(columns, select_head, state);
-        let width = cells.len() + usize::from(selected.is_some());
+        let width = cells.len() + usize::from(selection.is_some());
 
         let row_shown = move |row: Item<S, T>| -> Expr<S, bool> {
             let Some(size) = page_size else {
@@ -492,15 +512,8 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
                 .and(rank.lt(start + size))
         };
         let body = each(Box::new(move |row| {
-            let mut line = tr().show(row_shown(row)).css(body_row());
-            if let Some(selected) = selected {
-                let on = row.at(selected);
-                line = line.css_when(selected_row(), on).child(
-                    td().css(select_cell())
-                        .child(check_control(input().attr("aria-label", "Select row"), on)),
-                );
-            }
-            row_cells(line, &cells, row)
+            let line = tr().show(row_shown(row)).css(body_row());
+            row_cells(select_cell_of(line, selection.as_ref(), row), &cells, row)
         }));
 
         let mut out = div().css(stack(rem(1)));
@@ -532,7 +545,7 @@ impl<S, T> fmt::Debug for DataTable<S, T> {
             .field("state", &self.state)
             .field("rows", &self.rows)
             .field("columns", &self.columns)
-            .field("selected", &self.selected)
+            .field("selectable", &self.selection.is_some())
             .field("filter", &self.filter.as_ref().map(|(label, _)| label))
             .field("page_size", &self.page_size)
             .finish_non_exhaustive()
@@ -648,6 +661,7 @@ pub struct ServerTable<S, T> {
     each: Each<S, T>,
     load: Stmt<S>,
     columns: Vec<Entry<S, T>>,
+    selection: Option<Selection<S, T>>,
     filter: Option<String>,
     pages: Option<(i32, Sig<S, i32>)>,
     empty: String,
@@ -673,6 +687,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             each: Box::new(move |render| each_keyed(rows, key, render)),
             load: load.into_stmt(),
             columns: Vec::new(),
+            selection: None,
             filter: None,
             pages: None,
             empty: "No results.".to_owned(),
@@ -704,6 +719,22 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             column,
             sort: Some(sort),
         });
+        self
+    }
+
+    /// Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.
+    ///
+    /// The keys live in a signal of the page, so a row selected on one page
+    /// stays selected while the visitor moves to another, and the server
+    /// receives the keys as an argument of an action. The header checkbox
+    /// selects or clears the rows of the page shown.
+    #[must_use]
+    pub fn selectable<K: PartialEq + 'static, E: IntoExpr<S, K>>(
+        mut self,
+        selected: Sig<S, Vec<K>>,
+        key: impl Fn(Item<S, T>) -> E + 'static,
+    ) -> Self {
+        self.selection = Some(Selection::new(self.rows, selected, key));
         self
     }
 
@@ -752,16 +783,21 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             each,
             load,
             columns,
+            selection,
             filter,
             pages,
             empty,
         } = self;
         let query = state.at(TableState::query());
         let page = state.at(TableState::page());
-        let (head, cells) = header_row(columns, None, state);
-        let width = cells.len();
+        let select_head = selection
+            .as_ref()
+            .map(|selection| select_all(rows, selection));
+        let (head, cells) = header_row(columns, select_head, state);
+        let width = cells.len() + usize::from(selection.is_some());
         let body = each(Box::new(move |row| {
-            row_cells(tr().css(body_row()), &cells, row)
+            let line = select_cell_of(tr().css(body_row()), selection.as_ref(), row);
+            row_cells(line, &cells, row)
         }));
 
         let mut out = div().css(stack(rem(1)));
@@ -793,6 +829,7 @@ impl<S, T> fmt::Debug for ServerTable<S, T> {
             .field("rows", &self.rows)
             .field("load", &self.load)
             .field("columns", &self.columns)
+            .field("selectable", &self.selection.is_some())
             .field("filter", &self.filter)
             .field("pages", &self.pages)
             .finish_non_exhaustive()
@@ -940,10 +977,83 @@ fn sort_header<S>(
         )
 }
 
-/// The header checkbox: checked while every row is selected, mixed while
-/// some are, and a press selects every row unless all are selected already.
-fn select_all<S, T>(rows: Sig<S, Vec<T>>, selected: Sig<T, bool>) -> El<S> {
-    let count = rows.count(|row| row.at(selected));
+/// Which rows are selected, kept as a list of their keys, and the
+/// statements that change it.
+struct Selection<S, T> {
+    checked: RowTest<S, T>,
+    toggle: Box<dyn Fn(Item<S, T>) -> Stmt<S>>,
+    select_all: Stmt<S>,
+    clear_all: Stmt<S>,
+}
+
+impl<S: 'static, T: 'static> Selection<S, T> {
+    /// The selection of `rows` by `key`, kept in `selected`.
+    fn new<K: PartialEq + 'static, E: IntoExpr<S, K>>(
+        rows: Sig<S, Vec<T>>,
+        selected: Sig<S, Vec<K>>,
+        key: impl Fn(Item<S, T>) -> E + 'static,
+    ) -> Self {
+        let key: RowKey<S, T, K> = Rc::new(move |row| key(row).into_expr());
+        let checked = {
+            let key = Rc::clone(&key);
+            move |row: Item<S, T>| {
+                selected
+                    .count(|chosen| chosen.value().equals(key(row)))
+                    .gt(0)
+            }
+        };
+        let toggle = {
+            let key = Rc::clone(&key);
+            let checked = checked.clone();
+            move |row: Item<S, T>| {
+                Stmt::if_else(
+                    checked(row),
+                    selected.retain(|chosen| chosen.value().not_equals(key(row))),
+                    selected.push(key(row)),
+                )
+            }
+        };
+        // Keeps the keys of rows outside `rows`, such as another page's.
+        let clear_all =
+            selected.retain(|chosen| rows.count(|row| key(row).equals(chosen.value())).equals(0));
+        let select_all = clear_all
+            .clone()
+            .then(selected.append(rows.map(|row| key(row))));
+        Self {
+            checked: Box::new(checked),
+            toggle: Box::new(toggle),
+            select_all,
+            clear_all,
+        }
+    }
+}
+
+/// `line` with a first cell holding the checkbox of `row`, and the look of
+/// a selected row while it is checked, where the table has a selection.
+fn select_cell_of<S, T>(
+    line: El<S>,
+    selection: Option<&Selection<S, T>>,
+    row: Item<S, T>,
+) -> El<S> {
+    let Some(selection) = selection else {
+        return line;
+    };
+    let checked = (selection.checked)(row);
+    line.css_when(selected_row(), checked.clone()).child(
+        td().css(select_cell()).child(check_mark(
+            input()
+                .attr("aria-label", "Select row")
+                .bind_checked(checked)
+                .on_change((selection.toggle)(row)),
+        )),
+    )
+}
+
+/// The header checkbox: checked while every row of `rows` is selected,
+/// mixed while some are, and a press selects every row unless all are
+/// selected already.
+fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>) -> El<S> {
+    let count = rows.count(|row| (selection.checked)(row));
     let all = count.clone().equals(rows.len()).and(rows.len().gt(0));
     let some = count.gt(0);
     let mark = span()
@@ -962,8 +1072,8 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selected: Sig<T, bool>) -> El<S> {
         )
         .on_click(Stmt::if_else(
             all,
-            rows.set_all(selected, false),
-            rows.set_all(selected, true),
+            selection.clear_all.clone(),
+            selection.select_all.clone(),
         ))
         .css(
             Style::new()
