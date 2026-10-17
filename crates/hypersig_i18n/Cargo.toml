@@ -1,0 +1,31 @@
+[package]
+name = "hypersig_i18n"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Typed translations for hypersig, where a missing translation is a compile error"
+keywords = ["i18n", "translation", "locale", "hypersig", "axum"]
+categories = ["internationalization", "web-programming"]
+readme = "../../README.md"
+include = ["src/**/*.rs"]
+
+[features]
+default = ["axum"]
+axum = ["dep:axum", "hypersig/axum"]
+
+[dependencies]
+axum = { workspace = true, optional = true }
+hypersig = { path = "../hypersig", version = "=0.1.0", default-features = false }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+http-body-util.workspace = true
+tokio.workspace = true
+tower.workspace = true
+
+[lints]
+workspace = true

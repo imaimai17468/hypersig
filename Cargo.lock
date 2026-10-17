@@ -460,6 +460,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "hypersig_i18n"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "hypersig",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+]
+
+[[package]]
 name = "hypersig_proc"
 version = "0.1.0"
 dependencies = [

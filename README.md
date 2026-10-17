@@ -203,6 +203,10 @@ A text field's label, description, and error message are tied to the field by id
 
 The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 AA: a control's border has 3:1 contrast or more, secondary text keeps 4.5:1 on the muted fill, and focus is a solid outline, which forced-colors mode still draws. The [`ui`](examples/ui) example puts every component on one page, and its end-to-end test drives them with the keyboard and checks their roles and accessible names.
 
+## Translations
+
+The `hypersig_i18n` crate keeps each text with its translations in one value. An application lists its locales in an enum with `#[derive(Segment)]` and implements `Locale` for it, naming a struct with one field per locale, such as `ByLang { en: "Hello", ja: "こんにちは" }`. A text without one of its translations fails to compile, and so does a text once a locale is added to the enum. The locale is the first segment of each page's route, as in `"/{lang}/members/{id}"`, so the link to the same page in another language is the same route with another locale. `Page::lang` writes the locale's tag into `<html lang>`, and `redirect_to_locale` answers `/` with a redirect to the language the browser's `Accept-Language` asks for.
+
 ## Limitations
 
 In hypersig the server holds the state. What the browser can do on its own is the set of operations and statements hypersig provides, such as arithmetic on `i32` and `f64`, string and list operations, and focus. Anything else goes through a server action, so it responds a network round trip later.
