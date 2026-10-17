@@ -81,7 +81,7 @@ impl Toast {
         self
     }
 
-    /// Sets how the toast is drawn.
+    /// Sets the look of the toast.
     #[must_use]
     pub fn variant(mut self, variant: ToastVariant) -> Self {
         self.tone = variant;
@@ -137,7 +137,7 @@ pub struct Toaster<S> {
 }
 
 impl<S> Toaster<S> {
-    /// A toaster that shows `toasts`, newest last.
+    /// A region that shows `toasts`, newest last.
     #[must_use]
     pub fn new(toasts: Sig<S, Vec<Toast>>) -> Self {
         Self {

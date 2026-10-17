@@ -39,7 +39,7 @@ pub trait RouterExt<St>: Sized {
         Fut: Future<Output = R> + Send + 'static,
         R: Into<PageResponse>;
 
-    /// Serves `action` with a handler that answers with one batch of patches.
+    /// Serves `action` with a handler that returns one batch of patches.
     ///
     /// The handler receives the router state and the arguments the call
     /// passed, already deserialized. A request whose arguments do not
@@ -53,7 +53,7 @@ pub trait RouterExt<St>: Sized {
         Fut: Future<Output = P> + Send + 'static,
         P: Into<Patches<S>>;
 
-    /// Serves `action` with a handler that answers with a stream of patches.
+    /// Serves `action` with a handler that returns a stream of patches.
     ///
     /// The response stays open until the stream ends or the browser leaves
     /// the page. Use it with [`El::on_load`](crate::html::El::on_load) to push
@@ -180,7 +180,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
     }
 }
 
-/// What a page handler answers with: a page, a redirect, or a 404.
+/// What a page handler returns: a page, a redirect, or a 404.
 ///
 /// A handler that only ever renders returns `Page` or `Option<Page>`, which
 /// convert into this. One that sometimes sends the browser elsewhere returns

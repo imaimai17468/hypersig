@@ -203,8 +203,8 @@ pub fn switch<S, R>(text: impl Into<String>, on: Sig<S, bool, R>) -> El<S> {
         .child(text)
 }
 
-/// A group of radio buttons under the legend `title`, one per option, that
-/// sets `selected` to the option's value.
+/// A group of radio buttons with `title` in its `<legend>`, one per option,
+/// that sets `selected` to the option's value.
 ///
 /// The radios share a `name` derived from the signal's path, so the browser
 /// gives the group one Tab stop and moves between its radios with the arrow

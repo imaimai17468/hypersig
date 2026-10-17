@@ -185,7 +185,7 @@ pub fn button<S>(variant: ButtonVariant, size: ButtonSize) -> El<S> {
 }
 
 /// A `<button type="submit">` of `variant` and `size`, which submits the
-/// form it is in.
+/// form around it.
 ///
 /// ```
 /// use hypersig::html::form;

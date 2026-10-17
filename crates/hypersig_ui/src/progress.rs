@@ -10,7 +10,7 @@ use hypersig::{Expr, IntoExpr};
 use crate::look;
 use crate::token;
 
-/// A bar that fills to `percent`, a value from 0 to 100, named by `label`.
+/// A bar filled up to `percent`, a value from 0 to 100, named by `label`.
 ///
 /// It is a `role="progressbar"` with `aria-valuenow` kept equal to the value,
 /// so a screen reader reads the label and the percentage. A value below 0 or

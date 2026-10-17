@@ -162,7 +162,7 @@ impl<S> MenuItem<S> {
         }
     }
 
-    /// Draws the action in [`token::destructive`], for one that deletes.
+    /// Draws the action in [`token::destructive`]. It is for an action that deletes.
     #[must_use]
     pub fn destructive(mut self) -> Self {
         self.destructive = true;

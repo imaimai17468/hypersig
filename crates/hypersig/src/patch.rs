@@ -26,7 +26,7 @@ use crate::route::Url;
 use crate::signal::Signals;
 use crate::style::Sheet;
 
-/// A part of the page the server can re-render and replace on its own.
+/// A part of the page that the server can re-render and replace without the rest of the page.
 ///
 /// The fragment owns its element id, so the id in the initial page and the id
 /// in a later patch cannot drift apart.

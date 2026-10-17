@@ -179,7 +179,7 @@ impl<S> Call<S> {
         }
     }
 
-    /// Sets `flag` to true while the request is in flight and to false after.
+    /// Sets `flag` to true while the response is awaited and to false after.
     #[must_use]
     pub fn indicator(mut self, flag: Sig<S, bool>) -> Self {
         self.indicator = Value::from(flag.path());

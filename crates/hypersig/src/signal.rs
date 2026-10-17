@@ -39,15 +39,15 @@ pub trait Signals: Serialize + DeserializeOwned + Send + 'static {}
 /// The deepest chain of fields a [`Sig`] can name.
 pub const MAX_DEPTH: usize = 8;
 
-/// Marks a [`Sig`] rooted at the page's signal struct.
+/// Marks a [`Sig`] whose path starts at the page's signal struct.
 ///
 /// Only a page-rooted signal has a fixed path, so only it can be patched from
 /// the server.
 #[derive(Debug, Clone, Copy)]
 pub enum Root {}
 
-/// Marks a [`Sig`] rooted at the current item of an [`each`](crate::html::each)
-/// or a list predicate. Its path is resolved in the browser per item.
+/// Marks a [`Sig`] whose path starts at the current item of an
+/// [`each`](crate::html::each) or a list predicate. Its path is resolved in the browser per item.
 #[derive(Debug, Clone, Copy)]
 pub enum Local {}
 

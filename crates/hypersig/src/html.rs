@@ -162,7 +162,8 @@ impl<S> From<String> for Node<S> {
     }
 }
 
-/// Renders `render` once per item of `list`, in the browser, kept in step with the list.
+/// Renders `render` once per item of `list` in the browser, and updates the
+/// rendered elements when the list changes.
 ///
 /// `render` runs once on the server to build a template, receiving an
 /// [`Item`] that stands for whichever item the browser is rendering. Items are
@@ -562,7 +563,8 @@ impl Key {
     }
 }
 
-/// A horizontal or vertical direction, which [`El::roving_focus`] reads as its arrow keys.
+/// A horizontal or vertical direction, which decides the arrow keys
+/// [`El::roving_focus`] uses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Orientation {
@@ -771,7 +773,7 @@ impl<S> El<S> {
         self
     }
 
-    /// Points the element's `href` at a page the router serves.
+    /// Makes the element's `href` a link to a page the router serves.
     ///
     /// A link whose parameters are all literals is written as a plain
     /// attribute. One that reads signals is kept up to date as they change.
@@ -1026,7 +1028,8 @@ impl<S> El<S> {
         self
     }
 
-    /// Runs `stmt` on `event`. A second call for the same event runs after the first.
+    /// Runs `stmt` on `event`. When `on` is called twice for the same event, the
+    /// second statement runs after the first.
     #[must_use]
     pub fn on(mut self, event: Event, stmt: impl IntoStmt<S>) -> Self {
         let stmt = match self.on.remove(&event) {
@@ -1087,7 +1090,7 @@ impl<S> El<S> {
         self.on(Event::Blur, stmt)
     }
 
-    /// Runs `stmt` once when the element enters the document.
+    /// Runs `stmt` once when the element is added to the document.
     #[must_use]
     pub fn on_load(self, stmt: impl IntoStmt<S>) -> Self {
         self.on(Event::Load, stmt)
@@ -1201,7 +1204,7 @@ impl<S> El<S> {
         self
     }
 
-    /// Runs `stmt` once, `delay` after the element enters the document, if
+    /// Runs `stmt` once, `delay` after the element is added to the document, if
     /// the element is still in it then.
     ///
     /// A second call replaces the first.
@@ -1240,8 +1243,8 @@ impl<S> El<S> {
         self
     }
 
-    /// Runs `stmt` when the element enters the document and again whenever
-    /// a signal that `stmt` reads changes.
+    /// Runs `stmt` when the element is added to the document and whenever a
+    /// signal `stmt` reads changes.
     ///
     /// The runtime records which signals `stmt` reads as it runs, so there is
     /// no dependency list to keep in step. A signal read only after an

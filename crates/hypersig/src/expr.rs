@@ -341,7 +341,7 @@ macro_rules! operations {
         }
 
         impl<S $(, $r)?> $ty<S, String $(, $r)?> {
-            /// Appends `rhs` to this string.
+            /// This string with `rhs` appended.
             #[must_use]
             pub fn concat(self, rhs: impl IntoExpr<S, String>) -> Expr<S, String> {
                 Expr::binary("concat", self.into_expr(), rhs.into_expr())
