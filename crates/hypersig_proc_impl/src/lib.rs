@@ -156,14 +156,16 @@ fn expand_search(input: TokenStream) -> syn::Result<TokenStream> {
 /// Expands `#[derive(Segment)]` for the enum in `input`.
 ///
 /// The expansion implements `hypersig::Segment` and its seal for the enum. A
-/// segment is the variant's name, which is also the JSON string serde writes
-/// for the variant, so the server and the browser write the same URL. It
-/// defines no other item.
+/// segment is the string serde writes for the variant: its name, renamed by
+/// `#[serde(rename_all = "...")]` on the enum or `#[serde(rename = "...")]`
+/// on the variant as serde renames it, so the server and the browser write
+/// the same URL. It defines no other item.
 ///
 /// Rejected inputs, each with a compile error at the offending span: structs,
-/// unions, generic enums, enums without variants, variants with fields, and
-/// any `#[serde(...)]` attribute on the enum or a variant, because a rename
-/// would make the segment disagree with the variant's name.
+/// unions, generic enums, enums without variants, variants with fields, an
+/// unknown `rename_all` rule, and any other `#[serde(...)]` attribute on the
+/// enum or a variant, because it could make serde write a variant as
+/// something other than its segment.
 #[must_use]
 pub fn derive_segment(input: TokenStream) -> TokenStream {
     match expand_segment(input) {
@@ -174,7 +176,7 @@ pub fn derive_segment(input: TokenStream) -> TokenStream {
 
 fn expand_segment(input: TokenStream) -> syn::Result<TokenStream> {
     let input: DeriveInput = syn::parse2(input)?;
-    reject_serde(&input.attrs, SEGMENT_SERDE)?;
+    let rename_all = serde_rename(&input.attrs, "rename_all")?;
 
     if !input.generics.params.is_empty() {
         return Err(syn::Error::new_spanned(
@@ -208,7 +210,7 @@ fn expand_segment(input: TokenStream) -> syn::Result<TokenStream> {
     let mut idents = Vec::with_capacity(data.variants.len());
     let mut names = Vec::with_capacity(data.variants.len());
     for variant in &data.variants {
-        reject_serde(&variant.attrs, SEGMENT_SERDE)?;
+        let rename = serde_rename(&variant.attrs, "rename")?;
         if !matches!(variant.fields, Fields::Unit) {
             return Err(syn::Error::new_spanned(
                 &variant.fields,
@@ -216,7 +218,12 @@ fn expand_segment(input: TokenStream) -> syn::Result<TokenStream> {
             ));
         }
         idents.push(&variant.ident);
-        names.push(variant.ident.unraw().to_string());
+        let name = variant.ident.unraw().to_string();
+        names.push(match (rename, &rename_all) {
+            (Some(rename), _) => rename.value(),
+            (None, Some(rule)) => apply_rename_all(rule, &name)?,
+            (None, None) => name,
+        });
     }
 
     let name = &input.ident;
@@ -256,7 +263,62 @@ fn reject_serde(attrs: &[syn::Attribute], message: &str) -> syn::Result<()> {
     }
 }
 
-const SEGMENT_SERDE: &str = "`#[serde(...)]` is not supported on a `Segment` enum, because the segment must equal the variant's name";
+/// The string of `#[serde(KEY = "...")]` in `attrs`, the one serde attribute a
+/// `Segment` enum takes on that item.
+///
+/// Any other serde attribute is an error, because it could make serde write
+/// a variant as something other than the string the segment holds.
+fn serde_rename(attrs: &[syn::Attribute], key: &str) -> syn::Result<Option<syn::LitStr>> {
+    let mut found = None;
+    for attr in attrs.iter().filter(|attr| attr.path().is_ident("serde")) {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident(key) {
+                found = Some(meta.value()?.parse::<syn::LitStr>()?);
+                Ok(())
+            } else {
+                Err(meta.error(format!(
+                    "a `Segment` enum takes only `#[serde({key} = \"...\")]` here, because serde must write each variant as the string its segment holds"
+                )))
+            }
+        })?;
+    }
+    Ok(found)
+}
+
+/// `name`, a variant's name, renamed by the `rename_all` rule `rule` as serde renames a variant.
+fn apply_rename_all(rule: &syn::LitStr, name: &str) -> syn::Result<String> {
+    let snake = || {
+        let mut out = String::new();
+        for (i, c) in name.char_indices() {
+            if c.is_uppercase() && i > 0 {
+                out.push('_');
+            }
+            out.extend(c.to_lowercase());
+        }
+        out
+    };
+    Ok(match rule.value().as_str() {
+        "lowercase" => name.to_lowercase(),
+        "UPPERCASE" => name.to_uppercase(),
+        "PascalCase" => name.to_owned(),
+        "camelCase" => {
+            let mut chars = name.chars();
+            chars.next().map_or_else(String::new, |first| {
+                first.to_lowercase().chain(chars).collect()
+            })
+        }
+        "snake_case" => snake(),
+        "SCREAMING_SNAKE_CASE" => snake().to_uppercase(),
+        "kebab-case" => snake().replace('_', "-"),
+        "SCREAMING-KEBAB-CASE" => snake().replace('_', "-").to_uppercase(),
+        _ => {
+            return Err(syn::Error::new_spanned(
+                rule,
+                "an unknown `rename_all` rule; serde takes `lowercase`, `UPPERCASE`, `PascalCase`, `camelCase`, `snake_case`, `SCREAMING_SNAKE_CASE`, `kebab-case`, or `SCREAMING-KEBAB-CASE`",
+            ));
+        }
+    })
+}
 
 #[cfg(test)]
 mod tests {
@@ -334,9 +396,17 @@ mod tests {
     }
 
     #[test]
-    fn rejects_segment_serde_rename() {
+    fn segment_follows_serde_renames() {
         insta::assert_snapshot!(expand_segment(quote! {
             #[serde(rename_all = "kebab-case")]
+            enum Locale { En, JaJp, #[serde(rename = "zh-Hant")] ZhHant }
+        }));
+    }
+
+    #[test]
+    fn rejects_segment_serde_untagged() {
+        insta::assert_snapshot!(expand_segment(quote! {
+            #[serde(untagged)]
             enum E { A }
         }));
     }

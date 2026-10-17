@@ -366,3 +366,25 @@ async fn a_rest_segment_reads_the_rest_of_the_path() {
         "/repos/web/files/docs/a%20b/c.md"
     );
 }
+
+#[derive(Segment, Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "lowercase")]
+enum Locale {
+    En,
+    #[serde(rename = "ja-JP")]
+    Ja,
+}
+
+#[test]
+fn a_renamed_segment_matches_what_serde_writes() {
+    for (locale, text) in [(Locale::En, "en"), (Locale::Ja, "ja-JP")] {
+        assert_eq!(
+            serde_json::to_string(&locale).expect("serializes"),
+            format!("\"{text}\"")
+        );
+        assert_eq!(
+            <Locale as hypersig::Params>::from_segments(&[text]),
+            Some(locale)
+        );
+    }
+}

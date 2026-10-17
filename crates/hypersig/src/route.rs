@@ -601,19 +601,21 @@ pub(crate) fn query_string(value: &Value) -> String {
 /// past 2^53 loses precision in the browser, as it does in any signal.
 ///
 /// `#[derive(Segment)]` implements it for an enum whose variants have no
-/// fields. The segment is the variant's name, which is also the string serde
-/// writes for the variant, so a link that reads the enum from a signal and the
-/// server write the same URL. The derive rejects `#[serde(...)]` on the enum
-/// and its variants, because a rename would make the two disagree.
+/// fields. The segment is the string serde writes for the variant, so a link
+/// that reads the enum from a signal and the server write the same URL. The
+/// derive follows `#[serde(rename_all = "...")]` on the enum and
+/// `#[serde(rename = "...")]` on a variant, and rejects any other serde
+/// attribute, which could make serde write a variant differently.
 ///
 /// ```
 /// use hypersig::{Page, Route, Segment, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Segment, Serialize, Deserialize)]
+/// #[serde(rename_all = "kebab-case")]
 /// enum Tab {
 ///     Overview,
-///     Settings,
+///     TeamSettings,
 /// }
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -625,7 +627,7 @@ pub(crate) fn query_string(value: &Value) -> String {
 ///     const TAB: Route<(String, Tab)> = "/teams/{team}/{tab}" => tab;
 /// }
 ///
-/// assert_eq!(TAB.url(("red".to_owned(), Tab::Settings)).as_str(), "/teams/red/Settings");
+/// assert_eq!(TAB.url(("red".to_owned(), Tab::TeamSettings)).as_str(), "/teams/red/team-settings");
 /// # let _ = pages;
 /// ```
 pub trait Segment: sealed::Sealed + Sized {

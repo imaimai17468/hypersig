@@ -1,0 +1,26 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_segment(quote!\n{\n    #[serde(rename_all = \"kebab-case\")] enum Locale\n    { En, JaJp, #[serde(rename = \"zh-Hant\")] ZhHant }\n})"
+---
+#[automatically_derived]
+impl ::hypersig::_private::Sealed for Locale {}
+#[automatically_derived]
+impl ::hypersig::Segment for Locale {
+    fn parse(segment: &str) -> ::core::option::Option<Self> {
+        match segment {
+            "en" => ::core::option::Option::Some(Self::En),
+            "ja-jp" => ::core::option::Option::Some(Self::JaJp),
+            "zh-Hant" => ::core::option::Option::Some(Self::ZhHant),
+            _ => ::core::option::Option::None,
+        }
+    }
+    fn write(&self) -> ::std::string::String {
+        ::std::string::String::from(
+            match self {
+                Self::En => "en",
+                Self::JaJp => "ja-jp",
+                Self::ZhHant => "zh-Hant",
+            },
+        )
+    }
+}

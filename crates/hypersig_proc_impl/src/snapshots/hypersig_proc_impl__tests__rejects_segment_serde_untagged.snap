@@ -1,0 +1,7 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_segment(quote! { #[serde(untagged)] enum E { A } })"
+---
+::core::compile_error! {
+    "a `Segment` enum takes only `#[serde(rename_all = \"...\")]` here, because serde must write each variant as the string its segment holds"
+}
