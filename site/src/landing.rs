@@ -269,12 +269,12 @@ pub fn components(site: Site) -> String {
         [
             hero(
                 site,
-                "The `hypersig_ui` crate",
-                "Accessible components, styled after shadcn/ui",
-                "Buttons, fields, pickers, tabs, dialogs, menus, tooltips, and toasts on the browser's native elements and the WAI-ARIA Authoring Practices. Each returns an `El`, so it takes handlers and children like any other element.",
+                site.t(L { en: "The `hypersig_ui` crate", ja: "`hypersig_ui` クレート" }),
+                site.t(L { en: "Accessible components, styled after shadcn/ui", ja: "shadcn/ui の見た目を持つ、アクセシブルなコンポーネント" }),
+                site.t(L { en: "Buttons, fields, pickers, tabs, dialogs, menus, tooltips, and toasts on the browser's native elements and the WAI-ARIA Authoring Practices. Each returns an `El`, so it takes handlers and children like any other element.", ja: "ボタン、入力欄、選択、タブ、ダイアログ、メニュー、ツールチップ、トーストを、ブラウザのネイティブ要素と WAI-ARIA Authoring Practices の上に作っています。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を足せます。" }),
                 &[
                     (
-                        "Get started",
+                        site.t(L { en: "Get started", ja: "はじめる" }),
                         "components/installation/",
                         ButtonVariant::Default,
                     ),
@@ -285,46 +285,46 @@ pub fn components(site: Site) -> String {
                 site,
                 &[
                     (
-                        "Native elements first",
-                        "A `<button>`, a `<select>`, a `<details>`, a `<dialog>`, and `popover` carry the behavior the browser already has.",
+                        site.t(L { en: "Native elements first", ja: "ネイティブ要素を先に使う" }),
+                        site.t(L { en: "A `<button>`, a `<select>`, a `<details>`, a `<dialog>`, and `popover` carry the behavior the browser already has.", ja: "`<button>`、`<select>`、`<details>`、`<dialog>`、`popover` が、ブラウザにもともとある振る舞いを受け持ちます。" }),
                     ),
                     (
-                        "The keyboard of WAI-ARIA",
-                        "Tabs, listbox options, and menu items move with the arrow keys, Home, and End, and a combobox keeps focus in its text field.",
+                        site.t(L { en: "The keyboard of WAI-ARIA", ja: "WAI-ARIA のキーボード操作" }),
+                        site.t(L { en: "Tabs, listbox options, and menu items move with the arrow keys, Home, and End, and a combobox keeps focus in its text field.", ja: "タブ、リストボックスの選択肢、メニューの項目の間は、矢印キー、Home、End で移ります。コンボボックスはフォーカスをテキスト欄に置いたままにします。" }),
                     ),
                     (
-                        "Contrast for WCAG 2.2 AA",
-                        "shadcn/ui's zinc theme, with a control's border at 3:1, secondary text at 4.5:1, and focus drawn as a solid outline.",
+                        site.t(L { en: "Contrast for WCAG 2.2 AA", ja: "WCAG 2.2 AA を満たすコントラスト" }),
+                        site.t(L { en: "shadcn/ui's zinc theme, with a control's border at 3:1, secondary text at 4.5:1, and focus drawn as a solid outline.", ja: "shadcn/ui の zinc テーマをもとに、コントロールの境界線を 3:1、補足のテキストを 4.5:1 にし、フォーカスを単色の outline で描きます。" }),
                     ),
                 ],
             ),
             titled(
                 site,
-                "A dialog in a few lines",
+                L { en: "A dialog in a few lines", ja: "数行で書けるダイアログ" },
                 [
                     para(
                         site,
-                        "A `const` handle ties the dialog to the buttons that open and close it, and the browser opens it as a modal through invoker commands.",
+                        L { en: "A `const` handle ties the dialog to the buttons that open and close it, and the browser opens it as a modal through invoker commands.", ja: "`const` のハンドルが、ダイアログとそれを開閉するボタンを結び付けます。ブラウザは invoker commands を通して、ダイアログをモーダルとして開きます。" },
                     ),
                     demo::show(site, Demo::Dialog),
                 ],
             ),
-            titled(site, "Every component", [catalog(site)]),
+            titled(site, L { en: "Every component", ja: "すべてのコンポーネント" }, [catalog(site)]),
             titled(
                 site,
-                "Part of hypersig",
+                L { en: "Part of hypersig", ja: "hypersig の一部" },
                 [two_cards(
                     site,
                     [
                         (
                             Library::Framework,
                             "hypersig",
-                            "The framework the components run on: signals, statements, and actions.",
+                            site.t(L { en: "The framework the components run on: signals, statements, and actions.", ja: "コンポーネントが動くフレームワーク本体です。シグナル、文、アクションを持ちます。" }),
                         ),
                         (
                             Library::Style,
                             "hypersig_style",
-                            "The typed styles the components are built with, which restyle them too.",
+                            site.t(L { en: "The typed styles the components are built with, which restyle them too.", ja: "コンポーネントを作っている型付きのスタイルです。コンポーネントの見た目を変えるのにも使えます。" }),
                         ),
                     ],
                 )],

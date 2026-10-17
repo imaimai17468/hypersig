@@ -9,21 +9,22 @@ use crate::Site;
 use crate::code::{self, Lang};
 use crate::demo::{self, Demo};
 use crate::doc::{Component, Doc};
+use crate::lang::L;
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
 /// One item: its name, its rustdoc page and anchor under `api/`, and its
 /// summary.
-type Row = (&'static str, &'static str, &'static str);
+type Row = (&'static str, &'static str, L<&'static str>);
 
 /// What a component page holds.
 struct Page {
-    lead: &'static str,
+    lead: L<&'static str>,
     demo: Demo,
     /// What the component is built on and what assistive technology hears.
-    built_on: &'static [&'static str],
+    built_on: &'static [L<&'static str>],
     /// Each key and what it does, empty where the component takes no keys.
-    keys: &'static [(&'static str, &'static str)],
+    keys: &'static [(L<&'static str>, L<&'static str>)],
     items: &'static [Row],
 }
 
@@ -41,30 +42,61 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
         title(Doc::Components(page).title(site)),
         lead(site, content.lead),
         demo::show(site, content.demo),
-        heading(site, "Accessibility"),
+        heading(
+            site,
+            L {
+                en: "Accessibility",
+                ja: "アクセシビリティ",
+            },
+        ),
     ];
     children.extend(content.built_on.iter().map(|&text| para(site, text)));
     if !content.keys.is_empty() {
         let rows: Vec<[&str; 2]> = content
             .keys
             .iter()
-            .map(|&(key, action)| [key, action])
+            .map(|&(key, action)| [site.t(key), site.t(action)])
             .collect();
         let rows: Vec<&[&str]> = rows.iter().map(<[&str; 2]>::as_slice).collect();
-        children.push(table_of(site, &["Key", "What it does"], rows.as_slice()));
+        children.push(table_of(
+            site,
+            L {
+                en: &["Key", "What it does"],
+                ja: &["キー", "動作"],
+            },
+            rows.as_slice(),
+        ));
     }
-    children.push(heading(site, "API"));
+    children.push(heading(
+        site,
+        L {
+            en: "API",
+            ja: "API",
+        },
+    ));
     let cells: Vec<[String; 2]> = content
         .items
         .iter()
-        .map(|(name, target, summary)| [format!("[`{name}`](api:{target})"), (*summary).to_owned()])
+        .map(|&(name, target, summary)| {
+            [
+                format!("[`{name}`](api:{target})"),
+                site.t(summary).to_owned(),
+            ]
+        })
         .collect();
     let rows: Vec<Vec<&str>> = cells
         .iter()
         .map(|[name, summary]| vec![name.as_str(), summary.as_str()])
         .collect();
     let rows: Vec<&[&str]> = rows.iter().map(Vec::as_slice).collect();
-    children.push(table_of(site, &["Item", "Summary"], rows.as_slice()));
+    children.push(table_of(
+        site,
+        L {
+            en: &["Item", "Summary"],
+            ja: &["項目", "概要"],
+        },
+        rows.as_slice(),
+    ));
     parts(children)
 }
 
@@ -73,12 +105,24 @@ fn installation(site: Site) -> Part {
         title(Doc::Components(Component::Installation).title(site)),
         lead(
             site,
-            "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
+            L {
+                en: "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
+                ja: "`hypersig_ui` は、shadcn/ui の見た目を持ち、振る舞いをブラウザのネイティブ要素と WAI-ARIA Authoring Practices から取るコンポーネント集です。",
+            },
         ),
-        heading(site, "Add the crate"),
+        heading(
+            site,
+            L {
+                en: "Add the crate",
+                ja: "クレートを追加する",
+            },
+        ),
         para(
             site,
-            "It lives in the hypersig repository and is not on crates.io yet. Add it next to `hypersig`:",
+            L {
+                en: "It lives in the hypersig repository and is not on crates.io yet. Add it next to `hypersig`:",
+                ja: "hypersig のリポジトリにあり、まだ crates.io には公開していません。次のように `hypersig` と並べて追加します。",
+            },
         ),
         code::block(
             Lang::Toml,
@@ -87,25 +131,55 @@ fn installation(site: Site) -> Part {
 hypersig = { git = "https://github.com/imaimai17468/hypersig" }
 hypersig_ui = { git = "https://github.com/imaimai17468/hypersig" }"#,
         ),
-        heading(site, "Add the theme to the page"),
+        heading(
+            site,
+            L {
+                en: "Add the theme to the page",
+                ja: "ページにテーマを入れる",
+            },
+        ),
         para(
             site,
-            "Add `hypersig_ui::global()` and `hypersig_ui::theme()` to the page once. `global` is a small reset with the font and the page colors, and `theme` switches the color tokens to their dark values for a visitor whose system prefers dark.",
+            L {
+                en: "Add `hypersig_ui::global()` and `hypersig_ui::theme()` to the page once. `global` is a small reset with the font and the page colors, and `theme` switches the color tokens to their dark values for a visitor whose system prefers dark.",
+                ja: "`hypersig_ui::global()` と `hypersig_ui::theme()` を、ページに 1 回ずつ追加します。`global` はフォントとページの色を含む小さなリセットです。`theme` は、システムの設定がダークモードの訪問者に対して、色のトークンをダークの値に切り替えます。",
+            },
         ),
         show(Snippet::UiSetup),
-        heading(site, "How the components are built"),
+        heading(
+            site,
+            L {
+                en: "How the components are built",
+                ja: "コンポーネントの作り",
+            },
+        ),
         bullets(
             site,
             &[
-                "Each component is a function or a small builder that returns an `El<S>`, so it takes handlers, styles, and children like any other element.",
-                "The behavior a screen reader and a keyboard depend on comes from the browser where the browser has it: a native `<button>`, `<input>`, `<select>`, `<details>`, `<dialog>`, or `popover`. Where it does not, the component follows the WAI-ARIA Authoring Practices, with keyboard handling from `El::roving_focus` and `El::active_descendant`.",
-                "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox take their names in a `const` handle that their parts share, and a name that an id cannot hold is a compile error.",
-                "The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 AA: a control's border has 3:1 contrast or more, secondary text keeps 4.5:1 on the muted fill, and focus is a solid outline, which forced-colors mode still draws.",
+                L {
+                    en: "Each component is a function or a small builder that returns an `El<S>`, so it takes handlers, styles, and children like any other element.",
+                    ja: "どのコンポーネントも `El<S>` を返す関数か小さなビルダーなので、ほかの要素と同じようにハンドラ、スタイル、子要素を受け取ります。",
+                },
+                L {
+                    en: "The behavior a screen reader and a keyboard depend on comes from the browser where the browser has it: a native `<button>`, `<input>`, `<select>`, `<details>`, `<dialog>`, or `popover`. Where it does not, the component follows the WAI-ARIA Authoring Practices, with keyboard handling from `El::roving_focus` and `El::active_descendant`.",
+                    ja: "スクリーンリーダーとキーボードが頼る振る舞いは、ブラウザが持っているものならブラウザから取ります。ネイティブの `<button>`、`<input>`、`<select>`、`<details>`、`<dialog>`、`popover` です。ブラウザが持っていないものは WAI-ARIA Authoring Practices に従い、キーボード操作は `El::roving_focus` と `El::active_descendant` で扱います。",
+                },
+                L {
+                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox take their names in a `const` handle that their parts share, and a name that an id cannot hold is a compile error.",
+                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ツールチップ、コンボボックスは、部品どうしで共有する `const` のハンドルから名前を取り、id に使えない名前はコンパイルエラーになります。",
+                },
+                L {
+                    en: "The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 AA: a control's border has 3:1 contrast or more, secondary text keeps 4.5:1 on the muted fill, and focus is a solid outline, which forced-colors mode still draws.",
+                    ja: "色は shadcn/ui の zinc テーマに合わせ、WCAG 2.2 AA を満たすために 3 つの値を変えています。コントロールの境界線は 3:1 以上のコントラストを持ち、補足のテキストは muted の塗りの上でも 4.5:1 を保ち、フォーカスは forced-colors モードでも描かれる単色の outline です。",
+                },
             ],
         ),
         para(
             site,
-            "The demos on these pages run in frames on this static site, so they use signals alone. The [`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) example in the repository puts every component on one page with a server, and its end-to-end test drives them with the keyboard.",
+            L {
+                en: "The demos on these pages run in frames on this static site, so they use signals alone. The [`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) example in the repository puts every component on one page with a server, and its end-to-end test drives them with the keyboard.",
+                ja: "各ページのデモは、この静的サイトの中のフレームで動くので、シグナルだけを使います。リポジトリの例 [`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) は、全コンポーネントをサーバー付きで 1 ページに並べたもので、その E2E テストはキーボードでコンポーネントを操作します。",
+            },
         ),
     ])
 }
@@ -115,23 +189,47 @@ fn theming(site: Site) -> Part {
         title(Doc::Components(Component::Theming).title(site)),
         lead(
             site,
-            "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
+            L {
+                en: "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
+                ja: "コンポーネントは、色と角の丸みをデザイントークンから読みます。トークンの値は、ページ全体にはテーマが、1 つの要素にはスタイルが設定します。",
+            },
         ),
-        heading(site, "Tokens"),
+        heading(
+            site,
+            L {
+                en: "Tokens",
+                ja: "トークン",
+            },
+        ),
         para(
             site,
-            "The [`token`](api:hypersig_ui/token/index.html) module has one function per token, named as in shadcn/ui: `background`, `foreground`, `primary`, `muted`, `border`, `ring`, `radius`, and the rest. Each returns a `Token`, which is a CSS custom property with a typed default. A page that sets nothing gets the light values.",
+            L {
+                en: "The [`token`](api:hypersig_ui/token/index.html) module has one function per token, named as in shadcn/ui: `background`, `foreground`, `primary`, `muted`, `border`, `ring`, `radius`, and the rest. Each returns a `Token`, which is a CSS custom property with a typed default. A page that sets nothing gets the light values.",
+                ja: "[`token`](api:hypersig_ui/token/index.html) モジュールにはトークンごとに 1 つの関数があり、名前は shadcn/ui に合わせています。`background`、`foreground`、`primary`、`muted`、`border`、`ring`、`radius` などです。どの関数も `Token` を返します。`Token` は、型の付いた既定値を持つ CSS のカスタムプロパティです。何も設定しないページには、ライトの値が入ります。",
+            },
         ),
         show(Snippet::UiTheme),
-        heading(site, "Light and dark"),
+        heading(
+            site,
+            L {
+                en: "Light and dark",
+                ja: "ライトとダーク",
+            },
+        ),
         para(
             site,
-            "`hypersig_ui::theme()` sets the dark values under `prefers-color-scheme: dark`. To let a signal pick the scheme instead, put `hypersig_ui::dark()` or `hypersig_ui::light()` on an element with `css_when` or `css_match`. Each sets every color token for the element and those inside it, and `color-scheme` with them, so native controls such as a scrollbar follow.",
+            L {
+                en: "`hypersig_ui::theme()` sets the dark values under `prefers-color-scheme: dark`. To let a signal pick the scheme instead, put `hypersig_ui::dark()` or `hypersig_ui::light()` on an element with `css_when` or `css_match`. Each sets every color token for the element and those inside it, and `color-scheme` with them, so native controls such as a scrollbar follow.",
+                ja: "`hypersig_ui::theme()` は、`prefers-color-scheme: dark` のもとでダークの値を設定します。代わりにシグナルで配色を選ぶには、`hypersig_ui::dark()` か `hypersig_ui::light()` を `css_when` や `css_match` で要素に付けます。どちらも、その要素と内側の要素に色のトークンをすべて設定し、`color-scheme` も一緒に設定するので、スクロールバーのようなネイティブのコントロールも配色に従います。",
+            },
         ),
         demo::show(site, Demo::Theme),
         note(
             site,
-            "The tokens are plain values of `hypersig::style`. [Tokens and themes](style/tokens/) covers how they are written to the page.",
+            L {
+                en: "The tokens are plain values of `hypersig::style`. [Tokens and themes](style/tokens/) covers how they are written to the page.",
+                ja: "トークンは `hypersig::style` の普通の値です。トークンをページに書き出す仕組みは、[トークンとテーマ](style/tokens/) で説明しています。",
+            },
         ),
     ])
 }
@@ -142,659 +240,1245 @@ fn component_page(page: Component) -> Page {
     match page {
         Component::Installation | Component::Theming => unreachable!("written by hand"),
         Component::Button => Page {
-            lead: "A button in one of six variants and three sizes.",
+            lead: L {
+                en: "A button in one of six variants and three sizes.",
+                ja: "6 つのバリアントと 3 つのサイズを持つボタンです。",
+            },
             demo: Demo::Button,
             built_on: &[
-                "Each is a native `<button>`, so Enter and Space press it and a screen reader announces it as a button. `button` has `type=\"button\"`, so it does not submit a form it sits in, and `submit_button` is the one that does. Disable either with `.attr_when(\"disabled\", ...)`.",
-                "An icon button has no text, so `icon_button` takes the label that names it as an argument. `button_style` gives the same look to an element that is not a button, such as a link.",
+                L {
+                    en: "Each is a native `<button>`, so Enter and Space press it and a screen reader announces it as a button. `button` has `type=\"button\"`, so it does not submit a form it sits in, and `submit_button` is the one that does. Disable either with `.attr_when(\"disabled\", ...)`.",
+                    ja: "どれもネイティブの `<button>` なので、Enter と Space で押せ、スクリーンリーダーはボタンとして読み上げます。`button` は `type=\"button\"` を持つので、置かれたフォームを送信しません。フォームを送信するのは `submit_button` です。どちらも `.attr_when(\"disabled\", ...)` で無効にできます。",
+                },
+                L {
+                    en: "An icon button has no text, so `icon_button` takes the label that names it as an argument. `button_style` gives the same look to an element that is not a button, such as a link.",
+                    ja: "アイコンボタンにはテキストがないので、`icon_button` はボタンの名前になるラベルを引数に取ります。`button_style` は、リンクのようなボタン以外の要素に同じ見た目を与えます。",
+                },
             ],
-            keys: &[("Enter, Space", "Presses the button.")],
+            keys: &[(
+                L {
+                    en: "Enter, Space",
+                    ja: "Enter、Space",
+                },
+                L {
+                    en: "Presses the button.",
+                    ja: "ボタンを押します。",
+                },
+            )],
             items: &[
                 (
                     "button",
                     "hypersig_ui/fn.button.html",
-                    "A `<button type=\"button\">` of `variant` and `size`.",
+                    L {
+                        en: "A `<button type=\"button\">` of `variant` and `size`.",
+                        ja: "`variant` と `size` を指定した `<button type=\"button\">`",
+                    },
                 ),
                 (
                     "submit_button",
                     "hypersig_ui/fn.submit_button.html",
-                    "A `<button type=\"submit\">` of `variant` and `size`, which submits the form it is in.",
+                    L {
+                        en: "A `<button type=\"submit\">` of `variant` and `size`, which submits the form it is in.",
+                        ja: "置かれたフォームを送信する、`variant` と `size` を指定した `<button type=\"submit\">`",
+                    },
                 ),
                 (
                     "icon_button",
                     "hypersig_ui/fn.icon_button.html",
-                    "A square button that shows only an icon, named by `label`.",
+                    L {
+                        en: "A square button that shows only an icon, named by `label`.",
+                        ja: "アイコンだけを表示し、`label` を名前に持つ正方形のボタン",
+                    },
                 ),
                 (
                     "button_style",
                     "hypersig_ui/fn.button_style.html",
-                    "The style of a button of `variant` and `size`, for an element that is not a `<button>`.",
+                    L {
+                        en: "The style of a button of `variant` and `size`, for an element that is not a `<button>`.",
+                        ja: "`<button>` 以外の要素に使う、`variant` と `size` を指定したボタンのスタイル",
+                    },
                 ),
                 (
                     "ButtonVariant",
                     "hypersig_ui/enum.ButtonVariant.html",
-                    "The look of a button.",
+                    L {
+                        en: "The look of a button.",
+                        ja: "ボタンの見た目",
+                    },
                 ),
                 (
                     "ButtonSize",
                     "hypersig_ui/enum.ButtonSize.html",
-                    "The height and padding of a button.",
+                    L {
+                        en: "The height and padding of a button.",
+                        ja: "ボタンの高さと余白",
+                    },
                 ),
             ],
         },
         Component::TextField => Page {
-            lead: "A text field with its label, and where given, a description and an error message tied to it.",
+            lead: L {
+                en: "A text field with its label, and where given, a description and an error message tied to it.",
+                ja: "ラベルの付いたテキストフィールドです。指定すると、説明とエラーメッセージもフィールドに結び付きます。",
+            },
             demo: Demo::TextField,
             built_on: &[
-                "It is a `<label>` and an `<input>`, or a `<textarea>` with `multiline`. The ids that tie them together are derived from the signal's path, so a label always names its own field. `aria-describedby` points at the description and the error, and `aria-invalid` is `true` while the error is not empty.",
-                "The error sits in an `aria-live=\"polite\"` region, so a screen reader reads a new message when it appears. A required field shows an asterisk that a screen reader skips, since it reads \"required\" from the field. `autocomplete` tells the browser what the field holds, for WCAG 1.3.5.",
+                L {
+                    en: "It is a `<label>` and an `<input>`, or a `<textarea>` with `multiline`. The ids that tie them together are derived from the signal's path, so a label always names its own field. `aria-describedby` points at the description and the error, and `aria-invalid` is `true` while the error is not empty.",
+                    ja: "`<label>` と `<input>` からできており、`multiline` を指定すると `<input>` の代わりに `<textarea>` になります。両者を結び付ける id はシグナルのパスから作られるので、ラベルは必ず自分のフィールドを指します。`aria-describedby` は説明とエラーを指し、`aria-invalid` はエラーが空でない間 `true` になります。",
+                },
+                L {
+                    en: "The error sits in an `aria-live=\"polite\"` region, so a screen reader reads a new message when it appears. A required field shows an asterisk that a screen reader skips, since it reads \"required\" from the field. `autocomplete` tells the browser what the field holds, for WCAG 1.3.5.",
+                    ja: "エラーは `aria-live=\"polite\"` の領域に入るので、新しいメッセージが出るとスクリーンリーダーが読み上げます。必須のフィールドに付くアスタリスクは、スクリーンリーダーが読み飛ばします。スクリーンリーダーは「必須」であることをフィールド自体から読み取るからです。`autocomplete` は、WCAG 1.3.5 のために、フィールドに何が入るかをブラウザに伝えます。",
+                },
             ],
             keys: &[],
             items: &[
                 (
                     "TextField::new",
                     "hypersig_ui/struct.TextField.html#method.new",
-                    "A single-line text field labeled `label`, bound to `value`.",
+                    L {
+                        en: "A single-line text field labeled `label`, bound to `value`.",
+                        ja: "`value` に束縛し、`label` をラベルに持つ 1 行のテキストフィールド",
+                    },
                 ),
                 (
                     "kind",
                     "hypersig_ui/struct.TextField.html#method.kind",
-                    "Sets the `type` of the input. A multiline field ignores it.",
+                    L {
+                        en: "Sets the `type` of the input. A multiline field ignores it.",
+                        ja: "入力欄の `type` を設定します。複数行のフィールドでは無視されます。",
+                    },
                 ),
                 (
                     "multiline",
                     "hypersig_ui/struct.TextField.html#method.multiline",
-                    "Makes the field a `<textarea>` that the visitor can resize vertically.",
+                    L {
+                        en: "Makes the field a `<textarea>` that the visitor can resize vertically.",
+                        ja: "フィールドを、訪問者が縦にサイズを変えられる `<textarea>` にします。",
+                    },
                 ),
                 (
                     "autocomplete",
                     "hypersig_ui/struct.TextField.html#method.autocomplete",
-                    "Tells the browser what the field holds, so that it can fill it in.",
+                    L {
+                        en: "Tells the browser what the field holds, so that it can fill it in.",
+                        ja: "フィールドに何が入るかをブラウザに伝え、ブラウザが自動で入力できるようにします。",
+                    },
                 ),
                 (
                     "placeholder",
                     "hypersig_ui/struct.TextField.html#method.placeholder",
-                    "Shows `text` in the empty field.",
+                    L {
+                        en: "Shows `text` in the empty field.",
+                        ja: "空のフィールドに `text` を表示します。",
+                    },
                 ),
                 (
                     "description",
                     "hypersig_ui/struct.TextField.html#method.description",
-                    "Adds a line under the field that `aria-describedby` points at.",
+                    L {
+                        en: "Adds a line under the field that `aria-describedby` points at.",
+                        ja: "フィールドの下に、`aria-describedby` が指す 1 行を足します。",
+                    },
                 ),
                 (
                     "error",
                     "hypersig_ui/struct.TextField.html#method.error",
-                    "Shows `message` under the field and marks the field invalid while `message` is not empty.",
+                    L {
+                        en: "Shows `message` under the field and marks the field invalid while `message` is not empty.",
+                        ja: "フィールドの下に `message` を表示し、`message` が空でない間はフィールドを無効な入力として示します。",
+                    },
                 ),
                 (
                     "required",
                     "hypersig_ui/struct.TextField.html#method.required",
-                    "Marks the field `required`, which the label shows with an asterisk.",
+                    L {
+                        en: "Marks the field `required`, which the label shows with an asterisk.",
+                        ja: "フィールドを `required` にします。ラベルにはアスタリスクが付きます。",
+                    },
                 ),
                 (
                     "disabled",
                     "hypersig_ui/struct.TextField.html#method.disabled",
-                    "Disables the field while `when` is true.",
+                    L {
+                        en: "Disables the field while `when` is true.",
+                        ja: "`when` が true の間、フィールドを無効にします。",
+                    },
                 ),
                 (
                     "InputKind",
                     "hypersig_ui/enum.InputKind.html",
-                    "The `type` of a single-line `TextField`.",
+                    L {
+                        en: "The `type` of a single-line `TextField`.",
+                        ja: "1 行の `TextField` の `type`",
+                    },
                 ),
                 (
                     "Autocomplete",
                     "hypersig_ui/enum.Autocomplete.html",
-                    "What a `TextField` holds, as `autocomplete` names it.",
+                    L {
+                        en: "What a `TextField` holds, as `autocomplete` names it.",
+                        ja: "`TextField` に入る内容を、`autocomplete` の値で表したもの",
+                    },
                 ),
             ],
         },
         Component::Checkbox => Page {
-            lead: "A checkbox and an on and off switch, each bound to a `bool` signal.",
+            lead: L {
+                en: "A checkbox and an on and off switch, each bound to a `bool` signal.",
+                ja: "`bool` のシグナルに束縛するチェックボックスと、オンとオフを切り替えるスイッチです。",
+            },
             demo: Demo::Checkbox,
             built_on: &[
-                "Both are a native `<input type=\"checkbox\">` inside the `<label>` that holds the text, so a click on the text toggles them and they need no id. That also lets them sit on a field of a list item.",
-                "The switch has `role=\"switch\"`, so a screen reader says \"switch, on\" rather than \"checkbox, checked\".",
+                L {
+                    en: "Both are a native `<input type=\"checkbox\">` inside the `<label>` that holds the text, so a click on the text toggles them and they need no id. That also lets them sit on a field of a list item.",
+                    ja: "どちらも、テキストを含む `<label>` の中に置いたネイティブの `<input type=\"checkbox\">` です。そのため、テキストをクリックしても切り替わり、id が要りません。id が要らないので、リストの項目のフィールドにも置けます。",
+                },
+                L {
+                    en: "The switch has `role=\"switch\"`, so a screen reader says \"switch, on\" rather than \"checkbox, checked\".",
+                    ja: "スイッチには `role=\"switch\"` があるので、スクリーンリーダーはチェックボックスとしてではなく、「スイッチ、オン」のようにスイッチとして読み上げます。",
+                },
             ],
-            keys: &[("Space", "Toggles the checkbox or the switch.")],
+            keys: &[(
+                L {
+                    en: "Space",
+                    ja: "Space",
+                },
+                L {
+                    en: "Toggles the checkbox or the switch.",
+                    ja: "チェックボックスやスイッチを切り替えます。",
+                },
+            )],
             items: &[
                 (
                     "checkbox",
                     "hypersig_ui/fn.checkbox.html",
-                    "A checkbox labeled `text`, bound to `checked`.",
+                    L {
+                        en: "A checkbox labeled `text`, bound to `checked`.",
+                        ja: "`checked` に束縛し、`text` をラベルに持つチェックボックス",
+                    },
                 ),
                 (
                     "switch",
                     "hypersig_ui/fn.switch.html",
-                    "An on and off switch labeled `text`, bound to `on`.",
+                    L {
+                        en: "An on and off switch labeled `text`, bound to `on`.",
+                        ja: "`on` に束縛し、`text` をラベルに持つオンとオフのスイッチ",
+                    },
                 ),
             ],
         },
         Component::RadioGroup => Page {
-            lead: "A group of radio buttons that sets a signal to the chosen option's value.",
+            lead: L {
+                en: "A group of radio buttons that sets a signal to the chosen option's value.",
+                ja: "選んだ選択肢の値をシグナルに入れる、ラジオボタンのグループです。",
+            },
             demo: Demo::RadioGroup,
-            built_on: &[
-                "The radios share a `name` derived from the signal's path, so the browser gives the group one Tab stop and moves between its radios with the arrow keys. The `<fieldset>` and `<legend>` name the group for a screen reader.",
-            ],
+            built_on: &[L {
+                en: "The radios share a `name` derived from the signal's path, so the browser gives the group one Tab stop and moves between its radios with the arrow keys. The `<fieldset>` and `<legend>` name the group for a screen reader.",
+                ja: "ラジオボタンはシグナルのパスから作った `name` を共有するので、ブラウザはグループ全体で Tab の止まる場所を 1 つにし、グループの中は矢印キーで移れるようにします。`<fieldset>` と `<legend>` が、スクリーンリーダーに向けてグループに名前を付けます。",
+            }],
             keys: &[
-                ("Tab", "Moves focus into the group, to the checked radio."),
                 (
-                    "Arrow keys",
-                    "Move to the next or previous radio and check it.",
+                    L {
+                        en: "Tab",
+                        ja: "Tab",
+                    },
+                    L {
+                        en: "Moves focus into the group, to the checked radio.",
+                        ja: "グループの中の、チェックされたラジオボタンにフォーカスを移します。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Arrow keys",
+                        ja: "矢印キー",
+                    },
+                    L {
+                        en: "Move to the next or previous radio and check it.",
+                        ja: "次か前のラジオボタンに移り、それをチェックします。",
+                    },
                 ),
             ],
             items: &[(
                 "radio_group",
                 "hypersig_ui/fn.radio_group.html",
-                "A group of radio buttons under the legend `title`, one per option, that sets `selected` to the option's value.",
+                L {
+                    en: "A group of radio buttons under the legend `title`, one per option, that sets `selected` to the option's value.",
+                    ja: "`title` を凡例に持ち、選択肢ごとに 1 つのラジオボタンを並べて、選んだ選択肢の値を `selected` に入れるグループ",
+                },
             )],
         },
         Component::Select => Page {
-            lead: "A select that sets a signal to the chosen option's value.",
+            lead: L {
+                en: "A select that sets a signal to the chosen option's value.",
+                ja: "選んだ選択肢の値をシグナルに入れるセレクトです。",
+            },
             demo: Demo::Select,
             built_on: &[
-                "It is a native `<select>`, which a screen reader, a keyboard, and a phone's picker wheel already handle. The closed control is drawn like a text field with a chevron.",
-                "Where the browser supports `appearance: base-select` and `::picker(select)`, which browser-compat-data 8.1.6 lists for Chrome 135 and Safari 27, the open list is drawn as a popover card too. Elsewhere it is the browser's own picker.",
+                L {
+                    en: "It is a native `<select>`, which a screen reader, a keyboard, and a phone's picker wheel already handle. The closed control is drawn like a text field with a chevron.",
+                    ja: "ネイティブの `<select>` なので、スクリーンリーダー、キーボード、スマートフォンのピッカーホイールがもともと扱えます。閉じた状態のコントロールは、山形の矢印（シェブロン）が付いたテキストフィールドのように描かれます。",
+                },
+                L {
+                    en: "Where the browser supports `appearance: base-select` and `::picker(select)`, which browser-compat-data 8.1.6 lists for Chrome 135 and Safari 27, the open list is drawn as a popover card too. Elsewhere it is the browser's own picker.",
+                    ja: "ブラウザが `appearance: base-select` と `::picker(select)` に対応していれば、開いた一覧もポップオーバーのカードとして描かれます。browser-compat-data 8.1.6 では、対応しているのは Chrome 135 と Safari 27 です。それ以外のブラウザでは、ブラウザ自身のピッカーが開きます。",
+                },
             ],
             keys: &[(
-                "The browser's keys",
-                "A native `<select>` takes the keys of the platform, which differ between systems.",
+                L {
+                    en: "The browser's keys",
+                    ja: "ブラウザのキー",
+                },
+                L {
+                    en: "A native `<select>` takes the keys of the platform, which differ between systems.",
+                    ja: "ネイティブの `<select>` はプラットフォームのキー操作に従うので、使えるキーはシステムごとに異なります。",
+                },
             )],
             items: &[(
                 "select_field",
                 "hypersig_ui/fn.select_field.html",
-                "A select labeled `title`, offering `options`, that sets `selected` to the chosen option's value.",
+                L {
+                    en: "A select labeled `title`, offering `options`, that sets `selected` to the chosen option's value.",
+                    ja: "`title` をラベルに持ち、`options` を選択肢として出して、選んだ選択肢の値を `selected` に入れるセレクト",
+                },
             )],
         },
         Component::Slider => Page {
-            lead: "A slider that sets an `i32` signal, with a value text for a unit.",
+            lead: L {
+                en: "A slider that sets an `i32` signal, with a value text for a unit.",
+                ja: "`i32` のシグナルを設定するスライダーです。単位を表す値のテキストも付けられます。",
+            },
             demo: Demo::Slider,
             built_on: &[
-                "It is a native `<input type=\"range\">`, so the browser gives it `role=\"slider\"`, its keys, and dragging with a pointer or a finger. The input is transparent and lies over a track and a thumb drawn from the value, so the slider looks the same in every browser.",
-                "`value_text` shows a value such as \"40 %\" beside the label and gives it to assistive technology as `aria-valuetext`. The drawn thumb can sit a few pixels off the browser's own transparent thumb near either end.",
+                L {
+                    en: "It is a native `<input type=\"range\">`, so the browser gives it `role=\"slider\"`, its keys, and dragging with a pointer or a finger. The input is transparent and lies over a track and a thumb drawn from the value, so the slider looks the same in every browser.",
+                    ja: "ネイティブの `<input type=\"range\">` なので、`role=\"slider\"`、キー操作、ポインタや指でのドラッグはブラウザが与えます。入力欄は透明で、値から描いたトラックとつまみの上に重なっているので、スライダーはどのブラウザでも同じ見た目になります。",
+                },
+                L {
+                    en: "`value_text` shows a value such as \"40 %\" beside the label and gives it to assistive technology as `aria-valuetext`. The drawn thumb can sit a few pixels off the browser's own transparent thumb near either end.",
+                    ja: "`value_text` は「40 %」のような値をラベルの横に表示し、支援技術には `aria-valuetext` として渡します。両端の近くでは、描いたつまみがブラウザ自身の透明なつまみから数ピクセルずれることがあります。",
+                },
             ],
             keys: &[
-                ("Arrow keys", "Move the value by one step."),
-                ("Page Up, Page Down", "Move the value by a larger step."),
-                ("Home, End", "Move to the lowest or the highest value."),
+                (
+                    L {
+                        en: "Arrow keys",
+                        ja: "矢印キー",
+                    },
+                    L {
+                        en: "Move the value by one step.",
+                        ja: "値を 1 ステップ動かします。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Page Up, Page Down",
+                        ja: "Page Up、Page Down",
+                    },
+                    L {
+                        en: "Move the value by a larger step.",
+                        ja: "値を大きめのステップで動かします。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Home, End",
+                        ja: "Home、End",
+                    },
+                    L {
+                        en: "Move to the lowest or the highest value.",
+                        ja: "最小値か最大値に移ります。",
+                    },
+                ),
             ],
             items: &[
                 (
                     "Slider::new",
                     "hypersig_ui/struct.Slider.html#method.new",
-                    "A slider from 0 to 100 in steps of 1, labeled `label`, bound to `value`.",
+                    L {
+                        en: "A slider from 0 to 100 in steps of 1, labeled `label`, bound to `value`.",
+                        ja: "`value` に束縛し、`label` をラベルに持つ、0 から 100 まで 1 刻みのスライダー",
+                    },
                 ),
                 (
                     "range",
                     "hypersig_ui/struct.Slider.html#method.range",
-                    "Sets the lowest and the highest value.",
+                    L {
+                        en: "Sets the lowest and the highest value.",
+                        ja: "最小値と最大値を設定します。",
+                    },
                 ),
                 (
                     "step",
                     "hypersig_ui/struct.Slider.html#method.step",
-                    "Sets how far one arrow key press moves the value.",
+                    L {
+                        en: "Sets how far one arrow key press moves the value.",
+                        ja: "矢印キーを 1 回押したときに値が動く幅を設定します。",
+                    },
                 ),
                 (
                     "value_text",
                     "hypersig_ui/struct.Slider.html#method.value_text",
-                    "Shows `text` beside the label and gives it to assistive technology as `aria-valuetext`.",
+                    L {
+                        en: "Shows `text` beside the label and gives it to assistive technology as `aria-valuetext`.",
+                        ja: "ラベルの横に `text` を表示し、支援技術には `aria-valuetext` として渡します。",
+                    },
                 ),
             ],
         },
         Component::Listbox => Page {
-            lead: "A list of options of which one is selected, kept in a signal.",
+            lead: L {
+                en: "A list of options of which one is selected, kept in a signal.",
+                ja: "選択肢のうち 1 つを選ぶ一覧です。選ばれた選択肢はシグナルに入ります。",
+            },
             demo: Demo::Listbox,
-            built_on: &[
-                "It follows the WAI-ARIA listbox pattern for a single selection. The list has `role=\"listbox\"` and each option `role=\"option\"` with `aria-selected`. Focus moves between the options through `El::roving_focus`, and each option is selected as it gains focus. The ids are derived from the signal's path and the option's position.",
-            ],
+            built_on: &[L {
+                en: "It follows the WAI-ARIA listbox pattern for a single selection. The list has `role=\"listbox\"` and each option `role=\"option\"` with `aria-selected`. Focus moves between the options through `El::roving_focus`, and each option is selected as it gains focus. The ids are derived from the signal's path and the option's position.",
+                ja: "単一選択の WAI-ARIA listbox パターンに従います。一覧は `role=\"listbox\"` を持ち、各選択肢は `role=\"option\"` と `aria-selected` を持ちます。フォーカスは `El::roving_focus` で選択肢の間を移り、選択肢はフォーカスを受けると同時に選ばれます。id は、シグナルのパスと選択肢の位置から作られます。",
+            }],
             keys: &[
                 (
-                    "Tab",
-                    "Moves focus into the list, to the selected option, or to the first where none is selected.",
+                    L {
+                        en: "Tab",
+                        ja: "Tab",
+                    },
+                    L {
+                        en: "Moves focus into the list, to the selected option, or to the first where none is selected.",
+                        ja: "一覧の中の選ばれた選択肢にフォーカスを移します。選ばれた選択肢がなければ、最初の選択肢に移します。",
+                    },
                 ),
                 (
-                    "Up, Down",
-                    "Move to the previous or next option and select it.",
+                    L {
+                        en: "Up, Down",
+                        ja: "上矢印、下矢印",
+                    },
+                    L {
+                        en: "Move to the previous or next option and select it.",
+                        ja: "前か次の選択肢に移り、それを選びます。",
+                    },
                 ),
                 (
-                    "Home, End",
-                    "Move to the first or last option and select it.",
+                    L {
+                        en: "Home, End",
+                        ja: "Home、End",
+                    },
+                    L {
+                        en: "Move to the first or last option and select it.",
+                        ja: "最初か最後の選択肢に移り、それを選びます。",
+                    },
                 ),
             ],
             items: &[
                 (
                     "Listbox::new",
                     "hypersig_ui/struct.Listbox.html#method.new",
-                    "An empty list named `label` for assistive technology.",
+                    L {
+                        en: "An empty list named `label` for assistive technology.",
+                        ja: "支援技術に向けて `label` を名前に持つ、空の一覧",
+                    },
                 ),
                 (
                     "option",
                     "hypersig_ui/struct.Listbox.html#method.option",
-                    "Adds an option labeled `title` that selects `value`.",
+                    L {
+                        en: "Adds an option labeled `title` that selects `value`.",
+                        ja: "`title` をラベルに持ち、`value` を選ぶ選択肢を足します。",
+                    },
                 ),
             ],
         },
         Component::Combobox => Page {
-            lead: "A text field that suggests options from a list as the visitor types.",
+            lead: L {
+                en: "A text field that suggests options from a list as the visitor types.",
+                ja: "訪問者が入力するのに合わせて、一覧から選択肢を候補に出すテキストフィールドです。",
+            },
             demo: Demo::Combobox,
             built_on: &[
-                "It follows the WAI-ARIA combobox pattern with list autocomplete. The text field has `role=\"combobox\"`, `aria-expanded`, `aria-controls`, and `aria-activedescendant`, and focus stays in it while the arrows move through the options shown, through `El::active_descendant`. Typing shows the options that contain the text, ignoring case.",
-                "Declare the combobox as a `const` naming its text field and its list, and keep its state in a `ComboboxState` field of the page's signals. The chosen text is `ComboboxState::text`. The visitor can leave text that matches no option, which the page checks where it needs one of the options.",
+                L {
+                    en: "It follows the WAI-ARIA combobox pattern with list autocomplete. The text field has `role=\"combobox\"`, `aria-expanded`, `aria-controls`, and `aria-activedescendant`, and focus stays in it while the arrows move through the options shown, through `El::active_descendant`. Typing shows the options that contain the text, ignoring case.",
+                    ja: "一覧による自動補完を持つ WAI-ARIA combobox パターンに従います。テキストフィールドは `role=\"combobox\"`、`aria-expanded`、`aria-controls`、`aria-activedescendant` を持ちます。`El::active_descendant` を使うので、矢印キーで表示中の選択肢をたどる間も、フォーカスはテキストフィールドに残ります。文字を入力すると、大文字と小文字を区別せずに、その文字列を含む選択肢が表示されます。",
+                },
+                L {
+                    en: "Declare the combobox as a `const` naming its text field and its list, and keep its state in a `ComboboxState` field of the page's signals. The chosen text is `ComboboxState::text`. The visitor can leave text that matches no option, which the page checks where it needs one of the options.",
+                    ja: "コンボボックスは、テキストフィールドと一覧の名前を持つ `const` として宣言し、状態はページのシグナルにある `ComboboxState` のフィールドに持たせます。選ばれたテキストは `ComboboxState::text` です。訪問者はどの選択肢にも合わないテキストを残せるので、選択肢のどれかが必要なところでは、ページの側で確かめます。",
+                },
             ],
             keys: &[
                 (
-                    "Typing",
-                    "Opens the list and shows the options that contain the text.",
+                    L {
+                        en: "Typing",
+                        ja: "文字の入力",
+                    },
+                    L {
+                        en: "Opens the list and shows the options that contain the text.",
+                        ja: "一覧を開き、その文字列を含む選択肢を表示します。",
+                    },
                 ),
                 (
-                    "Down",
-                    "Opens the list, then moves to the next option shown.",
+                    L {
+                        en: "Down",
+                        ja: "下矢印",
+                    },
+                    L {
+                        en: "Opens the list, then moves to the next option shown.",
+                        ja: "一覧を開きます。開いたあとは、表示中の次の選択肢に移ります。",
+                    },
                 ),
-                ("Up", "Moves to the previous option shown."),
                 (
-                    "Enter",
-                    "Chooses the option the arrows reached and closes the list.",
+                    L {
+                        en: "Up",
+                        ja: "上矢印",
+                    },
+                    L {
+                        en: "Moves to the previous option shown.",
+                        ja: "表示中の前の選択肢に移ります。",
+                    },
                 ),
                 (
-                    "Escape",
-                    "Closes the list, or clears the text when it is closed. A dialog around the combobox does not close on it from the text field.",
+                    L {
+                        en: "Enter",
+                        ja: "Enter",
+                    },
+                    L {
+                        en: "Chooses the option the arrows reached and closes the list.",
+                        ja: "矢印キーでたどり着いた選択肢を選び、一覧を閉じます。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Escape",
+                        ja: "Escape",
+                    },
+                    L {
+                        en: "Closes the list, or clears the text when it is closed. A dialog around the combobox does not close on it from the text field.",
+                        ja: "一覧を閉じます。一覧が閉じているときは、テキストを消します。コンボボックスを囲むダイアログは、テキストフィールドで押された Escape では閉じません。",
+                    },
                 ),
             ],
             items: &[
                 (
                     "Combobox::new",
                     "hypersig_ui/struct.Combobox.html#method.new",
-                    "A combobox whose text field has the id `field` and whose list has the id `list`.",
+                    L {
+                        en: "A combobox whose text field has the id `field` and whose list has the id `list`.",
+                        ja: "テキストフィールドの id が `field`、一覧の id が `list` のコンボボックス",
+                    },
                 ),
                 (
                     "render",
                     "hypersig_ui/struct.Combobox.html#method.render",
-                    "The label, the text field, and the list of `options`, keeping their state in `state`.",
+                    L {
+                        en: "The label, the text field, and the list of `options`, keeping their state in `state`.",
+                        ja: "状態を `state` に持つ、ラベルとテキストフィールドと `options` の一覧",
+                    },
                 ),
                 (
                     "ComboboxState",
                     "hypersig_ui/struct.ComboboxState.html",
-                    "The signals a `Combobox` keeps.",
+                    L {
+                        en: "The signals a `Combobox` keeps.",
+                        ja: "`Combobox` が持つシグナル",
+                    },
                 ),
                 (
                     "ComboboxState::new",
                     "hypersig_ui/struct.ComboboxState.html#method.new",
-                    "A closed combobox whose text field holds `text`.",
+                    L {
+                        en: "A closed combobox whose text field holds `text`.",
+                        ja: "テキストフィールドに `text` が入った、閉じたコンボボックス",
+                    },
                 ),
             ],
         },
         Component::Tabs => Page {
-            lead: "A tab list whose selection is a signal, with one panel per tab.",
+            lead: L {
+                en: "A tab list whose selection is a signal, with one panel per tab.",
+                ja: "選択をシグナルに持つタブの一覧です。タブごとに 1 つのパネルがあります。",
+            },
             demo: Demo::Tabs,
-            built_on: &[
-                "It follows the WAI-ARIA tabs pattern. The list has `role=\"tablist\"`, each tab `role=\"tab\"` with `aria-selected` and `aria-controls`, and each panel `role=\"tabpanel\"` labeled by its tab. A tab is selected as it gains focus, through `El::roving_focus`. The ids are derived from the signal's path and the tab's position.",
-            ],
+            built_on: &[L {
+                en: "It follows the WAI-ARIA tabs pattern. The list has `role=\"tablist\"`, each tab `role=\"tab\"` with `aria-selected` and `aria-controls`, and each panel `role=\"tabpanel\"` labeled by its tab. A tab is selected as it gains focus, through `El::roving_focus`. The ids are derived from the signal's path and the tab's position.",
+                ja: "WAI-ARIA tabs パターンに従います。一覧は `role=\"tablist\"` を持ち、各タブは `role=\"tab\"` と `aria-selected`、`aria-controls` を持ちます。各パネルは `role=\"tabpanel\"` を持ち、そのタブがパネルのラベルになります。タブは `El::roving_focus` でフォーカスを受けると同時に選ばれます。id は、シグナルのパスとタブの位置から作られます。",
+            }],
             keys: &[
                 (
-                    "Tab",
-                    "Moves focus into the list at the selected tab, then on to the panel.",
+                    L {
+                        en: "Tab",
+                        ja: "Tab",
+                    },
+                    L {
+                        en: "Moves focus into the list at the selected tab, then on to the panel.",
+                        ja: "一覧の中の選ばれたタブにフォーカスを移し、もう一度押すとパネルに移します。",
+                    },
                 ),
                 (
-                    "Left, Right",
-                    "Move to the previous or next tab and select it.",
+                    L {
+                        en: "Left, Right",
+                        ja: "左矢印、右矢印",
+                    },
+                    L {
+                        en: "Move to the previous or next tab and select it.",
+                        ja: "前か次のタブに移り、それを選びます。",
+                    },
                 ),
-                ("Home, End", "Move to the first or last tab and select it."),
+                (
+                    L {
+                        en: "Home, End",
+                        ja: "Home、End",
+                    },
+                    L {
+                        en: "Move to the first or last tab and select it.",
+                        ja: "最初か最後のタブに移り、それを選びます。",
+                    },
+                ),
             ],
             items: &[
                 (
                     "Tabs::new",
                     "hypersig_ui/struct.Tabs.html#method.new",
-                    "An empty tab list named `label` for assistive technology.",
+                    L {
+                        en: "An empty tab list named `label` for assistive technology.",
+                        ja: "支援技術に向けて `label` を名前に持つ、空のタブの一覧",
+                    },
                 ),
                 (
                     "tab",
                     "hypersig_ui/struct.Tabs.html#method.tab",
-                    "Adds a tab titled `title` that selects `value` and shows `panel`.",
+                    L {
+                        en: "Adds a tab titled `title` that selects `value` and shows `panel`.",
+                        ja: "`title` をタイトルに持ち、`value` を選んで `panel` を表示するタブを足します。",
+                    },
                 ),
             ],
         },
         Component::Accordion => Page {
-            lead: "A stack of sections that open and close, one at a time or each on its own.",
+            lead: L {
+                en: "A stack of sections that open and close, one at a time or each on its own.",
+                ja: "開閉するセクションを縦に並べたものです。一度に 1 つだけ開く形と、それぞれが独立に開く形があります。",
+            },
             demo: Demo::Accordion,
             built_on: &[
-                "Each section is a native `<details>` whose `<summary>` opens and closes it. The browser handles the keyboard and announces each summary as a button that is expanded or collapsed, and find-in-page opens a closed section that holds a match.",
-                "An exclusive accordion gives its sections one `name`, so the browser closes the open one when another opens.",
+                L {
+                    en: "Each section is a native `<details>` whose `<summary>` opens and closes it. The browser handles the keyboard and announces each summary as a button that is expanded or collapsed, and find-in-page opens a closed section that holds a match.",
+                    ja: "各セクションはネイティブの `<details>` で、その `<summary>` がセクションを開閉します。キーボード操作はブラウザが扱い、各 summary を、展開か折りたたみの状態を持つボタンとして読み上げます。ページ内検索で一致した箇所が閉じたセクションにあれば、ブラウザがそのセクションを開きます。",
+                },
+                L {
+                    en: "An exclusive accordion gives its sections one `name`, so the browser closes the open one when another opens.",
+                    ja: "排他的なアコーディオンはセクションに同じ `name` を付けるので、別のセクションが開くと、ブラウザが開いていたセクションを閉じます。",
+                },
             ],
-            keys: &[("Enter, Space", "Opens or closes the focused section.")],
+            keys: &[(
+                L {
+                    en: "Enter, Space",
+                    ja: "Enter、Space",
+                },
+                L {
+                    en: "Opens or closes the focused section.",
+                    ja: "フォーカスのあるセクションを開くか閉じます。",
+                },
+            )],
             items: &[
                 (
                     "Accordion::new",
                     "hypersig_ui/struct.Accordion.html#method.new",
-                    "An accordion whose sections open and close independently.",
+                    L {
+                        en: "An accordion whose sections open and close independently.",
+                        ja: "セクションがそれぞれ独立に開閉するアコーディオン",
+                    },
                 ),
                 (
                     "Accordion::exclusive",
                     "hypersig_ui/struct.Accordion.html#method.exclusive",
-                    "An accordion that keeps at most one section open, grouped by `name`.",
+                    L {
+                        en: "An accordion that keeps at most one section open, grouped by `name`.",
+                        ja: "セクションを `name` でまとめ、開くセクションを多くても 1 つに保つアコーディオン",
+                    },
                 ),
                 (
                     "item",
                     "hypersig_ui/struct.Accordion.html#method.item",
-                    "Adds a section titled `title` whose content is `content`.",
+                    L {
+                        en: "Adds a section titled `title` whose content is `content`.",
+                        ja: "`title` をタイトルに持ち、中身が `content` のセクションを足します。",
+                    },
                 ),
             ],
         },
         Component::Card => Page {
-            lead: "A bordered surface with a header, content, and a footer.",
+            lead: L {
+                en: "A bordered surface with a header, content, and a footer.",
+                ja: "ヘッダー、中身、フッターを持つ、枠線付きの面です。",
+            },
             demo: Demo::Card,
-            built_on: &[
-                "A card is a `<div>` and takes no role. Its title is a heading whose level you choose with `Level`, so that it sits one level below the section around it and a screen reader's list of headings stays in order.",
-            ],
+            built_on: &[L {
+                en: "A card is a `<div>` and takes no role. Its title is a heading whose level you choose with `Level`, so that it sits one level below the section around it and a screen reader's list of headings stays in order.",
+                ja: "カードは `<div>` で、ロールを持ちません。タイトルは見出しで、そのレベルは `Level` で選びます。周りのセクションより 1 つ下のレベルにすると、スクリーンリーダーの見出しの一覧が順番どおりに並びます。",
+            }],
             keys: &[],
             items: &[
                 (
                     "card",
                     "hypersig_ui/fn.card.html",
-                    "A `<div>` with a border, a shadow, and `token::card` behind it.",
+                    L {
+                        en: "A `<div>` with a border, a shadow, and `token::card` behind it.",
+                        ja: "枠線と影を持ち、背景が `token::card` の `<div>`",
+                    },
                 ),
                 (
                     "card_header",
                     "hypersig_ui/fn.card_header.html",
-                    "The top of a `card`, holding its title and description.",
+                    L {
+                        en: "The top of a `card`, holding its title and description.",
+                        ja: "タイトルと説明を入れる、`card` の上部",
+                    },
                 ),
                 (
                     "card_title",
                     "hypersig_ui/fn.card_title.html",
-                    "The title of a `card`, as a heading of `level`.",
+                    L {
+                        en: "The title of a `card`, as a heading of `level`.",
+                        ja: "`level` の見出しとして描く、`card` のタイトル",
+                    },
                 ),
                 (
                     "card_description",
                     "hypersig_ui/fn.card_description.html",
-                    "A line under the title of a `card`, in `token::muted_foreground`.",
+                    L {
+                        en: "A line under the title of a `card`, in `token::muted_foreground`.",
+                        ja: "`card` のタイトルの下に `token::muted_foreground` の色で書く 1 行",
+                    },
                 ),
                 (
                     "card_content",
                     "hypersig_ui/fn.card_content.html",
-                    "The body of a `card`.",
+                    L {
+                        en: "The body of a `card`.",
+                        ja: "`card` の本体",
+                    },
                 ),
                 (
                     "card_footer",
                     "hypersig_ui/fn.card_footer.html",
-                    "The bottom of a `card`, laying its children out in a row.",
+                    L {
+                        en: "The bottom of a `card`, laying its children out in a row.",
+                        ja: "子要素を横に並べる、`card` の下部",
+                    },
                 ),
                 (
                     "Level",
                     "hypersig_ui/enum.Level.html",
-                    "The level of a heading, which follows the headings around it.",
+                    L {
+                        en: "The level of a heading, which follows the headings around it.",
+                        ja: "周りの見出しに合わせて決める、見出しのレベル",
+                    },
                 ),
             ],
         },
         Component::Separator => Page {
-            lead: "A one-pixel line between groups of content, across or along.",
+            lead: L {
+                en: "A one-pixel line between groups of content, across or along.",
+                ja: "内容のまとまりの間に引く、横向きか縦向きの 1 ピクセルの線です。",
+            },
             demo: Demo::Separator,
-            built_on: &[
-                "A horizontal separator is an `<hr>`, and a vertical one is a `<div>` with `role=\"separator\"` and `aria-orientation=\"vertical\"`, so a screen reader announces both as separators.",
-            ],
+            built_on: &[L {
+                en: "A horizontal separator is an `<hr>`, and a vertical one is a `<div>` with `role=\"separator\"` and `aria-orientation=\"vertical\"`, so a screen reader announces both as separators.",
+                ja: "横向きの区切り線は `<hr>` で、縦向きの区切り線は `role=\"separator\"` と `aria-orientation=\"vertical\"` を持つ `<div>` です。そのため、スクリーンリーダーはどちらも区切り線として読み上げます。",
+            }],
             keys: &[],
             items: &[(
                 "separator",
                 "hypersig_ui/fn.separator.html",
-                "A one-pixel line in `token::border` that runs along `orientation`.",
+                L {
+                    en: "A one-pixel line in `token::border` that runs along `orientation`.",
+                    ja: "`orientation` の向きに引く、`token::border` の色の 1 ピクセルの線",
+                },
             )],
         },
         Component::Dialog => Page {
-            lead: "A modal dialog, and an alert dialog that asks the visitor to confirm.",
+            lead: L {
+                en: "A modal dialog, and an alert dialog that asks the visitor to confirm.",
+                ja: "モーダルダイアログと、訪問者に確認を求めるアラートダイアログです。",
+            },
             demo: Demo::Dialog,
             built_on: &[
-                "Declare the dialog as a `const` and use it for the dialog and for the buttons that open and close it. The buttons carry `commandfor` and `command`, and the browser opens the `<dialog>` with `showModal()`: the rest of the page becomes inert, Escape closes it, and focus returns to the button that opened it. Invoker commands ship in Chrome 135, Firefox 144, and Safari 26.2.",
-                "The dialog is labeled by its title and described by its description through ids derived from the name. An alert dialog has `role=\"alertdialog\"` and no close button in its corner, so the visitor answers with one of its buttons.",
+                L {
+                    en: "Declare the dialog as a `const` and use it for the dialog and for the buttons that open and close it. The buttons carry `commandfor` and `command`, and the browser opens the `<dialog>` with `showModal()`: the rest of the page becomes inert, Escape closes it, and focus returns to the button that opened it. Invoker commands ship in Chrome 135, Firefox 144, and Safari 26.2.",
+                    ja: "ダイアログは `const` として宣言し、ダイアログ本体と、それを開くボタン、閉じるボタンに使います。ボタンには `commandfor` と `command` が付き、ブラウザが `<dialog>` を `showModal()` で開きます。開いている間はページのほかの部分を操作できなくなり（inert）、Escape で閉じると、フォーカスはダイアログを開いたボタンに戻ります。invoker commands は Chrome 135、Firefox 144、Safari 26.2 から使えます。",
+                },
+                L {
+                    en: "The dialog is labeled by its title and described by its description through ids derived from the name. An alert dialog has `role=\"alertdialog\"` and no close button in its corner, so the visitor answers with one of its buttons.",
+                    ja: "ダイアログには、名前から作った id を通して、タイトルがラベルとして、説明が説明文として結び付きます。アラートダイアログは `role=\"alertdialog\"` を持ち、角に閉じるボタンがないので、訪問者はダイアログのボタンのどれかで答えます。",
+                },
             ],
             keys: &[
                 (
-                    "Tab",
-                    "Moves between the dialog's controls and never reaches the page behind.",
+                    L {
+                        en: "Tab",
+                        ja: "Tab",
+                    },
+                    L {
+                        en: "Moves between the dialog's controls and never reaches the page behind.",
+                        ja: "ダイアログのコントロールの間を移り、後ろのページには移りません。",
+                    },
                 ),
                 (
-                    "Escape",
-                    "Closes the dialog and returns focus to the button that opened it.",
+                    L {
+                        en: "Escape",
+                        ja: "Escape",
+                    },
+                    L {
+                        en: "Closes the dialog and returns focus to the button that opened it.",
+                        ja: "ダイアログを閉じ、ダイアログを開いたボタンにフォーカスを戻します。",
+                    },
                 ),
             ],
             items: &[
                 (
                     "Dialog::new",
                     "hypersig_ui/struct.Dialog.html#method.new",
-                    "A dialog whose id is `name`.",
+                    L {
+                        en: "A dialog whose id is `name`.",
+                        ja: "id が `name` のダイアログ",
+                    },
                 ),
                 (
                     "trigger",
                     "hypersig_ui/struct.Dialog.html#method.trigger",
-                    "A button that opens the dialog.",
+                    L {
+                        en: "A button that opens the dialog.",
+                        ja: "ダイアログを開くボタン",
+                    },
                 ),
                 (
                     "close",
                     "hypersig_ui/struct.Dialog.html#method.close",
-                    "A button that closes the dialog. Put it inside the dialog.",
+                    L {
+                        en: "A button that closes the dialog. Put it inside the dialog.",
+                        ja: "ダイアログの中に置く、ダイアログを閉じるボタン",
+                    },
                 ),
                 (
                     "dialog",
                     "hypersig_ui/struct.Dialog.html#method.dialog",
-                    "The dialog, with `title`, `description`, `content`, and a close button in its corner.",
+                    L {
+                        en: "The dialog, with `title`, `description`, `content`, and a close button in its corner.",
+                        ja: "`title`、`description`、`content` と、角の閉じるボタンを持つダイアログ",
+                    },
                 ),
                 (
                     "alert_dialog",
                     "hypersig_ui/struct.Dialog.html#method.alert_dialog",
-                    "An alert dialog, which asks the visitor to confirm or cancel before going on.",
+                    L {
+                        en: "An alert dialog, which asks the visitor to confirm or cancel before going on.",
+                        ja: "先に進む前に、訪問者に確認か取り消しを求めるアラートダイアログ",
+                    },
                 ),
                 (
                     "dialog_footer",
                     "hypersig_ui/fn.dialog_footer.html",
-                    "The row of buttons at the bottom of a dialog, aligned to the end.",
+                    L {
+                        en: "The row of buttons at the bottom of a dialog, aligned to the end.",
+                        ja: "ダイアログの下部に、末尾に寄せて並べるボタンの列",
+                    },
                 ),
             ],
         },
         Component::Menu => Page {
-            lead: "A menu of actions opened by a button.",
+            lead: L {
+                en: "A menu of actions opened by a button.",
+                ja: "ボタンで開く、操作のメニューです。",
+            },
             demo: Demo::Menu,
             built_on: &[
-                "It follows the WAI-ARIA menu button pattern: the button has `aria-haspopup=\"menu\"`, the menu `role=\"menu\"`, and each action `role=\"menuitem\"`. The menu is a `popover`, so the browser puts it above the page and closes it on Escape or on a click outside. It is placed under the button with CSS anchor positioning and flips above it where there is no room below.",
-                "A disabled action keeps its place, and the arrow keys skip it.",
+                L {
+                    en: "It follows the WAI-ARIA menu button pattern: the button has `aria-haspopup=\"menu\"`, the menu `role=\"menu\"`, and each action `role=\"menuitem\"`. The menu is a `popover`, so the browser puts it above the page and closes it on Escape or on a click outside. It is placed under the button with CSS anchor positioning and flips above it where there is no room below.",
+                    ja: "WAI-ARIA menu button パターンに従います。ボタンは `aria-haspopup=\"menu\"` を、メニューは `role=\"menu\"` を、各操作は `role=\"menuitem\"` を持ちます。メニューは `popover` なので、ブラウザがページの上に出し、Escape か外側のクリックで閉じます。メニューは CSS の anchor positioning でボタンの下に置かれ、下に場所がなければボタンの上に移ります。",
+                },
+                L {
+                    en: "A disabled action keeps its place, and the arrow keys skip it.",
+                    ja: "無効な操作はその位置に残り、矢印キーでは飛ばされます。",
+                },
             ],
             keys: &[
                 (
-                    "Enter, Space",
-                    "On the button, opens the menu and moves focus to the first action. On an action, runs it and closes the menu.",
+                    L {
+                        en: "Enter, Space",
+                        ja: "Enter、Space",
+                    },
+                    L {
+                        en: "On the button, opens the menu and moves focus to the first action. On an action, runs it and closes the menu.",
+                        ja: "ボタンで押すと、メニューを開いて最初の操作にフォーカスを移します。操作で押すと、その操作を実行してメニューを閉じます。",
+                    },
                 ),
-                ("Up, Down", "Move to the previous or next action."),
-                ("Home, End", "Move to the first or last action."),
-                ("Escape", "Closes the menu and returns focus to the button."),
-                ("Tab", "Closes the menu."),
+                (
+                    L {
+                        en: "Up, Down",
+                        ja: "上矢印、下矢印",
+                    },
+                    L {
+                        en: "Move to the previous or next action.",
+                        ja: "前か次の操作に移ります。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Home, End",
+                        ja: "Home、End",
+                    },
+                    L {
+                        en: "Move to the first or last action.",
+                        ja: "最初か最後の操作に移ります。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Escape",
+                        ja: "Escape",
+                    },
+                    L {
+                        en: "Closes the menu and returns focus to the button.",
+                        ja: "メニューを閉じ、ボタンにフォーカスを戻します。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Tab",
+                        ja: "Tab",
+                    },
+                    L {
+                        en: "Closes the menu.",
+                        ja: "メニューを閉じます。",
+                    },
+                ),
             ],
             items: &[
                 (
                     "Menu::new",
                     "hypersig_ui/struct.Menu.html#method.new",
-                    "A menu whose id is `name`.",
+                    L {
+                        en: "A menu whose id is `name`.",
+                        ja: "id が `name` のメニュー",
+                    },
                 ),
                 (
                     "trigger",
                     "hypersig_ui/struct.Menu.html#method.trigger",
-                    "The button that opens and closes the menu.",
+                    L {
+                        en: "The button that opens and closes the menu.",
+                        ja: "メニューを開閉するボタン",
+                    },
                 ),
                 (
                     "menu",
                     "hypersig_ui/struct.Menu.html#method.menu",
-                    "The menu, holding `items` in order.",
+                    L {
+                        en: "The menu, holding `items` in order.",
+                        ja: "`items` を順に並べたメニュー",
+                    },
                 ),
                 (
                     "MenuItem::new",
                     "hypersig_ui/struct.MenuItem.html#method.new",
-                    "An action labeled `label` that runs `run` when chosen.",
+                    L {
+                        en: "An action labeled `label` that runs `run` when chosen.",
+                        ja: "`label` をラベルに持ち、選ばれると `run` を実行する操作",
+                    },
                 ),
                 (
                     "destructive",
                     "hypersig_ui/struct.MenuItem.html#method.destructive",
-                    "Draws the action in `token::destructive`, for one that deletes.",
+                    L {
+                        en: "Draws the action in `token::destructive`, for one that deletes.",
+                        ja: "削除する操作に使うために、操作を `token::destructive` の色で描きます。",
+                    },
                 ),
                 (
                     "disabled",
                     "hypersig_ui/struct.MenuItem.html#method.disabled",
-                    "Disables the action while `when` is true, which the arrow keys then skip.",
+                    L {
+                        en: "Disables the action while `when` is true, which the arrow keys then skip.",
+                        ja: "`when` が true の間、操作を無効にします。無効な操作は矢印キーで飛ばされます。",
+                    },
                 ),
             ],
         },
         Component::Tooltip => Page {
-            lead: "A short description shown while a button is hovered or focused.",
+            lead: L {
+                en: "A short description shown while a button is hovered or focused.",
+                ja: "ボタンにポインタが重なっている間か、フォーカスがある間に表示する短い説明です。",
+            },
             demo: Demo::Tooltip,
             built_on: &[
-                "It follows the WAI-ARIA tooltip pattern: the tooltip has `role=\"tooltip\"` and the button `aria-describedby` pointing at it, so a screen reader reads the text after the button's name. The tooltip builds its own button, which carries the attributes the tooltip needs.",
-                "The tooltip is a `popover=\"hint\"`, which browser-compat-data 8.1.6 lists for Chrome 151 and Firefox 153, with an older partial version before them and Safari only in its preview. A browser without it treats the value as `manual`, and there Escape closes the tooltip only while focus is on its button.",
+                L {
+                    en: "It follows the WAI-ARIA tooltip pattern: the tooltip has `role=\"tooltip\"` and the button `aria-describedby` pointing at it, so a screen reader reads the text after the button's name. The tooltip builds its own button, which carries the attributes the tooltip needs.",
+                    ja: "WAI-ARIA tooltip パターンに従います。ツールチップは `role=\"tooltip\"` を持ち、ボタンの `aria-describedby` がツールチップを指すので、スクリーンリーダーはボタンの名前のあとにツールチップのテキストを読み上げます。ボタンはツールチップ自身が作り、ツールチップに必要な属性をそのボタンに付けます。",
+                },
+                L {
+                    en: "The tooltip is a `popover=\"hint\"`, which browser-compat-data 8.1.6 lists for Chrome 151 and Firefox 153, with an older partial version before them and Safari only in its preview. A browser without it treats the value as `manual`, and there Escape closes the tooltip only while focus is on its button.",
+                    ja: "ツールチップは `popover=\"hint\"` です。browser-compat-data 8.1.6 では、Chrome 151 と Firefox 153 が対応しており、それより前の版には部分的な古い実装があり、Safari はプレビュー版だけが対応しています。対応していないブラウザはこの値を `manual` として扱うので、Escape でツールチップが閉じるのは、フォーカスがそのボタンにある間だけです。",
+                },
             ],
             keys: &[
                 (
-                    "Tab",
-                    "Focusing the button opens the tooltip, and leaving it closes the tooltip.",
+                    L {
+                        en: "Tab",
+                        ja: "Tab",
+                    },
+                    L {
+                        en: "Focusing the button opens the tooltip, and leaving it closes the tooltip.",
+                        ja: "ボタンにフォーカスが移るとツールチップが開き、フォーカスが離れると閉じます。",
+                    },
                 ),
                 (
-                    "Any key",
-                    "Pressed on the button, closes the tooltip. Escape among them still reaches a dialog around it.",
+                    L {
+                        en: "Any key",
+                        ja: "任意のキー",
+                    },
+                    L {
+                        en: "Pressed on the button, closes the tooltip. Escape among them still reaches a dialog around it.",
+                        ja: "ボタンで押すと、ツールチップを閉じます。そのうち Escape は、ツールチップを囲むダイアログにも届きます。",
+                    },
                 ),
             ],
             items: &[
                 (
                     "Tooltip::new",
                     "hypersig_ui/struct.Tooltip.html#method.new",
-                    "A tooltip whose id is `name`.",
+                    L {
+                        en: "A tooltip whose id is `name`.",
+                        ja: "id が `name` のツールチップ",
+                    },
                 ),
                 (
                     "trigger",
                     "hypersig_ui/struct.Tooltip.html#method.trigger",
-                    "A button described by the tooltip.",
+                    L {
+                        en: "A button described by the tooltip.",
+                        ja: "ツールチップが説明するボタン",
+                    },
                 ),
                 (
                     "icon_trigger",
                     "hypersig_ui/struct.Tooltip.html#method.icon_trigger",
-                    "An icon button named `label` and described by the tooltip.",
+                    L {
+                        en: "An icon button named `label` and described by the tooltip.",
+                        ja: "`label` を名前に持ち、ツールチップが説明するアイコンボタン",
+                    },
                 ),
                 (
                     "tooltip",
                     "hypersig_ui/struct.Tooltip.html#method.tooltip",
-                    "The tooltip, holding `text`.",
+                    L {
+                        en: "The tooltip, holding `text`.",
+                        ja: "`text` を入れたツールチップ",
+                    },
                 ),
             ],
         },
         Component::Toast => Page {
-            lead: "Short notices stacked in a corner of the page, added from the browser or by the server.",
+            lead: L {
+                en: "Short notices stacked in a corner of the page, added from the browser or by the server.",
+                ja: "ページの隅に積み重ねる短いお知らせです。ブラウザからもサーバーからも追加できます。",
+            },
             demo: Demo::Toast,
             built_on: &[
-                "The toaster is a landmark region named \"Notifications\" holding an `aria-live=\"polite\"` list, so a screen reader reads a toast when it is added, after what it is reading. Each toast has a button that removes it.",
-                "A toast stays until it is dismissed, unless `Toaster::dismiss_after` sets a time, because a visitor who reads slowly or uses a magnifier can miss a notice that leaves by itself (WCAG 2.2.1). The region sits in the page rather than in the top layer, so an open modal dialog makes it inert until the dialog closes.",
+                L {
+                    en: "The toaster is a landmark region named \"Notifications\" holding an `aria-live=\"polite\"` list, so a screen reader reads a toast when it is added, after what it is reading. Each toast has a button that removes it.",
+                    ja: "トースター（トーストを並べる領域）は「Notifications」という名前のランドマーク領域で、`aria-live=\"polite\"` の一覧を持ちます。そのため、トーストが追加されると、スクリーンリーダーは読み上げ中の内容のあとにそのトーストを読み上げます。各トーストには、そのトーストを消すボタンがあります。",
+                },
+                L {
+                    en: "A toast stays until it is dismissed, unless `Toaster::dismiss_after` sets a time, because a visitor who reads slowly or uses a magnifier can miss a notice that leaves by itself (WCAG 2.2.1). The region sits in the page rather than in the top layer, so an open modal dialog makes it inert until the dialog closes.",
+                    ja: "トーストは、`Toaster::dismiss_after` で時間を設定しない限り、消されるまで残ります。ゆっくり読む訪問者や拡大鏡を使う訪問者は、ひとりでに消えるお知らせを見逃すことがあるからです（WCAG 2.2.1）。この領域は top layer ではなくページの中にあるので、モーダルダイアログが開いている間は操作できなくなり（inert）、ダイアログが閉じると元に戻ります。",
+                },
             ],
-            keys: &[("Tab, Enter", "Reach a toast's Dismiss button and press it.")],
+            keys: &[(
+                L {
+                    en: "Tab, Enter",
+                    ja: "Tab、Enter",
+                },
+                L {
+                    en: "Reach a toast's Dismiss button and press it.",
+                    ja: "トーストの Dismiss ボタンに移り、それを押します。",
+                },
+            )],
             items: &[
                 (
                     "Toaster::new",
                     "hypersig_ui/struct.Toaster.html#method.new",
-                    "A toaster that shows `toasts`, newest last.",
+                    L {
+                        en: "A toaster that shows `toasts`, newest last.",
+                        ja: "`toasts` を、新しいものほど後ろにして表示するトースター",
+                    },
                 ),
                 (
                     "label",
                     "hypersig_ui/struct.Toaster.html#method.label",
-                    "Names the region for assistive technology, in place of \"Notifications\".",
+                    L {
+                        en: "Names the region for assistive technology, in place of \"Notifications\".",
+                        ja: "「Notifications」の代わりに、支援技術に向けた領域の名前を付けます。",
+                    },
                 ),
                 (
                     "dismiss_after",
                     "hypersig_ui/struct.Toaster.html#method.dismiss_after",
-                    "Removes each toast `delay` after it appears.",
+                    L {
+                        en: "Removes each toast `delay` after it appears.",
+                        ja: "各トーストを、表示してから `delay` が経ったら取り除きます。",
+                    },
                 ),
                 (
                     "Toast::new",
                     "hypersig_ui/struct.Toast.html#method.new",
-                    "A toast titled `title`, with the id 0.",
+                    L {
+                        en: "A toast titled `title`, with the id 0.",
+                        ja: "`title` をタイトルに持ち、id が 0 のトースト",
+                    },
                 ),
                 (
                     "description",
                     "hypersig_ui/struct.Toast.html#method.description",
-                    "Adds a line of text under the title.",
+                    L {
+                        en: "Adds a line of text under the title.",
+                        ja: "タイトルの下に 1 行のテキストを足します。",
+                    },
                 ),
                 (
                     "variant",
                     "hypersig_ui/struct.Toast.html#method.variant",
-                    "Sets how the toast is drawn.",
+                    L {
+                        en: "Sets how the toast is drawn.",
+                        ja: "トーストの描き方を設定します。",
+                    },
                 ),
                 (
                     "id",
                     "hypersig_ui/struct.Toast.html#method.id",
-                    "Sets the id that tells this toast apart from the others in its list.",
+                    L {
+                        en: "Sets the id that tells this toast apart from the others in its list.",
+                        ja: "同じ一覧のほかのトーストとこのトーストを区別する id を設定します。",
+                    },
                 ),
                 (
                     "push",
                     "hypersig_ui/struct.Toast.html#method.push",
-                    "A statement that adds this toast to `toasts` with the id `id`.",
+                    L {
+                        en: "A statement that adds this toast to `toasts` with the id `id`.",
+                        ja: "このトーストを id `id` で `toasts` に追加する文",
+                    },
                 ),
             ],
         },
         Component::Alert => Page {
-            lead: "A bordered box for a message, with a title and a description.",
+            lead: L {
+                en: "A bordered box for a message, with a title and a description.",
+                ja: "タイトルと説明を持つ、メッセージ用の枠線付きのボックスです。",
+            },
             demo: Demo::Alert,
-            built_on: &[
-                "Both variants are live regions. A destructive alert has `role=\"alert\"`, which a screen reader reads when it is put on the page, as the demo does with `when`. A default alert has `role=\"status\"`, which is read when its text changes. Some screen readers skip a status that arrives with its text already in it, so keep a status box on the page and change its text with `bind_text`.",
-            ],
+            built_on: &[L {
+                en: "Both variants are live regions. A destructive alert has `role=\"alert\"`, which a screen reader reads when it is put on the page, as the demo does with `when`. A default alert has `role=\"status\"`, which is read when its text changes. Some screen readers skip a status that arrives with its text already in it, so keep a status box on the page and change its text with `bind_text`.",
+                ja: "どちらのバリアントもライブリージョンです。destructive のアラートは `role=\"alert\"` を持ち、ページに置かれたときにスクリーンリーダーが読み上げます。デモでは `when` でアラートをページに置いています。default のアラートは `role=\"status\"` を持ち、テキストが変わったときに読み上げられます。最初からテキストが入った状態で現れた status を読み飛ばすスクリーンリーダーもあるので、status のボックスはページに置いたままにして、テキストを `bind_text` で変えてください。",
+            }],
             keys: &[],
             items: &[
                 (
                     "alert",
                     "hypersig_ui/fn.alert.html",
-                    "A bordered box for a message, holding an `alert_title` and an `alert_description`.",
+                    L {
+                        en: "A bordered box for a message, holding an `alert_title` and an `alert_description`.",
+                        ja: "`alert_title` と `alert_description` を入れる、メッセージ用の枠線付きのボックス",
+                    },
                 ),
                 (
                     "alert_title",
                     "hypersig_ui/fn.alert_title.html",
-                    "The first line of an `alert`.",
+                    L {
+                        en: "The first line of an `alert`.",
+                        ja: "`alert` の最初の行",
+                    },
                 ),
                 (
                     "alert_description",
                     "hypersig_ui/fn.alert_description.html",
-                    "The text under the title of an `alert`.",
+                    L {
+                        en: "The text under the title of an `alert`.",
+                        ja: "`alert` のタイトルの下のテキスト",
+                    },
                 ),
                 (
                     "AlertVariant",
                     "hypersig_ui/enum.AlertVariant.html",
-                    "The look and the urgency of an alert.",
+                    L {
+                        en: "The look and the urgency of an alert.",
+                        ja: "アラートの見た目と緊急度",
+                    },
                 ),
             ],
         },
         Component::Badge => Page {
-            lead: "A short label, such as a status, drawn as a badge.",
+            lead: L {
+                en: "A short label, such as a status, drawn as a badge.",
+                ja: "状態のような短いラベルを描くバッジです。",
+            },
             demo: Demo::Badge,
-            built_on: &[
-                "A badge is a `<span>` and takes no role, so a screen reader reads it where it stands. Where the color alone carries the meaning, put the meaning in the text too, such as \"Failed\" rather than a red dot.",
-            ],
+            built_on: &[L {
+                en: "A badge is a `<span>` and takes no role, so a screen reader reads it where it stands. Where the color alone carries the meaning, put the meaning in the text too, such as \"Failed\" rather than a red dot.",
+                ja: "バッジは `<span>` でロールを持たないので、スクリーンリーダーは置かれた位置でそのまま読み上げます。色だけで意味を伝えている場合は、赤い点だけで済ませずに、「失敗」のように意味をテキストにも書いてください。",
+            }],
             keys: &[],
             items: &[
                 (
                     "badge",
                     "hypersig_ui/fn.badge.html",
-                    "A `<span>` that shows a short label, such as a status, as a badge.",
+                    L {
+                        en: "A `<span>` that shows a short label, such as a status, as a badge.",
+                        ja: "状態のような短いラベルをバッジとして表示する `<span>`",
+                    },
                 ),
                 (
                     "BadgeVariant",
                     "hypersig_ui/enum.BadgeVariant.html",
-                    "The look of a badge.",
+                    L {
+                        en: "The look of a badge.",
+                        ja: "バッジの見た目",
+                    },
                 ),
             ],
         },
         Component::Progress => Page {
-            lead: "A bar that fills to a percentage, and a block that stands in for content still loading.",
+            lead: L {
+                en: "A bar that fills to a percentage, and a block that stands in for content still loading.",
+                ja: "割合に応じて満ちるバーと、読み込み中の内容の代わりに置くブロックです。",
+            },
             demo: Demo::Progress,
             built_on: &[
-                "The bar is a `role=\"progressbar\"` with `aria-valuenow` kept equal to the value, so a screen reader reads the label and the percentage. A value below 0 or above 100 is drawn and announced as 0 or 100.",
-                "A skeleton is hidden from assistive technology. Tell a screen reader that the content is loading elsewhere, as the demo does with `aria-busy` on the region it fills.",
+                L {
+                    en: "The bar is a `role=\"progressbar\"` with `aria-valuenow` kept equal to the value, so a screen reader reads the label and the percentage. A value below 0 or above 100 is drawn and announced as 0 or 100.",
+                    ja: "バーは `role=\"progressbar\"` で、`aria-valuenow` を常に値と等しく保つので、スクリーンリーダーはラベルと割合を読み上げます。0 未満や 100 を超える値は、0 や 100 として描かれ、読み上げられます。",
+                },
+                L {
+                    en: "A skeleton is hidden from assistive technology. Tell a screen reader that the content is loading elsewhere, as the demo does with `aria-busy` on the region it fills.",
+                    ja: "スケルトンは支援技術から隠れています。内容を読み込み中であることは、別の場所でスクリーンリーダーに伝えてください。デモでは、スケルトンが埋める領域に `aria-busy` を付けています。",
+                },
             ],
             keys: &[],
             items: &[
                 (
                     "progress",
                     "hypersig_ui/fn.progress.html",
-                    "A bar that fills to `percent`, a value from 0 to 100, named by `label`.",
+                    L {
+                        en: "A bar that fills to `percent`, a value from 0 to 100, named by `label`.",
+                        ja: "`label` を名前に持ち、0 から 100 の値 `percent` まで満ちるバー",
+                    },
                 ),
                 (
                     "skeleton",
                     "hypersig_ui/fn.skeleton.html",
-                    "A pulsing block in `token::accent` that stands in for content still loading.",
+                    L {
+                        en: "A pulsing block in `token::accent` that stands in for content still loading.",
+                        ja: "読み込み中の内容の代わりに置く、`token::accent` の色で明滅するブロック",
+                    },
                 ),
             ],
         },
