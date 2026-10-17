@@ -14,9 +14,9 @@ use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
 use hypersig::{Action, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals, if_else};
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart, Column,
-    Combobox, ComboboxState, DataTable, Dialog, InputKind, Level, Listbox, Menu, MenuItem,
-    ServerTable, Slider, SortOrder, TableState, Tabs, TextField, Toast, ToastVariant, Toaster,
-    Tooltip, alert, alert_description, alert_title, badge, button, card, card_content,
+    Combobox, ComboboxState, DataTable, Dialog, DonutChart, InputKind, Level, Listbox, Menu,
+    MenuItem, ServerTable, Slider, SortOrder, TableState, Tabs, TextField, Toast, ToastVariant,
+    Toaster, Tooltip, alert, alert_description, alert_title, badge, button, card, card_content,
     card_description, card_footer, card_header, card_title, checkbox, dialog_footer, progress,
     radio_group, select_field, separator, skeleton, submit_button, switch, token,
 };
@@ -65,6 +65,13 @@ struct Month {
     mobile: i32,
     /// Desktop visitors less mobile ones, negative where mobile led.
     lead: i32,
+}
+
+/// One slice of the donut chart.
+#[derive(Signals, Serialize, Deserialize)]
+struct Browser {
+    name: String,
+    visitors: i32,
 }
 
 /// One row of the data table.
@@ -129,6 +136,7 @@ struct Gallery {
     orders_total: i32,
     orders_table: TableState,
     months: Vec<Month>,
+    browsers: Vec<Browser>,
 }
 
 hypersig::routes! {
@@ -671,6 +679,12 @@ fn charts() -> El<Gallery> {
                             Month::name(),
                         ))),
                 )
+                .child(div().id("donut-chart").child(DonutChart::new(
+                    "Visitors by browser",
+                    Gallery::browsers(),
+                    Browser::name(),
+                    Browser::visitors(),
+                )))
                 .child(
                     div().id("lead-chart").child(
                         Chart::bar("Desktop lead", Gallery::months(), Month::name())
@@ -847,6 +861,19 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             orders_total,
             orders_table: TableState::default(),
             months: first_half(),
+            browsers: [
+                ("Chrome", 275),
+                ("Safari", 200),
+                ("Firefox", 187),
+                ("Edge", 173),
+                ("Other", 90),
+            ]
+            .into_iter()
+            .map(|(name, visitors)| Browser {
+                name: name.to_owned(),
+                visitors,
+            })
+            .collect(),
         },
     )
     .global(hypersig_ui::global())

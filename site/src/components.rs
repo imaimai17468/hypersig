@@ -1179,14 +1179,14 @@ fn component_page(page: Component) -> Page {
         },
         Component::Chart => Page {
             lead: L {
-                en: "Bar, stacked bar, horizontal bar, line, and area charts of the rows of a list signal, on a scale the browser fits to the values.",
-                ja: "リストのシグナルの行を、棒、積み上げ棒、横棒、折れ線、面で描くチャートです。値の軸の目盛りはブラウザが値に合わせて決めます。",
+                en: "Bar, stacked bar, horizontal bar, line, area, and donut charts of the rows of a list signal, on a scale the browser fits to the values.",
+                ja: "リストのシグナルの行を、棒、積み上げ棒、横棒、折れ線、面、ドーナツで描くチャートです。値の軸の目盛りはブラウザが値に合わせて決めます。",
             },
             demo: Demo::Chart,
             built_on: &[
                 L {
-                    en: "The drawing is an `<svg>` with `viewBox=\"0 0 100 100\"` and `preserveAspectRatio=\"none\"`, so it stretches to its box, and its lines keep their width with `vector-effect=\"non-scaling-stroke\"`. The axis labels, the legend, and the box that shows a row's values under the pointer are HTML, which does not stretch.",
-                    ja: "描画は `viewBox=\"0 0 100 100\"` と `preserveAspectRatio=\"none\"` を持つ `<svg>` で、枠に合わせて伸び縮みします。線は `vector-effect=\"non-scaling-stroke\"` で太さを保ちます。軸のラベル、凡例、ポインタの下に出る行の値は、伸び縮みしない HTML で置きます。",
+                    en: "The drawing is an `<svg>` with `viewBox=\"0 0 100 100\"` and `preserveAspectRatio=\"none\"`, so it stretches to its box, and its lines keep their width with `vector-effect=\"non-scaling-stroke\"`. The axis labels, the legend, and the box that shows a row's values under the pointer are HTML, which does not stretch. A `DonutChart` draws each row as a circle with `pathLength=\"100\"`, whose `stroke-dasharray` is the row's share of the total in hundredths.",
+                    ja: "描画は `viewBox=\"0 0 100 100\"` と `preserveAspectRatio=\"none\"` を持つ `<svg>` で、枠に合わせて伸び縮みします。線は `vector-effect=\"non-scaling-stroke\"` で太さを保ちます。軸のラベル、凡例、ポインタの下に出る行の値は、伸び縮みしない HTML で置きます。`DonutChart` は各行を `pathLength=\"100\"` の円で描き、その `stroke-dasharray` に合計に占める行の割合を百分率で書きます。",
                 },
                 L {
                     en: "The drawing is hidden from assistive technology. A screen reader reads a visually hidden `<table>` of the same rows, captioned with the chart's name, and the values under the pointer have no keyboard equivalent beyond that table.",
@@ -1261,6 +1261,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "Writes the values and the axis labels in `format`.",
                         ja: "値と軸のラベルを `format` の形で書きます。",
+                    },
+                ),
+                (
+                    "DonutChart::new",
+                    "hypersig_ui/struct.DonutChart.html#method.new",
+                    L {
+                        en: "A donut chart named `label` of `rows`, with slices of `value` labeled by `category`.",
+                        ja: "`label` を名前に持ち、`rows` の `value` を `category` でラベルを付けた弧で描くドーナツグラフ",
                     },
                 ),
                 (

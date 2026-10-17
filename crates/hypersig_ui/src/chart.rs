@@ -827,7 +827,7 @@ fn tooltip_style() -> Style {
 }
 
 /// Hides an element from sight and keeps it in the accessibility tree.
-fn visually_hidden() -> Style {
+pub(crate) fn visually_hidden() -> Style {
     Style::new()
         .position(Position::Absolute)
         .width(px(1))

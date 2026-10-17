@@ -21,6 +21,7 @@
 //! | [`Combobox`] | the combobox pattern with list autocomplete and `aria-activedescendant` |
 //! | [`Tabs`] | the tabs pattern, with roving focus |
 //! | [`Chart`] | an `<svg>` hidden from assistive technology, beside a visually hidden `<table>` of the same rows |
+//! | [`DonutChart`] | the same, with each row an arc of a ring |
 //! | [`DataTable`] | `<table>` with `<th scope="col">` and `aria-sort`, and a tri-state checkbox for selecting rows |
 //! | [`ServerTable`] | the same `<table>`, whose rows an action sends one page at a time |
 //! | [`Accordion`] | `<details>` and `<summary>` |
@@ -69,6 +70,7 @@ mod chart;
 mod choice;
 mod combobox;
 mod dialog;
+mod donut;
 mod field;
 mod id;
 mod listbox;
@@ -94,6 +96,7 @@ pub use chart::Chart;
 pub use choice::{checkbox, radio_group, switch};
 pub use combobox::{Combobox, ComboboxState};
 pub use dialog::{Dialog, dialog_footer};
+pub use donut::DonutChart;
 pub use field::{Autocomplete, InputKind, TextField};
 pub use listbox::Listbox;
 pub use menu::{Menu, MenuItem};

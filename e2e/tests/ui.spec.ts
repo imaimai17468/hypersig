@@ -514,6 +514,19 @@ test("a horizontal bar chart runs its bars from the left and its scale along the
   ]);
 });
 
+test("a donut chart draws each row as an arc as long as its share", async ({ page }) => {
+  const donut = page.locator("#donut-chart");
+  await expect(donut.locator("figure > div > div span")).toHaveText("925");
+  const arcs = donut.locator("svg circle[pathLength]");
+  await expect(arcs).toHaveCount(5);
+  await expect(arcs.nth(0)).toHaveAttribute("stroke-dasharray", "29.730 70.270");
+  await expect(arcs.nth(0)).toHaveAttribute("stroke-dashoffset", "0.000");
+  await expect(arcs.nth(1)).toHaveAttribute("stroke-dashoffset", "-29.730");
+  const colors = await arcs.evaluateAll((circles) => circles.map((circle) => getComputedStyle(circle).stroke));
+  expect(new Set(colors).size).toBe(5);
+  await expect(page.getByRole("table", { name: "Visitors by browser" }).getByRole("row", { name: /Safari/ })).toContainText("200");
+});
+
 test("a line chart joins each row to the next and draws nothing past the last", async ({ page }) => {
   const segments = page.locator("#line-chart svg g");
   await expect(segments).toHaveCount(12);
