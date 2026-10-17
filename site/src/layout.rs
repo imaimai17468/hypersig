@@ -11,7 +11,7 @@ use hypersig::style::{Element, Global, Media, PseudoClass, Style};
 use hypersig::{Page, if_else};
 use hypersig_ui::{ButtonVariant, icon_button, token};
 
-use crate::doc::{Doc, Learn, Reference};
+use crate::doc::{Component, Doc, Learn, Reference, StylePage};
 use crate::prose::{Docs, Part, href};
 use crate::{Site, code};
 
@@ -78,12 +78,10 @@ pub fn article(site: Site, doc: Doc, content: Part) -> String {
 
 fn top_bar(site: Site, doc: Doc) -> Part {
     let section_link = |target: Doc, label: &str, current: bool| {
-        mark_current(a().attr("href", target.url(site)), current)
+        mark_section(a().attr("href", target.url(site)), current)
             .css(nav_link_style(current))
             .text(label)
     };
-    let in_learn = matches!(doc, Doc::Learn(_));
-    let in_reference = matches!(doc, Doc::Reference(_));
     let has_sidebar = doc != Doc::Home;
     header()
         .css(
@@ -102,8 +100,9 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                     container(rem(88), rem(1))
                         .display(Display::Flex)
                         .align_items(AlignItems::Center)
-                        .gap(rem(1.5))
-                        .height(rem(3.5)),
+                        .gap(rem(1))
+                        .height(rem(3.5))
+                        .on(Media::Md, Style::new().gap(rem(1.5))),
                 )
                 .children(has_sidebar.then(menu_button))
                 .child(
@@ -118,20 +117,46 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                 .child(
                     nav()
                         .attr("aria-label", "Sections")
-                        .css(hstack(rem(1.25)).font_size(rem(0.875)))
+                        .css(
+                            hstack(rem(0.875))
+                                .on(Media::Md, Style::new().gap(rem(1.25)))
+                                .font_size(rem(0.875))
+                                .min_width(px(0))
+                                .overflow_x(hypersig::style::value::OverflowX::Auto)
+                                .white_space(hypersig::style::value::WhiteSpace::Nowrap)
+                                // On a phone, a page with a sidebar lists the
+                                // sections in it instead.
+                                .merge(if has_sidebar {
+                                    Style::new()
+                                        .display(Display::None)
+                                        .on(Media::Md, Style::new().display(Display::Flex))
+                                } else {
+                                    Style::new()
+                                }),
+                        )
                         .child(section_link(
                             Doc::Learn(Learn::QuickStart),
                             "Learn",
-                            in_learn,
+                            matches!(doc, Doc::Learn(_)),
+                        ))
+                        .child(section_link(
+                            Doc::Components(Component::Installation),
+                            "Components",
+                            matches!(doc, Doc::Components(_)),
+                        ))
+                        .child(section_link(
+                            Doc::Style(StylePage::Overview),
+                            "Style",
+                            matches!(doc, Doc::Style(_)),
                         ))
                         .child(section_link(
                             Doc::Reference(Reference::Overview),
                             "Reference",
-                            in_reference,
+                            matches!(doc, Doc::Reference(_)),
                         ))
                         .child(
                             a().attr("href", href(site, "api:hypersig/index.html"))
-                                .css(nav_link_style(false))
+                                .css(nav_link_style(false).merge(wide_only()))
                                 .text("API"),
                         ),
                 )
@@ -140,7 +165,8 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                         .css(
                             nav_link_style(false)
                                 .margin_left(raw("auto"))
-                                .font_size(rem(0.875)),
+                                .font_size(rem(0.875))
+                                .merge(wide_only()),
                         )
                         .text("GitHub"),
                 ),
@@ -154,6 +180,24 @@ fn mark_current(link: Part, current: bool) -> Part {
     } else {
         link
     }
+}
+
+/// `link` to a section, marked as the section the page is in where
+/// `current` is true. The page itself is marked in the sidebar.
+fn mark_section(link: Part, current: bool) -> Part {
+    if current {
+        link.attr("aria-current", "true")
+    } else {
+        link
+    }
+}
+
+/// Hidden below the medium breakpoint, where the header has no room. The
+/// page footer links to the same places.
+fn wide_only() -> Style {
+    Style::new()
+        .display(Display::None)
+        .on(Media::Md, Style::new().display(Display::Inline))
 }
 
 fn nav_link_style(current: bool) -> Style {
@@ -225,6 +269,7 @@ fn sidebar(site: Site, doc: Doc) -> Part {
         .child(
             div()
                 .css(stack(rem(1.5)))
+                .child(phone_sections(site, doc))
                 .children(doc.groups().iter().map(|group| {
                     div()
                         .child(
@@ -248,6 +293,57 @@ fn sidebar(site: Site, doc: Doc) -> Part {
                                 })),
                         )
                 })),
+        )
+}
+
+/// The sections and the outside links, at the top of the sidebar on a
+/// phone, where the header has no room for them.
+fn phone_sections(site: Site, doc: Doc) -> Part {
+    let sections = [
+        (
+            Doc::Learn(Learn::QuickStart),
+            "Learn",
+            matches!(doc, Doc::Learn(_)),
+        ),
+        (
+            Doc::Components(Component::Installation),
+            "Components",
+            matches!(doc, Doc::Components(_)),
+        ),
+        (
+            Doc::Style(StylePage::Overview),
+            "Style",
+            matches!(doc, Doc::Style(_)),
+        ),
+        (
+            Doc::Reference(Reference::Overview),
+            "Reference",
+            matches!(doc, Doc::Reference(_)),
+        ),
+    ];
+    div()
+        .css(
+            stack(px(2))
+                .padding_bottom(rem(1))
+                .border_bottom_width(px(1))
+                .border_bottom_style(BorderBottomStyle::Solid)
+                .border_bottom_color(token::border().var())
+                .on(Media::Md, Style::new().display(Display::None)),
+        )
+        .children(sections.into_iter().map(|(target, label, current)| {
+            mark_section(a().attr("href", target.url(site)), current)
+                .css(sidebar_link_style(current))
+                .text(label)
+        }))
+        .child(
+            a().attr("href", href(site, "api:hypersig/index.html"))
+                .css(sidebar_link_style(false))
+                .text("API"),
+        )
+        .child(
+            a().attr("href", REPOSITORY)
+                .css(sidebar_link_style(false))
+                .text("GitHub"),
         )
 }
 
@@ -345,5 +441,8 @@ fn page_footer(site: Site) -> Part {
             site,
             "Built with hypersig and `hypersig_ui`, and served as static files.",
         )))
-        .child(p().text("MIT License"))
+        .child(p().children(crate::prose::inline(
+            site,
+            "[API documentation](api:hypersig/index.html), [GitHub](https://github.com/imaimai17468/hypersig), MIT License",
+        )))
 }

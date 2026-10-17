@@ -2,7 +2,7 @@
 
 mod basics;
 mod server;
-mod snippet;
+pub mod snippet;
 mod state;
 
 use crate::Site;

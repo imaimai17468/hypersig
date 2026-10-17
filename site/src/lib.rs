@@ -6,6 +6,7 @@
 //! GitHub Pages.
 
 mod code;
+mod components;
 mod demo;
 mod doc;
 mod home;
@@ -13,6 +14,7 @@ mod layout;
 mod learn;
 mod prose;
 mod reference;
+mod style;
 
 use std::collections::BTreeSet;
 use std::path::Path;

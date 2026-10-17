@@ -4,14 +4,6 @@
 //! A demo runs on signals alone, since the site is served as static files
 //! and has no server to answer an action.
 
-mod cart;
-mod counter;
-mod greeting;
-mod status;
-mod stopwatch;
-mod temperature;
-mod todos;
-
 use hypersig::Page;
 use hypersig::Signals;
 use hypersig::html::{div, el, p};
@@ -23,82 +15,94 @@ use crate::Site;
 use crate::code::{self, Lang};
 use crate::prose::{Part, parts};
 
-/// One live demo.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Demo {
-    Counter,
-    Greeting,
-    Cart,
-    Temperature,
-    Todos,
-    Status,
-    Stopwatch,
+/// Declares each demo: its variant, its module and file, and the height of
+/// its frame, enough for the demo without a scrollbar.
+macro_rules! demos {
+    ($($variant:ident => $module:ident, $file:literal, $height:literal;)*) => {
+        $(
+            #[path = $file]
+            mod $module;
+        )*
+
+        /// One live demo.
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        pub enum Demo {
+            $($variant,)*
+        }
+
+        impl Demo {
+            /// Every demo.
+            pub const ALL: &[Self] = &[$(Self::$variant,)*];
+
+            /// The demo's name: its file name without the directory and
+            /// the extension.
+            fn name(self) -> &'static str {
+                match self {
+                    $(Self::$variant => stringify!($module),)*
+                }
+            }
+
+            /// The demo's source, as the article shows it.
+            fn source(self) -> &'static str {
+                code::without_header(match self {
+                    $(Self::$variant => include_str!($file),)*
+                })
+            }
+
+            fn height(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $height,)*
+                }
+            }
+
+            /// The demo's page as an HTML document.
+            pub fn render(self, site: Site) -> String {
+                match self {
+                    $(Self::$variant => frame_page(site, $module::page()),)*
+                }
+            }
+        }
+    };
+}
+
+demos! {
+    Counter => counter, "counter.rs", "6rem";
+    Greeting => greeting, "greeting.rs", "11rem";
+    Cart => cart, "cart.rs", "10rem";
+    Temperature => temperature, "temperature.rs", "10.5rem";
+    Todos => todos, "todos.rs", "19rem";
+    Status => status, "status.rs", "8rem";
+    Stopwatch => stopwatch, "stopwatch.rs", "6rem";
+    Theme => theme, "ui/theme.rs", "21rem";
+    Button => button, "ui/button.rs", "12rem";
+    TextField => text_field, "ui/text_field.rs", "20rem";
+    Checkbox => checkbox, "ui/checkbox.rs", "9.5rem";
+    RadioGroup => radio_group, "ui/radio_group.rs", "13.5rem";
+    Select => select, "ui/select.rs", "16rem";
+    Slider => slider, "ui/slider.rs", "7rem";
+    Listbox => listbox, "ui/listbox.rs", "10.5rem";
+    Combobox => combobox, "ui/combobox.rs", "22rem";
+    Tabs => tabs, "ui/tabs.rs", "8rem";
+    Accordion => accordion, "ui/accordion.rs", "19rem";
+    Dialog => dialog, "ui/dialog.rs", "24rem";
+    Menu => menu, "ui/menu.rs", "17rem";
+    Tooltip => tooltip, "ui/tooltip.rs", "8rem";
+    Toast => toast, "ui/toast.rs", "20rem";
+    Card => card, "ui/card.rs", "19rem";
+    Alert => alert, "ui/alert.rs", "16rem";
+    Badge => badge, "ui/badge.rs", "8rem";
+    Progress => progress, "ui/progress.rs", "10.5rem";
+    Separator => separator, "ui/separator.rs", "12.5rem";
+    Hover => hover, "style/hover.rs", "12rem";
+    Accent => accent, "style/accent.rs", "15rem";
+    Layout => layout, "style/layout.rs", "14rem";
+    Spinner => spinner, "style/spinner.rs", "6rem";
 }
 
 impl Demo {
-    /// Every demo.
-    pub const ALL: &[Self] = &[
-        Self::Counter,
-        Self::Greeting,
-        Self::Cart,
-        Self::Temperature,
-        Self::Todos,
-        Self::Status,
-        Self::Stopwatch,
-    ];
-
     /// The demo's directory inside the site, ending in `/`.
     pub fn path(self) -> String {
         format!("demo/{}/", self.name())
-    }
-
-    fn name(self) -> &'static str {
-        match self {
-            Self::Counter => "counter",
-            Self::Greeting => "greeting",
-            Self::Cart => "cart",
-            Self::Temperature => "temperature",
-            Self::Todos => "todos",
-            Self::Status => "status",
-            Self::Stopwatch => "stopwatch",
-        }
-    }
-
-    /// The demo's source, as the article shows it.
-    fn source(self) -> &'static str {
-        code::without_header(match self {
-            Self::Counter => include_str!("counter.rs"),
-            Self::Greeting => include_str!("greeting.rs"),
-            Self::Cart => include_str!("cart.rs"),
-            Self::Temperature => include_str!("temperature.rs"),
-            Self::Todos => include_str!("todos.rs"),
-            Self::Status => include_str!("status.rs"),
-            Self::Stopwatch => include_str!("stopwatch.rs"),
-        })
-    }
-
-    /// The height of the frame, enough for the demo without a scrollbar.
-    fn height(self) -> &'static str {
-        match self {
-            Self::Counter | Self::Stopwatch => "6rem",
-            Self::Greeting => "11rem",
-            Self::Cart | Self::Temperature => "10rem",
-            Self::Todos => "19rem",
-            Self::Status => "7rem",
-        }
-    }
-
-    /// The demo's page as an HTML document.
-    pub fn render(self, site: Site) -> String {
-        match self {
-            Self::Counter => frame_page(site, counter::page()),
-            Self::Greeting => frame_page(site, greeting::page()),
-            Self::Cart => frame_page(site, cart::page()),
-            Self::Temperature => frame_page(site, temperature::page()),
-            Self::Todos => frame_page(site, todos::page()),
-            Self::Status => frame_page(site, status::page()),
-            Self::Stopwatch => frame_page(site, stopwatch::page()),
-        }
     }
 }
 
@@ -115,18 +119,13 @@ fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
         .render()
 }
 
-/// The source of `demo` above the demo running in a frame.
+/// `demo` running in a frame, above its source.
 pub fn show(site: Site, demo: Demo) -> Part {
     parts([
-        code::block(
-            Lang::Rust,
-            Some(&format!("{}.rs", demo.name())),
-            demo.source(),
-        ),
         div()
             .css(
                 Style::new()
-                    .margin_top(rem(0.75))
+                    .margin_top(rem(1.5))
                     .border_width(px(1))
                     .border_style(BorderStyle::Solid)
                     .border_color(token::border().var())
@@ -150,7 +149,10 @@ pub fn show(site: Site, demo: Demo) -> Part {
             .child(
                 el("iframe")
                     .attr("src", site.url(&demo.path()))
-                    .attr("title", format!("The {} demo, running", demo.name()))
+                    .attr(
+                        "title",
+                        format!("The {} demo, running", demo.name().replace('_', " ")),
+                    )
                     .attr("loading", "lazy")
                     .css(
                         Style::new()
@@ -160,5 +162,10 @@ pub fn show(site: Site, demo: Demo) -> Part {
                             .border_width(px(0)),
                     ),
             ),
+        code::block(
+            Lang::Rust,
+            Some(&format!("{}.rs", demo.name())),
+            demo.source(),
+        ),
     ])
 }

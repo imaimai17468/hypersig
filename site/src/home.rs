@@ -7,7 +7,7 @@ use hypersig::style::{Media, Style};
 use hypersig_ui::{ButtonSize, ButtonVariant, button_style, token};
 
 use crate::demo::{self, Demo};
-use crate::doc::{Doc, Learn, Reference};
+use crate::doc::{Component, Doc, Learn};
 use crate::layout::{self, REPOSITORY};
 use crate::prose::{Part, inline, para, table_of};
 use crate::{Site, prose};
@@ -112,9 +112,9 @@ fn hero(site: Site) -> Part {
                         .text("Get started"),
                 )
                 .child(
-                    a().attr("href", Doc::Reference(Reference::Overview).url(site))
+                    a().attr("href", Doc::Components(Component::Installation).url(site))
                         .css(button_style(ButtonVariant::Outline, ButtonSize::Lg))
-                        .text("API reference"),
+                        .text("Components"),
                 )
                 .child(
                     a().attr("href", REPOSITORY)

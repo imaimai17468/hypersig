@@ -50,6 +50,18 @@ snippets! {
     Styles => "styles.rs";
     Effects => "effects.rs";
     StaticPage => "static_page.rs";
+    UiSetup => "ui_setup.rs";
+    UiTheme => "ui_theme.rs";
+    StyleBasics => "style_basics.rs";
+    StyleValues => "style_values.rs";
+    WrongValue => "wrong_value.rs", "compile_fail,E0277";
+    Conditions => "conditions.rs";
+    GroupPeer => "group_peer.rs";
+    Tokens => "tokens.rs";
+    GlobalRules => "global_rules.rs";
+    Patterns => "patterns.rs";
+    Animation => "animation.rs";
+    Unchecked => "unchecked.rs";
 }
 
 /// `snippet` as a code block, without its hidden lines.

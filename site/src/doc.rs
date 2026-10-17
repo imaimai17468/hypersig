@@ -1,6 +1,6 @@
 //! The pages of the site, their paths, and the order the sidebar lists them in.
 
-use crate::{Site, home, layout, learn, reference};
+use crate::{Site, components, home, layout, learn, reference, style};
 
 /// One page of the site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -11,6 +11,10 @@ pub enum Doc {
     Learn(Learn),
     /// A page of the Reference section.
     Reference(Reference),
+    /// A page of the Components section, about `hypersig_ui`.
+    Components(Component),
+    /// A page of the Style section, about `hypersig::style`.
+    Style(StylePage),
 }
 
 /// The pages of the Learn section, a guide read from top to bottom.
@@ -40,6 +44,45 @@ pub enum Reference {
     Patches,
     NodeRef,
     RouterExt,
+}
+
+/// The pages of the Components section: setup, then one page per component.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Component {
+    Installation,
+    Theming,
+    Button,
+    TextField,
+    Checkbox,
+    RadioGroup,
+    Select,
+    Slider,
+    Listbox,
+    Combobox,
+    Tabs,
+    Accordion,
+    Card,
+    Separator,
+    Dialog,
+    Menu,
+    Tooltip,
+    Toast,
+    Alert,
+    Badge,
+    Progress,
+}
+
+/// The pages of the Style section.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StylePage {
+    Overview,
+    Values,
+    Conditions,
+    Tokens,
+    Global,
+    Patterns,
+    Animation,
+    Unchecked,
 }
 
 /// A titled run of pages in a sidebar.
@@ -102,6 +145,89 @@ pub const REFERENCE: &[Group] = &[
     },
 ];
 
+/// The sidebar of the Components section.
+pub const COMPONENTS: &[Group] = &[
+    Group {
+        title: "Get started",
+        docs: &[
+            Doc::Components(Component::Installation),
+            Doc::Components(Component::Theming),
+        ],
+    },
+    Group {
+        title: "Forms",
+        docs: &[
+            Doc::Components(Component::Button),
+            Doc::Components(Component::TextField),
+            Doc::Components(Component::Checkbox),
+            Doc::Components(Component::RadioGroup),
+            Doc::Components(Component::Select),
+            Doc::Components(Component::Slider),
+        ],
+    },
+    Group {
+        title: "Pickers",
+        docs: &[
+            Doc::Components(Component::Listbox),
+            Doc::Components(Component::Combobox),
+        ],
+    },
+    Group {
+        title: "Layout",
+        docs: &[
+            Doc::Components(Component::Tabs),
+            Doc::Components(Component::Accordion),
+            Doc::Components(Component::Card),
+            Doc::Components(Component::Separator),
+        ],
+    },
+    Group {
+        title: "Overlays",
+        docs: &[
+            Doc::Components(Component::Dialog),
+            Doc::Components(Component::Menu),
+            Doc::Components(Component::Tooltip),
+            Doc::Components(Component::Toast),
+        ],
+    },
+    Group {
+        title: "Feedback",
+        docs: &[
+            Doc::Components(Component::Alert),
+            Doc::Components(Component::Badge),
+            Doc::Components(Component::Progress),
+        ],
+    },
+];
+
+/// The sidebar of the Style section.
+pub const STYLE: &[Group] = &[
+    Group {
+        title: "Get started",
+        docs: &[Doc::Style(StylePage::Overview)],
+    },
+    Group {
+        title: "Writing styles",
+        docs: &[
+            Doc::Style(StylePage::Values),
+            Doc::Style(StylePage::Conditions),
+            Doc::Style(StylePage::Tokens),
+        ],
+    },
+    Group {
+        title: "The page",
+        docs: &[
+            Doc::Style(StylePage::Global),
+            Doc::Style(StylePage::Patterns),
+            Doc::Style(StylePage::Animation),
+        ],
+    },
+    Group {
+        title: "Escape hatches",
+        docs: &[Doc::Style(StylePage::Unchecked)],
+    },
+];
+
 impl Doc {
     /// Every page, in the order the site lists them.
     pub const ALL: &[Self] = &[
@@ -125,6 +251,35 @@ impl Doc {
         Self::Reference(Reference::Action),
         Self::Reference(Reference::Patches),
         Self::Reference(Reference::RouterExt),
+        Self::Components(Component::Installation),
+        Self::Components(Component::Theming),
+        Self::Components(Component::Button),
+        Self::Components(Component::TextField),
+        Self::Components(Component::Checkbox),
+        Self::Components(Component::RadioGroup),
+        Self::Components(Component::Select),
+        Self::Components(Component::Slider),
+        Self::Components(Component::Listbox),
+        Self::Components(Component::Combobox),
+        Self::Components(Component::Tabs),
+        Self::Components(Component::Accordion),
+        Self::Components(Component::Card),
+        Self::Components(Component::Separator),
+        Self::Components(Component::Dialog),
+        Self::Components(Component::Menu),
+        Self::Components(Component::Tooltip),
+        Self::Components(Component::Toast),
+        Self::Components(Component::Alert),
+        Self::Components(Component::Badge),
+        Self::Components(Component::Progress),
+        Self::Style(StylePage::Overview),
+        Self::Style(StylePage::Values),
+        Self::Style(StylePage::Conditions),
+        Self::Style(StylePage::Tokens),
+        Self::Style(StylePage::Global),
+        Self::Style(StylePage::Patterns),
+        Self::Style(StylePage::Animation),
+        Self::Style(StylePage::Unchecked),
     ];
 
     /// The page's directory inside the site, ending in `/`, or `""` for the
@@ -137,6 +292,10 @@ impl Doc {
             Self::Reference(Reference::Overview) => "reference/".to_owned(),
             Self::Learn(page) => format!("learn/{}/", page.slug()),
             Self::Reference(page) => format!("reference/{}/", page.slug()),
+            Self::Components(Component::Installation) => "components/".to_owned(),
+            Self::Components(page) => format!("components/{}/", page.slug()),
+            Self::Style(StylePage::Overview) => "style/".to_owned(),
+            Self::Style(page) => format!("style/{}/", page.slug()),
         }
     }
 
@@ -168,6 +327,39 @@ impl Doc {
                 Reference::NodeRef => "NodeRef",
                 Reference::RouterExt => "RouterExt",
             },
+            Self::Components(page) => match page {
+                Component::Installation => "Installation",
+                Component::Theming => "Theming",
+                Component::Button => "Button",
+                Component::TextField => "Text field",
+                Component::Checkbox => "Checkbox and switch",
+                Component::RadioGroup => "Radio group",
+                Component::Select => "Select",
+                Component::Slider => "Slider",
+                Component::Listbox => "Listbox",
+                Component::Combobox => "Combobox",
+                Component::Tabs => "Tabs",
+                Component::Accordion => "Accordion",
+                Component::Card => "Card",
+                Component::Separator => "Separator",
+                Component::Dialog => "Dialog",
+                Component::Menu => "Menu",
+                Component::Tooltip => "Tooltip",
+                Component::Toast => "Toast",
+                Component::Alert => "Alert",
+                Component::Badge => "Badge",
+                Component::Progress => "Progress and skeleton",
+            },
+            Self::Style(page) => match page {
+                StylePage::Overview => "Style",
+                StylePage::Values => "Properties and values",
+                StylePage::Conditions => "Conditions",
+                StylePage::Tokens => "Tokens and themes",
+                StylePage::Global => "Global styles",
+                StylePage::Patterns => "Layout patterns",
+                StylePage::Animation => "Animation",
+                StylePage::Unchecked => "Unchecked values",
+            },
         }
     }
 
@@ -182,6 +374,8 @@ impl Doc {
             Self::Home => &[],
             Self::Learn(_) => LEARN,
             Self::Reference(_) => REFERENCE,
+            Self::Components(_) => COMPONENTS,
+            Self::Style(_) => STYLE,
         }
     }
 
@@ -206,6 +400,8 @@ impl Doc {
             Self::Home => home::render(site),
             Self::Learn(page) => layout::article(site, self, learn::content(site, page)),
             Self::Reference(page) => layout::article(site, self, reference::content(site, page)),
+            Self::Components(page) => layout::article(site, self, components::content(site, page)),
+            Self::Style(page) => layout::article(site, self, style::content(site, page)),
         }
     }
 }
@@ -239,6 +435,49 @@ impl Reference {
             Self::Patches => "patches",
             Self::NodeRef => "node-ref",
             Self::RouterExt => "router-ext",
+        }
+    }
+}
+
+impl Component {
+    fn slug(self) -> &'static str {
+        match self {
+            Self::Installation => "",
+            Self::Theming => "theming",
+            Self::Button => "button",
+            Self::TextField => "text-field",
+            Self::Checkbox => "checkbox",
+            Self::RadioGroup => "radio-group",
+            Self::Select => "select",
+            Self::Slider => "slider",
+            Self::Listbox => "listbox",
+            Self::Combobox => "combobox",
+            Self::Tabs => "tabs",
+            Self::Accordion => "accordion",
+            Self::Card => "card",
+            Self::Separator => "separator",
+            Self::Dialog => "dialog",
+            Self::Menu => "menu",
+            Self::Tooltip => "tooltip",
+            Self::Toast => "toast",
+            Self::Alert => "alert",
+            Self::Badge => "badge",
+            Self::Progress => "progress",
+        }
+    }
+}
+
+impl StylePage {
+    fn slug(self) -> &'static str {
+        match self {
+            Self::Overview => "",
+            Self::Values => "values",
+            Self::Conditions => "conditions",
+            Self::Tokens => "tokens",
+            Self::Global => "global",
+            Self::Patterns => "patterns",
+            Self::Animation => "animation",
+            Self::Unchecked => "unchecked",
         }
     }
 }
