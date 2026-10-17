@@ -2,7 +2,7 @@
 //!
 //! Each row links to the item in the rustdoc output that the site serves
 //! under `api/`, and its summary is the first sentence of the item's doc
-//! comment. The binary checks every link against that output when it is
+//! comment, shortened where it runs past one line of the table. The binary checks every link against that output when it is
 //! given `--rustdoc`, so a renamed or removed item fails the build.
 
 use crate::Site;
@@ -78,7 +78,7 @@ fn overview(site: Site) -> Part {
         ),
         para(
             site,
-            "The [complete API documentation](api:hypersig/index.html) is the rustdoc output of the same commit as this site, with every method, its signature, and its examples. The pages here list the items you reach for most, with the first sentence of each doc comment.",
+            "The [complete API documentation](api:hypersig/index.html) is the rustdoc output of the same commit as this site, with every method, its signature, and its examples. The pages here list the items you reach for most, each with the first sentence of its doc comment, shortened where it runs long.",
         ),
         table_of(site, &["Page", "What it covers"], &rows),
         para(
