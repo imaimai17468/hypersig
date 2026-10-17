@@ -8,16 +8,18 @@ use std::fmt;
 
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::{Query, State};
+use axum::extract::{Query, RawPathParams, State};
 use axum::http::{StatusCode, header};
 use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
-use axum::response::{IntoResponse, Response};
+use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{MethodRouter, get, post};
 use futures::{Stream, StreamExt as _, stream};
 use serde::de::DeserializeOwned;
 
 use crate::action::{Action, Method};
+use crate::page::Page;
 use crate::patch::{PatchEvent, Patches};
+use crate::route::{Params, Route};
 use crate::signal::Signals;
 
 /// Adds hypersig routes to an axum [`Router`].
@@ -25,6 +27,43 @@ pub trait RouterExt<St>: Sized {
     /// Serves the browser runtime at [`RUNTIME_PATH`](crate::RUNTIME_PATH).
     #[must_use]
     fn hypersig_runtime(self) -> Self;
+
+    /// Serves the page at `route` on `GET`, with a handler that builds it.
+    ///
+    /// The handler receives the router state and the path's parameters,
+    /// already parsed. A path whose segments do not parse into the
+    /// parameter types, or a handler that answers `None`, gets a 404.
+    ///
+    /// ```
+    /// use axum::Router;
+    /// use hypersig::html::{a, h1};
+    /// use hypersig::{Page, Route, RouterExt, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Profile {
+    ///     name: String,
+    /// }
+    ///
+    /// const HOME: Route = Route::new("/");
+    /// const MEMBER: Route<i32> = Route::new("/members/{id}");
+    ///
+    /// async fn member((): (), id: i32) -> Option<Page<Profile>> {
+    ///     let name = ["Ada", "Grace"].get(usize::try_from(id).ok()?)?;
+    ///     let signals = Profile { name: (*name).to_owned() };
+    ///     Some(Page::new(*name, signals).child(h1().text(*name)).child(a().href(HOME.link()).text("Home")))
+    /// }
+    ///
+    /// let _app: Router = Router::new().page(MEMBER, member);
+    /// ```
+    #[must_use]
+    fn page<P, S, H, Fut, R>(self, route: Route<P>, handler: H) -> Self
+    where
+        P: Params + Send + 'static,
+        S: Signals,
+        H: Fn(St, P) -> Fut + Clone + Send + Sync + 'static,
+        Fut: Future<Output = R> + Send + 'static,
+        R: Into<Option<Page<S>>>;
 
     /// Serves `action` with a handler that answers with one batch of patches.
     ///
@@ -65,6 +104,36 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 )
             }),
         )
+    }
+
+    fn page<P, S, H, Fut, R>(self, route: Route<P>, handler: H) -> Self
+    where
+        P: Params + Send + 'static,
+        S: Signals,
+        H: Fn(St, P) -> Fut + Clone + Send + Sync + 'static,
+        Fut: Future<Output = R> + Send + 'static,
+        R: Into<Option<Page<S>>>,
+    {
+        let route_handler = move |State(state): State<St>, params: RawPathParams| {
+            let handler = handler.clone();
+            // A router nested under a path with parameters puts the outer
+            // ones first, so the route's own are the last `P::COUNT`.
+            let segments: Vec<&str> = params.iter().map(|(_, value)| value).collect();
+            let params = segments
+                .len()
+                .checked_sub(P::COUNT)
+                .and_then(|start| P::from_segments(&segments[start..]));
+            async move {
+                let Some(params) = params else {
+                    return StatusCode::NOT_FOUND.into_response();
+                };
+                match handler(state, params).await.into() {
+                    Some(page) => Html(page.render()).into_response(),
+                    None => StatusCode::NOT_FOUND.into_response(),
+                }
+            }
+        };
+        self.route(route.path(), get(route_handler))
     }
 
     fn action<S, A, H, Fut, P>(self, action: Action<S, A>, handler: H) -> Self

@@ -4,7 +4,8 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt as _;
-use hypersig::{Action, Patches, RouterExt, Signals};
+use hypersig::html::{a, p};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -15,6 +16,15 @@ struct Counter {
 
 const ADD: Action<Counter, (i32, i32)> = Action::post("/add");
 const PEEK: Action<Counter, i32> = Action::get("/peek");
+const HOME: Route = Route::new("/");
+const MEMBER: Route<(String, i32)> = Route::new("/teams/{team}/members/{id}");
+const NESTED: Route<i32> = Route::new("/members/{id}");
+
+fn member_page(team: &str, id: i32) -> Page<Counter> {
+    Page::new("Member", Counter { count: id })
+        .child(p().text(format!("{team} #{id}")))
+        .child(a().href(HOME.link()).text("Home"))
+}
 
 fn app() -> Router {
     Router::new()
@@ -25,6 +35,20 @@ fn app() -> Router {
         .action(PEEK, |(), count: i32| async move {
             Patches::from(Counter::count().patch(count))
         })
+        .page(HOME, |(), ()| async {
+            Page::new("Home", Counter { count: 0 })
+                .child(a().href(MEMBER.link_with(("red team", 2))).text("Member"))
+        })
+        .page(MEMBER, |(), (team, id): (String, i32)| async move {
+            (id >= 0).then(|| member_page(&team, id))
+        })
+        .nest(
+            "/orgs/{org}",
+            Router::new().page(
+                NESTED,
+                |(), id: i32| async move { member_page("nested", id) },
+            ),
+        )
 }
 
 async fn send(request: Request<Body>) -> (StatusCode, String) {
@@ -105,4 +129,60 @@ async fn serves_the_runtime() {
     .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, hypersig::RUNTIME_JS);
+}
+
+#[tokio::test]
+async fn serves_a_page_without_parameters() {
+    let (status, body) = send(Request::get("/").body(Body::empty()).expect("request")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        body.contains(r#"href="/teams/red%20team/members/2""#),
+        "{body}"
+    );
+}
+
+#[tokio::test]
+async fn a_page_receives_its_decoded_parameters() {
+    let (status, body) = send(
+        Request::get("/teams/red%20team/members/2")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("red team #2"), "{body}");
+}
+
+#[tokio::test]
+async fn a_segment_that_does_not_parse_gets_404() {
+    let (status, _) = send(
+        Request::get("/teams/red/members/two")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn a_handler_that_answers_none_gets_404() {
+    let (status, _) = send(
+        Request::get("/teams/red/members/-1")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn a_nested_page_reads_its_own_parameters() {
+    let (status, body) = send(
+        Request::get("/orgs/acme/members/9")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("nested #9"), "{body}");
 }

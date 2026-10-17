@@ -12,6 +12,8 @@ use std::borrow::Cow;
 
 use serde_json::{Map, Number, Value};
 
+use crate::route::encode_uri_component;
+
 static NULL: Value = Value::Null;
 
 /// The signals an expression reads, and the store path of each enclosing list item.
@@ -257,6 +259,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "or" => Value::Bool(truthy(&*eval(1)?) || truthy(&*eval(2)?)),
         "not" => Value::Bool(!truthy(&*eval(1)?)),
         "str" => Value::from(js_string(&*eval(1)?)),
+        "uri" => Value::from(encode_uri_component(&js_string(&*eval(1)?))),
         "fixed" => {
             let digits = usize::try_from(arg(2)?.as_u64()?).ok()?;
             Value::from(format!("{:.*}", digits, f(&*eval(1)?)?))

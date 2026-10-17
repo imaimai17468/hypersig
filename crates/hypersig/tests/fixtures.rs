@@ -8,12 +8,12 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, Orientation, button, div, each, each_keyed, input, label, li, main, select,
+    El, Event, Key, Orientation, a, button, div, each, each_keyed, input, label, li, main, select,
     span, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
-use hypersig::{Action, Expr, Fragment, NodeRef, Page, Patches, Signals, Stmt, if_else};
+use hypersig::{Action, Expr, Fragment, NodeRef, Page, Patches, Route, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -583,6 +583,45 @@ impl Fragment for Panel {
     }
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Member {
+    team: String,
+    id: i32,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Roster {
+    members: Vec<Member>,
+}
+
+const HOME: Route = Route::new("/");
+const MEMBER: Route<(String, i32)> = Route::new("/teams/{team}/members/{id}");
+
+/// Links whose parameters need percent-encoding, so the server's encoding
+/// and the browser's `encodeURIComponent` are compared on the same values.
+fn links() -> (El<Roster>, Roster) {
+    let el = main()
+        .child(a().id("home").href(HOME.link()))
+        .child(ul().id("members").child(each(Roster::members(), |member| {
+            li().child(
+                a().href(MEMBER.link_with((member.at(Member::team()), member.at(Member::id())))),
+            )
+        })));
+    let signals = Roster {
+        members: vec![
+            Member {
+                team: "red team".to_owned(),
+                id: 1,
+            },
+            Member {
+                team: "café/ü?&#".to_owned(),
+                id: -2,
+            },
+        ],
+    };
+    (el, signals)
+}
+
 /// Writes the page as `Page::render` serves it, with the server-side values applied.
 fn check_page<S: Signals>(name: &str, el: El<S>, signals: S) {
     let html = Page::new(name, signals).child(el).render();
@@ -611,8 +650,12 @@ fn fixtures_match_the_builder() {
     check("roving", &el, &signals);
     let (el, signals) = combo();
     check("combo", &el, &signals);
+    let (el, signals) = links();
+    check("links", &el, &signals);
     let (el, signals) = todos();
     check_page("todos_page", el, signals);
+    let (el, signals) = links();
+    check_page("links_page", el, signals);
     let (el, signals) = nested();
     check_page("nested_page", el, signals);
     let (el, signals) = controls();

@@ -61,6 +61,7 @@ const binary: Record<string, (a: never, b: never) => unknown> = {
 const unary: Record<string, (a: never) => unknown> = {
   not: (a: unknown) => !a,
   str: (a: unknown) => String(a),
+  uri: (a: unknown) => encodeURIComponent(String(a)),
   trim: (a: string) => a.trim(),
   lower: (a: string) => a.toLowerCase(),
   upper: (a: string) => a.toUpperCase(),

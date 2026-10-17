@@ -1,0 +1,25 @@
+error[E0277]: `&str` is not an expression of type `i32` on the page whose signals are `_`
+  --> tests/ui/fail/link_wrong_param_type.rs:13:47
+   |
+13 |     let _ = a::<Team>().href(MEMBER.link_with("ada"));
+   |                                     --------- ^^^^^ the trait `IntoExpr<_, i32>` is not implemented for `&str`
+   |                                     |
+   |                                     required by a bound introduced by this call
+   |
+   = note: an expression must have the type the attribute expects, and use signals of the same page
+help: the trait `IntoExpr<_, i32>` is not implemented for `&str`
+      but trait `IntoExpr<_, String>` is implemented for it
+  --> src/expr.rs
+   |
+   |         impl<S> IntoExpr<S, $target> for $ty {
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+   | literal!(i32 => i32, f64 => f64, bool => bool, String => String, &str => String);
+   | -------------------------------------------------------------------------------- in this macro invocation
+   = help: for that trait implementation, expected `String`, found `i32`
+note: required by a bound in `Route::<P>::link_with`
+  --> src/route.rs
+   |
+   |     pub fn link_with<S>(&self, params: impl IntoExpr<S, P>) -> Link<S> {
+   |                                             ^^^^^^^^^^^^^^ required by this bound in `Route::<P>::link_with`
+   = note: this error originates in the macro `literal` (in Nightly builds, run with -Z macro-backtrace for more info)

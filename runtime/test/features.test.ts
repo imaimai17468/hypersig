@@ -615,6 +615,22 @@ describe("server rendering", () => {
   });
 });
 
+describe("links", () => {
+  it("writes the same percent-encoded hrefs on the server as the runtime does, and follows a changed parameter", async () => {
+    serve("links_page");
+    const served = $$("#members a").map((a) => a.getAttribute("href"));
+    expect(served).toEqual(["/teams/red%20team/members/1", "/teams/caf%C3%A9%2F%C3%BC%3F%26%23/members/-2"]);
+    expect($("#home").getAttribute("href")).toBe("/");
+
+    const runtime = mount("links");
+    await tick();
+    expect($$("#members a").map((a) => a.getAttribute("href"))).toEqual(served);
+    runtime.store.set("members.0.team", "blue");
+    await tick();
+    expect($$("#members a")[0]!.getAttribute("href")).toBe("/teams/blue/members/1");
+  });
+});
+
 describe("computed signals", () => {
   it("are computed on the server, recomputed in order in the browser, and rerun readers only when their value changes", async () => {
     serve("computed_page");

@@ -51,6 +51,7 @@ use serde_json::{Value, json};
 
 use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
+use crate::route::Link;
 use crate::signal::{Item, Sig, in_item_scope};
 use crate::ssr::{self, Ctx};
 use crate::style::{Property, Sheet, Style, Token, TokenValue};
@@ -767,6 +768,19 @@ impl<S> El<S> {
     ) -> Self {
         self.style
             .push((format!("--{}", token.name()), value.into_expr()));
+        self
+    }
+
+    /// Points the element's `href` at a page the router serves.
+    ///
+    /// A link whose parameters are all literals is written as a plain
+    /// attribute. One that reads signals is kept up to date as they change.
+    #[must_use]
+    pub fn href(mut self, link: Link<S>) -> Self {
+        match link.into_parts() {
+            Ok(url) => self.attrs.push(("href", url)),
+            Err(expr) => self.attr_bind.push(("href", expr)),
+        }
         self
     }
 

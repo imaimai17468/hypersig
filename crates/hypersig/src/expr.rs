@@ -33,6 +33,7 @@
 //! | `list.update_where(\|item\| p, f, \|item\| e)` | `["update",place,depth,p,"path",e]` |
 //! | `list.swap(i, j)`, `list.sort_by(\|item\| k)` | `["swap",place,i,j]`, `["sort",place,depth,k]` |
 //! | `Stmt::when(c, s)`, `Stmt::if_else(c, s, t)` | `["if",c,s,t]` |
+//! | `route.link_with(p)` for `"/users/{id}"` | `["concat",["lit","/users/"],["uri",p]]` |
 //! | `action.call()` | `["call",method,path,args,indicator,error]` |
 //! | `node_ref.focus()` | `["dom","focus",name]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |

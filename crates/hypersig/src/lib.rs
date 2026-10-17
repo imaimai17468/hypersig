@@ -3,9 +3,10 @@
 //! The server owns the state, renders HTML, and answers browser events with
 //! patches over Server-Sent Events. A small runtime in the browser keeps a
 //! store of signals for local reactivity and applies the patches. Signal
-//! names, attribute expressions, action endpoints, and patch targets are all
-//! produced from Rust types, so a misspelled signal, a type mismatch in an
-//! expression, or an action called from the wrong page is a compile error.
+//! names, attribute expressions, action endpoints, page links, and patch
+//! targets are all produced from Rust types, so a misspelled signal, a type
+//! mismatch in an expression, an action called from the wrong page, or a link
+//! whose parameters do not fit its route is a compile error.
 //! [`Page::render`] evaluates the expressions with the initial signals, so the
 //! first HTML already shows what the runtime would compute.
 //!
@@ -35,8 +36,8 @@
 //! assert!(reply.to_event_stream().starts_with("event: hs-signals"));
 //! ```
 //!
-//! With the `axum` feature (on by default), `RouterExt` serves the runtime and
-//! the actions.
+//! With the `axum` feature (on by default), `RouterExt` serves the runtime,
+//! the pages at their [`Route`]s, and the actions.
 
 extern crate self as hypersig;
 
@@ -47,6 +48,7 @@ mod expr;
 pub mod html;
 mod page;
 mod patch;
+mod route;
 mod signal;
 mod ssr;
 
@@ -65,6 +67,7 @@ pub use expr::{Comparable, Expr, IntoExpr, IntoStmt, Number, Stmt, Textual, if_e
 pub use hypersig_proc::Signals;
 pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};
+pub use route::{Link, Params, Route, Segment};
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 
 /// Typed atomic CSS, from the `hypersig_style` crate.
