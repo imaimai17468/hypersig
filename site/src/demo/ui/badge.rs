@@ -7,14 +7,24 @@ use hypersig::{Page, Signals};
 use hypersig_ui::{BadgeVariant, ButtonSize, ButtonVariant, badge, button};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Build {
     failed: bool,
 }
 
-pub fn page() -> Page<Build> {
+pub fn page(site: Site) -> Page<Build> {
     let failed = Build::failed();
-    Page::new("Build", Build { failed: false }).child(
+    Page::new(
+        site.t(L {
+            en: "Build",
+            ja: "ビルド",
+        }),
+        Build { failed: false },
+    )
+    .child(
         div()
             .css(stack(rem(1)))
             .child(
@@ -23,14 +33,27 @@ pub fn page() -> Page<Build> {
                     .child(badge(BadgeVariant::Default).text("Default"))
                     .child(badge(BadgeVariant::Secondary).text("Secondary"))
                     .child(badge(BadgeVariant::Outline).text("Outline"))
-                    .child(badge(BadgeVariant::Destructive).show(failed).text("Failed"))
-                    .child(badge(BadgeVariant::Secondary).show(!failed).text("Passing")),
+                    .child(
+                        badge(BadgeVariant::Destructive)
+                            .show(failed)
+                            .text(site.t(L {
+                                en: "Failed",
+                                ja: "失敗",
+                            })),
+                    )
+                    .child(badge(BadgeVariant::Secondary).show(!failed).text(site.t(L {
+                        en: "Passing",
+                        ja: "成功",
+                    }))),
             )
             .child(
                 div().child(
                     button(ButtonVariant::Outline, ButtonSize::Sm)
                         .on_click(failed.toggle())
-                        .text("Toggle the build"),
+                        .text(site.t(L {
+                            en: "Toggle the build",
+                            ja: "ビルドの結果を切り替える",
+                        })),
                 ),
             ),
     )

@@ -59,7 +59,7 @@ macro_rules! demos {
             /// The demo's page as an HTML document.
             pub fn render(self, site: Site) -> String {
                 match self {
-                    $(Self::$variant => frame_page(site, $module::page),)*
+                    $(Self::$variant => frame_page(site, $module::page(site)),)*
                 }
             }
         }
@@ -107,38 +107,9 @@ impl Demo {
     }
 }
 
-/// The function that builds a demo's page: `fn page() -> Page<S>` for a demo
-/// whose texts are the same in every language, or `fn page(site: Site) ->
-/// Page<S>` for one that writes its texts in the site's language.
-///
-/// `M` tells the two implementations apart, since a function item implements
-/// only one of them.
-trait DemoPage<M> {
-    type Signals: Signals;
-
-    fn page(self, site: Site) -> Page<Self::Signals>;
-}
-
-impl<S: Signals, F: FnOnce() -> Page<S>> DemoPage<fn() -> S> for F {
-    type Signals = S;
-
-    fn page(self, _site: Site) -> Page<S> {
-        self()
-    }
-}
-
-impl<S: Signals, F: FnOnce(Site) -> Page<S>> DemoPage<fn(Site) -> S> for F {
-    type Signals = S;
-
-    fn page(self, site: Site) -> Page<S> {
-        self(site)
-    }
-}
-
-/// The page `page` builds, with the components' theme and room around its content.
-fn frame_page<M>(site: Site, page: impl DemoPage<M>) -> String {
-    page.page(site)
-        .runtime_src(site.runtime())
+/// `page` with the components' theme and room around its content.
+fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
+    page.runtime_src(site.runtime())
         .global(hypersig_ui::global())
         .global(
             Global::new()

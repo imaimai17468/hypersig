@@ -11,6 +11,9 @@ use hypersig_ui::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Scheme {
     System,
@@ -24,12 +27,19 @@ pub struct Preview {
     on: bool,
 }
 
-pub fn page() -> Page<Preview> {
+pub fn page(site: Site) -> Page<Preview> {
     let initial = Preview {
         scheme: Scheme::System,
         on: true,
     };
-    Page::new("Preview", initial).child(
+    Page::new(
+        site.t(L {
+            en: "Preview",
+            ja: "プレビュー",
+        }),
+        initial,
+    )
+    .child(
         div()
             .css(
                 stack(rem(1))
@@ -45,32 +55,68 @@ pub fn page() -> Page<Preview> {
                 ],
             )
             .child(
-                div().css(Style::new().max_width(rem(12))).child(select_field(
-                    "Theme",
-                    Preview::scheme(),
-                    [
-                        (Scheme::System, "System"),
-                        (Scheme::Light, "Light"),
-                        (Scheme::Dark, "Dark"),
-                    ],
-                )),
+                div()
+                    .css(Style::new().max_width(rem(12)))
+                    .child(select_field(
+                        site.t(L {
+                            en: "Theme",
+                            ja: "テーマ",
+                        }),
+                        Preview::scheme(),
+                        [
+                            (
+                                Scheme::System,
+                                site.t(L {
+                                    en: "System",
+                                    ja: "システム",
+                                }),
+                            ),
+                            (
+                                Scheme::Light,
+                                site.t(L {
+                                    en: "Light",
+                                    ja: "ライト",
+                                }),
+                            ),
+                            (
+                                Scheme::Dark,
+                                site.t(L {
+                                    en: "Dark",
+                                    ja: "ダーク",
+                                }),
+                            ),
+                        ],
+                    )),
             )
             .child(
                 card()
                     .child(
                         card_header()
-                            .child(card_title(Level::H2).text("Notifications"))
-                            .child(card_description().text("Choose what reaches your inbox.")),
+                            .child(card_title(Level::H2).text(site.t(L {
+                                en: "Notifications",
+                                ja: "通知",
+                            })))
+                            .child(card_description().text(site.t(L {
+                                en: "Choose what reaches your inbox.",
+                                ja: "受信トレイに届ける内容を選んでください。",
+                            }))),
                     )
                     .child(
                         card_content()
                             .css(stack(rem(1)))
-                            .child(switch("Product updates", Preview::on()))
-                            .child(
-                                div().child(
-                                    button(ButtonVariant::Default, ButtonSize::Sm).text("Save"),
-                                ),
-                            ),
+                            .child(switch(
+                                site.t(L {
+                                    en: "Product updates",
+                                    ja: "製品のお知らせ",
+                                }),
+                                Preview::on(),
+                            ))
+                            .child(div().child(
+                                button(ButtonVariant::Default, ButtonSize::Sm).text(site.t(L {
+                                    en: "Save",
+                                    ja: "保存",
+                                })),
+                            )),
                     ),
             ),
     )

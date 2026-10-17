@@ -7,12 +7,15 @@ use hypersig::{Page, Signals};
 use hypersig_ui::{ButtonSize, ButtonVariant, button, icon_button};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Buttons {
     clicks: i32,
 }
 
-pub fn page() -> Page<Buttons> {
+pub fn page(site: Site) -> Page<Buttons> {
     let clicks = Buttons::clicks();
     let count = clicks.set(clicks + 1);
     let variants = [
@@ -23,7 +26,14 @@ pub fn page() -> Page<Buttons> {
         (ButtonVariant::Destructive, "Destructive"),
         (ButtonVariant::Link, "Link"),
     ];
-    Page::new("Buttons", Buttons { clicks: 0 }).child(
+    Page::new(
+        site.t(L {
+            en: "Buttons",
+            ja: "ボタン",
+        }),
+        Buttons { clicks: 0 },
+    )
+    .child(
         div()
             .css(stack(rem(1)))
             .child(div().css(wrap(rem(0.5))).children(variants.into_iter().map(
@@ -36,19 +46,47 @@ pub fn page() -> Page<Buttons> {
             .child(
                 div()
                     .css(wrap(rem(0.5)))
-                    .child(button(ButtonVariant::Outline, ButtonSize::Sm).text("Small"))
-                    .child(button(ButtonVariant::Outline, ButtonSize::Lg).text("Large"))
+                    .child(
+                        button(ButtonVariant::Outline, ButtonSize::Sm).text(site.t(L {
+                            en: "Small",
+                            ja: "小",
+                        })),
+                    )
+                    .child(
+                        button(ButtonVariant::Outline, ButtonSize::Lg).text(site.t(L {
+                            en: "Large",
+                            ja: "大",
+                        })),
+                    )
                     .child(
                         button(ButtonVariant::Outline, ButtonSize::Default)
                             .attr("disabled", "")
-                            .text("Disabled"),
+                            .text(site.t(L {
+                                en: "Disabled",
+                                ja: "無効",
+                            })),
                     )
-                    .child(icon_button(ButtonVariant::Outline, "Add").text("+")),
+                    .child(
+                        icon_button(
+                            ButtonVariant::Outline,
+                            site.t(L {
+                                en: "Add",
+                                ja: "追加",
+                            }),
+                        )
+                        .text("+"),
+                    ),
             )
             .child(
-                p().text("Clicked ")
-                    .child(span().bind_text(clicks.to_text()))
-                    .text(" times"),
+                p().text(site.t(L {
+                    en: "Clicked ",
+                    ja: "クリックした回数: ",
+                }))
+                .child(span().bind_text(clicks.to_text()))
+                .text(site.t(L {
+                    en: " times",
+                    ja: " 回",
+                })),
             ),
     )
 }

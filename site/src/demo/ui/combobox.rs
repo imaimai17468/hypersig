@@ -7,6 +7,9 @@ use hypersig::{Page, Signals};
 use hypersig_ui::{Combobox, ComboboxState};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Shipping {
     country: ComboboxState,
@@ -14,18 +17,44 @@ pub struct Shipping {
 
 const COUNTRY: Combobox<Shipping> = Combobox::new("country", "country-options");
 
-pub fn page() -> Page<Shipping> {
+pub fn page(site: Site) -> Page<Shipping> {
     let initial = Shipping {
         country: ComboboxState::new(""),
     };
-    Page::new("Shipping", initial).child(
-        div().css(Style::new().max_width(rem(20))).child(COUNTRY.render(
-            "Country",
-            Shipping::country(),
-            [
-                "Brazil", "Canada", "France", "Germany", "India", "Japan", "Kenya", "Mexico",
-                "Norway", "Spain",
-            ],
-        )),
+    Page::new(
+        site.t(L {
+            en: "Shipping",
+            ja: "配送先",
+        }),
+        initial,
+    )
+    .child(
+        div()
+            .css(Style::new().max_width(rem(20)))
+            .child(COUNTRY.render(
+                site.t(L {
+                    en: "Country",
+                    ja: "国",
+                }),
+                Shipping::country(),
+                site.t(L {
+                    en: [
+                        "Brazil", "Canada", "France", "Germany", "India", "Japan", "Kenya",
+                        "Mexico", "Norway", "Spain",
+                    ],
+                    ja: [
+                        "インド",
+                        "カナダ",
+                        "ケニア",
+                        "スペイン",
+                        "ドイツ",
+                        "日本",
+                        "ノルウェー",
+                        "ブラジル",
+                        "フランス",
+                        "メキシコ",
+                    ],
+                }),
+            )),
     )
 }

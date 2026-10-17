@@ -7,6 +7,9 @@ use hypersig::{Page, Signals, if_else};
 use hypersig_ui::radio_group;
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Plan {
     Hobby,
@@ -19,24 +22,58 @@ pub struct Billing {
     plan: Plan,
 }
 
-pub fn page() -> Page<Billing> {
+pub fn page(site: Site) -> Page<Billing> {
     let plan = Billing::plan();
-    Page::new("Billing", Billing { plan: Plan::Pro }).child(
+    Page::new(
+        site.t(L {
+            en: "Billing",
+            ja: "お支払い",
+        }),
+        Billing { plan: Plan::Pro },
+    )
+    .child(
         div()
             .css(stack(rem(1)))
             .child(radio_group(
-                "Plan",
+                site.t(L {
+                    en: "Plan",
+                    ja: "プラン",
+                }),
                 plan,
                 [
-                    (Plan::Hobby, "Hobby"),
-                    (Plan::Pro, "Pro"),
-                    (Plan::Team, "Team"),
+                    (
+                        Plan::Hobby,
+                        site.t(L {
+                            en: "Hobby",
+                            ja: "ホビー",
+                        }),
+                    ),
+                    (
+                        Plan::Pro,
+                        site.t(L {
+                            en: "Pro",
+                            ja: "プロ",
+                        }),
+                    ),
+                    (
+                        Plan::Team,
+                        site.t(L {
+                            en: "Team",
+                            ja: "チーム",
+                        }),
+                    ),
                 ],
             ))
             .child(p().bind_text(if_else(
                 plan.equals(&Plan::Hobby),
-                "Free for personal projects.",
-                "Billed monthly.",
+                site.t(L {
+                    en: "Free for personal projects.",
+                    ja: "個人のプロジェクトには無料です。",
+                }),
+                site.t(L {
+                    en: "Billed monthly.",
+                    ja: "毎月請求されます。",
+                }),
             ))),
     )
 }

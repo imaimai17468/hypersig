@@ -8,23 +8,39 @@ use hypersig::{Page, Signals};
 use hypersig_ui::{ButtonSize, ButtonVariant, button, progress, skeleton};
 use serde::{Deserialize, Serialize};
 
+use crate::Site;
+use crate::lang::L;
+
 #[derive(Signals, Serialize, Deserialize)]
 pub struct Upload {
     percent: i32,
     loading: bool,
 }
 
-pub fn page() -> Page<Upload> {
+pub fn page(site: Site) -> Page<Upload> {
     let percent = Upload::percent();
     let loading = Upload::loading();
     let initial = Upload {
         percent: 40,
         loading: true,
     };
-    Page::new("Upload", initial).child(
+    Page::new(
+        site.t(L {
+            en: "Upload",
+            ja: "アップロード",
+        }),
+        initial,
+    )
+    .child(
         div()
             .css(stack(rem(1)).max_width(rem(24)))
-            .child(progress("Upload", percent))
+            .child(progress(
+                site.t(L {
+                    en: "Upload",
+                    ja: "アップロード",
+                }),
+                percent,
+            ))
             .child(
                 div()
                     .css(wrap(rem(0.5)))
@@ -41,7 +57,10 @@ pub fn page() -> Page<Upload> {
                     .child(
                         button(ButtonVariant::Outline, ButtonSize::Sm)
                             .on_click(loading.toggle())
-                            .text("Toggle loading"),
+                            .text(site.t(L {
+                                en: "Toggle loading",
+                                ja: "読み込み中を切り替える",
+                            })),
                     ),
             )
             .child(
@@ -52,6 +71,9 @@ pub fn page() -> Page<Upload> {
                     .child(skeleton().css(Style::new().height(rem(1)).width(rem(16))))
                     .child(skeleton().css(Style::new().height(rem(1)).width(rem(12)))),
             )
-            .child(p().show(!loading).text("The report is ready.")),
+            .child(p().show(!loading).text(site.t(L {
+                en: "The report is ready.",
+                ja: "レポートの準備ができました。",
+            }))),
     )
 }
