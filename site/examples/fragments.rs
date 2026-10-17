@@ -3,9 +3,9 @@
 
 use std::time::Duration;
 
-use axum::{Router, response::Html, routing::get};
+use axum::Router;
 use hypersig::html::{El, Event, input, li, ul};
-use hypersig::{Action, Fragment, Page, Patches, RouterExt, Signals, fragment};
+use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, fragment};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -35,11 +35,12 @@ impl Fragment for Results {
     }
 }
 
+const INDEX: Route = Route::new("/");
 const SEARCH: Action<Search, String> = Action::post("/search");
 
-async fn index() -> Html<String> {
+async fn index((): (), (): ()) -> Page<Search> {
     let query = Search::query();
-    let page = Page::new(
+    Page::new(
         "Search",
         Search {
             query: String::new(),
@@ -57,8 +58,7 @@ async fn index() -> Html<String> {
     )
     .child(fragment(&Results {
         query: String::new(),
-    }));
-    Html(page.render())
+    }))
 }
 
 async fn search((): (), query: String) -> Patches<Search> {
@@ -68,7 +68,7 @@ async fn search((): (), query: String) -> Patches<Search> {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(SEARCH, search);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;

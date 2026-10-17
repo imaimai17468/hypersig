@@ -185,6 +185,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                             "Sets a plain attribute.",
                         ),
                         (
+                            "href",
+                            "html/struct.El.html#method.href",
+                            "Points the element's `href` at a page the router serves.",
+                        ),
+                        (
                             "id",
                             "html/struct.El.html#method.id",
                             "Sets the element's `id`.",
@@ -1000,6 +1005,58 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                 },
             ],
         ),
+        Reference::Route => (
+            "`Route<P>` is a page served at a path whose parameters are `P`, and `Link<S>` points to one.",
+            &[
+                Section {
+                    heading: "Route",
+                    text: "Declare one as a `const` and use the same value in the router and in the links to the page.",
+                    rows: &[
+                        (
+                            "Route::new",
+                            "struct.Route.html#method.new",
+                            "A page served at `path`, whose `{name}` segments take the values of `P`.",
+                        ),
+                        (
+                            "link",
+                            "struct.Route.html#method.link",
+                            "A link to this page, which has no parameters.",
+                        ),
+                        (
+                            "link_with",
+                            "struct.Route.html#method.link_with",
+                            "A link to this page with the parameters `params`.",
+                        ),
+                        (
+                            "path",
+                            "struct.Route.html#method.path",
+                            "The path as axum matches it, with each parameter still written `{name}`.",
+                        ),
+                    ],
+                },
+                Section {
+                    heading: "Parameters and links",
+                    text: "",
+                    rows: &[
+                        (
+                            "Params",
+                            "trait.Params.html",
+                            "The parameters of a `Route`: `()`, one `Segment`, or a tuple of two or three.",
+                        ),
+                        (
+                            "Segment",
+                            "trait.Segment.html",
+                            "A type one `{name}` segment of a `Route` holds.",
+                        ),
+                        (
+                            "Link",
+                            "struct.Link.html",
+                            "A link to a `Route`, for `El::href` on the page whose signals are `S`.",
+                        ),
+                    ],
+                },
+            ],
+        ),
         Reference::RouterExt => (
             "`RouterExt` adds hypersig routes to an axum `Router`. It needs the `axum` feature, which is on by default.",
             &[Section {
@@ -1010,6 +1067,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                         "hypersig_runtime",
                         "trait.RouterExt.html#tymethod.hypersig_runtime",
                         "Serves the browser runtime at `RUNTIME_PATH`.",
+                    ),
+                    (
+                        "page",
+                        "trait.RouterExt.html#tymethod.page",
+                        "Serves the page at `route` on `GET`, with a handler that builds it.",
                     ),
                     (
                         "action",

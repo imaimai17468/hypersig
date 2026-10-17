@@ -48,6 +48,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                 "`#[derive(Signals)]` on `Counter` adds `Counter::count()`, a `Sig<Counter, i32>` that names the field. A misspelled field is a compile error.",
                 "`count.set(count + 1)` is a statement. `on_click` writes it into a `data-hs-on-click` attribute as JSON, and the runtime runs it on each click.",
                 "`span().bind_text(count.to_text())` keeps the text equal to the count. `Page::render` evaluates it with the initial values, so the HTML already shows `0`.",
+                "`INDEX` is a `Route`, the page at `/`. The router serves it with `.page(INDEX, index)`, and a link to it is `INDEX.link()`. [Pages and links](learn/pages/) covers routes with parameters.",
                 "`RESET` is an `Action<Counter>`. The page calls it with `RESET.call()` and the router serves it with `.action(RESET, reset)`, so both sides share its path, its method, its argument type, and the page it belongs to.",
                 "The handler returns `Counter::count().patch(0)`. The server sends it as a Server-Sent Event, and the runtime writes the value into the signal, which rewrites the text.",
             ],
@@ -84,7 +85,7 @@ pub fn describing_the_page(site: Site) -> Part {
         show(Snippet::Elements),
         para(
             site,
-            "`text` appends static text, and `child` appends an element or a string. `attr` sets a plain attribute. `id` and `class` have their own methods, and `attr` panics on them and on names starting with `data-hs-`, which only the typed methods write.",
+            "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. `id` and `class` have their own methods, and `attr` panics on them and on names starting with `data-hs-`, which only the typed methods write.",
         ),
         heading("The page"),
         para(

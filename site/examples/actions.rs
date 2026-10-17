@@ -4,10 +4,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 
-use axum::extract::State;
-use axum::{Router, response::Html, routing::get};
+use axum::Router;
 use hypersig::html::{button, form, input, label, p, span};
-use hypersig::{Action, Page, Patches, RouterExt, Signals};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -19,13 +18,14 @@ struct Profile {
     likes: i32,
 }
 
+const INDEX: Route = Route::new("/");
 const SAVE: Action<Profile, String> = Action::post("/save");
 const LIKE: Action<Profile> = Action::post("/like");
 
 #[derive(Clone, Default)]
 struct Likes(Arc<AtomicI32>);
 
-async fn index(State(likes): State<Likes>) -> Html<String> {
+async fn index(likes: Likes, (): ()) -> Page<Profile> {
     let name = Profile::name();
     let saving = Profile::saving();
     let count = Profile::likes();
@@ -36,7 +36,7 @@ async fn index(State(likes): State<Likes>) -> Html<String> {
         saved: String::new(),
         likes: likes.0.load(Ordering::Relaxed),
     };
-    let page = Page::new("Profile", initial)
+    Page::new("Profile", initial)
         .child(
             form()
                 .on_submit(
@@ -60,8 +60,7 @@ async fn index(State(likes): State<Likes>) -> Html<String> {
                 .on_click(count.set(count + 1).then(LIKE.call()))
                 .text("Like ")
                 .child(span().bind_text(count.to_text())),
-        );
-    Html(page.render())
+        )
 }
 
 async fn save(_: Likes, name: String) -> Patches<Profile> {
@@ -76,7 +75,7 @@ async fn like(likes: Likes, (): ()) -> Patches<Profile> {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(SAVE, save)
         .action(LIKE, like)

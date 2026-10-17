@@ -45,15 +45,17 @@ pub enum ButtonSize {
 ///
 /// ```
 /// use hypersig::html::a;
-/// use hypersig::Signals;
+/// use hypersig::{Route, Signals};
 /// use hypersig_ui::{ButtonSize, ButtonVariant, button_style};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
 /// struct App {}
 ///
+/// const SIGNUP: Route = Route::new("/signup");
+///
 /// let link = a::<App>()
-///     .attr("href", "/signup")
+///     .href(SIGNUP.link())
 ///     .css(button_style(ButtonVariant::Default, ButtonSize::Lg))
 ///     .text("Sign up");
 /// # let _ = link;

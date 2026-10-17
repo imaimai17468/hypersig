@@ -19,6 +19,7 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::Expressions => state::expressions(site),
         Learn::Lists => state::lists(site),
         Learn::Server => server::server(site),
+        Learn::Pages => server::pages(site),
         Learn::Styling => server::styling(site),
         Learn::EscapeHatches => server::escape_hatches(site),
     }
@@ -31,6 +32,7 @@ enum Program {
     Actions,
     Fragments,
     Streams,
+    Pages,
 }
 
 /// `program` as a code block titled `src/main.rs`.
@@ -40,6 +42,7 @@ fn program(program: Program) -> Part {
         Program::Actions => include_str!("../../examples/actions.rs"),
         Program::Fragments => include_str!("../../examples/fragments.rs"),
         Program::Streams => include_str!("../../examples/streams.rs"),
+        Program::Pages => include_str!("../../examples/pages.rs"),
     };
     code::block(
         Lang::Rust,

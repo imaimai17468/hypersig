@@ -3,10 +3,10 @@
 
 use std::time::Duration;
 
-use axum::{Router, response::Html, routing::get};
+use axum::Router;
 use futures::{Stream, stream};
 use hypersig::html::{p, span};
-use hypersig::{Action, Page, Patches, RouterExt, Signals};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -14,16 +14,16 @@ struct Clock {
     seconds: i32,
 }
 
+const INDEX: Route = Route::new("/");
 const TICKS: Action<Clock> = Action::get("/ticks");
 
-async fn index() -> Html<String> {
-    let page = Page::new("Clock", Clock { seconds: 0 }).child(
+async fn index((): (), (): ()) -> Page<Clock> {
+    Page::new("Clock", Clock { seconds: 0 }).child(
         p().on_load(TICKS.call())
             .text("Connected for ")
             .child(span().bind_text(Clock::seconds().to_text()))
             .text(" s"),
-    );
-    Html(page.render())
+    )
 }
 
 fn ticks((): (), (): ()) -> impl Stream<Item = Patches<Clock>> {
@@ -37,7 +37,7 @@ fn ticks((): (), (): ()) -> impl Stream<Item = Patches<Clock>> {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .stream(TICKS, ticks);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;

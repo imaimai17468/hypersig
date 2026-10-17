@@ -47,6 +47,8 @@ snippets! {
     Each => "each.rs";
     ListStatements => "list_statements.rs";
     Patches => "patches.rs";
+    Links => "links.rs";
+    WrongRoute => "wrong_route.rs", "compile_fail,E0080";
     Styles => "styles.rs";
     Effects => "effects.rs";
     StaticPage => "static_page.rs";

@@ -72,9 +72,9 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
 `src/main.rs` を書きます。
 
 ```rust,no_run
-use axum::{Router, response::Html, routing::get};
+use axum::Router;
 use hypersig::html::{button, div, span};
-use hypersig::{Action, Page, Patches, RouterExt, Signals};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -82,17 +82,17 @@ struct Counter {
     count: i32,
 }
 
+const INDEX: Route = Route::new("/");
 const RESET: Action<Counter> = Action::post("/reset");
 
-async fn index() -> Html<String> {
+async fn index((): (), (): ()) -> Page<Counter> {
     let count = Counter::count();
-    let page = Page::new("Counter", Counter { count: 0 }).child(
+    Page::new("Counter", Counter { count: 0 }).child(
         div()
             .child(button().on_click(count.set(count + 1)).text("+1"))
             .child(span().bind_text(count.to_text()))
             .child(button().on_click(RESET.call()).text("Reset on the server")),
-    );
-    Html(page.render())
+    )
 }
 
 async fn reset((): (), (): ()) -> Patches<Counter> {
@@ -102,7 +102,7 @@ async fn reset((): (), (): ()) -> Patches<Counter> {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(RESET, reset);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
@@ -110,7 +110,41 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。ブラウザ用のランタイムは `hypersig_runtime()` が配信するので、Node も JavaScript のビルドも要りません。
+`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`/` のページは `.page(INDEX, index)` が配信します。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。ブラウザ用のランタイムは `hypersig_runtime()` が配信するので、Node も JavaScript のビルドも要りません。
+
+## ページとリンク
+
+ページはアクションと同じく `const` で宣言する `Route` です。`RouterExt::page` がそれを配信し、`El::href` が同じ値からリンクを張ります。パラメータは `{name}` の形のセグメントで、ルートの型がそれぞれの型を決めます。ルートに合わないパラメータを渡すリンクや、`{name}` のセグメントの数が型の持つ値の数と食い違うパスは、コンパイルエラーになります。型に変換できないセグメントを持つリクエストには、ハンドラを呼ぶ前に 404 を返します。
+
+```rust
+use hypersig::html::{a, each, li, ul};
+use hypersig::{Route, Signals};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Member {
+    id: i32,
+    name: String,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Team {
+    members: Vec<Member>,
+}
+
+const MEMBER: Route<i32> = Route::new("/members/{id}");
+
+// Served with `.page(MEMBER, |state, id: i32| async move { ... })`.
+let list = ul::<Team>().child(each(Team::members(), |member| {
+    li().child(
+        a().href(MEMBER.link_with(member.at(Member::id())))
+            .bind_text(member.at(Member::name())),
+    )
+}));
+assert!(list.render().contains("/members/"));
+```
+
+クエリ文字列には型が付きません。リンクをたどると、次のページをサーバーから読み込みます。ほかのサイトへのリンクは、これまでどおり `attr("href", ...)` で書きます。`attr` は渡した文字列を検査しません。
 
 ## スタイル
 

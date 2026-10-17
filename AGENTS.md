@@ -1,6 +1,6 @@
 # Project Instructions
 
-hypersig is a server-driven hypermedia library for Rust. The server owns the state, renders HTML, and streams patches over Server-Sent Events. A small JavaScript runtime in the browser applies them and keeps a store of signals for local reactivity. Every string the browser acts on (signal names, attribute expressions, action URLs, patch target ids, node ref names) is produced from a Rust type, so a mistake in any of them is a compile error.
+hypersig is a server-driven hypermedia library for Rust. The server owns the state, renders HTML, and streams patches over Server-Sent Events. A small JavaScript runtime in the browser applies them and keeps a store of signals for local reactivity. Every string the browser acts on (signal names, attribute expressions, action URLs, page links, patch target ids, node ref names) is produced from a Rust type, so a mistake in any of them is a compile error.
 
 That last sentence is the project's thesis. A change that lets a user write one of those strings by hand again, or that turns a compile error into a runtime failure, needs the user's own words.
 
@@ -8,7 +8,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 
 | Path | What lives there |
 |---|---|
-| `crates/hypersig` | The library: `Signals`, `Sig`, `Expr`, `Stmt`, the HTML builder, `Action`, `Fragment`, `Patches`, the axum integration, and the embedded runtime |
+| `crates/hypersig` | The library: `Signals`, `Sig`, `Expr`, `Stmt`, the HTML builder, `Action`, `Route`, `Fragment`, `Patches`, the axum integration, and the embedded runtime |
 | `crates/hypersig_proc` | `#[derive(Signals)]` as a thin `proc-macro = true` shim |
 | `crates/hypersig_proc_impl` | The token transformation behind the derive, with its snapshot tests |
 | `crates/hypersig_style` | Typed atomic CSS: `Style`, `Sheet`, the value types, and the code `tests/generate.rs` writes from the MDN data in `data/`. Regenerate it with `HYPERSIG_GENERATE=overwrite cargo test -p hypersig_style --test generate` |
@@ -21,7 +21,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `e2e/` | Playwright tests that start every example and drive it in Chrome |
 | `site/` | The documentation site, built with hypersig and `hypersig_ui` and published to GitHub Pages by `.github/workflows/pages.yml`. `cargo run -p site -- --out DIR --base ""` writes it for a local preview. Its code samples are doctests under `site/snippets/`, programs under `site/examples/`, or live demos under `site/src/demo/` |
 
-The wire format between the two halves is defined twice, once in `crates/hypersig/src/expr.rs`, `html.rs`, `page.rs`, and `patch.rs` and once in `runtime/src/`. A change to one is a change to both in the same commit. `tests/fixtures.rs` fails when a committed fixture differs from what the builder writes now, and `runtime/test/features.test.ts` runs those fixtures, so a change on one side that the other side does not follow fails one of the two test suites. Regenerate the fixtures with `HYPERSIG_FIXTURES=overwrite cargo test -p hypersig --test fixtures`, then run `pnpm test`.
+The wire format between the two halves is defined twice, once in `crates/hypersig/src/expr.rs`, `html.rs`, `page.rs`, `patch.rs`, and `route.rs` and once in `runtime/src/`. A change to one is a change to both in the same commit. `tests/fixtures.rs` fails when a committed fixture differs from what the builder writes now, and `runtime/test/features.test.ts` runs those fixtures, so a change on one side that the other side does not follow fails one of the two test suites. Regenerate the fixtures with `HYPERSIG_FIXTURES=overwrite cargo test -p hypersig --test fixtures`, then run `pnpm test`.
 
 ## Verification before completion
 

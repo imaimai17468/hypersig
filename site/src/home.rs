@@ -32,7 +32,7 @@ pub fn render(site: Site) -> String {
                     ),
                     (
                         "Typed from page to server",
-                        "Signal names, expressions, action paths, and their arguments come from Rust types, so a mismatch between the page and the server is a compile error.",
+                        "Signal names, expressions, the paths of actions and pages, and their arguments come from Rust types, so a mismatch between the page and the server is a compile error.",
                     ),
                     (
                         "Optimistic updates for free",

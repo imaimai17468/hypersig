@@ -72,9 +72,9 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
 Write `src/main.rs`:
 
 ```rust,no_run
-use axum::{Router, response::Html, routing::get};
+use axum::Router;
 use hypersig::html::{button, div, span};
-use hypersig::{Action, Page, Patches, RouterExt, Signals};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -82,17 +82,17 @@ struct Counter {
     count: i32,
 }
 
+const INDEX: Route = Route::new("/");
 const RESET: Action<Counter> = Action::post("/reset");
 
-async fn index() -> Html<String> {
+async fn index((): (), (): ()) -> Page<Counter> {
     let count = Counter::count();
-    let page = Page::new("Counter", Counter { count: 0 }).child(
+    Page::new("Counter", Counter { count: 0 }).child(
         div()
             .child(button().on_click(count.set(count + 1)).text("+1"))
             .child(span().bind_text(count.to_text()))
             .child(button().on_click(RESET.call()).text("Reset on the server")),
-    );
-    Html(page.render())
+    )
 }
 
 async fn reset((): (), (): ()) -> Patches<Counter> {
@@ -102,7 +102,7 @@ async fn reset((): (), (): ()) -> Patches<Counter> {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(RESET, reset);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
@@ -110,7 +110,41 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime, and no Node or JavaScript build is involved.
+Run `cargo run` and open <http://127.0.0.1:3000>. `.page(INDEX, index)` serves the page at `/`. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime, and no Node or JavaScript build is involved.
+
+## Pages and links
+
+A page is a `Route`, declared as a `const` like an action. `RouterExt::page` serves it, and `El::href` links to it from the same value. A parameter is a `{name}` segment, and the route's type gives each one a type, so a link whose parameters do not fit the route, or a path with more or fewer `{name}` segments than the type has values, is a compile error. A path segment that does not parse into its type gets a 404 before the handler runs.
+
+```rust
+use hypersig::html::{a, each, li, ul};
+use hypersig::{Route, Signals};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Member {
+    id: i32,
+    name: String,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Team {
+    members: Vec<Member>,
+}
+
+const MEMBER: Route<i32> = Route::new("/members/{id}");
+
+// Served with `.page(MEMBER, |state, id: i32| async move { ... })`.
+let list = ul::<Team>().child(each(Team::members(), |member| {
+    li().child(
+        a().href(MEMBER.link_with(member.at(Member::id())))
+            .bind_text(member.at(Member::name())),
+    )
+}));
+assert!(list.render().contains("/members/"));
+```
+
+The query string is not typed, and following a link loads the next page from the server. A link to another site still goes through `attr("href", ...)`, unchecked.
 
 ## Styling
 

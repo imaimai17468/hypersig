@@ -63,6 +63,43 @@ pub fn server(site: Site) -> Part {
     ])
 }
 
+pub fn pages(site: Site) -> Part {
+    parts([
+        title(Doc::Learn(Learn::Pages).title()),
+        lead(
+            site,
+            "A route is a page the server renders at a path. The router serves it and the links on other pages point to it from the same value, so a parameter of the wrong type or in the wrong number is a compile error.",
+        ),
+        heading("Routes"),
+        para(
+            site,
+            "A [`Route<P>`](api:hypersig/struct.Route.html) is a path whose parameters are `P`. A parameter is a whole segment written `{name}`, as in axum, and `P` is `()` for a path without one, an integer or `String` for one, and a tuple for two or three, in path order. Declare it as a `const`: `Route::new` counts the segments, so a path whose count differs from `P` fails to compile.",
+        ),
+        show(Snippet::WrongRoute),
+        para(
+            site,
+            "`RouterExt::page` serves a route on `GET` with a handler that receives the router state and the parameters, already parsed, and returns the `Page`. A path whose segments do not parse into the parameter types gets a 404, and so does a handler that returns `None`, as `member` does below for an id it does not know.",
+        ),
+        program(Program::Pages),
+        heading("Links"),
+        para(
+            site,
+            "`El::href` takes a [`Link`](api:hypersig/struct.Link.html), which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
+        ),
+        show(Snippet::Links),
+        heading("What routes leave unchecked"),
+        bullets(
+            site,
+            &[
+                "Nothing checks that a route you link to is registered with `RouterExt::page`. A route that is not answers 404.",
+                "The query string is not typed. A page that reads one is served with axum's own `route(ROUTE.path(), ...)`, and its links still come from the route, without the query.",
+                "A link is a plain `<a href>`, so following it loads the next page from the server, and the signals of the page you leave are gone.",
+                "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
+            ],
+        ),
+    ])
+}
+
 pub fn styling(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Styling).title()),
@@ -107,7 +144,7 @@ pub fn escape_hatches(site: Site) -> Part {
         title(Doc::Learn(Learn::EscapeHatches).title()),
         lead(
             site,
-            "Most pages need only bindings and statements. These cover focus, timers, and reactions to a change, and serving a page as a static file.",
+            "Most pages need only bindings and statements. These cover focus, timers, and reactions to a change, links outside the router, and serving a page as a static file.",
         ),
         heading("Node refs"),
         para(
@@ -131,6 +168,11 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             "`roving_focus` moves focus between the items inside an element with the arrow keys, Home, and End, as a tab list or a menu needs. `active_descendant` keeps focus on a text field while the up and down arrows move through the options of a listbox, as a combobox needs. `hypersig_ui` builds its tabs, menus, listbox, and combobox on them.",
+        ),
+        heading("Links the router does not serve"),
+        para(
+            site,
+            "`El::href` takes only a link built from a [`Route`](learn/pages/). A link to another site, or to a `#fragment` on the same page, goes through `attr(\"href\", url)`, which writes the string as it is and checks nothing.",
         ),
         heading("Static pages"),
         para(
