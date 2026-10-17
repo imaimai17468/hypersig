@@ -1,0 +1,44 @@
+error[E0277]: `Filter` cannot be the search parameters of a route
+  --> tests/ui/fail/search_not_signals.rs:11:33
+   |
+11 | const FIND: Route<(), Filter> = Route::new("/find");
+   |                                 ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |
+help: the trait `Signals` is not implemented for `Filter`
+  --> tests/ui/fail/search_not_signals.rs:7:1
+   |
+ 7 | struct Filter {
+   | ^^^^^^^^^^^^^
+   = note: a route's search parameters are `()` or a struct with `#[derive(Signals)]`
+help: the trait `hypersig::Search` is implemented for `()`
+  --> src/route.rs
+   |
+   | impl Search for () {
+   | ^^^^^^^^^^^^^^^^^^
+   = note: required for `Filter` to implement `hypersig::Search`
+note: required by a bound in `Route::<P, Q>::new`
+  --> src/route.rs
+   |
+   | impl<P: Params, Q: Search> Route<P, Q> {
+   |                    ^^^^^^ required by this bound in `Route::<P, Q>::new`
+...
+   |     pub const fn new(path: &'static str) -> Self {
+   |                  --- required by a bound in this associated function
+
+error[E0599]: the method `path` exists for struct `Route<(), Filter>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/search_not_signals.rs:14:18
+   |
+ 7 | struct Filter {
+   | ------------- doesn't satisfy `Filter: Signals` or `Filter: hypersig::Search`
+...
+14 |     let _ = FIND.path();
+   |                  ^^^^ private field, not a method
+   |
+   = note: the following trait bounds were not satisfied:
+           `Filter: Signals`
+           which is required by `Filter: hypersig::Search`
+note: the trait `Signals` must be implemented
+  --> src/signal.rs
+   |
+   | pub trait Signals: Serialize + DeserializeOwned + Send + 'static {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

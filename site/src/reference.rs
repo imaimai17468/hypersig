@@ -1011,7 +1011,7 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
             ],
         ),
         Reference::Route => (
-            "`Route<P>` is a page served at a path whose parameters are `P`, and `Link<S>` points to one.",
+            "`Route<P, Q>` is a page served at a path whose parameters are `P`, with search parameters `Q`, and `Link<S>` points to one.",
             &[
                 Section {
                     heading: "Route",
@@ -1035,12 +1035,12 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                         (
                             "link_with",
                             "struct.Route.html#method.link_with",
-                            "A link to this page with the parameters `params`.",
+                            "A link to this page with the arguments `args`.",
                         ),
                         (
                             "url",
                             "struct.Route.html#method.url",
-                            "The URL of this page with the parameters `params`, written on the server.",
+                            "The URL of this page with the arguments `args`, written on the server.",
                         ),
                         (
                             "path",
@@ -1062,6 +1062,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                             "Segment",
                             "trait.Segment.html",
                             "A type one `{name}` segment of a `Route` holds.",
+                        ),
+                        (
+                            "Search",
+                            "trait.Search.html",
+                            "The search parameters of a `Route`: `()`, or a struct with `#[derive(Signals)]`.",
                         ),
                         (
                             "Extends",

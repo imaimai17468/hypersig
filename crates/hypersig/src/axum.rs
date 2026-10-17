@@ -9,7 +9,7 @@ use std::fmt;
 use axum::Router;
 use axum::body::Bytes;
 use axum::extract::{MatchedPath, Query, RawPathParams, State};
-use axum::http::{StatusCode, header};
+use axum::http::{StatusCode, Uri, header};
 use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::{MethodRouter, get, post};
@@ -19,7 +19,7 @@ use serde::de::DeserializeOwned;
 use crate::action::{Action, Method};
 use crate::page::Page;
 use crate::patch::{PatchEvent, Patches};
-use crate::route::{Params, Route, Url};
+use crate::route::{Params, Route, Search, Url};
 use crate::signal::Signals;
 
 /// Adds hypersig routes to an axum [`Router`].
@@ -30,10 +30,14 @@ pub trait RouterExt<St>: Sized {
 
     /// Serves the page at `route` on `GET`, with a handler that builds it.
     ///
-    /// The handler receives the router state and the path's parameters,
+    /// The handler receives the router state and the route's arguments,
     /// already parsed, and answers with a [`Page`], an `Option<Page>`, or a
-    /// [`PageResponse`]. A path whose segments do not parse into the
-    /// parameter types, or a handler that answers `None`, gets a 404.
+    /// [`PageResponse`]. The arguments are the path's parameters, or for a
+    /// route with search parameters, the tuple of both as
+    /// [`Route::link_with`] takes them. A path whose segments do not parse
+    /// into the parameter types, or a handler that answers `None`, gets a
+    /// 404, and a query string that does not deserialize into the search
+    /// parameters gets a 400.
     ///
     /// Register the page on the router the application serves, never on one
     /// passed to [`Router::nest`]. Its links point to `route`'s path, and a
@@ -64,10 +68,11 @@ pub trait RouterExt<St>: Sized {
     /// let _app: Router = Router::new().page(MEMBER, member);
     /// ```
     #[must_use]
-    fn page<P, H, Fut, R>(self, route: Route<P>, handler: H) -> Self
+    fn page<P, Q, H, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
     where
         P: Params + Send + 'static,
-        H: Fn(St, P) -> Fut + Clone + Send + Sync + 'static,
+        Q: Search + DeserializeOwned + Send + 'static,
+        H: Fn(St, Q::Args<P>) -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = R> + Send + 'static,
         R: Into<PageResponse>;
 
@@ -112,21 +117,27 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         )
     }
 
-    fn page<P, H, Fut, R>(self, route: Route<P>, handler: H) -> Self
+    fn page<P, Q, H, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
     where
         P: Params + Send + 'static,
-        H: Fn(St, P) -> Fut + Clone + Send + Sync + 'static,
+        Q: Search + DeserializeOwned + Send + 'static,
+        H: Fn(St, Q::Args<P>) -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = R> + Send + 'static,
         R: Into<PageResponse>,
     {
         let path = route.path();
         let route_handler = move |State(state): State<St>,
                                   matched: MatchedPath,
-                                  params: RawPathParams| {
+                                  params: RawPathParams,
+                                  uri: Uri| {
             let handler = handler.clone();
             let nested = matched.as_str() != path;
             let segments: Vec<&str> = params.iter().map(|(_, value)| value).collect();
             let params = P::from_segments(&segments);
+            let search = Q::unit().map_or_else(
+                || Query::<Q>::try_from_uri(&uri).map(|Query(search)| search),
+                Ok,
+            );
             let served_at = matched.as_str().to_owned();
             async move {
                 if nested {
@@ -141,7 +152,14 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 let Some(params) = params else {
                     return StatusCode::NOT_FOUND.into_response();
                 };
-                handler(state, params).await.into().into_response()
+                let search = match search {
+                    Ok(search) => search,
+                    Err(rejection) => return rejection.into_response(),
+                };
+                handler(state, Q::join(params, search))
+                    .await
+                    .into()
+                    .into_response()
             }
         };
         self.route(route.path(), get(route_handler))

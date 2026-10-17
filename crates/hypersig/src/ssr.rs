@@ -12,7 +12,7 @@ use std::borrow::Cow;
 
 use serde_json::{Map, Number, Value};
 
-use crate::route::encode_uri_component;
+use crate::route::{encode_uri_component, query_string};
 
 static NULL: Value = Value::Null;
 
@@ -260,6 +260,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "not" => Value::Bool(!truthy(&*eval(1)?)),
         "str" => Value::from(js_string(&*eval(1)?)),
         "uri" => Value::from(encode_uri_component(&js_string(&*eval(1)?))),
+        "query" => Value::from(query_string(&*eval(1)?)),
         "fixed" => {
             let digits = usize::try_from(arg(2)?.as_u64()?).ok()?;
             Value::from(format!("{:.*}", digits, f(&*eval(1)?)?))

@@ -6,8 +6,9 @@ use std::marker::PhantomData;
 use serde_json::{Value, json};
 
 use crate::expr::{Expr, IntoExpr, Stmt};
+use crate::signal::Signals;
 
-/// A page served at a path whose parameters are `P`.
+/// A page served at a path whose parameters are `P`, with search parameters `Q`.
 ///
 /// Declare one as a `const` and use the same value on both sides: the router
 /// serves the page with `RouterExt::page`, and an element links to it with
@@ -19,6 +20,10 @@ use crate::expr::{Expr, IntoExpr, Stmt};
 /// for a path without one, a [`Segment`] type for one, and a tuple for two or
 /// three, in the order they appear. The name inside the braces is for the
 /// reader and axum, and the position decides which value fills it.
+///
+/// `Q` is `()` for a page without a query string, or a struct with
+/// `#[derive(Signals)]` whose fields the query string holds. [`Search`] says
+/// how its fields are written.
 ///
 /// ```
 /// use hypersig::html::a;
@@ -43,12 +48,12 @@ use crate::expr::{Expr, IntoExpr, Stmt};
 /// let comment = a::<Team>().href(POST.link_with(("hello world", 3))).render();
 /// assert!(comment.contains(r#"href="/blog/hello%20world/comments/3""#));
 /// ```
-pub struct Route<P = ()> {
+pub struct Route<P = (), Q = ()> {
     path: &'static str,
-    marker: PhantomData<fn(P)>,
+    marker: PhantomData<fn(P, Q)>,
 }
 
-impl<P: Params> Route<P> {
+impl<P: Params, Q: Search> Route<P, Q> {
     /// A page served at `path`, whose `{name}` segments take the values of `P`.
     ///
     /// # Panics
@@ -82,8 +87,9 @@ impl<P: Params> Route<P> {
     /// A page under this one, served at the whole path `path`.
     ///
     /// `path` repeats this route's path and continues it after a `/`, and
-    /// `Q` repeats this route's parameters and may add more after them, so a
-    /// link to the child needs every value its path holds.
+    /// `C` repeats this route's parameters and may add more after them, so a
+    /// link to the child needs every value its path holds. The child's
+    /// search parameters `R` are its own.
     ///
     /// ```
     /// use hypersig::Route;
@@ -98,7 +104,10 @@ impl<P: Params> Route<P> {
     /// Panics if `path` does not continue this route's path, and for every
     /// reason [`Route::new`] does. In a `const`, each of these is a compile error.
     #[must_use]
-    pub const fn child<Q: Params + Extends<P>>(&self, path: &'static str) -> Route<Q> {
+    pub const fn child<C: Params + Extends<P>, R: Search>(
+        &self,
+        path: &'static str,
+    ) -> Route<C, R> {
         assert!(
             continues(path, self.path),
             "a child route's path is its parent's path followed by `/` and more segments"
@@ -106,31 +115,39 @@ impl<P: Params> Route<P> {
         Route::new(path)
     }
 
-    /// A link to this page with the parameters `params`.
+    /// A link to this page with the arguments `args`.
     ///
-    /// `params` can be literals, which give a fixed link, or expressions such
-    /// as `item.at(User::id())`, which the browser evaluates and keeps up to
+    /// `args` are the path's parameters `P`, or for a page with search
+    /// parameters, the tuple `(P, Q)`, or `Q` alone where `P` is `()`. They
+    /// can be literals, which give a fixed link, or expressions such as
+    /// `item.at(User::id())`, which the browser evaluates and keeps up to
     /// date. Each value is percent-encoded as `encodeURIComponent` does.
     #[must_use]
-    pub fn link_with<S>(&self, params: impl IntoExpr<S, P>) -> Link<S> {
-        let params = params.into_expr().into_json();
-        let values: Vec<Value> = match P::COUNT {
-            1 => vec![params],
-            count => match params.as_array().map(Vec::as_slice) {
-                Some([op, parts @ ..]) if op == "tuple" && parts.len() == count => parts.to_vec(),
-                _ => (0..count)
-                    .map(|index| json!(["nth", params, ["lit", index]]))
-                    .collect(),
-            },
+    pub fn link_with<S>(&self, args: impl IntoExpr<S, Q::Args<P>>) -> Link<S> {
+        let args = args.into_expr().into_json();
+        let (params, search) = match (Q::TYPED, P::COUNT) {
+            (false, _) => (args, None),
+            (true, 0) => (Value::Null, Some(args)),
+            (true, _) => {
+                let mut parts = split_tuple(args, 2).into_iter();
+                let params = parts.next().unwrap_or_default();
+                (params, parts.next())
+            }
         };
-        Link::new(self.path, values)
+        let values = match P::COUNT {
+            0 => Vec::new(),
+            1 => vec![params],
+            count => split_tuple(params, count),
+        };
+        Link::new(self.path, values, search)
     }
 
-    /// The URL of this page with the parameters `params`, written on the server.
+    /// The URL of this page with the arguments `args`, written on the server.
     ///
     /// Use it where the server sends the browser to the page: a page
-    /// handler's redirect, or `Patches::navigate` in an action. Each value is
-    /// percent-encoded as in [`Route::link_with`].
+    /// handler's redirect, or `Patches::navigate` in an action. `args` take
+    /// the shape they take in [`Route::link_with`], and each value is
+    /// percent-encoded as there.
     ///
     /// ```
     /// use hypersig::Route;
@@ -139,26 +156,36 @@ impl<P: Params> Route<P> {
     /// assert_eq!(POST.url(("hello world".to_owned(), 3)).as_str(), "/blog/hello%20world/comments/3");
     /// ```
     #[must_use]
-    #[expect(
-        clippy::needless_pass_by_value,
-        reason = "callers write `url((slug, id))` with the values themselves, as a handler receives them"
-    )]
-    pub fn url(&self, params: P) -> Url {
+    pub fn url(&self, args: Q::Args<P>) -> Url {
+        let (params, search) = Q::split(args);
         let parts = literal_parts(self.path);
         let mut url = parts[0].to_owned();
         for (segment, part) in params.segments().iter().zip(&parts[1..]) {
             url.push_str(&encode_uri_component(segment));
             url.push_str(part);
         }
+        url.push_str(&search.query());
         Url(url)
     }
 }
 
-impl Route<()> {
+impl Route<(), ()> {
     /// A link to this page, which has no parameters.
     #[must_use]
     pub fn link<S>(&self) -> Link<S> {
-        Link::new(self.path, Vec::new())
+        Link::new(self.path, Vec::new(), None)
+    }
+}
+
+/// The parts of a tuple expression, or an `nth` expression for each where it is not one.
+fn split_tuple(ast: Value, count: usize) -> Vec<Value> {
+    match ast {
+        Value::Array(mut items) if items.len() == count + 1 && items[0] == "tuple" => {
+            items.split_off(1)
+        }
+        ast => (0..count)
+            .map(|index| json!(["nth", ast, ["lit", index]]))
+            .collect(),
     }
 }
 
@@ -180,15 +207,15 @@ impl fmt::Display for Url {
     }
 }
 
-impl<P> Clone for Route<P> {
+impl<P, Q> Clone for Route<P, Q> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<P> Copy for Route<P> {}
+impl<P, Q> Copy for Route<P, Q> {}
 
-impl<P> fmt::Debug for Route<P> {
+impl<P, Q> fmt::Debug for Route<P, Q> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Route").field(&self.path).finish()
     }
@@ -274,20 +301,22 @@ enum LinkKind<S> {
 }
 
 impl<S> Link<S> {
-    fn new(path: &'static str, values: Vec<Value>) -> Self {
+    fn new(path: &'static str, values: Vec<Value>, search: Option<Value>) -> Self {
         let parts = literal_parts(path);
-        let literals: Option<Vec<&Value>> = values
-            .iter()
-            .map(|value| match value.as_array().map(Vec::as_slice) {
-                Some([op, literal]) if op == "lit" => Some(literal),
-                _ => None,
-            })
-            .collect();
-        if let Some(literals) = literals {
+        let literal = |value: &Value| match value.as_array().map(Vec::as_slice) {
+            Some([op, literal]) if op == "lit" => Some(literal.clone()),
+            _ => None,
+        };
+        let literals: Option<Vec<Value>> = values.iter().map(literal).collect();
+        let search_literal = search.as_ref().map(literal);
+        if let (Some(literals), None | Some(Some(_))) = (literals, &search_literal) {
             let mut url = parts[0].to_owned();
-            for (literal, part) in literals.into_iter().zip(&parts[1..]) {
+            for (literal, part) in literals.iter().zip(&parts[1..]) {
                 url.push_str(&encode_uri_component(&crate::ssr::js_string(literal)));
                 url.push_str(part);
+            }
+            if let Some(Some(search)) = &search_literal {
+                url.push_str(&query_string(search));
             }
             return Self(LinkKind::Fixed(url));
         }
@@ -297,6 +326,9 @@ impl<S> Link<S> {
             if !part.is_empty() {
                 ast = json!(["concat", ast, ["lit", part]]);
             }
+        }
+        if let Some(search) = search {
+            ast = json!(["concat", ast, ["query", search]]);
         }
         Self(LinkKind::Bound(Expr::from_json(ast)))
     }
@@ -359,6 +391,27 @@ pub(crate) fn encode_uri_component(text: &str) -> String {
     out
 }
 
+/// The query string of `value`, the JSON of a [`Search`] struct, as the runtime's `query` writes it.
+///
+/// The fields are written in the order of their names, compared byte by byte.
+/// A `null` field is left out, and each name and value is percent-encoded as
+/// `encodeURIComponent` does, after the value is written as `String` would.
+pub(crate) fn query_string(value: &Value) -> String {
+    let Value::Object(fields) = value else {
+        return String::new();
+    };
+    let mut pairs: Vec<(&String, &Value)> = fields.iter().filter(|(_, v)| !v.is_null()).collect();
+    pairs.sort_by(|a, b| a.0.cmp(b.0));
+    let mut out = String::new();
+    for (name, value) in pairs {
+        out.push(if out.is_empty() { '?' } else { '&' });
+        out.push_str(&encode_uri_component(name));
+        out.push('=');
+        out.push_str(&encode_uri_component(&crate::ssr::js_string(value)));
+    }
+    out
+}
+
 /// A type one `{name}` segment of a [`Route`] holds.
 ///
 /// It is implemented for `String` and the integer types, whose text the
@@ -417,6 +470,16 @@ pub trait Params: sealed::Sealed + Sized {
     /// Writes the values in path order, before percent-encoding.
     #[doc(hidden)]
     fn segments(&self) -> Vec<String>;
+
+    /// The arguments of a route with these parameters and search parameters `Q`.
+    #[doc(hidden)]
+    type With<Q>;
+
+    #[doc(hidden)]
+    fn join<Q>(self, search: Q) -> Self::With<Q>;
+
+    #[doc(hidden)]
+    fn split<Q>(args: Self::With<Q>) -> (Self, Q);
 }
 
 impl Params for () {
@@ -428,6 +491,16 @@ impl Params for () {
 
     fn segments(&self) -> Vec<String> {
         Vec::new()
+    }
+
+    type With<Q> = Q;
+
+    fn join<Q>(self, search: Q) -> Q {
+        search
+    }
+
+    fn split<Q>(args: Q) -> (Self, Q) {
+        ((), args)
     }
 }
 
@@ -444,6 +517,16 @@ impl<T: Segment> Params for T {
     fn segments(&self) -> Vec<String> {
         vec![self.write()]
     }
+
+    type With<Q> = (Self, Q);
+
+    fn join<Q>(self, search: Q) -> (Self, Q) {
+        (self, search)
+    }
+
+    fn split<Q>(args: (Self, Q)) -> (Self, Q) {
+        args
+    }
 }
 
 impl<A: Segment, B: Segment> Params for (A, B) {
@@ -459,6 +542,16 @@ impl<A: Segment, B: Segment> Params for (A, B) {
     fn segments(&self) -> Vec<String> {
         vec![self.0.write(), self.1.write()]
     }
+
+    type With<Q> = (Self, Q);
+
+    fn join<Q>(self, search: Q) -> (Self, Q) {
+        (self, search)
+    }
+
+    fn split<Q>(args: (Self, Q)) -> (Self, Q) {
+        args
+    }
 }
 
 impl<A: Segment, B: Segment, C: Segment> Params for (A, B, C) {
@@ -473,6 +566,97 @@ impl<A: Segment, B: Segment, C: Segment> Params for (A, B, C) {
 
     fn segments(&self) -> Vec<String> {
         vec![self.0.write(), self.1.write(), self.2.write()]
+    }
+
+    type With<Q> = (Self, Q);
+
+    fn join<Q>(self, search: Q) -> (Self, Q) {
+        (self, search)
+    }
+
+    fn split<Q>(args: (Self, Q)) -> (Self, Q) {
+        args
+    }
+}
+
+/// The search parameters of a [`Route`]: `()`, or a struct with `#[derive(Signals)]`.
+///
+/// A struct's fields are written into the query string in the order of
+/// their names, as `?name=value&...`, and a field that is `None` is left
+/// out. A value is written as JavaScript's `String` writes it, so a field is
+/// a string, a number, a `bool`, or an `Option` of one. axum's `Query`
+/// reads the struct back on the server and answers 400 where it cannot.
+///
+/// The server and the browser compare field names by their UTF-8 bytes and
+/// UTF-16 units, which agree for ASCII names. A `#[serde(rename)]` to a name
+/// outside ASCII can put two fields in a different order on the two sides.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot be the search parameters of a route",
+    note = "a route's search parameters are `()` or a struct with `#[derive(Signals)]`"
+)]
+pub trait Search: sealed::SealedSearch + Sized {
+    /// Whether the route has a query string.
+    #[doc(hidden)]
+    const TYPED: bool;
+
+    /// What a route with parameters `P` and these search parameters takes and its handler receives.
+    #[doc(hidden)]
+    type Args<P: Params>;
+
+    #[doc(hidden)]
+    fn join<P: Params>(params: P, search: Self) -> Self::Args<P>;
+
+    #[doc(hidden)]
+    fn split<P: Params>(args: Self::Args<P>) -> (P, Self);
+
+    /// The value of a route without a query string, which needs no parsing.
+    #[doc(hidden)]
+    fn unit() -> Option<Self>;
+
+    /// The query string, with its `?`, or empty.
+    #[doc(hidden)]
+    fn query(&self) -> String;
+}
+
+impl Search for () {
+    const TYPED: bool = false;
+    type Args<P: Params> = P;
+
+    fn join<P: Params>(params: P, (): ()) -> P {
+        params
+    }
+
+    fn split<P: Params>(args: P) -> (P, ()) {
+        (args, ())
+    }
+
+    fn unit() -> Option<Self> {
+        Some(())
+    }
+
+    fn query(&self) -> String {
+        String::new()
+    }
+}
+
+impl<Q: Signals> Search for Q {
+    const TYPED: bool = true;
+    type Args<P: Params> = P::With<Q>;
+
+    fn join<P: Params>(params: P, search: Q) -> P::With<Q> {
+        params.join(search)
+    }
+
+    fn split<P: Params>(args: P::With<Q>) -> (P, Q) {
+        P::split(args)
+    }
+
+    fn unit() -> Option<Self> {
+        None
+    }
+
+    fn query(&self) -> String {
+        query_string(&serde_json::to_value(self).expect("a Signals struct serializes to JSON"))
     }
 }
 
@@ -498,6 +682,10 @@ impl<A: Segment, B: Segment, C: Segment> Extends<(A, B)> for (A, B, C) {}
 impl<A: Segment, B: Segment, C: Segment> Extends<(A, B, C)> for (A, B, C) {}
 
 mod sealed {
+    pub trait SealedSearch {}
+    impl SealedSearch for () {}
+    impl<Q: crate::signal::Signals> SealedSearch for Q {}
+
     pub trait Sealed {}
     impl Sealed for () {}
     impl Sealed for i32 {}
@@ -574,6 +762,13 @@ mod tests {
             link.into_parts().ok(),
             Some(POST.url(("a/b é".to_owned(), -4)).to_string())
         );
+    }
+
+    #[test]
+    fn writes_the_query_string_in_name_order_without_nulls() {
+        let search = json!({ "q": "a b&c", "page": 2, "open": true, "tag": null, "x": 1.5 });
+        assert_eq!(query_string(&search), "?open=true&page=2&q=a%20b%26c&x=1.5");
+        assert_eq!(query_string(&json!({ "tag": null })), "");
     }
 
     #[test]

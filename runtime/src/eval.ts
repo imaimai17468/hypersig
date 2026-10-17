@@ -59,10 +59,25 @@ const binary: Record<string, (a: never, b: never) => unknown> = {
   or_else: (a: unknown, b: unknown) => a ?? b,
 };
 
+/**
+ * The query string of a search struct, as `query_string` in `crates/hypersig/src/route.rs` writes it:
+ * fields in the order of their names, `null` ones left out, each name and value percent-encoded.
+ */
+function queryString(value: unknown): string {
+  if (value === null || typeof value !== "object") return "";
+  const fields = value as Record<string, unknown>;
+  const pairs = Object.keys(fields)
+    .sort()
+    .filter((name) => fields[name] !== null && fields[name] !== undefined)
+    .map((name) => `${encodeURIComponent(name)}=${encodeURIComponent(String(fields[name]))}`);
+  return pairs.length === 0 ? "" : `?${pairs.join("&")}`;
+}
+
 const unary: Record<string, (a: never) => unknown> = {
   not: (a: unknown) => !a,
   str: (a: unknown) => String(a),
   uri: (a: unknown) => encodeURIComponent(String(a)),
+  query: queryString,
   trim: (a: string) => a.trim(),
   lower: (a: string) => a.toLowerCase(),
   upper: (a: string) => a.toUpperCase(),

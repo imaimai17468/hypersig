@@ -4,7 +4,7 @@ error[E0080]: evaluation panicked: a child route's path is its parent's path fol
 6 | const MEMBER: Route<(String, i32)> = ORG.child("/teams/{team}/members/{id}");
   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `MEMBER` failed inside this call
   |
-note: inside `Route::<String>::child::<(String, i32)>`
+note: inside `Route::<String>::child::<(String, i32), ()>`
  --> $RUST/core/src/panic.rs
   |
   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));

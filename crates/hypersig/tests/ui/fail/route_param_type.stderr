@@ -19,11 +19,11 @@ help: the following other types implement trait `Segment`
   | integer_segment!(i32, i64, u32, u64);
   | ------------------------------------ in this macro invocation
   = note: required for `f64` to implement `Params`
-note: required by a bound in `Route::<P>::new`
+note: required by a bound in `Route::<P, Q>::new`
  --> src/route.rs
   |
-  | impl<P: Params> Route<P> {
-  |         ^^^^^^ required by this bound in `Route::<P>::new`
+  | impl<P: Params, Q: Search> Route<P, Q> {
+  |         ^^^^^^ required by this bound in `Route::<P, Q>::new`
 ...
   |     pub const fn new(path: &'static str) -> Self {
   |                  --- required by a bound in this associated function

@@ -589,13 +589,24 @@ struct Member {
     id: i32,
 }
 
+#[derive(Signals, Serialize, Deserialize, Clone)]
+struct Filter {
+    q: String,
+    page: i32,
+    open: bool,
+    tag: Option<String>,
+}
+
 #[derive(Signals, Serialize, Deserialize)]
 struct Roster {
     members: Vec<Member>,
+    filter: Filter,
 }
 
 const HOME: Route = Route::new("/");
 const MEMBER: Route<(String, i32)> = Route::new("/teams/{team}/members/{id}");
+const FIND: Route<(), Filter> = Route::new("/search");
+const TEAM_SEARCH: Route<String, Filter> = Route::new("/teams/{team}");
 
 /// Links whose parameters need percent-encoding, so the server's encoding
 /// and the browser's `encodeURIComponent` are compared on the same values.
@@ -604,9 +615,16 @@ fn links() -> (El<Roster>, Roster) {
         .child(a().id("home").href(HOME.link()))
         .child(ul().id("members").child(each(Roster::members(), |member| {
             let params = || (member.at(Member::team()), member.at(Member::id()));
+            let search = Expr::lit(&filter()).with(Filter::page(), member.at(Member::id()));
             li().child(a().href(MEMBER.link_with(params())))
                 .child(button().on_click(MEMBER.link_with(params()).navigate()))
-        })));
+                .child(a().href(TEAM_SEARCH.link_with((member.at(Member::team()), search))))
+        })))
+        .child(a().id("search-fixed").href(FIND.link_with(&filter())))
+        .child(
+            a().id("search-bound")
+                .href(FIND.link_with(Roster::filter())),
+        );
     let signals = Roster {
         members: vec![
             Member {
@@ -618,8 +636,23 @@ fn links() -> (El<Roster>, Roster) {
                 id: -2,
             },
         ],
+        filter: Filter {
+            tag: Some("a+b".to_owned()),
+            ..filter()
+        },
     };
     (el, signals)
+}
+
+/// Search parameters whose fields are declared out of name order, with
+/// values that need percent-encoding and a `None` that is left out.
+fn filter() -> Filter {
+    Filter {
+        q: "a b&c=d#é".to_owned(),
+        page: 2,
+        open: true,
+        tag: None,
+    }
 }
 
 /// Writes the page as `Page::render` serves it, with the server-side values applied.

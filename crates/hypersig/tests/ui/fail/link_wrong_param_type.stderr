@@ -17,9 +17,9 @@ help: the trait `IntoExpr<_, i32>` is not implemented for `&str`
    | literal!(i32 => i32, f64 => f64, bool => bool, String => String, &str => String);
    | -------------------------------------------------------------------------------- in this macro invocation
    = help: for that trait implementation, expected `String`, found `i32`
-note: required by a bound in `Route::<P>::link_with`
+note: required by a bound in `Route::<P, Q>::link_with`
   --> src/route.rs
    |
-   |     pub fn link_with<S>(&self, params: impl IntoExpr<S, P>) -> Link<S> {
-   |                                             ^^^^^^^^^^^^^^ required by this bound in `Route::<P>::link_with`
+   |     pub fn link_with<S>(&self, args: impl IntoExpr<S, Q::Args<P>>) -> Link<S> {
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Route::<P, Q>::link_with`
    = note: this error originates in the macro `literal` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -64,60 +64,70 @@ pub fn server(site: Site) -> Part {
 }
 
 pub fn pages(site: Site) -> Part {
-    parts([
-        title(Doc::Learn(Learn::Pages).title()),
-        lead(
-            site,
-            "A route is a page the server renders at a path. The router serves it and the links on other pages point to it from the same value, so a parameter of the wrong type or in the wrong number is a compile error.",
-        ),
-        heading("Routes"),
-        para(
-            site,
-            "A [`Route<P>`](api:hypersig/struct.Route.html) is a path whose parameters are `P`. A parameter is a whole segment written `{name}`, as in axum, and `P` is `()` for a path without one, an integer or `String` for one, and a tuple for two or three, in path order. Declare it as a `const`: `Route::new` counts the segments, so a path whose count differs from `P` fails to compile.",
-        ),
-        show(Snippet::WrongRoute),
-        para(
-            site,
-            "`RouterExt::page` serves a route on `GET` with a handler that receives the router state and the parameters, already parsed, and returns the `Page`. A path whose segments do not parse into the parameter types gets a 404, and so does a handler that returns `None`, as `member` does below for an id it does not know.",
-        ),
-        program(Program::Pages),
-        heading("Links"),
-        para(
-            site,
-            "`El::href` takes a [`Link`](api:hypersig/struct.Link.html), which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
-        ),
-        show(Snippet::Links),
-        heading("Pages under a page"),
-        para(
-            site,
-            "`child` declares a route under another. Its path is the parent's path followed by more segments, and its parameters are the parent's followed by its own, so a link to the child needs the parent's values too. A path that does not continue the parent's, or parameters that do not start with the parent's, fail to compile.",
-        ),
-        show(Snippet::ChildRoutes),
-        para(
-            site,
-            "Register a child with `RouterExt::page` on the same router as every other page. A page registered on a router passed to axum's `nest` is served under a longer path than its links point to, so it answers every request with a 500 that names both paths.",
-        ),
-        heading("Redirects and navigation"),
-        para(
-            site,
-            "The server writes a page's URL with `url(params)`, which takes the route's parameter values themselves and encodes them as a link does. A page handler that sends the browser elsewhere returns a [`PageResponse`](api:hypersig/struct.PageResponse.html), built with `PageResponse::redirect(url)` or converted from a `Page`. An action does the same with `Patches::navigate(url)`, which the browser follows once the patches before it are applied.",
-        ),
-        para(
-            site,
-            "In the browser, `link.navigate()` is a statement that loads the linked page, for a handler that should leave the page after it runs other statements.",
-        ),
-        show(Snippet::Navigation),
-        heading("What routes leave unchecked"),
-        bullets(
-            site,
-            &[
-                "Nothing checks that a route you link to is registered with `RouterExt::page`. A route that is not answers 404.",
-                "The query string is not typed. A page that reads one is served with axum's own `route(ROUTE.path(), ...)`, and its links still come from the route, without the query.",
-                "A link is a plain `<a href>`, so following it loads the next page from the server, and the signals of the page you leave are gone.",
-                "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
-            ],
-        ),
-    ])
+    parts(
+        [
+            title(Doc::Learn(Learn::Pages).title()),
+            lead(
+                site,
+                "A route is a page the server renders at a path. The router serves it and the links on other pages point to it from the same value, so a parameter of the wrong type or in the wrong number is a compile error.",
+            ),
+            heading("Routes"),
+            para(
+                site,
+                "A [`Route<P>`](api:hypersig/struct.Route.html) is a path whose parameters are `P`. A parameter is a whole segment written `{name}`, as in axum, and `P` is `()` for a path without one, an integer or `String` for one, and a tuple for two or three, in path order. Declare it as a `const`: `Route::new` counts the segments, so a path whose count differs from `P` fails to compile.",
+            ),
+            show(Snippet::WrongRoute),
+            para(
+                site,
+                "`RouterExt::page` serves a route on `GET` with a handler that receives the router state and the parameters, already parsed, and returns the `Page`. A path whose segments do not parse into the parameter types gets a 404, and so does a handler that returns `None`, as `member` does below for an id it does not know.",
+            ),
+            program(Program::Pages),
+            heading("Links"),
+            para(
+                site,
+                "`El::href` takes a [`Link`](api:hypersig/struct.Link.html), which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
+            ),
+            show(Snippet::Links),
+            heading("Pages under a page"),
+            para(
+                site,
+                "`child` declares a route under another. Its path is the parent's path followed by more segments, and its parameters are the parent's followed by its own, so a link to the child needs the parent's values too. A path that does not continue the parent's, or parameters that do not start with the parent's, fail to compile.",
+            ),
+            show(Snippet::ChildRoutes),
+            para(
+                site,
+                "Register a child with `RouterExt::page` on the same router as every other page. A page registered on a router passed to axum's `nest` is served under a longer path than its links point to, so it answers every request with a 500 that names both paths.",
+            ),
+        ]
+        .into_iter()
+        .chain([
+            heading("Search parameters"),
+            para(
+                site,
+                "A route's second type, `Route<P, Q>`, types its query string. `Q` is a struct with `#[derive(Signals)]`, and a link and the handler then take `(P, Q)`, or `Q` alone for a path without parameters. A field is a string, a number, a `bool`, or an `Option` of one. The query string lists the fields in the order of their names and leaves out a field that is `None`, on the server and in the browser alike. A query string that does not deserialize into `Q` gets a 400.",
+            ),
+            show(Snippet::SearchParams),
+            heading("Redirects and navigation"),
+            para(
+                site,
+                "The server writes a page's URL with `url(params)`, which takes the route's parameter values themselves and encodes them as a link does. A page handler that sends the browser elsewhere returns a [`PageResponse`](api:hypersig/struct.PageResponse.html), built with `PageResponse::redirect(url)` or converted from a `Page`. An action does the same with `Patches::navigate(url)`, which the browser follows once the patches before it are applied.",
+            ),
+            para(
+                site,
+                "In the browser, `link.navigate()` is a statement that loads the linked page, for a handler that should leave the page after it runs other statements.",
+            ),
+            show(Snippet::Navigation),
+            heading("What routes leave unchecked"),
+            bullets(
+                site,
+                &[
+                    "Nothing checks that a route you link to is registered with `RouterExt::page`. A route that is not answers 404.",
+                    "A link is a plain `<a href>`, so following it loads the next page from the server, and the signals of the page you leave are gone.",
+                    "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
+                ],
+            ),
+        ]),
+    )
 }
 
 pub fn styling(site: Site) -> Part {

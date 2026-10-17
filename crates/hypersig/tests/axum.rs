@@ -23,6 +23,15 @@ const ORG_MEMBER: Route<(String, i32)> = ORG.child("/orgs/{org}/members/{id}");
 const NESTED: Route<i32> = Route::new("/members/{id}");
 const OLD_MEMBER: Route<i32> = Route::new("/people/{id}");
 const MOVE: Action<Counter, i32> = Action::post("/move");
+const TEAM: Route<String, Filter> = Route::new("/teams/{team}");
+const FIND: Route<(), Filter> = Route::new("/find");
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Filter {
+    q: String,
+    page: i32,
+    tag: Option<String>,
+}
 
 fn member_page(team: &str, id: i32) -> Page<Counter> {
     Page::new("Member", Counter { count: id })
@@ -49,6 +58,15 @@ fn app() -> Router {
         })
         .page(MEMBER, |(), (team, id): (String, i32)| async move {
             (id >= 0).then(|| member_page(&team, id))
+        })
+        .page(TEAM, |(), (team, filter): (String, Filter)| async move {
+            member_page(
+                &format!("{team} {} {} {:?}", filter.q, filter.page, filter.tag),
+                0,
+            )
+        })
+        .page(FIND, |(), filter: Filter| async move {
+            PageResponse::redirect(TEAM.url(("red team".to_owned(), filter)))
         })
         .page(OLD_MEMBER, |(), id: i32| async move {
             PageResponse::redirect(MEMBER.url(("old team".to_owned(), id)))
@@ -249,5 +267,45 @@ async fn an_action_sends_the_browser_to_another_page_after_its_patches() {
     assert_eq!(
         body,
         "event: hs-signals\ndata: {\"count\":5}\n\nevent: hs-navigate\ndata: {\"url\":\"/orgs/acme/members/5\"}\n\n"
+    );
+}
+
+#[tokio::test]
+async fn a_page_receives_its_search_parameters() {
+    let (status, body) = send(
+        Request::get("/teams/red%20team?page=3&q=a%20b%26c&tag=x")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains(r#"red team a b&amp;c 3 Some("x")"#), "{body}");
+}
+
+#[tokio::test]
+async fn a_query_string_that_does_not_deserialize_gets_400() {
+    let (status, _) = send(
+        Request::get("/teams/red?page=three&q=a")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn a_redirect_writes_the_search_parameters_and_leaves_out_none() {
+    let response = app()
+        .oneshot(
+            Request::get("/find?q=%C3%A9&page=1")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("the router is infallible");
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response.headers()["location"],
+        "/teams/red%20team?page=1&q=%C3%A9"
     );
 }

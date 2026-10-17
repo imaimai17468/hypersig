@@ -1,6 +1,12 @@
 {
-  "html": "<main><a id=\"home\" href=\"/\"></a><ul id=\"members\"><template data-hs-each=\"[&quot;members&quot;,0]\"><li><a data-hs-attr=\"[[&quot;href&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/teams/&quot;],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;team&quot;]]],[&quot;lit&quot;,&quot;/members/&quot;]],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;id&quot;]]]]]\"></a><button data-hs-on-click=\"[&quot;navigate&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/teams/&quot;],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;team&quot;]]],[&quot;lit&quot;,&quot;/members/&quot;]],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;id&quot;]]]]\"></button></li></template></ul></main>",
+  "html": "<main><a id=\"home\" href=\"/\"></a><ul id=\"members\"><template data-hs-each=\"[&quot;members&quot;,0]\"><li><a data-hs-attr=\"[[&quot;href&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/teams/&quot;],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;team&quot;]]],[&quot;lit&quot;,&quot;/members/&quot;]],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;id&quot;]]]]]\"></a><button data-hs-on-click=\"[&quot;navigate&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/teams/&quot;],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;team&quot;]]],[&quot;lit&quot;,&quot;/members/&quot;]],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;id&quot;]]]]\"></button><a data-hs-attr=\"[[&quot;href&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/teams/&quot;],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;team&quot;]]],[&quot;query&quot;,[&quot;with&quot;,[&quot;lit&quot;,{&quot;open&quot;:true,&quot;page&quot;:2,&quot;q&quot;:&quot;a b&amp;c=d#é&quot;,&quot;tag&quot;:null}],&quot;page&quot;,[&quot;item&quot;,0,&quot;id&quot;]]]]]]\"></a></li></template></ul><a id=\"search-fixed\" href=\"/search?open=true&amp;page=2&amp;q=a%20b%26c%3Dd%23%C3%A9\"></a><a id=\"search-bound\" data-hs-attr=\"[[&quot;href&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/search&quot;],[&quot;query&quot;,[&quot;sig&quot;,&quot;filter&quot;]]]]]\"></a></main>",
   "signals": {
+    "filter": {
+      "open": true,
+      "page": 2,
+      "q": "a b&c=d#é",
+      "tag": "a+b"
+    },
     "members": [
       {
         "id": 1,

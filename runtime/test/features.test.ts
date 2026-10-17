@@ -618,20 +618,32 @@ describe("server rendering", () => {
 describe("links", () => {
   it("writes the same percent-encoded hrefs on the server as the runtime does, and follows a changed parameter", async () => {
     serve("links_page");
-    const served = $$("#members a").map((a) => a.getAttribute("href"));
-    expect(served).toEqual(["/teams/red%20team/members/1", "/teams/caf%C3%A9%2F%C3%BC%3F%26%23/members/-2"]);
-    expect($("#home").getAttribute("href")).toBe("/");
+    const hrefs = () => $$("a").map((a) => a.getAttribute("href"));
+    const served = hrefs();
+    expect(served).toEqual([
+      "/",
+      "/teams/red%20team/members/1",
+      "/teams/red%20team?open=true&page=1&q=a%20b%26c%3Dd%23%C3%A9",
+      "/teams/caf%C3%A9%2F%C3%BC%3F%26%23/members/-2",
+      "/teams/caf%C3%A9%2F%C3%BC%3F%26%23?open=true&page=-2&q=a%20b%26c%3Dd%23%C3%A9",
+      "/search?open=true&page=2&q=a%20b%26c%3Dd%23%C3%A9",
+      "/search?open=true&page=2&q=a%20b%26c%3Dd%23%C3%A9&tag=a%2Bb",
+    ]);
 
     const runtime = mount("links");
     await tick();
-    expect($$("#members a").map((a) => a.getAttribute("href"))).toEqual(served);
+    expect(hrefs()).toEqual(served);
     runtime.store.set("members.0.team", "blue");
+    runtime.store.set("filter.tag", null);
+    runtime.store.set("filter.page", 3);
     await tick();
     expect($$("#members a")[0]!.getAttribute("href")).toBe("/teams/blue/members/1");
+    expect($$("#members a")[1]!.getAttribute("href")).toBe("/teams/blue?open=true&page=1&q=a%20b%26c%3Dd%23%C3%A9");
+    expect($("#search-bound").getAttribute("href")).toBe("/search?open=true&page=3&q=a%20b%26c%3Dd%23%C3%A9");
 
     const assign = vi.spyOn(location, "assign").mockImplementation(() => {});
     ($$("#members button")[1] as HTMLButtonElement).click();
-    expect(assign).toHaveBeenCalledWith(served[1]);
+    expect(assign).toHaveBeenCalledWith(served[3]);
     assign.mockRestore();
   });
 });

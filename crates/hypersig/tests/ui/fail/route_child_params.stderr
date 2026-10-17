@@ -14,8 +14,8 @@ error[E0277]: `(i32, i32)` does not start with `String`, the parameters of the p
             `(A, B, C)` implements `Extends<(A, B)>`
             `(A, B, C)` implements `Extends<(A, B, C)>`
             `(A, B, C)` implements `Extends<A>`
-note: required by a bound in `Route::<P>::child`
+note: required by a bound in `Route::<P, Q>::child`
  --> src/route.rs
   |
-  |     pub const fn child<Q: Params + Extends<P>>(&self, path: &'static str) -> Route<Q> {
-  |                                    ^^^^^^^^^^ required by this bound in `Route::<P>::child`
+  |     pub const fn child<C: Params + Extends<P>, R: Search>(
+  |                                    ^^^^^^^^^^ required by this bound in `Route::<P, Q>::child`
