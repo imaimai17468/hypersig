@@ -253,8 +253,9 @@ impl Route<(), ()> {
 /// does not report the function, because it comes from the macro, but it
 /// does report a handler `fn` that only the function names as never used.
 /// A closure written as the handler gets no such warning. Each `routes!`
-/// block is its own function, so an application with several blocks calls
-/// each of them.
+/// block is its own function, so declare every page of the application in
+/// one block: the application then calls one function, and a missing call
+/// shows on its first page.
 ///
 /// Call the function on the router the application serves, never on one
 /// passed to `Router::nest`. The links point to each route's path, and a

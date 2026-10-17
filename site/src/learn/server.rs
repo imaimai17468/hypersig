@@ -121,7 +121,7 @@ pub fn pages(site: Site) -> Part {
             bullets(
                 site,
                 &[
-                    "Nothing checks that the function `routes!` writes is called. A block whose function is never called answers 404 on every page, and rustc reports its handler functions as never used, though not the function itself or a handler written as a closure.",
+                    "Nothing checks that the function `routes!` writes is called, so declare every page of the application in one `routes!` block and call its one function. A block whose function is never called answers 404 on every page, and rustc reports its handler functions as never used, though not the function itself or a handler written as a closure.",
                     "A parent after `in` is a page itself, so a path prefix with no page of its own cannot be one.",
                     "A link is a plain `<a href>`, so following it loads the next page from the server, and the signals of the page you leave are gone.",
                     "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
