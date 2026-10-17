@@ -750,6 +750,12 @@ describe("lists and conditions inside svg", () => {
     await tick();
     expect(heights()).toEqual(["25", "10", "5"]);
     expect($("#extent").textContent).toBe("8 10 2 40");
+    expect($("#second").textContent).toBe("1");
+    $("#collect").click();
+    $("#collect").click();
+    await tick();
+    expect(runtime.store.get("collected")).toEqual([2, 1, 3, 2, 1, 3]);
+    expect($("#collected").textContent).toBe("6");
     expect(marks()).toEqual([1, 2, 0]);
     expect($$("#plot g line").map((line) => line.getAttribute("y1"))).toEqual(["3", "1", "2"]);
 
@@ -768,6 +774,7 @@ describe("lists and conditions inside svg", () => {
   it("adopts the items the server rendered", async () => {
     serve("plot_page");
     expect($("#extent").textContent).toBe("7 10 3 30");
+    expect($("#second").textContent).toBe("2");
     const first = $$("#plot > g")[0];
     const runtime = start();
     await tick();

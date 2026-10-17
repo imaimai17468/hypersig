@@ -298,6 +298,13 @@ function build(ast: Ast): Compiled {
         return ctx.store.fold(found[2], () => testItems(ctx, depth, found, test)).filter(Boolean).length;
       };
     }
+    case "map": {
+      const [place, depth, each] = [rest[0], rest[1] as number, compile(rest[2])];
+      return (ctx) => {
+        const found = list(ctx, place);
+        return ctx.store.fold(found[2], () => mapItems(ctx, depth, found, each));
+      };
+    }
     case "sum_of":
     case "max_of":
     case "min_of": {
@@ -332,6 +339,12 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
     case "push": {
       const [path, items] = list(ctx, rest[0]);
       store.set(path, [...items, evaluate(rest[1], ctx)]);
+      return;
+    }
+    case "append": {
+      const [path, items] = list(ctx, rest[0]);
+      const added = evaluate(rest[1], ctx);
+      if (Array.isArray(added) && added.length > 0) store.set(path, [...items, ...(added as unknown[])]);
       return;
     }
     case "remove": {

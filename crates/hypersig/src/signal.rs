@@ -253,6 +253,16 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
         )
     }
 
+    /// A statement that appends every item of `items` to this list.
+    #[must_use]
+    pub fn append(self, items: impl IntoExpr<S, Vec<T>>) -> Stmt<S> {
+        Stmt::list(
+            "append",
+            self.path.place_json(),
+            items.into_expr().into_json(),
+        )
+    }
+
     /// A statement that removes the item at `index`, if there is one.
     #[must_use]
     pub fn remove_at(self, index: impl IntoExpr<S, i32>) -> Stmt<S> {
@@ -289,6 +299,30 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
     ) -> Expr<S, i32> {
         let (depth, predicate) = self.predicate(matches);
         Expr::from_json(json!(["count", self.path.place_json(), depth, predicate]))
+    }
+
+    /// The list of what `value` gives for each item, in order.
+    ///
+    /// ```
+    /// use hypersig::{Expr, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Task {
+    ///     id: i32,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Board {
+    ///     tasks: Vec<Task>,
+    ///     chosen: Vec<i32>,
+    /// }
+    ///
+    /// let _choose_all = Board::chosen().set(Board::tasks().map(|task| task.at(Task::id())));
+    /// ```
+    #[must_use]
+    pub fn map<U, E: IntoExpr<S, U>>(self, value: impl FnOnce(Item<S, T>) -> E) -> Expr<S, Vec<U>> {
+        self.aggregate("map", value)
     }
 
     /// The sum of `value` over the items, 0 for an empty list.

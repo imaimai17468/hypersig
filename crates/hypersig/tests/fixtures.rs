@@ -508,6 +508,7 @@ struct Bar {
 struct Plot {
     bars: Vec<Bar>,
     marked: bool,
+    collected: Vec<i32>,
 }
 
 /// A list, a nested list, a condition, and a `show` inside an `<svg>`,
@@ -536,6 +537,25 @@ fn plot() -> (El<Plot>, Plot) {
     let el = main()
         .child(button().id("mark").on_click(Plot::marked().toggle()))
         .child(span().id("extent").bind_text(extent))
+        .child(
+            span().id("second").bind_text(
+                heights
+                    .map(|bar| bar.at(Bar::id()))
+                    .nth(1)
+                    .unwrap_or(0)
+                    .to_text(),
+            ),
+        )
+        .child(
+            button()
+                .id("collect")
+                .on_click(Plot::collected().append(heights.map(|bar| bar.at(Bar::id())))),
+        )
+        .child(
+            span()
+                .id("collected")
+                .bind_text(Plot::collected().len().to_text()),
+        )
         .child(
             el("svg")
                 .id("plot")
@@ -578,6 +598,7 @@ fn plot() -> (El<Plot>, Plot) {
             },
         ],
         marked: false,
+        collected: Vec::new(),
     };
     (el, signals)
 }

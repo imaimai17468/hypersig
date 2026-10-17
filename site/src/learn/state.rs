@@ -301,11 +301,11 @@ pub fn lists(site: Site) -> Part {
                 en: &[
                     &[
                         "Statements",
-                        "`push`, `extend`, `remove_at`, `clear`, `retain`, `swap`, `sort_by`, `set_all`, `update_where`",
+                        "`push`, `append`, `extend`, `remove_at`, `clear`, `retain`, `swap`, `sort_by`, `set_all`, `update_where`",
                     ],
                     &[
                         "Expressions",
-                        "`len`, `is_empty`, `nth`, `count`, `sum_of`, `max_of`, `min_of`",
+                        "`len`, `is_empty`, `nth`, `map`, `count`, `sum_of`, `max_of`, `min_of`",
                     ],
                     &[
                         "On one item",
@@ -315,11 +315,11 @@ pub fn lists(site: Site) -> Part {
                 ja: &[
                     &[
                         "文",
-                        "`push`、`extend`、`remove_at`、`clear`、`retain`、`swap`、`sort_by`、`set_all`、`update_where`",
+                        "`push`、`append`、`extend`、`remove_at`、`clear`、`retain`、`swap`、`sort_by`、`set_all`、`update_where`",
                     ],
                     &[
                         "式",
-                        "`len`、`is_empty`、`nth`、`count`、`sum_of`、`max_of`、`min_of`",
+                        "`len`、`is_empty`、`nth`、`map`、`count`、`sum_of`、`max_of`、`min_of`",
                     ],
                     &["1 つの項目に", "`item.remove()`、`item.at(field)` の `set`"],
                 ],

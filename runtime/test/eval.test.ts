@@ -65,6 +65,7 @@ describe("evaluate", () => {
     expect(fold("min_of", "rows")).toBe(-1.5);
     expect(fold("sum_of", "none")).toBe(0);
     expect(fold("max_of", "none")).toBe(null);
+    expect(fold("map", "rows")).toEqual([3, -1.5, 7]);
     expect(evaluate(["floor", ["lit", -2.5]], ctx)).toBe(-3);
     expect(evaluate(["ceil", ["lit", 2.1]], ctx)).toBe(3);
     expect(evaluate(["round", ["lit", 2.5]], ctx)).toBe(3);
@@ -155,6 +156,8 @@ describe("run", () => {
     expect(ctx.store.get("todos")).toEqual([{ t: "B", done: true }, { t: "c", done: true }]);
     await run(["retain", "todos", 0, ["eq", ["item", 0, "t"], ["lit", "c"]]], ctx, h);
     expect(ctx.store.get("todos")).toEqual([{ t: "c", done: true }]);
+    await run(["append", "todos", ["lit", [{ t: "d", done: false }, { t: "e", done: false }]]], ctx, h);
+    expect((ctx.store.get("todos") as { t: string }[]).map((todo) => todo.t)).toEqual(["c", "d", "e"]);
   });
 
   it("encodes each part of a rest of a path and keeps its slashes", () => {

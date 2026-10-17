@@ -841,6 +841,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "append",
+                            "struct.Sig.html#method.append",
+                            L {
+                                en: "A statement that appends every item of `items` to this list.",
+                                ja: "このリストに `items` のすべての項目を追加する文",
+                            },
+                        ),
+                        (
                             "extend",
                             "struct.Sig.html#method.extend",
                             L {
@@ -918,6 +926,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The number of items for which `matches` is true.",
                                 ja: "`matches` が真になる項目の数",
+                            },
+                        ),
+                        (
+                            "map",
+                            "struct.Sig.html#method.map",
+                            L {
+                                en: "The list of what `value` gives for each item, in order.",
+                                ja: "各項目について `value` が返す値を、順に並べたリスト",
                             },
                         ),
                         (

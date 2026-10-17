@@ -27,10 +27,12 @@
 //! | `Expr::random_below(n)`, `Expr::now()` | `["random",n]`, `["now"]` |
 //! | `list.count(\|item\| p)` | `["count",place,depth,p]` |
 //! | `list.sum_of(\|item\| e)`, `max_of`, `min_of` | `["sum_of",place,depth,e]`, `["max_of",place,depth,e]`, `["min_of",place,depth,e]` |
+//! | `list.map(\|item\| e)` | `["map",place,depth,e]` |
 //! | `opt.unwrap_or(d)`, `a.some()` | `["or_else",a,d]`, `a` |
 //! | `rec.at(field)`, `rec.with(field, v)` | `["get",a,"path"]`, `["with",a,"path",v]` |
 //! | `sig.set(e)` | `["set",place,e]` |
 //! | `list.push(e)`, `list.remove_at(i)` | `["push",place,e]`, `["remove",place,i]` |
+//! | `list.append(e)` | `["append",place,e]` |
 //! | `list.retain(\|item\| p)`, `list.set_all(f, e)` | `["retain",place,depth,p]`, `["set_all",place,"path",e]` |
 //! | `list.extend(n, \|i\| e)` | `["extend",place,n,depth,e]` |
 //! | `list.update_where(\|item\| p, f, \|item\| e)` | `["update",place,depth,p,"path",e]` |

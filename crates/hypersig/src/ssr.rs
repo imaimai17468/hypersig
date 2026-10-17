@@ -371,7 +371,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
             ))
         }
         "with" => set_path(&*eval(1)?, arg(2)?.as_str()?, eval(3)?.into_owned()),
-        "count" | "sum_of" | "max_of" | "min_of" => fold(op, parts, ctx)?,
+        "count" | "sum_of" | "max_of" | "min_of" | "map" => fold(op, parts, ctx)?,
         "floor" => number(f(&*eval(1)?)?.floor()),
         "ceil" => number(f(&*eval(1)?)?.ceil()),
         "round" => number(js_round(f(&*eval(1)?)?)),
@@ -418,9 +418,14 @@ fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
     let len = ctx.get(&path).as_array().map_or(0, Vec::len);
     let mut count = 0_u64;
     let mut folded: Option<f64> = None;
+    let mut mapped = Vec::new();
     for index in 0..len {
         let item = ctx.with_item(depth, join(&path, &index.to_string()));
         let value = evaluate(each, &item)?;
+        if op == "map" {
+            mapped.push(value.into_owned());
+            continue;
+        }
         if op == "count" {
             count += u64::from(truthy(&value));
             continue;
@@ -434,6 +439,7 @@ fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
         });
     }
     Some(match (op, folded) {
+        ("map", _) => Value::Array(mapped),
         ("count", _) => Value::from(count),
         ("sum_of", None) => Value::from(0),
         (_, folded) => folded.map_or(Value::Null, number),
@@ -558,6 +564,7 @@ mod tests {
         assert_eq!(fold("min_of", "rows"), json!(-1.5));
         assert_eq!(fold("sum_of", "none"), json!(0));
         assert_eq!(fold("max_of", "none"), json!(null));
+        assert_eq!(fold("map", "rows"), json!([3, -1.5, 7]));
         assert_eq!(eval(&json!(["floor", ["lit", -2.5]]), &root), json!(-3));
         assert_eq!(eval(&json!(["ceil", ["lit", 2.1]]), &root), json!(3));
         assert_eq!(eval(&json!(["round", ["lit", 2.5]]), &root), json!(3));
