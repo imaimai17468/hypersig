@@ -97,6 +97,16 @@ pub fn pages(site: Site) -> Part {
             site,
             "Register a child with `RouterExt::page` on the same router as every other page. A page registered on a router passed to axum's `nest` is served under a longer path than its links point to, so it answers every request with a 500 that names both paths.",
         ),
+        heading("Redirects and navigation"),
+        para(
+            site,
+            "The server writes a page's URL with `url(params)`, which takes the route's parameter values themselves and encodes them as a link does. A page handler that sends the browser elsewhere returns a [`PageResponse`](api:hypersig/struct.PageResponse.html), built with `PageResponse::redirect(url)` or converted from a `Page`. An action does the same with `Patches::navigate(url)`, which the browser follows once the patches before it are applied.",
+        ),
+        para(
+            site,
+            "In the browser, `link.navigate()` is a statement that loads the linked page, for a handler that should leave the page after it runs other statements.",
+        ),
+        show(Snippet::Navigation),
         heading("What routes leave unchecked"),
         bullets(
             site,

@@ -6,8 +6,13 @@ function context(values: Record<string, unknown>): Context {
   return { store: new Store(values), scope: [] };
 }
 
-function host(): Host & { call: ReturnType<typeof vi.fn> } {
-  return { call: vi.fn(async () => {}), dom: vi.fn(), debounce: vi.fn() };
+function host() {
+  return {
+    call: vi.fn(async () => {}),
+    dom: vi.fn(),
+    navigate: vi.fn((_url: string) => {}),
+    debounce: vi.fn(),
+  } satisfies Host;
 }
 
 describe("evaluate", () => {
@@ -108,6 +113,12 @@ describe("run", () => {
     expect(ctx.store.get("todos")).toEqual([{ t: "B", done: true }, { t: "c", done: true }]);
     await run(["retain", "todos", 0, ["eq", ["item", 0, "t"], ["lit", "c"]]], ctx, h);
     expect(ctx.store.get("todos")).toEqual([{ t: "c", done: true }]);
+  });
+
+  it("hands the evaluated URL to the host to navigate", async () => {
+    const h = host();
+    await run(["navigate", ["concat", ["lit", "/members/"], ["uri", ["sig", "id"]]]], context({ id: "a b" }), h);
+    expect(h.navigate).toHaveBeenCalledWith("/members/a%20b");
   });
 
   it("runs the branch the condition picks", async () => {

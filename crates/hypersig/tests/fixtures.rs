@@ -603,9 +603,9 @@ fn links() -> (El<Roster>, Roster) {
     let el = main()
         .child(a().id("home").href(HOME.link()))
         .child(ul().id("members").child(each(Roster::members(), |member| {
-            li().child(
-                a().href(MEMBER.link_with((member.at(Member::team()), member.at(Member::id())))),
-            )
+            let params = || (member.at(Member::team()), member.at(Member::id()));
+            li().child(a().href(MEMBER.link_with(params())))
+                .child(button().on_click(MEMBER.link_with(params()).navigate()))
         })));
     let signals = Roster {
         members: vec![

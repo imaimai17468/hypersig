@@ -1,12 +1,13 @@
 //! Patches the server sends back to the page, and the fragments they replace.
 //!
 //! On the wire each patch is one Server-Sent Event with a single-line JSON
-//! payload. The runtime in `runtime/src/sse.ts` reads two event names:
+//! payload. The runtime in `runtime/src/runtime.ts` reads three event names:
 //!
 //! | Event | Data |
 //! |---|---|
 //! | `hs-signals` | `{"path": value, ...}`, merged into the signal store |
 //! | `hs-element` | `{"html": "...", "css": [[sort key, css], ...]}`, morphed into the element with the root's `id` |
+//! | `hs-navigate` | `{"url": "..."}`, the page the browser loads next |
 //!
 //! `css` is present when the fragment uses [`El::css`] or [`El::css_when`].
 //! It lists the rule buckets of [`Sheet::buckets`]. The runtime adds each to
@@ -21,6 +22,7 @@ use serde::Serialize;
 use serde_json::{Map, Value, json};
 
 use crate::html::El;
+use crate::route::Url;
 use crate::signal::Signals;
 use crate::style::Sheet;
 
@@ -110,6 +112,7 @@ pub(crate) enum PatchEvent {
         html: String,
         css: Vec<(String, String)>,
     },
+    Navigate(Url),
 }
 
 impl PatchEvent {
@@ -117,6 +120,7 @@ impl PatchEvent {
         match self {
             Self::Signals(_) => "hs-signals",
             Self::Element { .. } => "hs-element",
+            Self::Navigate(_) => "hs-navigate",
         }
     }
 
@@ -125,6 +129,7 @@ impl PatchEvent {
             Self::Signals(values) => Value::Object(values.clone()).to_string(),
             Self::Element { html, css } if css.is_empty() => json!({ "html": html }).to_string(),
             Self::Element { html, css } => json!({ "html": html, "css": css }).to_string(),
+            Self::Navigate(url) => json!({ "url": url.as_str() }).to_string(),
         }
     }
 }
@@ -201,6 +206,16 @@ impl<S: Signals> Patches<S> {
             html: el.render(),
             css,
         });
+        self
+    }
+
+    /// Loads the page at `url` once the patches before it are applied.
+    ///
+    /// The browser leaves the current page, so patches after this one in the
+    /// same batch are not applied.
+    #[must_use]
+    pub fn navigate(mut self, url: Url) -> Self {
+        self.events.push(PatchEvent::Navigate(url));
         self
     }
 

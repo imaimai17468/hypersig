@@ -5,7 +5,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt as _;
 use hypersig::html::{a, p};
-use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
+use hypersig::{Action, Page, PageResponse, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -21,6 +21,8 @@ const MEMBER: Route<(String, i32)> = Route::new("/teams/{team}/members/{id}");
 const ORG: Route<String> = Route::new("/orgs/{org}");
 const ORG_MEMBER: Route<(String, i32)> = ORG.child("/orgs/{org}/members/{id}");
 const NESTED: Route<i32> = Route::new("/members/{id}");
+const OLD_MEMBER: Route<i32> = Route::new("/people/{id}");
+const MOVE: Action<Counter, i32> = Action::post("/move");
 
 fn member_page(team: &str, id: i32) -> Page<Counter> {
     Page::new("Member", Counter { count: id })
@@ -47,6 +49,13 @@ fn app() -> Router {
         })
         .page(MEMBER, |(), (team, id): (String, i32)| async move {
             (id >= 0).then(|| member_page(&team, id))
+        })
+        .page(OLD_MEMBER, |(), id: i32| async move {
+            PageResponse::redirect(MEMBER.url(("old team".to_owned(), id)))
+        })
+        .action(MOVE, |(), id: i32| async move {
+            Patches::from(Counter::count().patch(id))
+                .navigate(ORG_MEMBER.url(("acme".to_owned(), id)))
         })
         .page(ORG_MEMBER, |(), (org, id): (String, i32)| async move {
             member_page(&org, id)
@@ -208,4 +217,37 @@ async fn a_page_on_a_nested_router_answers_with_a_500() {
     .await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
     assert!(body.contains("`/legacy/members/{id}`"), "{body}");
+}
+
+#[tokio::test]
+async fn a_page_handler_redirects_to_another_route() {
+    let response = app()
+        .oneshot(
+            Request::get("/people/4")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("the router is infallible");
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response.headers()["location"],
+        "/teams/old%20team/members/4"
+    );
+}
+
+#[tokio::test]
+async fn an_action_sends_the_browser_to_another_page_after_its_patches() {
+    let (status, body) = send(
+        Request::post("/move")
+            .header("content-type", "application/json")
+            .body(Body::from("5"))
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":5}\n\nevent: hs-navigate\ndata: {\"url\":\"/orgs/acme/members/5\"}\n\n"
+    );
 }

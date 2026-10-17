@@ -50,6 +50,7 @@ snippets! {
     Links => "links.rs";
     WrongRoute => "wrong_route.rs", "compile_fail,E0080";
     ChildRoutes => "child_routes.rs";
+    Navigation => "navigation.rs";
     Styles => "styles.rs";
     Effects => "effects.rs";
     StaticPage => "static_page.rs";

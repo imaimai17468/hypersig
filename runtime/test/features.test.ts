@@ -628,6 +628,11 @@ describe("links", () => {
     runtime.store.set("members.0.team", "blue");
     await tick();
     expect($$("#members a")[0]!.getAttribute("href")).toBe("/teams/blue/members/1");
+
+    const assign = vi.spyOn(location, "assign").mockImplementation(() => {});
+    ($$("#members button")[1] as HTMLButtonElement).click();
+    expect(assign).toHaveBeenCalledWith(served[1]);
+    assign.mockRestore();
   });
 });
 

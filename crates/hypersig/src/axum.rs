@@ -11,7 +11,7 @@ use axum::body::Bytes;
 use axum::extract::{MatchedPath, Query, RawPathParams, State};
 use axum::http::{StatusCode, header};
 use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
-use axum::response::{Html, IntoResponse, Response};
+use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::{MethodRouter, get, post};
 use futures::{Stream, StreamExt as _, stream};
 use serde::de::DeserializeOwned;
@@ -19,7 +19,7 @@ use serde::de::DeserializeOwned;
 use crate::action::{Action, Method};
 use crate::page::Page;
 use crate::patch::{PatchEvent, Patches};
-use crate::route::{Params, Route};
+use crate::route::{Params, Route, Url};
 use crate::signal::Signals;
 
 /// Adds hypersig routes to an axum [`Router`].
@@ -31,7 +31,8 @@ pub trait RouterExt<St>: Sized {
     /// Serves the page at `route` on `GET`, with a handler that builds it.
     ///
     /// The handler receives the router state and the path's parameters,
-    /// already parsed. A path whose segments do not parse into the
+    /// already parsed, and answers with a [`Page`], an `Option<Page>`, or a
+    /// [`PageResponse`]. A path whose segments do not parse into the
     /// parameter types, or a handler that answers `None`, gets a 404.
     ///
     /// Register the page on the router the application serves, never on one
@@ -63,13 +64,12 @@ pub trait RouterExt<St>: Sized {
     /// let _app: Router = Router::new().page(MEMBER, member);
     /// ```
     #[must_use]
-    fn page<P, S, H, Fut, R>(self, route: Route<P>, handler: H) -> Self
+    fn page<P, H, Fut, R>(self, route: Route<P>, handler: H) -> Self
     where
         P: Params + Send + 'static,
-        S: Signals,
         H: Fn(St, P) -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = R> + Send + 'static,
-        R: Into<Option<Page<S>>>;
+        R: Into<PageResponse>;
 
     /// Serves `action` with a handler that answers with one batch of patches.
     ///
@@ -112,13 +112,12 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         )
     }
 
-    fn page<P, S, H, Fut, R>(self, route: Route<P>, handler: H) -> Self
+    fn page<P, H, Fut, R>(self, route: Route<P>, handler: H) -> Self
     where
         P: Params + Send + 'static,
-        S: Signals,
         H: Fn(St, P) -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = R> + Send + 'static,
-        R: Into<Option<Page<S>>>,
+        R: Into<PageResponse>,
     {
         let path = route.path();
         let route_handler = move |State(state): State<St>,
@@ -142,10 +141,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 let Some(params) = params else {
                     return StatusCode::NOT_FOUND.into_response();
                 };
-                match handler(state, params).await.into() {
-                    Some(page) => Html(page.render()).into_response(),
-                    None => StatusCode::NOT_FOUND.into_response(),
-                }
+                handler(state, params).await.into().into_response()
             }
         };
         self.route(route.path(), get(route_handler))
@@ -200,6 +196,79 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             }
         };
         self.route(action.path(), method_router(method, route))
+    }
+}
+
+/// What a page handler answers with: a page, a redirect, or a 404.
+///
+/// A handler that only ever renders returns `Page` or `Option<Page>`, which
+/// convert into this. One that sometimes sends the browser elsewhere returns
+/// this type, built from either.
+///
+/// ```
+/// use hypersig::html::h1;
+/// use hypersig::{Page, PageResponse, Route, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Profile {
+///     name: String,
+/// }
+///
+/// const LOGIN: Route = Route::new("/login");
+///
+/// fn profile(signed_in: bool) -> PageResponse {
+///     if !signed_in {
+///         return PageResponse::redirect(LOGIN.url(()));
+///     }
+///     let signals = Profile { name: "Ada".to_owned() };
+///     Page::new("Profile", signals).child(h1().bind_text(Profile::name())).into()
+/// }
+/// # let _ = profile(true);
+/// ```
+#[derive(Debug)]
+pub struct PageResponse(PageKind);
+
+#[derive(Debug)]
+enum PageKind {
+    Html(String),
+    Redirect(Url),
+    NotFound,
+}
+
+impl PageResponse {
+    /// Sends the browser to `url` with a `303 See Other`.
+    #[must_use]
+    pub fn redirect(url: Url) -> Self {
+        Self(PageKind::Redirect(url))
+    }
+
+    /// Answers with a `404 Not Found`.
+    #[must_use]
+    pub fn not_found() -> Self {
+        Self(PageKind::NotFound)
+    }
+}
+
+impl<S: Signals> From<Page<S>> for PageResponse {
+    fn from(page: Page<S>) -> Self {
+        Self(PageKind::Html(page.render()))
+    }
+}
+
+impl<S: Signals> From<Option<Page<S>>> for PageResponse {
+    fn from(page: Option<Page<S>>) -> Self {
+        page.map_or_else(Self::not_found, Self::from)
+    }
+}
+
+impl IntoResponse for PageResponse {
+    fn into_response(self) -> Response {
+        match self.0 {
+            PageKind::Html(html) => Html(html).into_response(),
+            PageKind::Redirect(url) => Redirect::to(url.as_str()).into_response(),
+            PageKind::NotFound => StatusCode::NOT_FOUND.into_response(),
+        }
     }
 }
 

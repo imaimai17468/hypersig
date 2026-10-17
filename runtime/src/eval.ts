@@ -35,6 +35,7 @@ export interface Host {
     error: string | null,
   ): Promise<void>;
   dom(op: string, name: string, origin: Element | undefined): void;
+  navigate(url: string): void;
   debounce(origin: Element | undefined, key: string, ms: number, action: () => void): void;
 }
 
@@ -343,6 +344,9 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
     }
     case "dom":
       host.dom(rest[0] as string, rest[1] as string, ctx.origin);
+      return;
+    case "navigate":
+      host.navigate(String(evaluate(rest[0], ctx)));
       return;
     case "debounce":
       host.debounce(ctx.origin, JSON.stringify(rest[1]), rest[0] as number, () => {

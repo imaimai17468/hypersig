@@ -961,6 +961,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                             "Re-renders `fragment` and morphs it into the element with its id.",
                         ),
                         (
+                            "navigate",
+                            "struct.Patches.html#method.navigate",
+                            "Loads the page at `url` once the patches before it are applied.",
+                        ),
+                        (
                             "to_event_stream",
                             "struct.Patches.html#method.to_event_stream",
                             "The batch as a Server-Sent Events body, for use without the axum feature.",
@@ -1033,6 +1038,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                             "A link to this page with the parameters `params`.",
                         ),
                         (
+                            "url",
+                            "struct.Route.html#method.url",
+                            "The URL of this page with the parameters `params`, written on the server.",
+                        ),
+                        (
                             "path",
                             "struct.Route.html#method.path",
                             "The path as axum matches it, with each parameter still written `{name}`.",
@@ -1063,6 +1073,16 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                             "struct.Link.html",
                             "A link to a `Route`, for `El::href` on the page whose signals are `S`.",
                         ),
+                        (
+                            "Link::navigate",
+                            "struct.Link.html#method.navigate",
+                            "A statement that loads the linked page, as following the link would.",
+                        ),
+                        (
+                            "Url",
+                            "struct.Url.html",
+                            "The URL of a page, written on the server by `Route::url`.",
+                        ),
                     ],
                 },
             ],
@@ -1092,6 +1112,11 @@ fn page_items(page: Reference) -> (&'static str, &'static [Section]) {
                         "stream",
                         "trait.RouterExt.html#tymethod.stream",
                         "Serves `action` with a handler that answers with a stream of patches.",
+                    ),
+                    (
+                        "PageResponse",
+                        "struct.PageResponse.html",
+                        "What a page handler answers with: a page, a redirect, or a 404.",
                     ),
                     (
                         "RequestError",

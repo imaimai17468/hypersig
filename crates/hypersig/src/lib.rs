@@ -62,12 +62,12 @@ struct ReadmeJa;
 
 pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]
-pub use axum::{RequestError, RouterExt};
+pub use axum::{PageResponse, RequestError, RouterExt};
 pub use expr::{Comparable, Expr, IntoExpr, IntoStmt, Number, Stmt, Textual, if_else};
 pub use hypersig_proc::Signals;
 pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};
-pub use route::{Extends, Link, Params, Route, Segment};
+pub use route::{Extends, Link, Params, Route, Segment, Url};
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 
 /// Typed atomic CSS, from the `hypersig_style` crate.

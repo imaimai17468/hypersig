@@ -36,6 +36,7 @@
 //! | `route.link_with(p)` for `"/users/{id}"` | `["concat",["lit","/users/"],["uri",p]]` |
 //! | `action.call()` | `["call",method,path,args,indicator,error]` |
 //! | `node_ref.focus()` | `["dom","focus",name]` |
+//! | `link.navigate()` | `["navigate",url]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |
 //!
 //! A place is `"dotted.path"` for a page signal and `["item",depth,"path"]`

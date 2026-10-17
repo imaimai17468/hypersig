@@ -228,6 +228,8 @@ export class Runtime implements Host {
   #nextSlot = 0;
   /** Whether a patch has replaced elements since the last `#sweep`, which may have taken list items with them. */
   #patched = false;
+  /** Whether the browser is loading another page, after which server events are not applied. */
+  #leaving = false;
   readonly #mounted = new WeakMap<Element, Element>();
   readonly #timers = new WeakMap<Element, Map<string, ReturnType<typeof setTimeout>>>();
   /**
@@ -418,6 +420,12 @@ export class Runtime implements Host {
     );
   }
 
+  /** Loads the page at `url`, as following a link to it would. */
+  navigate(url: string): void {
+    this.#leaving = true;
+    location.assign(url);
+  }
+
   /** Runs `action` once no call with the same key on `origin` has arrived for `ms`. */
   debounce(origin: Element | undefined, key: string, ms: number, action: () => void): void {
     const owner = origin ?? this.#root;
@@ -438,6 +446,7 @@ export class Runtime implements Host {
 
   /** Applies one server event. */
   apply(event: ServerEvent): void {
+    if (this.#leaving) return;
     switch (event.event) {
       case "hs-signals":
         this.store.merge(JSON.parse(event.data) as Values);
@@ -464,6 +473,9 @@ export class Runtime implements Host {
         this.#sweepLater();
         return;
       }
+      case "hs-navigate":
+        this.navigate((JSON.parse(event.data) as { url: string }).url);
+        return;
       default:
         console.warn(`hypersig: ignored server event "${event.event}"`);
     }

@@ -1,5 +1,5 @@
 {
-  "html": "<main><a id=\"home\" href=\"/\"></a><ul id=\"members\"><template data-hs-each=\"[&quot;members&quot;,0]\"><li><a data-hs-attr=\"[[&quot;href&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/teams/&quot;],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;team&quot;]]],[&quot;lit&quot;,&quot;/members/&quot;]],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;id&quot;]]]]]\"></a></li></template></ul></main>",
+  "html": "<main><a id=\"home\" href=\"/\"></a><ul id=\"members\"><template data-hs-each=\"[&quot;members&quot;,0]\"><li><a data-hs-attr=\"[[&quot;href&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/teams/&quot;],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;team&quot;]]],[&quot;lit&quot;,&quot;/members/&quot;]],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;id&quot;]]]]]\"></a><button data-hs-on-click=\"[&quot;navigate&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;concat&quot;,[&quot;lit&quot;,&quot;/teams/&quot;],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;team&quot;]]],[&quot;lit&quot;,&quot;/members/&quot;]],[&quot;uri&quot;,[&quot;item&quot;,0,&quot;id&quot;]]]]\"></button></li></template></ul></main>",
   "signals": {
     "members": [
       {

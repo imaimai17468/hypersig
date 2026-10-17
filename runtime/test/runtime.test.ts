@@ -547,6 +547,16 @@ describe("Runtime", () => {
     await vi.waitFor(() => expect(runtime.store.get("n")).toBe(2));
   });
 
+  it("loads the page a navigate event names, and applies no event after it", () => {
+    const assign = vi.spyOn(location, "assign").mockImplementation(() => {});
+    const runtime = mount(`<p></p>`, { n: 1 });
+    runtime.apply({ event: "hs-navigate", data: JSON.stringify({ url: "/todos/3" }) });
+    runtime.apply({ event: "hs-signals", data: JSON.stringify({ n: 2 }) });
+    expect(assign).toHaveBeenCalledWith("/todos/3");
+    expect(runtime.store.get("n")).toBe(1);
+    assign.mockRestore();
+  });
+
   it("re-registers effects inside a patched fragment", async () => {
     const runtime = mount(`<div id="frag"></div>`, { on: false });
     runtime.apply({

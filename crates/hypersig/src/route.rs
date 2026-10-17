@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 
 use serde_json::{Value, json};
 
-use crate::expr::{Expr, IntoExpr};
+use crate::expr::{Expr, IntoExpr, Stmt};
 
 /// A page served at a path whose parameters are `P`.
 ///
@@ -125,6 +125,33 @@ impl<P: Params> Route<P> {
         };
         Link::new(self.path, values)
     }
+
+    /// The URL of this page with the parameters `params`, written on the server.
+    ///
+    /// Use it where the server sends the browser to the page: a page
+    /// handler's redirect, or `Patches::navigate` in an action. Each value is
+    /// percent-encoded as in [`Route::link_with`].
+    ///
+    /// ```
+    /// use hypersig::Route;
+    ///
+    /// const POST: Route<(String, i32)> = Route::new("/blog/{slug}/comments/{id}");
+    /// assert_eq!(POST.url(("hello world".to_owned(), 3)).as_str(), "/blog/hello%20world/comments/3");
+    /// ```
+    #[must_use]
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "callers write `url((slug, id))` with the values themselves, as a handler receives them"
+    )]
+    pub fn url(&self, params: P) -> Url {
+        let parts = literal_parts(self.path);
+        let mut url = parts[0].to_owned();
+        for (segment, part) in params.segments().iter().zip(&parts[1..]) {
+            url.push_str(&encode_uri_component(segment));
+            url.push_str(part);
+        }
+        Url(url)
+    }
 }
 
 impl Route<()> {
@@ -132,6 +159,24 @@ impl Route<()> {
     #[must_use]
     pub fn link<S>(&self) -> Link<S> {
         Link::new(self.path, Vec::new())
+    }
+}
+
+/// The URL of a page, written on the server by [`Route::url`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Url(String);
+
+impl Url {
+    /// The URL as text.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for Url {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
     }
 }
 
@@ -256,6 +301,30 @@ impl<S> Link<S> {
         Self(LinkKind::Bound(Expr::from_json(ast)))
     }
 
+    /// A statement that loads the linked page, as following the link would.
+    ///
+    /// ```
+    /// use hypersig::html::button;
+    /// use hypersig::{Route, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Search {
+    ///     id: i32,
+    /// }
+    ///
+    /// const MEMBER: Route<i32> = Route::new("/members/{id}");
+    /// let _open = button().on_click(MEMBER.link_with(Search::id()).navigate()).text("Open");
+    /// ```
+    #[must_use]
+    pub fn navigate(self) -> Stmt<S> {
+        let url = match self.0 {
+            LinkKind::Fixed(url) => json!(["lit", url]),
+            LinkKind::Bound(expr) => expr.into_json(),
+        };
+        Stmt::new(json!(["navigate", url]))
+    }
+
     /// The fixed URL, or the expression the browser evaluates into one.
     pub(crate) fn into_parts(self) -> Result<String, Expr<S, String>> {
         match self.0 {
@@ -299,6 +368,10 @@ pub trait Segment: sealed::Sealed + Sized {
     /// Reads the value from a percent-decoded segment, or `None` if it is not one.
     #[doc(hidden)]
     fn parse(segment: &str) -> Option<Self>;
+
+    /// Writes the value as the browser's `String` would, before percent-encoding.
+    #[doc(hidden)]
+    fn write(&self) -> String;
 }
 
 macro_rules! integer_segment {
@@ -306,6 +379,10 @@ macro_rules! integer_segment {
         impl Segment for $ty {
             fn parse(segment: &str) -> Option<Self> {
                 segment.parse().ok()
+            }
+
+            fn write(&self) -> String {
+                self.to_string()
             }
         }
     )*};
@@ -316,6 +393,10 @@ integer_segment!(i32, i64, u32, u64);
 impl Segment for String {
     fn parse(segment: &str) -> Option<Self> {
         Some(segment.to_owned())
+    }
+
+    fn write(&self) -> String {
+        self.clone()
     }
 }
 
@@ -332,6 +413,10 @@ pub trait Params: sealed::Sealed + Sized {
     /// Reads the values from the percent-decoded segments, in path order.
     #[doc(hidden)]
     fn from_segments(segments: &[&str]) -> Option<Self>;
+
+    /// Writes the values in path order, before percent-encoding.
+    #[doc(hidden)]
+    fn segments(&self) -> Vec<String>;
 }
 
 impl Params for () {
@@ -339,6 +424,10 @@ impl Params for () {
 
     fn from_segments(_: &[&str]) -> Option<Self> {
         Some(())
+    }
+
+    fn segments(&self) -> Vec<String> {
+        Vec::new()
     }
 }
 
@@ -351,6 +440,10 @@ impl<T: Segment> Params for T {
             _ => None,
         }
     }
+
+    fn segments(&self) -> Vec<String> {
+        vec![self.write()]
+    }
 }
 
 impl<A: Segment, B: Segment> Params for (A, B) {
@@ -362,6 +455,10 @@ impl<A: Segment, B: Segment> Params for (A, B) {
             _ => None,
         }
     }
+
+    fn segments(&self) -> Vec<String> {
+        vec![self.0.write(), self.1.write()]
+    }
 }
 
 impl<A: Segment, B: Segment, C: Segment> Params for (A, B, C) {
@@ -372,6 +469,10 @@ impl<A: Segment, B: Segment, C: Segment> Params for (A, B, C) {
             [a, b, c] => Some((A::parse(a)?, B::parse(b)?, C::parse(c)?)),
             _ => None,
         }
+    }
+
+    fn segments(&self) -> Vec<String> {
+        vec![self.0.write(), self.1.write(), self.2.write()]
     }
 }
 
@@ -462,6 +563,16 @@ mod tests {
         assert_eq!(
             link.into_parts().ok().as_deref(),
             Some("/blog/a%2Fb/comments/-4")
+        );
+    }
+
+    #[test]
+    fn a_url_matches_the_fixed_link() {
+        const POST: Route<(String, i32)> = Route::new("/blog/{slug}/comments/{id}");
+        let link: Link<()> = POST.link_with(("a/b é", -4));
+        assert_eq!(
+            link.into_parts().ok(),
+            Some(POST.url(("a/b é".to_owned(), -4)).to_string())
         );
     }
 
