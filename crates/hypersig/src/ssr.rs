@@ -4,7 +4,9 @@
 //! This mirrors `evaluate` in `runtime/src/eval.ts`. Where the two disagree,
 //! the runtime wins: it re-evaluates every binding when the page loads, so a
 //! difference shows for one frame and is then corrected. The known
-//! difference is string ordering outside the Basic Multilingual Plane.
+//! differences are string ordering outside the Basic Multilingual Plane,
+//! and the last bit of `log10` and `pow`, which each side takes from its
+//! platform's math library.
 
 use std::borrow::Cow;
 
@@ -22,6 +24,8 @@ pub(crate) struct Ctx<'a> {
     /// takes over. A copy leaves out the `data-hs-*` attributes, because the
     /// runtime reads them from the template.
     pub(crate) copy: bool,
+    /// The values `let_in` names, by depth.
+    pub(crate) vars: Vec<Value>,
 }
 
 impl<'a> Ctx<'a> {
@@ -32,6 +36,7 @@ impl<'a> Ctx<'a> {
             root: self.root,
             scope,
             copy: true,
+            vars: self.vars.clone(),
         }
     }
 
@@ -40,6 +45,7 @@ impl<'a> Ctx<'a> {
             root: self.root,
             scope: self.scope.clone(),
             copy: true,
+            vars: self.vars.clone(),
         }
     }
 
@@ -153,6 +159,17 @@ fn js_number(value: f64) -> String {
         "0".to_owned()
     } else {
         format!("{value}")
+    }
+}
+
+/// `Math.round(value)` in JavaScript, which rounds a halfway value up.
+fn js_round(value: f64) -> f64 {
+    let floor = value.floor();
+    // Subtracting the floor is exact, so the halfway test sees the true fraction.
+    if value - floor >= 0.5 {
+        floor + 1.0
+    } else {
+        floor
     }
 }
 
@@ -292,6 +309,11 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "item" => return Some(Cow::Borrowed(ctx.get(&ctx.resolve(ast)?))),
         "lit" => return arg(1).map(Cow::Borrowed),
         "if" => return if truthy(&*eval(1)?) { eval(2) } else { eval(3) },
+        "let" => return let_in(parts, ctx).map(Cow::Owned),
+        "var" => {
+            let depth = usize::try_from(arg(1)?.as_u64()?).ok()?;
+            return ctx.vars.get(depth).cloned().map(Cow::Owned);
+        }
         "get" => {
             let tail = arg(2)?.as_str()?;
             return Some(match eval(1)? {
@@ -349,19 +371,11 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
             ))
         }
         "with" => set_path(&*eval(1)?, arg(2)?.as_str()?, eval(3)?.into_owned()),
-        "count" => {
-            let path = ctx.resolve(arg(1)?)?;
-            let depth = usize::try_from(arg(2)?.as_u64()?).ok()?;
-            let len = ctx.get(&path).as_array().map_or(0, Vec::len);
-            let mut count = 0_u64;
-            for index in 0..len {
-                let item = ctx.with_item(depth, join(&path, &index.to_string()));
-                if truthy(&*evaluate(arg(3)?, &item)?) {
-                    count += 1;
-                }
-            }
-            Value::from(count)
-        }
+        "count" | "sum_of" | "max_of" | "min_of" => fold(op, parts, ctx)?,
+        "floor" => number(f(&*eval(1)?)?.floor()),
+        "ceil" => number(f(&*eval(1)?)?.ceil()),
+        "round" => number(js_round(f(&*eval(1)?)?)),
+        "log10" => number(f(&*eval(1)?)?.log10()),
         "trim" => Value::from(s(&*eval(1)?)?.trim()),
         "lower" => Value::from(s(&*eval(1)?)?.to_lowercase()),
         "upper" => Value::from(s(&*eval(1)?)?.to_uppercase()),
@@ -373,12 +387,57 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "contains" => Value::Bool(s(&*eval(1)?)?.contains(s(&*eval(2)?)?)),
         "starts" => Value::Bool(s(&*eval(1)?)?.starts_with(s(&*eval(2)?)?)),
         "gt" | "ge" | "lt" | "le" => compare(op, &*eval(1)?, &*eval(2)?)?,
-        "add" | "sub" | "mul" | "div" | "rem" | "min" | "max" => {
+        "add" | "sub" | "mul" | "div" | "rem" | "min" | "max" | "pow" => {
             arithmetic(op, f(&*eval(1)?)?, f(&*eval(2)?)?)
         }
         _ => return None,
     };
     Some(Cow::Owned(value))
+}
+
+/// `["let",value,depth,body]`: `body` with `["var",depth]` standing for `value`.
+fn let_in<'a>(parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
+    let depth = usize::try_from(parts.get(2)?.as_u64()?).ok()?;
+    let mut vars: Vec<Value> = ctx.vars.iter().take(depth).cloned().collect();
+    vars.push(evaluate(parts.get(1)?, ctx)?.into_owned());
+    let inner = Ctx {
+        root: ctx.root,
+        scope: ctx.scope.clone(),
+        copy: ctx.copy,
+        vars,
+    };
+    Some(evaluate(parts.get(3)?, &inner)?.into_owned())
+}
+
+/// `["count",place,depth,e]` and the other operations that evaluate `e`
+/// once per item of the list at `place`.
+fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
+    let path = ctx.resolve(parts.get(1)?)?;
+    let depth = usize::try_from(parts.get(2)?.as_u64()?).ok()?;
+    let each = parts.get(3)?;
+    let len = ctx.get(&path).as_array().map_or(0, Vec::len);
+    let mut count = 0_u64;
+    let mut folded: Option<f64> = None;
+    for index in 0..len {
+        let item = ctx.with_item(depth, join(&path, &index.to_string()));
+        let value = evaluate(each, &item)?;
+        if op == "count" {
+            count += u64::from(truthy(&value));
+            continue;
+        }
+        let value = f(&value)?;
+        folded = Some(match (op, folded) {
+            (_, None) => value,
+            ("sum_of", Some(sum)) => sum + value,
+            ("max_of", Some(max)) => max.max(value),
+            (_, Some(min)) => min.min(value),
+        });
+    }
+    Some(match (op, folded) {
+        ("count", _) => Value::from(count),
+        ("sum_of", None) => Value::from(0),
+        (_, folded) => folded.map_or(Value::Null, number),
+    })
 }
 
 /// `a < b` and friends: strings in code point order, anything else as numbers.
@@ -403,6 +462,7 @@ fn arithmetic(op: &str, a: f64, b: f64) -> Value {
         "div" => a / b,
         "rem" => a % b,
         "min" => a.min(b),
+        "pow" => a.powf(b),
         _ => a.max(b),
     })
 }
@@ -411,7 +471,7 @@ fn arithmetic(op: &str, a: f64, b: f64) -> Value {
 mod tests {
     use serde_json::json;
 
-    use super::{Ctx, evaluate, format_number, js_fixed, js_json, js_string};
+    use super::{Ctx, evaluate, format_number, js_fixed, js_json, js_round, js_string};
 
     fn eval(ast: &serde_json::Value, root: &serde_json::Value) -> serde_json::Value {
         evaluate(
@@ -420,6 +480,7 @@ mod tests {
                 root,
                 scope: Vec::new(),
                 copy: false,
+                vars: Vec::new(),
             },
         )
         .expect("evaluates")
@@ -463,6 +524,43 @@ mod tests {
             ),
             json!(2)
         );
+    }
+
+    #[test]
+    fn names_a_value_once_for_its_body() {
+        let root = json!({ "rows": [{ "v": 3 }, { "v": 7 }] });
+        let best = json!(["max_of", "rows", 0, ["item", 0, "v"]]);
+        let doubled = json!(["let", best, 0, ["add", ["var", 0], ["var", 0]]]);
+        assert_eq!(eval(&doubled, &root), json!(14));
+        let nested = json!([
+            "let",
+            ["lit", 2],
+            0,
+            ["let", ["lit", 5], 1, ["sub", ["var", 1], ["var", 0]]]
+        ]);
+        assert_eq!(eval(&nested, &root), json!(3));
+    }
+
+    #[test]
+    fn rounds_as_math_round_does() {
+        assert_eq!(js_round(2.5), 3.0);
+        assert_eq!(js_round(-2.5), -2.0);
+        assert_eq!(js_round(-2.6), -3.0);
+        assert_eq!(js_round(0.499_999_999_999_999_94), 0.0);
+    }
+
+    #[test]
+    fn folds_a_list_into_a_sum_a_largest_and_a_smallest() {
+        let root = json!({ "rows": [{ "v": 3 }, { "v": -1.5 }, { "v": 7 }], "none": [] });
+        let fold = |op: &str, list: &str| eval(&json!([op, list, 0, ["item", 0, "v"]]), &root);
+        assert_eq!(fold("sum_of", "rows"), json!(8.5));
+        assert_eq!(fold("max_of", "rows"), json!(7));
+        assert_eq!(fold("min_of", "rows"), json!(-1.5));
+        assert_eq!(fold("sum_of", "none"), json!(0));
+        assert_eq!(fold("max_of", "none"), json!(null));
+        assert_eq!(eval(&json!(["floor", ["lit", -2.5]]), &root), json!(-3));
+        assert_eq!(eval(&json!(["ceil", ["lit", 2.1]]), &root), json!(3));
+        assert_eq!(eval(&json!(["round", ["lit", 2.5]]), &root), json!(3));
     }
 
     #[test]

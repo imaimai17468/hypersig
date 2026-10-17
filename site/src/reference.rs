@@ -920,6 +920,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "`matches` が真になる項目の数",
                             },
                         ),
+                        (
+                            "sum_of",
+                            "struct.Sig.html#method.sum_of",
+                            L {
+                                en: "The sum of `value` over the items, 0 for an empty list.",
+                                ja: "各項目の `value` の合計。空のリストでは 0",
+                            },
+                        ),
+                        (
+                            "max_of",
+                            "struct.Sig.html#method.max_of",
+                            L {
+                                en: "The largest `value` over the items, or `None` for an empty list.",
+                                ja: "各項目の `value` のうち最大のもの。空のリストでは `None`",
+                            },
+                        ),
+                        (
+                            "min_of",
+                            "struct.Sig.html#method.min_of",
+                            L {
+                                en: "The smallest `value` over the items, or `None` for an empty list.",
+                                ja: "各項目の `value` のうち最小のもの。空のリストでは `None`",
+                            },
+                        ),
                     ],
                 },
                 Section {
@@ -1027,6 +1051,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A copy of this struct with `field` replaced by `value`.",
                                 ja: "この構造体の `field` を `value` に置き換えた複製",
+                            },
+                        ),
+                        (
+                            "let_in",
+                            "struct.Expr.html#method.let_in",
+                            L {
+                                en: "The expression `body` builds from this value, which is evaluated once however often `body` uses it.",
+                                ja: "この値から `body` が作る式。`body` が何度使っても、値の評価は 1 回で済みます。",
                             },
                         ),
                     ],
@@ -1141,6 +1173,46 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "This number as text with `digits` digits after the point.",
                                 ja: "この数を、小数点以下 `digits` 桁のテキストにしたもの",
+                            },
+                        ),
+                        (
+                            "floor",
+                            "struct.Expr.html#method.floor",
+                            L {
+                                en: "The largest whole number at or below this one.",
+                                ja: "この数以下で最大の整数",
+                            },
+                        ),
+                        (
+                            "ceil",
+                            "struct.Expr.html#method.ceil",
+                            L {
+                                en: "The smallest whole number at or above this one.",
+                                ja: "この数以上で最小の整数",
+                            },
+                        ),
+                        (
+                            "round",
+                            "struct.Expr.html#method.round",
+                            L {
+                                en: "The nearest whole number, with a halfway value rounded up.",
+                                ja: "最も近い整数。ちょうど半分の値は大きいほうに丸めます。",
+                            },
+                        ),
+                        (
+                            "log10",
+                            "struct.Expr.html#method.log10",
+                            L {
+                                en: "The base 10 logarithm of this number.",
+                                ja: "この数の常用対数",
+                            },
+                        ),
+                        (
+                            "pow",
+                            "struct.Expr.html#method.pow",
+                            L {
+                                en: "This number raised to the power `exponent`.",
+                                ja: "この数の `exponent` 乗",
                             },
                         ),
                         (

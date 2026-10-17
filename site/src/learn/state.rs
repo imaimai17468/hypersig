@@ -143,7 +143,7 @@ pub fn expressions(site: Site) -> Part {
                 en: &[
                     &[
                         "`i32` and `f64`",
-                        "`+`, `-`, `*`, `%`, `min`, `max`, `to_fixed`, and `/` on `f64`. `to_f64` turns an `i32` into an `f64`, and `format` writes a number in a `NumberFormat`, with grouped digits and affixes.",
+                        "`+`, `-`, `*`, `%`, `min`, `max`, and `to_fixed`. `f64` adds `/`, `floor`, `ceil`, `round`, `log10`, and `pow`. `to_f64` turns an `i32` into an `f64`, and `format` writes a number in a `NumberFormat`, with grouped digits and affixes.",
                     ],
                     &[
                         "`String`",
@@ -160,13 +160,13 @@ pub fn expressions(site: Site) -> Part {
                     ],
                     &[
                         "Structs",
-                        "`at` for a field, `with` for a copy with one field replaced",
+                        "`at` for a field, `with` for a copy with one field replaced. `let_in` names any value once for the expression built from it.",
                     ],
                 ],
                 ja: &[
                     &[
                         "`i32` と `f64`",
-                        "`+`、`-`、`*`、`%`、`min`、`max`、`to_fixed`、`f64` の `/`。`to_f64` は `i32` を `f64` に変えます。`format` は数を `NumberFormat` に従い、桁を区切って前後に文字を付けたテキストにします。",
+                        "`+`、`-`、`*`、`%`、`min`、`max`、`to_fixed`。`f64` では `/`、`floor`、`ceil`、`round`、`log10`、`pow` も使えます。`to_f64` は `i32` を `f64` に変えます。`format` は数を `NumberFormat` に従い、桁を区切って前後に文字を付けたテキストにします。",
                     ],
                     &[
                         "`String`",
@@ -183,7 +183,7 @@ pub fn expressions(site: Site) -> Part {
                     ],
                     &[
                         "構造体",
-                        "フィールドを読む `at`、1 つのフィールドを置き換えた複製を作る `with`",
+                        "フィールドを読む `at`、1 つのフィールドを置き換えた複製を作る `with`。`let_in` はどの値にも使え、値に一度だけ名前を付けて、それを使う式を作ります。",
                     ],
                 ],
             },
@@ -303,7 +303,10 @@ pub fn lists(site: Site) -> Part {
                         "Statements",
                         "`push`, `extend`, `remove_at`, `clear`, `retain`, `swap`, `sort_by`, `set_all`, `update_where`",
                     ],
-                    &["Expressions", "`len`, `is_empty`, `nth`, `count`"],
+                    &[
+                        "Expressions",
+                        "`len`, `is_empty`, `nth`, `count`, `sum_of`, `max_of`, `min_of`",
+                    ],
                     &[
                         "On one item",
                         "`item.remove()`, and `set` on `item.at(field)`",
@@ -314,7 +317,10 @@ pub fn lists(site: Site) -> Part {
                         "文",
                         "`push`、`extend`、`remove_at`、`clear`、`retain`、`swap`、`sort_by`、`set_all`、`update_where`",
                     ],
-                    &["式", "`len`、`is_empty`、`nth`、`count`"],
+                    &[
+                        "式",
+                        "`len`、`is_empty`、`nth`、`count`、`sum_of`、`max_of`、`min_of`",
+                    ],
                     &["1 つの項目に", "`item.remove()`、`item.at(field)` の `set`"],
                 ],
             },

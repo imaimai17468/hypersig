@@ -8,7 +8,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use crate::expr::{Comparable, Expr, IntoExpr, Stmt};
+use crate::expr::{Comparable, Expr, IntoExpr, Number, Stmt};
 use crate::patch::SignalPatch;
 
 /// A struct whose fields are signals.
@@ -291,6 +291,42 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
         Expr::from_json(json!(["count", self.path.place_json(), depth, predicate]))
     }
 
+    /// The sum of `value` over the items, 0 for an empty list.
+    #[must_use]
+    pub fn sum_of<U: Number, E: IntoExpr<S, U>>(
+        self,
+        value: impl FnOnce(Item<S, T>) -> E,
+    ) -> Expr<S, U> {
+        self.aggregate("sum_of", value)
+    }
+
+    /// The largest `value` over the items, or `None` for an empty list.
+    #[must_use]
+    pub fn max_of<U: Number, E: IntoExpr<S, U>>(
+        self,
+        value: impl FnOnce(Item<S, T>) -> E,
+    ) -> Expr<S, Option<U>> {
+        self.aggregate("max_of", value)
+    }
+
+    /// The smallest `value` over the items, or `None` for an empty list.
+    #[must_use]
+    pub fn min_of<U: Number, E: IntoExpr<S, U>>(
+        self,
+        value: impl FnOnce(Item<S, T>) -> E,
+    ) -> Expr<S, Option<U>> {
+        self.aggregate("min_of", value)
+    }
+
+    fn aggregate<U, E: IntoExpr<S, U>, V>(
+        self,
+        op: &str,
+        value: impl FnOnce(Item<S, T>) -> E,
+    ) -> Expr<S, V> {
+        let (depth, value) = self.scoped(value);
+        Expr::from_json(json!([op, self.path.place_json(), depth, value]))
+    }
+
     /// A statement that sets `field` to `value` on every item.
     #[must_use]
     pub fn set_all<U>(self, field: Sig<T, U>, value: impl IntoExpr<S, U>) -> Stmt<S> {
@@ -401,6 +437,12 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
     }
 
     fn predicate<P: IntoExpr<S, bool>>(self, build: impl FnOnce(Item<S, T>) -> P) -> (u8, Value) {
+        self.scoped(build)
+    }
+
+    /// The depth of a new item scope over this list, and the expression
+    /// `build` makes from its item.
+    fn scoped<U, E: IntoExpr<S, U>>(self, build: impl FnOnce(Item<S, T>) -> E) -> (u8, Value) {
         in_item_scope(|depth| {
             let item = Item::new(self.path, depth);
             (depth, build(item).into_expr().into_json())

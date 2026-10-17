@@ -50,6 +50,29 @@ describe("evaluate", () => {
     expect(evaluate(["format", ["lit", 2e21], 0, ",", ".", "", ""], ctx)).toBe("2e+21");
   });
 
+  it("names a value once for its body", () => {
+    const rows = context({ rows: [{ v: 3 }, { v: 7 }] });
+    const best = ["max_of", "rows", 0, ["item", 0, "v"]];
+    expect(evaluate(["let", best, 0, ["add", ["var", 0], ["var", 0]]], rows)).toBe(14);
+    expect(evaluate(["let", ["lit", 2], 0, ["let", ["lit", 5], 1, ["sub", ["var", 1], ["var", 0]]]], rows)).toBe(3);
+  });
+
+  it("folds a list and rounds as ssr.rs does", () => {
+    const rows = context({ rows: [{ v: 3 }, { v: -1.5 }, { v: 7 }], none: [] });
+    const fold = (op: string, list: string) => evaluate([op, list, 0, ["item", 0, "v"]], rows);
+    expect(fold("sum_of", "rows")).toBe(8.5);
+    expect(fold("max_of", "rows")).toBe(7);
+    expect(fold("min_of", "rows")).toBe(-1.5);
+    expect(fold("sum_of", "none")).toBe(0);
+    expect(fold("max_of", "none")).toBe(null);
+    expect(evaluate(["floor", ["lit", -2.5]], ctx)).toBe(-3);
+    expect(evaluate(["ceil", ["lit", 2.1]], ctx)).toBe(3);
+    expect(evaluate(["round", ["lit", 2.5]], ctx)).toBe(3);
+    expect(evaluate(["round", ["lit", -2.5]], ctx)).toBe(-2);
+    expect(evaluate(["pow", ["lit", 10], ["lit", 2]], ctx)).toBe(100);
+    expect(evaluate(["log10", ["lit", 1000]], ctx)).toBe(3);
+  });
+
   it("builds a tuple into an array, as serde writes one", () => {
     expect(evaluate(["tuple", ["sig", "count"], ["lit", "x"], ["not", ["lit", false]]], ctx)).toEqual([3, "x", true]);
   });
@@ -80,7 +103,7 @@ describe("evaluate", () => {
   });
 
   it("rejects an operation it does not know", () => {
-    expect(() => evaluate(["pow", ["lit", 2], ["lit", 3]], ctx)).toThrow(AstError);
+    expect(() => evaluate(["cube", ["lit", 2]], ctx)).toThrow(AstError);
   });
 });
 

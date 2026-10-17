@@ -739,6 +739,7 @@ describe("lists and conditions inside svg", () => {
     for (const template of document.querySelectorAll("#plot template")) expect(template).toBeInstanceOf(HTMLTemplateElement);
     expect(heights()).toEqual(["10", "20"]);
     expect(marks()).toEqual([2, 0]);
+    expect($("#extent").textContent).toBe("7 10 3 30");
     expect($$("#plot g > rect").every((rect) => rect.namespaceURI === "http://www.w3.org/2000/svg")).toBe(true);
 
     runtime.store.set("bars", [
@@ -748,6 +749,7 @@ describe("lists and conditions inside svg", () => {
     ]);
     await tick();
     expect(heights()).toEqual(["25", "10", "5"]);
+    expect($("#extent").textContent).toBe("8 10 2 40");
     expect(marks()).toEqual([1, 2, 0]);
     expect($$("#plot g line").map((line) => line.getAttribute("y1"))).toEqual(["3", "1", "2"]);
 
@@ -765,6 +767,7 @@ describe("lists and conditions inside svg", () => {
 
   it("adopts the items the server rendered", async () => {
     serve("plot_page");
+    expect($("#extent").textContent).toBe("7 10 3 30");
     const first = $$("#plot > g")[0];
     const runtime = start();
     await tick();

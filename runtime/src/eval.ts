@@ -23,6 +23,8 @@ export interface Context {
   readonly scope: readonly Slot[];
   /** The element whose attribute is being evaluated, for statements that act on the DOM. */
   readonly origin?: Element;
+  /** The values `["let",...]` names, by depth. */
+  readonly vars?: readonly unknown[];
 }
 
 /** The side effects a statement can ask the runtime for. */
@@ -47,6 +49,7 @@ const binary: Record<string, (a: never, b: never) => unknown> = {
   rem: (a: number, b: number) => a % b,
   min: (a: number, b: number) => Math.min(a, b),
   max: (a: number, b: number) => Math.max(a, b),
+  pow: (a: number, b: number) => a ** b,
   concat: (a: string, b: string) => a + b,
   contains: (a: string, b: string) => a.includes(b),
   starts: (a: string, b: string) => a.startsWith(b),
@@ -98,6 +101,10 @@ const unary: Record<string, (a: never) => unknown> = {
   upper: (a: string) => a.toUpperCase(),
   chars: (a: string) => [...a].length,
   len: (a: unknown) => (Array.isArray(a) ? a.length : 0),
+  floor: (a: number) => Math.floor(a),
+  ceil: (a: number) => Math.ceil(a),
+  round: (a: number) => Math.round(a),
+  log10: (a: number) => Math.log10(a),
 };
 
 /** Whether `op` names an operation that `evaluate` builds through `unary` or `binary`. */
@@ -167,6 +174,23 @@ function testItems(ctx: Context, depth: number, [path, items, read]: [string, re
   });
 }
 
+/** The value of `each` for each item of the list at `path`, with one context reused for every item. */
+function mapItems(ctx: Context, depth: number, [path, items, read]: [string, readonly unknown[], string], each: Compiled): unknown[] {
+  const [slot, at] = walker(path, read);
+  const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
+  return items.map((_, index) => {
+    at(index);
+    return each(itemCtx);
+  });
+}
+
+/** How `sum_of`, `max_of`, and `min_of` fold the values of a list, as `fold` in `ssr.rs` does. */
+const folds: Record<string, (values: number[]) => number | null> = {
+  sum_of: (values) => values.reduce((sum, value) => sum + value, 0),
+  max_of: (values) => (values.length === 0 ? null : values.reduce((max, value) => Math.max(max, value))),
+  min_of: (values) => (values.length === 0 ? null : values.reduce((min, value) => Math.min(min, value))),
+};
+
 export type Compiled = (ctx: Context) => unknown;
 
 const compiled = new WeakMap<Ast, Compiled>();
@@ -208,6 +232,14 @@ function build(ast: Ast): Compiled {
         ctx.store.getPosition(found.read ?? found.path);
         return Number(found.path.slice(found.path.lastIndexOf(".") + 1));
       };
+    }
+    case "let": {
+      const [value, depth, body] = [compile(rest[0]), rest[1] as number, compile(rest[2])];
+      return (ctx) => body({ ...ctx, vars: [...(ctx.vars ?? []).slice(0, depth), value(ctx)] });
+    }
+    case "var": {
+      const depth = rest[0] as number;
+      return (ctx) => ctx.vars?.[depth] ?? null;
     }
     case "lit": {
       const value = rest[0];
@@ -264,6 +296,15 @@ function build(ast: Ast): Compiled {
       return (ctx) => {
         const found = list(ctx, place);
         return ctx.store.fold(found[2], () => testItems(ctx, depth, found, test)).filter(Boolean).length;
+      };
+    }
+    case "sum_of":
+    case "max_of":
+    case "min_of": {
+      const [place, depth, each, combine] = [rest[0], rest[1] as number, compile(rest[2]), folds[op]!];
+      return (ctx) => {
+        const found = list(ctx, place);
+        return combine(ctx.store.fold(found[2], () => mapItems(ctx, depth, found, each)) as number[]);
       };
     }
     default: {

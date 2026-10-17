@@ -513,8 +513,29 @@ struct Plot {
 /// A list, a nested list, a condition, and a `show` inside an `<svg>`,
 /// where the parser reads `<template>` as an SVG element.
 fn plot() -> (El<Plot>, Plot) {
+    let heights = Plot::bars();
+    let tallest = heights
+        .max_of(|bar| bar.at(Bar::height()))
+        .unwrap_or(0)
+        .to_f64();
+    let shortest = heights
+        .min_of(|bar| bar.at(Bar::height()))
+        .unwrap_or(0)
+        .to_f64();
+    let extent = tallest.let_in(|top| {
+        (top.clone() / 3.0)
+            .round()
+            .to_text()
+            .concat(" ")
+            .concat(Expr::lit(&10.0).pow(top.log10().floor()).to_text())
+            .concat(" ")
+            .concat((shortest / 4.0).ceil().to_text())
+            .concat(" ")
+            .concat(heights.sum_of(|bar| bar.at(Bar::height())).to_text())
+    });
     let el = main()
         .child(button().id("mark").on_click(Plot::marked().toggle()))
+        .child(span().id("extent").bind_text(extent))
         .child(
             el("svg")
                 .id("plot")

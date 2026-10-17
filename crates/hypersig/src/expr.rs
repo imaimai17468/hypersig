@@ -20,11 +20,13 @@
 //! | `(a, b)`, `(a, b, c)` | `["tuple",a,b]`, `["tuple",a,b,c]` |
 //! | `a.to_text()`, `a.to_fixed(n)` | `["str",a]`, `["fixed",a,n]` |
 //! | `a.format(&f)` | `["format",a,digits,group,point,prefix,suffix]` |
+//! | `a.floor()`, `ceil`, `round`, `log10`, `a.pow(b)` | `["floor",a]`, `["ceil",a]`, `["round",a]`, `["log10",a]`, `["pow",a,b]` |
 //! | `a.concat(b)`, `trim`, `to_lowercase`, `to_uppercase` | `["concat",a,b]`, `["trim",a]`, `["lower",a]`, `["upper",a]` |
 //! | `a.contains(b)`, `a.starts_with(b)`, `a.char_count()` | `["contains",a,b]`, `["starts",a,b]`, `["chars",a]` |
 //! | `list.len()`, `list.nth(i)` | `["len",a]`, `["nth",a,i]` |
 //! | `Expr::random_below(n)`, `Expr::now()` | `["random",n]`, `["now"]` |
 //! | `list.count(\|item\| p)` | `["count",place,depth,p]` |
+//! | `list.sum_of(\|item\| e)`, `max_of`, `min_of` | `["sum_of",place,depth,e]`, `["max_of",place,depth,e]`, `["min_of",place,depth,e]` |
 //! | `opt.unwrap_or(d)`, `a.some()` | `["or_else",a,d]`, `a` |
 //! | `rec.at(field)`, `rec.with(field, v)` | `["get",a,"path"]`, `["with",a,"path",v]` |
 //! | `sig.set(e)` | `["set",place,e]` |
@@ -42,10 +44,12 @@
 //! | `node_ref.focus()` | `["dom","focus",name]` |
 //! | `link.navigate()` | `["navigate",url]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |
+//! | `a.let_in(\|v\| e)`, and `v` inside `e` | `["let",a,depth,e]`, `["var",depth]` |
 //!
 //! A place is `"dotted.path"` for a page signal and `["item",depth,"path"]`
 //! for a field of a list item.
 
+use std::cell::Cell;
 use std::fmt;
 use std::marker::PhantomData;
 use std::ops;
@@ -123,6 +127,36 @@ impl<S, T> Expr<S, T> {
         Expr::from_json(json!(["get", self.ast, field.raw_path().dotted()]))
     }
 
+    /// The expression `body` builds from this value, which is evaluated once however often `body` uses it.
+    ///
+    /// `body` receives an expression that stands for the value. Each use of
+    /// a plain expression copies it into the attribute and evaluates it
+    /// again, so a value that costs a pass over a list, such as
+    /// [`Sig::max_of`], is better named once with `let_in`. The expression
+    /// `body` receives means nothing outside `body`, and the type system
+    /// does not stop one from being moved out.
+    ///
+    /// ```
+    /// use hypersig::{Expr, Signals, if_else};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Scores {
+    ///     scores: Vec<i32>,
+    /// }
+    ///
+    /// let best = Scores::scores().max_of(|score| score.value()).unwrap_or(0);
+    /// let _label: Expr<Scores, String> =
+    ///     best.let_in(|best| if_else(best.clone().gt(90), "top", best.to_text()));
+    /// ```
+    #[must_use]
+    pub fn let_in<U>(self, body: impl FnOnce(Expr<S, T>) -> Expr<S, U>) -> Expr<S, U> {
+        in_let_scope(|depth| {
+            let body = body(Expr::from_json(json!(["var", depth])));
+            Expr::from_json(json!(["let", self.ast, depth, body.ast]))
+        })
+    }
+
     pub(crate) fn into_json(self) -> Value {
         self.ast
     }
@@ -134,6 +168,29 @@ impl<S, T> Expr<S, T> {
     pub(crate) fn to_json(&self) -> String {
         self.ast.to_string()
     }
+}
+
+thread_local! {
+    static LET_DEPTH: Cell<u8> = const { Cell::new(0) };
+}
+
+/// Runs `body` with the depth of a new `let_in` scope, one deeper than the
+/// enclosing one, so nested names do not collide.
+fn in_let_scope<R>(body: impl FnOnce(u8) -> R) -> R {
+    struct Restore(u8);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            LET_DEPTH.set(self.0);
+        }
+    }
+    let depth = LET_DEPTH.get();
+    let _restore = Restore(depth);
+    LET_DEPTH.set(
+        depth
+            .checked_add(1)
+            .expect("let_in scopes nest fewer than 256 deep"),
+    );
+    body(depth)
 }
 
 impl<S, T> Clone for Expr<S, T> {
@@ -361,6 +418,45 @@ macro_rules! operations {
         }
 
         impl<S $(, $r)?> $ty<S, f64 $(, $r)?> {
+            /// The largest whole number at or below this one.
+            #[must_use]
+            pub fn floor(self) -> Expr<S, f64> {
+                Expr::unary("floor", self.into_expr())
+            }
+
+            /// The smallest whole number at or above this one.
+            #[must_use]
+            pub fn ceil(self) -> Expr<S, f64> {
+                Expr::unary("ceil", self.into_expr())
+            }
+
+            /// The nearest whole number, with a halfway value rounded up.
+            ///
+            /// It is JavaScript's `Math.round`, so `-2.5` rounds to `-2`,
+            /// where Rust's `f64::round` gives `-3`.
+            #[must_use]
+            pub fn round(self) -> Expr<S, f64> {
+                Expr::unary("round", self.into_expr())
+            }
+
+            /// The base 10 logarithm of this number.
+            ///
+            /// The browser and the server each use their platform's math
+            /// library, which can differ in the last bit of the result.
+            #[must_use]
+            pub fn log10(self) -> Expr<S, f64> {
+                Expr::unary("log10", self.into_expr())
+            }
+
+            /// This number raised to the power `exponent`.
+            ///
+            /// The browser and the server each use their platform's math
+            /// library, which can differ in the last bit of the result.
+            #[must_use]
+            pub fn pow(self, exponent: impl IntoExpr<S, f64>) -> Expr<S, f64> {
+                Expr::binary("pow", self.into_expr(), exponent.into_expr())
+            }
+
             /// This number as text with `digits` digits after the point.
             ///
             /// The runtime uses `Number.prototype.toFixed`, which rounds a
