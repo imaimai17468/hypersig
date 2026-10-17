@@ -8,14 +8,11 @@
 use std::sync::{Arc, Mutex};
 
 use axum::Router;
-use axum::extract::State;
-use axum::response::Html;
-use axum::routing::get;
 use hypersig::html::{
     El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
     ul, when,
 };
-use hypersig::{Action, Expr, NodeRef, Page, Patches, RouterExt, Signals, Stmt, if_else};
+use hypersig::{Action, Expr, NodeRef, Page, Patches, Route, RouterExt, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
@@ -44,6 +41,7 @@ struct TodoMvc {
     completed: i32,
 }
 
+const INDEX: Route = Route::new("/");
 const SAVE: Action<TodoMvc, Vec<Todo>> = Action::post("/save");
 const EDIT: NodeRef<TodoMvc> = NodeRef::new("edit");
 
@@ -243,9 +241,9 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
         )
 }
 
-async fn index(State(state): State<AppState>) -> Html<String> {
+async fn index(state: AppState, (): ()) -> Page<TodoMvc> {
     let todos = state.todos.lock().expect("todo lock poisoned").clone();
-    Html(page(todos).render())
+    page(todos)
 }
 
 async fn save(state: AppState, todos: Vec<Todo>) -> Patches<TodoMvc> {
@@ -471,7 +469,7 @@ mod styles {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(SAVE, save)
         .with_state(AppState::default());

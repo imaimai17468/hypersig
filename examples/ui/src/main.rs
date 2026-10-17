@@ -5,14 +5,12 @@
 //! Run with `cargo run -p example-ui` and open <http://localhost:3005>.
 
 use axum::Router;
-use axum::response::Html;
-use axum::routing::get;
 use hypersig::html::{self, El, Orientation, div, form, h1, h2, header, p, section, span};
 use hypersig::style::Media;
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
-use hypersig::{Action, Page, Patches, RouterExt, Signals, if_else};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Signals, if_else};
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Combobox,
     ComboboxState, Dialog, InputKind, Level, Listbox, Menu, MenuItem, Slider, Tabs, TextField,
@@ -89,6 +87,7 @@ struct Gallery {
     next_toast: i32,
 }
 
+const INDEX: Route = Route::new("/");
 const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
 const EDIT: Dialog<Gallery> = Dialog::new("edit-profile");
 const DELETE: Dialog<Gallery> = Dialog::new("delete-project");
@@ -519,8 +518,8 @@ fn toasts() -> El<Gallery> {
         .child(Toaster::new(toasts))
 }
 
-async fn index() -> Html<String> {
-    let page = Page::new(
+async fn index((): (), (): ()) -> Page<Gallery> {
+    Page::new(
         "hypersig_ui",
         Gallery {
             scheme: Scheme::System,
@@ -589,14 +588,13 @@ async fn index() -> Html<String> {
                     .child(overlays())
                     .child(feedback()),
             ),
-    );
-    Html(page.render())
+    )
 }
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(SAVE, save);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3005".to_owned());

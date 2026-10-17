@@ -33,3 +33,22 @@ test("two tabs see each other's changes over the update stream", async ({ page: 
   await expect(items(a)).toHaveCount(1);
   expect(problems).toEqual([]);
 });
+
+test("a todo's title links to its own page, and an unknown id gets 404", async ({ page, request }) => {
+  await page.goto(url("todo"));
+  const draft = page.getByPlaceholder("What needs doing?");
+  await draft.fill("read the spec");
+  await draft.press("Enter");
+  await page.locator("#todo-list li").getByRole("link", { name: "read the spec" }).click();
+  await expect(page).toHaveURL(/\/todos\/\d+$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("read the spec");
+  await expect(page.locator("#status-open")).toBeVisible();
+  await expect(page.locator("#status")).toBeHidden();
+
+  await page.getByRole("link", { name: "All todos" }).click();
+  await expect(page).toHaveURL(url("todo"));
+  await expect(page.locator("#todo-list li").getByRole("link", { name: "read the spec" })).toBeVisible();
+
+  expect((await request.get(`${url("todo")}todos/999999`)).status()).toBe(404);
+  expect((await request.get(`${url("todo")}todos/seven`)).status()).toBe(404);
+});

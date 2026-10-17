@@ -6,10 +6,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 
 use axum::Router;
-use axum::response::Html;
-use axum::routing::get;
 use hypersig::html::{Stylesheet, button, div, h1, input, label, p, span};
-use hypersig::{Action, Page, Patches, RouterExt, Signals};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -19,6 +17,7 @@ struct Counter {
     status: String,
 }
 
+const INDEX: Route = Route::new("/");
 const SAVE: Action<Counter, (i32, String)> = Action::post("/save");
 const RESET: Action<Counter> = Action::post("/reset");
 
@@ -50,7 +49,7 @@ input { font-size: 1rem; padding: .3rem; flex: 1; }
 ",
 );
 
-async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> Html<String> {
+async fn index(state: AppState, (): ()) -> Page<Counter> {
     let count = Counter::count();
     let note = Counter::note();
     let initial = Counter {
@@ -58,7 +57,7 @@ async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> H
         note: String::new(),
         status: String::new(),
     };
-    let page = Page::new("hypersig counter", initial).style(STYLE).child(
+    Page::new("hypersig counter", initial).style(STYLE).child(
         div()
             .child(h1().text("Counter"))
             .child(
@@ -99,8 +98,7 @@ async fn index(axum::extract::State(state): axum::extract::State<AppState>) -> H
                     ),
             )
             .child(p().class(class::STATUS).bind_text(Counter::status())),
-    );
-    Html(page.render())
+    )
 }
 
 async fn save(state: AppState, (count, note): (i32, String)) -> Patches<Counter> {
@@ -126,7 +124,7 @@ async fn reset(state: AppState, (): ()) -> Patches<Counter> {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(SAVE, save)
         .action(RESET, reset)

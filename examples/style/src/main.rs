@@ -5,10 +5,8 @@
 //! Run with `cargo run -p example-style` and open <http://localhost:3004>.
 
 use axum::Router;
-use axum::response::Html;
-use axum::routing::get;
 use hypersig::html::{El, button, div, h1, h2, input, label, p, section, span};
-use hypersig::{Action, Fragment, Page, Patches, RouterExt, Signals, if_else};
+use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, if_else};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
@@ -30,6 +28,7 @@ struct Gallery {
     tone: Tone,
 }
 
+const INDEX: Route = Route::new("/");
 const MORE: Action<Gallery> = Action::post("/more");
 
 /// Cards the server sends on request. Their widths use the `md` breakpoint,
@@ -146,8 +145,8 @@ fn motion_section() -> El<Gallery> {
         .child(div().id("more"))
 }
 
-async fn index() -> Html<String> {
-    let page = Page::new(
+async fn index((): (), (): ()) -> Page<Gallery> {
+    Page::new(
         "hypersig style",
         Gallery {
             dark: false,
@@ -167,8 +166,7 @@ async fn index() -> Html<String> {
             .child(recipe_section())
             .child(grid_section())
             .child(motion_section()),
-    );
-    Html(page.render())
+    )
 }
 
 async fn more((): (), (): ()) -> Patches<Gallery> {
@@ -382,7 +380,7 @@ mod look {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(MORE, more);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3004".to_owned());

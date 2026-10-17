@@ -1,16 +1,14 @@
-//! A shared todo list. Every open tab receives changes over a long-lived stream.
+//! A shared todo list. Every open tab receives changes over a long-lived stream,
+//! and each todo has a page of its own at `/todos/{id}`.
 //!
 //! Run with `cargo run -p example-todo` and open <http://localhost:3001> in two tabs.
 
 use std::sync::{Arc, Mutex};
 
 use axum::Router;
-use axum::extract::State;
-use axum::response::Html;
-use axum::routing::get;
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, button, div, form, h1, input, li, p, span, ul};
-use hypersig::{Action, Fragment, Page, Patches, RouterExt, Signals};
+use hypersig::html::{El, a, button, div, form, h1, input, li, p, span, ul};
+use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
@@ -21,9 +19,16 @@ struct TodoPage {
     remaining: i32,
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct TodoDetail {
+    done: bool,
+}
+
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 struct TodoId(u64);
 
+const INDEX: Route = Route::new("/");
+const TODO: Route<u64> = Route::new("/todos/{id}");
 const ADD: Action<TodoPage, String> = Action::post("/todos");
 const TOGGLE: Action<TodoPage, TodoId> = Action::post("/todos/toggle");
 const REMOVE: Action<TodoPage, TodoId> = Action::post("/todos/remove");
@@ -83,9 +88,11 @@ impl Fragment for TodoList {
     fn render(&self) -> El<TodoPage> {
         ul().css(styles::list())
             .children(self.items.iter().map(|todo| {
-                let title = span()
-                    .css(styles::title(todo.done))
-                    .text(todo.title.as_str());
+                let title = span().css(styles::title(todo.done)).child(
+                    a().css(styles::link())
+                        .href(TODO.link_with(&todo.id.0))
+                        .text(todo.title.as_str()),
+                );
                 li().id(format!("todo-{}", todo.id.0))
                     .css(styles::item())
                     .child(
@@ -170,18 +177,22 @@ mod styles {
             .background_color(Color::TRANSPARENT)
     }
 
+    pub fn link() -> Style {
+        Style::new().color(Color::CURRENT_COLOR)
+    }
+
     pub fn summary() -> Style {
         Style::new().color(Color::hex(0x0055_5555))
     }
 }
 
-async fn index(State(state): State<AppState>) -> Html<String> {
+async fn index(state: AppState, (): ()) -> Page<TodoPage> {
     let list = TodoList {
         items: state.snapshot(),
     };
     let draft = TodoPage::draft();
     let remaining = TodoPage::remaining();
-    let page = Page::new(
+    Page::new(
         "hypersig todo",
         TodoPage {
             draft: String::new(),
@@ -223,8 +234,25 @@ async fn index(State(state): State<AppState>) -> Html<String> {
                     .show(remaining.equals(0))
                     .text("All done."),
             ),
-    );
-    Html(page.render())
+    )
+}
+
+async fn todo(state: AppState, id: u64) -> Option<Page<TodoDetail>> {
+    let todo = state
+        .snapshot()
+        .into_iter()
+        .find(|todo| todo.id == TodoId(id))?;
+    let done = TodoDetail::done();
+    Some(
+        Page::new(todo.title.clone(), TodoDetail { done: todo.done }).child(
+            div()
+                .css(styles::page())
+                .child(h1().text(todo.title))
+                .child(p().id("status").show(done).text("Done."))
+                .child(p().id("status-open").show(!done).text("Still to do."))
+                .child(a().href(INDEX.link()).text("All todos")),
+        ),
+    )
 }
 
 async fn add(state: AppState, draft: String) -> Patches<TodoPage> {
@@ -279,7 +307,8 @@ async fn main() -> std::io::Result<()> {
         changed,
     };
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
+        .page(TODO, todo)
         .hypersig_runtime()
         .action(ADD, add)
         .action(TOGGLE, toggle)

@@ -6,13 +6,13 @@
 use std::time::Duration;
 
 use axum::Router;
-use axum::response::Html;
-use axum::routing::get;
 use hypersig::html::{
     El, Event, Key, Stylesheet, button, div, form, h1, h2, input, label, li, p, section, select,
     small, span, textarea, ul,
 };
-use hypersig::{Action, Fragment, NodeRef, Page, Patches, RouterExt, Sig, Signals, Stmt, if_else};
+use hypersig::{
+    Action, Fragment, NodeRef, Page, Patches, Route, RouterExt, Sig, Signals, Stmt, if_else,
+};
 use serde::{Deserialize, Serialize};
 
 /// State owned by one [`disclosure`]. Each placement gets its own copy.
@@ -74,6 +74,7 @@ struct Showcase {
     look: Look,
 }
 
+const INDEX: Route = Route::new("/");
 const SEARCH: Action<Showcase, String> = Action::post("/search");
 const ORDER: Action<Showcase, (i32, Size, bool)> = Action::post("/order");
 const SEARCH_FIELD: NodeRef<Showcase> = NodeRef::new("search");
@@ -489,7 +490,7 @@ mod look {
     }
 }
 
-async fn index() -> Html<String> {
+async fn index((): (), (): ()) -> Page<Showcase> {
     let signals = Showcase {
         shipping: Disclosure::default(),
         returns: Disclosure { open: true },
@@ -511,7 +512,7 @@ async fn index() -> Html<String> {
             tone: Tone::Calm,
         },
     };
-    let page = Page::new("hypersig showcase", signals)
+    Page::new("hypersig showcase", signals)
         .style(STYLE)
         .theme(look::theme())
         .child(h1().text("hypersig showcase"))
@@ -519,8 +520,7 @@ async fn index() -> Html<String> {
         .child(stopwatch())
         .child(search())
         .child(order_form())
-        .child(styles());
-    Html(page.render())
+        .child(styles())
 }
 
 async fn search_fruit((): (), query: String) -> Patches<Showcase> {
@@ -595,7 +595,7 @@ textarea { font: inherit; min-height: 3rem; }
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = Router::new()
-        .route("/", get(index))
+        .page(INDEX, index)
         .hypersig_runtime()
         .action(SEARCH, search_fruit)
         .action(ORDER, order);
