@@ -1131,8 +1131,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "to_f64",
                             "struct.Expr.html#method.to_f64",
                             L {
-                                en: "This integer as an `f64`, which holds every `i32` exactly.",
-                                ja: "この整数を、どの `i32` も正確に表せる `f64` にした値",
+                                en: "This number as an `f64`, which holds every `i32` exactly.",
+                                ja: "この数を、どの `i32` も正確に表せる `f64` にした値",
                             },
                         ),
                         (

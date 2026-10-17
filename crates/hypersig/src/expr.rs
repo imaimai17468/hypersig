@@ -320,10 +320,12 @@ macro_rules! operations {
             pub fn max(self, rhs: impl IntoExpr<S, T>) -> Expr<S, T> {
                 Expr::binary("max", self.into_expr(), rhs.into_expr())
             }
-        }
 
-        impl<S $(, $r)?> $ty<S, i32 $(, $r)?> {
-            /// This integer as an `f64`, which holds every `i32` exactly.
+            /// This number as an `f64`, which holds every `i32` exactly.
+            ///
+            /// The browser keeps both as a JavaScript number, so the value
+            /// is unchanged. Code generic over [`Number`] uses it to do
+            /// division, which only `f64` has.
             #[must_use]
             pub fn to_f64(self) -> Expr<S, f64> {
                 self.into_expr().retype()
