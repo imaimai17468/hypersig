@@ -7,5 +7,5 @@ error[E0599]: no method named `key` found for struct `El<S>` in the current scop
 help: there is a method `on_key` with a similar name, but with different arguments
   --> src/html.rs
    |
-   |     pub fn on_key(mut self, key: Key, stmt: impl IntoStmt<S>) -> Self {
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     pub fn on_key(mut self, shortcut: impl Into<Shortcut>, stmt: impl IntoStmt<S>) -> Self {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
