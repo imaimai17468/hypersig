@@ -57,6 +57,7 @@ snippets! {
     WrongRoute => "wrong_route.rs", "compile_fail,E0080";
     ChildRoutes => "child_routes.rs";
     Navigation => "navigation.rs";
+    History => "history.rs";
     Head => "head.rs";
     SearchParams => "search_params.rs";
     Styles => "styles.rs";

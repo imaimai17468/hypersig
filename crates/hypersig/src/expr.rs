@@ -49,6 +49,7 @@
 //! | `node_ref.focus()` | `["dom","focus",name]` |
 //! | `file_input.clear()` | `["clear-files",name]` |
 //! | `link.navigate()` | `["navigate",url]` |
+//! | `link.push_url()`, `link.replace_url()` | `["history","push",url]`, `["history","replace",url]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |
 //! | `a.let_in(\|v\| e)`, and `v` inside `e` | `["let",a,depth,e]`, `["var",depth]` |
 //!

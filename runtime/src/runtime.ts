@@ -255,6 +255,8 @@ export class Runtime implements Host {
   #patched = false;
   /** Whether the browser is loading another page, after which server events are not applied. */
   #leaving = false;
+  /** The path and query of the URL the page shows, which `history` changes without loading a page. */
+  #shown = location.pathname + location.search;
   /** The unfinished call sent with `latest`, by method and action path. */
   readonly #latest = new Map<string, AbortController>();
   /** The number of calls awaiting an answer, by the indicator signal they set. */
@@ -566,6 +568,30 @@ export class Runtime implements Host {
     location.assign(url);
   }
 
+  /**
+   * Shows `url` in the address bar without loading it, as a new history
+   * entry unless `replace`. A URL equal to the current one adds no entry.
+   */
+  history(url: string, replace: boolean): void {
+    if (this.#leaving) return;
+    const next = new URL(url, document.baseURI);
+    if (!replace && next.href === location.href) return;
+    if (replace) history.replaceState(null, "", next);
+    else history.pushState(null, "", next);
+    this.#shown = next.pathname + next.search;
+  }
+
+  /**
+   * Loads the page at the URL Back or Forward moved to, since the server
+   * renders a page from its URL. A move between two entries of one path and
+   * query, such as to a `#fragment`, keeps the page.
+   */
+  popped(): void {
+    if (this.#leaving || location.pathname + location.search === this.#shown) return;
+    this.#leaving = true;
+    location.reload();
+  }
+
   /** Runs `action` once no call with the same key on `origin` has arrived for `ms`. */
   debounce(origin: Element | undefined, key: string, ms: number, action: () => void): void {
     const owner = origin ?? this.#root;
@@ -618,6 +644,11 @@ export class Runtime implements Host {
       case "hs-navigate":
         this.navigate((JSON.parse(event.data) as { url: string }).url);
         return;
+      case "hs-history": {
+        const { url, replace } = JSON.parse(event.data) as { url: string; replace: boolean };
+        this.history(url, replace);
+        return;
+      }
       default:
         console.warn(`hypersig: ignored server event "${event.event}"`);
     }

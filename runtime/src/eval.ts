@@ -52,6 +52,7 @@ export interface Host {
   dom(op: string, name: string, origin: Element | undefined): void;
   clearFiles(name: string, origin: Element | undefined): void;
   navigate(url: string): void;
+  history(url: string, replace: boolean): void;
   debounce(origin: Element | undefined, key: string, ms: number, action: () => void): void;
 }
 
@@ -465,6 +466,9 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       return;
     case "navigate":
       host.navigate(String(evaluate(rest[0], ctx)));
+      return;
+    case "history":
+      host.history(String(evaluate(rest[1], ctx)), rest[0] === "replace");
       return;
     case "debounce":
       host.debounce(ctx.origin, JSON.stringify(rest[1]), rest[0] as number, () => {

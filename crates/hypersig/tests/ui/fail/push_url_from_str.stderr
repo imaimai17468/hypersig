@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/push_url_from_str.rs:10:46
+   |
+10 |     let _ = Patches::<Fruit>::new().push_url("/fruit?q=app");
+   |                                     -------- ^^^^^^^^^^^^^^ expected `Url`, found `&str`
+   |                                     |
+   |                                     arguments to this method are incorrect
+   |
+note: method defined here
+  --> src/patch.rs
+   |
+   |     pub fn push_url(mut self, url: Url) -> Self {
+   |            ^^^^^^^^

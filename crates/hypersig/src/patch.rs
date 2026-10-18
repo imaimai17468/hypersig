@@ -8,6 +8,7 @@
 //! | `hs-signals` | `{"path": value, ...}`, merged into the signal store |
 //! | `hs-element` | `{"html": "...", "css": [[sort key, css], ...]}`, morphed into the element with the root's `id` |
 //! | `hs-navigate` | `{"url": "..."}`, the page the browser loads next |
+//! | `hs-history` | `{"url": "...", "replace": bool}`, the URL the address bar shows, without loading it |
 //!
 //! `css` is present when the fragment uses [`El::css`] or [`El::css_when`].
 //! It lists the rule buckets of [`Sheet::buckets`]. The runtime adds each to
@@ -113,6 +114,10 @@ pub(crate) enum PatchEvent {
         css: Vec<(String, String)>,
     },
     Navigate(Url),
+    History {
+        url: Url,
+        replace: bool,
+    },
 }
 
 impl PatchEvent {
@@ -121,6 +126,7 @@ impl PatchEvent {
             Self::Signals(_) => "hs-signals",
             Self::Element { .. } => "hs-element",
             Self::Navigate(_) => "hs-navigate",
+            Self::History { .. } => "hs-history",
         }
     }
 
@@ -130,6 +136,9 @@ impl PatchEvent {
             Self::Element { html, css } if css.is_empty() => json!({ "html": html }).to_string(),
             Self::Element { html, css } => json!({ "html": html, "css": css }).to_string(),
             Self::Navigate(url) => json!({ "url": url.as_str() }).to_string(),
+            Self::History { url, replace } => {
+                json!({ "url": url.as_str(), "replace": replace }).to_string()
+            }
         }
     }
 }
@@ -221,6 +230,65 @@ impl<S: Signals> Patches<S> {
     #[must_use]
     pub fn navigate(mut self, url: Url) -> Self {
         self.events.push(PatchEvent::Navigate(url));
+        self
+    }
+
+    /// Shows `url` in the address bar as a new history entry, without loading it.
+    ///
+    /// The patches after it in the batch are applied, so an action that
+    /// answers a change of filter can send the rows it found and the URL
+    /// that names them together. The visitor's Back and Forward buttons
+    /// move between the entries, and the browser then loads the page at the
+    /// entry's URL from the server. A URL equal to the current one adds no
+    /// entry.
+    ///
+    /// The type system does not check that `url` is an address of the page
+    /// the action patches. The URL of another page shows over this page's
+    /// content, and reloading it loads the other page.
+    ///
+    /// ```
+    /// use hypersig::{Patches, Route, Search, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Search, Serialize, Deserialize)]
+    /// struct Filter {
+    ///     q: String,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Fruit {
+    ///     matches: Vec<String>,
+    /// }
+    ///
+    /// # async fn fruit((): (), _: Filter) -> Option<hypersig::Page<Fruit>> { None }
+    /// hypersig::routes! {
+    ///     fn pages(Router<()>);
+    ///     const FRUIT: Route<(), Filter> = "/fruit" => fruit;
+    /// }
+    ///
+    /// let q = "app".to_owned();
+    /// let patches = Patches::from(Fruit::matches().patch(vec!["apple".to_owned()]))
+    ///     .push_url(FRUIT.url(Filter { q }));
+    /// assert!(patches.to_event_stream().ends_with(
+    ///     "event: hs-history\ndata: {\"replace\":false,\"url\":\"/fruit?q=app\"}\n\n"
+    /// ));
+    /// # let _ = pages;
+    /// ```
+    #[must_use]
+    pub fn push_url(mut self, url: Url) -> Self {
+        self.events.push(PatchEvent::History {
+            url,
+            replace: false,
+        });
+        self
+    }
+
+    /// Shows `url` in the address bar in place of the current URL, without loading it.
+    ///
+    /// It is [`Patches::push_url`] without the new history entry.
+    #[must_use]
+    pub fn replace_url(mut self, url: Url) -> Self {
+        self.events.push(PatchEvent::History { url, replace: true });
         self
     }
 

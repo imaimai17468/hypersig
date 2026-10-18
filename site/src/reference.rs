@@ -2012,6 +2012,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "push_url",
+                            "struct.Patches.html#method.push_url",
+                            L {
+                                en: "Shows `url` in the address bar as a new history entry, without loading it.",
+                                ja: "`url` を新しい履歴の項目としてアドレスバーに出します。ページは読み込みません。",
+                            },
+                        ),
+                        (
+                            "replace_url",
+                            "struct.Patches.html#method.replace_url",
+                            L {
+                                en: "Shows `url` in the address bar in place of the current URL, without loading it.",
+                                ja: "今の URL の代わりに `url` をアドレスバーに出します。ページは読み込みません。",
+                            },
+                        ),
+                        (
                             "to_event_stream",
                             "struct.Patches.html#method.to_event_stream",
                             L {
@@ -2223,6 +2239,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A statement that loads the linked page, as following the link would.",
                                 ja: "リンクをたどったときと同じように、リンク先のページを読み込む文です。",
+                            },
+                        ),
+                        (
+                            "Link::push_url",
+                            "struct.Link.html#method.push_url",
+                            L {
+                                en: "A statement that shows the linked URL in the address bar as a new history entry.",
+                                ja: "リンク先の URL を新しい履歴の項目としてアドレスバーに出す文です。",
+                            },
+                        ),
+                        (
+                            "Link::replace_url",
+                            "struct.Link.html#method.replace_url",
+                            L {
+                                en: "A statement that shows the linked URL in the address bar in place of the current one.",
+                                ja: "今の URL の代わりにリンク先の URL をアドレスバーに出す文です。",
                             },
                         ),
                         (

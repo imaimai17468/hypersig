@@ -734,6 +734,36 @@ describe("links", () => {
     expect(assign).toHaveBeenCalledWith(served[3]);
     assign.mockRestore();
   });
+
+  it("pushes and replaces the URL a link names, and the URL a server event names, as the server writes it", async () => {
+    history.replaceState(null, "", "/");
+    const runtime = mount("links");
+    const shown = () => location.pathname + location.search;
+    const length = history.length;
+    $("#push").click();
+    await tick();
+    expect(shown()).toBe($("#search-bound").getAttribute("href"));
+    expect(history.length).toBe(length + 1);
+    $("#replace").click();
+    await tick();
+    expect(shown()).toBe($("#file-bound").getAttribute("href"));
+    expect(history.length).toBe(length + 1);
+
+    const { stream } = JSON.parse(readFileSync(resolve(__dirname, "fixtures/history_patch.json"), "utf8")) as { stream: string };
+    const events = stream
+      .trim()
+      .split("\n\n")
+      .map((block) => {
+        const [event, data] = block.split("\n");
+        return { event: event!.slice("event: ".length), data: data!.slice("data: ".length) };
+      });
+    runtime.apply(events[0]!);
+    expect(shown()).toBe("/search?open=true&page=2&q=a%20b%26c%3Dd%23%C3%A9");
+    expect(history.length).toBe(length + 2);
+    runtime.apply(events[1]!);
+    expect(shown()).toBe("/teams/red%20team/members/1");
+    expect(history.length).toBe(length + 2);
+  });
 });
 
 describe("computed signals", () => {

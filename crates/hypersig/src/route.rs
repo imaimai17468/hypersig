@@ -515,11 +515,73 @@ impl<S> Link<S> {
     /// ```
     #[must_use]
     pub fn navigate(self) -> Stmt<S> {
-        let url = match self.0 {
+        Stmt::new(json!(["navigate", self.into_json()]))
+    }
+
+    /// A statement that shows the linked URL in the address bar as a new history entry.
+    ///
+    /// The page stays loaded, with its signals, its focus, and its scroll
+    /// position, so the statement goes with the ones that bring the page in
+    /// line with the URL, such as a call to the action that loads the rows a
+    /// search names. The visitor's Back and Forward buttons move between the
+    /// entries, and the browser then loads the page at the entry's URL from
+    /// the server. A URL equal to the current one adds no entry.
+    ///
+    /// The type system does not check that the linked route serves the page
+    /// the statement runs on. A link to another page's route shows that URL
+    /// over this page's content, and reloading it loads the other page.
+    ///
+    /// ```
+    /// use hypersig::html::input;
+    /// use hypersig::{Action, Expr, Route, Search, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Search, Serialize, Deserialize, Default)]
+    /// struct Filter {
+    ///     q: String,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Fruit {
+    ///     query: String,
+    /// }
+    ///
+    /// # async fn fruit((): (), _: Filter) -> Option<hypersig::Page<Fruit>> { None }
+    /// hypersig::routes! {
+    ///     fn pages(Router<()>);
+    ///     const FRUIT: Route<(), Filter> = "/fruit" => fruit;
+    /// }
+    ///
+    /// const SEARCH: Action<Fruit, String> = Action::post("/search");
+    ///
+    /// let query = Fruit::query();
+    /// let filter = Expr::lit(&Filter::default()).with(Filter::q(), query);
+    /// let _field = input()
+    ///     .bind(query)
+    ///     .on_input(SEARCH.call_with(query).then(FRUIT.link_with(filter).push_url()));
+    /// # let _ = pages;
+    /// ```
+    #[must_use]
+    pub fn push_url(self) -> Stmt<S> {
+        Stmt::new(json!(["history", "push", self.into_json()]))
+    }
+
+    /// A statement that shows the linked URL in the address bar in place of the current one.
+    ///
+    /// It is [`Link::push_url`] without the new history entry, for a change
+    /// the Back button should skip, such as each letter typed into a search
+    /// field.
+    #[must_use]
+    pub fn replace_url(self) -> Stmt<S> {
+        Stmt::new(json!(["history", "replace", self.into_json()]))
+    }
+
+    /// The URL as an expression: a literal for a fixed link.
+    fn into_json(self) -> Value {
+        match self.0 {
             LinkKind::Fixed(url) => json!(["lit", url]),
             LinkKind::Bound(expr) => expr.into_json(),
-        };
-        Stmt::new(json!(["navigate", url]))
+        }
     }
 
     /// The fixed URL, or the expression the browser evaluates into one.

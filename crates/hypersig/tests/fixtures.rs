@@ -862,7 +862,17 @@ fn links() -> (El<Roster>, Roster) {
             a().id("file-fixed")
                 .href(FILE.link_with(&Rest::new("docs/a b/ü?.md"))),
         )
-        .child(a().id("file-bound").href(FILE.link_with(Roster::file())));
+        .child(a().id("file-bound").href(FILE.link_with(Roster::file())))
+        .child(
+            button()
+                .id("push")
+                .on_click(FIND.link_with(Roster::filter()).push_url()),
+        )
+        .child(
+            button()
+                .id("replace")
+                .on_click(FILE.link_with(Roster::file()).replace_url()),
+        );
     let signals = Roster {
         members: vec![
             Member {
@@ -948,6 +958,19 @@ fn fixtures_match_the_builder() {
             "{}\n",
             serde_json::to_string_pretty(&json!({
                 "stream": Patches::<Styled>::new().element(&Panel).to_event_stream()
+            }))
+            .expect("fixture JSON")
+        ),
+    );
+    write_or_compare(
+        "history_patch",
+        &format!(
+            "{}\n",
+            serde_json::to_string_pretty(&json!({
+                "stream": Patches::<Roster>::new()
+                    .push_url(FIND.url(filter()))
+                    .replace_url(MEMBER.url(("red team".to_owned(), 1)))
+                    .to_event_stream()
             }))
             .expect("fixture JSON")
         ),

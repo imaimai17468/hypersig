@@ -1,0 +1,3 @@
+{
+  "stream": "event: hs-history\ndata: {\"replace\":false,\"url\":\"/search?open=true&page=2&q=a%20b%26c%3Dd%23%C3%A9\"}\n\nevent: hs-history\ndata: {\"replace\":true,\"url\":\"/teams/red%20team/members/1\"}\n\n"
+}

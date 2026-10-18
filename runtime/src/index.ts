@@ -4,7 +4,8 @@ import type { Values } from "./store.ts";
 function start(): void {
   const body = document.body;
   const initial = JSON.parse(body.getAttribute("data-hs-signals") ?? "{}") as Values;
-  new Runtime(body, initial);
+  const runtime = new Runtime(body, initial);
+  window.addEventListener("popstate", () => runtime.popped());
 }
 
 if (document.readyState === "loading") {

@@ -581,6 +581,39 @@ describe("Runtime", () => {
     assign.mockRestore();
   });
 
+  it("pushes and replaces the URL without loading it, and loads the page Back moves to", async () => {
+    history.replaceState(null, "", "/fruit");
+    const reload = vi.spyOn(location, "reload").mockImplementation(() => {});
+    const runtime = mount(`<button data-hs-on-click='["history","push",["lit","/fruit?q=fig"]]'>go</button>`, { n: 1 });
+    const length = history.length;
+    document.querySelector("button")!.click();
+    await tick();
+    expect(location.pathname + location.search).toBe("/fruit?q=fig");
+    expect(history.length).toBe(length + 1);
+
+    document.querySelector("button")!.click();
+    await tick();
+    expect(history.length).toBe(length + 1);
+
+    runtime.apply({ event: "hs-history", data: JSON.stringify({ url: "/fruit?q=kiwi", replace: true }) });
+    runtime.apply({ event: "hs-signals", data: JSON.stringify({ n: 2 }) });
+    expect(location.pathname + location.search).toBe("/fruit?q=kiwi");
+    expect(history.length).toBe(length + 1);
+    expect(runtime.store.get("n")).toBe(2);
+
+    // A move to a `#fragment` of the URL the page shows keeps the page.
+    history.replaceState(null, "", "/fruit?q=kiwi#top");
+    runtime.popped();
+    expect(reload).not.toHaveBeenCalled();
+
+    history.replaceState(null, "", "/fruit");
+    runtime.popped();
+    expect(reload).toHaveBeenCalledOnce();
+    runtime.apply({ event: "hs-signals", data: JSON.stringify({ n: 3 }) });
+    expect(runtime.store.get("n")).toBe(2);
+    reload.mockRestore();
+  });
+
   it("re-registers effects inside a patched fragment", async () => {
     const runtime = mount(`<div id="frag"></div>`, { on: false });
     runtime.apply({

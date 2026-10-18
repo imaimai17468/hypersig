@@ -286,6 +286,21 @@ pub fn pages(site: Site) -> Part {
                 },
             ),
             show(Snippet::Navigation),
+            heading(
+                site,
+                L {
+                    en: "Changing the URL without loading a page",
+                    ja: "ページを読み込まずに URL を変える",
+                },
+            ),
+            para(
+                site,
+                L {
+                    en: "A list whose filter, sort, and page live in the query string can keep the page loaded while they change. `link.push_url()` is a statement that shows the link's URL in the address bar as a new history entry, and `link.replace_url()` shows it in place of the current one, for a change the Back button should skip, such as each letter typed into a search field. The page keeps its signals and its focus, so the statement runs beside the call that loads the rows. An action does the same with `Patches::push_url(url)` and `Patches::replace_url(url)`, and the patches after them are applied. When the visitor presses Back or Forward, the browser loads the page at that entry's URL from the server, which renders it from the query string.",
+                    ja: "フィルター、並び順、ページ番号をクエリ文字列に持つリストは、それらが変わってもページを読み込み直さずに済みます。`link.push_url()` はリンクの URL を新しい履歴の項目としてアドレスバーに出す文です。`link.replace_url()` は今の URL と置き換えるので、検索欄に打つ 1 文字ごとのように、戻るボタンで飛ばしたい変更に使います。ページのシグナルとフォーカスはそのまま残るので、この文は行を読み込む呼び出しと並べて書きます。アクションでは `Patches::push_url(url)` と `Patches::replace_url(url)` で同じことをし、その後の差分も適用されます。訪問者が戻るボタンや進むボタンを押すと、ブラウザはその項目の URL のページをサーバーから読み込み、サーバーはクエリ文字列からページを描きます。",
+                },
+            ),
+            show(Snippet::History),
             head(site),
             heading(
                 site,
@@ -308,6 +323,10 @@ pub fn pages(site: Site) -> Part {
                     L {
                         en: "A link is a plain `<a href>`, so following it loads the next page from the server, and the signals of the page you leave are gone.",
                         ja: "リンクは普通の `<a href>` なので、たどると次のページをサーバーから読み込み、離れたページのシグナルは失われます。",
+                    },
+                    L {
+                        en: "Nothing checks that the URL `push_url` or `replace_url` shows belongs to the page on screen. The URL of another page shows over this page's content, and reloading it loads the other page.",
+                        ja: "`push_url` や `replace_url` が出す URL が、画面のページのものかどうかは検査されません。別のページの URL を出すと、このページの内容のままその URL が表示され、再読み込みすると別のページが読み込まれます。",
                     },
                     L {
                         en: "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
