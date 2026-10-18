@@ -45,6 +45,24 @@ impl InputKind {
 
 /// What a [`TextField`] holds, as `autocomplete` names it for the browser
 /// and for WCAG 1.3.5.
+///
+/// The variants are the WHATWG autofill field names a sign-up form and a
+/// checkout ask for. A form that asks for a shipping and a billing address
+/// on one page has no way here to mark which is which.
+///
+/// ```
+/// use hypersig::Signals;
+/// use hypersig_ui::{Autocomplete, TextField};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Address {
+///     city: String,
+/// }
+///
+/// let city = TextField::new("City", Address::city()).autocomplete(Autocomplete::AddressLevel2);
+/// assert!(city.render().render().contains(r#"autocomplete="address-level2""#));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Autocomplete {
@@ -62,16 +80,68 @@ pub enum Autocomplete {
     NewPassword,
     /// `one-time-code`.
     OneTimeCode,
+    /// `given-name`: the first name in Western order.
+    GivenName,
+    /// `additional-name`: a middle name.
+    AdditionalName,
+    /// `family-name`: the last name in Western order.
+    FamilyName,
+    /// `honorific-prefix`, such as "Dr.".
+    HonorificPrefix,
+    /// `nickname`.
+    Nickname,
     /// `organization`.
     Organization,
-    /// `street-address`.
+    /// `organization-title`: a job title.
+    OrganizationTitle,
+    /// `street-address`, for a field that takes the whole street address.
     StreetAddress,
+    /// `address-line1`.
+    AddressLine1,
+    /// `address-line2`.
+    AddressLine2,
+    /// `address-line3`.
+    AddressLine3,
+    /// `address-level1`: a state, a province, or a prefecture.
+    AddressLevel1,
+    /// `address-level2`: a city or a town.
+    AddressLevel2,
+    /// `address-level3`: a district within a city.
+    AddressLevel3,
     /// `postal-code`.
     PostalCode,
     /// `country-name`.
     Country,
+    /// `country`: an ISO 3166-1 alpha-2 country code.
+    CountryCode,
+    /// `cc-name`: the name on a payment card.
+    CcName,
+    /// `cc-number`.
+    CcNumber,
+    /// `cc-exp`: the expiry date of a payment card.
+    CcExp,
+    /// `cc-exp-month`.
+    CcExpMonth,
+    /// `cc-exp-year`.
+    CcExpYear,
+    /// `cc-csc`: the security code of a payment card.
+    CcCsc,
+    /// `bday`: a birthday.
+    Bday,
+    /// `bday-day`.
+    BdayDay,
+    /// `bday-month`.
+    BdayMonth,
+    /// `bday-year`.
+    BdayYear,
+    /// `sex`: a gender identity, as free text.
+    Sex,
+    /// `language`: a preferred language, as a BCP 47 tag.
+    Language,
     /// `tel`.
     Tel,
+    /// `tel-national`: a phone number without the country code.
+    TelNational,
     /// `url`.
     Url,
 }
@@ -86,11 +156,37 @@ impl Autocomplete {
             Self::CurrentPassword => "current-password",
             Self::NewPassword => "new-password",
             Self::OneTimeCode => "one-time-code",
+            Self::GivenName => "given-name",
+            Self::AdditionalName => "additional-name",
+            Self::FamilyName => "family-name",
+            Self::HonorificPrefix => "honorific-prefix",
+            Self::Nickname => "nickname",
             Self::Organization => "organization",
+            Self::OrganizationTitle => "organization-title",
             Self::StreetAddress => "street-address",
+            Self::AddressLine1 => "address-line1",
+            Self::AddressLine2 => "address-line2",
+            Self::AddressLine3 => "address-line3",
+            Self::AddressLevel1 => "address-level1",
+            Self::AddressLevel2 => "address-level2",
+            Self::AddressLevel3 => "address-level3",
             Self::PostalCode => "postal-code",
             Self::Country => "country-name",
+            Self::CountryCode => "country",
+            Self::CcName => "cc-name",
+            Self::CcNumber => "cc-number",
+            Self::CcExp => "cc-exp",
+            Self::CcExpMonth => "cc-exp-month",
+            Self::CcExpYear => "cc-exp-year",
+            Self::CcCsc => "cc-csc",
+            Self::Bday => "bday",
+            Self::BdayDay => "bday-day",
+            Self::BdayMonth => "bday-month",
+            Self::BdayYear => "bday-year",
+            Self::Sex => "sex",
+            Self::Language => "language",
             Self::Tel => "tel",
+            Self::TelNational => "tel-national",
             Self::Url => "url",
         }
     }
