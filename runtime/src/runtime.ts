@@ -434,7 +434,10 @@ export class Runtime implements Host {
     try {
       const response = await fetch(url, init);
       if (!response.ok || response.body === null) {
-        return { message: `${response.status}: ${await response.text()}`, status: response.status };
+        // The error signal is text a page shows, so it holds the body the server wrote for the visitor, and the status only when there is no body.
+        const body = (await response.text()).trim();
+        const message = body === "" ? `${response.status} ${response.statusText}`.trim() : body;
+        return { message, status: response.status };
       }
       connected();
       if (error !== null) this.store.set(error, "");
@@ -1478,7 +1481,9 @@ export class Runtime implements Host {
   #fail(method: string, path: string, message: string, error: string | null, status: number): void {
     if (error !== null) this.store.set(error, message);
     this.#root.dispatchEvent(new CustomEvent("hs-error", { detail: { status, message } }));
-    console.error(`hypersig: ${method} ${path} failed with ${message}`);
+    // A message made from an empty body already starts with the status.
+    const answer = status === 0 || message.startsWith(`${status} `) || message === `${status}` ? message : `${status}: ${message}`;
+    console.error(`hypersig: ${method} ${path} failed with ${answer}`);
   }
 
   #runAttribute(source: string, element: Element): void {

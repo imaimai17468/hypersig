@@ -365,9 +365,22 @@ describe("timers, effects, and calls", () => {
     $("#save").click();
     await tick();
     expect(runtime.store.get("saving")).toBe(true);
-    finish(new Response("no", { status: 500 }));
+    finish(new Response("You can keep 3 notes.\n", { status: 409 }));
     await vi.waitFor(() => expect(runtime.store.get("saving")).toBe(false));
-    expect(runtime.store.get("error")).toBe("500: no");
+    expect(runtime.store.get("error")).toBe("You can keep 3 notes.");
+    expect(console.error).toHaveBeenCalledWith("hypersig: POST /search failed with 409: You can keep 3 notes.");
+  });
+
+  it("writes the status and its reason to the error when the failed answer has no body", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 502, statusText: "Bad Gateway" })),
+    );
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const runtime = mount("timers");
+    $("#save").click();
+    await vi.waitFor(() => expect(runtime.store.get("error")).toBe("502 Bad Gateway"));
+    expect(console.error).toHaveBeenCalledWith("hypersig: POST /search failed with 502 Bad Gateway");
   });
 
   it("aborts the earlier latest call and applies only the newer answer", async () => {

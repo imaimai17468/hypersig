@@ -50,8 +50,8 @@ pub fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A handler may return `Result<_, E>` where `E` implements `IntoResponse`, so `?` works. An action whose response has a status outside 2xx fails on the page: the runtime writes the status and the body to the signal given to `Call::error`.",
-                ja: "ハンドラは、`E` が `IntoResponse` を実装する `Result<_, E>` を返せるので、`?` が使えます。応答の状態が 2xx 以外のアクションは、ページでは失敗になります。ランタイムは、`Call::error` に渡したシグナルに状態と本文を書きます。",
+                en: "A handler may return `Result<_, E>` where `E` implements `IntoResponse`, so `?` works. An action whose response has a status outside 2xx fails on the page: the runtime writes the body to the signal given to `Call::error`, so the error's response text is what the visitor reads. An empty body writes the status and its reason, such as `502 Bad Gateway`.",
+                ja: "ハンドラは、`E` が `IntoResponse` を実装する `Result<_, E>` を返せるので、`?` が使えます。応答の状態が 2xx 以外のアクションは、ページでは失敗になります。ランタイムは、`Call::error` に渡したシグナルに応答の本文を書くので、エラーの応答の文言がそのまま訪問者に見えます。本文が空のときは、`502 Bad Gateway` のように状態とその理由を書きます。",
             },
         ),
         show(Snippet::HandlerErrors),

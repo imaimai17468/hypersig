@@ -196,6 +196,12 @@ impl<S> Call<S> {
     }
 
     /// Sets `message` to the error text when the call fails, and to `""` when it succeeds.
+    ///
+    /// The text is the body of an answer whose status is outside 2xx, so a
+    /// handler that fails writes the sentence the page shows. When that body
+    /// is empty, it is the status and its reason, such as `502 Bad Gateway`,
+    /// and when no answer arrives, it is the browser's message. The status
+    /// also goes to the console and to the `hs-error` event.
     #[must_use]
     pub fn error(mut self, message: Sig<S, String>) -> Self {
         self.error = Value::from(message.path());

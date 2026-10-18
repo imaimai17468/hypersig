@@ -32,12 +32,12 @@ base("signs in with a cookie, shows the handler's error, and asks to sign in aga
   await expect(note).toHaveValue("");
   await note.fill("four");
   await page.getByRole("button", { name: "Add note" }).click();
-  await expect(page.locator("#problem")).toHaveText("409: You can keep 3 notes.");
+  await expect(page.locator("#problem")).toHaveText("You can keep 3 notes.");
   await expect(notes).toHaveCount(3);
 
   await context.clearCookies();
   await page.getByRole("button", { name: "Add note" }).click();
-  await expect(page.locator("#problem")).toHaveText("401: Your session has ended. Sign in again.");
+  await expect(page.locator("#problem")).toHaveText("Your session has ended. Sign in again.");
   await page.reload();
   await expect(page).toHaveURL(`${url("auth")}login`);
 
