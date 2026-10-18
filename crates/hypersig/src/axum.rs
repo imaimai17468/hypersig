@@ -26,7 +26,7 @@ use crate::page::Page;
 use crate::patch::{PatchEvent, Patches, SignalPatch};
 use crate::route::{Params, Route, Search, Url};
 use crate::signal::Signals;
-use crate::upload::{Upload, Uploaded, UploadedFile};
+use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
 
 /// Adds hypersig routes to an axum [`Router`].
 ///
@@ -96,6 +96,23 @@ pub trait RouterExt<St>: Sized {
         S: Signals,
         A: DeserializeOwned + Send + 'static,
         H: Handler<St, Uploaded<A>, M, Output = Fut>,
+        M: 'static,
+        Fut: Future<Output = P> + Send + 'static,
+        P: Into<ActionResponse<S>>;
+
+    /// Serves `upload` with a handler that receives its arguments and reads
+    /// the files in chunks from an [`UploadStream`], for files too large to
+    /// hold in memory.
+    ///
+    /// The same refusals as [`RouterExt::upload`] apply before the handler
+    /// runs, and a body whose first part is not the arguments is refused
+    /// too. The limit of `upload` holds while the handler reads the files.
+    #[must_use]
+    fn upload_stream<S, A, H, M, Fut, P>(self, upload: Upload<S, A>, handler: H) -> Self
+    where
+        S: Signals,
+        A: DeserializeOwned + Send + 'static,
+        H: Handler<St, UploadStream<A>, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = P> + Send + 'static,
         P: Into<ActionResponse<S>>;
@@ -238,6 +255,36 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             let handler = handler.clone();
             async move {
                 let uploaded = read_upload::<A>(&request.headers, multipart, limit).await?;
+                Ok::<_, RequestError>(match handler.call(state, request, uploaded).await {
+                    Ok(reply) => reply.await.into().into_response(),
+                    Err(rejection) => rejection,
+                })
+            }
+        };
+        self.route(
+            upload.path(),
+            post(route).layer(DefaultBodyLimit::max(limit)),
+        )
+    }
+
+    fn upload_stream<S, A, H, M, Fut, P>(self, upload: Upload<S, A>, handler: H) -> Self
+    where
+        S: Signals,
+        A: DeserializeOwned + Send + 'static,
+        H: Handler<St, UploadStream<A>, M, Output = Fut>,
+        M: 'static,
+        Fut: Future<Output = P> + Send + 'static,
+        P: Into<ActionResponse<S>>,
+    {
+        let limit = upload.limit();
+        let route = move |State(state): State<St>,
+                          request: Parts,
+                          multipart: Result<Multipart, MultipartRejection>| {
+            let handler = handler.clone();
+            async move {
+                let mut multipart = open_upload(&request.headers, multipart, limit)?;
+                let args = read_args_part::<A>(&mut multipart).await?;
+                let uploaded = UploadStream::new(args, multipart);
                 Ok::<_, RequestError>(match handler.call(state, request, uploaded).await {
                     Ok(reply) => reply.await.into().into_response(),
                     Err(rejection) => rejection,
@@ -577,14 +624,63 @@ fn refuse_cross_site(headers: &HeaderMap) -> Result<(), RequestError> {
 /// The header the runtime adds to an upload. Its value is not read.
 const UPLOAD_HEADER: &str = "hypersig-upload";
 
-/// Refuses a request from another site, one without [`UPLOAD_HEADER`], and
-/// one longer than `limit`, then reads the arguments from the `args` part
-/// and the files from the `files` parts, which the runtime names.
+/// Refuses a request from another site, one without [`UPLOAD_HEADER`], one
+/// longer than `limit`, and one that is not multipart, then reads the
+/// arguments from the `args` part and the files from the `files` parts,
+/// which the runtime names, into memory.
 async fn read_upload<A: DeserializeOwned>(
     headers: &HeaderMap,
     multipart: Result<Multipart, MultipartRejection>,
     limit: usize,
 ) -> Result<Uploaded<A>, RequestError> {
+    let mut multipart = open_upload(headers, multipart, limit)?;
+    let mut args = None;
+    let mut files = Vec::new();
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(RequestError::from_multipart)?
+    {
+        match field.name() {
+            Some(ARGS_PART) => {
+                args = Some(field.bytes().await.map_err(RequestError::from_multipart)?);
+            }
+            Some(FILES_PART) => {
+                let file_name = field.file_name().map(str::to_owned);
+                let content_type = field.content_type().map(str::to_owned);
+                let bytes = field.bytes().await.map_err(RequestError::from_multipart)?;
+                files.push(UploadedFile::new(file_name, content_type, bytes.to_vec()));
+            }
+            _ => {}
+        }
+    }
+    let args = serde_json::from_slice(args.as_deref().unwrap_or(b"null"))
+        .map_err(|source| RequestError::new(Refusal::Arguments(source)))?;
+    Ok(Uploaded::new(args, files))
+}
+
+/// Reads the arguments from the first part of `multipart`, which the runtime
+/// sends before the files.
+async fn read_args_part<A: DeserializeOwned>(multipart: &mut Multipart) -> Result<A, RequestError> {
+    let field = multipart
+        .next_field()
+        .await
+        .map_err(RequestError::from_multipart)?
+        .ok_or_else(RequestError::unexpected_part)?;
+    if field.name() != Some(ARGS_PART) {
+        return Err(RequestError::unexpected_part());
+    }
+    let args = field.bytes().await.map_err(RequestError::from_multipart)?;
+    serde_json::from_slice(&args).map_err(|source| RequestError::new(Refusal::Arguments(source)))
+}
+
+/// Refuses a request from another site, one without [`UPLOAD_HEADER`], one
+/// that says it is longer than `limit`, and one that is not multipart.
+fn open_upload(
+    headers: &HeaderMap,
+    multipart: Result<Multipart, MultipartRejection>,
+    limit: usize,
+) -> Result<Multipart, RequestError> {
     refuse_cross_site(headers)?;
     // A `multipart/form-data` body is one a form on another site can send
     // without a preflight, but no form can add a header. A browser sends a
@@ -600,45 +696,22 @@ async fn read_upload<A: DeserializeOwned>(
     if declared.is_some_and(|length| length > limit) {
         return Err(RequestError::new(Refusal::TooLarge));
     }
-    let mut multipart =
-        multipart.map_err(|rejection| RequestError::new(Refusal::NotMultipart(rejection)))?;
-    let failed = |error: MultipartError| {
-        RequestError::new(if error.status() == StatusCode::PAYLOAD_TOO_LARGE {
-            Refusal::TooLarge
-        } else {
-            Refusal::Multipart(error)
-        })
-    };
-    let mut args = None;
-    let mut files = Vec::new();
-    while let Some(field) = multipart.next_field().await.map_err(failed)? {
-        match field.name() {
-            Some("args") => args = Some(field.bytes().await.map_err(failed)?),
-            Some("files") => {
-                let file_name = field.file_name().map(str::to_owned);
-                let content_type = field.content_type().map(str::to_owned);
-                let bytes = field.bytes().await.map_err(failed)?;
-                files.push(UploadedFile::new(file_name, content_type, bytes.to_vec()));
-            }
-            _ => {}
-        }
-    }
-    let args = serde_json::from_slice(args.as_deref().unwrap_or(b"null"))
-        .map_err(|source| RequestError::new(Refusal::Arguments(source)))?;
-    Ok(Uploaded::new(args, files))
+    multipart.map_err(|rejection| RequestError::new(Refusal::NotMultipart(rejection)))
 }
 
 fn to_sse(event: &PatchEvent) -> SseEvent {
     SseEvent::default().event(event.name()).data(event.data())
 }
 
-/// A request to an action or an upload that was refused before its handler ran.
+/// A request to an action or an upload that was refused, before its handler
+/// ran or while a streaming upload's handler read the files.
 ///
 /// Its response is `403 Forbidden` for a request from another site or an
 /// upload without the header the runtime adds, `415 Unsupported Media Type`
 /// for a POST whose body is not JSON or an upload whose body is not
 /// `multipart/form-data`, `413 Payload Too Large` for an upload longer than
-/// [`Upload::limit`], and `400 Bad Request` for a malformed multipart body
+/// [`Upload::limit`], and `400 Bad Request` for a malformed multipart body,
+/// a streaming upload whose parts are not the arguments followed by files,
 /// or arguments that do not deserialize, with the serde message.
 #[derive(Debug)]
 pub struct RequestError {
@@ -654,6 +727,7 @@ enum Refusal {
     NotMultipart(MultipartRejection),
     TooLarge,
     Multipart(MultipartError),
+    PartOrder,
     Arguments(serde_json::Error),
 }
 
@@ -663,6 +737,21 @@ impl RequestError {
             refusal,
             backtrace: Backtrace::capture(),
         }
+    }
+
+    /// The refusal for `error`, met while reading an upload's body.
+    pub(crate) fn from_multipart(error: MultipartError) -> Self {
+        Self::new(if error.status() == StatusCode::PAYLOAD_TOO_LARGE {
+            Refusal::TooLarge
+        } else {
+            Refusal::Multipart(error)
+        })
+    }
+
+    /// The refusal for a streaming upload whose parts are not the arguments
+    /// followed by files.
+    pub(crate) fn unexpected_part() -> Self {
+        Self::new(Refusal::PartOrder)
     }
 
     /// The backtrace captured where the error was created.
@@ -678,7 +767,9 @@ impl RequestError {
             Refusal::CrossSite | Refusal::NotFromPage => StatusCode::FORBIDDEN,
             Refusal::NotJson | Refusal::NotMultipart(_) => StatusCode::UNSUPPORTED_MEDIA_TYPE,
             Refusal::TooLarge => StatusCode::PAYLOAD_TOO_LARGE,
-            Refusal::Multipart(_) | Refusal::Arguments(_) => StatusCode::BAD_REQUEST,
+            Refusal::Multipart(_) | Refusal::PartOrder | Refusal::Arguments(_) => {
+                StatusCode::BAD_REQUEST
+            }
         }
     }
 }
@@ -696,6 +787,9 @@ impl fmt::Display for RequestError {
             }
             Refusal::TooLarge => f.write_str("the upload is longer than its limit"),
             Refusal::Multipart(source) => write!(f, "the upload's body is malformed: {source}"),
+            Refusal::PartOrder => {
+                f.write_str("the upload's parts are not the arguments followed by files")
+            }
             Refusal::Arguments(source) => {
                 write!(f, "the action's arguments did not deserialize: {source}")
             }
@@ -709,9 +803,11 @@ impl StdError for RequestError {
             Refusal::Arguments(source) => Some(source),
             Refusal::Multipart(source) => Some(source),
             Refusal::NotMultipart(source) => Some(source),
-            Refusal::CrossSite | Refusal::NotJson | Refusal::NotFromPage | Refusal::TooLarge => {
-                None
-            }
+            Refusal::CrossSite
+            | Refusal::NotJson
+            | Refusal::NotFromPage
+            | Refusal::TooLarge
+            | Refusal::PartOrder => None,
         }
     }
 }

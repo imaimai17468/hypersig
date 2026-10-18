@@ -79,7 +79,7 @@ pub use route::{Extends, Link, Params, Rest, Route, Search, SearchValue, Segment
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 pub use upload::{FileInput, Upload};
 #[cfg(feature = "axum")]
-pub use upload::{Uploaded, UploadedFile};
+pub use upload::{StreamedFile, UploadStream, Uploaded, UploadedFile};
 
 /// Typed atomic CSS, from the `hypersig_style` crate.
 ///

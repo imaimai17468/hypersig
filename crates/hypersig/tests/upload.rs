@@ -189,3 +189,154 @@ async fn an_ordinary_action_still_refuses_a_multipart_body() {
     let response = app.oneshot(request).await.expect("infallible");
     assert_eq!(response.status(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
 }
+
+mod streaming {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    use axum::Router;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode, header};
+    use futures::StreamExt as _;
+    use http_body_util::BodyExt as _;
+    use hypersig::{Patches, RequestError, RouterExt, Upload, UploadStream};
+    use tower::ServiceExt as _;
+
+    use super::{BOUNDARY, FROM_PAGE, Gallery, multipart};
+
+    const STREAM: Upload<Gallery, String> = Upload::post("/stream").max_bytes(64 * 1024);
+
+    /// Set once the handler has read a chunk, so a refusal can be told apart
+    /// from one made before the handler ran.
+    static READ_A_CHUNK: AtomicBool = AtomicBool::new(false);
+
+    /// Answers with the arguments and, per file, its name, its length, and
+    /// how many chunks it arrived in.
+    fn app() -> Router {
+        Router::new().upload_stream(STREAM, |(), mut upload: UploadStream<String>| async move {
+            let mut files = Vec::new();
+            while let Some(mut file) = upload.next_file().await? {
+                let name = file.file_name().unwrap_or("?").to_owned();
+                let (mut length, mut chunks) = (0, 0);
+                while let Some(chunk) = file.chunk().await? {
+                    READ_A_CHUNK.store(true, Ordering::SeqCst);
+                    length += chunk.len();
+                    chunks += 1;
+                }
+                files.push(format!("{name}:{length}:{chunks}"));
+            }
+            let summary = format!("{} {}", upload.args(), files.join(","));
+            Ok::<_, RequestError>(Patches::from(Gallery::summary().patch(summary)))
+        })
+    }
+
+    /// A request whose body arrives in chunks of `chunk` bytes, with no `Content-Length`.
+    fn chunked(headers: &[(&str, &str)], body: &str, chunk: usize) -> Request<Body> {
+        let chunks: Vec<Result<Vec<u8>, std::io::Error>> = body
+            .as_bytes()
+            .chunks(chunk)
+            .map(|part| Ok(part.to_vec()))
+            .collect();
+        let mut request = Request::post("/stream").header(
+            header::CONTENT_TYPE,
+            format!("multipart/form-data; boundary={BOUNDARY}"),
+        );
+        for (name, value) in headers {
+            request = request.header(*name, *value);
+        }
+        // Each chunk waits for the next poll, as one from the network would,
+        // so the parser cannot read the whole body at once.
+        let arriving = futures::stream::iter(chunks).then(|chunk| async move {
+            tokio::task::yield_now().await;
+            chunk
+        });
+        request.body(Body::from_stream(arriving)).expect("request")
+    }
+
+    async fn send(request: Request<Body>) -> (StatusCode, String) {
+        let response = app().oneshot(request).await.expect("infallible");
+        let status = response.status();
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        (
+            status,
+            String::from_utf8(body.to_vec()).expect("utf-8 body"),
+        )
+    }
+
+    #[tokio::test]
+    async fn the_handler_reads_each_file_in_chunks() {
+        let large = "x".repeat(40 * 1024);
+        let body = multipart(
+            "\"beach\"",
+            &[
+                ("a.bin", "application/octet-stream", &large),
+                ("b.txt", "text/plain", "two"),
+            ],
+        );
+        let (status, text) = send(chunked(&[FROM_PAGE], &body, 1024)).await;
+        assert_eq!(status, StatusCode::OK, "{text}");
+        let summary = text
+            .split(r#""summary":""#)
+            .nth(1)
+            .and_then(|rest| rest.split('"').next())
+            .expect("a summary patch");
+        let (args, files) = summary.split_once(' ').expect("arguments and files");
+        assert_eq!(args, "beach");
+        let files: Vec<&str> = files.split(',').collect();
+        let first: Vec<&str> = files[0].split(':').collect();
+        assert_eq!(first[..2], ["a.bin", "40960"]);
+        assert!(
+            first[2].parse::<usize>().expect("a chunk count") > 1,
+            "a 40 KiB file arrived in one chunk: {summary}"
+        );
+        assert_eq!(files[1], "b.txt:3:1");
+    }
+
+    #[tokio::test]
+    async fn a_body_past_the_limit_fails_the_read_with_413() {
+        let large = "x".repeat(100 * 1024);
+        let body = multipart(
+            "\"big\"",
+            &[("big.bin", "application/octet-stream", &large)],
+        );
+        let (status, text) = send(chunked(&[FROM_PAGE], &body, 4096)).await;
+        assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+        assert_eq!(text, "the upload is longer than its limit");
+        assert!(
+            READ_A_CHUNK.load(Ordering::SeqCst),
+            "the limit was met before the handler read the file"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_body_whose_first_part_is_a_file_gets_400() {
+        let body = format!(
+            "--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"files\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\none\r\n--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"args\"\r\n\r\n\"late\"\r\n--{BOUNDARY}--\r\n"
+        );
+        let (status, text) = send(chunked(&[FROM_PAGE], &body, 64)).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            text,
+            "the upload's parts are not the arguments followed by files"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_streaming_upload_without_the_runtime_header_gets_403() {
+        let body = multipart("\"x\"", &[("a.txt", "text/plain", "one")]);
+        let (status, _) = send(chunked(&[], &body, 64)).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn a_streaming_upload_from_another_site_gets_403() {
+        let body = multipart("\"x\"", &[]);
+        let headers = [FROM_PAGE, ("sec-fetch-site", "cross-site")];
+        let (status, _) = send(chunked(&headers, &body, 64)).await;
+        assert_eq!(status, StatusCode::FORBIDDEN);
+    }
+}

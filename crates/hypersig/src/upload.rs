@@ -266,3 +266,133 @@ impl UploadedFile {
         self.bytes
     }
 }
+
+/// What a streaming upload's handler receives: the arguments, then the files
+/// one at a time, each in chunks as they arrive.
+///
+/// `RouterExt::upload_stream` hands one to its handler, which keeps no file
+/// in memory unless it collects the chunks itself. The arguments are read
+/// before the handler runs, because the runtime sends them as the first part
+/// of the body. The limit of the [`Upload`] holds while the handler reads:
+/// past it, the read fails with a [`RequestError`](crate::RequestError)
+/// whose status is `413 Payload Too Large`, which the handler can return as
+/// its error.
+///
+/// # Examples
+///
+/// A handler that counts the bytes of each file without holding one in
+/// memory. Writing each chunk to a file works the same way.
+///
+/// ```
+/// use axum::Router;
+/// use hypersig::{Patches, RequestError, RouterExt, Signals, Upload, UploadStream};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Library {
+///     received: u64,
+/// }
+///
+/// const VIDEO: Upload<Library> = Upload::post("/video").max_bytes(512 * 1024 * 1024);
+///
+/// async fn receive((): (), mut upload: UploadStream<()>) -> Result<Patches<Library>, RequestError> {
+///     let mut received = 0;
+///     while let Some(mut file) = upload.next_file().await? {
+///         while let Some(chunk) = file.chunk().await? {
+///             received += chunk.len() as u64;
+///         }
+///     }
+///     Ok(Library::received().patch(received).into())
+/// }
+///
+/// let _app: Router = Router::new().upload_stream(VIDEO, receive);
+/// ```
+#[cfg(feature = "axum")]
+#[derive(Debug)]
+pub struct UploadStream<A> {
+    args: A,
+    multipart: axum::extract::Multipart,
+}
+
+#[cfg(feature = "axum")]
+impl<A> UploadStream<A> {
+    pub(crate) fn new(args: A, multipart: axum::extract::Multipart) -> Self {
+        Self { args, multipart }
+    }
+
+    /// The arguments the call passed.
+    #[must_use]
+    pub fn args(&self) -> &A {
+        &self.args
+    }
+
+    /// The next file, in the order the visitor picked them, or `None` after
+    /// the last one.
+    ///
+    /// The part of the previous file that was not read is skipped.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`RequestError`](crate::RequestError) when the body is
+    /// malformed, holds a part other than a file after the arguments, or is
+    /// longer than the upload's limit.
+    pub async fn next_file(&mut self) -> Result<Option<StreamedFile<'_>>, crate::RequestError> {
+        let field = self
+            .multipart
+            .next_field()
+            .await
+            .map_err(crate::RequestError::from_multipart)?;
+        match field {
+            None => Ok(None),
+            Some(field) if field.name() == Some(FILES_PART) => Ok(Some(StreamedFile { field })),
+            Some(_) => Err(crate::RequestError::unexpected_part()),
+        }
+    }
+}
+
+/// One file of a streaming upload, read in chunks.
+#[cfg(feature = "axum")]
+#[derive(Debug)]
+pub struct StreamedFile<'a> {
+    field: axum::extract::multipart::Field<'a>,
+}
+
+#[cfg(feature = "axum")]
+impl StreamedFile<'_> {
+    /// The file's name on the visitor's computer, as the browser sent it.
+    ///
+    /// The visitor controls it, so it is no safe path to write to.
+    #[must_use]
+    pub fn file_name(&self) -> Option<&str> {
+        self.field.file_name()
+    }
+
+    /// The media type the browser sent, such as `image/png`. The browser
+    /// guesses it from the file name, so check the bytes before trusting it.
+    #[must_use]
+    pub fn content_type(&self) -> Option<&str> {
+        self.field.content_type()
+    }
+
+    /// The next chunk of the file's contents, or `None` after the last one.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`RequestError`](crate::RequestError) when the body is
+    /// malformed or longer than the upload's limit.
+    pub async fn chunk(&mut self) -> Result<Option<axum::body::Bytes>, crate::RequestError> {
+        self.field
+            .chunk()
+            .await
+            .map_err(crate::RequestError::from_multipart)
+    }
+}
+
+/// The name of the multipart part that holds the arguments, which the runtime
+/// sends first.
+#[cfg(feature = "axum")]
+pub(crate) const ARGS_PART: &str = "args";
+
+/// The name of the multipart parts that hold the files.
+#[cfg(feature = "axum")]
+pub(crate) const FILES_PART: &str = "files";
