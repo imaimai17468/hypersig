@@ -193,6 +193,11 @@ impl<S: Signals> Patches<S> {
     /// arrives. A list or condition inside it whose template is unchanged keeps
     /// the items and content the runtime drew, with their focus and any text
     /// being typed in them.
+    ///
+    /// The server checks the fragment's names and ids on their own, and the
+    /// browser checks them against the rest of the page once the patch is
+    /// applied, writing a warning to the console for each one another element
+    /// already carries.
     #[must_use]
     pub fn element<F: Fragment<Signals = S>>(mut self, fragment: &F) -> Self {
         let el = self::fragment(fragment);

@@ -211,6 +211,14 @@ interface ElementState {
 
 type Stateful = Element & { [STATE]?: ElementState };
 
+/** Whether `element` sits in a list item or a conditional copy the runtime drew. */
+function inCopy(element: Element): boolean {
+  for (let at: Element | null = element; at !== null; at = at.parentElement) {
+    if (own(at)?.root === true) return true;
+  }
+  return false;
+}
+
 function own(element: Element): ElementState | undefined {
   return (element as Stateful)[STATE];
 }
@@ -581,6 +589,7 @@ export class Runtime implements Host {
         }
         const morphed = morph(target, next, this.#removed, (template) => this.#drawn(template));
         this.scan(morphed, this.#scopeOf(morphed.parentElement));
+        this.#warnDuplicates(morphed);
         this.#render(new Map());
         this.#patched = true;
         this.#sweepLater();
@@ -1521,6 +1530,31 @@ export class Runtime implements Host {
       if (scope !== undefined) return scope;
     }
     return [];
+  }
+
+  /**
+   * Warns about an id or a name inside `element` that another element the
+   * runtime can reach also carries. The server checks a page when it renders
+   * it, but a patched element is rendered alone, so only the browser sees it
+   * next to the rest of the page.
+   */
+  #warnDuplicates(element: Element): void {
+    for (const el of [element, ...element.querySelectorAll("*")]) {
+      if (el.id !== "" && document.querySelectorAll(`[id="${CSS.escape(el.id)}"]`).length > 1) {
+        console.warn(`hypersig: the patch for #${element.id} adds a second element with the id "${el.id}"`);
+      }
+      for (const attribute of NAMES) {
+        const name = el.getAttribute(attribute);
+        if (name === null) continue;
+        const selector = `[${attribute}="${CSS.escape(name)}"]`;
+        const onPage = [...this.#root.querySelectorAll(selector)].filter((other) => !inCopy(other));
+        // A lookup from inside a list item meets the page's elements too, so
+        // one page element is too many there, and two are too many outside.
+        if (this.#findNamed(attribute, name, el) !== el || onPage.length > (inCopy(el) ? 0 : 1)) {
+          console.warn(`hypersig: the patch for #${element.id} adds a second element with ${attribute}="${name}"`);
+        }
+      }
+    }
   }
 
   #findRef(name: string, origin: Element | undefined): Element | null {

@@ -382,6 +382,30 @@ describe("Runtime", () => {
     expect(document.querySelector("#frag li")).toBe(items[0]);
   });
 
+  it("warns when a patch adds an id or a node ref name the rest of the page already has", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const runtime = mount(`<p id="total"></p><input data-hs-ref="field"><div id="frag"></div>`, {});
+    await tick();
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p id="total"></p><input data-hs-ref="field"></div>` }) });
+    expect(warn.mock.calls.map(([message]) => message)).toEqual([
+      'hypersig: the patch for #frag adds a second element with the id "total"',
+      'hypersig: the patch for #frag adds a second element with data-hs-ref="field"',
+    ]);
+    warn.mockRestore();
+  });
+
+  it("does not warn about a node ref name every item of a list carries", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const html = `<div id="frag"><ul><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,""]'><input data-hs-ref="field"></li></template></ul></div>`;
+    const runtime = mount(html, { rows: [1, 2, 3] });
+    await tick();
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html }) });
+    await tick();
+    expect(document.querySelectorAll("#frag input")).toHaveLength(3);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
   it("builds the items of a list again when a patch changes its template", async () => {
     const list = (tag: string) =>
       `<div id="frag"><ul><template data-hs-each='["rows",0]'><${tag} data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></${tag}></template></ul></div>`;

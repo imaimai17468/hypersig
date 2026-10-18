@@ -455,10 +455,12 @@ impl<S> fmt::Debug for StreamCall<S> {
 /// Outside a list, one name sits on one element. [`Page::render`](crate::Page::render)
 /// and [`El::render`](crate::html::El::render) panic when two elements the
 /// browser could both reach carry one name, which a test that renders the
-/// page catches. A [`Fragment`](crate::Fragment) sent again is checked on
-/// its own, so a name that a later render of it adds and the rest of the
-/// page already carries goes unchecked. A [`FileInput`](crate::FileInput)
-/// name is looked up apart from these, so it never collides with one.
+/// page catches. A [`Fragment`](crate::Fragment) sent again is rendered on
+/// its own, so the server cannot compare it with the rest of the page. The
+/// browser does, and writes a warning to the console when the patch adds a
+/// name or an id that another element it can reach already carries. A
+/// [`FileInput`](crate::FileInput) name is looked up apart from these, so it
+/// never collides with one.
 ///
 /// ```
 /// use hypersig::html::{button, div, input};
