@@ -218,6 +218,39 @@ async fn an_ordinary_action_still_refuses_a_multipart_body() {
     assert_eq!(response.status(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
 }
 
+#[tokio::test]
+async fn an_extractor_that_refuses_answers_before_the_body_is_read() {
+    use axum::extract::FromRequestParts;
+    use axum::http::request::Parts;
+
+    struct Member;
+
+    impl FromRequestParts<()> for Member {
+        type Rejection = StatusCode;
+
+        fn from_request_parts(
+            _: &mut Parts,
+            (): &(),
+        ) -> impl Future<Output = Result<Self, StatusCode>> + Send {
+            std::future::ready(Err(StatusCode::UNAUTHORIZED))
+        }
+    }
+
+    let app: Router = Router::new().upload(SEND, |(), _: Member, _: Uploaded<String>| async move {
+        Patches::<Gallery>::new()
+    });
+    // The body's first part is a file, which reading the body would refuse
+    // with a 400, so a 401 shows the body was never read.
+    let body = format!(
+        "--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"files\"; filename=\"a.txt\"\r\n\r\none\r\n--{BOUNDARY}--\r\n"
+    );
+    let response = app
+        .oneshot(upload(&[FROM_PAGE], body))
+        .await
+        .expect("infallible");
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
 mod streaming {
     use std::sync::atomic::{AtomicBool, Ordering};
 

@@ -43,6 +43,7 @@ pub trait RouterExt<St>: Sized {
     where
         P: Params + Send + 'static,
         Q: Search + DeserializeOwned + Send + 'static,
+        Q::Args<P>: Send,
         H: Handler<St, Q::Args<P>, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = R> + Send + 'static,
@@ -88,7 +89,9 @@ pub trait RouterExt<St>: Sized {
     /// body that is not `multipart/form-data`, one longer than
     /// [`Upload::limit`], one whose first part is not the arguments, or
     /// arguments that do not deserialize. Parts other than the arguments
-    /// and the files are skipped.
+    /// and the files are skipped. A handler's extractor runs after the
+    /// header checks and before the body is read, so one that refuses a
+    /// visitor who is not signed in answers before any file arrives.
     #[must_use]
     fn upload<S, A, H, M, Fut, P>(self, upload: Upload<S, A>, handler: H) -> Self
     where
@@ -134,6 +137,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
     where
         P: Params + Send + 'static,
         Q: Search + DeserializeOwned + Send + 'static,
+        Q::Args<P>: Send,
         H: Handler<St, Q::Args<P>, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = R> + Send + 'static,
@@ -170,7 +174,10 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                     Ok(search) => search,
                     Err(rejection) => return rejection.into_response(),
                 };
-                match handler.call(state, request, Q::join(params, search)).await {
+                match handler
+                    .call(state, request, ready(Q::join(params, search)))
+                    .await
+                {
                     Ok(page) => page.await.into().into_response(),
                     Err(rejection) => rejection,
                 }
@@ -196,7 +203,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             let handler = handler.clone();
             async move {
                 let args = read_args::<A>(method, &request.headers, &query, &body)?;
-                Ok::<_, RequestError>(match handler.call(state, request, args).await {
+                Ok::<_, RequestError>(match handler.call(state, request, ready(args)).await {
                     Ok(reply) => reply.await.into().into_response(),
                     Err(rejection) => rejection,
                 })
@@ -221,7 +228,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             let handler = handler.clone();
             async move {
                 let args = read_args::<A>(method, &request.headers, &query, &body)?;
-                let patches = match handler.call(state, request, args).await {
+                let patches = match handler.call(state, request, ready(args)).await {
                     Ok(patches) => patches,
                     Err(rejection) => return Ok(rejection),
                 };
@@ -252,7 +259,12 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             let handler = handler.clone();
             async move {
                 let (request, body) = request.into_parts();
-                let uploaded = read_upload::<A>(&request.headers, body, limit).await?;
+                let multipart = open_upload_stream(&request.headers, body, limit)?;
+                let uploaded = async move {
+                    read_upload::<A>(multipart)
+                        .await
+                        .map_err(IntoResponse::into_response)
+                };
                 Ok::<_, RequestError>(match handler.call(state, request, uploaded).await {
                     Ok(reply) => reply.await.into().into_response(),
                     Err(rejection) => rejection,
@@ -278,8 +290,12 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             async move {
                 let (request, body) = request.into_parts();
                 let mut multipart = open_upload_stream(&request.headers, body, limit)?;
-                let args = read_args_part::<A>(&mut multipart).await?;
-                let uploaded = UploadStream::new(args, multipart);
+                let uploaded = async move {
+                    let args = read_args_part::<A>(&mut multipart)
+                        .await
+                        .map_err(IntoResponse::into_response)?;
+                    Ok(UploadStream::new(args, multipart))
+                };
                 Ok::<_, RequestError>(match handler.call(state, request, uploaded).await {
                     Ok(reply) => reply.await.into().into_response(),
                     Err(rejection) => rejection,
@@ -336,16 +352,21 @@ pub trait Handler<St, A, M>: Clone + Send + Sync + 'static + sealed::Sealed<St, 
     /// What the function returns: a future for a page or an action, a stream for a stream.
     type Output;
 
-    /// Runs the extractor, if the function takes one, then the function.
+    /// Runs the extractor, if the function takes one, then awaits `args` and
+    /// runs the function.
+    ///
+    /// `args` is awaited after the extractor, so an upload whose extractor
+    /// refuses the request is answered before its body is read.
     ///
     /// # Errors
     ///
-    /// Returns the extractor's rejection as a response when it fails.
+    /// Returns the extractor's rejection, or the error `args` ends with, as a
+    /// response.
     fn call(
         self,
         state: St,
         request: Parts,
-        args: A,
+        args: impl Future<Output = Result<A, Response>> + Send,
     ) -> impl Future<Output = Result<Self::Output, Response>> + Send;
 }
 
@@ -364,13 +385,13 @@ where
 {
     type Output = O;
 
-    fn call(
+    async fn call(
         self,
         state: St,
         _request: Parts,
-        args: A,
-    ) -> impl Future<Output = Result<O, Response>> + Send {
-        std::future::ready(Ok(self(state, args)))
+        args: impl Future<Output = Result<A, Response>> + Send,
+    ) -> Result<O, Response> {
+        Ok(self(state, args.await?))
     }
 }
 
@@ -387,11 +408,16 @@ where
 {
     type Output = O;
 
-    async fn call(self, state: St, mut request: Parts, args: A) -> Result<O, Response> {
+    async fn call(
+        self,
+        state: St,
+        mut request: Parts,
+        args: impl Future<Output = Result<A, Response>> + Send,
+    ) -> Result<O, Response> {
         let extracted = E::from_request_parts(&mut request, &state)
             .await
             .map_err(IntoResponse::into_response)?;
-        Ok(self(state, extracted, args))
+        Ok(self(state, extracted, args.await?))
     }
 }
 
@@ -619,15 +645,16 @@ fn refuse_cross_site(headers: &HeaderMap) -> Result<(), RequestError> {
 /// The header the runtime adds to an upload. Its value is not read.
 const UPLOAD_HEADER: &str = "hypersig-upload";
 
-/// Refuses what [`open_upload_stream`] refuses, then reads the arguments
-/// from the first part and the files from the `files` parts into memory,
-/// skipping any other part.
+/// Arguments already read, as the future [`Handler::call`] awaits.
+fn ready<A>(args: A) -> std::future::Ready<Result<A, Response>> {
+    std::future::ready(Ok(args))
+}
+
+/// Reads the arguments from the first part of `multipart` and the files
+/// from the `files` parts into memory, skipping any other part.
 async fn read_upload<A: DeserializeOwned>(
-    headers: &HeaderMap,
-    body: Body,
-    limit: usize,
+    mut multipart: multer::Multipart<'static>,
 ) -> Result<Uploaded<A>, RequestError> {
-    let mut multipart = open_upload_stream(headers, body, limit)?;
     let args = read_args_part::<A>(&mut multipart).await?;
     let mut files = Vec::new();
     while let Some(field) = multipart
