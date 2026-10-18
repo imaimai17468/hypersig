@@ -76,8 +76,9 @@ impl ComboboxState {
 /// Escape is taken by the combobox while focus is in its text field, so a
 /// dialog around it closes on Escape only from elsewhere. The visitor can
 /// also leave text that matches no option, which the page
-/// checks where it needs one of the options. Two comboboxes with the same
-/// names on one page share ids, which nothing checks.
+/// checks where it needs one of the options. The text field and the list
+/// carry node refs with their names, so two comboboxes with one name on a page
+/// make [`Page::render`](hypersig::Page::render) panic.
 ///
 /// ```
 /// use hypersig::Signals;

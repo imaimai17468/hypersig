@@ -27,8 +27,9 @@ use crate::token;
 /// runs its statement and closes the menu, and Tab closes it.
 ///
 /// The menu is placed under the button with CSS anchor positioning and flips
-/// above it where there is no room below. Two menus with the same name on one
-/// page share an id, which nothing checks.
+/// above it where there is no room below. The menu carries a node ref with
+/// its name, so two menus with one name on a page make
+/// [`Page::render`](hypersig::Page::render) panic.
 ///
 /// ```
 /// use hypersig::Signals;
@@ -231,4 +232,24 @@ fn item_style(destructive: bool) -> Style {
         )
         .on(PseudoClass::FocusVisible, look::ring(px(-2)))
         .merge(look::disabled())
+}
+
+#[cfg(test)]
+mod tests {
+    use hypersig::html::div;
+
+    use super::Menu;
+
+    struct Page;
+
+    const ACTIONS: Menu<Page> = Menu::new("actions");
+
+    #[test]
+    #[should_panic(expected = "node ref name `actions`")]
+    fn two_menus_with_one_name_panic_when_rendered() {
+        let _ = div::<Page>()
+            .child(ACTIONS.menu([]))
+            .child(ACTIONS.menu([]))
+            .render();
+    }
 }

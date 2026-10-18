@@ -33,8 +33,9 @@ use crate::token;
 /// Escape closes the tooltip only while focus is on its button.
 ///
 /// The button carries the attributes the tooltip needs, so build it here
-/// rather than adding a tooltip to a button made elsewhere. Two tooltips with
-/// the same name on one page share an id, which nothing checks.
+/// rather than adding a tooltip to a button made elsewhere. The tooltip
+/// carries a node ref with its name, so two tooltips with one name on a page
+/// make [`Page::render`](hypersig::Page::render) panic.
 ///
 /// ```
 /// use hypersig::Signals;

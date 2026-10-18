@@ -440,8 +440,8 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A [`NodeRef`](api:hypersig/struct.NodeRef.html) names one element for a DOM call that no binding covers. Declare it as a `const`, attach it with `El::node_ref`, and use its statements: `focus`, `blur`, `select`, `scroll_into_view`, `show_popover`, and `hide_popover`. The reset button below stops the stopwatch and moves focus to the start button.",
-                ja: "[`NodeRef`](api:hypersig/struct.NodeRef.html) は、束縛では扱えない DOM の呼び出しのために要素を 1 つ指す名前です。`const` として宣言し、`El::node_ref` で要素に付け、`focus`、`blur`、`select`、`scroll_into_view`、`show_popover`、`hide_popover` の文を使います。下のリセットボタンはストップウォッチを止め、フォーカスをスタートボタンに移します。",
+                en: "A [`NodeRef`](api:hypersig/struct.NodeRef.html) names one element for a DOM call that no binding covers. Declare it as a `const`, attach it with `El::node_ref`, and use its statements: `focus`, `blur`, `select`, `scroll_into_view`, `show_popover`, and `hide_popover`. Each item of a list may carry the same name, and any other two elements with one name make `Page::render` panic, so a test that renders the page finds the second. The reset button below stops the stopwatch and moves focus to the start button.",
+                ja: "[`NodeRef`](api:hypersig/struct.NodeRef.html) は、束縛では扱えない DOM の呼び出しのために要素を 1 つ指す名前です。`const` として宣言し、`El::node_ref` で要素に付け、`focus`、`blur`、`select`、`scroll_into_view`、`show_popover`、`hide_popover` の文を使います。リストの項目ごとに同じ名前を付けるのはかまいませんが、それ以外で 2 つの要素に同じ名前を付けると `Page::render` が panic するので、ページを描画するテストで見つかります。下のリセットボタンはストップウォッチを止め、フォーカスをスタートボタンに移します。",
             },
         ),
         demo::show(site, Demo::Stopwatch),
