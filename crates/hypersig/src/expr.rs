@@ -57,6 +57,8 @@
 //! | `link.push_url()`, `link.replace_url()` | `["history","push",url]`, `["history","replace",url]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |
 //! | `a.let_in(\|v\| e)`, and `v` inside `e` | `["let",a,depth,e]`, `["var",depth]` |
+//! | `a.let_in_stmt(\|v\| s)` | `["let",a,depth,s]` |
+//! | `call.on_error(\|message\| s)`, `call.on_success(t)` | `["call",...,flags,{"error":[depth,s],"ok":t}]` |
 //!
 //! A place is `"dotted.path"` for a page signal and `["item",depth,"path"]`
 //! for a field of a list item.
@@ -170,6 +172,40 @@ impl<S, T> Expr<S, T> {
         })
     }
 
+    /// A statement that runs `body` with this value, computed once when the statement runs.
+    ///
+    /// `body` receives an expression that reads the value as it was then.
+    /// Statements that run later inside `body`, such as a call's
+    /// [`on_error`](crate::Call::on_error), still read that value after the
+    /// signals it came from have changed. As with [`let_in`](Expr::let_in),
+    /// the expression means nothing outside `body`.
+    ///
+    /// ```
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Notes {
+    ///     next: i32,
+    ///     failed: Vec<i32>,
+    /// }
+    ///
+    /// const SAVE: Action<Notes, i32> = Action::post("/save");
+    /// let next = Notes::next();
+    /// let _save = next.let_in_stmt(|sent| {
+    ///     SAVE.call_with(sent.clone())
+    ///         .on_error(|_| Notes::failed().push(sent))
+    ///         .then(next.set(next + 1))
+    /// });
+    /// ```
+    #[must_use]
+    pub fn let_in_stmt<B: IntoStmt<S>>(self, body: impl FnOnce(Expr<S, T>) -> B) -> Stmt<S> {
+        in_let_scope(|depth| {
+            let body = body(Expr::from_json(json!(["var", depth]))).into_stmt();
+            Stmt::new(json!(["let", self.ast, depth, body.ast]))
+        })
+    }
+
     pub(crate) fn into_json(self) -> Value {
         self.ast
     }
@@ -189,7 +225,7 @@ thread_local! {
 
 /// Runs `body` with the depth of a new `let_in` scope, one deeper than the
 /// enclosing one, so nested names do not collide.
-fn in_let_scope<R>(body: impl FnOnce(u8) -> R) -> R {
+pub(crate) fn in_let_scope<R>(body: impl FnOnce(u8) -> R) -> R {
     struct Restore(u8);
     impl Drop for Restore {
         fn drop(&mut self) {

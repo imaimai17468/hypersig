@@ -8,7 +8,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use crate::expr::{Comparable, Expr, IntoExpr, Number, Stmt};
+use crate::expr::{Comparable, Expr, IntoExpr, IntoStmt, Number, Stmt};
 use crate::patch::SignalPatch;
 
 /// A struct whose fields are signals.
@@ -205,6 +205,16 @@ impl<S, T, R> Sig<S, T, R> {
     #[must_use]
     pub fn set(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
         Stmt::set(self.path.place_json(), value.into_expr())
+    }
+
+    /// A statement that runs `body` with this signal's value when the statement runs.
+    ///
+    /// It is [`Expr::let_in_stmt`] on the signal's value, so statements that
+    /// run later inside `body`, such as a call's
+    /// [`on_error`](crate::Call::on_error), read the value as it was then.
+    #[must_use]
+    pub fn let_in_stmt<B: IntoStmt<S>>(self, body: impl FnOnce(Expr<S, T>) -> B) -> Stmt<S> {
+        self.expr().let_in_stmt(body)
     }
 
     pub(crate) fn expr(self) -> Expr<S, T> {

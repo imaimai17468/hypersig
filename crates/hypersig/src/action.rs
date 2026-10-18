@@ -3,9 +3,9 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
-use crate::expr::{IntoExpr, IntoStmt, Stmt};
+use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
 use crate::html::El;
 use crate::route::Base;
 use crate::signal::Sig;
@@ -192,6 +192,9 @@ pub struct Call<S> {
     connected: bool,
     /// The name of the [`FileInput`](crate::FileInput) whose files an upload sends.
     files: Option<&'static str>,
+    /// The `let` depth the error text is named at, and the statement that reads it.
+    on_error: Option<(u8, Value)>,
+    on_success: Option<Value>,
     marker: PhantomData<fn() -> S>,
 }
 
@@ -208,6 +211,8 @@ impl<S> Call<S> {
             resends: false,
             connected: false,
             files: None,
+            on_error: None,
+            on_success: None,
             marker: PhantomData,
         }
     }
@@ -279,6 +284,62 @@ impl<S> Call<S> {
         self
     }
 
+    /// Runs the statement `handle` builds when this call fails.
+    ///
+    /// `handle` receives the error text, the same text [`Call::error`] writes,
+    /// so a page with several calls in flight can mark the one that failed
+    /// rather than all of them. The statement runs where the call was made:
+    /// inside a list item it reaches that item, and inside
+    /// [`Expr::let_in_stmt`] it reads the values named when the call was sent.
+    ///
+    /// The statement does not run for a `latest` call that a later one
+    /// aborted, nor once the page navigates away.
+    ///
+    /// ```
+    /// use hypersig::html::{button, each, li};
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Line {
+    ///     id: i32,
+    ///     problem: String,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Cart {
+    ///     lines: Vec<Line>,
+    /// }
+    ///
+    /// const ORDER: Action<Cart, i32> = Action::post("/order");
+    /// let _lines = each(Cart::lines(), |line| {
+    ///     li().child(button().text("Order").on_click(
+    ///         ORDER
+    ///             .call_with(line.at(Line::id()))
+    ///             .on_error(|message| line.at(Line::problem()).set(message))
+    ///             .on_success(line.at(Line::problem()).set("")),
+    ///     ))
+    /// });
+    /// ```
+    #[must_use]
+    pub fn on_error<B: IntoStmt<S>>(mut self, handle: impl FnOnce(Expr<S, String>) -> B) -> Self {
+        self.on_error = Some(in_let_scope(|depth| {
+            let message = Expr::from_json(json!(["var", depth]));
+            (depth, handle(message).into_stmt().into_json())
+        }));
+        self
+    }
+
+    /// Runs `next` once the server's answer has arrived and its patches are applied.
+    ///
+    /// It runs where the call was made, as [`Call::on_error`] does, and not
+    /// for an aborted `latest` call or once the page navigates away.
+    #[must_use]
+    pub fn on_success(mut self, next: impl IntoStmt<S>) -> Self {
+        self.on_success = Some(next.into_stmt().into_json());
+        self
+    }
+
     /// Sends this call, then runs `next` without waiting for the answer.
     ///
     /// The arguments are evaluated when the call is sent, so `next` can
@@ -313,11 +374,22 @@ impl<S> IntoStmt<S> for Call<S> {
         .into_iter()
         .filter_map(|(flag, on)| on.then_some(flag))
         .collect();
-        // A call without flags keeps the six-element form.
-        if !flags.is_empty()
-            && let Value::Array(items) = &mut ast
-        {
-            items.push(json!(flags));
+        let mut outcomes = Map::new();
+        if let Some((depth, stmt)) = call.on_error {
+            outcomes.insert("error".to_owned(), json!([depth, stmt]));
+        }
+        if let Some(stmt) = call.on_success {
+            outcomes.insert("ok".to_owned(), stmt);
+        }
+        // A call without flags or outcomes keeps the six-element form, and
+        // one with outcomes writes its flags, empty or not, before them.
+        if let Value::Array(items) = &mut ast {
+            if !flags.is_empty() || !outcomes.is_empty() {
+                items.push(json!(flags));
+            }
+            if !outcomes.is_empty() {
+                items.push(Value::Object(outcomes));
+            }
         }
         Stmt::new(ast)
     }
@@ -757,6 +829,31 @@ mod tests {
         assert_eq!(
             FEED.call().connected(live).into_stmt().as_json(),
             &json!(["call", "GET", "/feed", null, "live", null, ["connected"]])
+        );
+    }
+
+    #[test]
+    fn the_outcomes_follow_the_flags() {
+        let saved: Sig<Page, String> = Sig::from_path(crate::signal::Path::field("saved"));
+        assert_eq!(
+            SAVE.call()
+                .on_error(|message| saved.set(message))
+                .on_success(saved.set("yes"))
+                .into_stmt()
+                .as_json(),
+            &json!([
+                "call",
+                "POST",
+                "/save",
+                null,
+                null,
+                null,
+                [],
+                {
+                    "error": [0, ["set", "saved", ["var", 0]]],
+                    "ok": ["set", "saved", ["lit", "yes"]]
+                }
+            ])
         );
     }
 

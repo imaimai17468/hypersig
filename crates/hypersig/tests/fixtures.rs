@@ -296,6 +296,83 @@ fn timers() -> (El<Timers>, Timers) {
 }
 
 #[derive(Signals, Serialize, Deserialize, Clone)]
+struct Letter {
+    id: i32,
+    text: String,
+    state: String,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Outbox {
+    letters: Vec<Letter>,
+    draft: String,
+    next: i32,
+}
+
+const DELIVER: Action<Outbox, i32> = Action::post("/send");
+
+/// Sends each line in its own call, and marks only the line whose call failed.
+fn outbox() -> (El<Outbox>, Outbox) {
+    let letters = Outbox::letters();
+    let next = Outbox::next();
+    let draft = Outbox::draft();
+    let blank = Expr::lit(&Letter {
+        id: 0,
+        text: String::new(),
+        state: "sending".to_owned(),
+    });
+    let send = next.let_in_stmt(|id| {
+        let mark = |state: Expr<Outbox, String>| {
+            letters.update_where(
+                |line| line.at(Letter::id()).equals(id.clone()),
+                Letter::state(),
+                |_| state,
+            )
+        };
+        letters
+            .push(
+                blank
+                    .with(Letter::id(), id.clone())
+                    .with(Letter::text(), draft),
+            )
+            .then(
+                DELIVER
+                    .call_with(id.clone())
+                    .on_error(mark)
+                    .on_success(mark(Expr::lit(&"sent".to_owned()))),
+            )
+            .then(next.set(next + 1))
+    });
+    let el = main()
+        .child(input().id("draft").bind(draft))
+        .child(button().id("send").on_click(send))
+        .child(ul().id("letters").child(each(letters, |line| {
+            li().child(span().class(class::NAME).bind_text(line.at(Letter::text())))
+                .child(
+                    span()
+                        .class(class::COUNT)
+                        .bind_text(line.at(Letter::state())),
+                )
+                .child(
+                    button().class(class::EDIT).on_click(
+                        line.at(Letter::state()).set("sending").then(
+                            DELIVER
+                                .call_with(line.at(Letter::id()))
+                                .on_error(|message| line.at(Letter::state()).set(message))
+                                .on_success(line.at(Letter::state()).set("sent")),
+                        ),
+                    ),
+                )
+        })));
+    let signals = Outbox {
+        letters: Vec::new(),
+        draft: String::new(),
+        next: 1,
+    };
+    (el, signals)
+}
+
+#[derive(Signals, Serialize, Deserialize, Clone)]
 struct Signup {
     email: String,
     password: String,
@@ -1198,6 +1275,8 @@ fn fixtures_match_the_builder() {
     check("controls", &el, &signals);
     let (el, signals) = timers();
     check("timers", &el, &signals);
+    let (el, signals) = outbox();
+    check("outbox", &el, &signals);
     let (el, signals) = nested();
     check("nested", &el, &signals);
     let (el, signals) = table();

@@ -451,6 +451,37 @@ describe("timers, effects, and calls", () => {
   });
 });
 
+describe("call outcomes", () => {
+  it("marks only the line whose call failed, with the values named when it was sent", async () => {
+    const answers = new Map<string, (response: Response) => void>();
+    const fetch = vi.fn(
+      (_url: URL, init: RequestInit) => new Promise<Response>((resolve) => answers.set(String(init.body), resolve)),
+    );
+    vi.stubGlobal("fetch", fetch);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const runtime = mount("outbox");
+    const states = () => (runtime.store.get("letters") as { state: string }[]).map((letter) => letter.state);
+    type($<HTMLInputElement>("#draft"), "first");
+    $("#send").click();
+    await tick();
+    type($<HTMLInputElement>("#draft"), "second");
+    $("#send").click();
+    await vi.waitFor(() => expect(answers.size).toBe(2));
+    expect(states()).toEqual(["sending", "sending"]);
+
+    answers.get("1")!(new Response("The outbox is full.", { status: 409 }));
+    answers.get("2")!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+    await vi.waitFor(() => expect(states()).toEqual(["The outbox is full.", "sent"]));
+
+    answers.clear();
+    $$("#letters .edit")[0]!.click();
+    expect(states()).toEqual(["sending", "sent"]);
+    await vi.waitFor(() => expect(answers.size).toBe(1));
+    answers.get("1")!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+    await vi.waitFor(() => expect(states()).toEqual(["sent", "sent"]));
+  });
+});
+
 describe("list statements and browser values", () => {
   it("creates, updates, swaps, and sorts items, and reads random numbers and the clock", async () => {
     const runtime = mount("table");

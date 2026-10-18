@@ -495,8 +495,13 @@ export class Runtime implements Host {
           this.#busy(open, 1);
         });
         if (opened) this.#busy(open!, -1);
-        if (failure === null || latest?.signal.aborted === true) return;
+        if (latest?.signal.aborted === true) return;
+        if (failure === null) {
+          if (!this.#leaving) options.succeeded?.();
+          return;
+        }
         this.#fail(method, path, failure.message, error, failure.status);
+        options.failed?.(failure.message);
         const again = options.reconnect && method === "GET" && (failure.status === 0 || failure.status >= 500);
         if (!again || abandoned()) return;
         await new Promise((resolve) => setTimeout(resolve, delay));

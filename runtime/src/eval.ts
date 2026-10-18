@@ -39,6 +39,10 @@ export interface CallOptions {
   readonly origin: Element | undefined;
   /** The name of the file input whose files go with the arguments, for an upload. */
   readonly files?: string;
+  /** Runs the call's own statement for a failure, with the error text. */
+  readonly failed?: (message: string) => void;
+  /** Runs the call's own statement once the answer has been applied. */
+  readonly succeeded?: () => void;
 }
 
 /** The side effects a statement can ask the runtime for. */
@@ -426,6 +430,30 @@ function build(ast: Ast): Compiled {
   }
 }
 
+/**
+ * The statements a call runs when it fails or succeeds, from its
+ * `{"error": [depth, statement], "ok": statement}` element. They run in the
+ * context of the statement that made the call, so they reach its list items
+ * and `let` values, and the error statement reads the error text as the
+ * `let` value at `depth`.
+ */
+function outcomes(spec: unknown, ctx: Context, host: Host): Pick<CallOptions, "failed" | "succeeded"> {
+  if (spec === null || typeof spec !== "object") return {};
+  const { error, ok } = spec as { error?: [number, unknown]; ok?: unknown };
+  const report = (cause: unknown): void => console.error("hypersig:", cause);
+  return {
+    ...(error === undefined
+      ? {}
+      : {
+          failed: (message: string) => {
+            const [depth, stmt] = error;
+            run(stmt, { ...ctx, vars: [...(ctx.vars ?? []).slice(0, depth), message] }, host).catch(report);
+          },
+        }),
+    ...(ok === undefined ? {} : { succeeded: () => void run(ok, ctx, host).catch(report) }),
+  };
+}
+
 export async function run(ast: unknown, ctx: Context, host: Host): Promise<void> {
   if (!isAst(ast)) throw new AstError(ast);
   const [op, ...rest] = ast;
@@ -577,16 +605,31 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
         reconnect: flags.includes("reconnect"),
         connected: flags.includes("connected"),
         origin: ctx.origin,
+        ...outcomes(rest[6], ctx, host),
       };
       void host.call(rest[0] as string, rest[1] as string, args, rest[3] as string | null, rest[4] as string | null, options);
       return;
     }
     case "upload": {
-      // `["upload", path, args, indicator, error, file input, flags?]`, always a POST.
+      // `["upload", path, args, indicator, error, file input, flags?, outcomes?]`, always a POST.
       const args = (): unknown => (rest[1] === null ? null : evaluate(rest[1], ctx));
       const flags = (rest[5] ?? []) as string[];
-      const options = { latest: flags.includes("latest"), reconnect: false, connected: false, origin: ctx.origin, files: rest[4] as string };
+      const options = {
+        latest: flags.includes("latest"),
+        reconnect: false,
+        connected: false,
+        origin: ctx.origin,
+        files: rest[4] as string,
+        ...outcomes(rest[6], ctx, host),
+      };
       void host.call("POST", rest[0] as string, args, rest[2] as string | null, rest[3] as string | null, options);
+      return;
+    }
+    case "let": {
+      // `["let", value, depth, statement]`: the statement form of the `let` expression.
+      const value = evaluate(rest[0], ctx);
+      const depth = rest[1] as number;
+      await run(rest[2], { ...ctx, vars: [...(ctx.vars ?? []).slice(0, depth), value] }, host);
       return;
     }
     case "dom":

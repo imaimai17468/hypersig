@@ -1299,6 +1299,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "この値から `body` が作る式。`body` が何度使っても、値の評価は 1 回で済みます。",
                             },
                         ),
+                        (
+                            "let_in_stmt",
+                            "struct.Expr.html#method.let_in_stmt",
+                            L {
+                                en: "A statement that runs `body` with this value, computed once when the statement runs.",
+                                ja: "文を実行した時点で 1 回だけ計算したこの値で、`body` を実行する文",
+                            },
+                        ),
                     ],
                 },
                 Section {
@@ -1966,6 +1974,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "Aborts the unfinished earlier `latest` call to the same action.",
                                 ja: "同じアクションへの `latest` の呼び出しで、まだ終わっていない前のものを取り消します。",
+                            },
+                        ),
+                        (
+                            "on_error",
+                            "struct.Call.html#method.on_error",
+                            L {
+                                en: "Runs the statement `handle` builds when this call fails.",
+                                ja: "この呼び出しが失敗したとき、`handle` が作る文を実行します。",
+                            },
+                        ),
+                        (
+                            "on_success",
+                            "struct.Call.html#method.on_success",
+                            L {
+                                en: "Runs `next` once the server's answer has arrived and its patches are applied.",
+                                ja: "サーバーの応答が届き、そのパッチを適用し終えたら `next` を実行します。",
                             },
                         ),
                         (
