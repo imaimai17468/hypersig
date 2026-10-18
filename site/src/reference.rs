@@ -122,114 +122,176 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                 en: "`Page` is the full HTML document for a page, with its title, its initial signals, and the runtime.",
                 ja: "`Page` はページ全体の HTML 文書です。タイトル、シグナルの初期値、ランタイムを持ちます。",
             },
-            &[Section {
-                heading: L {
-                    en: "Page",
-                    ja: "Page",
+            &[
+                Section {
+                    heading: L {
+                        en: "Page",
+                        ja: "Page",
+                    },
+                    text: L {
+                        en: "`Page::render` evaluates every binding with the initial signals, so the first HTML already contains the values the runtime would compute.",
+                        ja: "`Page::render` はすべての束縛をシグナルの初期値で評価します。そのため、最初の HTML には、ランタイムが計算するはずの値がすでに入っています。",
+                    },
+                    rows: &[
+                        (
+                            "Page::new",
+                            "struct.Page.html#method.new",
+                            L {
+                                en: "Starts a page with its title and initial signal values.",
+                                ja: "タイトルとシグナルの初期値からページを作り始めます。",
+                            },
+                        ),
+                        (
+                            "child",
+                            "struct.Page.html#method.child",
+                            L {
+                                en: "Appends a node to `<body>`.",
+                                ja: "`<body>` にノードを追加します。",
+                            },
+                        ),
+                        (
+                            "computed",
+                            "struct.Page.html#method.computed",
+                            L {
+                                en: "Keeps `signal` equal to `value`, recomputed when a signal `value` reads changes.",
+                                ja: "`signal` を `value` と等しく保ちます。`value` が読むシグナルが変わると計算し直します。",
+                            },
+                        ),
+                        (
+                            "theme",
+                            "struct.Page.html#method.theme",
+                            L {
+                                en: "Sets token values for the whole page.",
+                                ja: "ページ全体のトークンの値を設定します。",
+                            },
+                        ),
+                        (
+                            "global",
+                            "struct.Page.html#method.global",
+                            L {
+                                en: "Adds rules for elements by their tag, and fonts, to the page.",
+                                ja: "タグで要素を選ぶ規則とフォントをページに追加します。",
+                            },
+                        ),
+                        (
+                            "style",
+                            "struct.Page.html#method.style",
+                            L {
+                                en: "Adds `sheet` to `<head>` as a `<style>` block.",
+                                ja: "`sheet` を `<style>` ブロックとして `<head>` に追加します。",
+                            },
+                        ),
+                        (
+                            "stylesheet",
+                            "struct.Page.html#method.stylesheet",
+                            L {
+                                en: "Adds a `<link rel=\"stylesheet\">` for the file at `href` to `<head>`.",
+                                ja: "`href` にあるファイルを読み込む `<link rel=\"stylesheet\">` を `<head>` に追加します。",
+                            },
+                        ),
+                        (
+                            "lang",
+                            "struct.Page.html#method.lang",
+                            L {
+                                en: "Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.",
+                                ja: "ページの言語（`<html>` の `lang` 属性）を BCP 47 のタグ `tag` に設定します。",
+                            },
+                        ),
+                        (
+                            "runtime_src",
+                            "struct.Page.html#method.runtime_src",
+                            L {
+                                en: "Loads the runtime from `src` instead of `RUNTIME_PATH`, for a page served as a static file.",
+                                ja: "ランタイムを `RUNTIME_PATH` ではなく `src` から読み込みます。静的ファイルとして配信するページに使います。",
+                            },
+                        ),
+                        (
+                            "render",
+                            "struct.Page.html#method.render",
+                            L {
+                                en: "Renders the document.",
+                                ja: "文書を描画します。",
+                            },
+                        ),
+                        (
+                            "RUNTIME_PATH",
+                            "constant.RUNTIME_PATH.html",
+                            L {
+                                en: "The path `Page` loads the runtime from.",
+                                ja: "`Page` がランタイムを読み込むパスです。",
+                            },
+                        ),
+                        (
+                            "RUNTIME_JS",
+                            "constant.RUNTIME_JS.html",
+                            L {
+                                en: "The browser runtime, built from `runtime/` in the repository.",
+                                ja: "リポジトリの `runtime/` からビルドした、ブラウザのランタイムです。",
+                            },
+                        ),
+                    ],
                 },
-                text: L {
-                    en: "`Page::render` evaluates every binding with the initial signals, so the first HTML already contains the values the runtime would compute.",
-                    ja: "`Page::render` はすべての束縛をシグナルの初期値で評価します。そのため、最初の HTML には、ランタイムが計算するはずの値がすでに入っています。",
+                Section {
+                    heading: L {
+                        en: "Search results and link previews",
+                        ja: "検索結果とリンクのプレビュー",
+                    },
+                    text: L {
+                        en: "A canonical URL and the image of a card are absolute, so they join a path to an `Origin`. Navigation loads the next document, so each page writes its own tags.",
+                        ja: "canonical の URL とカードの画像は絶対 URL なので、パスを `Origin` につないで作ります。ページ遷移では次の文書を読み込むので、タグはページごとに書きます。",
+                    },
+                    rows: &[
+                        (
+                            "description",
+                            "struct.Page.html#method.description",
+                            L {
+                                en: "Sets the summary of the page that search results and link previews show.",
+                                ja: "検索結果やリンクのプレビューに出す、ページの要約を設定します。",
+                            },
+                        ),
+                        (
+                            "canonical",
+                            "struct.Page.html#method.canonical",
+                            L {
+                                en: "Names `url` on `origin` as the page's one address.",
+                                ja: "`origin` 上の `url` を、ページのただ 1 つのアドレスとして示します。",
+                            },
+                        ),
+                        (
+                            "icon",
+                            "struct.Page.html#method.icon",
+                            L {
+                                en: "Uses the file at `href` as the page's icon in tabs and bookmarks.",
+                                ja: "`href` のファイルを、タブやブックマークに出すページのアイコンにします。",
+                            },
+                        ),
+                        (
+                            "open_graph",
+                            "struct.Page.html#method.open_graph",
+                            L {
+                                en: "Adds the card a link to the page shows in chat apps and social sites.",
+                                ja: "チャットアプリや SNS でページへのリンクに出すカードを追加します。",
+                            },
+                        ),
+                        (
+                            "Origin",
+                            "struct.Origin.html",
+                            L {
+                                en: "The scheme and host a site is served from, such as `https://example.com`.",
+                                ja: "`https://example.com` のような、サイトを配信するスキームとホストです。",
+                            },
+                        ),
+                        (
+                            "OpenGraph",
+                            "struct.OpenGraph.html",
+                            L {
+                                en: "The card a chat app or a social site shows for a link to the page.",
+                                ja: "チャットアプリや SNS が、ページへのリンクに出すカードです。",
+                            },
+                        ),
+                    ],
                 },
-                rows: &[
-                    (
-                        "Page::new",
-                        "struct.Page.html#method.new",
-                        L {
-                            en: "Starts a page with its title and initial signal values.",
-                            ja: "タイトルとシグナルの初期値からページを作り始めます。",
-                        },
-                    ),
-                    (
-                        "child",
-                        "struct.Page.html#method.child",
-                        L {
-                            en: "Appends a node to `<body>`.",
-                            ja: "`<body>` にノードを追加します。",
-                        },
-                    ),
-                    (
-                        "computed",
-                        "struct.Page.html#method.computed",
-                        L {
-                            en: "Keeps `signal` equal to `value`, recomputed when a signal `value` reads changes.",
-                            ja: "`signal` を `value` と等しく保ちます。`value` が読むシグナルが変わると計算し直します。",
-                        },
-                    ),
-                    (
-                        "theme",
-                        "struct.Page.html#method.theme",
-                        L {
-                            en: "Sets token values for the whole page.",
-                            ja: "ページ全体のトークンの値を設定します。",
-                        },
-                    ),
-                    (
-                        "global",
-                        "struct.Page.html#method.global",
-                        L {
-                            en: "Adds rules for elements by their tag, and fonts, to the page.",
-                            ja: "タグで要素を選ぶ規則とフォントをページに追加します。",
-                        },
-                    ),
-                    (
-                        "style",
-                        "struct.Page.html#method.style",
-                        L {
-                            en: "Adds `sheet` to `<head>` as a `<style>` block.",
-                            ja: "`sheet` を `<style>` ブロックとして `<head>` に追加します。",
-                        },
-                    ),
-                    (
-                        "stylesheet",
-                        "struct.Page.html#method.stylesheet",
-                        L {
-                            en: "Adds a `<link rel=\"stylesheet\">` for the file at `href` to `<head>`.",
-                            ja: "`href` にあるファイルを読み込む `<link rel=\"stylesheet\">` を `<head>` に追加します。",
-                        },
-                    ),
-                    (
-                        "lang",
-                        "struct.Page.html#method.lang",
-                        L {
-                            en: "Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.",
-                            ja: "ページの言語（`<html>` の `lang` 属性）を BCP 47 のタグ `tag` に設定します。",
-                        },
-                    ),
-                    (
-                        "runtime_src",
-                        "struct.Page.html#method.runtime_src",
-                        L {
-                            en: "Loads the runtime from `src` instead of `RUNTIME_PATH`, for a page served as a static file.",
-                            ja: "ランタイムを `RUNTIME_PATH` ではなく `src` から読み込みます。静的ファイルとして配信するページに使います。",
-                        },
-                    ),
-                    (
-                        "render",
-                        "struct.Page.html#method.render",
-                        L {
-                            en: "Renders the document.",
-                            ja: "文書を描画します。",
-                        },
-                    ),
-                    (
-                        "RUNTIME_PATH",
-                        "constant.RUNTIME_PATH.html",
-                        L {
-                            en: "The path `Page` loads the runtime from.",
-                            ja: "`Page` がランタイムを読み込むパスです。",
-                        },
-                    ),
-                    (
-                        "RUNTIME_JS",
-                        "constant.RUNTIME_JS.html",
-                        L {
-                            en: "The browser runtime, built from `runtime/` in the repository.",
-                            ja: "リポジトリの `runtime/` からビルドした、ブラウザのランタイムです。",
-                        },
-                    ),
-                ],
-            }],
+            ],
         ),
         Reference::El => (
             L {

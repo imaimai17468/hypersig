@@ -8,7 +8,7 @@ use hypersig::style::value::{
     JustifyContent, LineHeight, OverflowY, Position, TextDecorationLine, ZIndex, px, raw, rem,
 };
 use hypersig::style::{Element, Global, Media, PseudoClass, Style};
-use hypersig::{Page, if_else};
+use hypersig::{OpenGraph, Page, if_else};
 use hypersig_ui::{ButtonVariant, icon_button, token};
 
 use crate::doc::{Doc, Library};
@@ -32,6 +32,8 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
     };
     Page::new(title, Docs::default())
         .lang(site.lang().tag())
+        .description(doc.library().description(site))
+        .open_graph(OpenGraph::new().site_name("hypersig"))
         .runtime_src(site.runtime())
         .global(hypersig_ui::global())
         .global(

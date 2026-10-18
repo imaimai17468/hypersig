@@ -149,6 +149,29 @@ impl Library {
         })
     }
 
+    /// What the library is, as the description of each of its pages that
+    /// search results and link previews show.
+    pub fn description(self, site: Site) -> &'static str {
+        site.t(match self {
+            Self::Framework => L {
+                en: "hypersig is a server-driven hypermedia library for Rust. Signal names, expressions, actions, and links are built from Rust types, so a mistake in one is a compile error.",
+                ja: "hypersig は Rust のサーバー駆動のハイパーメディアライブラリです。シグナル名、式、アクション、リンクを Rust の型から作るので、その誤りはコンパイルエラーになります。",
+            },
+            Self::Style => L {
+                en: "Typed atomic CSS for hypersig, with properties and values generated from MDN's data.",
+                ja: "hypersig の型付きアトミック CSS です。プロパティと値は MDN のデータから生成しています。",
+            },
+            Self::Components => L {
+                en: "Components for hypersig styled after shadcn/ui, built on native elements and the WAI-ARIA patterns.",
+                ja: "shadcn/ui の見た目に倣った hypersig のコンポーネントです。ネイティブの要素と WAI-ARIA のパターンの上に作っています。",
+            },
+            Self::I18n => L {
+                en: "Typed translations for hypersig, with the language picked from Accept-Language.",
+                ja: "hypersig の型付きの翻訳です。言語は Accept-Language から選びます。",
+            },
+        })
+    }
+
     /// The library's landing page.
     pub fn home(self) -> Doc {
         match self {
