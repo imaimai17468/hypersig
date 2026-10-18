@@ -15,6 +15,7 @@
 //! and a random number, which only the browser knows.
 
 use std::borrow::Cow;
+use std::cell::RefCell;
 
 use serde_json::{Map, Number, Value};
 
@@ -32,6 +33,10 @@ pub(crate) struct Ctx<'a> {
     pub(crate) copy: bool,
     /// The values `let_in` names, by depth.
     pub(crate) vars: Vec<Value>,
+    /// Where an element puts its bound style declarations in place of a
+    /// `style` attribute, for a page with a CSP nonce. Each entry is the body
+    /// of one rule, and its index is the element's `data-hs-inline` value.
+    pub(crate) rules: Option<&'a RefCell<Vec<String>>>,
 }
 
 impl<'a> Ctx<'a> {
@@ -43,6 +48,7 @@ impl<'a> Ctx<'a> {
             scope,
             copy: true,
             vars: self.vars.clone(),
+            rules: self.rules,
         }
     }
 
@@ -52,6 +58,7 @@ impl<'a> Ctx<'a> {
             scope: self.scope.clone(),
             copy: true,
             vars: self.vars.clone(),
+            rules: self.rules,
         }
     }
 
@@ -460,6 +467,7 @@ fn let_in<'a>(parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
         scope: ctx.scope.clone(),
         copy: ctx.copy,
         vars,
+        rules: ctx.rules,
     };
     Some(evaluate(parts.get(3)?, &inner)?.into_owned())
 }
@@ -542,6 +550,7 @@ mod tests {
                 scope: Vec::new(),
                 copy: false,
                 vars: Vec::new(),
+                rules: None,
             },
         )
         .expect("evaluates")

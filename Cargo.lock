@@ -294,6 +294,7 @@ name = "example-ui"
 version = "0.0.0"
 dependencies = [
  "axum",
+ "getrandom",
  "hypersig",
  "hypersig_ui",
  "serde",

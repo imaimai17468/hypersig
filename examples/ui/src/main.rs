@@ -1,11 +1,17 @@
 //! The components of `hypersig_ui` on one page: a form whose email the
 //! server checks, toggles, pickers, tabs, an accordion, dialogs, a menu,
 //! tooltips, toasts, a data table, a table the server pages, charts, and
-//! the static pieces.
+//! the static pieces. Every response carries a Content-Security-Policy that
+//! allows styles only by nonce, which the progress bar, the slider, and the
+//! charts run under.
 //!
 //! Run with `cargo run -p example-ui` and open <http://localhost:3005>.
 
-use axum::Router;
+use axum::extract::Request;
+use axum::http::{HeaderValue, header};
+use axum::middleware::{self, Next};
+use axum::response::Response;
+use axum::{Extension, Router};
 use hypersig::html::{
     self, El, Orientation, div, each, form, h1, h2, header, li, p, section, span, ul,
 };
@@ -165,14 +171,14 @@ struct Catalog {
 const CATALOG_PAGES: u32 = 12;
 
 /// The first page of the catalog, at the address the sections link to.
-async fn catalog_home((): (), (): ()) -> Option<Page<Catalog>> {
-    Some(catalog_page(1, CATALOG_HOME.url(())))
+async fn catalog_home((): (), Extension(nonce): Extension<Nonce>, (): ()) -> Option<Page<Catalog>> {
+    Some(catalog_page(1, CATALOG_HOME.url(())).csp_nonce(nonce.0))
 }
 
-async fn catalog((): (), page: u32) -> Option<Page<Catalog>> {
+async fn catalog((): (), Extension(nonce): Extension<Nonce>, page: u32) -> Option<Page<Catalog>> {
     (1..=CATALOG_PAGES)
         .contains(&page)
-        .then(|| catalog_page(page, CATALOG.url(page)))
+        .then(|| catalog_page(page, CATALOG.url(page)).csp_nonce(nonce.0))
 }
 
 /// Page `page` of a catalog of 12 pages, served at `here`, with a list of
@@ -988,7 +994,12 @@ fn browsers() -> Vec<Browser> {
     .collect()
 }
 
-async fn index((): (), (): ()) -> Page<Gallery> {
+async fn index((): (), Extension(nonce): Extension<Nonce>, (): ()) -> Page<Gallery> {
+    gallery().csp_nonce(nonce.0)
+}
+
+/// The page, before the nonce of its response.
+fn gallery() -> Page<Gallery> {
     let (orders, orders_total) = query_orders(&TableState::default());
     Page::new(
         "hypersig_ui",
@@ -1079,13 +1090,37 @@ async fn index((): (), (): ()) -> Page<Gallery> {
     )
 }
 
+/// The nonce of one response, which its `<style>` elements carry.
+#[derive(Clone)]
+struct Nonce(String);
+
+/// Gives each request a fresh nonce and answers with a Content-Security-Policy
+/// that allows a style only with that nonce and a script only from this origin.
+async fn content_security_policy(mut request: Request, next: Next) -> Response {
+    let mut bytes = [0_u8; 16];
+    getrandom::fill(&mut bytes).expect("the operating system provides random bytes");
+    // Hex digits are a subset of the base64 alphabet a nonce is written in.
+    let nonce = format!("{:032x}", u128::from_ne_bytes(bytes));
+    request.extensions_mut().insert(Nonce(nonce.clone()));
+    let mut response = next.run(request).await;
+    let policy = format!(
+        "default-src 'self'; script-src 'self'; style-src 'nonce-{nonce}'; img-src 'self' data:"
+    );
+    response.headers_mut().insert(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_str(&policy).expect("the policy is ASCII"),
+    );
+    response
+}
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
         .action(SAVE, save)
         .action(NEXT_HALF, next_half)
-        .action(ORDERS, load_orders);
+        .action(ORDERS, load_orders)
+        .layer(middleware::from_fn(content_security_policy));
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3005".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

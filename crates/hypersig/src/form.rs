@@ -136,6 +136,7 @@ impl<T: Validate> Form<T> {
             scope: Vec::new(),
             copy: false,
             vars: Vec::new(),
+            rules: None,
         };
         let mut errors = FieldErrors::new();
         for check in &rules.checks {

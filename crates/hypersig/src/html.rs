@@ -1018,6 +1018,32 @@ mod sealed {
 /// The attribute a server-rendered element hidden by [`El::show`] carries.
 pub(crate) const HIDE: &str = "data-hs-hide";
 
+/// The attribute that selects the rule holding a server-rendered element's
+/// [`El::bind_style`] values, on a page with a CSP nonce.
+pub(crate) const INLINE: &str = "data-hs-inline";
+
+/// Whether `value` can sit inside a declaration in a `<style>` element
+/// without ending the declaration, the rule, a string, or the element.
+///
+/// An unclosed `(` would let a `url(` token run on into the next rules, so
+/// the parentheses have to balance.
+fn plain_css(value: &str) -> bool {
+    let mut depth = 0_usize;
+    for c in value.chars() {
+        match c {
+            '(' => depth += 1,
+            ')' => match depth.checked_sub(1) {
+                Some(less) => depth = less,
+                None => return false,
+            },
+            '{' | '}' | ';' | '<' | '>' | '\\' | '"' | '\'' => return false,
+            c if c.is_control() => return false,
+            _ => {}
+        }
+    }
+    depth == 0 && !value.contains("/*")
+}
+
 /// Creates an element with any tag.
 ///
 /// Use the named constructors such as [`div`] where one exists. A tag the
@@ -1863,12 +1889,30 @@ impl<S> El<S> {
             }
         }
         let mut style: Vec<String> = Vec::new();
+        let mut rule = String::new();
+        let rules = ctx.and_then(|ctx| ctx.rules);
         for (property, value) in &self.style {
-            if let Some(value) = eval_text(value.as_json()) {
-                style.push(format!("{property}: {value}"));
+            match eval_text(value.as_json()) {
+                Some(value) if rules.is_none() => style.push(format!("{property}: {value}")),
+                // A value that could end the rule or the `<style>` element is
+                // left for the runtime to set.
+                Some(value) if plain_css(&value) => {
+                    rule.push_str(property);
+                    rule.push(':');
+                    rule.push_str(&value);
+                    rule.push_str("!important;");
+                }
+                _ => {}
             }
         }
         let mut computed: Vec<(&str, String)> = Vec::new();
+        if let Some(rules) = rules
+            && !rule.is_empty()
+        {
+            let mut rules = rules.borrow_mut();
+            computed.push((INLINE, rules.len().to_string()));
+            rules.push(rule);
+        }
         // A strict Content-Security-Policy ignores a `style` attribute, so a
         // hidden element carries `HIDE`, which a rule `Page` writes hides.
         if let Some(show) = &self.show
@@ -2156,6 +2200,31 @@ mod tests {
             html,
             r#"<picture><source srcset="/a.avif"><meta itemprop="name"><img src="/a.png"></picture>"#
         );
+    }
+
+    #[test]
+    fn a_plain_css_value_cannot_leave_its_declaration() {
+        for value in [
+            "50%",
+            "calc(100% - var(--a, 1px))",
+            "rgb(0 0 0 / 50%)",
+            "#fff",
+        ] {
+            assert!(super::plain_css(value), "{value}");
+        }
+        for value in [
+            "1px}a{b:c",
+            "a;b:c",
+            "</style>",
+            "url(x",
+            "a)",
+            "\"",
+            "/* x",
+            "a\\b",
+            "a\nb",
+        ] {
+            assert!(!super::plain_css(value), "{value}");
+        }
     }
 
     #[test]

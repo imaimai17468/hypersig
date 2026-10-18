@@ -1998,6 +1998,10 @@ function write(element: Element, kind: Write, name: string, value: unknown): voi
       if (element.hasAttribute(name) !== value) element.toggleAttribute(name, Boolean(value));
       return;
     case "style":
+      // On a page with a CSP nonce, the server writes the element's values
+      // as a rule selected by `data-hs-inline` in place of an inline style.
+      // The rule is `!important`, so it goes once the inline style takes over.
+      element.removeAttribute("data-hs-inline");
       (element as HTMLElement).style.setProperty(name, String(value));
   }
 }

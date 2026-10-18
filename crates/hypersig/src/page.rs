@@ -1,6 +1,7 @@
 //! The full HTML document a page is served as.
 
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::fmt;
 
 use serde::de::DeserializeOwned;
@@ -9,7 +10,7 @@ use serde_json::{Value, json};
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
-    HIDE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr,
+    HIDE, INLINE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr,
 };
 use crate::patch::at_path;
 use crate::route::{Base, Url};
@@ -252,13 +253,15 @@ impl<S: Signals> Page<S> {
     /// value the server generated for this response and wrote into its
     /// `Content-Security-Policy` header, at least 128 random bits.
     ///
-    /// A nonce does not reach a `style` attribute, so a page with
-    /// [`El::bind_style`](crate::html::El::bind_style),
-    /// [`El::bind_token`](crate::html::El::bind_token), or a `style` set with
-    /// [`El::attr`](crate::html::El::attr) also needs `style-src-attr
-    /// 'unsafe-inline'`. Without it, the browser drops the server-rendered
-    /// value and the element shows without it until the runtime sets the
-    /// property.
+    /// A nonce does not reach a `style` attribute, so with a nonce the values
+    /// of [`El::bind_style`](crate::html::El::bind_style) and
+    /// [`El::bind_token`](crate::html::El::bind_token) are written as rules
+    /// of a nonced `<style>`, one per element, and the runtime sets them
+    /// inline from then on. A value holding `{`, `}`, `;`, `<`, `>`, a quote,
+    /// a backslash, a comment, or unbalanced parentheses could end its rule,
+    /// so it is left out, and the element shows without it until the runtime
+    /// sets it. A `style` set with [`El::attr`](crate::html::El::attr) stays
+    /// an attribute and needs `style-src-attr 'unsafe-inline'`.
     ///
     /// ```
     /// use hypersig::{Page, Signals};
@@ -524,6 +527,7 @@ impl<S: Signals> Page<S> {
                 scope: Vec::new(),
                 copy: false,
                 vars: Vec::new(),
+                rules: None,
             };
             if let Some(value) = ssr::evaluate(value, &ctx).map(Cow::into_owned) {
                 root = ssr::set_path(&root, path, value);
@@ -635,11 +639,13 @@ impl<S: Signals> Page<S> {
         out.push_str("<link rel=\"icon\"");
         write_attr(&mut out, "href", self.icon.unwrap_or("data:,"));
         out.push('>');
+        let rules = RefCell::new(Vec::new());
         let ctx = Ctx {
             root: &root,
             scope: Vec::new(),
             copy: false,
             vars: Vec::new(),
+            rules: self.nonce.as_ref().map(|_| &rules),
         };
         let title = self
             .bound_title
@@ -669,20 +675,41 @@ impl<S: Signals> Page<S> {
         for child in &self.body {
             child.write(&mut out, Some(&ctx));
         }
-        // An element `El::show` hides on the server carries `HIDE` in place
-        // of a `style` attribute, and this rule hides it. `!important` gives
-        // the rule the precedence an inline style would have over the page's
-        // other rules.
-        if out[body_at..].contains(HIDE) {
-            let mut rule = String::from("<style");
-            self.write_nonce(&mut rule);
-            rule.push_str(">[");
-            rule.push_str(HIDE);
-            rule.push_str("]{display:none!important}</style>");
-            out.insert_str(styles_at, &rule);
+        let hidden = out[body_at..].contains(HIDE);
+        let rules = rules.into_inner();
+        if hidden || !rules.is_empty() {
+            out.insert_str(styles_at, &self.inline_style(hidden, &rules));
         }
         out.push_str("</body></html>");
         out
+    }
+
+    /// The `<style>` that stands in for the `style` attributes of the body:
+    /// the rule that hides each element with `HIDE`, if `hidden`, and one
+    /// rule per entry of `rules`, which selects its element by `INLINE`.
+    ///
+    /// `!important` gives each rule the precedence an inline style would
+    /// have over the page's other rules.
+    fn inline_style(&self, hidden: bool, rules: &[String]) -> String {
+        let mut style = String::from("<style");
+        self.write_nonce(&mut style);
+        style.push('>');
+        if hidden {
+            style.push('[');
+            style.push_str(HIDE);
+            style.push_str("]{display:none!important}");
+        }
+        for (at, rule) in rules.iter().enumerate() {
+            style.push('[');
+            style.push_str(INLINE);
+            style.push_str("=\"");
+            style.push_str(&at.to_string());
+            style.push_str("\"]{");
+            style.push_str(rule);
+            style.push('}');
+        }
+        style.push_str("</style>");
+        style
     }
 
     /// Writes the attributes of `<body>`, which the runtime reads when it starts.
@@ -761,7 +788,7 @@ mod tests {
 
     use crate::html::{Stylesheet, input, p};
     use crate::style::value::Color;
-    use crate::style::{Global, Style, Theme, Token};
+    use crate::style::{Global, Property, Style, Theme, Token};
     use crate::{NodeRef, Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize, Default)]
@@ -792,6 +819,49 @@ mod tests {
             .child(p().show(Search::query().is_empty()).text("Nothing yet"))
             .render();
         assert!(!html.contains("display:none"));
+    }
+
+    fn bars(nonce: Option<&str>) -> String {
+        let page = Page::new(
+            "Search",
+            Search {
+                query: "50%".to_owned(),
+            },
+        )
+        .child(p().bind_style(Property::Width, Search::query()))
+        .child(
+            p().attr("style", "color: red")
+                .bind_style(Property::Height, Search::query())
+                .bind_token(&Token::new("ink", Color::RED), "blue".to_owned()),
+        )
+        .child(p().bind_style(Property::Width, "1px}body{color:red".to_owned()));
+        match nonce {
+            Some(nonce) => page.csp_nonce(nonce).render(),
+            None => page.render(),
+        }
+    }
+
+    #[test]
+    fn without_a_nonce_bound_styles_are_inline() {
+        let html = bars(None);
+        assert!(html.contains(r#"style="width: 50%""#));
+        assert!(html.contains(r#"style="color: red; height: 50%; --ink: blue""#));
+        assert!(!html.contains("data-hs-inline"));
+    }
+
+    #[test]
+    fn with_a_nonce_bound_styles_are_rules_of_the_nonced_style() {
+        let html = bars(Some("n0nce"));
+        assert!(html.contains(concat!(
+            r#"<style nonce="n0nce">"#,
+            r#"[data-hs-inline="0"]{width:50%!important;}"#,
+            r#"[data-hs-inline="1"]{height:50%!important;--ink:blue!important;}"#,
+            "</style>"
+        )));
+        assert!(html.contains(r#"data-hs-inline="0""#));
+        assert!(html.contains(r#"style="color: red""#));
+        assert_eq!(html.matches(" style=").count(), 1);
+        assert!(!html.contains(r#"data-hs-inline="2""#));
     }
 
     #[test]

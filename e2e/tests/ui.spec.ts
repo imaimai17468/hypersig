@@ -669,3 +669,37 @@ test("a chart shows a row's values under the pointer", async ({ page }) => {
   await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.6);
   await expect(page.locator("#bar-chart").locator("div:visible", { hasText: /^February/ }).first()).toContainText("Desktop305");
 });
+
+test("the progress bar, the slider, and the charts run under a policy that allows styles only by nonce", async ({ page }) => {
+  // Without the runtime, the bar's width comes from the rule the server wrote
+  // into the nonced <style>, since the policy drops a style attribute.
+  await page.route("**/_hypersig/runtime.js", (route) => route.fulfill({ contentType: "text/javascript", body: "" }));
+  await page.goto(url("ui"));
+  const bar = page.getByRole("progressbar", { name: "Upload" });
+  const share = async () => {
+    const [fill, track] = await Promise.all([bar.locator("div").first().boundingBox(), bar.boundingBox()]);
+    return Math.round((fill!.width / track!.width) * 100);
+  };
+  expect(await share()).toBe(40);
+  await page.unroute("**/_hypersig/runtime.js");
+
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { violations: string[] }).violations = seen;
+    document.addEventListener("securitypolicyviolation", (event) => seen.push(`${event.violatedDirective} ${event.blockedURI}`));
+  });
+  const response = await page.goto(url("ui"));
+  expect(response!.headers()["content-security-policy"]).toMatch(/style-src 'nonce-[0-9a-f]{32}'/);
+  await page.locator("#more").click();
+  await expect(bar).toHaveAttribute("aria-valuenow", "50");
+  await expect.poll(share).toBe(50);
+  await expect(bar.locator("[data-hs-inline]")).toHaveCount(0);
+
+  const slider = page.getByRole("slider", { name: "Volume" });
+  await slider.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(slider).toHaveValue("45");
+  await expect(page.locator("#bar-chart svg rect").first()).toBeVisible();
+
+  expect(await page.evaluate(() => (window as unknown as { violations: string[] }).violations)).toEqual([]);
+});
