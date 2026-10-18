@@ -715,6 +715,8 @@ impl<S: Signals> Page<S> {
 
     /// Writes the attributes of `<body>`, which the runtime reads when it starts.
     fn write_body_attrs(&self, out: &mut String, root: &Value) {
+        // `write_json_attr` reads all of `out` once, which here holds only
+        // the head, because the body attributes come before the body.
         write_json_attr(out, "data-hs-signals", root);
         if !self.computed.is_empty() {
             let computed: Vec<Value> = self

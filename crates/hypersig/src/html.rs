@@ -2175,8 +2175,7 @@ pub(crate) fn write_json_attr(out: &mut String, name: &str, value: &impl Seriali
     out.push_str("=\"");
     // `serde_json` writes bytes, so `out` is lent to it as a `Vec<u8>` and
     // checked as UTF-8 once when it comes back. The check reads all of
-    // `out`, which `Page` keeps short by writing `data-hs-signals` before
-    // the body.
+    // `out`, so its cost grows with what the caller has already written.
     let mut bytes = std::mem::take(out).into_bytes();
     let mut serializer = serde_json::Serializer::with_formatter(&mut bytes, AttrJson);
     value
