@@ -27,6 +27,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::{Map, Value, json};
 
 use crate::expr::IntoExpr;
@@ -291,6 +292,7 @@ pub(crate) enum PatchEvent {
     Signals(Map<String, Value>),
     List(Value),
     Element {
+        id: &'static str,
         html: String,
         css: Vec<(String, String)>,
         /// The part the fragment's paths were written under.
@@ -345,7 +347,9 @@ impl PatchEvent {
                     statement.to_string()
                 }
             },
-            Self::Element { html, css, part } => {
+            Self::Element {
+                html, css, part, ..
+            } => {
                 assert!(
                     *part == current_part(),
                     "a fragment rendered under the part at {part:?} answers a call from the part \
@@ -458,6 +462,7 @@ impl<S: Signals> Patches<S> {
             .map(|bucket| (bucket.sort_key().to_owned(), bucket.css().to_owned()))
             .collect();
         self.events.push(PatchEvent::Element {
+            id: F::ID,
             html: el.render(),
             css,
             part: current_part(),
@@ -534,6 +539,76 @@ impl<S: Signals> Patches<S> {
         self
     }
 
+    /// The value the batch leaves `signal` at, for a test of an action.
+    ///
+    /// The patches are read in order, as the browser applies them. A patch of
+    /// `signal` or of a struct around it sets the value, and a later patch of
+    /// a field inside it changes that field. `None` means no patch in the
+    /// batch sets `signal` or a struct around it.
+    ///
+    /// ```
+    /// use hypersig::{Patches, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Cart {
+    ///     count: i32,
+    ///     note: String,
+    /// }
+    ///
+    /// let patches = Patches::new().signals(Cart::count().patch(3));
+    /// assert_eq!(patches.value_of(Cart::count()), Some(3));
+    /// assert_eq!(patches.value_of(Cart::note()), None);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value the batch holds does not deserialize into `T`,
+    /// which happens where a later patch sets a field of `signal` that `T`
+    /// lacks, or where `T`'s serde impls disagree with each other.
+    #[must_use]
+    pub fn value_of<T: DeserializeOwned>(&self, signal: Sig<S, T>) -> Option<T> {
+        let path = signal.dotted();
+        let mut value: Option<Value> = None;
+        for event in &self.events {
+            let PatchEvent::Signals(values) = event else {
+                continue;
+            };
+            for (key, next) in values {
+                if *key == path {
+                    value = Some(next.clone());
+                } else if let Some(rest) = below(&path, key) {
+                    value = at_path(next, rest).cloned();
+                } else if let (Some(rest), Some(current)) = (below(key, &path), value.as_mut()) {
+                    set_at_path(current, rest, next.clone());
+                }
+            }
+        }
+        value.map(|value| {
+            serde_json::from_value(value)
+                .expect("a patched signal value deserializes into the signal's type")
+        })
+    }
+
+    /// The URL of the first [`navigate`](Self::navigate) in the batch, for a test.
+    ///
+    /// The browser leaves the page there, so a later one is never followed.
+    #[must_use]
+    pub fn navigates_to(&self) -> Option<&Url> {
+        self.events.iter().find_map(|event| match event {
+            PatchEvent::Navigate(url) => Some(url),
+            _ => None,
+        })
+    }
+
+    /// Whether the batch re-renders the fragment `F`, for a test.
+    #[must_use]
+    pub fn replaces<F: Fragment<Signals = S>>(&self) -> bool {
+        self.events
+            .iter()
+            .any(|event| matches!(event, PatchEvent::Element { id, .. } if *id == F::ID))
+    }
+
     /// The batch as a Server-Sent Events body, for use without the axum feature.
     #[must_use]
     pub fn to_event_stream(&self) -> String {
@@ -554,6 +629,37 @@ impl<S: Signals> Patches<S> {
     }
 }
 
+/// The rest of the dotted path `path` after `outer` and a `.`, where `outer`
+/// names a struct around the field `path` names.
+fn below<'a>(path: &'a str, outer: &str) -> Option<&'a str> {
+    path.strip_prefix(outer)?.strip_prefix('.')
+}
+
+/// The value at the dotted path `path` inside `value`.
+pub(crate) fn at_path<'v>(value: &'v Value, path: &str) -> Option<&'v Value> {
+    path.split('.')
+        .try_fold(value, |current, segment| match current {
+            Value::Object(map) => map.get(segment),
+            _ => None,
+        })
+}
+
+/// Sets the dotted path `path` inside `value` to `next`, adding the objects
+/// on the way that are missing.
+fn set_at_path(value: &mut Value, path: &str, next: Value) {
+    let mut current = value;
+    for segment in path.split('.') {
+        if !current.is_object() {
+            *current = Value::Object(Map::new());
+        }
+        let Value::Object(map) = current else {
+            unreachable!("the value was just made an object");
+        };
+        current = map.entry(segment).or_insert(Value::Null);
+    }
+    *current = next;
+}
+
 impl<S: Signals> From<SignalPatch<S>> for Patches<S> {
     fn from(patch: SignalPatch<S>) -> Self {
         Self::new().signals(patch)
@@ -571,8 +677,9 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     use super::*;
-    use crate::html::span;
+    use crate::html::{div, span};
     use crate::signal::{Path, in_part};
+    use crate::{Route, Signals};
 
     #[derive(Serialize, Deserialize)]
     struct Badge {
@@ -593,6 +700,39 @@ mod tests {
 
         fn render(&self) -> El<Badge> {
             span().bind_text(count().to_text())
+        }
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Debug, PartialEq)]
+    struct Address {
+        city: String,
+        zip: String,
+    }
+
+    #[derive(Signals, Serialize, Deserialize)]
+    struct Shop {
+        count: i32,
+        address: Address,
+    }
+
+    struct Total;
+
+    impl Fragment for Total {
+        type Signals = Shop;
+        const ID: &'static str = "total";
+
+        fn render(&self) -> El<Shop> {
+            div()
+        }
+    }
+
+    fn shop() -> Shop {
+        Shop {
+            count: 1,
+            address: Address {
+                city: "Kyoto".into(),
+                zip: "600".into(),
+            },
         }
     }
 
@@ -629,5 +769,44 @@ mod tests {
     fn a_fragment_rendered_outside_its_part_panics_when_written() {
         let patches = Patches::new().element(&Count);
         in_part(Some("header.badge".into()), || patches.to_event_stream());
+    }
+
+    #[test]
+    fn a_field_reads_from_a_patch_of_the_whole_struct() {
+        let patches = Patches::new().all_signals(&shop());
+        let city = Shop::address().at(Address::city());
+        assert_eq!(patches.value_of(city), Some("Kyoto".to_owned()));
+    }
+
+    #[test]
+    fn a_later_patch_of_a_field_changes_the_struct_around_it() {
+        let zip = Shop::address().at(Address::zip());
+        let patches = Patches::new()
+            .all_signals(&shop())
+            .signals(zip.patch("601".into()));
+        let address = patches.value_of(Shop::address()).unwrap();
+        assert_eq!(address.zip, "601");
+        assert_eq!(address.city, "Kyoto");
+    }
+
+    #[test]
+    fn a_patch_of_a_field_alone_leaves_the_struct_unknown() {
+        let zip = Shop::address().at(Address::zip());
+        let patches = Patches::new().signals(zip.patch("601".into()));
+        assert_eq!(patches.value_of(Shop::address()), None);
+        assert_eq!(patches.value_of(Shop::count()), None);
+    }
+
+    #[test]
+    fn the_first_navigation_and_each_fragment_are_reported() {
+        let first: Route = Route::new("/");
+        let second: Route = Route::new("/later");
+        let patches = Patches::new()
+            .element(&Total)
+            .navigate(first.url(()))
+            .navigate(second.url(()));
+        assert_eq!(patches.navigates_to().map(crate::Url::as_str), Some("/"));
+        assert!(patches.replaces::<Total>());
+        assert!(!Patches::<Shop>::new().replaces::<Total>());
     }
 }

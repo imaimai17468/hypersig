@@ -238,6 +238,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "value_of",
+                            "struct.Page.html#method.value_of",
+                            L {
+                                en: "The value `signal` starts at in the browser, for a test of a page handler.",
+                                ja: "ブラウザで `signal` が最初に持つ値です。ページのハンドラのテストで使います。",
+                            },
+                        ),
+                        (
                             "RUNTIME_PATH",
                             "constant.RUNTIME_PATH.html",
                             L {
@@ -2383,6 +2391,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The batch as a Server-Sent Events body, for use without the axum feature.",
                                 ja: "このまとまりを Server-Sent Events の本文にしたものです。`axum` の feature を使わないときに使います。",
+                            },
+                        ),
+                        (
+                            "value_of",
+                            "struct.Patches.html#method.value_of",
+                            L {
+                                en: "The value the batch leaves `signal` at, for a test of an action.",
+                                ja: "このまとまりを適用したあとに `signal` が持つ値です。アクションのテストで使います。",
+                            },
+                        ),
+                        (
+                            "navigates_to",
+                            "struct.Patches.html#method.navigates_to",
+                            L {
+                                en: "The URL of the first `navigate` in the batch, for a test.",
+                                ja: "このまとまりの最初の `navigate` の URL です。テストで使います。",
+                            },
+                        ),
+                        (
+                            "replaces",
+                            "struct.Patches.html#method.replaces",
+                            L {
+                                en: "Whether the batch re-renders the fragment `F`, for a test.",
+                                ja: "このまとまりがフラグメント `F` を描き直すかどうかです。テストで使います。",
                             },
                         ),
                         (

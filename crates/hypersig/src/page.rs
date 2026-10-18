@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 use std::fmt;
 
+use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
@@ -10,6 +11,7 @@ use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
     HIDE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr,
 };
+use crate::patch::at_path;
 use crate::route::{Base, Url};
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
@@ -565,6 +567,43 @@ impl<S: Signals> Page<S> {
             out.push_str(json);
             out.push_str("</script>");
         }
+    }
+
+    /// The value `signal` starts at in the browser, for a test of a page handler.
+    ///
+    /// It is the value the page was built with, or for a
+    /// [`computed`](Self::computed) signal, the value computed from the others.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Cart {
+    ///     price: f64,
+    ///     quantity: i32,
+    ///     total: f64,
+    /// }
+    ///
+    /// let page = Page::new("Cart", Cart { price: 2.5, quantity: 3, total: 0.0 })
+    ///     .computed(Cart::total(), Cart::price() * Cart::quantity().to_f64());
+    /// assert_eq!(page.value_of(Cart::quantity()), 3);
+    /// assert_eq!(page.value_of(Cart::total()), 7.5);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the signal struct fails to serialize to JSON, or if the value
+    /// does not deserialize into `T`, which happens where a `Serialize` impl
+    /// skips the field or disagrees with its `Deserialize` impl.
+    #[must_use]
+    pub fn value_of<T: DeserializeOwned>(&self, signal: Sig<S, T>) -> T {
+        let root = self.initial_values();
+        let value = at_path(&root, &signal.dotted())
+            .cloned()
+            .unwrap_or(Value::Null);
+        serde_json::from_value(value)
+            .expect("a signal's initial value deserializes into the signal's type")
     }
 
     /// Renders the document.
