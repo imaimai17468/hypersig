@@ -2475,16 +2475,24 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "SearchValue",
                             "trait.SearchValue.html",
                             L {
-                                en: "A type one field of `Search` parameters holds: one value of the query string.",
-                                ja: "`Search` パラメータのフィールド 1 つが持つ型で、クエリ文字列の値 1 つに当たります。",
+                                en: "A type one field of `Search` parameters holds: a `SearchScalar`, or an `Option` or a `Vec` of one.",
+                                ja: "`Search` パラメータのフィールド 1 つが持つ型で、`SearchScalar` か、その `Option` か `Vec` です。",
+                            },
+                        ),
+                        (
+                            "SearchScalar",
+                            "trait.SearchScalar.html",
+                            L {
+                                en: "A type that one value of the query string holds.",
+                                ja: "クエリ文字列の値 1 つが持つ型です。",
                             },
                         ),
                         (
                             "derive(Search)",
                             "derive.Search.html",
                             L {
-                                en: "Checks that each field of a struct can be one value of a query string.",
-                                ja: "構造体の各フィールドがクエリ文字列の値 1 つとして扱えることを検査します。",
+                                en: "Checks that each field of a struct can be written into a query string.",
+                                ja: "構造体の各フィールドをクエリ文字列に書けることを検査します。",
                             },
                         ),
                         (

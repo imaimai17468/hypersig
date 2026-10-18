@@ -18,7 +18,7 @@ pub fn derive_segment(input: TokenStream) -> TokenStream {
     hypersig_proc_impl::derive_segment(input.into()).into()
 }
 
-/// Checks that each field of a struct can be one value of a query string.
+/// Checks that each field of a struct can be written into a query string.
 ///
 /// See `hypersig::Search` for what the expansion contains.
 #[proc_macro_derive(Search)]

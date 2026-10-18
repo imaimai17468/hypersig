@@ -39,7 +39,13 @@ hypersig::routes! {
     };
     const TEAM: Route<String, Filter> = "/teams/{team}" =>
         |(), (team, filter): (String, Filter)| async move {
-            member_page(&format!("{team} {} {} {:?}", filter.q, filter.page, filter.tag), 0)
+            member_page(
+                &format!(
+                    "{team} {} {} {:?} {:?}",
+                    filter.q, filter.page, filter.tag, filter.tags
+                ),
+                0,
+            )
         };
     const FIND: Route<(), Filter> = "/find" => |(), filter: Filter| async move {
         PageResponse::redirect(TEAM.url(("red team".to_owned(), filter)))
@@ -70,6 +76,7 @@ struct Filter {
     q: String,
     page: i32,
     tag: Option<String>,
+    tags: Vec<Tab>,
 }
 
 fn member_page(team: &str, id: i32) -> Page<Counter> {
@@ -320,7 +327,32 @@ async fn a_page_receives_its_search_parameters() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body.contains(r#"red team a b&amp;c 3 Some("x")"#), "{body}");
+    assert!(
+        body.contains(r#"red team a b&amp;c 3 Some("x") []"#),
+        "{body}"
+    );
+}
+
+#[tokio::test]
+async fn a_repeated_key_reads_into_a_list_field_in_order() {
+    let (status, body) = send(
+        Request::get("/teams/red?tags=Settings&page=1&q=a+b&tags=Overview")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        body.contains("red a b 1 None [Settings, Overview]"),
+        "{body}"
+    );
+    let (status, _) = send(
+        Request::get("/teams/red?page=1&q=a&page=2")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]

@@ -178,7 +178,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             let segments: Vec<&str> = params.iter().map(|(_, value)| value).collect();
             let params = P::from_segments(&segments);
             let search = Q::unit().map_or_else(
-                || Query::<Q>::try_from_uri(&request.uri).map(|Query(search)| search),
+                || crate::query::parse_query::<Q>(request.uri.query().unwrap_or_default()),
                 Ok,
             );
             let served_at = matched.as_str().to_owned();
@@ -198,7 +198,9 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 }
                 let refused = match (params, search) {
                     (None, _) => Err(Reason::Segments),
-                    (Some(_), Err(rejection)) => Err(Reason::Query(rejection.body_text())),
+                    (Some(_), Err(rejection)) => Err(Reason::Query(format!(
+                        "Failed to deserialize query string: {rejection}"
+                    ))),
                     (Some(params), Ok(search)) => Ok(Q::join(params, search)),
                 };
                 let args = match (refused, &unserved) {

@@ -935,6 +935,7 @@ struct Filter {
     page: i32,
     open: bool,
     tag: Option<String>,
+    color: Vec<String>,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -1006,6 +1007,7 @@ fn links() -> (El<Roster>, Roster) {
         ],
         filter: Filter {
             tag: Some("a+b".to_owned()),
+            color: vec!["red".to_owned(), "dark blue".to_owned()],
             ..filter()
         },
         file: Rest::new("docs/a b/ü?.md"),
@@ -1014,13 +1016,15 @@ fn links() -> (El<Roster>, Roster) {
 }
 
 /// Search parameters whose fields are declared out of name order, with
-/// values that need percent-encoding and a `None` that is left out.
+/// values that need percent-encoding, a `None` that is left out, and an
+/// empty list that writes nothing.
 fn filter() -> Filter {
     Filter {
         q: "a b&c=d#é".to_owned(),
         page: 2,
         open: true,
         tag: None,
+        color: Vec::new(),
     }
 }
 

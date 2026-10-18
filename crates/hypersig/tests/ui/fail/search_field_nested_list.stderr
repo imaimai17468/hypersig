@@ -1,0 +1,29 @@
+error[E0277]: `std::option::Option<Vec<String>>` cannot be a field of search parameters
+  --> tests/ui/fail/search_field_nested_list.rs:12:13
+   |
+12 |     colors: Option<Vec<String>>,
+   |             ^^^^^^ the trait `SearchValue` is not implemented for `std::option::Option<Vec<String>>`
+   |
+   = note: a search field is a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` or a `Vec` of one, because the query string holds text values under each key
+help: the trait `SearchValue` is conditionally implemented for `std::option::Option<T>`
+  --> src/route.rs
+   |
+   | impl<T: SearchScalar> SearchValue for Option<T> {}
+   | ^^^^^^^^------------^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         unsatisfied requirement introduced here: `Vec<String>: SearchScalar`
+
+error[E0277]: `Vec<Vec<String>>` cannot be a field of search parameters
+  --> tests/ui/fail/search_field_nested_list.rs:11:13
+   |
+11 |     groups: Vec<Vec<String>>,
+   |             ^^^ the trait `SearchValue` is not implemented for `Vec<Vec<String>>`
+   |
+   = note: a search field is a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` or a `Vec` of one, because the query string holds text values under each key
+help: the trait `SearchValue` is conditionally implemented for `Vec<T>`
+  --> src/route.rs
+   |
+   | impl<T: SearchScalar> SearchValue for Vec<T> {}
+   | ^^^^^^^^------------^^^^^^^^^^^^^^^^^^^^^^^^
+   |         |
+   |         unsatisfied requirement introduced here: `Vec<String>: SearchScalar`

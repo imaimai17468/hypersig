@@ -81,15 +81,19 @@ const binary: Record<string, (a: never, b: never) => unknown> = {
 
 /**
  * The query string of a search struct, as `query_string` in `crates/hypersig/src/route.rs` writes it:
- * fields in the order of their names, `null` ones left out, each name and value percent-encoded.
+ * fields in the order of their names, `null` ones left out, a list's name once per item,
+ * each name and value percent-encoded.
  */
 function queryString(value: unknown): string {
   if (value === null || typeof value !== "object") return "";
   const fields = value as Record<string, unknown>;
   const pairs = Object.keys(fields)
     .sort()
-    .filter((name) => fields[name] !== null && fields[name] !== undefined)
-    .map((name) => `${encodeURIComponent(name)}=${encodeURIComponent(String(fields[name]))}`);
+    .flatMap((name) => {
+      const field = fields[name];
+      const values = Array.isArray(field) ? field : field === null || field === undefined ? [] : [field];
+      return values.map((item) => `${encodeURIComponent(name)}=${encodeURIComponent(String(item))}`);
+    });
   return pairs.length === 0 ? "" : `?${pairs.join("&")}`;
 }
 

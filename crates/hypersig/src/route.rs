@@ -909,20 +909,28 @@ pub(crate) fn encode_uri_component(text: &str) -> String {
 /// The query string of `value`, the JSON of a [`Search`] struct, as the runtime's `query` writes it.
 ///
 /// The fields are written in the order of their names, compared byte by byte.
-/// A `null` field is left out, and each name and value is percent-encoded as
-/// `encodeURIComponent` does, after the value is written as `String` would.
+/// A `null` field is left out, a list writes its name once per item in item
+/// order, and each name and value is percent-encoded as `encodeURIComponent`
+/// does, after the value is written as `String` would.
 pub(crate) fn query_string(value: &Value) -> String {
     let Value::Object(fields) = value else {
         return String::new();
     };
-    let mut pairs: Vec<(&String, &Value)> = fields.iter().filter(|(_, v)| !v.is_null()).collect();
+    let mut pairs: Vec<(&String, &Value)> = fields.iter().collect();
     pairs.sort_by(|a, b| a.0.cmp(b.0));
     let mut out = String::new();
     for (name, value) in pairs {
-        out.push(if out.is_empty() { '?' } else { '&' });
-        out.push_str(&encode_uri_component(name));
-        out.push('=');
-        out.push_str(&encode_uri_component(&crate::ssr::js_string(value)));
+        let values = match value {
+            Value::Array(items) => items.as_slice(),
+            Value::Null => &[],
+            one => std::slice::from_ref(one),
+        };
+        for value in values {
+            out.push(if out.is_empty() { '?' } else { '&' });
+            out.push_str(&encode_uri_component(name));
+            out.push('=');
+            out.push_str(&encode_uri_component(&crate::ssr::js_string(value)));
+        }
     }
     out
 }
@@ -1193,22 +1201,32 @@ tuple_params!(6: A a 0, B b 1, C c 2, D d 3, E e 4, F f 5; last F);
 /// The search parameters of a [`Route`]: `()`, or a struct with `#[derive(Signals, Search)]`.
 ///
 /// A struct's fields are written into the query string in the order of
-/// their names, as `?name=value&...`, and a field that is `None` is left
-/// out. A value is written as JavaScript's `String` writes it.
-/// `#[derive(Search)]` requires each field's type to implement
-/// [`SearchValue`], so a field holds one value of the query string, and a
-/// list or a struct in a field is a compile error. axum's `Query` reads the
-/// struct back on the server and answers 400 where it cannot, such as for a
-/// value a field's `Deserialize` rejects.
+/// their names, as `?name=value&...`. A field that is `None` is left out,
+/// and a `Vec` field writes its name once per item, as
+/// `?color=red&color=blue`, and nothing when it is empty. A value is written
+/// as JavaScript's `String` writes it. `#[derive(Search)]` requires each
+/// field's type to implement [`SearchValue`], so a struct in a field, or a
+/// list of lists, is a compile error. The server reads the struct back,
+/// with a key that appears more than once read into a `Vec` field, and
+/// answers 400 where it cannot, such as for a value a field's `Deserialize`
+/// rejects or a key repeated for a field that is not a `Vec`.
 ///
 /// ```
-/// use hypersig::{Search, Signals};
+/// use hypersig::{Search, Segment, Signals};
 /// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Segment, Serialize, Deserialize)]
+/// #[serde(rename_all = "lowercase")]
+/// enum Color {
+///     Red,
+///     Blue,
+/// }
 ///
 /// #[derive(Signals, Search, Serialize, Deserialize)]
 /// struct Filter {
 ///     q: String,
 ///     page: Option<i32>,
+///     color: Vec<Color>,
 /// }
 /// ```
 ///
@@ -1289,12 +1307,25 @@ impl<Q: SearchFields> Search for Q {
 #[doc(hidden)]
 pub trait SearchFields: Signals {}
 
-/// A type one field of [`Search`] parameters holds: one value of the query string.
+/// A type one field of [`Search`] parameters holds: a [`SearchScalar`], or an `Option` or a `Vec` of one.
+///
+/// The query string leaves out an `Option` that is `None`, and writes the
+/// key of a `Vec` once per item. A list of lists, or an `Option` of a list,
+/// has no form in the query string, so neither implements it.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot be a field of search parameters",
+    note = "a search field is a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` or a `Vec` of one, because the query string holds text values under each key"
+)]
+pub trait SearchValue {}
+
+impl<T: SearchScalar> SearchValue for T {}
+impl<T: SearchScalar> SearchValue for Option<T> {}
+impl<T: SearchScalar> SearchValue for Vec<T> {}
+
+/// A type that one value of the query string holds.
 ///
 /// It is implemented for every [`Segment`] (the integers, `String`, and an
-/// enum with `#[derive(Segment)]`), for `f64`, `f32`, and `bool`, and for an
-/// `Option` of any of them, which the query string leaves out when it is
-/// `None`.
+/// enum with `#[derive(Segment)]`), and for `f64`, `f32`, and `bool`.
 ///
 /// Implement it for your own type only where serde writes the type as one of
 /// these, such as a newtype with `#[serde(try_from = "i32", into = "i32")]`
@@ -1302,16 +1333,15 @@ pub trait SearchFields: Signals {}
 /// check that claim, and a type that serde writes as a list or an object
 /// gives links whose query string the server answers with 400.
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` cannot be a field of search parameters",
-    note = "a search field is a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` of one, because the query string holds one text value per field"
+    message = "`{Self}` cannot be one value of a query string",
+    note = "a query string value is a string, a number, a `bool`, or an enum with `#[derive(Segment)]`"
 )]
-pub trait SearchValue {}
+pub trait SearchScalar {}
 
-impl<T: Segment> SearchValue for T {}
-impl SearchValue for f64 {}
-impl SearchValue for f32 {}
-impl SearchValue for bool {}
-impl<T: SearchValue> SearchValue for Option<T> {}
+impl<T: Segment> SearchScalar for T {}
+impl SearchScalar for f64 {}
+impl SearchScalar for f32 {}
+impl SearchScalar for bool {}
 
 /// Parameters that start with the parameters `P` of a parent [`Route`].
 ///
@@ -1442,6 +1472,10 @@ mod tests {
         let search = json!({ "q": "a b&c", "page": 2, "open": true, "tag": null, "x": 1.5 });
         assert_eq!(query_string(&search), "?open=true&page=2&q=a%20b%26c&x=1.5");
         assert_eq!(query_string(&json!({ "tag": null })), "");
+        assert_eq!(
+            query_string(&json!({ "color": ["red", "a b"], "size": [], "q": "x" })),
+            "?color=red&color=a%20b&q=x"
+        );
     }
 
     #[test]
