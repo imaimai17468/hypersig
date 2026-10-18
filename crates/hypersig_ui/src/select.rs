@@ -2,7 +2,9 @@
 
 use hypersig::html::{El, div, label, select};
 use hypersig::style::pattern::stack;
-use hypersig::style::value::{Appearance, BorderStyle, Cursor, Display, Position, px, raw, rem};
+use hypersig::style::value::{
+    AlignItems, Appearance, BorderStyle, Cursor, Display, Position, px, raw, rem,
+};
 use hypersig::style::{PseudoElement, Style};
 use hypersig::{Expr, Form, Sig, Validate};
 use serde::Serialize;
@@ -129,6 +131,10 @@ fn select_with<S, T: Serialize + PartialEq, L: Into<String>>(
                 .height(rem(2.25))
                 .padding_inline_end(rem(2))
                 .appearance(Appearance::None)
+                // A `base-select` select is an inline flex box whose items
+                // stretch, which puts the text at the top of the space the
+                // padding leaves, above the middle of the fixed height.
+                .align_items(AlignItems::Center)
                 .background_color(token::background().var())
                 .cursor(Cursor::Pointer)
                 .pseudo(
