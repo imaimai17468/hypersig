@@ -64,6 +64,10 @@ hypersig では、最初のデータはページの HTML にシグナル構造�
 
 シグナル構造体に型が `Form<T>` のフィールドを置くと、フォームの値、開始時の値、訪問者が離れたフィールド、サーバーが返したメッセージをそこに持ちます。React Hook Form の `formState`、`reset`、`setError` が受け持つ範囲です。ルールは `Validate::rules` に、`T` のフィールドを使う式として 1 回だけ書きます。ブラウザは入力に合わせてその式を評価し、アクションのハンドラでは `Form::validate` が最初の HTML を書く評価器で同じ式を評価するので、サーバー側にルールの写しを持つ必要はありません。メールアドレスが登録済みかどうかのようにサーバーにしかできない検査は、`reject` でそのフィールドに返します。別の構造体のフィールドにルールを付けるとコンパイルエラーになります。[`signup`](examples/signup) の例が、動くフォーム一式です。
 
+## リクエスト、Cookie、エラー
+
+ページとアクションのハンドラは、状態と引数のあいだに axum の extractor を 1 つ受け取れます。`async fn add(state: AppState, member: Member, note: String)` のように書けば、アプリケーションの `Member` を通してセッションの Cookie を読めます。extractor が失敗すると、その rejection が応答になり、ハンドラは動きません。`Set-Cookie` などのヘッダーは、`(headers, patches)` のようにページや差分と組にして返します。ハンドラは `E` が `IntoResponse` である `Result<_, E>` も返せるので、`?` が使えます。2xx 以外の状態で失敗したアクションは、ページの `Call::error` に届きます。アクションは、ハンドラが動く前に 2 種類のリクエストを断ります。`Sec-Fetch-Site` が別のサイトを示すリクエストには 403 を、本文が `application/json` でない POST には 415 を返すので、別のサイトのフォームが訪問者の Cookie を付けて呼び出すことはできません。`Sec-Fetch-Site` を送らないブラウザからは、別のサイトのリンクで GET のアクションに届くので、GET のアクションでは何も変更しないでください。[`auth`](examples/auth) の例は、Cookie のセッションでサインインします。
+
 ## クイックスタート
 
 `Cargo.toml` に依存を追加します。hypersig はまだ crates.io に公開していないので、Git から取得します。

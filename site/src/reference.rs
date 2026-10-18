@@ -2214,11 +2214,35 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         },
                     ),
                     (
+                        "ActionResponse",
+                        "struct.ActionResponse.html",
+                        L {
+                            en: "What an action handler returns: patches for the page whose signals are `S`.",
+                            ja: "アクションのハンドラが返す値です。シグナルが `S` のページへの差分です。",
+                        },
+                    ),
+                    (
+                        "Handler",
+                        "trait.Handler.html",
+                        L {
+                            en: "A function that serves a page, an action, or a stream.",
+                            ja: "ページ、アクション、ストリームを配信する関数です。",
+                        },
+                    ),
+                    (
                         "RequestError",
                         "struct.RequestError.html",
                         L {
-                            en: "A request to an action whose arguments did not deserialize.",
-                            ja: "引数をデシリアライズできなかった、アクションへのリクエストです。",
+                            en: "A request to an action that was refused before its handler ran.",
+                            ja: "ハンドラが動く前に断られた、アクションへのリクエストです。",
+                        },
+                    ),
+                    (
+                        "RequestError::status",
+                        "struct.RequestError.html#method.status",
+                        L {
+                            en: "The status of the response the error answers with.",
+                            ja: "このエラーが返す応答の状態です。",
                         },
                     ),
                 ],

@@ -50,6 +50,8 @@ snippets! {
     Patches => "patches.rs";
     Forms => "forms.rs";
     Latest => "latest.rs";
+    Extractors => "extractors.rs";
+    HandlerErrors => "handler_errors.rs";
     Links => "links.rs";
     WrongRoute => "wrong_route.rs", "compile_fail,E0080";
     ChildRoutes => "child_routes.rs";

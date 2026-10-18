@@ -2,6 +2,7 @@
 
 mod basics;
 mod forms;
+mod requests;
 mod server;
 pub mod snippet;
 mod state;
@@ -23,6 +24,7 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::Lists => state::lists(site),
         Learn::Server => server::server(site),
         Learn::Forms => forms::forms(site),
+        Learn::Requests => requests::requests(site),
         Learn::Pages => server::pages(site),
         Learn::Styling => server::styling(site),
         Learn::EscapeHatches => server::escape_hatches(site),

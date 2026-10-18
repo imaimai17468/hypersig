@@ -64,6 +64,10 @@ Answers apply in the order they arrive. A search that runs as the visitor types 
 
 A field of type `Form<T>` in the signal struct holds a form's values, the values it started from, which fields the visitor has left, and the messages the server sent, covering what React Hook Form's `formState`, `reset`, and `setError` cover. The rules are written once, in `Validate::rules`, as expressions over the fields of `T`. The browser evaluates them as the visitor types, and `Form::validate` in the action handler evaluates the same expressions with the evaluator that writes the first HTML, so the server does not keep a second copy of the rules. A check that only the server can make, such as whether an email address is taken, goes back to the field with `reject`. A rule on a field of another struct is a compile error. The [`signup`](examples/signup) example is a complete form.
 
+## Requests, cookies, and errors
+
+A page or action handler may take one axum extractor between the state and its arguments, as `async fn add(state: AppState, member: Member, note: String)`, so it can read a session cookie through the application's own `Member`. When the extractor fails, its rejection is the response and the handler does not run. A handler adds headers such as `Set-Cookie` by returning them beside its page or patches, as `(headers, patches)`, and returns `Result<_, E>` where `E` is an `IntoResponse`, so `?` works. An action that fails with a status outside 2xx reaches the page's `Call::error`. Before any handler runs, an action refuses a request whose `Sec-Fetch-Site` names another site with a 403, and a POST whose body is not `application/json` with a 415, so a form on another site cannot call it with the visitor's cookie. A browser that sends no `Sec-Fetch-Site` still reaches a GET action from a link on another site, so a GET action should change nothing. The [`auth`](examples/auth) example signs in with a cookie session.
+
 ## Quick start
 
 Add the dependencies to `Cargo.toml`. hypersig is not on crates.io yet, so it comes from Git.
