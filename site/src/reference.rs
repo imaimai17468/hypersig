@@ -274,6 +274,46 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "alternate",
+                            "struct.Page.html#method.alternate",
+                            L {
+                                en: "Names `url` on `origin` as the same page in the language `hreflang`.",
+                                ja: "`origin` 上の `url` を、`hreflang` の言語で書いた同じページとして示します。",
+                            },
+                        ),
+                        (
+                            "alternate_default",
+                            "struct.Page.html#method.alternate_default",
+                            L {
+                                en: "Names `url` on `origin` as the version for a visitor whose language no alternate matches.",
+                                ja: "`origin` 上の `url` を、どの alternate にも言語が合わない訪問者向けのページとして示します。",
+                            },
+                        ),
+                        (
+                            "noindex",
+                            "struct.Page.html#method.noindex",
+                            L {
+                                en: "Asks search engines to leave the page out of their results.",
+                                ja: "ページを検索結果に出さないよう、検索エンジンに求めます。",
+                            },
+                        ),
+                        (
+                            "nofollow",
+                            "struct.Page.html#method.nofollow",
+                            L {
+                                en: "Asks search engines not to follow the links on the page.",
+                                ja: "ページのリンクをたどらないよう、検索エンジンに求めます。",
+                            },
+                        ),
+                        (
+                            "json_ld",
+                            "struct.Page.html#method.json_ld",
+                            L {
+                                en: "Adds `data` to `<head>` as JSON-LD, the structured data search engines read.",
+                                ja: "`data` を、検索エンジンが読む構造化データの JSON-LD として `<head>` に足します。",
+                            },
+                        ),
+                        (
                             "icon",
                             "struct.Page.html#method.icon",
                             L {

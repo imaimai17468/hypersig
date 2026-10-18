@@ -38,6 +38,12 @@ pub struct Page<S> {
     canonical: Option<String>,
     icon: Option<&'static str>,
     open_graph: Option<OpenGraph>,
+    noindex: bool,
+    nofollow: bool,
+    /// Each `hreflang` with its absolute URL, where `None` is `x-default`.
+    alternates: Vec<(Option<String>, String)>,
+    /// Each JSON-LD block, serialized with `<` escaped.
+    json_ld: Vec<String>,
 }
 
 impl<S> fmt::Debug for Page<S> {
@@ -69,6 +75,10 @@ impl<S: Signals> Page<S> {
             canonical: None,
             icon: None,
             open_graph: None,
+            noindex: false,
+            nofollow: false,
+            alternates: Vec::new(),
+            json_ld: Vec::new(),
         }
     }
 
@@ -115,6 +125,113 @@ impl<S: Signals> Page<S> {
     #[must_use]
     pub fn canonical(mut self, origin: Origin, url: &Url) -> Self {
         self.canonical = Some(origin.join(url.as_str()));
+        self
+    }
+
+    /// Names `url` on `origin` as the same page in the language `hreflang`, a BCP 47 tag.
+    ///
+    /// Search engines show the visitor the version in their language. Each
+    /// version lists every version, itself included, and
+    /// `hypersig_i18n::LocalePage::alternates` adds one per locale of an
+    /// application.
+    ///
+    /// ```
+    /// use hypersig::{Origin, Page, Route, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Home {}
+    ///
+    /// # async fn en((): (), (): ()) -> Page<Home> { Page::new("Home", Home {}) }
+    /// # async fn ja((): (), (): ()) -> Page<Home> { Page::new("Home", Home {}) }
+    /// hypersig::routes! {
+    ///     fn pages(Router<()>);
+    ///     const EN: Route = "/en" => en;
+    ///     const JA: Route = "/ja" => ja;
+    /// }
+    ///
+    /// const SITE: Origin = Origin::new("https://example.com");
+    ///
+    /// let html = Page::new("Home", Home {})
+    ///     .alternate(SITE, &EN.url(()), "en")
+    ///     .alternate(SITE, &JA.url(()), "ja")
+    ///     .alternate_default(SITE, &EN.url(()))
+    ///     .render();
+    /// assert!(html.contains(r#"<link rel="alternate" hreflang="ja" href="https://example.com/ja">"#));
+    /// assert!(html.contains(r#"<link rel="alternate" hreflang="x-default" href="https://example.com/en">"#));
+    /// # let _ = pages;
+    /// ```
+    #[must_use]
+    pub fn alternate(mut self, origin: Origin, url: &Url, hreflang: impl Into<String>) -> Self {
+        self.alternates
+            .push((Some(hreflang.into()), origin.join(url.as_str())));
+        self
+    }
+
+    /// Names `url` on `origin` as the version for a visitor whose language no
+    /// [`Page::alternate`] matches, the `x-default` alternate.
+    #[must_use]
+    pub fn alternate_default(mut self, origin: Origin, url: &Url) -> Self {
+        self.alternates.push((None, origin.join(url.as_str())));
+        self
+    }
+
+    /// Asks search engines to leave the page out of their results.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Cart {}
+    ///
+    /// let html = Page::new("Cart", Cart {}).noindex().nofollow().render();
+    /// assert!(html.contains(r#"<meta name="robots" content="noindex, nofollow">"#));
+    /// ```
+    #[must_use]
+    pub fn noindex(mut self) -> Self {
+        self.noindex = true;
+        self
+    }
+
+    /// Asks search engines not to follow the links on the page.
+    #[must_use]
+    pub fn nofollow(mut self) -> Self {
+        self.nofollow = true;
+        self
+    }
+
+    /// Adds `data` to `<head>` as JSON-LD, the structured data search engines read.
+    ///
+    /// The JSON is written into a `<script type="application/ld+json">`
+    /// block with each `<` written as `\u003c`, so no string inside it can
+    /// close the block. A later call adds another block.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    /// use serde_json::json;
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Post {}
+    ///
+    /// let html = Page::new("Post", Post {})
+    ///     .json_ld(&json!({ "@type": "Article", "headline": "A & </script>" }))
+    ///     .render();
+    /// assert!(html.contains(
+    ///     r#"<script type="application/ld+json">{"@type":"Article","headline":"A & \u003c/script>"}</script>"#
+    /// ));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `data` fails to serialize to JSON, which only happens for a
+    /// `Serialize` impl that returns an error or a map with keys that are not
+    /// strings.
+    #[must_use]
+    pub fn json_ld(mut self, data: &impl serde::Serialize) -> Self {
+        let json = serde_json::to_string(data).expect("JSON-LD data serializes to JSON");
+        self.json_ld.push(json.replace('<', "\\u003c"));
         self
     }
 
@@ -358,6 +475,43 @@ impl<S: Signals> Page<S> {
         root
     }
 
+    /// Writes what search engines and link previews read into `<head>`.
+    fn write_metadata(&self, out: &mut String) {
+        if let Some(description) = &self.description {
+            meta(out, "name", "description", description);
+        }
+        match (self.noindex, self.nofollow) {
+            (true, true) => meta(out, "name", "robots", "noindex, nofollow"),
+            (true, false) => meta(out, "name", "robots", "noindex"),
+            (false, true) => meta(out, "name", "robots", "nofollow"),
+            (false, false) => {}
+        }
+        if let Some(url) = &self.canonical {
+            out.push_str("<link rel=\"canonical\"");
+            write_attr(out, "href", url);
+            out.push('>');
+        }
+        for (hreflang, url) in &self.alternates {
+            out.push_str("<link rel=\"alternate\"");
+            write_attr(out, "hreflang", hreflang.as_deref().unwrap_or("x-default"));
+            write_attr(out, "href", url);
+            out.push('>');
+        }
+        if let Some(card) = &self.open_graph {
+            card.write(
+                out,
+                &self.title,
+                self.description.as_deref(),
+                self.canonical.as_deref(),
+            );
+        }
+        for json in &self.json_ld {
+            out.push_str("<script type=\"application/ld+json\">");
+            out.push_str(json);
+            out.push_str("</script>");
+        }
+    }
+
     /// Renders the document.
     ///
     /// # Panics
@@ -398,22 +552,7 @@ impl<S: Signals> Page<S> {
         out.push_str("<title>");
         escape_into(&mut out, &title, false);
         out.push_str("</title>");
-        if let Some(description) = &self.description {
-            meta(&mut out, "name", "description", description);
-        }
-        if let Some(url) = &self.canonical {
-            out.push_str("<link rel=\"canonical\"");
-            write_attr(&mut out, "href", url);
-            out.push('>');
-        }
-        if let Some(card) = &self.open_graph {
-            card.write(
-                &mut out,
-                &self.title,
-                self.description.as_deref(),
-                self.canonical.as_deref(),
-            );
-        }
+        self.write_metadata(&mut out);
         if !self.global.is_empty() {
             out.push_str("<style data-hs-global>");
             out.push_str(&self.global.to_css());
@@ -484,12 +623,40 @@ mod tests {
     use crate::html::input;
     use crate::{NodeRef, Page, Signals};
 
-    #[derive(Signals, Serialize, Deserialize)]
+    #[derive(Signals, Serialize, Deserialize, Default)]
     struct Search {
         query: String,
     }
 
     const FIELD: NodeRef<Search> = NodeRef::new("field");
+
+    #[test]
+    fn robots_lists_only_what_the_page_asks() {
+        let page = || Page::new("Search", Search::default());
+        let robots = |html: String| {
+            html.split_once(r#"<meta name="robots" content=""#)
+                .map(|(_, rest)| rest.split_once('"').unwrap().0.to_owned())
+        };
+        assert_eq!(robots(page().render()), None);
+        assert_eq!(
+            robots(page().noindex().render()).as_deref(),
+            Some("noindex")
+        );
+        assert_eq!(
+            robots(page().nofollow().render()).as_deref(),
+            Some("nofollow")
+        );
+    }
+
+    #[test]
+    fn json_ld_cannot_close_its_script_or_open_a_comment() {
+        let html = Page::new("Search", Search::default())
+            .json_ld(&["</script><script>alert(1)</script>", "<!--", "a & b"])
+            .render();
+        assert!(html.contains(
+            r#"<script type="application/ld+json">["\u003c/script>\u003cscript>alert(1)\u003c/script>","\u003c!--","a & b"]</script>"#
+        ));
+    }
 
     #[test]
     #[should_panic(expected = "node ref name `field`")]
