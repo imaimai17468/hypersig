@@ -45,6 +45,9 @@ const ADOPT_BUDGET_MS = 30;
 const FIRST_RETRY_MS = 1000;
 const LAST_RETRY_MS = 30_000;
 
+/** The header an upload carries, which `crates/hypersig/src/axum.rs` requires. */
+const UPLOAD_HEADER = "hypersig-upload";
+
 interface Instance {
   readonly element: Element;
   readonly slot: Slot;
@@ -384,7 +387,11 @@ export class Runtime implements Host {
     const url = new URL(path, document.baseURI);
     const body = JSON.stringify(args ?? null);
     const init: RequestInit = { method, headers: { accept: "text/event-stream" } };
-    if (method === "GET") {
+    if (options.files !== undefined) {
+      // The server refuses an upload without this header, which a form on another site cannot add.
+      init.headers = { accept: "text/event-stream", [UPLOAD_HEADER]: "1" };
+      init.body = this.#uploadBody(body, options.files, options.origin);
+    } else if (method === "GET") {
       if (args !== null && args !== undefined) url.searchParams.set("args", body);
     } else {
       init.headers = { accept: "text/event-stream", "content-type": "application/json" };
@@ -448,6 +455,22 @@ export class Runtime implements Host {
     }
   }
 
+  /**
+   * The body of an upload: the arguments as JSON in the `args` part, then
+   * each file picked in the file input named `files` in a `files` part.
+   */
+  #uploadBody(args: string, files: string, origin: Element | undefined): FormData {
+    const data = new FormData();
+    data.append("args", new Blob([args], { type: "application/json" }));
+    const input = this.#findRef(files, origin);
+    if (input instanceof HTMLInputElement && input.files !== null) {
+      for (const file of input.files) data.append("files", file, file.name);
+    } else if (!(input instanceof HTMLInputElement)) {
+      console.warn(`hypersig: no file input with node ref "${files}"`);
+    }
+    return data;
+  }
+
   /** Counts the calls awaiting an answer under `indicator`, which is true while any of them is. */
   #busy(indicator: string, by: 1 | -1): void {
     const count = (this.#calls.get(indicator) ?? 0) + by;
@@ -474,6 +497,7 @@ export class Runtime implements Host {
         else if (op === "select" && (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) target.select();
         else if (op === "scroll") target.scrollIntoView({ block: "nearest" });
         else if (op === "hide-popover" && target instanceof HTMLElement && target.matches(":popover-open")) target.hidePopover();
+        else if (op === "clear-files" && target instanceof HTMLInputElement && target.type === "file") target.value = "";
         else if (op === "show-popover" && target instanceof HTMLElement && target.hasAttribute("popover") && !target.matches(":popover-open")) target.showPopover();
       }),
     );

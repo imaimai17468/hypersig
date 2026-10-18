@@ -35,6 +35,8 @@ export interface CallOptions {
   readonly reconnect: boolean;
   /** The element whose statement made the call. Reconnecting stops once it leaves the document. */
   readonly origin: Element | undefined;
+  /** The node ref name of the file input whose files go with the arguments, for an upload. */
+  readonly files?: string;
 }
 
 /** The side effects a statement can ask the runtime for. */
@@ -444,6 +446,14 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       const flags = (rest[5] ?? []) as string[];
       const options = { latest: flags.includes("latest"), reconnect: flags.includes("reconnect"), origin: ctx.origin };
       void host.call(rest[0] as string, rest[1] as string, args, rest[3] as string | null, rest[4] as string | null, options);
+      return;
+    }
+    case "upload": {
+      // `["upload", path, args, indicator, error, file input, flags?]`, always a POST.
+      const args = rest[1] === null ? null : evaluate(rest[1], ctx);
+      const flags = (rest[5] ?? []) as string[];
+      const options = { latest: flags.includes("latest"), reconnect: false, origin: ctx.origin, files: rest[4] as string };
+      void host.call("POST", rest[0] as string, args, rest[2] as string | null, rest[3] as string | null, options);
       return;
     }
     case "dom":

@@ -16,7 +16,7 @@ default = ["axum"]
 axum = ["dep:axum", "dep:futures"]
 
 [dependencies]
-axum = { workspace = true, optional = true }
+axum = { workspace = true, optional = true, features = ["multipart"] }
 futures = { workspace = true, optional = true }
 hypersig_proc.workspace = true
 hypersig_style.workspace = true
@@ -25,6 +25,7 @@ serde_json.workspace = true
 
 [dev-dependencies]
 divan.workspace = true
+futures.workspace = true
 http-body-util.workspace = true
 tokio.workspace = true
 tower.workspace = true

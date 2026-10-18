@@ -1,0 +1,9 @@
+{
+  "html": "<main><input id=\"pictures\" type=\"file\" multiple=\"\" data-hs-ref=\"pictures\"><input id=\"caption\" data-hs-bind=\"[&quot;caption&quot;,&quot;text&quot;]\"><button id=\"send\" data-hs-on-click=\"[&quot;seq&quot;,[[&quot;upload&quot;,&quot;/pictures&quot;,[&quot;sig&quot;,&quot;caption&quot;],&quot;uploading&quot;,&quot;error&quot;,&quot;pictures&quot;],[&quot;dom&quot;,&quot;clear-files&quot;,&quot;pictures&quot;]]]\"></button></main>",
+  "signals": {
+    "caption": "",
+    "error": "",
+    "saved": "",
+    "uploading": false
+  }
+}

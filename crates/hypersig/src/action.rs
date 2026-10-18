@@ -168,6 +168,8 @@ pub struct Call<S> {
     error: Value,
     latest: bool,
     resends: bool,
+    /// The node ref name of the file input whose files an upload sends.
+    files: Option<&'static str>,
     marker: PhantomData<fn() -> S>,
 }
 
@@ -181,7 +183,17 @@ impl<S> Call<S> {
             error: Value::Null,
             latest: false,
             resends: false,
+            files: None,
             marker: PhantomData,
+        }
+    }
+
+    /// A `POST` to `path` that sends `args` with the files picked in the
+    /// file input whose node ref name is `files`.
+    pub(crate) fn upload(path: &'static str, args: Value, files: &'static str) -> Self {
+        Self {
+            files: Some(files),
+            ..Self::new(Method::Post, path, args)
         }
     }
 
@@ -255,14 +267,24 @@ impl<S> Call<S> {
 impl<S> IntoStmt<S> for Call<S> {
     fn into_stmt(self) -> Stmt<S> {
         let call = self;
-        let mut ast = json!([
-            "call",
-            call.method.as_str(),
-            call.path,
-            call.args,
-            call.indicator,
-            call.error
-        ]);
+        let mut ast = match call.files {
+            Some(files) => json!([
+                "upload",
+                call.path,
+                call.args,
+                call.indicator,
+                call.error,
+                files
+            ]),
+            None => json!([
+                "call",
+                call.method.as_str(),
+                call.path,
+                call.args,
+                call.indicator,
+                call.error
+            ]),
+        };
         let flags: Vec<&str> = [("latest", call.latest), ("reconnect", call.resends)]
             .into_iter()
             .filter_map(|(flag, on)| on.then_some(flag))
@@ -504,6 +526,11 @@ impl<S> NodeRef<S> {
     #[must_use]
     pub fn hide_popover(self) -> Stmt<S> {
         self.dom("hide-popover")
+    }
+
+    /// A statement that empties the element if it is a file input.
+    pub(crate) fn clear_files(self) -> Stmt<S> {
+        self.dom("clear-files")
     }
 
     /// A statement that shows the element if it is a popover that is not open.

@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/file_input_from_other_page.rs:19:25
+   |
+19 |     let _ = AVATAR.call(PICTURE);
+   |                    ---- ^^^^^^^ expected `FileInput<Profile>`, found `FileInput<Gallery>`
+   |                    |
+   |                    arguments to this method are incorrect
+   |
+   = note: expected struct `FileInput<Profile>`
+              found struct `FileInput<Gallery>`
+note: method defined here
+  --> src/upload.rs
+   |
+   |     pub fn call(&self, files: FileInput<S>) -> Call<S> {
+   |            ^^^^

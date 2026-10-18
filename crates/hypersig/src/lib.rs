@@ -54,6 +54,7 @@ mod patch;
 mod route;
 mod signal;
 mod ssr;
+mod upload;
 
 #[cfg(doctest)]
 #[doc = include_str!("../../../README.md")]
@@ -76,6 +77,9 @@ pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};
 pub use route::{Extends, Link, Params, Rest, Route, Search, SearchValue, Segment, Url};
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
+pub use upload::{FileInput, Upload};
+#[cfg(feature = "axum")]
+pub use upload::{Uploaded, UploadedFile};
 
 /// Typed atomic CSS, from the `hypersig_style` crate.
 ///

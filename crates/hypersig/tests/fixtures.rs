@@ -14,8 +14,8 @@ use hypersig::html::{
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
-    Action, Expr, Form, Fragment, NodeRef, Page, Patches, Rest, Route, Rules, Search, Sig, Signals,
-    Stmt, StreamAction, Validate, if_else,
+    Action, Expr, FileInput, Form, Fragment, NodeRef, Page, Patches, Rest, Route, Rules, Search,
+    Sig, Signals, Stmt, StreamAction, Upload, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -958,4 +958,42 @@ fn fixtures_match_the_builder() {
             serde_json::to_string_pretty(&json!({ "document": document })).expect("fixture JSON")
         ),
     );
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Uploads {
+    caption: String,
+    uploading: bool,
+    error: String,
+    saved: String,
+}
+
+const PICTURES: FileInput<Uploads> = FileInput::new("pictures");
+const SEND: Upload<Uploads, String> = Upload::post("/pictures");
+
+fn uploads() -> (El<Uploads>, Uploads) {
+    let el = main()
+        .child(PICTURES.input().id("pictures").attr("multiple", ""))
+        .child(input().id("caption").bind(Uploads::caption()))
+        .child(
+            button().id("send").on_click(
+                SEND.call_with(PICTURES, Uploads::caption())
+                    .indicator(Uploads::uploading())
+                    .error(Uploads::error())
+                    .then(PICTURES.clear()),
+            ),
+        );
+    let signals = Uploads {
+        caption: String::new(),
+        uploading: false,
+        error: String::new(),
+        saved: String::new(),
+    };
+    (el, signals)
+}
+
+#[test]
+fn the_upload_fixture_matches_the_builder() {
+    let (el, signals) = uploads();
+    check("upload", &el, &signals);
 }
