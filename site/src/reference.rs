@@ -277,8 +277,16 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "Origin",
                             "struct.Origin.html",
                             L {
-                                en: "The scheme and host a site is served from, such as `https://example.com`.",
-                                ja: "`https://example.com` のような、サイトを配信するスキームとホストです。",
+                                en: "The scheme, host, and optional path prefix a site is served from.",
+                                ja: "サイトを配信するスキーム、ホスト、省略できるパスの接頭辞です。",
+                            },
+                        ),
+                        (
+                            "Origin::under",
+                            "struct.Origin.html#method.under",
+                            L {
+                                en: "The same origin with the site served under `prefix`, such as `/blog`.",
+                                ja: "サイトを `/blog` のような `prefix` の下に配信する、同じオリジンです。",
                             },
                         ),
                         (

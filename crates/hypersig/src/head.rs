@@ -3,8 +3,10 @@
 
 use std::fmt;
 
-/// The scheme and host a site is served from, such as `https://example.com`,
-/// and the path the site is served under, if any.
+/// The scheme, host, and optional path prefix a site is served from.
+///
+/// `Origin::new("https://example.com")` holds the scheme and host, and
+/// [`Origin::under`] adds the path the site is served under.
 ///
 /// A canonical URL and the URLs of a link preview must be absolute, and a
 /// route's [`Url`](crate::Url) is a path, so [`Page::canonical`](crate::Page::canonical)
