@@ -85,3 +85,53 @@ test("refuses an action called from another site or with a body that is not JSON
   expect(sameOrigin.status()).toBe(200);
   expect(sameOrigin.headers()["set-cookie"]).toContain("HttpOnly");
 });
+
+/** The eight bytes every PNG file starts with, followed by a little more. */
+const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+
+// The page refuses one upload on purpose, so this test checks the failures it logs itself.
+base("uploads a picture from the file input and shows the handler's refusal of another file", async ({ page }) => {
+  const problems = watch(page);
+  await page.goto(`${url("auth")}login`);
+  await page.getByRole("textbox", { name: "Name", exact: true }).fill("ada");
+  await page.getByRole("textbox", { name: "Password", exact: true }).fill("lovelace");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator("#member")).toHaveText("Signed in as ada");
+
+  const file = page.getByLabel("Picture");
+  await file.setInputFiles({ name: "cat.png", mimeType: "image/png", buffer: png });
+  await page.getByRole("button", { name: "Upload picture" }).click();
+  await expect(page.locator("#picture")).toHaveText("Your picture: cat.png, 12 bytes");
+  await expect(file).toHaveValue("");
+
+  await file.setInputFiles({ name: "notes.png", mimeType: "image/png", buffer: Buffer.from("not a picture") });
+  await page.getByRole("button", { name: "Upload picture" }).click();
+  await expect(page.locator("#picture-problem")).toHaveText("422: Choose one PNG or JPEG picture.");
+  await expect(page.locator("#picture")).toHaveText("Your picture: cat.png, 12 bytes");
+
+  await page.reload();
+  await expect(page.locator("#picture")).toHaveText("Your picture: cat.png, 12 bytes");
+  expect(problems.filter((problem) => problem.startsWith("hypersig:"))).toEqual([
+    "hypersig: POST /picture failed with 422: Choose one PNG or JPEG picture.",
+  ]);
+  expect(problems.filter((problem) => !problem.startsWith("4") && !problem.startsWith("hypersig:") && !problem.startsWith("Failed to load resource"))).toEqual([]);
+});
+
+test("refuses an upload without the runtime's header, from another site, or over its limit", async ({ request }) => {
+  const upload = `${url("auth")}picture`;
+  const multipart = { files: { name: "cat.png", mimeType: "image/png", buffer: png } };
+
+  const fromForm = await request.post(upload, { multipart });
+  expect(fromForm.status()).toBe(403);
+
+  const crossSite = await request.post(upload, { multipart, headers: { "hypersig-upload": "1", "sec-fetch-site": "cross-site" } });
+  expect(crossSite.status()).toBe(403);
+
+  const large = { files: { name: "big.png", mimeType: "image/png", buffer: Buffer.alloc(80 * 1024) } };
+  const tooLarge = await request.post(upload, { multipart: large, headers: { "hypersig-upload": "1" } });
+  expect(tooLarge.status()).toBe(413);
+
+  // With the header and within the limit, the request reaches the member extractor, which finds no session.
+  const signedOut = await request.post(upload, { multipart, headers: { "hypersig-upload": "1", accept: "text/event-stream" } });
+  expect(signedOut.status()).toBe(401);
+});
