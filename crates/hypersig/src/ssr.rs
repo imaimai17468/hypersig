@@ -20,7 +20,7 @@ use std::cell::RefCell;
 use serde_json::{Map, Number, Value};
 
 use crate::route::{encode_uri_component, encode_uri_path, query_string};
-use crate::tape::{Ref, View};
+use crate::tape::{Items, Ref, View};
 
 /// What an expression evaluates to: a value read from the signals or from
 /// the expression itself, or one the expression computed.
@@ -604,7 +604,7 @@ fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
     let list = ctx.lookup(parts.get(1)?)?;
     let depth = usize::try_from(parts.get(2)?.as_u64()?).ok()?;
     let each = parts.get(3)?;
-    let items = list.items().into_iter().flatten();
+    let items = list.items().unwrap_or(Items::Json([].iter()));
     let mut count = 0_u64;
     let mut folded: Option<f64> = None;
     let mut mapped = Vec::new();

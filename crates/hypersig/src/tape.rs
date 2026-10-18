@@ -144,6 +144,34 @@ impl Tape {
         }
     }
 
+    /// The value of the entry for `key` in the object at `head`, which has
+    /// `len` entries.
+    fn field(&self, head: usize, len: usize, unique: bool, key: &str) -> Option<Ref<'_>> {
+        // A key that appears twice reads as its last value, as
+        // `JSON.parse` and `serde_json::Map` both keep it.
+        let key = key.as_bytes();
+        let mut found = None;
+        let mut next = head + 1;
+        for _ in 0..len {
+            // Keys are short, so comparing them byte by byte here is faster
+            // than the call to `memcmp` that slice equality makes.
+            if let Node::Str { start, end } = self.nodes[next]
+                && end - start == key.len()
+                && self.text.as_bytes()[start..end]
+                    .iter()
+                    .zip(key)
+                    .all(|(a, b)| a == b)
+            {
+                found = Some(Ref::Tape(self, next + 1));
+                if unique {
+                    break;
+                }
+            }
+            next = self.skip(next + 1);
+        }
+        found
+    }
+
     /// The text of the key node at `index`.
     fn key(&self, index: usize) -> &[u8] {
         let Node::Str { start, end } = self.nodes[index] else {
@@ -289,25 +317,10 @@ impl<'a> Ref<'a> {
     pub(crate) fn field(self, key: &str) -> Option<Ref<'a>> {
         match self {
             Ref::Json(value) => value.as_object()?.get(key).map(Ref::Json),
-            Ref::Tape(tape, index) => {
-                let Node::Object { len, unique, .. } = tape.nodes[index] else {
-                    return None;
-                };
-                // A key that appears twice reads as its last value, as
-                // `JSON.parse` and `serde_json::Map` both keep it.
-                let mut found = None;
-                let mut next = index + 1;
-                for _ in 0..len {
-                    if tape.key(next) == key.as_bytes() {
-                        found = Some(Ref::Tape(tape, next + 1));
-                        if unique {
-                            break;
-                        }
-                    }
-                    next = tape.skip(next + 1);
-                }
-                found
-            }
+            Ref::Tape(tape, index) => match tape.nodes[index] {
+                Node::Object { len, unique, .. } => tape.field(index, len, unique, key),
+                _ => None,
+            },
         }
     }
 
@@ -316,12 +329,33 @@ impl<'a> Ref<'a> {
         if path.is_empty() {
             return Some(self);
         }
-        path.split('.')
-            .try_fold(self, |current, segment| match current.view() {
-                View::Object => current.field(segment),
-                View::Array => current.items()?.nth(segment.parse::<usize>().ok()?),
+        let mut current = self;
+        let mut rest = path;
+        while let Some(dot) = rest.bytes().position(|byte| byte == b'.') {
+            current = current.child(&rest[..dot])?;
+            rest = &rest[dot + 1..];
+        }
+        current.child(rest)
+    }
+
+    /// An object's entry for `segment`, or an array's item at the index `segment` names.
+    fn child(self, segment: &str) -> Option<Ref<'a>> {
+        match self {
+            Ref::Json(Value::Object(map)) => map.get(segment).map(Ref::Json),
+            Ref::Json(Value::Array(items)) => {
+                items.get(segment.parse::<usize>().ok()?).map(Ref::Json)
+            }
+            Ref::Json(_) => None,
+            Ref::Tape(tape, index) => match tape.nodes[index] {
+                Node::Object { len, unique, .. } => tape.field(index, len, unique, segment),
+                Node::Array { len, .. } => {
+                    let at = segment.parse::<usize>().ok().filter(|at| *at < len)?;
+                    let next = (0..at).fold(index + 1, |next, _| tape.skip(next));
+                    Some(Ref::Tape(tape, next))
+                }
                 _ => None,
-            })
+            },
+        }
     }
 
     pub(crate) fn to_value(self) -> Value {
