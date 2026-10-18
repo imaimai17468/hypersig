@@ -155,6 +155,43 @@ test("a page shortcut opens a dialog with its statement", async ({ page }) => {
   await expect(dialog).toBeHidden();
 });
 
+test("a sheet is a modal dialog along the right edge that closes on Escape", async ({ page }) => {
+  const open = page.getByRole("button", { name: "Filters" });
+  await open.click();
+  const sheet = page.getByRole("dialog", { name: "Filters" });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByRole("textbox", { name: "Owner" })).toBeFocused();
+  const box = (await sheet.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(Math.round(box.x + box.width)).toBe(viewport.width);
+  expect(Math.round(box.height)).toBe(viewport.height);
+  await page.keyboard.press("Escape");
+  await expect(sheet).toBeHidden();
+  await expect(open).toBeFocused();
+});
+
+test("a catalog page marks its section, ends its breadcrumb at itself, and links to the pages around it", async ({ page }) => {
+  await page.goto(`${url("ui")}catalog/5`);
+  const sections = page.getByRole("navigation", { name: "Sections" });
+  await expect(sections.getByRole("link", { name: "Catalog" })).toHaveAttribute("aria-current", "true");
+  await expect(sections.getByRole("link", { name: "Gallery" })).not.toHaveAttribute("aria-current");
+  const trail = page.getByRole("navigation", { name: "Breadcrumb" });
+  await expect(trail.getByRole("link")).toHaveText(["Gallery", "Catalog"]);
+  await expect(trail.locator('[aria-current="page"]')).toHaveText("Page 5");
+  const pager = page.getByRole("navigation", { name: "Pagination" });
+  await expect(pager.getByRole("link", { name: "5" })).toHaveAttribute("aria-current", "page");
+  await expect(pager.getByRole("link")).toHaveText(["Previous", "1", "4", "5", "6", "12", "Next"]);
+  await pager.getByRole("link", { name: "Next" }).click();
+  await expect(page).toHaveURL(/\/catalog\/6$/);
+  await expect(page.getByRole("listitem").filter({ hasText: "Item 16" })).toBeVisible();
+  await page.goto(`${url("ui")}catalog/12`);
+  await expect(pager.getByRole("link", { name: "Next" })).toHaveCount(0);
+  await expect(pager.locator('[aria-disabled="true"]')).toHaveText("Next");
+  await page.goto(`${url("ui")}catalog`);
+  await expect(sections.getByRole("link", { name: "Catalog" })).toHaveAttribute("aria-current", "page");
+  await expect(pager.locator('[aria-disabled="true"]')).toHaveText("Previous");
+});
+
 test("an alert dialog stays open on a click outside and closes with its buttons", async ({ page }) => {
   await page.getByRole("button", { name: "Delete project" }).click();
   const dialog = page.getByRole("alertdialog", { name: "Delete this project?" });

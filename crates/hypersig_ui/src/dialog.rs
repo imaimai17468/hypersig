@@ -120,7 +120,59 @@ impl<S> Dialog<S> {
         description: impl Into<String>,
         content: impl Into<Node<S>>,
     ) -> El<S> {
-        self.frame(title.into(), description.into(), content.into())
+        self.closable(
+            dialog_style(),
+            title.into(),
+            description.into(),
+            content.into(),
+        )
+    }
+
+    /// A sheet: a dialog along the `side` edge of the viewport, with
+    /// `title`, `description`, `content`, and a close button in its corner.
+    ///
+    /// It is the same modal `<dialog>` as [`Dialog::dialog`], opened by
+    /// [`Dialog::trigger`], with the same focus, Escape, and backdrop
+    /// behavior. Only its place and size differ: it spans the full height of
+    /// the viewport at the left or the right, and the full width at the top
+    /// or the bottom.
+    ///
+    /// ```
+    /// use hypersig::Signals;
+    /// use hypersig::html::p;
+    /// use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, Side};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Shop {}
+    ///
+    /// const CART: Dialog<Shop> = Dialog::new("cart");
+    ///
+    /// let open = CART.trigger(ButtonVariant::Outline, ButtonSize::Default).text("Cart");
+    /// let sheet = CART.sheet(Side::Right, "Cart", "Two items.", p().text("Tea, cups"));
+    /// assert!(sheet.render().contains(r#"aria-labelledby="cart-title""#));
+    /// # let _ = open;
+    /// ```
+    #[must_use]
+    pub fn sheet(
+        self,
+        side: Side,
+        title: impl Into<String>,
+        description: impl Into<String>,
+        content: impl Into<Node<S>>,
+    ) -> El<S> {
+        self.closable(
+            sheet_style(side),
+            title.into(),
+            description.into(),
+            content.into(),
+        )
+    }
+
+    /// The dialog in `style`, closed by a click on the backdrop, with a close
+    /// button in its corner after `content`.
+    fn closable(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {
+        self.frame(style, title, description, content)
             .attr("closedby", "any")
             .child(
                 button_el()
@@ -146,11 +198,16 @@ impl<S> Dialog<S> {
         description: impl Into<String>,
         content: impl Into<Node<S>>,
     ) -> El<S> {
-        self.frame(title.into(), description.into(), content.into())
-            .attr("role", "alertdialog")
+        self.frame(
+            dialog_style(),
+            title.into(),
+            description.into(),
+            content.into(),
+        )
+        .attr("role", "alertdialog")
     }
 
-    fn frame(self, title: String, description: String, content: Node<S>) -> El<S> {
+    fn frame(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {
         let title_id = format!("{}-title", self.name);
         let description_id = format!("{}-description", self.name);
         DialogRef::new(self.name)
@@ -158,7 +215,7 @@ impl<S> Dialog<S> {
             .id(self.name)
             .attr("aria-labelledby", title_id.clone())
             .attr("aria-describedby", description_id.clone())
-            .css(dialog_style())
+            .css(style)
             .child(
                 div()
                     .css(stack(rem(1)))
@@ -210,6 +267,20 @@ pub fn dialog_footer<S>() -> El<S> {
     )
 }
 
+/// The edge of the viewport a [`Dialog::sheet`] sits along.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Side {
+    /// The top edge, the full width of the viewport.
+    Top,
+    /// The right edge, the full height of the viewport.
+    Right,
+    /// The bottom edge, the full width of the viewport.
+    Bottom,
+    /// The left edge, the full height of the viewport.
+    Left,
+}
+
 fn dialog_style() -> Style {
     // The browser hides a closed <dialog> with `display: none`, which a
     // `display` here would override, so the layout lives on the child. The
@@ -219,6 +290,33 @@ fn dialog_style() -> Style {
         .margin(raw("auto"))
         .width(raw("min(32rem, calc(100% - 2rem))"))
         .max_height(raw("calc(100% - 2rem)"))
+        .merge(panel_style())
+}
+
+fn sheet_style(side: Side) -> Style {
+    // A modal dialog sits in the top layer at `position: fixed; inset: 0`,
+    // so the margin on the side away from `side` pushes it to that edge. The
+    // browser's own `max-width` and `max-height` keep it off the edges, so
+    // they are lifted.
+    let (margin, width, height) = match side {
+        Side::Top => ("0 0 auto 0", "100%", "auto"),
+        Side::Right => ("0 0 0 auto", "min(24rem, calc(100% - 3rem))", "100%"),
+        Side::Bottom => ("auto 0 0 0", "100%", "auto"),
+        Side::Left => ("0 auto 0 0", "min(24rem, calc(100% - 3rem))", "100%"),
+    };
+    Style::new()
+        .margin(raw(margin))
+        .width(raw(width))
+        .height(raw(height))
+        .max_width(raw("100%"))
+        .max_height(raw("100%"))
+        .overflow_y(hypersig::style::value::OverflowY::Auto)
+        .merge(panel_style())
+}
+
+/// The padding, border, colors, and backdrop a dialog and a sheet share.
+fn panel_style() -> Style {
+    Style::new()
         .padding(rem(1.5))
         .border_width(px(1))
         .border_style(BorderStyle::Solid)

@@ -1,10 +1,10 @@
-//! A dialog and an alert dialog, for the dialog page.
+//! A dialog, a sheet, and an alert dialog, for the dialog page.
 
 use hypersig::html::{div, p};
 use hypersig::style::pattern::{stack, wrap};
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
-use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, TextField, dialog_footer};
+use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, Side, TextField, dialog_footer};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
@@ -18,6 +18,7 @@ pub struct Project {
 
 const RENAME: Dialog<Project> = Dialog::new("rename");
 const DELETE: Dialog<Project> = Dialog::new("delete");
+const DETAILS: Dialog<Project> = Dialog::new("details");
 
 pub fn page(site: Site) -> Page<Project> {
     let name = Project::name();
@@ -45,6 +46,14 @@ pub fn page(site: Site) -> Page<Project> {
                             .text(site.t(L {
                                 en: "Rename",
                                 ja: "名前を変更",
+                            })),
+                    )
+                    .child(
+                        DETAILS
+                            .trigger(ButtonVariant::Outline, ButtonSize::Default)
+                            .text(site.t(L {
+                                en: "Details",
+                                ja: "詳細",
                             })),
                     )
                     .child(
@@ -102,7 +111,29 @@ pub fn page(site: Site) -> Page<Project> {
                 ),
             )
             .child(
+                DETAILS.sheet(
+                    Side::Right,
+                    site.t(L {
+                        en: "Project details",
+                        ja: "プロジェクトの詳細",
+                    }),
+                    site.t(L {
+                        en: "Created on March 3. Deployed 12 times.",
+                        ja: "3 月 3 日に作成し、12 回デプロイしました。",
+                    }),
+                    dialog_footer().child(
+                        DETAILS
+                            .close(ButtonVariant::Outline, ButtonSize::Default)
+                            .text(site.t(L {
+                                en: "Done",
+                                ja: "完了",
+                            })),
+                    ),
+                ),
+            )
+            .child(
                 DELETE.alert_dialog(
+
                     site.t(L {
                         en: "Delete this project?",
                         ja: "このプロジェクトを削除しますか？",

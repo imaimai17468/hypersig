@@ -1132,6 +1132,82 @@ fn component_page(page: Component) -> Page {
                 },
             )],
         },
+        Component::Navigation => Page {
+            lead: L {
+                en: "Links between the pages of an application: a list of its sections, a breadcrumb trail, and the pages of a long list.",
+                ja: "アプリケーションのページの間を移るリンクです。セクションの一覧、パンくずリスト、長い一覧のページ送りがあります。",
+            },
+            demo: Demo::Navigation,
+            built_on: &[
+                L {
+                    en: "Each is a `<nav>` named by the label it takes, holding a list of links, so a screen reader lists it among the page's landmarks. The links are typed `Link` values from routes, and the one to the page the visitor is on has `aria-current=\"page\"`.",
+                    ja: "どれも、受け取ったラベルを名前に持つ `<nav>` で、中にリンクの一覧を持ちます。そのため、スクリーンリーダーはページのランドマークの 1 つとして一覧に出します。リンクはルートから作った型付きの `Link` で、訪問者がいるページへのリンクは `aria-current=\"page\"` を持ちます。",
+                },
+                L {
+                    en: "`NavList` decides the mark on the server, from the page's own `Url` that `Route::url` writes. A link to the same path has `aria-current=\"page\"`, and a link to a path that the page's path continues has `aria-current=\"true\"`. `Breadcrumb::current` ends the trail with the current page as text and returns the element, so no link can follow it. `pagination` shows the first and the last page and the pages next to the current one, and marks the link to the page before or after `aria-disabled` where there is none. The links in the demo lead to pages of this site.",
+                    ja: "`NavList` は、`Route::url` で書いたページ自身の `Url` をもとに、サーバーで印を決めます。同じパスへのリンクは `aria-current=\"page\"` を持ち、ページのパスが続きとなるパスへのリンクは `aria-current=\"true\"` を持ちます。`Breadcrumb::current` は今のページをテキストとして最後に置き、要素を返すので、そのあとにリンクは続けられません。`pagination` は最初と最後のページ、今のページの前後のページを表示し、前や次のページがないときはそのリンクを `aria-disabled` にします。デモのリンクは、このサイトのページにつながります。",
+                },
+            ],
+            keys: &[],
+            items: &[
+                (
+                    "NavList::new",
+                    "hypersig_ui/struct.NavList.html#method.new",
+                    L {
+                        en: "An empty list whose `<nav>` is named `label`, on the page at `current`.",
+                        ja: "`<nav>` の名前が `label` で、`current` のページに置く空の一覧",
+                    },
+                ),
+                (
+                    "item",
+                    "hypersig_ui/struct.NavList.html#method.item",
+                    L {
+                        en: "Adds a link to `route` with the arguments `args`, as `Route::url` takes them.",
+                        ja: "`Route::url` と同じ形の引数 `args` を付けた、`route` へのリンクを足します。",
+                    },
+                ),
+                (
+                    "Breadcrumb::new",
+                    "hypersig_ui/struct.Breadcrumb.html#method.new",
+                    L {
+                        en: "An empty trail whose `<nav>` is named `label`, such as \"Breadcrumb\".",
+                        ja: "`<nav>` の名前が `label`（たとえば「Breadcrumb」）の空のパンくずリスト",
+                    },
+                ),
+                (
+                    "link",
+                    "hypersig_ui/struct.Breadcrumb.html#method.link",
+                    L {
+                        en: "Adds a link to a page above the current one, after the links before it.",
+                        ja: "今のページより上のページへのリンクを、それまでのリンクのあとに足します。",
+                    },
+                ),
+                (
+                    "current",
+                    "hypersig_ui/struct.Breadcrumb.html#method.current",
+                    L {
+                        en: "The trail, ending at the current page `text`.",
+                        ja: "今のページ `text` で終わるパンくずリスト",
+                    },
+                ),
+                (
+                    "pagination",
+                    "hypersig_ui/fn.pagination.html",
+                    L {
+                        en: "Links to the pages of a list of `count` pages, on page `current`.",
+                        ja: "`count` ページある一覧の各ページへのリンク。今のページは `current`",
+                    },
+                ),
+                (
+                    "PaginationText",
+                    "hypersig_ui/struct.PaginationText.html",
+                    L {
+                        en: "The words `pagination` names its parts with.",
+                        ja: "`pagination` が各部分の名前に使う言葉",
+                    },
+                ),
+            ],
+        },
         Component::DataTable => Page {
             lead: L {
                 en: "A table of the rows of a list signal under typed columns, which sorts, filters, pages, and selects rows in the browser, or asks the server for one page at a time.",
@@ -1455,8 +1531,8 @@ fn component_page(page: Component) -> Page {
         },
         Component::Dialog => Page {
             lead: L {
-                en: "A modal dialog, and an alert dialog that asks the visitor to confirm.",
-                ja: "モーダルダイアログと、訪問者に確認を求めるアラートダイアログです。",
+                en: "A modal dialog, a sheet along an edge of the viewport, and an alert dialog that asks the visitor to confirm.",
+                ja: "モーダルダイアログ、ビューポートの端に沿って出るシート、訪問者に確認を求めるアラートダイアログです。",
             },
             demo: Demo::Dialog,
             built_on: &[
@@ -1467,6 +1543,10 @@ fn component_page(page: Component) -> Page {
                 L {
                     en: "The dialog is labeled by its title and described by its description through ids derived from the name. An alert dialog has `role=\"alertdialog\"` and no close button in its corner, so the visitor answers with one of its buttons.",
                     ja: "ダイアログには名前から作った id を通して、タイトルがラベルとして、説明が説明文として結び付きます。アラートダイアログは `role=\"alertdialog\"` を持ち、角に閉じるボタンがないので、訪問者はダイアログのボタンのどれかで答えます。",
+                },
+                L {
+                    en: "A sheet is the same modal `<dialog>`, placed along one edge of the viewport by `Dialog::sheet`, so it keeps the focus, Escape, and backdrop behavior of a dialog.",
+                    ja: "シートは同じモーダルの `<dialog>` を `Dialog::sheet` でビューポートの端に沿って置いたものなので、フォーカス、Escape、背景のクリックの振る舞いはダイアログと同じです。",
                 },
             ],
             keys: &[
@@ -1546,6 +1626,22 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "An alert dialog, which asks the visitor to confirm or cancel before going on.",
                         ja: "先に進む前に、訪問者に確認か取り消しを求めるアラートダイアログ",
+                    },
+                ),
+                (
+                    "sheet",
+                    "hypersig_ui/struct.Dialog.html#method.sheet",
+                    L {
+                        en: "A sheet: a dialog along the `side` edge of the viewport.",
+                        ja: "シート。ビューポートの `side` の端に沿って出るダイアログ",
+                    },
+                ),
+                (
+                    "Side",
+                    "hypersig_ui/enum.Side.html",
+                    L {
+                        en: "The edge of the viewport a `Dialog::sheet` sits along.",
+                        ja: "`Dialog::sheet` が沿うビューポートの端",
                     },
                 ),
                 (

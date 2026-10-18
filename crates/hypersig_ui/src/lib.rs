@@ -27,7 +27,8 @@
 //! | [`DataTable`] | `<table>` with `<th scope="col">` and `aria-sort`, and a tri-state checkbox for selecting rows |
 //! | [`ServerTable`] | the same `<table>`, whose rows an action sends one page at a time |
 //! | [`Accordion`] | `<details>` and `<summary>` |
-//! | [`Dialog`] | `<dialog>` opened by invoker commands |
+//! | [`Dialog`] | `<dialog>` opened by invoker commands, centered or along an edge as a sheet |
+//! | [`NavList`], [`Breadcrumb`], [`pagination`] | `<nav>` holding a list of links, with `aria-current` on the link to the page shown |
 //! | [`Menu`] | the menu button pattern on a `popover` |
 //! | [`Tooltip`] | the tooltip pattern on a `popover="hint"` |
 //! | [`Toaster`] | a landmark region holding an `aria-live` list |
@@ -78,6 +79,7 @@ mod id;
 mod listbox;
 mod look;
 mod menu;
+mod navigation;
 mod number;
 mod progress;
 mod select;
@@ -100,11 +102,12 @@ pub use choice::{
     checkbox, checkbox_in_form, radio_group, radio_group_in_form, switch, switch_in_form,
 };
 pub use combobox::{Combobox, ComboboxState};
-pub use dialog::{Dialog, dialog_footer};
+pub use dialog::{Dialog, Side, dialog_footer};
 pub use donut::DonutChart;
 pub use field::{Autocomplete, InputKind, InputMode, TextField};
 pub use listbox::Listbox;
 pub use menu::{Menu, MenuItem};
+pub use navigation::{Breadcrumb, NavList, PaginationText, pagination};
 pub use number::{NumberField, Numeric};
 pub use progress::{progress, skeleton};
 pub use select::{select_field, select_field_in_form};

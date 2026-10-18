@@ -1,0 +1,13 @@
+error[E0599]: no method named `link` found for struct `El<S>` in the current scope
+  --> tests/ui/fail/breadcrumb_link_after_current.rs:22:10
+   |
+20 |       let _ = Breadcrumb::<Issue>::new("Breadcrumb")
+   |               --------------------------------------
+   |               |
+   |  _____________method `link` is available on `Breadcrumb<Issue>`
+   | |
+21 | |         .current("Login is slow")
+22 | |         .link("Issues", ISSUES.link());
+   | |         -^^^^ method not found in `El<Issue>`
+   | |_________|
+   |

@@ -6,21 +6,25 @@
 //! Run with `cargo run -p example-ui` and open <http://localhost:3005>.
 
 use axum::Router;
-use hypersig::html::{self, El, Orientation, div, form, h1, h2, header, p, section, span};
+use hypersig::html::{
+    self, El, Orientation, div, each, form, h1, h2, header, li, p, section, span, ul,
+};
+
 use hypersig::style::Media;
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
 use hypersig::{
-    Action, Expr, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals, if_else,
+    Action, Expr, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals, Url, if_else,
 };
 use hypersig_ui::{
-    Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart, Column,
-    Combobox, ComboboxState, DataTable, Dialog, DonutChart, InputKind, Level, Listbox, Menu,
-    MenuItem, NumberField, ServerTable, Slider, SortOrder, TableState, Tabs, TextField, Toast,
-    ToastVariant, Toaster, Tooltip, alert, alert_description, alert_title, badge, button, card,
-    card_content, card_description, card_footer, card_header, card_title, checkbox, dialog_footer,
-    progress, radio_group, select_field, separator, skeleton, submit_button, switch, token,
+    Accordion, AlertVariant, Autocomplete, BadgeVariant, Breadcrumb, ButtonSize, ButtonVariant,
+    Chart, Column, Combobox, ComboboxState, DataTable, Dialog, DonutChart, InputKind, Level,
+    Listbox, Menu, MenuItem, NavList, NumberField, PaginationText, ServerTable, Side, Slider,
+    SortOrder, TableState, Tabs, TextField, Toast, ToastVariant, Toaster, Tooltip, alert,
+    alert_description, alert_title, badge, button, card, card_content, card_description,
+    card_footer, card_header, card_title, checkbox, dialog_footer, pagination, progress,
+    radio_group, select_field, separator, skeleton, submit_button, switch, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -113,6 +117,7 @@ struct Gallery {
     scheme: Scheme,
     name: String,
     nickname: String,
+    owner: String,
     email: String,
     bio: String,
     seats: i32,
@@ -146,6 +151,74 @@ struct Gallery {
 hypersig::routes! {
     fn pages(Router<()>);
     const INDEX: Route = "/" => index;
+    const CATALOG_HOME: Route = "/catalog" => catalog_home;
+    const CATALOG: Route<u32> = "/catalog/{page}" => catalog;
+}
+
+/// The items of the catalog page.
+#[derive(Signals, Serialize, Deserialize)]
+struct Catalog {
+    items: Vec<String>,
+}
+
+/// The number of pages of the catalog.
+const CATALOG_PAGES: u32 = 12;
+
+/// The first page of the catalog, at the address the sections link to.
+async fn catalog_home((): (), (): ()) -> Option<Page<Catalog>> {
+    Some(catalog_page(1, CATALOG_HOME.url(())))
+}
+
+async fn catalog((): (), page: u32) -> Option<Page<Catalog>> {
+    (1..=CATALOG_PAGES)
+        .contains(&page)
+        .then(|| catalog_page(page, CATALOG.url(page)))
+}
+
+/// Page `page` of a catalog of 12 pages, served at `here`, with a list of
+/// the sections, a breadcrumb, and links to the other pages.
+fn catalog_page(page: u32, here: Url) -> Page<Catalog> {
+    let items = (1..=3)
+        .map(|n| format!("Item {}", (page - 1) * 3 + n))
+        .collect();
+    Page::new("Catalog", Catalog { items })
+        .global(hypersig_ui::global())
+        .theme(hypersig_ui::theme())
+        .child(
+            div()
+                .css(container(rem(48), rem(2)).padding_block(rem(2)))
+                .child(
+                    div()
+                        .css(grid(1, rem(2)).on(
+                            Media::Md,
+                            Style::new().grid_template_columns(raw("12rem 1fr")),
+                        ))
+                        .child(
+                            NavList::new("Sections", here)
+                                .item("Gallery", INDEX, ())
+                                .item("Catalog", CATALOG_HOME, ()),
+                        )
+                        .child(
+                            div()
+                                .css(stack(rem(1.5)))
+                                .child(
+                                    Breadcrumb::new("Breadcrumb")
+                                        .link("Gallery", INDEX.link())
+                                        .link("Catalog", CATALOG_HOME.link())
+                                        .current(format!("Page {page}")),
+                                )
+                                .child(ul().child(each(Catalog::items(), |item| {
+                                    li().bind_text(item.value())
+                                })))
+                                .child(pagination(
+                                    page,
+                                    CATALOG_PAGES,
+                                    |page| CATALOG.link_with(&page),
+                                    &PaginationText::default(),
+                                )),
+                        ),
+                ),
+        )
 }
 
 const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
@@ -154,6 +227,7 @@ const ORDERS: Action<Gallery, TableState> = Action::post("/orders");
 const DOLLARS: NumberFormat = NumberFormat::new().digits(2).prefix("$");
 const EDIT: Dialog<Gallery> = Dialog::new("edit-profile");
 const DELETE: Dialog<Gallery> = Dialog::new("delete-project");
+const FILTERS: Dialog<Gallery> = Dialog::new("filters");
 const ACTIONS: Menu<Gallery> = Menu::new("project-actions");
 const ADD_TIP: Tooltip<Gallery> = Tooltip::new("add-item-tip");
 const COUNTRY: Combobox<Gallery> = Combobox::new("country", "country-options");
@@ -435,6 +509,25 @@ fn faq() -> El<Gallery> {
     )
 }
 
+/// A sheet along the right edge, opened by the Filters button.
+fn filters() -> El<Gallery> {
+    FILTERS.sheet(
+        Side::Right,
+        "Filters",
+        "Narrow the projects down, then press Apply.",
+        div()
+            .css(stack(rem(1)))
+            .child(TextField::new("Owner", Gallery::owner()))
+            .child(
+                dialog_footer().child(
+                    FILTERS
+                        .close(ButtonVariant::Default, ButtonSize::Default)
+                        .text("Apply"),
+                ),
+            ),
+    )
+}
+
 fn overlays() -> El<Gallery> {
     let status = Gallery::status();
     let archived = Gallery::archived();
@@ -457,6 +550,12 @@ fn overlays() -> El<Gallery> {
                     ACTIONS
                         .trigger(ButtonVariant::Outline, ButtonSize::Default)
                         .text("Project actions"),
+                )
+                .child(
+                    FILTERS
+                        .trigger(ButtonVariant::Outline, ButtonSize::Default)
+                        .id("open-filters")
+                        .text("Filters"),
                 )
                 .child(
                     ACTIONS.menu([
@@ -497,6 +596,7 @@ fn overlays() -> El<Gallery> {
                     ),
             ),
         )
+        .child(filters())
         .child(
             DELETE.alert_dialog(
                 "Delete this project?",
@@ -896,6 +996,7 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             scheme: Scheme::System,
             name: String::new(),
             nickname: String::new(),
+            owner: String::new(),
             email: String::new(),
             bio: String::new(),
             seats: 2,
