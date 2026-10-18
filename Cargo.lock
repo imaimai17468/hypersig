@@ -195,6 +195,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-signup"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "hypersig",
+ "hypersig_ui",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "example-style"
 version = "0.0.0"
 dependencies = [
