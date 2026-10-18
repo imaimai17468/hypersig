@@ -165,6 +165,13 @@ fn pages(site: Site, head: Part) -> Part {
                 ja: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) はタグを `<html lang>` に書きます。ブラウザはこの属性を見て、ハイフネーション、スクリーンリーダーの読み上げの声、使うフォントを決めます。そのため、`lang=\"ja\"` の付いた日本語の文は日本語の字形で表示されます。",
             },
         ),
+        para(
+            site,
+            L {
+                en: "[`LocalePage::alternates`](api:hypersig_i18n/trait.LocalePage.html#tymethod.alternates) takes an `Origin` and a function from a language to the page's `Url`, as in `|lang| POST.url((lang, id))`. It writes one `<link rel=\"alternate\" hreflang>` per language of `Locale::ALL`, and an `x-default` at the first language, so a search engine shows each reader the page in their language.",
+                ja: "[`LocalePage::alternates`](api:hypersig_i18n/trait.LocalePage.html#tymethod.alternates) は `Origin` と、`|lang| POST.url((lang, id))` のように言語からページの `Url` を返す関数を受け取ります。`Locale::ALL` の言語ごとに `<link rel=\"alternate\" hreflang>` を 1 つ書き、最初の言語には `x-default` も書きます。検索エンジンはこれを見て、読者の言語のページを結果に出します。",
+            },
+        ),
     ])
 }
 

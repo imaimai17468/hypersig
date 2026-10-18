@@ -73,7 +73,7 @@ mod axum;
 #[cfg(feature = "axum")]
 pub use axum::LocaleRouterExt;
 
-use hypersig::Segment;
+use hypersig::{Origin, Page, Segment, Signals, Url};
 use serde::Serialize;
 
 /// The locales of an application: an enum with `#[derive(Segment)]` whose segments are BCP 47 tags.
@@ -186,4 +186,60 @@ pub fn negotiate<L: Locale>(accept_language: &str) -> L {
         }
     }
     default
+}
+
+/// Adds the alternate of each locale to a [`Page`].
+pub trait LocalePage: Sized {
+    /// Names the page's address in each locale of `L`, where `url` gives the address in one.
+    ///
+    /// It adds one [`Page::alternate`] per locale of [`Locale::ALL`], tagged
+    /// with [`Locale::tag`], and a [`Page::alternate_default`] at the first
+    /// locale, the default that [`negotiate`] falls back to.
+    ///
+    /// ```
+    /// # use hypersig::{Origin, Page, Route, Segment, Signals};
+    /// # use hypersig_i18n::{Locale, LocalePage};
+    /// # use serde::{Deserialize, Serialize};
+    /// # #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+    /// # #[serde(rename_all = "lowercase")]
+    /// # enum Lang { En, Ja }
+    /// # struct ByLang<T> { en: T, ja: T }
+    /// # impl Locale for Lang {
+    /// #     const ALL: &'static [Self] = &[Self::En, Self::Ja];
+    /// #     type Text<T> = ByLang<T>;
+    /// #     fn pick<T>(self, t: ByLang<T>) -> T { match self { Self::En => t.en, Self::Ja => t.ja } }
+    /// # }
+    /// # #[derive(Signals, Serialize, Deserialize)]
+    /// # struct Post {}
+    /// # async fn post((): (), _: (Lang, u32)) -> Option<Page<Post>> { None }
+    /// hypersig::routes! {
+    ///     fn pages(Router<()>);
+    ///     const POST: Route<(Lang, u32)> = "/{lang}/posts/{id}" => post;
+    /// }
+    ///
+    /// const SITE: Origin = Origin::new("https://example.com");
+    ///
+    /// let html = Page::new("Post", Post {})
+    ///     .alternates(SITE, |lang: Lang| POST.url((lang, 3)))
+    ///     .render();
+    /// assert!(html.contains(r#"<link rel="alternate" hreflang="en" href="https://example.com/en/posts/3">"#));
+    /// assert!(html.contains(r#"<link rel="alternate" hreflang="ja" href="https://example.com/ja/posts/3">"#));
+    /// assert!(html.contains(r#"<link rel="alternate" hreflang="x-default" href="https://example.com/en/posts/3">"#));
+    /// # let _ = pages;
+    /// ```
+    #[must_use]
+    fn alternates<L: Locale>(self, origin: Origin, url: impl Fn(L) -> Url) -> Self;
+}
+
+impl<S: Signals> LocalePage for Page<S> {
+    fn alternates<L: Locale>(self, origin: Origin, url: impl Fn(L) -> Url) -> Self {
+        let mut page = self;
+        for &locale in L::ALL {
+            page = page.alternate(origin, &url(locale), locale.tag());
+        }
+        match L::ALL.first() {
+            Some(&default) => page.alternate_default(origin, &url(default)),
+            None => page,
+        }
+    }
 }
