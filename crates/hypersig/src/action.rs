@@ -452,10 +452,13 @@ impl<S> fmt::Debug for StreamCall<S> {
 /// handlers. Inside a list item the browser looks for the element in the same
 /// item first, so one `NodeRef` serves every item.
 ///
-/// Outside a list, give each `NodeRef` its own name. Two with one name both
-/// reach the first element that carries it, which the types do not check.
-/// A [`FileInput`](crate::FileInput) name is looked up apart from these, so
-/// it never collides with one.
+/// Outside a list, one name sits on one element. [`Page::render`](crate::Page::render)
+/// and [`El::render`](crate::html::El::render) panic when two elements the
+/// browser could both reach carry one name, which a test that renders the
+/// page catches. A [`Fragment`](crate::Fragment) sent again is checked on
+/// its own, so a name that a later render of it adds and the rest of the
+/// page already carries goes unchecked. A [`FileInput`](crate::FileInput)
+/// name is looked up apart from these, so it never collides with one.
 ///
 /// ```
 /// use hypersig::html::{button, div, input};

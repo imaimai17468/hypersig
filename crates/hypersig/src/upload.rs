@@ -134,8 +134,8 @@ impl<S, A> fmt::Debug for Upload<S, A> {
 /// the same value to the call. Inside a list item the browser looks for the
 /// input in the same item first, as for a [`NodeRef`](crate::NodeRef). The
 /// browser looks up file inputs apart from node refs, so the two never share
-/// a name. Two file inputs with one name are the same mistake as two node
-/// refs with one name.
+/// a name. Two file inputs with one name are checked as two node refs with
+/// one name are.
 pub struct FileInput<S> {
     name: &'static str,
     marker: PhantomData<fn() -> S>,

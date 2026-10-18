@@ -144,6 +144,98 @@ impl<S> Node<S> {
     }
 }
 
+/// Panics if two elements in `nodes` carry one node ref name, or one file
+/// input name, where the runtime could find either.
+///
+/// The runtime looks a name up in the list items and conditional copies
+/// around the statement first, innermost first, and then in the whole page
+/// (`#findNamed` in `runtime/src/runtime.ts`). Two elements collide when
+/// they sit in one template or one of them sits in a template that encloses
+/// the other, counting the page as the outermost template, because one
+/// lookup can then reach both. Elements in sibling templates never meet, so
+/// every item of a list may carry the same name.
+pub(crate) fn check_names<S>(nodes: &[Node<S>]) {
+    let mut names = Names::default();
+    for node in nodes {
+        names.node(node, None);
+    }
+    names.check();
+}
+
+/// The names that elements carry, each with the templates it sits in,
+/// outermost first, numbered in the order the walk enters them.
+#[derive(Default)]
+struct Names {
+    found: Vec<(&'static str, &'static str, Vec<u32>)>,
+    templates: u32,
+}
+
+/// The template the walk is in and the templates around it, kept on the
+/// call stack so that a page whose elements carry no name allocates nothing.
+struct Scope<'a> {
+    template: u32,
+    outer: Option<&'a Scope<'a>>,
+}
+
+impl Scope<'_> {
+    /// The templates from the outermost to `scope`.
+    fn path(scope: Option<&Self>) -> Vec<u32> {
+        let mut path = Vec::new();
+        let mut at = scope;
+        while let Some(scope) = at {
+            path.push(scope.template);
+            at = scope.outer;
+        }
+        path.reverse();
+        path
+    }
+}
+
+impl Names {
+    fn el<S>(&mut self, el: &El<S>, scope: Option<&Scope<'_>>) {
+        if let Some(name) = el.node_ref {
+            self.found.push(("node ref", name, Scope::path(scope)));
+        }
+        if let Some(name) = el.file_input {
+            self.found.push(("file input", name, Scope::path(scope)));
+        }
+        for child in &el.children {
+            self.node(child, scope);
+        }
+    }
+
+    fn node<S>(&mut self, node: &Node<S>, scope: Option<&Scope<'_>>) {
+        match &node.0 {
+            NodeKind::Element(el) => self.el(el, scope),
+            NodeKind::Text(_) => {}
+            NodeKind::Each { template, .. } | NodeKind::When { template, .. } => {
+                self.templates += 1;
+                let inner = Scope {
+                    template: self.templates,
+                    outer: scope,
+                };
+                self.el(template, Some(&inner));
+            }
+        }
+    }
+
+    fn check(mut self) {
+        self.found
+            .sort_unstable_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
+        for group in self.found.chunk_by(|a, b| (a.0, a.1) == (b.0, b.1)) {
+            for (i, (kind, name, a)) in group.iter().enumerate() {
+                let meets = |(_, _, b): &(_, _, Vec<u32>)| a.starts_with(b) || b.starts_with(a);
+                assert!(
+                    !group[i + 1..].iter().any(meets),
+                    "two elements carry the {kind} name `{name}` where the runtime can \
+                     reach both, so its statements act on whichever comes first: give one \
+                     of them another name"
+                );
+            }
+        }
+    }
+}
+
 impl<S> From<El<S>> for Node<S> {
     fn from(el: El<S>) -> Self {
         Self(NodeKind::Element(Box::new(el)))
@@ -1288,8 +1380,17 @@ impl<S> El<S> {
     ///
     /// The reactive parts are left for the runtime to fill in, because an
     /// element alone has no signal values. [`Page::render`](crate::Page::render) fills them in.
+    ///
+    /// # Panics
+    ///
+    /// Panics if two elements carry one [`NodeRef`] name, or one
+    /// [`FileInput`](crate::FileInput) name, where the runtime can reach
+    /// both. Each item of a list may carry the same name.
     #[must_use]
     pub fn render(&self) -> String {
+        let mut names = Names::default();
+        names.el(self, None);
+        names.check();
         let mut out = String::new();
         self.write(&mut out, None, None);
         out
@@ -1710,6 +1811,84 @@ mod tests {
             html.contains(r#"data-hs-text="[&quot;item&quot;,1,&quot;&quot;]""#),
             "{html}"
         );
+    }
+
+    mod names {
+        use super::super::{each, li, ul, when};
+        use super::{Page, count, div, input, sig};
+        use crate::{FileInput, NodeRef, Sig};
+
+        const FIELD: NodeRef<Page> = NodeRef::new("field");
+        const PICTURE: FileInput<Page> = FileInput::new("field");
+
+        fn rows() -> Sig<Page, Vec<String>> {
+            sig("rows")
+        }
+
+        #[test]
+        #[should_panic(expected = "node ref name `field`")]
+        fn one_node_ref_on_two_elements_of_the_page_panics() {
+            let _ = div::<Page>()
+                .child(input().node_ref(FIELD))
+                .child(input().node_ref(FIELD))
+                .render();
+        }
+
+        #[test]
+        #[should_panic(expected = "file input name `field`")]
+        fn one_file_input_twice_panics() {
+            let _ = div::<Page>()
+                .child(PICTURE.input())
+                .child(PICTURE.input())
+                .render();
+        }
+
+        #[test]
+        fn each_item_and_sibling_lists_may_carry_one_name() {
+            let item = || each(rows(), |_| li().child(input().node_ref(FIELD)));
+            let html = div::<Page>()
+                .child(ul().child(item()))
+                .child(ul().child(item()))
+                .render();
+            assert!(html.contains("data-hs-ref"), "{html}");
+        }
+
+        #[test]
+        fn a_node_ref_and_a_file_input_may_share_a_name() {
+            let _ = div::<Page>()
+                .child(input().node_ref(FIELD))
+                .child(PICTURE.input())
+                .render();
+        }
+
+        #[test]
+        #[should_panic(expected = "node ref name `field`")]
+        fn a_name_in_a_list_and_on_the_page_around_it_panics() {
+            let _ = div::<Page>()
+                .child(ul().child(each(rows(), |_| li().child(input().node_ref(FIELD)))))
+                .child(input().node_ref(FIELD))
+                .render();
+        }
+
+        #[test]
+        #[should_panic(expected = "node ref name `field`")]
+        fn one_name_twice_in_one_item_panics() {
+            let _ = ul::<Page>()
+                .child(each(rows(), |_| {
+                    li().child(input().node_ref(FIELD))
+                        .child(input().node_ref(FIELD))
+                }))
+                .render();
+        }
+
+        #[test]
+        #[should_panic(expected = "node ref name `field`")]
+        fn a_conditional_copy_and_the_page_around_it_panics() {
+            let _ = div::<Page>()
+                .child(when(count().gt(0), input().node_ref(FIELD)))
+                .child(input().node_ref(FIELD))
+                .render();
+        }
     }
 
     #[test]

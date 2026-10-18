@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 
 use crate::expr::IntoExpr;
 use crate::head::{OpenGraph, Origin, meta};
-use crate::html::{Node, Stylesheet, escape_into, write_attr};
+use crate::html::{Node, Stylesheet, check_names, escape_into, write_attr};
 use crate::route::Url;
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
@@ -275,14 +275,8 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Renders the document.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the signal struct fails to serialize to JSON, which only
-    /// happens for a `Serialize` impl that returns an error.
-    #[must_use]
-    pub fn render(&self) -> String {
+    /// The signals as JSON, with each computed signal set from the others.
+    fn initial_values(&self) -> Value {
         let mut root = serde_json::to_value(&self.signals)
             .expect("a Signals struct serializes to a JSON object");
         for (path, value) in &self.computed {
@@ -296,6 +290,22 @@ impl<S: Signals> Page<S> {
                 root = ssr::set_path(&root, path, value);
             }
         }
+        root
+    }
+
+    /// Renders the document.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the signal struct fails to serialize to JSON, which only
+    /// happens for a `Serialize` impl that returns an error, or if two
+    /// elements carry one [`NodeRef`](crate::NodeRef) name, or one
+    /// [`FileInput`](crate::FileInput) name, where the runtime can reach
+    /// both. Each item of a list may carry the same name.
+    #[must_use]
+    pub fn render(&self) -> String {
+        check_names(&self.body);
+        let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
         if let Some(lang) = &self.lang {
             write_attr(&mut out, "lang", lang);
@@ -383,5 +393,34 @@ impl<S: Signals> Page<S> {
         }
         out.push_str("</body></html>");
         out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
+
+    use crate::html::input;
+    use crate::{NodeRef, Page, Signals};
+
+    #[derive(Signals, Serialize, Deserialize)]
+    struct Search {
+        query: String,
+    }
+
+    const FIELD: NodeRef<Search> = NodeRef::new("field");
+
+    #[test]
+    #[should_panic(expected = "node ref name `field`")]
+    fn one_node_ref_in_two_children_of_the_body_panics() {
+        let _ = Page::new(
+            "Search",
+            Search {
+                query: String::new(),
+            },
+        )
+        .child(input().node_ref(FIELD))
+        .child(input().node_ref(FIELD))
+        .render();
     }
 }
