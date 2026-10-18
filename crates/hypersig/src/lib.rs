@@ -46,6 +46,7 @@ mod action;
 #[cfg(feature = "axum")]
 mod axum;
 mod expr;
+mod form;
 pub mod html;
 mod page;
 mod patch;
@@ -67,6 +68,7 @@ pub use axum::{PageResponse, RequestError, RouterExt};
 pub use expr::{
     Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };
+pub use form::{FieldErrors, Form, Rules, Validate};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};

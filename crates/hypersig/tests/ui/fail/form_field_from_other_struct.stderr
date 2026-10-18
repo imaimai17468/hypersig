@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/form_field_from_other_struct.rs:23:34
+   |
+23 |     let _ = Join::signup().error(Login::email());
+   |                            ----- ^^^^^^^^^^^^^^ expected `Sig<Signup, _>`, found `Sig<Login, String>`
+   |                            |
+   |                            arguments to this method are incorrect
+   |
+   = note: expected struct `Sig<Signup, _>`
+              found struct `Sig<Login, String>`
+note: method defined here
+  --> src/form.rs
+   |
+   |     pub fn error<U>(self, field: Sig<T, U>) -> Expr<S, String> {
+   |            ^^^^^

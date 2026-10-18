@@ -14,7 +14,8 @@ use hypersig::html::{
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
-    Action, Expr, Fragment, NodeRef, Page, Patches, Rest, Route, Search, Signals, Stmt, if_else,
+    Action, Expr, Form, Fragment, NodeRef, Page, Patches, Rest, Route, Rules, Search, Sig, Signals,
+    Stmt, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -257,6 +258,83 @@ fn timers() -> (El<Timers>, Timers) {
         saving: false,
         error: String::new(),
         fired: 0,
+    };
+    (el, signals)
+}
+
+#[derive(Signals, Serialize, Deserialize, Clone)]
+struct Signup {
+    email: String,
+    password: String,
+}
+
+impl Validate for Signup {
+    fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+        let email = form.at(Signup::email());
+        rules
+            .check(
+                Signup::email(),
+                !email.is_empty(),
+                "Enter an email address.",
+            )
+            .check(
+                Signup::email(),
+                email.contains("@"),
+                "That is not an email address.",
+            )
+            .check(
+                Signup::password(),
+                form.at(Signup::password()).char_count().ge(8),
+                "Use 8 or more characters.",
+            );
+    }
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Join {
+    signup: Form<Signup>,
+}
+
+const JOIN: Action<Join, Signup> = Action::post("/join");
+
+fn join() -> (El<Join>, Join) {
+    let signup = Join::signup();
+    let (email, password) = (Signup::email(), Signup::password());
+    let el = signup
+        .form(JOIN.call_with(signup.value()))
+        .id("join")
+        .child(
+            input()
+                .id("email")
+                .bind(signup.field(email))
+                .on_blur(signup.touch(email)),
+        )
+        .child(span().id("email-error").bind_text(signup.error(email)))
+        .child(
+            input()
+                .id("password")
+                .bind(signup.field(password))
+                .on_blur(signup.touch(password)),
+        )
+        .child(
+            span()
+                .id("password-error")
+                .bind_text(signup.error(password)),
+        )
+        .child(span().id("dirty").show(signup.is_dirty()).text("unsaved"))
+        .child(span().id("valid").show(signup.is_valid()).text("ok"))
+        .child(button().id("submit").attr("type", "submit"))
+        .child(
+            button()
+                .id("reset")
+                .attr("type", "button")
+                .on_click(signup.reset()),
+        );
+    let signals = Join {
+        signup: Form::new(Signup {
+            email: "ada@example.com".to_owned(),
+            password: String::new(),
+        }),
     };
     (el, signals)
 }
@@ -825,6 +903,10 @@ fn fixtures_match_the_builder() {
     check_page("plot_page", el, signals);
     let (el, signals) = combo();
     check("combo", &el, &signals);
+    let (el, signals) = join();
+    check("join", &el, &signals);
+    let (el, signals) = join();
+    check_page("join_page", el, signals);
     let (el, signals) = links();
     check("links", &el, &signals);
     let (el, signals) = todos();
