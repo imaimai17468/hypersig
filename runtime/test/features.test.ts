@@ -299,6 +299,9 @@ describe("node refs", () => {
     key($("#item0"), "Tab");
     await tick();
     expect(hide).toHaveBeenCalledOnce();
+    $("#item0").dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true }));
+    await tick();
+    expect(hide).toHaveBeenCalledTimes(2);
   });
 
   it("shows a closed popover and leaves an open one alone", async () => {

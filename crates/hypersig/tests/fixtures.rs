@@ -539,6 +539,7 @@ fn roving() -> (El<Roving>, Roving) {
                     .roving_focus(Orientation::Vertical)
                     .node_ref(MENU)
                     .on_key(Key::Tab, MENU.hide_popover())
+                    .on_key(Key::Tab.shift(), MENU.hide_popover())
                     .on_key(Key::Enter, MENU.show_popover())
                     .children(
                         (0..2).map(|i| button().id(format!("item{i}")).attr("tabindex", "-1")),

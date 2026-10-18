@@ -102,7 +102,9 @@ impl<S> Menu<S> {
             .attr("aria-labelledby", self.trigger_id())
             .node_ref(node_ref)
             .roving_focus(Orientation::Vertical)
+            // Tab and Shift+Tab both leave the menu, which closes it.
             .on_key(Key::Tab, node_ref.hide_popover())
+            .on_key(Key::Tab.shift(), node_ref.hide_popover())
             .css(menu_style(self.anchor()))
             .children(items.into_iter().enumerate().map(|(index, item)| {
                 let mut action = button_el()
