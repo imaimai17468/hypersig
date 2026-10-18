@@ -881,11 +881,20 @@ mod sealed {
 
 /// Creates an element with any tag.
 ///
-/// Use the named constructors such as [`div`] where one exists.
+/// Use the named constructors such as [`div`] where one exists. A tag the
+/// HTML standard lists as void, such as `source` or `meta`, is written
+/// without children or a closing tag, as the browser parses it.
 #[must_use]
 pub fn el<S>(tag: &'static str) -> El<S> {
-    El::new(tag, false)
+    El::new(tag, VOID.contains(&tag))
 }
+
+/// The tags the HTML standard defines as void elements, which take no
+/// children or closing tag.
+const VOID: [&str; 13] = [
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track",
+    "wbr",
+];
 
 macro_rules! tags {
     ($($name:ident),* $(,)?) => {$(
@@ -908,12 +917,14 @@ macro_rules! void_tags {
 }
 
 tags!(
-    a, article, aside, b, button, code, details, dialog, div, em, fieldset, footer, form, h1, h2,
-    h3, h4, header, i, label, legend, li, main, nav, ol, option, p, pre, progress, section, select,
-    small, span, strong, summary, table, tbody, td, textarea, th, thead, time, tr, ul,
+    a, abbr, address, article, aside, audio, b, blockquote, button, caption, cite, code, colgroup,
+    dd, del, details, dialog, div, dl, dt, em, fieldset, figcaption, figure, footer, form, h1, h2,
+    h3, h4, h5, h6, header, i, ins, kbd, label, legend, li, main, mark, meter, nav, ol, optgroup,
+    option, output, p, picture, pre, progress, section, select, small, span, strong, sub, summary,
+    sup, table, tbody, td, textarea, tfoot, th, thead, time, tr, ul, video,
 );
 
-void_tags!(br, hr, img, input);
+void_tags!(br, col, hr, img, input, source, track, wbr);
 
 impl<S> El<S> {
     fn new(tag: &'static str, void: bool) -> Self {
@@ -1938,7 +1949,7 @@ pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
 
 #[cfg(test)]
 mod tests {
-    use super::{Class, button, div, input, span};
+    use super::{Class, button, div, el, img, input, picture, source, span};
     use crate::_private::sig;
     use crate::style::Token;
     use crate::{Sig, Stmt};
@@ -1963,6 +1974,19 @@ mod tests {
         assert!(!found("p { margin: 1.5rem }", "5rem"));
         assert!(!found("/* .big */ p { }", "big"));
         assert!(!found("p::before { content: '.big' }", "big"));
+    }
+
+    #[test]
+    fn a_void_tag_has_no_closing_tag_from_its_constructor_or_from_el() {
+        let html = picture::<Page>()
+            .child(source().attr("srcset", "/a.avif"))
+            .child(el("meta").attr("itemprop", "name"))
+            .child(img().attr("src", "/a.png"))
+            .render();
+        assert_eq!(
+            html,
+            r#"<picture><source srcset="/a.avif"><meta itemprop="name"><img src="/a.png"></picture>"#
+        );
     }
 
     #[test]
