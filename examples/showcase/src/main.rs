@@ -39,6 +39,21 @@ struct Search {
     searching: bool,
 }
 
+/// The search the page's URL names, as `/?q=berr`.
+#[derive(Signals, hypersig::Search, Serialize, Deserialize, Default)]
+struct Find {
+    q: Option<String>,
+}
+
+impl Find {
+    /// The URL's search for `query`, which leaves an empty query out of the URL.
+    fn of(query: String) -> Self {
+        Self {
+            q: (!query.is_empty()).then_some(query),
+        }
+    }
+}
+
 #[derive(Signals, Serialize, Deserialize)]
 struct Order {
     quantity: i32,
@@ -76,7 +91,7 @@ struct Showcase {
 
 hypersig::routes! {
     fn pages(Router<()>);
-    const INDEX: Route = "/" => index;
+    const INDEX: Route<(), Find> = "/" => index;
 }
 
 const SEARCH: Action<Showcase, String> = Action::post("/search");
@@ -223,7 +238,7 @@ impl Fragment for Results {
     }
 }
 
-fn search() -> El<Showcase> {
+fn search(find: &Find) -> El<Showcase> {
     let query = Showcase::search().at(Search::query());
     let searching = Showcase::search().at(Search::searching());
     section()
@@ -246,6 +261,7 @@ fn search() -> El<Showcase> {
                             Key::Escape,
                             query
                                 .set("")
+                                .then(INDEX.link_with(&Find::default()).push_url())
                                 .then(SEARCH.call_with("").indicator(searching).latest()),
                         ),
                 )
@@ -262,7 +278,9 @@ fn search() -> El<Showcase> {
                 .show(searching)
                 .text("Searching…"),
         )
-        .child(hypersig::fragment(&Results::for_query("")))
+        .child(hypersig::fragment(&Results::for_query(
+            find.q.as_deref().unwrap_or_default(),
+        )))
 }
 
 fn order_form() -> El<Showcase> {
@@ -494,14 +512,17 @@ mod look {
     }
 }
 
-async fn index((): (), (): ()) -> Page<Showcase> {
+async fn index((): (), find: Find) -> Page<Showcase> {
     let signals = Showcase {
         shipping: Disclosure::default(),
         returns: Disclosure { open: true },
         adults: 2,
         children: 0,
         stopwatch: Stopwatch::default(),
-        search: Search::default(),
+        search: Search {
+            query: find.q.clone().unwrap_or_default(),
+            searching: false,
+        },
         order: Order {
             quantity: 1,
             size: Size::Small,
@@ -516,20 +537,30 @@ async fn index((): (), (): ()) -> Page<Showcase> {
             tone: Tone::Calm,
         },
     };
+    let query = Showcase::search().at(Search::query());
     Page::new("hypersig showcase", signals)
+        .bind_title(if_else(
+            query.is_empty(),
+            "hypersig showcase",
+            query.concat(" - hypersig showcase"),
+        ))
         .style(STYLE)
         .theme(look::theme())
         .child(h1().text("hypersig showcase"))
         .child(components())
         .child(stopwatch())
-        .child(search())
+        .child(search(&find))
         .child(order_form())
         .child(styles())
 }
 
 async fn search_fruit((): (), query: String) -> Patches<Showcase> {
     tokio::time::sleep(Duration::from_millis(200)).await;
-    Patches::new().element(&Results::for_query(&query))
+    let results = Results::for_query(&query);
+    // Each answered search is an entry that Back returns to.
+    Patches::new()
+        .element(&results)
+        .push_url(INDEX.url(Find::of(query)))
 }
 
 async fn order((): (), (quantity, size, gift): (i32, Size, bool)) -> Patches<Showcase> {

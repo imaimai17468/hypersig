@@ -54,6 +54,46 @@ test("search waits for a pause in typing and shows an indicator", async ({ page 
   await expect(page.locator("#results li")).toHaveCount(13);
 });
 
+test("each answered search is a history entry, Back loads the earlier search from the server, and the title follows the query", async ({ page }) => {
+  const field = page.getByPlaceholder("Search fruit");
+  const shown = () => {
+    const at = new URL(page.url());
+    return at.pathname + at.search;
+  };
+  await expect(page).toHaveTitle("hypersig showcase");
+  await field.click();
+  await page.keyboard.type("berr", { delay: 30 });
+  await expect(page.locator("#results li")).toHaveText(["blackberry", "blueberry"]);
+  await expect.poll(shown).toBe("/?q=berr");
+  await expect(page).toHaveTitle("berr - hypersig showcase");
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.type("ap", { delay: 30 });
+  await expect(page.locator("#results li")).toHaveText(["apple", "apricot", "grape"]);
+  await expect.poll(shown).toBe("/?q=ap");
+  // The URL changed without loading a page, so the field keeps its focus.
+  await expect(field).toBeFocused();
+  await page.evaluate(() => Object.assign(window, { before: true }));
+
+  const loaded = page.waitForEvent("load");
+  await page.goBack();
+  await loaded;
+  expect(shown()).toBe("/?q=berr");
+  expect(await page.evaluate(() => "before" in window)).toBe(false);
+  await expect(field).toHaveValue("berr");
+  await expect(page.locator("#results li")).toHaveText(["blackberry", "blueberry"]);
+  await expect(page).toHaveTitle("berr - hypersig showcase");
+
+  await field.click();
+  await page.keyboard.press("Escape");
+  await expect.poll(shown).toBe("/");
+  await expect(page.locator("#results li")).toHaveCount(13);
+  await expect(page).toHaveTitle("hypersig showcase");
+  const back = page.waitForEvent("load");
+  await page.goBack();
+  await back;
+  expect(shown()).toBe("/?q=berr");
+});
+
 test("a slow answer to an earlier search does not overwrite the answer to a later one", async ({ page }) => {
   const field = page.getByPlaceholder("Search fruit");
   const sent: string[] = [];
