@@ -95,7 +95,7 @@ pub fn page(site: Site) -> Page<Traffic> {
     let grow = Traffic::months().update_where(
         |month| month.index().equals(3),
         Month::desktop(),
-        |month| month.at(Month::desktop()) + 300,
+        |month| month.at(Month::desktop()) + 400,
     );
     let tabs = Tabs::new(label, Traffic::kind())
         .tab(
@@ -155,8 +155,8 @@ pub fn page(site: Site) -> Page<Traffic> {
                     button(ButtonVariant::Outline, ButtonSize::Sm)
                         .on_click(grow)
                         .text(site.t(L {
-                            en: "Add 300 desktop visitors in April",
-                            ja: "4 月のデスクトップに 300 人足す",
+                            en: "Add 400 desktop visitors in April",
+                            ja: "4 月のデスクトップに 400 人足す",
                         })),
                 ),
             )
