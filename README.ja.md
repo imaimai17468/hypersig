@@ -2,11 +2,15 @@
 
 [English](README.md) | [ドキュメント](https://imaimai17468.github.io/hypersig/ja/)
 
-axum の上で動き、画面もブラウザでの動きもサーバーの処理も Rust で書く Web フレームワークです。
+axum の上で動き、画面もブラウザでの動きもサーバーの処理も Rust で書く Web フレームワークです。ブラウザが扱う文字列（シグナルの名前、式、アクションの URL、リンク）はすべて Rust の型から作るので、その書き間違いはコンパイルエラーになります。
 
 - `cargo build` だけでビルドでき、Node も wasm も要りません。
-- 画面とサーバーの食い違いは、コンパイルエラーになります。ルートに合わないページ、パスのパラメータ、クエリへのリンクも同じです。
+- 画面とサーバーの食い違いと、ルートに合わないリンクはコンパイルエラーになります（[hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/)）。
+- 最初の HTML にページの状態が入っています。アクションは変わった値だけを返し、ブラウザはその値を表示している箇所だけを書き換えます（[サーバーとのやり取り](https://imaimai17468.github.io/hypersig/ja/learn/server/)）。
 - サーバーの応答を待たずに画面を変える処理（楽観的更新）を、追加のコードなしで書けます。
+- フォームの検証規則は一度書けば、ブラウザとサーバーの両方が同じ規則で検証します（[フォーム](https://imaimai17468.github.io/hypersig/ja/learn/forms/)）。
+- CSS のプロパティと値も型で検査します（[スタイル](https://imaimai17468.github.io/hypersig/ja/style/)）。
+- shadcn/ui の見た目のコンポーネント集と、訳の漏れをコンパイルエラーにする多言語化のクレートがあります（[コンポーネント](https://imaimai17468.github.io/hypersig/ja/components/)、[多言語化](https://imaimai17468.github.io/hypersig/ja/i18n/)）。
 
 ## フレームワークの比較
 
@@ -21,62 +25,7 @@ Rust のサーバーに画面を付けようとすると、今は 2 通りの選
 | リンクの行き先をコンパイル時に検査 | はい | いいえ（`href` は文字列） | いいえ（ルーターなし） | 設定で有効化（`typedRoutes`） | はい | 実験的（`typedPages`） | いいえ |
 | ブラウザの中で状態を持てる | はい | はい | はい | はい | はい | はい | いいえ |
 
-## ベンチマーク
-
-追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。
-
-| | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
-|---|---|---|---|---|---|---|---|
-| JS（gzip） | 13.4 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
-| First Contentful Paint | 179 ms | 190 ms | 184 ms | 198 ms | 188 ms | 172 ms | 235 ms |
-| Total Blocking Time | 0 ms | 27 ms | 2 ms | 5 ms | 0 ms | 25 ms | 233 ms |
-| Interaction to Next Paint | 24 ms | 16 ms | 24 ms | 16 ms | 24 ms | 16 ms | 16 ms |
-
-測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。
-
-## 状態管理とレンダリング
-
-ページの状態は 1 つの Rust の構造体（シグナル構造体）で定義します。画面の式もサーバーのハンドラも、値はこの構造体のフィールドを通してしか読み書きできません。そのため、フィールドの名前を変えたのに画面の式を直し忘れた、表示の条件に `bool` ではなく数値を渡した、別のページのアクションを呼んだ、といった間違いは、ブラウザで動かす前にコンパイルエラーになります。
-
-読み込みと更新でブラウザが実行するものを、ほかのフレームワークと比べると次のようになります。表の「エフェクト」は、シグナルの値を読んで DOM を書き換える処理です。hypersig では `data-hs-text` や `data-hs-show` のような表示の属性 1 つにつき 1 つあります。
-
-| | hypersig | React | Vue | Solid | Qwik |
-|---|---|---|---|---|---|
-| ブラウザに送るアプリのコード | なし（式は HTML の属性にデータとして入る） | コンポーネント全部 | コンポーネント全部 | コンポーネント全部 | 操作されたハンドラの分だけ、操作したときに |
-| 読み込み時にブラウザが実行するもの | すべてのエフェクトを 1 回ずつ実行 | コンポーネントのツリー全体 | コンポーネントのツリー全体 | 各コンポーネントを 1 回（リアクティブな依存関係を作る） | なし（状態とハンドラの場所は HTML に入っている） |
-| 更新で再実行する範囲 | 値を読んだエフェクトだけ | 状態を持つコンポーネントと子孫 | コンポーネントの描画関数（仮想 DOM で差分を取る） | 値を読んだエフェクトだけ | 値を読んだエフェクトだけ |
-
-アクションに送る値の型は、呼ぶ側の画面のコードでも受け取るハンドラでも `(i32, bool)` です。TanStack Query の楽観的更新で書くクエリキーの指定、キャッシュの前の値の保存、一覧の取り直しは要りません。
-
-負担になるのは失敗したときです。サーバーがエラーを返しても、ブラウザで変えた値はそのまま残ります。`error(message)` で失敗は表示できますが、値を元に戻す仕組みはありません。
-
-## データを取る単位
-
-RSC と Next.js では、データを取得する処理をサーバーコンポーネントの中に `await` で書くので、取得はコンポーネントごとに別々に始まり、結果は Suspense の境界ごとに届いた順で表示されます。そのため境界の置き方しだいで画面が少しずつ埋まり（ポップコーン UI）、親コンポーネントの `await` が終わるまで子コンポーネントの取得が始まらない書き方をすると、取得が直列に並んで表示が遅れます。変更のあとは `revalidatePath` や `router.refresh` で、ルートのサーバーコンポーネントがもう一度描画されます。
-
-Remix と TanStack Start では、ルートごとの loader がページを表示する前に並列に実行されるので、取得が直列に並ぶことも画面が少しずつ埋まることも起きにくくなります。ただし変更のあとにも loader が再実行され、Remix は action のあと表示中のすべてのルートの loader を、TanStack Router は `router.invalidate()` で loader を、TanStack Query は無効にしたクエリを実行し直すので、チェックボックスを 1 つ切り替えただけでもページや一覧のデータを取得し直します。
-
-hypersig では、最初のデータはページの HTML にシグナル構造体の JSON として入っているので、表示のためにブラウザからデータを取得することはありません。変更のあとはアクションのハンドラが変わったシグナルの値だけを `Counter::count().patch(0)` のように返し、ブラウザはその値を使っている表示だけを書き換えるので、チェックボックスを 1 つ切り替えてもページや一覧を取得し直すことはありません。
-
-答えは届いた順に反映されます。入力に合わせて検索する呼び出しに `latest()` を付けると、同じアクションへの前の呼び出しがまだ終わっていなければ取り消すので、遅れて届いた答えが新しい答えを上書きしません。`on_load` から呼ぶ `StreamAction` に `reconnect()` を付けると、接続が切れたときに開き直し、ハンドラが現在の値から送り始めます。`POST` を送り直すと変更を繰り返しうるので、`reconnect()` があるのはストリームの呼び出しだけです。
-
-## フォーム
-
-シグナル構造体に型が `Form<T>` のフィールドを置くと、フォームの値、開始時の値、訪問者が離れたフィールド、サーバーが返したメッセージをそこに持ちます。React Hook Form の `formState`、`reset`、`setError` が受け持つ範囲です。ルールは `Validate::rules` に、`T` のフィールドを使う式として 1 回だけ書きます。ブラウザは入力に合わせてその式を評価し、アクションのハンドラでは `Form::validate` が最初の HTML を書く評価器で同じ式を評価するので、サーバー側にルールの写しを持つ必要はありません。メールアドレスが登録済みかどうかのようにサーバーにしかできない検査は、`reject` でそのフィールドに返します。別の構造体のフィールドにルールを付けるとコンパイルエラーになります。[`signup`](examples/signup) の例が、動くフォーム一式です。
-
-## リクエスト、Cookie、エラー
-
-ページとアクションのハンドラは、状態と引数のあいだに axum の extractor を 1 つ受け取れます。`async fn add(state: AppState, member: Member, note: String)` のように書けば、アプリケーションの `Member` を通してセッションの Cookie を読めます。extractor が失敗すると、その rejection が応答になり、ハンドラは動きません。`Set-Cookie` などのヘッダーは、`(headers, patches)` のようにページや差分と組にして返します。ハンドラは `E` が `IntoResponse` である `Result<_, E>` も返せるので、`?` が使えます。2xx 以外の状態で失敗したアクションは、ページの `Call::error` に届き、応答の本文が表示する文言になります。アクションは、ハンドラが動く前に 2 種類のリクエストを断ります。`Sec-Fetch-Site` が別のサイトを示すリクエストには 403 を、本文が `application/json` でない POST には 415 を返すので、別のサイトのフォームが訪問者の Cookie を付けて呼び出すことはできません。`Sec-Fetch-Site` を送らないブラウザからは、別のサイトのリンクで GET のアクションに届くので、GET のアクションでは何も変更しないでください。[`auth`](examples/auth) の例は、Cookie のセッションでサインインします。
-
-## ファイルのアップロード
-
-`Upload<S, A>` は、`FileInput<S>` で選んだファイルも受け取るアクションです。ページに `PICTURE.input()` を置いて `AVATAR.call(PICTURE)` で呼び出し、ルーターは `RouterExt::upload` で配信します。ハンドラは引数と、ファイルごとの名前、メディアタイプ、中身を `Uploaded<A>` として受け取ります。2 つの定数はどちらもページの型を持つので、別のページのファイル入力を渡すとコンパイルできません。`multipart/form-data` の本文は別のサイトのフォームからも送れるので、ランタイムはフォームでは付けられないヘッダーを付け、ルーターはそれがないアップロードを 403 で断ります。8 MiB（`Upload::max_bytes` で決めた上限があればその値）を超える本文には 413 を返します。メモリに収まらない大きなファイルには `RouterExt::upload_stream` を使ってください。ハンドラは `Uploaded<A>` の代わりに `UploadStream<A>` を受け取り、各ファイルを届いた分ずつチャンクで読みます。読んでいる途中で本文が上限を超えると、その読み込みが 413 で失敗します。[`auth`](examples/auth) の例は、会員の画像をアップロードし、その中身を検査します。
-
-## 複数のページで使う部品
-
-アプリの枠にあるサインアウトのボタンや、フッターのニュースレターのフォームのように複数のページに置くものは、`Part` として書きます。部品は自分のシグナル構造体と、`Part::render` で組み立てる要素と、その構造体に対するアクションを持ちます。部品の型のフィールドを持つページは、`html::part(Shop::footer())` で部品を埋め込み、部品はそのフィールドの下にパスを書きます。部品の中の呼び出しはヘッダーでフィールドを伝えるので、部品のアクションに登録したハンドラ 1 つが、部品を埋め込んだどのページにも応答します。ハンドラが書き換えるシグナルと描き直すフラグメントは、呼び出し元のフィールドの下に入ります。部品のアクションを部品の外から呼ぶことと、リストの項目のフィールドに部品を埋め込むことは、コンパイルエラーになります。
-
-`Call::on_error` はその呼び出しが失敗したときにエラーの文言を受け取って文を実行し、`Call::on_success` は差分を適用し終えたあとに文を実行します。どちらも呼び出しを書いた場所で動き、`let_in_stmt` で送信時の値に名前を付けられるので、サーバーの応答より先に項目を複数足すページでも、保存に失敗した項目だけに印を付けられます。[`storefront`](examples/storefront) の例は、ニュースレターの部品を 2 つのページに置き、この方法でほしいものリストを保存します。
+追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC では、hypersig の JS は gzip で 13.4 KB、Total Blocking Time は 0 ms でした。測った条件とほかのフレームワークの値は [`bench/compare`](bench/compare) にあります。
 
 ## クイックスタート
 
@@ -134,122 +83,18 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`routes!` が `/` のページをハンドラ `index` と一緒に宣言し、生成した関数 `pages` がそのページを配信します。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。ブラウザ用のランタイムは `hypersig_runtime()` が配信するので、Node も JavaScript のビルドも要りません。
+`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
 
-## ページとリンク
+## 向かないアプリ
 
-ページは `Route` で、配信するハンドラと一緒に `routes!` で宣言します。ハンドラのないルートは宣言できません。`El::href` は同じ値からリンクを張ります。パラメータは `{name}` の形のセグメントで、ルートの型がそれぞれの型を決めます。ルートに合わないパラメータを渡すリンクや、`{name}` のセグメントの数が型の持つ値の数と食い違うパスは、コンパイルエラーになります。型に変換できないセグメントを持つリクエストには、ハンドラを呼ぶ前に 404 を返します。
+ブラウザだけで完結するのは、hypersig が用意した演算と命令だけです。それ以外の処理はサーバーを通すので、次のようなアプリには向きません。
 
-```rust
-use hypersig::html::{a, each, li, ul};
-use hypersig::{Page, Route, Signals};
-use serde::{Deserialize, Serialize};
-
-#[derive(Signals, Serialize, Deserialize)]
-struct Member {
-    id: i32,
-    name: String,
-}
-
-#[derive(Signals, Serialize, Deserialize)]
-struct Team {
-    members: Vec<Member>,
-}
-
-hypersig::routes! {
-    fn pages(Router<()>);
-    const MEMBER: Route<i32> = "/members/{id}" => member;
-}
-
-async fn member((): (), id: i32) -> Option<Page<Team>> {
-    (id > 0).then(|| Page::new("Member", Team { members: Vec::new() }))
-}
-
-let list = ul::<Team>().child(each(Team::members(), |member| {
-    li().child(
-        a().href(MEMBER.link_with(member.at(Member::id())))
-            .bind_text(member.at(Member::name())),
-    )
-}));
-assert!(list.render().contains("/members/"));
-```
-
-クエリ文字列の型は `Route<P, Q>` の 2 つ目の型で指定します。`Q` は `#[derive(Signals, Search)]` を付けた構造体です。各フィールドは文字列、数値、`bool`、またはそれらの `Option` で、リンクとハンドラは `(P, Q)` を受け取ります。リンクをたどると、次のページをサーバーから読み込みます。ほかのサイトへのリンクは、これまでどおり `attr("href", ...)` で書きます。`attr` は渡した文字列を検査しません。
-
-`fn pages(Router<()>) else missing;` と書くと、アプリケーション自身のページを 404 か 400 で返すハンドラを指定できます。対象は、どのルートにも合わないパス、パースできないセグメント、`None` を返したハンドラ、デシリアライズできないクエリ文字列です。ほかの状態でページを返すには `PageResponse::with_status` を使います。パスの接頭辞の下で配信するアプリケーションは、接頭辞を `const APP: Base = Base::new("/app")` として 1 か所で宣言し、`routes!` の 1 行目に `under APP` を、各アクションに `.under(APP)` を書きます。そのうえで `Router::nest("/app", ...)` の中か、`/app` を取り除くプロキシの裏で動かします。リンク、アクションの呼び出し、リダイレクト、ランタイムのパスは `/app` で始まります。[`prefix`](examples/prefix) の例は、この方法でお店を配信します。
-
-## スタイル
-
-スタイルも Rust の値として書きます。`Style` には MDN の CSS データから生成した、標準の CSS プロパティごとのメソッドがあり、宣言 1 つが、その宣言から名前の決まるクラス 1 つになります（Panda CSS や Tailwind CSS と同じ atomic CSS です）。プロパティやキーワードの綴り違いと、`width` に色を渡すような型の違う値は、コンパイルエラーになります。ページは要素が使うルールを `<head>` に書き、新しい要素を運ぶパッチはそのルールも運びます。ルールは、ブレークポイントの値が基本の値に勝つ順番に並びます。
-
-```rust
-use hypersig::html::button;
-use hypersig::style::value::{Color, Cursor, rem};
-use hypersig::style::{Media, PseudoClass, Style, Theme, Token};
-use hypersig::{Page, Signals};
-use serde::{Deserialize, Serialize};
-
-#[derive(Signals, Serialize, Deserialize)]
-struct Cart {
-    busy: bool,
-}
-
-let accent = Token::new("accent", Color::hex(0xb83f45));
-let page = Page::new("Cart", Cart { busy: false })
-    .theme(Theme::new().on(Media::Dark, Theme::new().set(&accent, Color::hex(0xff6b6b))))
-    .child(
-        button()
-            .css(
-                Style::new()
-                    .padding(rem(0.5))
-                    .color(accent.var())
-                    .cursor(Cursor::Pointer)
-                    .on(PseudoClass::Hover, Style::new().color(Color::CRIMSON))
-                    .on(Media::Md, Style::new().padding(rem(1))),
-            )
-            .css_when(Style::new().opacity(0.5), Cart::busy())
-            .text("Buy"),
-    );
-assert!(page.render().contains("hover:color_crimson"));
-```
-
-`css_when` はシグナルでスタイルを切り替え、`css_match` はシグナルの値ごとにスタイルを選びます（Panda CSS の recipe の variants に当たります）。条件には、擬似クラスと擬似要素、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態（`group` と `peer`）を使えます。`hypersig::style` には、ページのテーマと組み合わせるデザイントークン、`stack` や `grid` のようなレイアウトのパターン、タグごとの要素へのルールと小さなリセット、`@font-face`、`@keyframes` もあります。例の [`style`](examples/style) は、これらを 1 ページに並べたものです。例の [`todomvc`](examples/todomvc) はこれらだけで書いてあり、Chrome で撮ったスクリーンショットは、以前のスタイルシートで撮ったものとバイト単位で一致しました。
-
-`margin: 0 auto`、影、`calc()` のように複数の部分からなる値は `raw(...)` を通し、ブラウザに検査なしで渡ります。負の幅のような、プロパティの範囲を外れた値も検査しません。既存のスタイルシートを読み込むページは、それをそのまま使えます。`Stylesheet::class("name")` は、そのクラスのセレクタがスタイルシートにあるかをコンパイル時に確かめます。
-
-## コンポーネント
-
-`hypersig_ui` クレートは、shadcn/ui の見た目を持ち、振る舞いをブラウザのネイティブ要素と WAI-ARIA Authoring Practices から取るコンポーネント集です。ボタン、テキストフィールド、チェックボックス、スイッチ、ラジオグループ、セレクト、スライダー、リストボックス、コンボボックス、タブ、アコーディオン、データテーブル、棒・積み上げ棒・横棒・折れ線・面・ドーナツのチャート、ダイアログ、メニューボタン、ツールチップ、トースト、アラート、バッジ、カード、プログレスバーがあります。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を足せます。
-
-テキストフィールドのラベル、説明、エラーメッセージは、束縛するシグナルから作った id で入力欄に結び付きます。タブとパネルも同じ方法で結び付きます。ダイアログ、メニュー、ツールチップ、コンボボックスは、部品どうしで共有する `const` のハンドルから名前を取ります。id に使えない名前はコンパイルエラーになります。ダイアログはブラウザが invoker commands を通して `showModal()` で開き、メニューとツールチップは `popover` として top layer に出て、anchor positioning でボタンの横に置かれます。タブ、リストボックスの選択肢、メニューの項目の間は、`El::roving_focus` を使って矢印キー、Home、End で移ります。コンボボックスはフォーカスをテキスト欄に置いたまま、`El::active_descendant` で表示中の選択肢をたどり、たどった選択肢の id をシグナルに書きます。トーストは `aria-live` の領域に並び、時間を指定しない限り閉じるまで残ります。データテーブルは行の並べ替え、絞り込み、ページ送り、選択をブラウザで行います。列は行の型のフィールドから作るので、別の構造体のフィールドを列にしたり、数値でも文字列でもないキーで並べ替えたりするとコンパイルエラーになります。サーバーテーブルは絞り込みの文字列、ページ、並べ替えをアクションに送り、サーバーが返した 1 ページ分の行を表示します。並べ替えのキーは列挙型で、サーバーは同じ型でキーを読み戻します。チャートは同じようにリストのシグナルから `<svg>` を描き、縦軸の目盛りは負の値も含めてブラウザが値に合わせて決めます。スクリーンリーダーは、行を並べた隠れた表を読みます。
-
-色は shadcn/ui の zinc テーマに合わせ、WCAG 2.2 AA を満たすために 3 つの値を変えています。コントロールの境界線は 3:1 以上のコントラストを持ち、補足のテキストは muted の塗りの上でも 4.5:1 を保ち、フォーカスは forced-colors モードでも描かれる単色の outline です。例の [`ui`](examples/ui) は全コンポーネントを 1 ページに並べたもので、その E2E テストはキーボードで操作し、ロールとアクセシブルな名前を確かめます。
-
-## 翻訳
-
-`hypersig_i18n` クレートは、1 つの文とその訳を 1 つの値にまとめて持ちます。アプリは対応する言語を `#[derive(Segment)]` を付けた enum に並べ、その enum に `Locale` を実装します。そのとき、`ByLang { en: "Hello", ja: "こんにちは" }` のように言語ごとに 1 つのフィールドを持つ構造体を指定します。どれかの言語の訳が欠けた文はコンパイルエラーになり、enum に言語を足したときも、その言語の訳がない文はコンパイルエラーになります。言語は `"/{lang}/members/{id}"` のように各ページのルートの最初のセグメントに置くので、同じページの別の言語へのリンクは、言語だけを変えた同じルートへのリンクです。`Page::lang` は言語のタグを `<html lang>` に書き、`LocalePage::alternates` は検索エンジンに向けて言語ごとの `<link rel="alternate" hreflang>` を書きます。`redirect_to_locale` は `/` へのリクエストを、ブラウザの `Accept-Language` が求める言語のページへリダイレクトします。詳しくは [多言語化のドキュメント](https://imaimai17468.github.io/hypersig/ja/i18n/) で説明しています。
-
-## 制限事項
-
-hypersig では、状態をサーバーが持ちます。ブラウザだけで完結するのは、hypersig が用意した演算と命令です。`i32`、`i64`、`f64` の計算、文字列とリストの操作、フォーカスなどがこれに当たります。それ以外の処理はサーバーのアクションを通すので、通信の分だけ反応が遅れます。
-
-次のようなアプリには向きません。
-
-- ブラウザで JavaScript のライブラリを動かすアプリ（地図、グラフ、リッチテキストエディタなど）。これらはブラウザの中で動く必要があり、サーバーでは代わりができません。
-- サーバーにつながらない状態で動くアプリ（オフラインで使うものなど）。
+- ブラウザで JavaScript のライブラリを動かすアプリ（地図、リッチテキストエディタなど）
+- サーバーにつながらない状態で動くアプリ
 
 ## 開発
 
-```sh
-cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-cargo bench -p hypersig --bench render
-cd runtime && pnpm install && pnpm check && pnpm test && pnpm build
-cd e2e && pnpm install && pnpm check && pnpm test   # 6 つの例を起動して Chrome で操作する
-```
-
-ブラウザ用のランタイムは `runtime/` にある TypeScript です。`pnpm build` がビルド済みの `crates/hypersig/assets/hypersig.js`（約 41 KB、gzip 後は約 14 KB）を書き出し、クレートはそれを埋め込みます。リポジトリの構成と、変更のたびに通す確認は `AGENTS.md` にあります。Lint の構成とコーディング規約は、Microsoft の [Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/) に沿っています。
+リポジトリの構成と、変更のたびに通す確認は [`AGENTS.md`](AGENTS.md) にあります。
 
 ## License
 
