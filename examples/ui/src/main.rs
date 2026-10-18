@@ -306,7 +306,7 @@ fn profile() -> El<Gallery> {
                 card_footer()
                     .child(
                         submit_button(ButtonVariant::Default, ButtonSize::Default)
-                            .attr_when("disabled", saving)
+                            .disabled(saving)
                             .bind_text(if_else(saving, "Saving…", "Save")),
                     )
                     .child(

@@ -535,6 +535,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "disabled",
+                            "html/struct.El.html#method.disabled",
+                            L {
+                                en: "Disables the control while `when` is true, through `disabled`.",
+                                ja: "`when` が真のあいだ、`disabled` でコントロールを無効にします。",
+                            },
+                        ),
+                        (
                             "class_when",
                             "html/struct.El.html#method.class_when",
                             L {

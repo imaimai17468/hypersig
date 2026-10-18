@@ -123,7 +123,7 @@ impl<S> Menu<S> {
                     action = action.attr("autofocus", "");
                 }
                 if let Some(disabled) = item.disabled {
-                    action = action.attr_when("disabled", disabled);
+                    action = action.disabled(disabled);
                 }
                 action
             }))

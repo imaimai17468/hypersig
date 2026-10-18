@@ -49,6 +49,7 @@ pub struct Slider<S> {
     max: i32,
     step: i32,
     value_text: Option<Expr<S, String>>,
+    disabled: Option<Expr<S, bool>>,
 }
 
 impl<S> Slider<S> {
@@ -62,6 +63,7 @@ impl<S> Slider<S> {
             max: 100,
             step: 1,
             value_text: None,
+            disabled: None,
         }
     }
 
@@ -98,6 +100,13 @@ impl<S> Slider<S> {
         self
     }
 
+    /// Disables the slider while `when` is true, and dims it.
+    #[must_use]
+    pub fn disabled(mut self, when: impl IntoExpr<S, bool>) -> Self {
+        self.disabled = Some(when.into_expr());
+        self
+    }
+
     /// The label, the shown value, and the slider, in a `<div>`.
     #[must_use]
     pub fn render(self) -> El<S> {
@@ -123,55 +132,60 @@ impl<S> Slider<S> {
         if let Some(text) = self.value_text {
             control = control.bind_attr("aria-valuetext", text);
         }
+        let mut out = div().css(stack(rem(0.75)));
+        if let Some(when) = self.disabled {
+            control = control.disabled(when.clone());
+            // The input is transparent, so the dimming that marks a disabled
+            // control goes on the drawn track and thumb around it.
+            out = out.css_when(Style::new().opacity(Opacity::Number(0.5)), when);
+        }
 
-        div()
-            .css(stack(rem(0.75)))
-            .child(
-                div()
-                    .css(
-                        Style::new()
-                            .display(Display::Flex)
-                            .align_items(AlignItems::Center)
-                            .justify_content(JustifyContent::SpaceBetween),
-                    )
-                    .child(label().attr("for", id).css(label_style()).text(self.label))
-                    .child(
-                        span()
-                            .attr("aria-hidden", "true")
-                            .css(look::small_text().color(token::muted_foreground().var()))
-                            .bind_text(shown),
-                    ),
-            )
-            .child(
-                div()
-                    .css(
-                        Style::new()
-                            .position(Position::Relative)
-                            .height(rem(1))
-                            .width(pct(100)),
-                    )
-                    .child(control)
-                    .child(
-                        div()
-                            .css(track_style())
-                            .child(div().css(fill_style()).bind_style(
-                                hypersig::style::Property::Width,
-                                (share.clone() * 100.0).to_fixed(3).concat("%"),
-                            )),
-                    )
-                    .child(
-                        div()
-                            .css(thumb_style())
-                            // The thumb's left edge travels the track minus
-                            // its own width, as the browser's thumb does.
-                            .bind_style(
-                                hypersig::style::Property::Left,
-                                Expr::lit(&String::from("calc((100% - 1rem) * "))
-                                    .concat(share.to_fixed(4))
-                                    .concat(")"),
-                            ),
-                    ),
-            )
+        out.child(
+            div()
+                .css(
+                    Style::new()
+                        .display(Display::Flex)
+                        .align_items(AlignItems::Center)
+                        .justify_content(JustifyContent::SpaceBetween),
+                )
+                .child(label().attr("for", id).css(label_style()).text(self.label))
+                .child(
+                    span()
+                        .attr("aria-hidden", "true")
+                        .css(look::small_text().color(token::muted_foreground().var()))
+                        .bind_text(shown),
+                ),
+        )
+        .child(
+            div()
+                .css(
+                    Style::new()
+                        .position(Position::Relative)
+                        .height(rem(1))
+                        .width(pct(100)),
+                )
+                .child(control)
+                .child(
+                    div()
+                        .css(track_style())
+                        .child(div().css(fill_style()).bind_style(
+                            hypersig::style::Property::Width,
+                            (share.clone() * 100.0).to_fixed(3).concat("%"),
+                        )),
+                )
+                .child(
+                    div()
+                        .css(thumb_style())
+                        // The thumb's left edge travels the track minus
+                        // its own width, as the browser's thumb does.
+                        .bind_style(
+                            hypersig::style::Property::Left,
+                            Expr::lit(&String::from("calc((100% - 1rem) * "))
+                                .concat(share.to_fixed(4))
+                                .concat(")"),
+                        ),
+                ),
+        )
     }
 }
 
@@ -186,6 +200,10 @@ fn input_style() -> Style {
         .margin(px(0))
         .opacity(Opacity::Number(0.0))
         .cursor(Cursor::Pointer)
+        .on(
+            PseudoClass::Disabled,
+            Style::new().cursor(Cursor::NotAllowed),
+        )
         .peer()
 }
 

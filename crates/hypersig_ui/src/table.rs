@@ -1369,13 +1369,13 @@ fn pager<S>(
         )
         .child(
             icon_button(ButtonVariant::Outline, text.previous_page.clone())
-                .attr_when("disabled", page.le(0))
+                .disabled(page.le(0))
                 .on_click(Stmt::when(page.gt(0), go(page - 1)))
                 .child(icon(icon::CHEVRON_LEFT, rem(1))),
         )
         .child(
             icon_button(ButtonVariant::Outline, text.next_page.clone())
-                .attr_when("disabled", !has_next.clone())
+                .disabled(!has_next.clone())
                 .on_click(Stmt::when(has_next, go(page + 1)))
                 .child(icon(icon::CHEVRON_RIGHT, rem(1))),
         )

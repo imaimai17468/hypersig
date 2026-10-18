@@ -159,7 +159,7 @@ fn hover_accent() -> Style {
 ///
 /// The type is `button`, so that a button inside a form does not submit it.
 /// The one that should is a [`submit_button`]. Disable either with
-/// `.attr_when("disabled", ...)`.
+/// [`El::disabled`], which dims it.
 ///
 /// ```
 /// use hypersig::Signals;
@@ -174,6 +174,7 @@ fn hover_accent() -> Style {
 /// let count = Counter::count();
 /// let plus = button::<Counter>(ButtonVariant::Outline, ButtonSize::Sm)
 ///     .on_click(count.set(count + 1))
+///     .disabled(count.ge(10))
 ///     .text("Add one");
 /// assert!(plus.render().contains(r#"type="button""#));
 /// ```

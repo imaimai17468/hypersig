@@ -247,8 +247,8 @@ fn component_page(page: Component) -> Page {
             demo: Demo::Button,
             built_on: &[
                 L {
-                    en: "Each is a native `<button>`, so Enter and Space press it and a screen reader announces it as a button. `button` has `type=\"button\"`, so it does not submit the form around it, and `submit_button` is the one that does. Disable either with `.attr_when(\"disabled\", ...)`.",
-                    ja: "どれもネイティブの `<button>` です。そのため Enter と Space で押せて、スクリーンリーダーもボタンとして読み上げます。`button` は `type=\"button\"` を持つので、囲んでいるフォームを送信しません。フォームを送信するのは `submit_button` です。どちらも `.attr_when(\"disabled\", ...)` で無効にできます。",
+                    en: "Each is a native `<button>`, so Enter and Space press it and a screen reader announces it as a button. `button` has `type=\"button\"`, so it does not submit the form around it, and `submit_button` is the one that does. Disable either with `El::disabled`, which dims it.",
+                    ja: "どれもネイティブの `<button>` です。そのため Enter と Space で押せて、スクリーンリーダーもボタンとして読み上げます。`button` は `type=\"button\"` を持つので、囲んでいるフォームを送信しません。フォームを送信するのは `submit_button` です。どちらも `El::disabled` で無効にでき、無効の間は薄く表示されます。",
                 },
                 L {
                     en: "An icon button has no text, so `icon_button` takes the label that names it as an argument. `button_style` gives the same look to an element that is not a button, such as a link.",
@@ -700,6 +700,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "Shows `text` beside the label and gives it to assistive technology as `aria-valuetext`.",
                         ja: "ラベルの横に `text` を表示し、支援技術には `aria-valuetext` として渡します。",
+                    },
+                ),
+                (
+                    "disabled",
+                    "hypersig_ui/struct.Slider.html#method.disabled",
+                    L {
+                        en: "Disables the slider while `when` is true, and dims it.",
+                        ja: "`when` が true の間、スライダーを無効にして薄く表示します。",
                     },
                 ),
             ],

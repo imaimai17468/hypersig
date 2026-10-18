@@ -505,7 +505,7 @@ impl<S> TextField<S> {
             control = control.attr("required", "");
         }
         if let Some(disabled) = self.disabled {
-            control = control.attr_when("disabled", disabled);
+            control = control.disabled(disabled);
         }
         if let Some(touch) = self.on_blur {
             control = control.on_blur(touch);

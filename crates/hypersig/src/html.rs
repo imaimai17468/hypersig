@@ -1147,6 +1147,32 @@ impl<S> El<S> {
         self
     }
 
+    /// Disables the control while `when` is true, through `disabled`.
+    ///
+    /// The browser skips a disabled control in the tab order, ignores clicks
+    /// on it, and leaves it out of a submitted form. That holds on
+    /// `<button>`, `<input>`, `<select>`, `<textarea>`, `<fieldset>`,
+    /// `<option>`, and `<optgroup>`. Nothing checks the tag, and on another
+    /// element the attribute changes nothing.
+    ///
+    /// ```
+    /// use hypersig::html::button;
+    /// use hypersig::Signals;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Save {
+    ///     saving: bool,
+    /// }
+    ///
+    /// let save = button::<Save>().disabled(Save::saving()).text("Save");
+    /// assert!(save.render().contains("data-hs-toggle"));
+    /// ```
+    #[must_use]
+    pub fn disabled(self, when: impl IntoExpr<S, bool>) -> Self {
+        self.attr_when("disabled", when)
+    }
+
     /// Keeps the CSS property `property` equal to `value` as signals change.
     ///
     /// The value is a string the browser parses, so nothing checks that it is
