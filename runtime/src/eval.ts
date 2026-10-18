@@ -43,6 +43,8 @@ export interface CallOptions {
   readonly failed?: (message: string) => void;
   /** Runs the call's own statement once the answer has been applied. */
   readonly succeeded?: () => void;
+  /** The dotted path of the page field the part that made the call sits at. */
+  readonly part?: string;
 }
 
 /** The side effects a statement can ask the runtime for. */
@@ -431,17 +433,18 @@ function build(ast: Ast): Compiled {
 }
 
 /**
- * The statements a call runs when it fails or succeeds, from its
- * `{"error": [depth, statement], "ok": statement}` element. They run in the
- * context of the statement that made the call, so they reach its list items
- * and `let` values, and the error statement reads the error text as the
- * `let` value at `depth`.
+ * What a call's `{"error": [depth, statement], "ok": statement, "part": path}`
+ * element asks for. The statements run when the call fails or succeeds, in
+ * the context of the statement that made the call, so they reach its list
+ * items and `let` values, and the error statement reads the error text as
+ * the `let` value at `depth`.
  */
-function outcomes(spec: unknown, ctx: Context, host: Host): Pick<CallOptions, "failed" | "succeeded"> {
+function outcomes(spec: unknown, ctx: Context, host: Host): Pick<CallOptions, "failed" | "succeeded" | "part"> {
   if (spec === null || typeof spec !== "object") return {};
-  const { error, ok } = spec as { error?: [number, unknown]; ok?: unknown };
+  const { error, ok, part } = spec as { error?: [number, unknown]; ok?: unknown; part?: string };
   const report = (cause: unknown): void => console.error("hypersig:", cause);
   return {
+    ...(part === undefined ? {} : { part }),
     ...(error === undefined
       ? {}
       : {

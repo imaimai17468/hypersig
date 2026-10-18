@@ -1,0 +1,18 @@
+error[E0277]: the trait bound `Badge: Part` is not satisfied
+  --> tests/ui/fail/part_of_field_that_is_not_a_part.rs:18:38
+   |
+18 |     let _ = div::<Shop>().child(part(Shop::badge()));
+   |                                 ---- ^^^^^^^^^^^^^ unsatisfied trait bound
+   |                                 |
+   |                                 required by a bound introduced by this call
+   |
+help: the trait `Part` is not implemented for `Badge`
+  --> tests/ui/fail/part_of_field_that_is_not_a_part.rs:7:1
+   |
+ 7 | struct Badge {
+   | ^^^^^^^^^^^^
+note: required by a bound in `part`
+  --> src/html.rs
+   |
+   | pub fn part<S, P: Part>(at: Sig<S, P>) -> Node<S> {
+   |                   ^^^^ required by this bound in `part`

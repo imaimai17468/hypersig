@@ -2,13 +2,14 @@
 
 use std::fmt;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
 
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
 use crate::html::El;
 use crate::route::Base;
-use crate::signal::Sig;
+use crate::signal::{Sig, current_part};
 
 /// The HTTP method an [`Action`] is served on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -195,6 +196,8 @@ pub struct Call<S> {
     /// The `let` depth the error text is named at, and the statement that reads it.
     on_error: Option<(u8, Value)>,
     on_success: Option<Value>,
+    /// The page field of the [`Part`](crate::Part) the call was built in.
+    part: Option<Arc<str>>,
     marker: PhantomData<fn() -> S>,
 }
 
@@ -213,6 +216,7 @@ impl<S> Call<S> {
             files: None,
             on_error: None,
             on_success: None,
+            part: current_part(),
             marker: PhantomData,
         }
     }
@@ -380,6 +384,9 @@ impl<S> IntoStmt<S> for Call<S> {
         }
         if let Some(stmt) = call.on_success {
             outcomes.insert("ok".to_owned(), stmt);
+        }
+        if let Some(part) = call.part {
+            outcomes.insert("part".to_owned(), Value::from(&*part));
         }
         // A call without flags or outcomes keeps the six-element form, and
         // one with outcomes writes its flags, empty or not, before them.

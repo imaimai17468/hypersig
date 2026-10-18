@@ -15,8 +15,8 @@ use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
     Action, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment, IntlLocale, NodeRef,
-    Page, Patches, PluralCategory, Rest, Route, Rules, Search, Sig, Signals, Stmt, StreamAction,
-    TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
+    Page, Part, Patches, PluralCategory, Rest, Route, Rules, Search, Sig, Signals, Stmt,
+    StreamAction, TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -368,6 +368,44 @@ fn outbox() -> (El<Outbox>, Outbox) {
         letters: Vec::new(),
         draft: String::new(),
         next: 1,
+    };
+    (el, signals)
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Mailing {
+    email: String,
+    status: String,
+}
+
+const SUBSCRIBE: Action<Mailing, String> = Action::post("/subscribe");
+
+impl Part for Mailing {
+    fn render() -> El<Self> {
+        div()
+            .child(input().id("email").bind(Mailing::email()))
+            .child(
+                button()
+                    .id("subscribe")
+                    .on_click(SUBSCRIBE.call_with(Mailing::email())),
+            )
+            .child(span().id("status").bind_text(Mailing::status()))
+    }
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Storefront {
+    footer: Mailing,
+}
+
+/// A page that embeds a part at its `footer` field.
+fn storefront() -> (El<Storefront>, Storefront) {
+    let el = main().child(hypersig::html::part(Storefront::footer()));
+    let signals = Storefront {
+        footer: Mailing {
+            email: "ada@example.com".to_owned(),
+            status: String::new(),
+        },
     };
     (el, signals)
 }
@@ -1277,6 +1315,8 @@ fn fixtures_match_the_builder() {
     check("timers", &el, &signals);
     let (el, signals) = outbox();
     check("outbox", &el, &signals);
+    let (el, signals) = storefront();
+    check("storefront", &el, &signals);
     let (el, signals) = nested();
     check("nested", &el, &signals);
     let (el, signals) = table();

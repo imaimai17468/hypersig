@@ -1,0 +1,30 @@
+error[E0277]: the trait bound `Node<Inbox>: From<El<Account>>` is not satisfied
+  --> tests/ui/fail/part_action_outside_part.rs:29:16
+   |
+29 |         .child(button().on_click(SIGN_OUT.call()));
+   |          ----- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<El<Account>>` is not implemented for `Node<Inbox>`
+   |          |
+   |          required by a bound introduced by this call
+   |
+help: `Node<S>` implements trait `From<T>`
+  --> src/html.rs
+   |
+   | impl<S> From<El<S>> for Node<S> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<El<S>>`
+...
+   | impl<S> From<&str> for Node<S> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<&str>`
+...
+   | impl<S> From<String> for Node<S> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<String>`
+   = note: required for `El<Account>` to implement `Into<Node<Inbox>>`
+note: required by a bound in `El::<S>::child`
+  --> src/html.rs
+   |
+   |     pub fn child(mut self, child: impl Into<Node<S>>) -> Self {
+   |                                        ^^^^^^^^^^^^^ required by this bound in `El::<S>::child`
+help: consider removing this method call, as the receiver has type `El<_>` and `El<_>: From<El<Account>>` trivially holds
+   |
+29 -         .child(button().on_click(SIGN_OUT.call()));
+29 +         .child(button());
+   |

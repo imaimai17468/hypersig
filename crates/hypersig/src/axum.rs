@@ -8,6 +8,7 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::task::{Context, Poll};
 
 use axum::Router;
 use axum::body::{Body, Bytes};
@@ -24,7 +25,7 @@ use crate::action::{Action, Method, StreamAction};
 use crate::page::Page;
 use crate::patch::{ListPatch, PatchEvent, Patches, SignalPatch};
 use crate::route::{Base, Params, Route, Search, Url};
-use crate::signal::Signals;
+use crate::signal::{Signals, current_part, in_part};
 use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
 
 /// Adds hypersig routes to an axum [`Router`].
@@ -250,13 +251,13 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                           request: Parts,
                           body: Bytes| {
             let handler = handler.clone();
-            async move {
+            in_called_part(called_part(&request.headers), async move {
                 let args = read_args::<A>(method, &request.headers, &query, &body)?;
                 Ok::<_, RequestError>(match handler.call(state, request, ready(args)).await {
                     Ok(reply) => reply.await.into().into_response(),
                     Err(rejection) => rejection,
                 })
-            }
+            })
         };
         self.route(action.path(), method_router(method, route))
     }
@@ -275,21 +276,28 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                           request: Parts,
                           body: Bytes| {
             let handler = handler.clone();
-            async move {
+            in_called_part(called_part(&request.headers), async move {
                 let args = read_args::<A>(method, &request.headers, &query, &body)?;
                 let patches = match handler.call(state, request, ready(args)).await {
                     Ok(patches) => patches,
                     Err(rejection) => return Ok(rejection),
                 };
-                let events = patches
-                    .flat_map(|patches| stream::iter(patches.into_events()))
-                    .map(|event| Ok::<_, Infallible>(to_sse(&event)));
+                // The stream is read after this future returns, so it
+                // builds and writes its patches under the part on its own.
+                let events = InPart {
+                    part: current_part(),
+                    inner: Box::pin(
+                        patches
+                            .flat_map(|patches| stream::iter(patches.into_events()))
+                            .map(|event| Ok::<_, Infallible>(to_sse(&event))),
+                    ),
+                };
                 Ok::<_, RequestError>(
                     Sse::new(events)
                         .keep_alive(KeepAlive::default())
                         .into_response(),
                 )
-            }
+            })
         };
         self.route(stream.path(), method_router(method, route))
     }
@@ -306,7 +314,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         let limit = upload.limit();
         let route = move |State(state): State<St>, request: Request| {
             let handler = handler.clone();
-            async move {
+            in_called_part(called_part(request.headers()), async move {
                 let (request, body) = request.into_parts();
                 let multipart = open_upload_stream(&request.headers, body, limit)?;
                 let uploaded = async move {
@@ -318,7 +326,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                     Ok(reply) => reply.await.into().into_response(),
                     Err(rejection) => rejection,
                 })
-            }
+            })
         };
         // `open_upload_stream` holds the limit, as it does for `upload_stream`.
         self.route(upload.path(), post(route))
@@ -336,7 +344,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         let limit = upload.limit();
         let route = move |State(state): State<St>, request: Request| {
             let handler = handler.clone();
-            async move {
+            in_called_part(called_part(request.headers()), async move {
                 let (request, body) = request.into_parts();
                 let mut multipart = open_upload_stream(&request.headers, body, limit)?;
                 let uploaded = async move {
@@ -349,7 +357,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                     Ok(reply) => reply.await.into().into_response(),
                     Err(rejection) => rejection,
                 })
-            }
+            })
         };
         // The body is read as a stream, which `DefaultBodyLimit` does not
         // reach, so the multer constraint in `open_upload_stream` holds the
@@ -961,10 +969,19 @@ impl<S> fmt::Debug for ActionResponse<S> {
 }
 
 impl<S: Signals> From<Patches<S>> for ActionResponse<S> {
+    /// # Panics
+    ///
+    /// Panics as [`Patches::element`] describes, for a fragment of a part
+    /// rendered outside the handler answering that part.
     fn from(patches: Patches<S>) -> Self {
-        let events =
-            stream::iter(patches.into_events()).map(|event| Ok::<_, Infallible>(to_sse(&event)));
-        Self::new(Sse::new(events).into_response())
+        // The events are written now, while the handler's part is current,
+        // rather than when the body is read.
+        let events: Vec<_> = patches
+            .into_events()
+            .iter()
+            .map(|event| Ok::<_, Infallible>(to_sse(event)))
+            .collect();
+        Self::new(Sse::new(stream::iter(events)).into_response())
     }
 }
 
@@ -1052,6 +1069,77 @@ fn refuse_cross_site(headers: &HeaderMap) -> Result<(), RequestError> {
 
 /// The header the runtime adds to an upload. Its value is not read.
 const UPLOAD_HEADER: &str = "hypersig-upload";
+
+/// The header the runtime adds to a call made inside a [`Part`](crate::Part),
+/// holding the dotted path of the page field the part sits at.
+const PART_HEADER: &str = "hypersig-part";
+
+/// The part a call came from, read from [`PART_HEADER`].
+///
+/// The path only places the answer in the caller's own page, so any field
+/// names pass, and only a value that is not a dotted path is refused.
+fn called_part(headers: &HeaderMap) -> Result<Option<Arc<str>>, RequestError> {
+    let Some(value) = headers.get(PART_HEADER) else {
+        return Ok(None);
+    };
+    let path = value
+        .to_str()
+        .ok()
+        .filter(|path| {
+            path.split('.').all(|field| {
+                !field.is_empty()
+                    && field
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+            })
+        })
+        .ok_or_else(|| RequestError::new(Refusal::Part))?;
+    Ok(Some(path.into()))
+}
+
+/// Runs `future`, the response to one request, with `part`, the part the
+/// request came from, current, or answers with the refusal of a malformed part.
+fn in_called_part<F>(
+    part: Result<Option<Arc<str>>, RequestError>,
+    future: F,
+) -> InPart<dyn Future<Output = Response> + Send>
+where
+    F: Future<Output: IntoResponse> + Send + 'static,
+{
+    let (part, inner): (_, Pin<Box<dyn Future<Output = Response> + Send>>) = match part {
+        Ok(part) => (part, Box::pin(async move { future.await.into_response() })),
+        Err(refusal) => (None, Box::pin(std::future::ready(refusal.into_response()))),
+    };
+    InPart { part, inner }
+}
+
+/// A future or a stream that runs with the paths of `part` current each
+/// time it is polled, so the patches it builds and writes land under it.
+///
+/// The part is set and put back around every poll, because a task may move
+/// between threads between two polls.
+struct InPart<T: ?Sized> {
+    part: Option<Arc<str>>,
+    inner: Pin<Box<T>>,
+}
+
+impl<T: Future + ?Sized> Future for InPart<T> {
+    type Output = T::Output;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<T::Output> {
+        let this = &mut *self;
+        in_part(this.part.clone(), || this.inner.as_mut().poll(cx))
+    }
+}
+
+impl<T: Stream + ?Sized> Stream for InPart<T> {
+    type Item = T::Item;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<T::Item>> {
+        let this = &mut *self;
+        in_part(this.part.clone(), || this.inner.as_mut().poll_next(cx))
+    }
+}
 
 /// Arguments already read, as the future [`Handler::call`] awaits.
 fn ready<A>(args: A) -> std::future::Ready<Result<A, Response>> {
@@ -1157,7 +1245,8 @@ fn to_sse(event: &PatchEvent) -> SseEvent {
 /// for a POST whose body is not JSON or an upload whose body is not
 /// `multipart/form-data`, `413 Payload Too Large` for an upload longer than
 /// [`Upload::limit`], and `400 Bad Request` for a malformed multipart body,
-/// an upload whose first part is not the arguments,
+/// an upload whose first part is not the arguments, a call whose
+/// `hypersig-part` header is not a dotted field path,
 /// or arguments that do not deserialize, with the serde message.
 #[derive(Debug)]
 pub struct RequestError {
@@ -1175,6 +1264,7 @@ enum Refusal {
     Multipart(Box<dyn StdError + Send + Sync>),
     PartOrder,
     Arguments(serde_json::Error),
+    Part,
 }
 
 impl RequestError {
@@ -1213,7 +1303,7 @@ impl RequestError {
             Refusal::CrossSite | Refusal::NotFromPage => StatusCode::FORBIDDEN,
             Refusal::NotJson | Refusal::NotMultipart(_) => StatusCode::UNSUPPORTED_MEDIA_TYPE,
             Refusal::TooLarge => StatusCode::PAYLOAD_TOO_LARGE,
-            Refusal::Multipart(_) | Refusal::PartOrder | Refusal::Arguments(_) => {
+            Refusal::Multipart(_) | Refusal::PartOrder | Refusal::Arguments(_) | Refusal::Part => {
                 StatusCode::BAD_REQUEST
             }
         }
@@ -1237,6 +1327,7 @@ impl fmt::Display for RequestError {
             Refusal::Arguments(source) => {
                 write!(f, "the action's arguments did not deserialize: {source}")
             }
+            Refusal::Part => f.write_str("the call's part header is not a dotted field path"),
         }
     }
 }
@@ -1250,7 +1341,8 @@ impl StdError for RequestError {
             | Refusal::NotJson
             | Refusal::NotFromPage
             | Refusal::TooLarge
-            | Refusal::PartOrder => None,
+            | Refusal::PartOrder
+            | Refusal::Part => None,
         }
     }
 }

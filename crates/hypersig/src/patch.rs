@@ -11,6 +11,11 @@
 //! | `hs-navigate` | `{"url": "..."}`, the page the browser loads next |
 //! | `hs-history` | `{"url": "...", "replace": bool}`, the URL the address bar shows, without loading it |
 //!
+//! A patch answering a call made inside a [`Part`](crate::Part) is written
+//! under the page field the part sits at: each key of `hs-signals` starts
+//! with that field, and the fragment of `hs-element` was rendered with its
+//! paths under it.
+//!
 //! `css` is present when the fragment uses [`El::css`] or [`El::css_when`].
 //! It lists the rule buckets of [`Sheet::buckets`]. The runtime adds each to
 //! the `<style data-hs-css>` with the same sort key, or inserts a new one
@@ -19,6 +24,7 @@
 
 use std::fmt;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use serde::Serialize;
 use serde_json::{Map, Value, json};
@@ -26,7 +32,7 @@ use serde_json::{Map, Value, json};
 use crate::expr::IntoExpr;
 use crate::html::El;
 use crate::route::Url;
-use crate::signal::{Item, Root, Sig, Signals, in_item_scope};
+use crate::signal::{Item, Root, Sig, Signals, current_part, in_item_scope};
 use crate::style::Sheet;
 
 /// A part of the page that the server can re-render and replace without the rest of the page.
@@ -176,7 +182,7 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
     /// `Serialize` impl that returns an error.
     #[must_use]
     pub fn patch_append(self, items: &[T]) -> ListPatch<S> {
-        ListPatch::single(json!(["append", self.path(), literal(items)]))
+        ListPatch::single(json!(["append", self.dotted(), literal(items)]))
     }
 
     /// A patch that adds `items` before the items the browser holds.
@@ -192,7 +198,7 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
     /// `Serialize` impl that returns an error.
     #[must_use]
     pub fn patch_prepend(self, items: &[T]) -> ListPatch<S> {
-        ListPatch::single(json!(["prepend", self.path(), literal(items)]))
+        ListPatch::single(json!(["prepend", self.dotted(), literal(items)]))
     }
 
     /// A patch that replaces items by key and appends those with new keys.
@@ -235,7 +241,7 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
         key: impl FnOnce(Item<S, T>) -> E,
     ) -> ListPatch<S> {
         let (depth, key) = self.key(key);
-        ListPatch::single(json!(["upsert", self.path(), depth, key, literal(items)]))
+        ListPatch::single(json!(["upsert", self.dotted(), depth, key, literal(items)]))
     }
 
     /// A patch that removes each item whose key is one of `keys`.
@@ -257,7 +263,7 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
         let (depth, key) = self.key(key);
         ListPatch::single(json!([
             "remove_keys",
-            self.path(),
+            self.dotted(),
             depth,
             key,
             literal(keys)
@@ -287,6 +293,8 @@ pub(crate) enum PatchEvent {
     Element {
         html: String,
         css: Vec<(String, String)>,
+        /// The part the fragment's paths were written under.
+        part: Option<Arc<str>>,
     },
     Navigate(Url),
     History {
@@ -306,12 +314,50 @@ impl PatchEvent {
         }
     }
 
+    /// The event's payload, written for the part the current call came from.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the event is a fragment rendered under another part than
+    /// the current one, such as one rendered in a task the call's handler
+    /// did not run, because its paths would land on the wrong signals.
     pub(crate) fn data(&self) -> String {
         match self {
-            Self::Signals(values) => Value::Object(values.clone()).to_string(),
-            Self::List(statement) => statement.to_string(),
-            Self::Element { html, css } if css.is_empty() => json!({ "html": html }).to_string(),
-            Self::Element { html, css } => json!({ "html": html, "css": css }).to_string(),
+            Self::Signals(values) => match current_part() {
+                None => Value::Object(values.clone()).to_string(),
+                Some(part) => Value::Object(
+                    values
+                        .iter()
+                        .map(|(path, value)| (format!("{part}.{path}"), value.clone()))
+                        .collect(),
+                )
+                .to_string(),
+            },
+            Self::List(statement) => match current_part() {
+                None => statement.to_string(),
+                Some(part) => {
+                    let mut statement = statement.clone();
+                    if let Some(place) = statement.get_mut(1)
+                        && let Value::String(path) = place
+                    {
+                        *path = format!("{part}.{path}");
+                    }
+                    statement.to_string()
+                }
+            },
+            Self::Element { html, css, part } => {
+                assert!(
+                    *part == current_part(),
+                    "a fragment rendered under the part at {part:?} answers a call from the part \
+                     at {:?}; render a part's fragment while its handler or stream runs",
+                    current_part(),
+                );
+                if css.is_empty() {
+                    json!({ "html": html }).to_string()
+                } else {
+                    json!({ "html": html, "css": css }).to_string()
+                }
+            }
             Self::Navigate(url) => json!({ "url": url.as_str() }).to_string(),
             Self::History { url, replace } => {
                 json!({ "url": url.as_str(), "replace": replace }).to_string()
@@ -349,6 +395,9 @@ impl<S: Signals> Patches<S> {
     }
 
     /// Sets signals in the browser.
+    ///
+    /// For a [`Part`](crate::Part), the values land under the page field the
+    /// calling part sits at, wherever the patch was built.
     #[must_use]
     pub fn signals(mut self, patch: SignalPatch<S>) -> Self {
         self.events.push(PatchEvent::Signals(patch.values));
@@ -392,6 +441,13 @@ impl<S: Signals> Patches<S> {
     /// browser checks them against the rest of the page once the patch is
     /// applied, writing a warning to the console for each one another element
     /// already carries.
+    ///
+    /// # Panics
+    ///
+    /// For a [`Part`](crate::Part), the fragment is rendered with its paths
+    /// under the field of the part being answered, so the batch panics when
+    /// it is sent if it was built outside the handler or stream answering
+    /// that part, such as in a task that broadcasts one batch to every page.
     #[must_use]
     pub fn element<F: Fragment<Signals = S>>(mut self, fragment: &F) -> Self {
         let el = self::fragment(fragment);
@@ -404,6 +460,7 @@ impl<S: Signals> Patches<S> {
         self.events.push(PatchEvent::Element {
             html: el.render(),
             css,
+            part: current_part(),
         });
         self
     }
@@ -506,5 +563,71 @@ impl<S: Signals> From<SignalPatch<S>> for Patches<S> {
 impl<S: Signals> From<ListPatch<S>> for Patches<S> {
     fn from(patch: ListPatch<S>) -> Self {
         Self::new().list(patch)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
+
+    use super::*;
+    use crate::html::span;
+    use crate::signal::{Path, in_part};
+
+    #[derive(Serialize, Deserialize)]
+    struct Badge {
+        count: i32,
+    }
+
+    impl Signals for Badge {}
+
+    fn count() -> Sig<Badge, i32> {
+        Sig::from_path(Path::field("count"))
+    }
+
+    struct Count;
+
+    impl Fragment for Count {
+        type Signals = Badge;
+        const ID: &'static str = "count";
+
+        fn render(&self) -> El<Badge> {
+            span().bind_text(count().to_text())
+        }
+    }
+
+    #[test]
+    fn signals_land_under_the_part_wherever_they_were_built() {
+        let patches = Patches::from(count().patch(3));
+        let stream = in_part(Some("header.badge".into()), || patches.to_event_stream());
+        assert_eq!(
+            stream,
+            "event: hs-signals\ndata: {\"header.badge.count\":3}\n\n"
+        );
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct Feed {
+        items: Vec<i32>,
+    }
+
+    impl Signals for Feed {}
+
+    #[test]
+    fn a_list_patch_lands_under_the_part_wherever_it_was_built() {
+        let items: Sig<Feed, Vec<i32>> = Sig::from_path(Path::field("items"));
+        let patches = Patches::from(items.patch_append(&[4]));
+        let stream = in_part(Some("footer".into()), || patches.to_event_stream());
+        assert_eq!(
+            stream,
+            "event: hs-list\ndata: [\"append\",\"footer.items\",[\"lit\",[4]]]\n\n"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "render a part's fragment while its handler or stream runs")]
+    fn a_fragment_rendered_outside_its_part_panics_when_written() {
+        let patches = Patches::new().element(&Count);
+        in_part(Some("header.badge".into()), || patches.to_event_stream());
     }
 }

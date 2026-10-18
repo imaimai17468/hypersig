@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/part_at_item_field.rs:24:79
+   |
+24 |     let _ = ul::<Shelf>().child(each(Shelf::badges(), |badge| li().child(part(badge.value()))));
+   |                                                                          ---- ^^^^^^^^^^^^^ expected `Sig<_, _>`, found `Sig<Shelf, Badge, Local>`
+   |                                                                          |
+   |                                                                          arguments to this function are incorrect
+   |
+   = note: expected struct `Sig<_, _, hypersig::Root>`
+              found struct `Sig<Shelf, Badge, hypersig::Local>`
+note: function defined here
+  --> src/html.rs
+   |
+   | pub fn part<S, P: Part>(at: Sig<S, P>) -> Node<S> {
+   |        ^^^^

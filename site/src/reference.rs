@@ -812,6 +812,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "`cond` が真のあいだだけ `el` を文書に置きます。",
                             },
                         ),
+                        (
+                            "part",
+                            "html/fn.part.html",
+                            L {
+                                en: "Embeds the `Part` whose signals are the field `at` of this page.",
+                                ja: "このページのフィールド `at` をシグナルとする `Part` を埋め込みます。",
+                            },
+                        ),
                     ],
                 },
                 Section {
@@ -943,6 +951,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Part",
+                            "trait.Part.html",
+                            L {
+                                en: "A piece of page written once against its own signals, which any page can embed.",
+                                ja: "自分のシグナルに対して一度だけ書き、どのページにも埋め込めるページの部品",
+                            },
+                        ),
+                        (
+                            "Part::render",
+                            "trait.Part.html#tymethod.render",
+                            L {
+                                en: "Renders the part, with its paths written under the field it is embedded at.",
+                                ja: "埋め込まれたフィールドの下にパスを書いて、部品を描画します。",
+                            },
+                        ),
+                        (
                             "MAX_DEPTH",
                             "constant.MAX_DEPTH.html",
                             L {
@@ -1000,6 +1024,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The dotted field path this signal is stored under.",
                                 ja: "このシグナルの格納先を表す、ドットで区切ったフィールドのパス",
+                            },
+                        ),
+                        (
+                            "let_in_stmt",
+                            "struct.Sig.html#method.let_in_stmt",
+                            L {
+                                en: "A statement that runs `body` with this signal's value when the statement runs.",
+                                ja: "文を実行した時点のこのシグナルの値で、`body` を実行する文",
                             },
                         ),
                     ],

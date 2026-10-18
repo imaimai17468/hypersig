@@ -482,6 +482,25 @@ describe("call outcomes", () => {
   });
 });
 
+describe("parts", () => {
+  it("reads and writes a part's signals under its field, and tells the server the field", async () => {
+    const fetch = vi.fn(
+      async (_url: URL, _init: RequestInit) =>
+        new Response('event: hs-signals\ndata: {"footer.status":"Subscribed"}\n\n', { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const runtime = mount("storefront");
+    expect($<HTMLInputElement>("#email").value).toBe("ada@example.com");
+    type($<HTMLInputElement>("#email"), "grace@example.com");
+    expect(runtime.store.get("footer.email")).toBe("grace@example.com");
+    $("#subscribe").click();
+    await vi.waitFor(() => expect($("#status").textContent).toBe("Subscribed"));
+    const [, init] = fetch.mock.calls[0]!;
+    expect((init.headers as Record<string, string>)["hypersig-part"]).toBe("footer");
+    expect(init.body).toBe('"grace@example.com"');
+  });
+});
+
 describe("list statements and browser values", () => {
   it("creates, updates, swaps, and sorts items, and reads random numbers and the clock", async () => {
     const runtime = mount("table");

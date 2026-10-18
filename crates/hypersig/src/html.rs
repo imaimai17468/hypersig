@@ -44,6 +44,7 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -52,7 +53,7 @@ use serde_json::{Value, json};
 use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
 use crate::route::Link;
-use crate::signal::{Item, Sig, in_item_scope};
+use crate::signal::{Item, Part, Sig, in_item_scope, in_part};
 use crate::ssr::{self, Ctx};
 use crate::style::{Property, Sheet, Style, Token, TokenValue};
 
@@ -366,6 +367,115 @@ pub fn when<S>(cond: impl IntoExpr<S, bool>, el: El<S>) -> Node<S> {
         cond: cond.into_expr(),
         template: Box::new(el),
     })
+}
+
+/// Embeds the [`Part`] whose signals are the field `at` of this page.
+///
+/// The part renders with each of its paths written under `at`, and each
+/// call it makes tells the server `at`, so the patches its handler answers
+/// with land there too. `at` starts at the page root, because an item of a
+/// list has no path the server can patch.
+///
+/// The result is a [`Node`], so nothing of the page can be added inside
+/// the part's element, where it would be read as the part's.
+#[must_use]
+pub fn part<S, P: Part>(at: Sig<S, P>) -> Node<S> {
+    let field: Arc<str> = at.path().into();
+    let el = in_part(Some(field), P::render);
+    Node(NodeKind::Element(Box::new(el.retype())))
+}
+
+impl<S> Node<S> {
+    fn retype<S2>(self) -> Node<S2> {
+        Node(match self.0 {
+            NodeKind::Element(el) => NodeKind::Element(Box::new(el.retype())),
+            NodeKind::Text(text) => NodeKind::Text(text),
+            NodeKind::Each {
+                list,
+                depth,
+                template,
+            } => NodeKind::Each {
+                list,
+                depth,
+                template: Box::new(template.retype()),
+            },
+            NodeKind::When { cond, template } => NodeKind::When {
+                cond: retype_expr(cond),
+                template: Box::new(template.retype()),
+            },
+        })
+    }
+}
+
+fn retype_expr<S, S2, T>(expr: Expr<S, T>) -> Expr<S2, T> {
+    Expr::from_json(expr.into_json())
+}
+
+fn retype_stmt<S, S2>(stmt: Stmt<S>) -> Stmt<S2> {
+    Stmt::new(stmt.into_json())
+}
+
+impl<S> El<S> {
+    /// The same element over the signals `S2`.
+    ///
+    /// Only [`part`] calls it, on an element whose paths were written under
+    /// the field of `S2` that holds `S`.
+    fn retype<S2>(self) -> El<S2> {
+        El {
+            tag: self.tag,
+            void: self.void,
+            id: self.id,
+            attrs: self.attrs,
+            classes: self.classes,
+            show: self.show.map(retype_expr),
+            text: self.text.map(retype_expr),
+            checked: self.checked.map(retype_expr),
+            bind: self.bind,
+            class_when: retype_pairs(self.class_when),
+            css: self.css,
+            css_names: self.css_names,
+            css_when: self
+                .css_when
+                .into_iter()
+                .map(|(style, names, cond)| (style, names, retype_expr(cond)))
+                .collect(),
+            attr_bind: retype_pairs(self.attr_bind),
+            attr_when: retype_pairs(self.attr_when),
+            style: retype_pairs(self.style),
+            key: self.key,
+            node_ref: self.node_ref,
+            file_input: self.file_input,
+            effects: self.effects.into_iter().map(retype_stmt).collect(),
+            watches: retype_stmts(self.watches),
+            interval: self.interval.map(|(ms, stmt)| (ms, retype_stmt(stmt))),
+            timeout: self.timeout.map(|(ms, stmt)| (ms, retype_stmt(stmt))),
+            on: retype_stmts(self.on),
+            keys: retype_stmts(self.keys),
+            roving: self.roving,
+            active: self.active,
+            children: self.children.into_iter().map(Node::retype).collect(),
+        }
+    }
+}
+
+fn retype_pairs<K, S, S2, T, C>(pairs: Vec<(K, Expr<S, T>)>) -> C
+where
+    C: FromIterator<(K, Expr<S2, T>)>,
+{
+    pairs
+        .into_iter()
+        .map(|(key, expr)| (key, retype_expr(expr)))
+        .collect()
+}
+
+fn retype_stmts<K, S, S2, C>(pairs: impl IntoIterator<Item = (K, Stmt<S>)>) -> C
+where
+    C: FromIterator<(K, Stmt<S2>)>,
+{
+    pairs
+        .into_iter()
+        .map(|(key, stmt)| (key, retype_stmt(stmt)))
+        .collect()
 }
 
 /// An HTML element belonging to a page whose signals are `S`.

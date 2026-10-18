@@ -437,7 +437,10 @@ impl<S, T> Sig<S, Form<T>> {
     /// A patch that shows `errors` under their fields until the next submit.
     #[must_use]
     pub fn reject(self, errors: &FieldErrors<T>) -> SignalPatch<S> {
-        SignalPatch::single(format!("{}.errors", self.path()), &errors.messages)
+        SignalPatch::single(
+            format!("{}.errors", self.raw_path().dotted()),
+            &errors.messages,
+        )
     }
 }
 

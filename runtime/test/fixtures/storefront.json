@@ -1,0 +1,9 @@
+{
+  "html": "<main><div><input id=\"email\" data-hs-bind=\"[&quot;footer.email&quot;,&quot;text&quot;]\"><button id=\"subscribe\" data-hs-on-click=\"[&quot;call&quot;,&quot;POST&quot;,&quot;/subscribe&quot;,[&quot;sig&quot;,&quot;footer.email&quot;],null,null,[],{&quot;part&quot;:&quot;footer&quot;}]\"></button><span id=\"status\" data-hs-text=\"[&quot;sig&quot;,&quot;footer.status&quot;]\"></span></div></main>",
+  "signals": {
+    "footer": {
+      "email": "ada@example.com",
+      "status": ""
+    }
+  }
+}

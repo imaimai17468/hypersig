@@ -1,8 +1,9 @@
 //! Signal structs and typed references to their fields.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::fmt;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -35,6 +36,73 @@ use crate::patch::SignalPatch;
 /// needs a signal's value takes it as an argument. A field may itself be a
 /// `Signals` struct or a `Vec` of one; [`Sig::at`] reaches into it.
 pub trait Signals: Serialize + DeserializeOwned + Send + 'static {}
+
+/// A piece of page written once against its own signals, which any page can embed.
+///
+/// A sign-out button in an app's shell, a newsletter form in a site's
+/// footer, or a cart badge in a shared header appear on several pages,
+/// whose signal structs differ. Write such a piece as a `Part`: its own
+/// signal struct, an [`El`](crate::html::El) over it, and actions over it.
+/// A page embeds it with [`html::part`](crate::html::part) at a field of its
+/// own struct whose type is the part's struct, and registers each action of
+/// the part once, for every page that embeds it.
+///
+/// The part's paths are written under that field. A call made inside the
+/// part tells the server the field, so the patches its handler answers with
+/// land there, and a [`Fragment`](crate::Fragment) of the part re-renders
+/// with its paths under it.
+///
+/// `render` takes no arguments, so nothing built outside it can reach the
+/// part, and what the part shows comes from its own signals, which the page
+/// fills in as the value of its field. Two fields of one page may hold the
+/// same part as long as the part names no element id, node ref, or file
+/// input, because [`Page::render`](crate::Page::render) panics on two
+/// elements with one of those.
+///
+/// ```
+/// use hypersig::html::{El, button, div, part, span};
+/// use hypersig::{Action, Page, Part, Patches, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Account {
+///     name: String,
+///     signing_out: bool,
+/// }
+///
+/// const SIGN_OUT: Action<Account> = Action::post("/sign-out");
+///
+/// impl Part for Account {
+///     fn render() -> El<Self> {
+///         div()
+///             .child(span().bind_text(Account::name()))
+///             .child(button().on_click(SIGN_OUT.call().indicator(Account::signing_out())))
+///     }
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Inbox {
+///     account: Account,
+///     unread: i32,
+/// }
+///
+/// let account = Account { name: "ada".into(), signing_out: false };
+/// let html = Page::new("Inbox", Inbox { account, unread: 3 })
+///     .child(part(Inbox::account()))
+///     .render();
+/// assert!(html.contains(r#"[&quot;sig&quot;,&quot;account.name&quot;]"#));
+///
+/// // One handler serves every page that embeds `Account`.
+/// async fn sign_out((): (), (): ()) -> Patches<Account> {
+///     Account::signing_out().patch(false).into()
+/// }
+/// let _app: axum::Router = axum::Router::new().action(SIGN_OUT, sign_out);
+/// # use hypersig::RouterExt as _;
+/// ```
+pub trait Part: Signals {
+    /// Renders the part, with its paths written under the field it is embedded at.
+    fn render() -> crate::html::El<Self>;
+}
 
 /// The deepest chain of fields a [`Sig`] can name.
 pub const MAX_DEPTH: usize = 8;
@@ -96,14 +164,25 @@ impl Path {
         self.segments[..usize::from(self.len)].iter().copied()
     }
 
+    /// The fields joined by dots, relative to the struct the path starts at.
     pub(crate) fn dotted(&self) -> String {
         self.segments().collect::<Vec<_>>().join(".")
+    }
+
+    /// The fields joined by dots and written under the field of the
+    /// [`Part`](crate::Part) being built, for a path from the root.
+    pub(crate) fn rooted(&self) -> String {
+        let dotted = self.dotted();
+        match current_part() {
+            Some(part) if self.item.is_none() => format!("{part}.{dotted}"),
+            _ => dotted,
+        }
     }
 
     /// The JSON the runtime reads this path's value from.
     pub(crate) fn expr_json(&self) -> Value {
         match self.item {
-            None => json!(["sig", self.dotted()]),
+            None => json!(["sig", self.rooted()]),
             Some(depth) => json!(["item", depth, self.dotted()]),
         }
     }
@@ -111,10 +190,36 @@ impl Path {
     /// The JSON the runtime resolves to a place it can write to.
     pub(crate) fn place_json(&self) -> Value {
         match self.item {
-            None => Value::from(self.dotted()),
+            None => Value::from(self.rooted()),
             Some(depth) => json!(["item", depth, self.dotted()]),
         }
     }
+}
+
+thread_local! {
+    static PART: RefCell<Option<Arc<str>>> = const { RefCell::new(None) };
+}
+
+/// The dotted path of the page field the [`Part`](crate::Part) being built
+/// or answered sits under, or `None` outside a part.
+pub(crate) fn current_part() -> Option<Arc<str>> {
+    PART.with_borrow(Clone::clone)
+}
+
+/// Runs `body` with paths from the root written under `part`, and with
+/// `None` writing them from the page root.
+///
+/// The previous part is put back when `body` returns or panics, so a part
+/// inside a part nests.
+pub(crate) fn in_part<R>(part: Option<Arc<str>>, body: impl FnOnce() -> R) -> R {
+    struct Restore(Option<Arc<str>>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            PART.set(self.0.take());
+        }
+    }
+    let _restore = Restore(PART.replace(part));
+    body()
 }
 
 impl fmt::Debug for Path {
@@ -224,8 +329,17 @@ impl<S, T, R> Sig<S, T, R> {
 
 impl<S, T> Sig<S, T, Root> {
     /// The dotted field path this signal is stored under.
+    ///
+    /// Inside [`Part::render`](crate::Part::render), the path starts with the
+    /// page field the part is embedded at.
     #[must_use]
     pub fn path(self) -> String {
+        self.path.rooted()
+    }
+
+    /// The dotted field path relative to `S`, which a patch writes under the
+    /// field of the part answering when it is sent.
+    pub(crate) fn dotted(self) -> String {
         self.path.dotted()
     }
 
@@ -240,7 +354,7 @@ impl<S, T> Sig<S, T, Root> {
     where
         T: Serialize,
     {
-        SignalPatch::single(self.path.dotted(), &value)
+        SignalPatch::single(self.dotted(), &value)
     }
 }
 

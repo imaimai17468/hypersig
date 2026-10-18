@@ -59,6 +59,8 @@ const NAMES = [REF, FILES];
 
 /** The header an upload carries, which `crates/hypersig/src/axum.rs` requires. */
 const UPLOAD_HEADER = "hypersig-upload";
+/** The header that tells the server which page field the part that made a call sits at. */
+const PART_HEADER = "hypersig-part";
 
 interface Instance {
   readonly element: Element;
@@ -463,6 +465,7 @@ export class Runtime implements Host {
         init.headers = { accept: "text/event-stream", "content-type": "application/json" };
         init.body = body;
       }
+      if (options.part !== undefined) init.headers = { ...(init.headers as Record<string, string>), [PART_HEADER]: options.part };
       return url;
     };
     // The first request is built before the call returns, so a statement after it can change what the arguments read.
