@@ -147,6 +147,8 @@ struct Controls {
     price: f64,
     size: Size,
     gift: bool,
+    note: Option<String>,
+    limit: Option<i64>,
 }
 
 fn controls() -> (El<Controls>, Controls) {
@@ -164,6 +166,13 @@ fn controls() -> (El<Controls>, Controls) {
             select()
                 .id("size")
                 .bind_select(size, [(Size::Small, "Small"), (Size::Large, "Large")]),
+        )
+        .child(input().id("note").bind(Controls::note()))
+        .child(
+            input()
+                .id("limit")
+                .attr("type", "number")
+                .bind(Controls::limit()),
         )
         .child(input().id("small").bind_radio(size, &Size::Small))
         .child(input().id("large").bind_radio(size, &Size::Large))
@@ -191,6 +200,8 @@ fn controls() -> (El<Controls>, Controls) {
         price: 2.5,
         size: Size::Small,
         gift: false,
+        note: Some("gift wrap".to_owned()),
+        limit: None,
     };
     (el, signals)
 }

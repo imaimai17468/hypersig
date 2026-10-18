@@ -852,9 +852,14 @@ impl Orientation {
 /// `String` binds to the value of a text field, `<textarea>`, or `<select>`,
 /// `bool` to `checked`, and `i32`, `i64`, and `f64` to a number or range
 /// field.
+///
+/// An `Option` of `String`, `i32`, `i64`, or `f64` binds as the type it
+/// holds, with an empty field standing for `None` in both directions: `None`
+/// empties the field, and emptying the field sets `None`. A number field
+/// whose text is not a number leaves the signal as it was.
 #[diagnostic::on_unimplemented(
     message = "a form control cannot be bound to a `{Self}` signal",
-    note = "bind `String`, `bool`, `i32`, `i64`, or `f64`; for other types use `bind_select` or `bind_radio`"
+    note = "bind `String`, `bool`, `i32`, `i64`, `f64`, or an `Option` of one other than `bool`; for other types use `bind_select` or `bind_radio`"
 )]
 pub trait Bindable: sealed::Sealed {}
 impl Bindable for String {}
@@ -862,6 +867,10 @@ impl Bindable for bool {}
 impl Bindable for i32 {}
 impl Bindable for i64 {}
 impl Bindable for f64 {}
+impl Bindable for Option<String> {}
+impl Bindable for Option<i32> {}
+impl Bindable for Option<i64> {}
+impl Bindable for Option<f64> {}
 
 mod sealed {
     pub trait Sealed {
@@ -881,6 +890,18 @@ mod sealed {
     }
     impl Sealed for f64 {
         const KIND: &'static str = "float";
+    }
+    impl Sealed for Option<String> {
+        const KIND: &'static str = "opt_text";
+    }
+    impl Sealed for Option<i32> {
+        const KIND: &'static str = "opt_int";
+    }
+    impl Sealed for Option<i64> {
+        const KIND: &'static str = "opt_int";
+    }
+    impl Sealed for Option<f64> {
+        const KIND: &'static str = "opt_float";
     }
 }
 
@@ -1749,7 +1770,9 @@ impl<S> El<S> {
                     computed.push(("checked", String::new()));
                 }
                 Some("json") => selected = Some(ssr::js_json(value)),
-                Some("text" | "int" | "float") if !value.is_null() => {
+                Some("text" | "int" | "float" | "opt_text" | "opt_int" | "opt_float")
+                    if !value.is_null() =>
+                {
                     let text = ssr::js_string(value);
                     match self.tag {
                         "textarea" => content = Some(text),

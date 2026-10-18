@@ -173,6 +173,30 @@ describe("controls", () => {
     expect($<HTMLSelectElement>("#size").value).toBe('"Small"');
   });
 
+  it("binds an empty field to None in both directions for an Option signal", async () => {
+    const runtime = mount("controls");
+    expect($<HTMLInputElement>("#note").value).toBe("gift wrap");
+    expect($<HTMLInputElement>("#limit").value).toBe("");
+
+    type($<HTMLInputElement>("#note"), "");
+    expect(runtime.store.get("note")).toBe(null);
+    type($<HTMLInputElement>("#note"), "ribbon");
+    expect(runtime.store.get("note")).toBe("ribbon");
+
+    type($<HTMLInputElement>("#limit"), "12.9");
+    expect(runtime.store.get("limit")).toBe(12);
+    type($<HTMLInputElement>("#limit"), "  ");
+    expect(runtime.store.get("limit")).toBe(null);
+    type($<HTMLInputElement>("#quantity"), "");
+    expect(runtime.store.get("quantity")).toBe(1);
+
+    runtime.store.set("note", null);
+    runtime.store.set("limit", 7);
+    await tick();
+    expect($<HTMLInputElement>("#note").value).toBe("");
+    expect($<HTMLInputElement>("#limit").value).toBe("7");
+  });
+
   it("binds attributes, boolean attributes, and styles", async () => {
     const runtime = mount("controls");
     const buy = $<HTMLButtonElement>("#buy");
@@ -804,6 +828,8 @@ describe("server rendering", () => {
     serve("controls_page");
     expect($<HTMLInputElement>("#quantity").value).toBe("1");
     expect($<HTMLInputElement>("#price").value).toBe("2.5");
+    expect($<HTMLInputElement>("#note").value).toBe("gift wrap");
+    expect($<HTMLInputElement>("#limit").hasAttribute("value")).toBe(false);
     expect($<HTMLSelectElement>("#size").value).toBe('"Small"');
     expect($<HTMLInputElement>("#small").checked).toBe(true);
     expect($<HTMLInputElement>("#large").checked).toBe(false);

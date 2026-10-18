@@ -1039,6 +1039,8 @@ export class Runtime implements Host {
         return;
       case "int":
       case "float":
+      case "opt_int":
+      case "opt_float":
         if (Number(element.value) !== current || element.value === "") element.value = String(current ?? "");
         return;
       case "json": {
@@ -1068,12 +1070,22 @@ export class Runtime implements Host {
         if (type === "change" && element instanceof HTMLInputElement && element.checked) this.store.set(path, choice);
         return;
       case "int":
-      case "float": {
+      case "float":
+      case "opt_int":
+      case "opt_float": {
+        // An emptied field sets an `Option` signal to `None` and leaves a plain number as it was.
+        if (raw.trim() === "") {
+          if (kind.startsWith("opt_")) this.store.set(path, null);
+          return;
+        }
         const number = Number(raw);
-        if (raw.trim() === "" || !Number.isFinite(number)) return;
-        this.store.set(path, kind === "int" ? Math.trunc(number) : number);
+        if (!Number.isFinite(number)) return;
+        this.store.set(path, kind.endsWith("int") ? Math.trunc(number) : number);
         return;
       }
+      case "opt_text":
+        if (type === "input" || element instanceof HTMLSelectElement) this.store.set(path, raw === "" ? null : raw);
+        return;
       case "json":
         if (type === "change") this.store.set(path, JSON.parse(raw));
         return;
