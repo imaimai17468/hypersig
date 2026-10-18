@@ -85,8 +85,8 @@ impl<S> Dialog<S> {
     /// A statement that opens the dialog, as its trigger button does.
     ///
     /// Use it where no button opens the dialog, such as a keyboard shortcut
-    /// on the page. Focus returns to the element that had it when the dialog
-    /// closes.
+    /// from [`Page::on_key`](hypersig::Page::on_key). Focus returns to the
+    /// element that had it when the dialog closes.
     #[must_use]
     pub fn open(self) -> Stmt<S> {
         DialogRef::new(self.name).show_modal()

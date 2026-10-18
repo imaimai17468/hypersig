@@ -323,7 +323,8 @@ fn search(find: &Find) -> El<Showcase> {
 fn palette() -> El<Showcase> {
     section()
         .id("palette")
-        .child(h2().text("Dialogs"))
+        .child(h2().text("Dialogs and shortcuts"))
+        .child(p().text("Command+K or Ctrl+K opens the commands, and / focuses the search."))
         .child(
             button()
                 .class(class::OPEN_PALETTE)
@@ -663,6 +664,9 @@ async fn index((): (), find: Find) -> Page<Showcase> {
         ))
         .style(STYLE)
         .theme(look::theme())
+        // `/` focuses the search from anywhere but a text field, which types it.
+        .on_key(Key::Char('/'), SEARCH_FIELD.focus())
+        .on_key(Key::Char('k').primary(), PALETTE.show_modal())
         .child(h1().text("hypersig showcase"))
         .child(components())
         .child(stopwatch())

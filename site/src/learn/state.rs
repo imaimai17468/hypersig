@@ -221,8 +221,8 @@ pub fn expressions(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`on_click`, `on_input`, `on_submit`, `on_change`, and `on_blur` run a statement on their event, and `on(Event::Focus, ...)` covers the rest of [`Event`](api:hypersig/html/enum.Event.html). `on_key` filters `keydown` by a [`Key`](api:hypersig/html/enum.Key.html), and `on_debounced` waits until the event has stopped firing for a given time.",
-                ja: "`on_click`、`on_input`、`on_submit`、`on_change`、`on_blur` は、それぞれのイベントで文を実行します。[`Event`](api:hypersig/html/enum.Event.html) のほかのイベントには `on(Event::Focus, ...)` を使います。`on_key` は `keydown` を [`Key`](api:hypersig/html/enum.Key.html) で絞り込み、`on_debounced` はイベントが指定した時間続けて起きなくなるまで待ちます。",
+                en: "`on_click`, `on_input`, `on_submit`, `on_change`, and `on_blur` run a statement on their event, and `on(Event::Focus, ...)` covers the rest of [`Event`](api:hypersig/html/enum.Event.html). `on_key` filters `keydown` by a [`Key`](api:hypersig/html/enum.Key.html) or a [`Shortcut`](api:hypersig/html/struct.Shortcut.html) such as `Key::Char('k').primary()`, and leaves the characters a text field inside the element types to the field. [`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) does the same for the whole page, even while nothing has focus. `on_debounced` waits until the event has stopped firing for a given time.",
+                ja: "`on_click`、`on_input`、`on_submit`、`on_change`、`on_blur` は、それぞれのイベントで文を実行します。[`Event`](api:hypersig/html/enum.Event.html) のほかのイベントには `on(Event::Focus, ...)` を使います。`on_key` は `keydown` を [`Key`](api:hypersig/html/enum.Key.html) か、`Key::Char('k').primary()` のような [`Shortcut`](api:hypersig/html/struct.Shortcut.html) で絞り込みます。要素の中のテキスト欄で打つ文字は、その欄に任せます。[`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) は同じことをページ全体で行い、どこにもフォーカスがないときにも動きます。`on_debounced` はイベントが指定した時間続けて起きなくなるまで待ちます。",
             },
         ),
         para(

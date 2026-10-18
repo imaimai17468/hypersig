@@ -130,6 +130,18 @@ test("a dialog keeps focus off the inert page, closes on Escape, and returns foc
   await expect(dialog).toBeHidden();
 });
 
+test("a page shortcut opens a dialog with its statement", async ({ page }) => {
+  await page.locator("h1").first().click();
+  await page.keyboard.press("ControlOrMeta+k");
+  const dialog = page.getByRole("dialog", { name: "Edit profile" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("textbox", { name: "Display name" })).toBeFocused();
+  await page.keyboard.type("k");
+  await expect(dialog.getByRole("textbox", { name: "Display name" })).toHaveValue(/k$/);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+});
+
 test("an alert dialog stays open on a click outside and closes with its buttons", async ({ page }) => {
   await page.getByRole("button", { name: "Delete project" }).click();
   const dialog = page.getByRole("alertdialog", { name: "Delete this project?" });

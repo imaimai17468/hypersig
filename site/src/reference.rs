@@ -150,6 +150,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "on_key",
+                            "struct.Page.html#method.on_key",
+                            L {
+                                en: "Runs `stmt` when `shortcut` is pressed anywhere on the page.",
+                                ja: "ページのどこかで `shortcut` が押されると `stmt` を実行します。",
+                            },
+                        ),
+                        (
                             "computed",
                             "struct.Page.html#method.computed",
                             L {
@@ -603,8 +611,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "on_key",
                             "html/struct.El.html#method.on_key",
                             L {
-                                en: "Runs `stmt` when `key` is pressed while focus is in this element.",
-                                ja: "フォーカスがこの要素の中にあるあいだに `key` が押されると `stmt` を実行します。",
+                                en: "Runs `stmt` when `shortcut` is pressed while focus is in this element.",
+                                ja: "フォーカスがこの要素の中にあるあいだに `shortcut` が押されると `stmt` を実行します。",
                             },
                         ),
                         (
@@ -771,6 +779,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A key that `El::on_key` filters `keydown` by.",
                                 ja: "`El::on_key` が `keydown` を絞り込むのに使うキー",
+                            },
+                        ),
+                        (
+                            "Shortcut",
+                            "html/struct.Shortcut.html",
+                            L {
+                                en: "A `Key` and the modifiers held with it, which `El::on_key` and `Page::on_key` match.",
+                                ja: "`Key` と、一緒に押す修飾キー。`El::on_key` と `Page::on_key` が照合します。",
                             },
                         ),
                         (

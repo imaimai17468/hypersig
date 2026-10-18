@@ -910,6 +910,8 @@ async fn index((): (), (): ()) -> Page<Gallery> {
     )
     .global(hypersig_ui::global())
     .theme(hypersig_ui::theme())
+    // Command+K on a Mac and Ctrl+K elsewhere opens the profile dialog from anywhere.
+    .on_key(html::Key::Char('k').primary(), EDIT.open())
     .child(
         div()
             .id("app")

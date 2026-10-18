@@ -394,7 +394,7 @@ pub struct El<S> {
     interval: Option<(u128, Stmt<S>)>,
     timeout: Option<(u128, Stmt<S>)>,
     on: BTreeMap<Event, Stmt<S>>,
-    keys: Vec<(Key, Stmt<S>)>,
+    keys: Vec<(Shortcut, Stmt<S>)>,
     roving: Option<Orientation>,
     active: Option<(&'static str, Value)>,
     children: Vec<Node<S>>,
@@ -629,6 +629,11 @@ impl Event {
 }
 
 /// A key that [`El::on_key`] filters `keydown` by.
+///
+/// A key alone matches only while Ctrl, Alt, and Meta are all released. Its
+/// methods [`ctrl`](Key::ctrl), [`alt`](Key::alt), [`meta`](Key::meta),
+/// [`shift`](Key::shift), and [`primary`](Key::primary) make a [`Shortcut`]
+/// that requires a modifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Key {
@@ -657,7 +662,146 @@ pub enum Key {
     /// End.
     End,
     /// A key that produces this character, as `KeyboardEvent.key` reports it.
+    ///
+    /// The character already says whether Shift was held, as `'K'` and `'?'`
+    /// do on a US layout, so Shift is not compared unless the shortcut asks
+    /// for it with [`Shortcut::shift`].
     Char(char),
+}
+
+impl Key {
+    /// This key with Ctrl held.
+    #[must_use]
+    pub fn ctrl(self) -> Shortcut {
+        Shortcut::from(self).ctrl()
+    }
+
+    /// This key with Alt held, which is Option on a Mac.
+    #[must_use]
+    pub fn alt(self) -> Shortcut {
+        Shortcut::from(self).alt()
+    }
+
+    /// This key with Meta held, which is Command on a Mac and the Windows key elsewhere.
+    #[must_use]
+    pub fn meta(self) -> Shortcut {
+        Shortcut::from(self).meta()
+    }
+
+    /// This key with Shift held.
+    #[must_use]
+    pub fn shift(self) -> Shortcut {
+        Shortcut::from(self).shift()
+    }
+
+    /// This key with Command on Apple platforms and Ctrl elsewhere.
+    #[must_use]
+    pub fn primary(self) -> Shortcut {
+        Shortcut::from(self).primary()
+    }
+}
+
+/// A [`Key`] and the modifiers held with it, which [`El::on_key`] and
+/// [`Page::on_key`](crate::Page::on_key) match.
+///
+/// Ctrl, Alt, and Meta match exactly: `Key::Char('k').ctrl()` runs on Ctrl+K
+/// and not on Ctrl+Alt+K. Shift matches exactly for a named key, so
+/// `Key::Enter` leaves Shift+Enter to a `<textarea>`. For a [`Key::Char`],
+/// Shift is compared only where [`shift`](Shortcut::shift) asks for it, and
+/// the character is then compared without regard to case, since Shift
+/// turns `k` into `K`.
+///
+/// The runtime decides [`primary`](Shortcut::primary) from
+/// `navigator.platform`. On macOS, Option changes the character a key
+/// produces, so a [`Key::Char`] with [`alt`](Shortcut::alt) does not match
+/// there.
+///
+/// ```
+/// use hypersig::html::{Key, Shortcut};
+///
+/// let palette: Shortcut = Key::Char('k').primary();
+/// let redo: Shortcut = Key::Char('z').primary().shift();
+/// # let _ = (palette, redo);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Shortcut {
+    key: Key,
+    /// The modifiers held, as bits indexed like [`MODIFIERS`].
+    held: u8,
+}
+
+/// The names the runtime reads for the modifiers, in the order of the bits of `Shortcut::held`.
+const MODIFIERS: [&str; 5] = ["ctrl", "alt", "meta", "shift", "primary"];
+
+impl From<Key> for Shortcut {
+    fn from(key: Key) -> Self {
+        Self { key, held: 0 }
+    }
+}
+
+impl Shortcut {
+    fn with(mut self, modifier: &str) -> Self {
+        let bit = MODIFIERS
+            .iter()
+            .position(|name| *name == modifier)
+            .expect("a modifier `MODIFIERS` names");
+        self.held |= 1 << bit;
+        self
+    }
+
+    /// This shortcut with Ctrl held too.
+    #[must_use]
+    pub fn ctrl(self) -> Self {
+        self.with("ctrl")
+    }
+
+    /// This shortcut with Alt held too, which is Option on a Mac.
+    #[must_use]
+    pub fn alt(self) -> Self {
+        self.with("alt")
+    }
+
+    /// This shortcut with Meta held too, which is Command on a Mac.
+    #[must_use]
+    pub fn meta(self) -> Self {
+        self.with("meta")
+    }
+
+    /// This shortcut with Shift held too.
+    #[must_use]
+    pub fn shift(self) -> Self {
+        self.with("shift")
+    }
+
+    /// This shortcut with Command held on Apple platforms and Ctrl elsewhere.
+    #[must_use]
+    pub fn primary(self) -> Self {
+        self.with("primary")
+    }
+
+    /// The entry of a `data-hs-on-key` list: the key, the statement, and the
+    /// names of the modifiers where any is held.
+    fn json(self, stmt: &Value) -> Value {
+        if self.held == 0 {
+            return json!([self.key.name(), stmt]);
+        }
+        let held: Vec<&str> = MODIFIERS
+            .iter()
+            .enumerate()
+            .filter(|(bit, _)| self.held & (1 << bit) != 0)
+            .map(|(_, name)| *name)
+            .collect();
+        json!([self.key.name(), stmt, held])
+    }
+}
+
+/// The value of `data-hs-on-key` for `keys`.
+pub(crate) fn keys_json<S>(keys: &[(Shortcut, Stmt<S>)]) -> String {
+    let keys: Vec<Value> = keys
+        .iter()
+        .map(|(shortcut, stmt)| shortcut.json(stmt.as_json()))
+        .collect();
+    json_text(&keys)
 }
 
 impl Key {
@@ -1222,12 +1366,44 @@ impl<S> El<S> {
         self.on(Event::Load, stmt)
     }
 
-    /// Runs `stmt` when `key` is pressed while focus is in this element.
+    /// Runs `stmt` when `shortcut` is pressed while focus is in this element.
     ///
-    /// The runtime calls `preventDefault` for a matched key.
+    /// `shortcut` is a [`Key`] alone, or a [`Shortcut`] such as
+    /// `Key::Char('k').primary()`, and its modifiers match as [`Shortcut`]
+    /// describes. The runtime calls `preventDefault` for a matched key.
+    ///
+    /// A text field inside this element keeps the keys it edits text with,
+    /// unless Ctrl, Alt, Meta, or [`primary`](Shortcut::primary) is part of
+    /// the shortcut. Those keys are a character, Space, Backspace, Delete,
+    /// the left and right arrows, Home, and End, and in a `<textarea>` or an
+    /// editable element also Enter and the up and down arrows. A handler on
+    /// the field itself still takes them, so put `on_key` on the field to
+    /// act on one of them there.
+    ///
+    /// Where several elements around the focus have handlers, the nearest one
+    /// with a shortcut that matches runs, and the ones further out do not.
+    /// [`Page::on_key`](crate::Page::on_key) is the outermost.
+    ///
+    /// ```
+    /// use hypersig::html::{Key, div, input};
+    /// use hypersig::Signals;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Editor {
+    ///     text: String,
+    ///     saved: bool,
+    /// }
+    ///
+    /// // Typing an `s` in the field types it, and Ctrl+S or Command+S saves.
+    /// let editor = div::<Editor>()
+    ///     .on_key(Key::Char('s').primary(), Editor::saved().set(true))
+    ///     .child(input().bind(Editor::text()));
+    /// assert!(editor.render().contains(r#"[&quot;s&quot;,[&quot;set&quot;"#));
+    /// ```
     #[must_use]
-    pub fn on_key(mut self, key: Key, stmt: impl IntoStmt<S>) -> Self {
-        self.keys.push((key, stmt.into_stmt()));
+    pub fn on_key(mut self, shortcut: impl Into<Shortcut>, stmt: impl IntoStmt<S>) -> Self {
+        self.keys.push((shortcut.into(), stmt.into_stmt()));
         self
     }
 
@@ -1654,12 +1830,7 @@ impl<S> El<S> {
             write_attr(out, event.attribute(), &stmt.to_json());
         }
         if !self.keys.is_empty() {
-            let keys: Vec<(String, &Value)> = self
-                .keys
-                .iter()
-                .map(|(key, stmt)| (key.name(), stmt.as_json()))
-                .collect();
-            write_attr(out, "data-hs-on-key", &json_text(&keys));
+            write_attr(out, "data-hs-on-key", &keys_json(&self.keys));
         }
         if let Some(orientation) = self.roving {
             write_attr(out, "data-hs-roving", orientation.name());

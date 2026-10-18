@@ -5,9 +5,9 @@ use std::fmt;
 
 use serde_json::{Value, json};
 
-use crate::expr::IntoExpr;
+use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
-use crate::html::{Node, Stylesheet, check_names, escape_into, write_attr};
+use crate::html::{Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr};
 use crate::route::Url;
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
@@ -31,6 +31,7 @@ pub struct Page<S> {
     global: Global,
     computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
+    keys: Vec<(Shortcut, Stmt<S>)>,
     runtime: &'static str,
     lang: Option<String>,
     description: Option<String>,
@@ -61,6 +62,7 @@ impl<S: Signals> Page<S> {
             global: Global::new(),
             computed: Vec::new(),
             body: Vec::new(),
+            keys: Vec::new(),
             runtime: crate::RUNTIME_PATH,
             lang: None,
             description: None,
@@ -299,6 +301,38 @@ impl<S: Signals> Page<S> {
         self
     }
 
+    /// Runs `stmt` when `shortcut` is pressed anywhere on the page.
+    ///
+    /// It runs while nothing has focus too, and matches as
+    /// [`El::on_key`](crate::html::El::on_key) does: a text field keeps the
+    /// keys it edits text with unless the shortcut holds Ctrl, Alt, Meta, or
+    /// [`primary`](Shortcut::primary), and a handler of `El::on_key` nearer
+    /// the focus that matches the same key runs in its place.
+    ///
+    /// ```
+    /// use hypersig::html::{Key, input};
+    /// use hypersig::{NodeRef, Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Docs {
+    ///     query: String,
+    /// }
+    ///
+    /// const SEARCH: NodeRef<Docs> = NodeRef::new("search");
+    /// let html = Page::new("Docs", Docs { query: String::new() })
+    ///     .on_key(Key::Char('/'), SEARCH.focus())
+    ///     .child(input().node_ref(SEARCH).bind(Docs::query()))
+    ///     .render();
+    /// assert!(html.contains("<body data-hs-signals"));
+    /// assert!(html.contains(r#" data-hs-on-key="[[&quot;/&quot;"#));
+    /// ```
+    #[must_use]
+    pub fn on_key(mut self, shortcut: impl Into<Shortcut>, stmt: impl IntoStmt<S>) -> Self {
+        self.keys.push((shortcut.into(), stmt.into_stmt()));
+        self
+    }
+
     /// Appends a node to `<body>`.
     #[must_use]
     pub fn child(mut self, child: impl Into<Node<S>>) -> Self {
@@ -414,28 +448,32 @@ impl<S: Signals> Page<S> {
         out.push_str("<script type=\"module\"");
         write_attr(&mut out, "src", self.runtime);
         out.push_str("></script></head><body");
-        write_attr(&mut out, "data-hs-signals", &root.to_string());
-        if !self.computed.is_empty() {
-            let computed: Vec<Value> = self
-                .computed
-                .iter()
-                .map(|(path, value)| json!([path, value]))
-                .collect();
-            write_attr(
-                &mut out,
-                "data-hs-computed",
-                &Value::from(computed).to_string(),
-            );
-        }
-        if let Some(title) = &self.bound_title {
-            write_attr(&mut out, "data-hs-title", &title.to_string());
-        }
+        self.write_body_attrs(&mut out, &root);
         out.push('>');
         for child in &self.body {
             child.write(&mut out, Some(&ctx));
         }
         out.push_str("</body></html>");
         out
+    }
+
+    /// Writes the attributes of `<body>`, which the runtime reads when it starts.
+    fn write_body_attrs(&self, out: &mut String, root: &Value) {
+        write_attr(out, "data-hs-signals", &root.to_string());
+        if !self.computed.is_empty() {
+            let computed: Vec<Value> = self
+                .computed
+                .iter()
+                .map(|(path, value)| json!([path, value]))
+                .collect();
+            write_attr(out, "data-hs-computed", &Value::from(computed).to_string());
+        }
+        if let Some(title) = &self.bound_title {
+            write_attr(out, "data-hs-title", &title.to_string());
+        }
+        if !self.keys.is_empty() {
+            write_attr(out, "data-hs-on-key", &keys_json(&self.keys));
+        }
     }
 }
 

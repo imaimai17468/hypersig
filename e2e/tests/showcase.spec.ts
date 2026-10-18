@@ -106,6 +106,29 @@ test("a statement opens a dialog as a modal and another closes it", async ({ pag
   await expect(page.locator(".open-palette")).toBeFocused();
 });
 
+test("a page shortcut runs from anywhere and leaves the characters a field types", async ({ page }) => {
+  const field = page.getByPlaceholder("Search fruit");
+  await page.keyboard.press("/");
+  await expect(field).toBeFocused();
+  await page.keyboard.type("b/k");
+  await expect(field).toHaveValue("b/k");
+
+  const dialog = page.getByRole("dialog", { name: "Commands" });
+  await page.keyboard.press("ControlOrMeta+k");
+  await expect(dialog).toBeVisible();
+  const command = page.getByPlaceholder("Type a command");
+  await expect(command).toBeFocused();
+  await page.keyboard.type("k/");
+  await expect(command).toHaveValue("k/");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(field).toBeFocused();
+
+  await page.locator("h1").click();
+  await page.keyboard.press("ControlOrMeta+k");
+  await expect(dialog).toBeVisible();
+});
+
 test("a slow answer to an earlier search does not overwrite the answer to a later one", async ({ page }) => {
   const field = page.getByPlaceholder("Search fruit");
   const sent: string[] = [];
