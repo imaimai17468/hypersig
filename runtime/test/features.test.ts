@@ -908,6 +908,32 @@ describe("links", () => {
   });
 });
 
+describe("value operations", () => {
+  const texts = () => $$("#values span").map((span) => [span.id, span.textContent]);
+
+  it("write the same text on the server and in the browser", async () => {
+    serve("values_page");
+    const served = texts();
+    expect(served.every(([, text]) => text !== "")).toBe(true);
+    start();
+    await tick();
+    expect(texts()).toEqual(served);
+  });
+
+  it("test the characters of a string by ASCII class", async () => {
+    const runtime = mount("values");
+    await tick();
+    expect(Object.fromEntries(texts())).toEqual({ "zip-digits": "yes", "code-digits": "no", "code-upper": "yes", "code-space": "yes" });
+    runtime.store.set("zip", "15ー0001");
+    runtime.store.set("code", "１２");
+    await tick();
+    expect(Object.fromEntries(texts())).toMatchObject({ "zip-digits": "no", "code-upper": "no", "code-space": "no" });
+    runtime.store.set("zip", "");
+    await tick();
+    expect($("#zip-digits").textContent).toBe("yes");
+  });
+});
+
 describe("computed signals", () => {
   it("are computed on the server, recomputed in order in the browser, and rerun readers only when their value changes", async () => {
     serve("computed_page");

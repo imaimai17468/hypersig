@@ -23,6 +23,7 @@
 //! | `a.floor()`, `ceil`, `round`, `log10`, `a.pow(b)` | `["floor",a]`, `["ceil",a]`, `["round",a]`, `["log10",a]`, `["pow",a,b]` |
 //! | `a.concat(b)`, `trim`, `to_lowercase`, `to_uppercase` | `["concat",a,b]`, `["trim",a]`, `["lower",a]`, `["upper",a]` |
 //! | `a.contains(b)`, `a.starts_with(b)`, `a.char_count()` | `["contains",a,b]`, `["starts",a,b]`, `["chars",a]` |
+//! | `a.all_chars(c)`, `a.any_char(c)` | `["chars_all",a,class]`, `["chars_any",a,class]` |
 //! | `list.len()`, `list.nth(i)` | `["len",a]`, `["nth",a,i]` |
 //! | `Expr::random_below(n)`, `Expr::now()` | `["random",n]`, `["now"]` |
 //! | `list.count(\|item\| p)` | `["count",place,depth,p]` |
@@ -548,6 +549,31 @@ macro_rules! operations {
             pub fn starts_with(self, prefix: impl IntoExpr<S, String>) -> Expr<S, bool> {
                 Expr::binary("starts", self.into_expr(), prefix.into_expr())
             }
+
+            /// Whether every character of this string is in `class`, true for an empty string.
+            ///
+            /// ```
+            /// use hypersig::{CharClass, Signals};
+            /// use serde::{Deserialize, Serialize};
+            ///
+            /// #[derive(Signals, Serialize, Deserialize)]
+            /// struct Signup {
+            ///     zip: String,
+            /// }
+            ///
+            /// let zip = Signup::zip();
+            /// let _valid = zip.char_count().equals(7).and(zip.all_chars(CharClass::AsciiDigit));
+            /// ```
+            #[must_use]
+            pub fn all_chars(self, class: CharClass) -> Expr<S, bool> {
+                Expr::from_json(json!(["chars_all", self.into_expr().ast, class.name()]))
+            }
+
+            /// Whether some character of this string is in `class`, false for an empty string.
+            #[must_use]
+            pub fn any_char(self, class: CharClass) -> Expr<S, bool> {
+                Expr::from_json(json!(["chars_any", self.into_expr().ast, class.name()]))
+            }
         }
 
         impl<S, T $(, $r)?> $ty<S, Vec<T> $(, $r)?> {
@@ -790,6 +816,44 @@ impl NumberFormat {
 impl Default for NumberFormat {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// A set of ASCII characters that [`all_chars`](Expr::all_chars) and [`any_char`](Expr::any_char) test for.
+///
+/// Each class holds what the `char` method of the same name accepts, such
+/// as [`char::is_ascii_digit`]. A character outside ASCII is in no class,
+/// so the browser and the server agree whatever Unicode version each has.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum CharClass {
+    /// `0` to `9`.
+    AsciiDigit,
+    /// `0` to `9`, `a` to `f`, and `A` to `F`.
+    AsciiHexdigit,
+    /// `a` to `z` and `A` to `Z`.
+    AsciiAlphabetic,
+    /// `a` to `z`, `A` to `Z`, and `0` to `9`.
+    AsciiAlphanumeric,
+    /// `A` to `Z`.
+    AsciiUppercase,
+    /// `a` to `z`.
+    AsciiLowercase,
+    /// Space, tab, line feed, form feed, and carriage return.
+    AsciiWhitespace,
+}
+
+impl CharClass {
+    fn name(self) -> &'static str {
+        match self {
+            Self::AsciiDigit => "digit",
+            Self::AsciiHexdigit => "hex",
+            Self::AsciiAlphabetic => "alpha",
+            Self::AsciiAlphanumeric => "alnum",
+            Self::AsciiUppercase => "upper",
+            Self::AsciiLowercase => "lower",
+            Self::AsciiWhitespace => "space",
+        }
     }
 }
 

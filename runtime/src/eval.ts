@@ -107,6 +107,29 @@ function formatNumber(value: number, digits: number, group: string, point: strin
   return `${sign}${prefix}${grouped}${fraction === "" ? "" : point + fraction}${suffix}`;
 }
 
+/**
+ * The ASCII character classes of `CharClass` in `crates/hypersig/src/expr.rs`, by UTF-16 code unit.
+ * A unit outside ASCII, including each half of a surrogate pair, is in no class.
+ */
+const classes: Record<string, (unit: number) => boolean> = {
+  digit: (u) => u >= 0x30 && u <= 0x39,
+  hex: (u) => (u >= 0x30 && u <= 0x39) || (u >= 0x41 && u <= 0x46) || (u >= 0x61 && u <= 0x66),
+  alpha: (u) => (u >= 0x41 && u <= 0x5a) || (u >= 0x61 && u <= 0x7a),
+  alnum: (u) => (u >= 0x30 && u <= 0x39) || (u >= 0x41 && u <= 0x5a) || (u >= 0x61 && u <= 0x7a),
+  upper: (u) => u >= 0x41 && u <= 0x5a,
+  lower: (u) => u >= 0x61 && u <= 0x7a,
+  // Rust's `is_ascii_whitespace`, which leaves out the vertical tab.
+  space: (u) => u === 0x20 || u === 0x09 || u === 0x0a || u === 0x0c || u === 0x0d,
+};
+
+/** Whether every (`all`) or some code unit of `text` is in `test`. */
+function testUnits(text: string, test: (unit: number) => boolean, all: boolean): boolean {
+  for (let i = 0; i < text.length; i++) {
+    if (test(text.charCodeAt(i)) !== all) return !all;
+  }
+  return all;
+}
+
 const unary: Record<string, (a: never) => unknown> = {
   not: (a: unknown) => !a,
   str: (a: unknown) => String(a),
@@ -304,6 +327,12 @@ function build(ast: Ast): Compiled {
       const value = compile(rest[0]);
       const [digits, group, point, prefix, suffix] = rest.slice(1) as [number, string, string, string, string];
       return (ctx) => formatNumber(value(ctx) as number, digits, group, point, prefix, suffix);
+    }
+    case "chars_all":
+    case "chars_any": {
+      const [value, test, all] = [compile(rest[0]), classes[rest[1] as string], op === "chars_all"];
+      if (test === undefined) throw new AstError(ast);
+      return (ctx) => testUnits(value(ctx) as string, test, all);
     }
     case "get": {
       const [value, path] = [compile(rest[0]), rest[1] as string];

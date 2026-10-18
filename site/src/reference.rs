@@ -1533,6 +1533,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "Rust の `chars().count()` と同じく数えた、Unicode スカラー値の数",
                             },
                         ),
+                        (
+                            "all_chars",
+                            "struct.Expr.html#method.all_chars",
+                            L {
+                                en: "Whether every character of this string is in `class`, true for an empty string.",
+                                ja: "この文字列のどの文字も `class` に入るかどうか。空の文字列では true です。",
+                            },
+                        ),
+                        (
+                            "any_char",
+                            "struct.Expr.html#method.any_char",
+                            L {
+                                en: "Whether some character of this string is in `class`, false for an empty string.",
+                                ja: "この文字列のどれかの文字が `class` に入るかどうか。空の文字列では false です。",
+                            },
+                        ),
+                        (
+                            "CharClass",
+                            "enum.CharClass.html",
+                            L {
+                                en: "A set of ASCII characters that `all_chars` and `any_char` test for.",
+                                ja: "`all_chars` と `any_char` が調べる ASCII 文字の集まり",
+                            },
+                        ),
                     ],
                 },
                 Section {

@@ -52,6 +52,19 @@ describe("evaluate", () => {
     expect(evaluate(["format", ["lit", 2e21], 0, ",", ".", "", ""], ctx)).toBe("2e+21");
   });
 
+  it("tests characters by ASCII class as ssr.rs does", () => {
+    expect(evaluate(["chars_all", ["lit", "0123"], "digit"], ctx)).toBe(true);
+    expect(evaluate(["chars_all", ["lit", ""], "digit"], ctx)).toBe(true);
+    expect(evaluate(["chars_any", ["lit", ""], "digit"], ctx)).toBe(false);
+    expect(evaluate(["chars_all", ["lit", "１"], "digit"], ctx)).toBe(false);
+    expect(evaluate(["chars_all", ["lit", "aF9"], "hex"], ctx)).toBe(true);
+    expect(evaluate(["chars_any", ["lit", "a\vb"], "space"], ctx)).toBe(false);
+    expect(evaluate(["chars_any", ["lit", "a\fb"], "space"], ctx)).toBe(true);
+    expect(evaluate(["chars_all", ["lit", "aZ"], "alpha"], ctx)).toBe(true);
+    expect(evaluate(["chars_any", ["lit", "😀"], "alnum"], ctx)).toBe(false);
+    expect(() => evaluate(["chars_all", ["lit", "a"], "emoji"], ctx)).toThrow(AstError);
+  });
+
   it("names a value once for its body", () => {
     const rows = context({ rows: [{ v: 3 }, { v: 7 }] });
     const best = ["max_of", "rows", 0, ["item", 0, "v"]];

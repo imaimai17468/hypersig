@@ -14,8 +14,8 @@ use hypersig::html::{
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
-    Action, Expr, FileInput, Form, Fragment, NodeRef, Page, Patches, Rest, Route, Rules, Search,
-    Sig, Signals, Stmt, StreamAction, Upload, Validate, if_else,
+    Action, CharClass, Expr, FileInput, Form, Fragment, NodeRef, Page, Patches, Rest, Route, Rules,
+    Search, Sig, Signals, Stmt, StreamAction, Upload, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -743,6 +743,49 @@ fn write_or_compare(name: &str, text: &str) {
 }
 
 #[derive(Signals, Serialize, Deserialize)]
+struct Values {
+    zip: String,
+    code: String,
+}
+
+/// Text the server writes into the first HTML and the runtime writes again,
+/// one `<span>` per value operation, so a test can compare the two.
+fn values() -> (El<Values>, Values) {
+    let zip = Values::zip();
+    let code = Values::code();
+    let yes_no = |test: Expr<Values, bool>| if_else(test, "yes", "no");
+    let el = main().child(
+        div()
+            .id("values")
+            .child(
+                span()
+                    .id("zip-digits")
+                    .bind_text(yes_no(zip.all_chars(CharClass::AsciiDigit))),
+            )
+            .child(
+                span()
+                    .id("code-digits")
+                    .bind_text(yes_no(code.all_chars(CharClass::AsciiDigit))),
+            )
+            .child(
+                span()
+                    .id("code-upper")
+                    .bind_text(yes_no(code.any_char(CharClass::AsciiUppercase))),
+            )
+            .child(
+                span()
+                    .id("code-space")
+                    .bind_text(yes_no(code.any_char(CharClass::AsciiWhitespace))),
+            ),
+    );
+    let signals = Values {
+        zip: "1500001".to_owned(),
+        code: "Ab 12\u{ff11}".to_owned(),
+    };
+    (el, signals)
+}
+
+#[derive(Signals, Serialize, Deserialize)]
 struct Sums {
     a: i32,
     b: i32,
@@ -1122,6 +1165,10 @@ fn fixtures_match_the_builder() {
                 .expect("fixture JSON")
         ),
     );
+    let (el, signals) = values();
+    check("values", &el, &signals);
+    let (el, signals) = values();
+    check_page("values_page", el, signals);
     let document = computed_page();
     write_or_compare(
         "computed_page",

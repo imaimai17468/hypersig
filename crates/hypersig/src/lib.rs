@@ -70,7 +70,7 @@ pub use axum::{
     ActionResponse, Handler, PageResponse, RequestError, RequestKind, RouterExt, Unserved,
 };
 pub use expr::{
-    Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
+    CharClass, Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };
 pub use form::{FieldErrors, Form, Rules, Validate};
 pub use head::{OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError};

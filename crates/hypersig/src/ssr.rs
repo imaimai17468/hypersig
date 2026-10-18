@@ -380,6 +380,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "lower" => Value::from(s(&*eval(1)?)?.to_lowercase()),
         "upper" => Value::from(s(&*eval(1)?)?.to_uppercase()),
         "chars" => Value::from(s(&*eval(1)?)?.chars().count()),
+        "chars_all" | "chars_any" => test_chars(op, &*eval(1)?, arg(2)?)?,
         "len" => Value::from(eval(1)?.as_array().map_or(0, Vec::len)),
         "eq" => Value::Bool(equal(&*eval(1)?, &*eval(2)?)),
         "ne" => Value::Bool(!equal(&*eval(1)?, &*eval(2)?)),
@@ -393,6 +394,30 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         _ => return None,
     };
     Some(Cow::Owned(value))
+}
+
+/// `["chars_all",text,class]` and `["chars_any",text,class]`.
+fn test_chars(op: &str, text: &Value, class: &Value) -> Option<Value> {
+    let (text, class) = (s(text)?, char_class(class.as_str()?)?);
+    Some(Value::Bool(if op == "chars_all" {
+        text.chars().all(class)
+    } else {
+        text.chars().any(class)
+    }))
+}
+
+/// The test for one character that a class name stands for, as `classes` in `runtime/src/eval.ts` holds it.
+fn char_class(name: &str) -> Option<fn(char) -> bool> {
+    Some(match name {
+        "digit" => |c: char| c.is_ascii_digit(),
+        "hex" => |c: char| c.is_ascii_hexdigit(),
+        "alpha" => |c: char| c.is_ascii_alphabetic(),
+        "alnum" => |c: char| c.is_ascii_alphanumeric(),
+        "upper" => |c: char| c.is_ascii_uppercase(),
+        "lower" => |c: char| c.is_ascii_lowercase(),
+        "space" => |c: char| c.is_ascii_whitespace(),
+        _ => return None,
+    })
 }
 
 /// `["let",value,depth,body]`: `body` with `["var",depth]` standing for `value`.
@@ -545,6 +570,22 @@ mod tests {
             ["let", ["lit", 5], 1, ["sub", ["var", 1], ["var", 0]]]
         ]);
         assert_eq!(eval(&nested, &root), json!(3));
+    }
+
+    #[test]
+    fn tests_characters_by_ascii_class_as_the_runtime_does() {
+        let root = json!({});
+        let test =
+            |op: &str, text: &str, class: &str| eval(&json!([op, ["lit", text], class]), &root);
+        assert_eq!(test("chars_all", "0123", "digit"), json!(true));
+        assert_eq!(test("chars_all", "", "digit"), json!(true));
+        assert_eq!(test("chars_any", "", "digit"), json!(false));
+        assert_eq!(test("chars_all", "\u{ff11}", "digit"), json!(false));
+        assert_eq!(test("chars_all", "aF9", "hex"), json!(true));
+        assert_eq!(test("chars_any", "a\u{b}b", "space"), json!(false));
+        assert_eq!(test("chars_any", "a\u{c}b", "space"), json!(true));
+        assert_eq!(test("chars_all", "aZ", "alpha"), json!(true));
+        assert_eq!(test("chars_any", "😀", "alnum"), json!(false));
     }
 
     #[test]
