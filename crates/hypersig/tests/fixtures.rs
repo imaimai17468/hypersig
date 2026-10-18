@@ -14,8 +14,9 @@ use hypersig::html::{
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
-    Action, CharClass, Expr, FileInput, Form, Fragment, NodeRef, Page, Patches, Rest, Route, Rules,
-    Search, Sig, Signals, Stmt, StreamAction, Upload, Validate, if_else,
+    Action, CharClass, Expr, FileInput, Form, Fragment, IntlLocale, NodeRef, Page, Patches,
+    PluralCategory, Rest, Route, Rules, Search, Sig, Signals, Stmt, StreamAction, Upload, Validate,
+    if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -746,6 +747,7 @@ fn write_or_compare(name: &str, text: &str) {
 struct Values {
     zip: String,
     code: String,
+    count: i32,
 }
 
 /// Text the server writes into the first HTML and the runtime writes again,
@@ -753,6 +755,7 @@ struct Values {
 fn values() -> (El<Values>, Values) {
     let zip = Values::zip();
     let code = Values::code();
+    let count = Values::count();
     let yes_no = |test: Expr<Values, bool>| if_else(test, "yes", "no");
     let el = main().child(
         div()
@@ -776,11 +779,31 @@ fn values() -> (El<Values>, Values) {
                 span()
                     .id("code-space")
                     .bind_text(yes_no(code.any_char(CharClass::AsciiWhitespace))),
+            )
+            .child(
+                span()
+                    .id("items-en")
+                    .bind_text(
+                        count
+                            .to_text()
+                            .concat(count.plural(IntlLocale::En, |category| match category {
+                                PluralCategory::One => " item",
+                                _ => " items",
+                            })),
+                    ),
+            )
+            .child(
+                span().id("items-ja").bind_text(
+                    count
+                        .to_text()
+                        .concat(count.plural(IntlLocale::Ja, |_| " 点")),
+                ),
             ),
     );
     let signals = Values {
         zip: "1500001".to_owned(),
         code: "Ab 12\u{ff11}".to_owned(),
+        count: 1,
     };
     (el, signals)
 }

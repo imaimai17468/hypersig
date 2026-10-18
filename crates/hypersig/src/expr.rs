@@ -24,6 +24,7 @@
 //! | `a.concat(b)`, `trim`, `to_lowercase`, `to_uppercase` | `["concat",a,b]`, `["trim",a]`, `["lower",a]`, `["upper",a]` |
 //! | `a.contains(b)`, `a.starts_with(b)`, `a.char_count()` | `["contains",a,b]`, `["starts",a,b]`, `["chars",a]` |
 //! | `a.all_chars(c)`, `a.any_char(c)` | `["chars_all",a,class]`, `["chars_any",a,class]` |
+//! | `n.plural(locale, \|category\| form)` | `["plural",n,locale,[zero,one,two,few,many,other]]` |
 //! | `list.len()`, `list.nth(i)` | `["len",a]`, `["nth",a,i]` |
 //! | `Expr::random_below(n)`, `Expr::now()` | `["random",n]`, `["now"]` |
 //! | `list.count(\|item\| p)` | `["count",place,depth,p]` |

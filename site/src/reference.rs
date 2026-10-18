@@ -1470,6 +1470,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "plural",
+                            "struct.Expr.html#method.plural",
+                            L {
+                                en: "The form that `form` gives for the plural category of this number in `locale`.",
+                                ja: "この数の `locale` での複数形のカテゴリに対して、`form` が返す形",
+                            },
+                        ),
+                        (
+                            "PluralCategory",
+                            "enum.PluralCategory.html",
+                            L {
+                                en: "A plural category of the Unicode CLDR, which `Intl.PluralRules` picks for a number.",
+                                ja: "`Intl.PluralRules` が数に対して選ぶ、Unicode CLDR の複数形のカテゴリ",
+                            },
+                        ),
+                        (
+                            "IntlLocale",
+                            "enum.IntlLocale.html",
+                            L {
+                                en: "A locale that the browser's `Intl` writes text for, and the first HTML matches.",
+                                ja: "ブラウザの `Intl` がテキストを書くロケールで、最初の HTML も同じテキストになります。",
+                            },
+                        ),
+                        (
                             "to_text",
                             "struct.Expr.html#method.to_text",
                             L {

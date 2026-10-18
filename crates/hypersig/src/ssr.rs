@@ -381,6 +381,10 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "upper" => Value::from(s(&*eval(1)?)?.to_uppercase()),
         "chars" => Value::from(s(&*eval(1)?)?.chars().count()),
         "chars_all" | "chars_any" => test_chars(op, &*eval(1)?, arg(2)?)?,
+        "plural" => {
+            let index = crate::intl::plural_index(arg(2)?.as_str()?, f(&*eval(1)?)?)?;
+            return evaluate(arg(3)?.as_array()?.get(index)?, ctx);
+        }
         "len" => Value::from(eval(1)?.as_array().map_or(0, Vec::len)),
         "eq" => Value::Bool(equal(&*eval(1)?, &*eval(2)?)),
         "ne" => Value::Bool(!equal(&*eval(1)?, &*eval(2)?)),
@@ -586,6 +590,27 @@ mod tests {
         assert_eq!(test("chars_any", "a\u{c}b", "space"), json!(true));
         assert_eq!(test("chars_all", "aZ", "alpha"), json!(true));
         assert_eq!(test("chars_any", "😀", "alnum"), json!(false));
+    }
+
+    #[test]
+    fn picks_the_plural_form_as_plural_rules_does() {
+        let root = json!({});
+        let forms = json!([
+            ["lit", "z"],
+            ["lit", "1"],
+            ["lit", "2"],
+            ["lit", "f"],
+            ["lit", "m"],
+            ["lit", "o"]
+        ]);
+        let plural =
+            |locale: &str, n: f64| eval(&json!(["plural", ["lit", n], locale, forms]), &root);
+        assert_eq!(plural("en", 1.0), json!("1"));
+        assert_eq!(plural("en", -1.0), json!("1"));
+        assert_eq!(plural("en", 0.0), json!("o"));
+        assert_eq!(plural("en", 1.5), json!("o"));
+        assert_eq!(plural("en", 2.0), json!("o"));
+        assert_eq!(plural("ja", 1.0), json!("o"));
     }
 
     #[test]

@@ -52,6 +52,13 @@ describe("evaluate", () => {
     expect(evaluate(["format", ["lit", 2e21], 0, ",", ".", "", ""], ctx)).toBe("2e+21");
   });
 
+  it("picks the plural form as ssr.rs does", () => {
+    const forms = ["z", "1", "2", "f", "m", "o"].map((form) => ["lit", form]);
+    const plural = (locale: string, n: number) => evaluate(["plural", ["lit", n], locale, forms], ctx);
+    expect([1, -1, 0, 1.5, 2].map((n) => plural("en", n))).toEqual(["1", "1", "o", "o", "o"]);
+    expect(plural("ja", 1)).toBe("o");
+  });
+
   it("tests characters by ASCII class as ssr.rs does", () => {
     expect(evaluate(["chars_all", ["lit", "0123"], "digit"], ctx)).toBe(true);
     expect(evaluate(["chars_all", ["lit", ""], "digit"], ctx)).toBe(true);

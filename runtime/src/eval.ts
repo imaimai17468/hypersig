@@ -126,6 +126,9 @@ const classes: Record<string, (unit: number) => boolean> = {
   space: (u) => u === 0x20 || u === 0x09 || u === 0x0a || u === 0x0c || u === 0x0d,
 };
 
+/** The categories `Intl.PluralRules` picks from, in the order `["plural",...]` lists their forms. */
+const pluralCategories: readonly string[] = ["zero", "one", "two", "few", "many", "other"];
+
 /** Whether every (`all`) or some code unit of `text` is in `test`. */
 function testUnits(text: string, test: (unit: number) => boolean, all: boolean): boolean {
   for (let i = 0; i < text.length; i++) {
@@ -331,6 +334,14 @@ function build(ast: Ast): Compiled {
       const value = compile(rest[0]);
       const [digits, group, point, prefix, suffix] = rest.slice(1) as [number, string, string, string, string];
       return (ctx) => formatNumber(value(ctx) as number, digits, group, point, prefix, suffix);
+    }
+    case "plural": {
+      const [value, rules, forms] = [compile(rest[0]), new Intl.PluralRules(rest[1] as string), (rest[2] as unknown[]).map(compile)];
+      return (ctx) => {
+        const form = forms[pluralCategories.indexOf(rules.select(value(ctx) as number))];
+        if (form === undefined) throw new AstError(ast);
+        return form(ctx);
+      };
     }
     case "chars_all":
     case "chars_any": {

@@ -924,10 +924,19 @@ describe("value operations", () => {
     expect(texts()).toEqual(served);
   });
 
+  it("pick a plural form for the count", async () => {
+    const runtime = mount("values");
+    await tick();
+    expect([$("#items-en").textContent, $("#items-ja").textContent]).toEqual(["1 item", "1 点"]);
+    runtime.store.set("count", 3);
+    await tick();
+    expect([$("#items-en").textContent, $("#items-ja").textContent]).toEqual(["3 items", "3 点"]);
+  });
+
   it("test the characters of a string by ASCII class", async () => {
     const runtime = mount("values");
     await tick();
-    expect(Object.fromEntries(texts())).toEqual({ "zip-digits": "yes", "code-digits": "no", "code-upper": "yes", "code-space": "yes" });
+    expect(Object.fromEntries(texts())).toMatchObject({ "zip-digits": "yes", "code-digits": "no", "code-upper": "yes", "code-space": "yes" });
     runtime.store.set("zip", "15ー0001");
     runtime.store.set("code", "１２");
     await tick();
