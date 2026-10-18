@@ -64,6 +64,7 @@ use std::ops;
 use serde::Serialize;
 use serde_json::{Value, json};
 
+use crate::Segment;
 use crate::signal::Sig;
 
 /// An expression over the signals of `S` that evaluates to a `T` in the browser.
@@ -215,7 +216,7 @@ impl<S, T> fmt::Debug for Expr<S, T> {
 /// Conversion into an [`Expr`] over `S` of type `T`.
 ///
 /// Implemented for [`Expr`] itself, for [`Sig`] and [`Item`](crate::Item), for literals of
-/// `i32`, `f64`, `bool`, `String`, and `&str`, and for a reference to any
+/// `i32`, `i64`, `f64`, `bool`, `String`, and `&str`, and for a reference to any
 /// `Serialize` value, so an operand can be any of them.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not an expression of type `{T}` on the page whose signals are `{S}`",
@@ -254,7 +255,7 @@ macro_rules! literal {
     )*};
 }
 
-literal!(i32 => i32, f64 => f64, bool => bool, String => String, &str => String);
+literal!(i32 => i32, i64 => i64, f64 => f64, bool => bool, String => String, &str => String);
 
 macro_rules! tuple {
     ($(($expr:ident, $value:ident, $ty:ident)),+) => {
@@ -289,16 +290,23 @@ pub fn if_else<S, T>(
 
 /// A type the runtime does arithmetic on with the same result Rust would get.
 ///
-/// `i32` and `f64` only. JavaScript numbers are 64-bit floats, so integer
-/// division and 64-bit integers would come back with a different value. A
-/// result outside `i32`'s range fails to deserialize on the next action and
-/// the action answers 400.
+/// `i32`, `i64`, and `f64` only. JavaScript numbers are 64-bit floats, so
+/// integer division would come back with a different value, and only `f64`
+/// divides. A result outside `i32`'s range fails to deserialize on the next
+/// action and the action answers 400.
+///
+/// An `i64` is exact in the browser from -2^53 to 2^53
+/// (9,007,199,254,740,992). Past that the browser rounds it to the nearest
+/// double, and the server reads back the rounded value. Keep an amount of
+/// money in minor units, such as cents, in an `i64`, and show it with
+/// `(cents.to_f64() / 100.0).format(&format)`.
 #[diagnostic::on_unimplemented(
     message = "the browser does not do arithmetic on `{Self}`",
-    note = "arithmetic is supported on `i32` and `f64`, and division on `f64` only"
+    note = "arithmetic is supported on `i32`, `i64`, and `f64`, and division on `f64` only"
 )]
 pub trait Number: sealed::Sealed {}
 impl Number for i32 {}
+impl Number for i64 {}
 impl Number for f64 {}
 
 /// A type the runtime can order with `<` and friends.
@@ -309,21 +317,38 @@ impl Number for f64 {}
 /// server's once the page loads.
 pub trait Comparable: sealed::Sealed {}
 impl Comparable for i32 {}
+impl Comparable for i64 {}
 impl Comparable for f64 {}
 impl Comparable for String {}
 
 /// A type the runtime can turn into display text.
-pub trait Textual: sealed::Sealed {}
-impl Textual for i32 {}
+///
+/// It is implemented for `f64`, `bool`, and every [`Segment`]: the
+/// integers, `String`, and an enum with `#[derive(Segment)]`, whose text is
+/// the string serde writes for the variant.
+#[diagnostic::on_unimplemented(
+    message = "the browser cannot write `{Self}` as text",
+    note = "`to_text` takes a number, a `bool`, a `String`, or an enum with `#[derive(Segment)]`"
+)]
+pub trait Textual: sealed::TextSeal {}
+impl<T: Segment> Textual for T {}
 impl Textual for f64 {}
 impl Textual for bool {}
 
 mod sealed {
+    use crate::Segment;
+
     pub trait Sealed {}
     impl Sealed for i32 {}
+    impl Sealed for i64 {}
     impl Sealed for f64 {}
     impl Sealed for bool {}
     impl Sealed for String {}
+
+    pub trait TextSeal {}
+    impl<T: Segment> TextSeal for T {}
+    impl TextSeal for f64 {}
+    impl TextSeal for bool {}
 }
 
 /// Defines the operator impls and methods on both `Expr` and `Sig`, so a
@@ -984,6 +1009,28 @@ mod tests {
         assert_eq!(
             push.to_json(),
             r#"["push","todos",["with",["lit",{"done":false,"title":""}],"title",["trim",["sig","name"]]]]"#
+        );
+    }
+
+    #[derive(crate::Segment, Serialize, Deserialize)]
+    #[serde(rename_all = "kebab-case")]
+    enum Status {
+        InReview,
+    }
+
+    #[test]
+    fn writes_a_segment_enum_and_an_i64_as_text() {
+        let status: Sig<Page, Status> = sig("status");
+        let cents: Sig<Page, i64> = sig("cents");
+        let e = status.to_text().concat((cents + 1).to_text());
+        assert_eq!(
+            e.to_json(),
+            r#"["concat",["str",["sig","status"]],["str",["add",["sig","cents"],["lit",1]]]]"#
+        );
+        let literal: Expr<Page, Status> = Expr::lit(&Status::InReview);
+        assert_eq!(
+            literal.to_text().to_json(),
+            r#"["str",["lit","in-review"]]"#
         );
     }
 

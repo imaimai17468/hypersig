@@ -225,7 +225,7 @@ The `hypersig_i18n` crate keeps each text with its translations in one value. An
 
 ## Limitations
 
-In hypersig the server holds the state. What the browser can do on its own is the set of operations and statements hypersig provides, such as arithmetic on `i32` and `f64`, string and list operations, and focus. Anything else goes through a server action, so it responds a network round trip later.
+In hypersig the server holds the state. What the browser can do on its own is the set of operations and statements hypersig provides, such as arithmetic on `i32`, `i64`, and `f64`, string and list operations, and focus. Anything else goes through a server action, so it responds a network round trip later.
 
 It does not suit these applications:
 

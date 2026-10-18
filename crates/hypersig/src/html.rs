@@ -850,15 +850,17 @@ impl Orientation {
 /// A field type that a form control can be bound to with [`El::bind`].
 ///
 /// `String` binds to the value of a text field, `<textarea>`, or `<select>`,
-/// `bool` to `checked`, and `i32` and `f64` to a number or range field.
+/// `bool` to `checked`, and `i32`, `i64`, and `f64` to a number or range
+/// field.
 #[diagnostic::on_unimplemented(
     message = "a form control cannot be bound to a `{Self}` signal",
-    note = "bind `String`, `bool`, `i32`, or `f64`; for other types use `bind_select` or `bind_radio`"
+    note = "bind `String`, `bool`, `i32`, `i64`, or `f64`; for other types use `bind_select` or `bind_radio`"
 )]
 pub trait Bindable: sealed::Sealed {}
 impl Bindable for String {}
 impl Bindable for bool {}
 impl Bindable for i32 {}
+impl Bindable for i64 {}
 impl Bindable for f64 {}
 
 mod sealed {
@@ -872,6 +874,9 @@ mod sealed {
         const KIND: &'static str = "bool";
     }
     impl Sealed for i32 {
+        const KIND: &'static str = "int";
+    }
+    impl Sealed for i64 {
         const KIND: &'static str = "int";
     }
     impl Sealed for f64 {

@@ -1,0 +1,17 @@
+error[E0599]: the method `to_text` exists for struct `Sig<Shop, Size>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/text_from_plain_enum.rs:19:48
+   |
+ 8 | enum Size {
+   | --------- doesn't satisfy `Size: Segment` or `Size: Textual`
+...
+19 |     let _ = p::<Shop>().bind_text(Shop::size().to_text());
+   |                                                ^^^^^^^ method cannot be called on `Sig<Shop, Size>` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `Size: Segment`
+           which is required by `Size: Textual`
+note: the trait `Segment` must be implemented
+  --> src/route.rs
+   |
+   | pub trait Segment: sealed::Sealed + Sized {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

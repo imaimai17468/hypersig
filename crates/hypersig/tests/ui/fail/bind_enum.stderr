@@ -11,18 +11,13 @@ help: the trait `Bindable` is not implemented for `Size`
    |
  7 | enum Size {
    | ^^^^^^^^^
-   = note: bind `String`, `bool`, `i32`, or `f64`; for other types use `bind_select` or `bind_radio`
-help: the following other types implement trait `Bindable`
-  --> src/html.rs
-   |
-   | impl Bindable for String {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^^ `String`
-   | impl Bindable for bool {}
-   | ^^^^^^^^^^^^^^^^^^^^^^ `bool`
-   | impl Bindable for i32 {}
-   | ^^^^^^^^^^^^^^^^^^^^^ `i32`
-   | impl Bindable for f64 {}
-   | ^^^^^^^^^^^^^^^^^^^^^ `f64`
+   = note: bind `String`, `bool`, `i32`, `i64`, or `f64`; for other types use `bind_select` or `bind_radio`
+   = help: the following other types implement trait `Bindable`:
+             String
+             bool
+             f64
+             i32
+             i64
 note: required by a bound in `El::<S>::bind`
   --> src/html.rs
    |

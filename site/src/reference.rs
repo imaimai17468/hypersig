@@ -1239,8 +1239,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         ja: "式を組み立てる",
                     },
                     text: L {
-                        en: "`+`, `-`, `*`, and `%` work on `i32` and `f64`, `/` on `f64`, and `!` on `bool`.",
-                        ja: "`+`、`-`、`*`、`%` は `i32` と `f64` に、`/` は `f64` に、`!` は `bool` に使えます。",
+                        en: "`+`, `-`, `*`, and `%` work on `i32`, `i64`, and `f64`, `/` on `f64`, and `!` on `bool`.",
+                        ja: "`+`、`-`、`*`、`%` は `i32`、`i64`、`f64` に、`/` は `f64` に、`!` は `bool` に使えます。",
                     },
                     rows: &[
                         (

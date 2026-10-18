@@ -9,6 +9,8 @@ help: the following other types implement trait `Comparable`
    |
    | impl Comparable for i32 {}
    | ^^^^^^^^^^^^^^^^^^^^^^^ `i32`
+   | impl Comparable for i64 {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^ `i64`
    | impl Comparable for f64 {}
    | ^^^^^^^^^^^^^^^^^^^^^^^ `f64`
    | impl Comparable for String {}

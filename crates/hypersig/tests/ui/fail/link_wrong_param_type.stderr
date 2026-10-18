@@ -14,8 +14,8 @@ help: the trait `IntoExpr<_, i32>` is not implemented for `&str`
    |         impl<S> IntoExpr<S, $target> for $ty {
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
-   | literal!(i32 => i32, f64 => f64, bool => bool, String => String, &str => String);
-   | -------------------------------------------------------------------------------- in this macro invocation
+   | literal!(i32 => i32, i64 => i64, f64 => f64, bool => bool, String => String, &str => String);
+   | -------------------------------------------------------------------------------------------- in this macro invocation
    = help: for that trait implementation, expected `String`, found `i32`
 note: required by a bound in `Route::<P, Q>::link_with`
   --> src/route.rs
