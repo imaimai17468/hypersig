@@ -24,3 +24,7 @@ impl ::hypersig::Segment for Color {
         )
     }
 }
+#[automatically_derived]
+impl ::hypersig::Variants for Color {
+    const VARIANTS: &'static [Self] = &[Self::Red, Self::Green, Self::r#Type];
+}

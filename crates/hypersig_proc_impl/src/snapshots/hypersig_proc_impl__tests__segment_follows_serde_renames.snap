@@ -24,3 +24,7 @@ impl ::hypersig::Segment for Locale {
         )
     }
 }
+#[automatically_derived]
+impl ::hypersig::Variants for Locale {
+    const VARIANTS: &'static [Self] = &[Self::En, Self::JaJp, Self::ZhHant];
+}

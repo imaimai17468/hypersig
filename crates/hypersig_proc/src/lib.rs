@@ -12,7 +12,8 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
 
 /// Implements `hypersig::Segment` for an enum whose variants have no fields.
 ///
-/// See `hypersig::Segment` for what the expansion contains.
+/// It also implements `hypersig::Variants`, which lists the variants. See
+/// `hypersig::Segment` for what the expansion contains.
 #[proc_macro_derive(Segment)]
 pub fn derive_segment(input: TokenStream) -> TokenStream {
     hypersig_proc_impl::derive_segment(input.into()).into()

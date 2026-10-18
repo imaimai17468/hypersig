@@ -1,0 +1,16 @@
+error[E0599]: the method `label` exists for struct `Sig<Ticket, Status>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/label_plain_enum.rs:18:30
+   |
+ 7 | enum Status {
+   | ----------- doesn't satisfy `Status: Variants`
+...
+18 |     let _ = Ticket::status().label(|status| match status {
+   |             -----------------^^^^^ method cannot be called on `Sig<Ticket, Status>` due to unsatisfied trait bounds
+   |
+   = note: the following trait bounds were not satisfied:
+           `Status: Variants`
+note: the trait `Variants` must be implemented
+  --> src/route.rs
+   |
+   | pub trait Variants: Segment + 'static {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

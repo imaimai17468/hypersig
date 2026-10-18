@@ -155,7 +155,8 @@ fn expand_search(input: TokenStream) -> syn::Result<TokenStream> {
 
 /// Expands `#[derive(Segment)]` for the enum in `input`.
 ///
-/// The expansion implements `hypersig::Segment` and its seal for the enum. A
+/// The expansion implements `hypersig::Segment` and its seal for the enum,
+/// and `hypersig::Variants` with every variant in declaration order. A
 /// segment is the string serde writes for the variant: its name, renamed by
 /// `#[serde(rename_all = "...")]` on the enum or `#[serde(rename = "...")]`
 /// on the variant as serde renames it, so the server and the browser write
@@ -245,6 +246,11 @@ fn expand_segment(input: TokenStream) -> syn::Result<TokenStream> {
                     #(Self::#idents => #names,)*
                 })
             }
+        }
+
+        #[automatically_derived]
+        impl ::hypersig::Variants for #name {
+            const VARIANTS: &'static [Self] = &[#(Self::#idents),*];
         }
     })
 }

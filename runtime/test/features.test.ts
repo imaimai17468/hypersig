@@ -995,6 +995,18 @@ describe("value operations", () => {
     expect([$("#ago-en").textContent, $("#ago-ja").textContent]).toEqual(["2 days ago", "2 日前"]);
   });
 
+  it("label each variant of an enum", async () => {
+    const runtime = mount("values");
+    await tick();
+    expect($("#status").textContent).toBe("In review");
+    runtime.store.set("status", "closed");
+    await tick();
+    expect($("#status").textContent).toBe("Closed");
+    runtime.store.set("status", "open");
+    await tick();
+    expect($("#status").textContent).toBe("Open");
+  });
+
   it("pick a plural form for the count", async () => {
     const runtime = mount("values");
     await tick();

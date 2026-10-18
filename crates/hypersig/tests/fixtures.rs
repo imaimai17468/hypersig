@@ -15,7 +15,7 @@ use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
     Action, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment, IntlLocale, NodeRef,
-    Page, Part, Patches, PluralCategory, Rest, Route, Rules, Search, Sig, Signals, Stmt,
+    Page, Part, Patches, PluralCategory, Rest, Route, Rules, Search, Segment, Sig, Signals, Stmt,
     StreamAction, TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
@@ -865,6 +865,15 @@ struct Values {
     count: i32,
     posted: Timestamp,
     now: Timestamp,
+    status: Status,
+}
+
+#[derive(Segment, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+enum Status {
+    Open,
+    InReview,
+    Closed,
 }
 
 /// Text the server writes into the first HTML and the runtime writes again,
@@ -874,54 +883,62 @@ fn values() -> (El<Values>, Values) {
     let code = Values::code();
     let count = Values::count();
     let yes_no = |test: Expr<Values, bool>| if_else(test, "yes", "no");
-    let el = main().child(
-        div()
-            .id("values")
-            .child(
-                span()
-                    .id("zip-digits")
-                    .bind_text(yes_no(zip.all_chars(CharClass::AsciiDigit))),
-            )
-            .child(
-                span()
-                    .id("code-digits")
-                    .bind_text(yes_no(code.all_chars(CharClass::AsciiDigit))),
-            )
-            .child(
-                span()
-                    .id("code-upper")
-                    .bind_text(yes_no(code.any_char(CharClass::AsciiUppercase))),
-            )
-            .child(
-                span()
-                    .id("code-space")
-                    .bind_text(yes_no(code.any_char(CharClass::AsciiWhitespace))),
-            )
-            .child(
-                span()
-                    .id("items-en")
-                    .bind_text(
-                        count
-                            .to_text()
-                            .concat(count.plural(IntlLocale::En, |category| match category {
+    let el =
+        main().child(
+            div()
+                .id("values")
+                .child(
+                    span()
+                        .id("zip-digits")
+                        .bind_text(yes_no(zip.all_chars(CharClass::AsciiDigit))),
+                )
+                .child(
+                    span()
+                        .id("code-digits")
+                        .bind_text(yes_no(code.all_chars(CharClass::AsciiDigit))),
+                )
+                .child(
+                    span()
+                        .id("code-upper")
+                        .bind_text(yes_no(code.any_char(CharClass::AsciiUppercase))),
+                )
+                .child(
+                    span()
+                        .id("code-space")
+                        .bind_text(yes_no(code.any_char(CharClass::AsciiWhitespace))),
+                )
+                .child(
+                    span()
+                        .id("items-en")
+                        .bind_text(count.to_text().concat(count.plural(
+                            IntlLocale::En,
+                            |category| match category {
                                 PluralCategory::One => " item",
                                 _ => " items",
-                            })),
+                            },
+                        ))),
+                )
+                .child(
+                    span().id("items-ja").bind_text(
+                        count
+                            .to_text()
+                            .concat(count.plural(IntlLocale::Ja, |_| " 点")),
                     ),
-            )
-            .child(
-                span().id("items-ja").bind_text(
-                    count
-                        .to_text()
-                        .concat(count.plural(IntlLocale::Ja, |_| " 点")),
-                ),
-            ),
-    );
+                )
+                .child(span().id("status").bind_text(Values::status().label(
+                    |status| match status {
+                        Status::Open => "Open",
+                        Status::InReview => "In review",
+                        Status::Closed => "Closed",
+                    },
+                ))),
+        );
     let el = el.child(dates());
     let signals = Values {
         zip: "1500001".to_owned(),
         code: "Ab 12\u{ff11}".to_owned(),
         count: 1,
+        status: Status::InReview,
         // 2026-01-05 15:04:05 UTC, and three minutes later.
         posted: Timestamp::from_millis(1_767_625_445_000),
         now: Timestamp::from_millis(1_767_625_625_000),

@@ -946,7 +946,9 @@ pub(crate) fn query_string(value: &Value) -> String {
 /// that reads the enum from a signal and the server write the same URL. The
 /// derive follows `#[serde(rename_all = "...")]` on the enum and
 /// `#[serde(rename = "...")]` on a variant, and rejects any other serde
-/// attribute, which could make serde write a variant differently.
+/// attribute, which could make serde write a variant differently. The
+/// derive also implements [`Variants`], which lists the variants for
+/// [`label`](crate::Expr::label).
 ///
 /// ```
 /// use hypersig::{Page, Route, Segment, Signals};
@@ -983,6 +985,22 @@ pub trait Segment: sealed::Sealed + Sized {
     /// Whether the value fills a `{*name}` segment, which may hold `/`.
     #[doc(hidden)]
     const REST: bool = false;
+}
+
+/// An enum with `#[derive(Segment)]`, whose variants the derive lists.
+///
+/// [`label`](crate::Expr::label) calls a function once per variant, so a
+/// `match` in that function names a text for each one, and the compiler
+/// rejects a `match` that leaves a variant out. Only the derive implements
+/// it, from the enum's own variants.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` does not list its variants",
+    note = "`label` takes an enum with `#[derive(Segment)]`, which lists every variant"
+)]
+pub trait Variants: Segment + 'static {
+    /// Every variant, in declaration order.
+    #[doc(hidden)]
+    const VARIANTS: &'static [Self];
 }
 
 /// The rest of a path, from a `{*name}` segment at its end, which may hold `/`.

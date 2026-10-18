@@ -51,6 +51,7 @@ mod form;
 mod head;
 pub mod html;
 mod intl;
+mod label;
 mod page;
 mod patch;
 #[cfg(feature = "axum")]
@@ -85,6 +86,7 @@ pub use page::Page;
 pub use patch::{Fragment, ListPatch, Patches, SignalPatch, fragment};
 pub use route::{
     Base, Extends, Link, Params, Rest, Route, Search, SearchScalar, SearchValue, Segment, Url,
+    Variants,
 };
 pub use signal::{Item, Local, MAX_DEPTH, Part, Root, Sig, Signals};
 pub use upload::{FileInput, Upload};

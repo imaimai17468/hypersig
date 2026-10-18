@@ -1590,6 +1590,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "label",
+                            "struct.Expr.html#method.label",
+                            L {
+                                en: "The text `label` gives for this value's variant, with every variant covered.",
+                                ja: "この値のバリアントに対して `label` が返すテキスト。どのバリアントにもテキストが要ります。",
+                            },
+                        ),
+                        (
+                            "Variants",
+                            "trait.Variants.html",
+                            L {
+                                en: "An enum with `#[derive(Segment)]`, whose variants the derive lists.",
+                                ja: "`#[derive(Segment)]` を付けた enum で、derive がバリアントを並べます。",
+                            },
+                        ),
+                        (
                             "concat",
                             "struct.Expr.html#method.concat",
                             L {
