@@ -72,6 +72,12 @@ A page or action handler may take one axum extractor between the state and its a
 
 An `Upload<S, A>` is an action that also receives the files picked in a `FileInput<S>`. The page puts `PICTURE.input()` in the page and calls `AVATAR.call(PICTURE)`, and the router serves it with `RouterExt::upload`, whose handler gets the arguments and each file's name, media type, and bytes as an `Uploaded<A>`. Both constants carry the page's type, so a file input from another page does not compile. A cross-site form can send a `multipart/form-data` body, so the runtime adds a header no form can set, and the router refuses an upload without it with a 403. A body longer than 8 MiB, or the limit `Upload::max_bytes` sets, gets a 413. For files too large to hold in memory, `RouterExt::upload_stream` hands the handler an `UploadStream<A>` instead, from which it reads each file in chunks as they arrive, and the limit fails the read with a 413 once the body passes it. The [`auth`](examples/auth) example uploads a member's picture and checks its bytes.
 
+## Parts shared across pages
+
+A piece that sits on several pages, such as a sign-out button in an app's shell or a newsletter form in a footer, is a `Part`: its own signal struct, an element built by `Part::render`, and actions over that struct. A page whose struct has a field of the part's type embeds it with `html::part(Shop::footer())`, and the part writes its paths under that field. Each call the part makes names the field in a header, so the one handler registered for the part's action serves every page that embeds it, and the signals it patches and the fragments it renders again land under the field the call came from. Calling the part's action outside the part, or embedding the part at a field of a list item, is a compile error.
+
+`Call::on_error` runs a statement with the error text when that one call fails, and `Call::on_success` runs one after its patches are applied. Both run where the call was made, and `let_in_stmt` names a value when the call is sent, so a page that adds several items before the server answers marks only the item whose save failed. The [`storefront`](examples/storefront) example puts one newsletter part on two pages and saves a wish list this way.
+
 ## Quick start
 
 Add the dependencies to `Cargo.toml`. hypersig is not on crates.io yet, so it comes from Git.
