@@ -106,6 +106,34 @@ async fn an_upload_without_files_still_reaches_the_handler() {
 }
 
 #[tokio::test]
+async fn an_upload_skips_a_part_other_than_a_file() {
+    let body = format!(
+        "--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"args\"\r\n\r\n\"mixed\"\r\n\
+         --{BOUNDARY}\r\nContent-Disposition: form-data; name=\"note\"\r\n\r\nnot a file\r\n\
+         --{BOUNDARY}\r\nContent-Disposition: form-data; name=\"files\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\none\r\n\
+         --{BOUNDARY}--\r\n"
+    );
+    let (status, text) = send(upload(&[FROM_PAGE], body)).await;
+    assert_eq!(status, StatusCode::OK, "{text}");
+    assert!(
+        text.contains(r#""summary":"mixed a.txt:text/plain:one""#),
+        "{text}"
+    );
+}
+
+#[tokio::test]
+async fn an_upload_whose_first_part_is_not_the_arguments_gets_400() {
+    let body = format!(
+        "--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"files\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\none\r\n\
+         --{BOUNDARY}\r\nContent-Disposition: form-data; name=\"args\"\r\n\r\n\"late\"\r\n\
+         --{BOUNDARY}--\r\n"
+    );
+    let (status, text) = send(upload(&[FROM_PAGE], body)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(text, "the upload's first part is not the arguments");
+}
+
+#[tokio::test]
 async fn an_upload_without_the_runtime_header_gets_403() {
     let body = multipart("\"x\"", &[("a.txt", "text/plain", "one")]);
     let (status, text) = send(upload(&[], body)).await;
