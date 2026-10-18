@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use axum::Router;
 use hypersig::html::{
-    El, Event, Key, Stylesheet, button, div, each_keyed, form, h1, h2, input, label, li, p,
+    El, Event, Key, Stylesheet, button, div, each, each_keyed, form, h1, h2, input, label, li, p,
     section, select, small, span, textarea, ul,
 };
 use hypersig::{
@@ -113,6 +113,9 @@ struct Showcase {
     feed: Feed,
     look: Look,
     command: String,
+    numbers: Vec<i32>,
+    loading_more: bool,
+    more: bool,
 }
 
 hypersig::routes! {
@@ -133,6 +136,11 @@ const FEED_START: i32 = 41;
 const FEED_PAGE: i32 = 5;
 
 const PALETTE: DialogRef<Showcase> = DialogRef::new("palette");
+const MORE: Action<Showcase, i32> = Action::get("/more");
+
+/// How many numbers one load adds, and how many there are in all.
+const PAGE: i32 = 20;
+const LAST: i32 = 100;
 
 const NOTE_LIMIT: i32 = 40;
 
@@ -654,6 +662,9 @@ async fn index((): (), find: Find) -> Page<Showcase> {
             tone: Tone::Calm,
         },
         command: String::new(),
+        numbers: (1..=PAGE).collect(),
+        loading_more: false,
+        more: true,
     };
     let query = Showcase::search().at(Search::query());
     Page::new("hypersig showcase", signals)
@@ -675,6 +686,7 @@ async fn index((): (), find: Find) -> Page<Showcase> {
         .child(order_form())
         .child(feed())
         .child(styles())
+        .child(numbers())
 }
 
 /// Sends only the notes before `oldest`, which the browser puts above the ones it shows.
@@ -727,6 +739,36 @@ async fn search_fruit((): (), query: String) -> Patches<Showcase> {
         .push_url(INDEX.url(Find::of(query)))
 }
 
+/// A list that loads the next numbers when the element after it scrolls into view.
+fn numbers() -> El<Showcase> {
+    let numbers = Showcase::numbers();
+    let loading = Showcase::loading_more();
+    section()
+        .id("numbers")
+        .child(h2().text("Loading as you scroll"))
+        .child(ul().child(each(numbers, |n| li().bind_text(n.value().to_text()))))
+        .child(
+            p().class(class::MORE)
+                .show(Showcase::more().and(!loading))
+                .on_visible(MORE.call_with(numbers.len()).indicator(loading))
+                .text("More…"),
+        )
+        .child(
+            p().class(class::END)
+                .show(!Showcase::more())
+                .text("That is all."),
+        )
+}
+
+async fn more((): (), shown: i32) -> Patches<Showcase> {
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    let end = (shown + PAGE).min(LAST);
+    Showcase::numbers()
+        .patch((1..=end).collect())
+        .and(Showcase::more().patch(end < LAST))
+        .into()
+}
+
 async fn order((): (), (quantity, size, gift): (i32, Size, bool)) -> Patches<Showcase> {
     tokio::time::sleep(Duration::from_millis(300)).await;
     let size = match size {
@@ -775,6 +817,8 @@ mod class {
     pub const DISMISS: Class = Class::new("dismiss");
     pub const OPEN_PALETTE: Class = Class::new("open-palette");
     pub const CLOSE_PALETTE: Class = Class::new("close-palette");
+    pub const MORE: Class = Class::new("more");
+    pub const END: Class = Class::new("end");
 }
 
 const STYLE: Stylesheet = Stylesheet::new("
@@ -810,7 +854,8 @@ async fn main() -> std::io::Result<()> {
         .action(OLDER, older)
         .action(NEWER, newer)
         .action(STAR, star)
-        .action(DISMISS, dismiss);
+        .action(DISMISS, dismiss)
+        .action(MORE, more);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3003".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

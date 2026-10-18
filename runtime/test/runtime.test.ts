@@ -627,6 +627,37 @@ describe("Runtime", () => {
   });
 });
 
+describe("visibility", () => {
+  it("runs an on-visible statement each time the element comes into view, and stops watching it once it leaves the page", () => {
+    let report!: (entries: { target: Element; isIntersecting: boolean }[]) => void;
+    const observed: Element[] = [];
+    const unobserved: Element[] = [];
+    class Observer {
+      constructor(callback: (entries: unknown[], observer: Observer) => void) {
+        report = (entries) => callback(entries, this);
+      }
+      observe(target: Element) {
+        observed.push(target);
+      }
+      unobserve(target: Element) {
+        unobserved.push(target);
+      }
+    }
+    vi.stubGlobal("IntersectionObserver", Observer);
+    const runtime = mount(`<p id="end" data-hs-on-visible='["set","loads",["add",["sig","loads"],["lit",1]]]'></p>`, { loads: 0 });
+    const end = document.getElementById("end")!;
+    expect(observed).toEqual([end]);
+    report([{ target: end, isIntersecting: true }]);
+    report([{ target: end, isIntersecting: false }]);
+    report([{ target: end, isIntersecting: true }]);
+    expect(runtime.store.get("loads")).toBe(2);
+    end.remove();
+    report([{ target: end, isIntersecting: false }]);
+    expect(unobserved).toEqual([end]);
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("calls", () => {
   /** A fetch whose answers the test settles one by one, which rejects once its request is aborted. */
   function pendingFetch() {

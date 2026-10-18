@@ -608,6 +608,8 @@ pub enum Event {
     MouseLeave,
     /// Runs once when the element enters the document.
     Load,
+    /// The element comes into the viewport. [`El::on_visible`] has the details.
+    Visible,
 }
 
 impl Event {
@@ -624,6 +626,7 @@ impl Event {
             Self::MouseEnter => "data-hs-on-mouseenter",
             Self::MouseLeave => "data-hs-on-mouseleave",
             Self::Load => "data-hs-on-load",
+            Self::Visible => "data-hs-on-visible",
         }
     }
 }
@@ -1364,6 +1367,47 @@ impl<S> El<S> {
     #[must_use]
     pub fn on_load(self, stmt: impl IntoStmt<S>) -> Self {
         self.on(Event::Load, stmt)
+    }
+
+    /// Runs `stmt` each time the element comes into the viewport.
+    ///
+    /// It runs when the element is added in view, and again each time it
+    /// enters the viewport after leaving it. An element hidden by
+    /// [`El::show`] is out of view, so showing it again in view runs `stmt`.
+    /// The browser decides with an `IntersectionObserver`, and a browser
+    /// without one never runs `stmt`.
+    ///
+    /// For a list that loads more as the visitor scrolls, put an element
+    /// after the items and hide it while a load is running and once nothing
+    /// is left. When the new items leave it in view, showing it again loads
+    /// the next page.
+    ///
+    /// ```
+    /// use hypersig::html::{div, each, li, ul};
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Feed {
+    ///     items: Vec<String>,
+    ///     loading: bool,
+    ///     more: bool,
+    /// }
+    ///
+    /// // The handler appends the items after the first `i32` and sets `more`.
+    /// const MORE: Action<Feed, i32> = Action::get("/more");
+    /// let feed = div::<Feed>()
+    ///     .child(ul().child(each(Feed::items(), |item| li().bind_text(item))))
+    ///     .child(
+    ///         div()
+    ///             .show(Feed::more().and(!Feed::loading()))
+    ///             .on_visible(MORE.call_with(Feed::items().len()).indicator(Feed::loading())),
+    ///     );
+    /// assert!(feed.render().contains("data-hs-on-visible"));
+    /// ```
+    #[must_use]
+    pub fn on_visible(self, stmt: impl IntoStmt<S>) -> Self {
+        self.on(Event::Visible, stmt)
     }
 
     /// Runs `stmt` when `shortcut` is pressed while focus is in this element.

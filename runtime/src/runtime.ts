@@ -28,6 +28,7 @@ const ATTRIBUTES = [
   "each",
   "if",
   "on-load",
+  "on-visible",
   "on-key",
   ...BUBBLING.map((type) => `on-${type}`),
   ...DIRECT.map((type) => `on-${type}`),
@@ -198,7 +199,7 @@ interface ElementState {
   source?: Element;
   scope?: readonly Slot[];
   effects?: Effect[];
-  /** Whether its on-load and on-interval statements have started. */
+  /** Whether its on-load, on-interval, and on-visible statements have started. */
   started?: boolean;
   /** Whether it is the root of a list item or a condition. */
   root?: boolean;
@@ -286,6 +287,21 @@ export class Runtime implements Host {
   /** The rows with parts to run, in the order they were marked. */
   #queue: Row[] = [];
   readonly #listParts = new WeakMap<HTMLTemplateElement, ListParts>();
+  /**
+   * Reports each element with an on-visible statement as it enters or leaves
+   * the viewport, and once when it starts being observed. Absent where the
+   * browser has no `IntersectionObserver`.
+   */
+  readonly #visibility =
+    typeof IntersectionObserver === "undefined"
+      ? null
+      : new IntersectionObserver((entries, observer) => {
+          for (const { target, isIntersecting } of entries) {
+            // An element leaves the viewport as it leaves the document, so it is reported once more then.
+            if (!target.isConnected) observer.unobserve(target);
+            else if (isIntersecting) this.#runAttribute(this.#attr(target, "data-hs-on-visible")!, target);
+          }
+        });
 
   constructor(root: Element, initial: Values) {
     this.#root = root;
@@ -402,6 +418,7 @@ export class Runtime implements Host {
     if (Array.isArray(interval)) this.#interval(element, interval[0] as number, interval[1]);
     const timeout = parse(this.#attr(element, "data-hs-on-timeout"));
     if (Array.isArray(timeout)) this.#timeout(element, timeout[0] as number, timeout[1]);
+    if (this.#attr(element, "data-hs-on-visible") !== null) this.#visibility?.observe(element);
   }
 
   /** The `data-hs-*` attribute `name` of `element`, read from its template element where it has one. */
@@ -2049,7 +2066,8 @@ function sources(plan: Plan, visit: (source: Element) => void): void {
 function partsFor(source: Element, depth: number): [Part, StaticRead[]][] | null {
   const spec = specOf(source);
   if (spec.effects.length > 0 || spec.watches.length > 0) return null;
-  if (source.hasAttribute("data-hs-on-load") || source.hasAttribute("data-hs-on-interval") || source.hasAttribute("data-hs-on-timeout")) return null;
+  const started = ["data-hs-on-load", "data-hs-on-interval", "data-hs-on-timeout", "data-hs-on-visible"];
+  if (started.some((name) => source.hasAttribute(name))) return null;
   const found: [Part, StaticRead[]][] = [];
   if (spec.each !== undefined) {
     // A nested list over a field of this item runs as a part. A rerun its items' keys ask for marks the part through `Row.lists`.

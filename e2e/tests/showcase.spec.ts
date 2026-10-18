@@ -129,6 +129,23 @@ test("a page shortcut runs from anywhere and leaves the characters a field types
   await expect(dialog).toBeVisible();
 });
 
+test("a list loads the next numbers each time the element after it scrolls into view", async ({ page }) => {
+  const numbers = page.locator("#numbers li");
+  const loads: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/more") loads.push(new URL(request.url()).searchParams.get("args") ?? "");
+  });
+  await expect(numbers).toHaveCount(20);
+  expect(loads).toEqual([]);
+  for (const count of [40, 60, 80, 100]) {
+    await page.locator("#numbers .more").scrollIntoViewIfNeeded();
+    await expect(numbers).toHaveCount(count);
+  }
+  await expect(page.locator("#numbers .end")).toBeVisible();
+  await expect(page.locator("#numbers .more")).toBeHidden();
+  expect(loads).toEqual(["20", "40", "60", "80"]);
+});
+
 test("a slow answer to an earlier search does not overwrite the answer to a later one", async ({ page }) => {
   const field = page.getByPlaceholder("Search fruit");
   const sent: string[] = [];

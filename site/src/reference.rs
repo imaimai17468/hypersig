@@ -608,6 +608,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "on_visible",
+                            "html/struct.El.html#method.on_visible",
+                            L {
+                                en: "Runs `stmt` each time the element comes into the viewport.",
+                                ja: "要素が表示領域に入るたびに `stmt` を実行します。",
+                            },
+                        ),
+                        (
                             "on_key",
                             "html/struct.El.html#method.on_key",
                             L {
