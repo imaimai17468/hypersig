@@ -1307,7 +1307,7 @@ impl<Q: SearchFields> Search for Q {
 #[doc(hidden)]
 pub trait SearchFields: Signals {}
 
-/// A type one field of [`Search`] parameters holds: a [`SearchScalar`], or an `Option` or a `Vec` of one.
+/// A [`Search`] field type: a [`SearchScalar`], or an `Option` or `Vec` of one.
 ///
 /// The query string leaves out an `Option` that is `None`, and writes the
 /// key of a `Vec` once per item. A list of lists, or an `Option` of a list,

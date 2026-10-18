@@ -10,9 +10,9 @@ use crate::expr::{Expr, IntoExpr};
 use crate::intl::IntlLocale;
 use crate::signal::Sig;
 
-/// A point in time, in milliseconds since the Unix epoch, as JavaScript's `Date` counts it.
+/// A point in time, in milliseconds since the Unix epoch.
 ///
-/// It serializes as a JSON number, which the browser holds exactly for any
+/// It counts time as JavaScript's `Date` does, and serializes as a JSON number, which the browser holds exactly for any
 /// time `Date` can hold.
 ///
 /// ```
@@ -221,9 +221,10 @@ impl DateFormat {
         self
     }
 
-    /// `time` written in this format as the browser writes it, or `None` where the server cannot.
+    /// `time` in this format, or `None` where the server cannot write it.
     ///
-    /// That is [`TimeZone::Browser`], and a year before 1000 or after 9999.
+    /// The text is what the browser writes. The server cannot write a time
+    /// in [`TimeZone::Browser`], or a year before 1000 or after 9999.
     #[must_use]
     pub fn write(&self, time: Timestamp) -> Option<String> {
         let offset = self.offset()?;
@@ -291,7 +292,7 @@ macro_rules! time_operations {
                 ]))
             }
 
-            /// How long before or after `now` this time is in `locale`, such as `3 minutes ago`.
+            /// This time relative to `now` in `locale`, such as `3 minutes ago`.
             ///
             /// The unit is the largest one the difference reaches: seconds
             /// under a minute, then minutes, hours, days under 30 days,

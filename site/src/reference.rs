@@ -1497,8 +1497,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "Timestamp",
                             "struct.Timestamp.html",
                             L {
-                                en: "A point in time, in milliseconds since the Unix epoch, as JavaScript's `Date` counts it.",
-                                ja: "JavaScript の `Date` と同じく、Unix エポックからのミリ秒で表した時刻",
+                                en: "A point in time, in milliseconds since the Unix epoch.",
+                                ja: "Unix エポックからのミリ秒で表した時刻",
                             },
                         ),
                         (
@@ -1521,8 +1521,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "relative_to",
                             "struct.Expr.html#method.relative_to",
                             L {
-                                en: "How long before or after `now` this time is in `locale`, such as `3 minutes ago`.",
-                                ja: "この時刻が `now` からどれだけ前か後かを、`locale` で `3 minutes ago` のように書いたテキスト",
+                                en: "This time relative to `now` in `locale`, such as `3 minutes ago`.",
+                                ja: "この時刻を `now` からの相対時間として、`locale` で `3 minutes ago` のように書いたテキスト",
                             },
                         ),
                         (
@@ -2531,8 +2531,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "SearchValue",
                             "trait.SearchValue.html",
                             L {
-                                en: "A type one field of `Search` parameters holds: a `SearchScalar`, or an `Option` or a `Vec` of one.",
-                                ja: "`Search` パラメータのフィールド 1 つが持つ型で、`SearchScalar` か、その `Option` か `Vec` です。",
+                                en: "A `Search` field type: a `SearchScalar`, or an `Option` or `Vec` of one.",
+                                ja: "`Search` のフィールドの型で、`SearchScalar` か、その `Option` か `Vec` です。",
                             },
                         ),
                         (
