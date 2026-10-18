@@ -11,8 +11,8 @@ use hypersig::html::{
     section, select, small, span, textarea, ul,
 };
 use hypersig::{
-    Action, DialogRef, Fragment, NodeRef, Page, Patches, Route, RouterExt, Sig, Signals, Stmt,
-    if_else,
+    Action, DateFormat, DateStyle, DialogRef, Expr, Fragment, IntlLocale, NodeRef, Page, Patches,
+    PluralCategory, Route, RouterExt, Sig, Signals, Stmt, TimeStyle, TimeZone, Timestamp, if_else,
 };
 use serde::{Deserialize, Serialize};
 
@@ -116,6 +116,8 @@ struct Showcase {
     numbers: Vec<i32>,
     loading_more: bool,
     more: bool,
+    rendered: Timestamp,
+    now: Timestamp,
 }
 
 hypersig::routes! {
@@ -201,7 +203,17 @@ fn components() -> El<Showcase> {
         .child(stepper("Children", children, 0, 6))
         .child(
             p().class(class::TOTAL)
-                .bind_text((adults + children).to_text().concat(" guests")),
+                .bind_text(
+                    (adults + children)
+                        .to_text()
+                        .concat((adults + children).plural(
+                            IntlLocale::En,
+                            |category| match category {
+                                PluralCategory::One => " guest",
+                                _ => " guests",
+                            },
+                        )),
+                ),
         )
 }
 
@@ -232,6 +244,43 @@ fn stopwatch() -> El<Showcase> {
                 .attr_when("disabled", running)
                 .on_click(elapsed.set(0.0))
                 .text("Reset"),
+        )
+}
+
+const RENDERED_EN: DateFormat =
+    DateFormat::date_time(IntlLocale::En, DateStyle::Medium, TimeStyle::Medium);
+const RENDERED_TOKYO: DateFormat =
+    DateFormat::date_time(IntlLocale::Ja, DateStyle::Long, TimeStyle::Short)
+        .zone(TimeZone::Offset(540));
+const RENDERED_LOCAL: DateFormat =
+    DateFormat::date_time(IntlLocale::En, DateStyle::Full, TimeStyle::Short)
+        .zone(TimeZone::Browser);
+
+/// The time the server rendered the page, in fixed zones that the first HTML
+/// already shows, in the visitor's zone, and relative to a clock the browser
+/// advances every second.
+fn dates() -> El<Showcase> {
+    let rendered = Showcase::rendered();
+    let now = Showcase::now();
+    section()
+        .id("dates")
+        .on_interval(Duration::from_secs(1), now.set(Expr::timestamp_now()))
+        .child(h2().text("Dates"))
+        .child(
+            p().class(class::RENDERED_EN)
+                .bind_text(rendered.format_date(&RENDERED_EN)),
+        )
+        .child(
+            p().class(class::RENDERED_TOKYO)
+                .bind_text(rendered.format_date(&RENDERED_TOKYO)),
+        )
+        .child(
+            p().class(class::RENDERED_LOCAL)
+                .bind_text(rendered.format_date(&RENDERED_LOCAL)),
+        )
+        .child(
+            p().class(class::SINCE)
+                .bind_text(rendered.relative_to(now, IntlLocale::En)),
         )
 }
 
@@ -665,6 +714,8 @@ async fn index((): (), find: Find) -> Page<Showcase> {
         numbers: (1..=PAGE).collect(),
         loading_more: false,
         more: true,
+        rendered: Timestamp::now(),
+        now: Timestamp::now(),
     };
     let query = Showcase::search().at(Search::query());
     Page::new("hypersig showcase", signals)
@@ -681,6 +732,7 @@ async fn index((): (), find: Find) -> Page<Showcase> {
         .child(h1().text("hypersig showcase"))
         .child(components())
         .child(stopwatch())
+        .child(dates())
         .child(search(&find))
         .child(palette())
         .child(order_form())
@@ -819,6 +871,10 @@ mod class {
     pub const CLOSE_PALETTE: Class = Class::new("close-palette");
     pub const MORE: Class = Class::new("more");
     pub const END: Class = Class::new("end");
+    pub const RENDERED_EN: Class = Class::new("rendered-en");
+    pub const RENDERED_TOKYO: Class = Class::new("rendered-tokyo");
+    pub const RENDERED_LOCAL: Class = Class::new("rendered-local");
+    pub const SINCE: Class = Class::new("since");
 }
 
 const STYLE: Stylesheet = Stylesheet::new("

@@ -21,6 +21,27 @@ test("each placement of a component keeps its own state", async ({ page }) => {
   await stepper(0).getByLabel("fewer").click();
   await expect(page.locator(".total")).toHaveText("2 guests");
   await expect(stepper(0).getByLabel("fewer")).toBeDisabled();
+  await stepper(1).getByLabel("fewer").click();
+  await expect(page.locator(".total")).toHaveText("1 guest");
+});
+
+test("dates are written in fixed zones by the server, in the visitor's zone by the browser, and relative to a clock", async ({ page, request }) => {
+  const format = (at: number, options: Intl.DateTimeFormatOptions, locale = "en") =>
+    page.evaluate(([at, options, locale]) => new Intl.DateTimeFormat(locale, options).format(at), [at, options, locale] as const);
+
+  // The first HTML writes the fixed zones as Chrome's Intl does, and leaves the visitor's zone empty.
+  const served = await (await request.get(url("showcase"))).text();
+  const text = (name: string) => new RegExp(`class="${name}"[^>]*>([^<]*)<`).exec(served)?.[1];
+  const servedAt = Number(/&quot;rendered&quot;:(\d+)/.exec(served)?.[1]);
+  expect(text("rendered-en")).toBe(await format(servedAt, { dateStyle: "medium", timeStyle: "medium", timeZone: "UTC" }));
+  expect(text("rendered-tokyo")).toBe(await format(servedAt, { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Tokyo" }, "ja"));
+  expect(text("rendered-local")).toBe("");
+
+  const rendered = await page.evaluate(() => (JSON.parse(document.body.getAttribute("data-hs-signals") ?? "{}") as { rendered: number }).rendered);
+  await expect(page.locator(".rendered-en")).toHaveText(await format(rendered, { dateStyle: "medium", timeStyle: "medium", timeZone: "UTC" }));
+  await expect(page.locator(".rendered-tokyo")).toHaveText(await format(rendered, { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Tokyo" }, "ja"));
+  await expect(page.locator(".rendered-local")).toHaveText(await format(rendered, { dateStyle: "full", timeStyle: "short" }));
+  await expect(page.locator(".since")).toHaveText(/^\d+ seconds? ago$/, { timeout: 5000 });
 });
 
 test("an interval runs while started", async ({ page }) => {
