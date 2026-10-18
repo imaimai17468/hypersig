@@ -304,6 +304,15 @@ pub(crate) fn js_string(value: &Value) -> String {
     }
 }
 
+/// `String(value)` in JavaScript, borrowing the text of a string rather than copying it.
+pub(crate) fn js_str(value: Cow<'_, Value>) -> Cow<'_, str> {
+    match value {
+        Cow::Borrowed(Value::String(text)) => Cow::Borrowed(text),
+        Cow::Owned(Value::String(text)) => Cow::Owned(text),
+        other => Cow::Owned(js_string(&other)),
+    }
+}
+
 /// `JSON.stringify(value)` in JavaScript, which writes integral numbers without a fraction.
 pub(crate) fn js_json(value: &Value) -> String {
     let mut out = String::new();

@@ -42,6 +42,7 @@
 //! assert!(html.contains("shipping.open") && html.contains("returns.open"));
 //! ```
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io;
@@ -1877,8 +1878,10 @@ impl<S> El<S> {
         reason = "one attribute after another, in the order the runtime documents them"
     )]
     fn write(&self, out: &mut String, ctx: Option<&Ctx<'_>>, ssr_key: Option<&str>) {
-        let eval_text =
-            |expr: &Value| ctx.and_then(|ctx| ssr::evaluate(expr, ctx).map(|v| ssr::js_string(&v)));
+        fn eval_text<'v>(expr: &'v Value, ctx: Option<&Ctx<'v>>) -> Option<Cow<'v, str>> {
+            ctx.and_then(|ctx| ssr::evaluate(expr, ctx))
+                .map(ssr::js_str)
+        }
         let eval_bool =
             |expr: &Value| ctx.and_then(|ctx| ssr::evaluate(expr, ctx).map(|v| ssr::truthy(&v)));
         let mut classes: Vec<&str> = self.classes.clone();
@@ -1897,7 +1900,7 @@ impl<S> El<S> {
         let mut rule = String::new();
         let rules = ctx.and_then(|ctx| ctx.rules);
         for (property, value) in &self.style {
-            match eval_text(value.as_json()) {
+            match eval_text(value.as_json(), ctx) {
                 Some(value) if rules.is_none() => style.push(format!("{property}: {value}")),
                 // A value that could end the rule or the `<style>` element is
                 // left for the runtime to set.
@@ -1910,12 +1913,12 @@ impl<S> El<S> {
                 _ => {}
             }
         }
-        let mut computed: Vec<(&str, String)> = Vec::new();
+        let mut computed: Vec<(&str, Cow<'_, str>)> = Vec::new();
         if let Some(rules) = rules
             && !rule.is_empty()
         {
             let mut rules = rules.borrow_mut();
-            computed.push((INLINE, rules.len().to_string()));
+            computed.push((INLINE, Cow::Owned(rules.len().to_string())));
             rules.push(rule);
         }
         // A strict Content-Security-Policy ignores a `style` attribute, so a
@@ -1923,44 +1926,46 @@ impl<S> El<S> {
         if let Some(show) = &self.show
             && eval_bool(show.as_json()) == Some(false)
         {
-            computed.push((HIDE, String::new()));
+            computed.push((HIDE, Cow::Borrowed("")));
         }
         for (name, value) in &self.attr_bind {
-            if let Some(value) = eval_text(value.as_json()) {
+            if let Some(value) = eval_text(value.as_json(), ctx) {
                 computed.push((name, value));
             }
         }
         for (name, when) in &self.attr_when {
             if eval_bool(when.as_json()) == Some(true) {
-                computed.push((name, String::new()));
+                computed.push((name, Cow::Borrowed("")));
             }
         }
         if let Some(checked) = &self.checked
             && eval_bool(checked.as_json()) == Some(true)
         {
-            computed.push(("checked", String::new()));
+            computed.push(("checked", Cow::Borrowed("")));
         }
-        let mut content: Option<String> = self
+        let mut content: Option<Cow<'_, str>> = self
             .text
             .as_ref()
-            .and_then(|text| eval_text(text.as_json()));
+            .and_then(|text| eval_text(text.as_json(), ctx));
         let mut selected: Option<String> = None;
         if let (Some(ctx), Some(bind)) = (ctx, &self.bind)
             && let Some(value) = bind.get(0).and_then(|place| ctx.lookup(place))
         {
             match bind.get(1).and_then(Value::as_str) {
-                Some("bool") if ssr::truthy(value) => computed.push(("checked", String::new())),
+                Some("bool") if ssr::truthy(value) => {
+                    computed.push(("checked", Cow::Borrowed("")));
+                }
                 Some("radio") if bind.get(2).is_some_and(|choice| ssr::equal(choice, value)) => {
-                    computed.push(("checked", String::new()));
+                    computed.push(("checked", Cow::Borrowed("")));
                 }
                 Some("json") => selected = Some(ssr::js_json(value)),
                 Some("text" | "int" | "float" | "opt_text" | "opt_int" | "opt_float")
                     if !value.is_null() =>
                 {
-                    let text = ssr::js_string(value);
+                    let text = ssr::js_str(Cow::Borrowed(value));
                     match self.tag {
                         "textarea" => content = Some(text),
-                        "select" => selected = Some(text),
+                        "select" => selected = Some(text.into_owned()),
                         _ => computed.push(("value", text)),
                     }
                 }
