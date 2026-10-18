@@ -4,17 +4,12 @@ error[E0277]: the trait bound `bool: Comparable` is not satisfied
 21 |         .sortable_column(Column::text("Title", Task::title()), |task| task.at(Task::done()));
    |          ^^^^^^^^^^^^^^^ the trait `Comparable` is not implemented for `bool`
    |
-help: the following other types implement trait `Comparable`
-  --> $WORKSPACE/crates/hypersig/src/expr.rs
-   |
-   | impl Comparable for i32 {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^ `i32`
-   | impl Comparable for i64 {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^ `i64`
-   | impl Comparable for f64 {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^ `f64`
-   | impl Comparable for String {}
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ `String`
+   = help: the following other types implement trait `Comparable`:
+             String
+             Timestamp
+             f64
+             i32
+             i64
 note: required by a bound in `DataTable::<S, T>::sortable_column`
   --> src/table.rs
    |

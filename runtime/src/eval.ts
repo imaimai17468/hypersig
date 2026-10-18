@@ -126,6 +126,18 @@ const classes: Record<string, (unit: number) => boolean> = {
   space: (u) => u === 0x20 || u === 0x09 || u === 0x0a || u === 0x0c || u === 0x0d,
 };
 
+type DateStyle = "full" | "long" | "medium" | "short";
+
+/** The units `["reltime",...]` picks from, largest first, with their length in milliseconds, as `UNITS` in `crates/hypersig/src/date.rs` lists them. */
+const relativeUnits: readonly (readonly [number, Intl.RelativeTimeFormatUnit])[] = [
+  [31_536_000_000, "year"],
+  [2_592_000_000, "month"],
+  [86_400_000, "day"],
+  [3_600_000, "hour"],
+  [60_000, "minute"],
+  [1000, "second"],
+];
+
 /** The categories `Intl.PluralRules` picks from, in the order `["plural",...]` lists their forms. */
 const pluralCategories: readonly string[] = ["zero", "one", "two", "few", "many", "other"];
 
@@ -334,6 +346,26 @@ function build(ast: Ast): Compiled {
       const value = compile(rest[0]);
       const [digits, group, point, prefix, suffix] = rest.slice(1) as [number, string, string, string, string];
       return (ctx) => formatNumber(value(ctx) as number, digits, group, point, prefix, suffix);
+    }
+    case "date": {
+      const value = compile(rest[0]);
+      const [locale, dateStyle, timeStyle, offset] = rest.slice(1) as [string, DateStyle | null, DateStyle | null, number | null];
+      const options: Intl.DateTimeFormatOptions = {};
+      if (dateStyle !== null) options.dateStyle = dateStyle;
+      if (timeStyle !== null) options.timeStyle = timeStyle;
+      // A fixed offset shifts the time and writes it as UTC; no offset leaves the browser's own zone.
+      if (offset !== null) options.timeZone = "UTC";
+      const format = new Intl.DateTimeFormat(locale, options);
+      const shift = (offset ?? 0) * 60_000;
+      return (ctx) => format.format((value(ctx) as number) + shift);
+    }
+    case "reltime": {
+      const [value, now, format] = [compile(rest[0]), compile(rest[1]), new Intl.RelativeTimeFormat(rest[2] as string)];
+      return (ctx) => {
+        const millis = (value(ctx) as number) - (now(ctx) as number);
+        const [length, unit] = relativeUnits.find(([length]) => Math.abs(millis) >= length) ?? relativeUnits[relativeUnits.length - 1]!;
+        return format.format(Math.trunc(millis / length), unit);
+      };
     }
     case "plural": {
       const [value, rules, forms] = [compile(rest[0]), new Intl.PluralRules(rest[1] as string), (rest[2] as unknown[]).map(compile)];

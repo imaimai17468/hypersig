@@ -1494,6 +1494,38 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Timestamp",
+                            "struct.Timestamp.html",
+                            L {
+                                en: "A point in time, in milliseconds since the Unix epoch, as JavaScript's `Date` counts it.",
+                                ja: "JavaScript の `Date` と同じく、Unix エポックからのミリ秒で表した時刻",
+                            },
+                        ),
+                        (
+                            "format_date",
+                            "struct.Expr.html#method.format_date",
+                            L {
+                                en: "This time written in `format` with the browser's `Intl.DateTimeFormat`.",
+                                ja: "この時刻を、ブラウザの `Intl.DateTimeFormat` で `format` に従って書いたテキスト",
+                            },
+                        ),
+                        (
+                            "DateFormat",
+                            "struct.DateFormat.html",
+                            L {
+                                en: "How `format_date` writes a `Timestamp`: a locale, styles, and a time zone.",
+                                ja: "`format_date` が `Timestamp` を書く形。ロケール、スタイル、タイムゾーン",
+                            },
+                        ),
+                        (
+                            "relative_to",
+                            "struct.Expr.html#method.relative_to",
+                            L {
+                                en: "How long before or after `now` this time is in `locale`, such as `3 minutes ago`.",
+                                ja: "この時刻が `now` からどれだけ前か後かを、`locale` で `3 minutes ago` のように書いたテキスト",
+                            },
+                        ),
+                        (
                             "to_text",
                             "struct.Expr.html#method.to_text",
                             L {

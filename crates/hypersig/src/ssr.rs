@@ -5,8 +5,14 @@
 //! the runtime wins: it re-evaluates every binding when the page loads, so a
 //! difference shows for one frame and is then corrected. The known
 //! differences are string ordering outside the Basic Multilingual Plane,
-//! and the last bit of `log10` and `pow`, which each side takes from its
-//! platform's math library.
+//! the last bit of `log10` and `pow`, which each side takes from its
+//! platform's math library, and the spaces and commas of a date, which the
+//! browser takes from its own version of the Unicode CLDR data.
+//!
+//! The server writes locale-dependent text for the locale the expression
+//! names, never the visitor's, and a date in the zone the expression names.
+//! It leaves out a date in the browser's zone, the browser's current time,
+//! and a random number, which only the browser knows.
 
 use std::borrow::Cow;
 
@@ -381,10 +387,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "upper" => Value::from(s(&*eval(1)?)?.to_uppercase()),
         "chars" => Value::from(s(&*eval(1)?)?.chars().count()),
         "chars_all" | "chars_any" => test_chars(op, &*eval(1)?, arg(2)?)?,
-        "plural" => {
-            let index = crate::intl::plural_index(arg(2)?.as_str()?, f(&*eval(1)?)?)?;
-            return evaluate(arg(3)?.as_array()?.get(index)?, ctx);
-        }
+        "date" | "reltime" | "plural" => return localized(op, parts, ctx),
         "len" => Value::from(eval(1)?.as_array().map_or(0, Vec::len)),
         "eq" => Value::Bool(equal(&*eval(1)?, &*eval(2)?)),
         "ne" => Value::Bool(!equal(&*eval(1)?, &*eval(2)?)),
@@ -422,6 +425,29 @@ fn char_class(name: &str) -> Option<fn(char) -> bool> {
         "space" => |c: char| c.is_ascii_whitespace(),
         _ => return None,
     })
+}
+
+/// `["date",...]`, `["reltime",...]`, and `["plural",...]`, whose text depends on the locale they name.
+fn localized<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Cow<'a, Value>> {
+    let arg = |i: usize| parts.get(i);
+    let eval = |i: usize| evaluate(arg(i)?, ctx);
+    let text = match op {
+        "date" => {
+            let offset = i64::from(i16::try_from(arg(5)?.as_i64()?).ok()?);
+            let millis = eval(1)?.as_i64()?.checked_add(offset * 60_000)?;
+            let (date, time) = (arg(3)?.as_str(), arg(4)?.as_str());
+            crate::date::write_date(arg(2)?.as_str()?, date, time, millis)?
+        }
+        "reltime" => {
+            let millis = f(&*eval(1)?)? - f(&*eval(2)?)?;
+            crate::date::write_relative(arg(3)?.as_str()?, millis)?
+        }
+        _ => {
+            let index = crate::intl::plural_index(arg(2)?.as_str()?, f(&*eval(1)?)?)?;
+            return evaluate(arg(3)?.as_array()?.get(index)?, ctx);
+        }
+    };
+    Some(Cow::Owned(Value::from(text)))
 }
 
 /// `["let",value,depth,body]`: `body` with `["var",depth]` standing for `value`.

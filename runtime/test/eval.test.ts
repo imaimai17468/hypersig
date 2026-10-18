@@ -52,6 +52,20 @@ describe("evaluate", () => {
     expect(evaluate(["format", ["lit", 2e21], 0, ",", ".", "", ""], ctx)).toBe("2e+21");
   });
 
+  it("writes dates in a fixed offset and relative times as date.rs does", () => {
+    const at = Date.UTC(2026, 0, 5, 15, 4, 5);
+    expect(evaluate(["date", ["lit", at], "en", "medium", "short", 0], ctx)).toBe("Jan 5, 2026, 3:04 PM");
+    expect(evaluate(["date", ["lit", at], "ja", null, "medium", 540], ctx)).toBe("0:04:05");
+    expect(evaluate(["date", ["lit", at], "en", "long", null, -300], ctx)).toBe("January 5, 2026");
+    const ago = (millis: number, locale = "en") => evaluate(["reltime", ["lit", at + millis], ["lit", at], locale], ctx);
+    expect(ago(-500)).toBe("0 seconds ago");
+    expect(ago(59_999)).toBe("in 59 seconds");
+    expect(ago(-3_600_000)).toBe("1 hour ago");
+    expect(ago(29 * 86_400_000)).toBe("in 29 days");
+    expect(ago(-31 * 86_400_000, "ja")).toBe("1 か月前");
+    expect(ago(400 * 86_400_000, "ja")).toBe("1 年後");
+  });
+
   it("picks the plural form as ssr.rs does", () => {
     const forms = ["z", "1", "2", "f", "m", "o"].map((form) => ["lit", form]);
     const plural = (locale: string, n: number) => evaluate(["plural", ["lit", n], locale, forms], ctx);

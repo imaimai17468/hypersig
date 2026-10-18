@@ -45,6 +45,7 @@ extern crate self as hypersig;
 mod action;
 #[cfg(feature = "axum")]
 mod axum;
+mod date;
 mod expr;
 mod form;
 mod head;
@@ -72,6 +73,7 @@ pub use action::{Action, Call, DialogRef, Method, NodeRef, StreamAction, StreamC
 pub use axum::{
     ActionResponse, Handler, PageResponse, RequestError, RequestKind, RouterExt, Unserved,
 };
+pub use date::{DateFormat, DateStyle, TimeStyle, TimeZone, Timestamp};
 pub use expr::{
     CharClass, Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };

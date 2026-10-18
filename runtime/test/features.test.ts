@@ -913,7 +913,7 @@ describe("links", () => {
 });
 
 describe("value operations", () => {
-  const texts = () => $$("#values span").map((span) => [span.id, span.textContent]);
+  const texts = () => $$("#values span, #dates span").map((span) => [span.id, span.textContent]);
 
   it("write the same text on the server and in the browser", async () => {
     serve("values_page");
@@ -922,6 +922,27 @@ describe("value operations", () => {
     start();
     await tick();
     expect(texts()).toEqual(served);
+  });
+
+  it("write dates and relative times with Intl, and leave the browser's zone to the runtime", async () => {
+    serve("values_page");
+    expect($("#date-local").textContent).toBe("");
+    expect(Object.fromEntries(texts())).toMatchObject({
+      "date-en-full": "Monday, January 5, 2026 at 3:04:05 PM",
+      "date-en-medium": "Jan 5, 2026, 3:04 PM",
+      "date-ja-full": "2026年1月5日月曜日 15:04:05",
+      "date-tokyo": "2026/01/06 0:04",
+      "ago-en": "3 minutes ago",
+      "ago-ja": "3 分前",
+    });
+    const runtime = start();
+    await tick();
+    expect($("#date-local").textContent).toBe(
+      new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(1_767_625_445_000),
+    );
+    runtime.store.set("now", 1_767_625_445_000 + 2 * 86_400_000);
+    await tick();
+    expect([$("#ago-en").textContent, $("#ago-ja").textContent]).toEqual(["2 days ago", "2 日前"]);
   });
 
   it("pick a plural form for the count", async () => {

@@ -25,6 +25,9 @@
 //! | `a.contains(b)`, `a.starts_with(b)`, `a.char_count()` | `["contains",a,b]`, `["starts",a,b]`, `["chars",a]` |
 //! | `a.all_chars(c)`, `a.any_char(c)` | `["chars_all",a,class]`, `["chars_any",a,class]` |
 //! | `n.plural(locale, \|category\| form)` | `["plural",n,locale,[zero,one,two,few,many,other]]` |
+//! | `t.format_date(&f)` | `["date",t,locale,dateStyle,timeStyle,offset]`, with `null` for a style left out and for the browser's zone |
+//! | `t.relative_to(now, locale)` | `["reltime",t,now,locale]` |
+//! | `t.millis()`, `t.add_millis(n)`, `Expr::timestamp_now()` | `t`, `["add",t,n]`, `["now"]` |
 //! | `list.len()`, `list.nth(i)` | `["len",a]`, `["nth",a,i]` |
 //! | `Expr::random_below(n)`, `Expr::now()` | `["random",n]`, `["now"]` |
 //! | `list.count(\|item\| p)` | `["count",place,depth,p]` |
@@ -322,6 +325,7 @@ impl Comparable for i32 {}
 impl Comparable for i64 {}
 impl Comparable for f64 {}
 impl Comparable for String {}
+impl Comparable for crate::Timestamp {}
 
 /// A type the runtime can turn into display text.
 ///
@@ -346,6 +350,7 @@ mod sealed {
     impl Sealed for f64 {}
     impl Sealed for bool {}
     impl Sealed for String {}
+    impl Sealed for crate::Timestamp {}
 
     pub trait TextSeal {}
     impl<T: Segment> TextSeal for T {}

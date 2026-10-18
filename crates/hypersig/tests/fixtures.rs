@@ -14,9 +14,9 @@ use hypersig::html::{
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
-    Action, CharClass, Expr, FileInput, Form, Fragment, IntlLocale, NodeRef, Page, Patches,
-    PluralCategory, Rest, Route, Rules, Search, Sig, Signals, Stmt, StreamAction, Upload, Validate,
-    if_else,
+    Action, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment, IntlLocale, NodeRef,
+    Page, Patches, PluralCategory, Rest, Route, Rules, Search, Sig, Signals, Stmt, StreamAction,
+    TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -748,6 +748,8 @@ struct Values {
     zip: String,
     code: String,
     count: i32,
+    posted: Timestamp,
+    now: Timestamp,
 }
 
 /// Text the server writes into the first HTML and the runtime writes again,
@@ -800,12 +802,77 @@ fn values() -> (El<Values>, Values) {
                 ),
             ),
     );
+    let el = el.child(dates());
     let signals = Values {
         zip: "1500001".to_owned(),
         code: "Ab 12\u{ff11}".to_owned(),
         count: 1,
+        // 2026-01-05 15:04:05 UTC, and three minutes later.
+        posted: Timestamp::from_millis(1_767_625_445_000),
+        now: Timestamp::from_millis(1_767_625_625_000),
     };
     (el, signals)
+}
+
+/// Dates in fixed zones and relative times, which the server writes, and a
+/// date in the browser's zone, which it leaves out.
+fn dates() -> El<Values> {
+    let posted = Values::posted();
+    let now = Values::now();
+    let date =
+        |id: &'static str, format: DateFormat| span().id(id).bind_text(posted.format_date(&format));
+    let ago = |id: &'static str, locale: IntlLocale| {
+        span().id(id).bind_text(posted.relative_to(now, locale))
+    };
+    div()
+        .child(
+            div()
+                .id("dates")
+                .child(date(
+                    "date-en-full",
+                    DateFormat::date_time(IntlLocale::En, DateStyle::Full, TimeStyle::Medium),
+                ))
+                .child(date(
+                    "date-en-long",
+                    DateFormat::date(IntlLocale::En, DateStyle::Long),
+                ))
+                .child(date(
+                    "date-en-medium",
+                    DateFormat::date_time(IntlLocale::En, DateStyle::Medium, TimeStyle::Short),
+                ))
+                .child(date(
+                    "date-en-short",
+                    DateFormat::date_time(IntlLocale::En, DateStyle::Short, TimeStyle::Short),
+                ))
+                .child(date(
+                    "time-en",
+                    DateFormat::time(IntlLocale::En, TimeStyle::Medium),
+                ))
+                .child(date(
+                    "date-ja-full",
+                    DateFormat::date_time(IntlLocale::Ja, DateStyle::Full, TimeStyle::Medium),
+                ))
+                .child(date(
+                    "date-ja-long",
+                    DateFormat::date(IntlLocale::Ja, DateStyle::Long),
+                ))
+                .child(date(
+                    "date-ja-short",
+                    DateFormat::date_time(IntlLocale::Ja, DateStyle::Short, TimeStyle::Short),
+                ))
+                .child(date(
+                    "date-tokyo",
+                    DateFormat::date_time(IntlLocale::Ja, DateStyle::Medium, TimeStyle::Short)
+                        .zone(TimeZone::Offset(540)),
+                ))
+                .child(ago("ago-en", IntlLocale::En))
+                .child(ago("ago-ja", IntlLocale::Ja)),
+        )
+        .child(date(
+            "date-local",
+            DateFormat::date_time(IntlLocale::En, DateStyle::Medium, TimeStyle::Short)
+                .zone(TimeZone::Browser),
+        ))
 }
 
 #[derive(Signals, Serialize, Deserialize)]

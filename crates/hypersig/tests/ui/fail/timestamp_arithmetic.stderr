@@ -1,0 +1,13 @@
+error[E0369]: cannot add `{integer}` to `Sig<Post, Timestamp>`
+  --> tests/ui/fail/timestamp_arithmetic.rs:12:47
+   |
+12 |     let _ = Post::posted().set(Post::posted() + 60_000);
+   |                                -------------- ^ ------ {integer}
+   |                                |
+   |                                Sig<Post, Timestamp>
+   |
+note: `Timestamp` does not implement `hypersig::Number`
+  --> src/date.rs
+   |
+   | pub struct Timestamp(i64);
+   | ^^^^^^^^^^^^^^^^^^^^ `Timestamp` is defined in another crate
