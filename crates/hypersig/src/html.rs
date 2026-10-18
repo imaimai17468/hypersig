@@ -1847,14 +1847,19 @@ impl<S> El<S> {
         let Some(items) = ctx.lookup(list).and_then(Value::as_array) else {
             return;
         };
+        let mut key = String::new();
         ctx.for_each_item(depth, items, |item, index| {
-            let key = match &self.key {
-                None => format!("#{index}"),
-                Some(key) => match ssr::evaluate(key, item) {
-                    Some(value) => ssr::js_json(&value),
+            key.clear();
+            match &self.key {
+                None => {
+                    key.push('#');
+                    key.push_str(&index.to_string());
+                }
+                Some(expr) => match ssr::evaluate(expr, item) {
+                    Some(value) => ssr::write_js_json(&mut key, &value),
                     None => return Some(()),
                 },
-            };
+            }
             self.write(out, Some(item), Some(&key));
             Some(())
         });

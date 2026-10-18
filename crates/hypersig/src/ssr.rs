@@ -171,26 +171,45 @@ fn number(value: f64) -> Value {
 }
 
 fn js_number(value: f64) -> String {
-    if value.is_nan() {
-        "NaN".to_owned()
+    let mut out = String::new();
+    write_js_number(&mut out, value);
+    out
+}
+
+/// Appends `String(value)` for a number, as `js_number` returns it.
+fn write_js_number(out: &mut String, value: f64) {
+    if value.fract() == 0.0 && value.abs() < 9_007_199_254_740_992.0 {
+        // An integer below 2^53 is written with all its digits and no
+        // fraction or exponent, as an `i64` is. This covers -0, which
+        // JavaScript writes as "0".
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "the value is integral and inside i64's range"
+        )]
+        let integer = value as i64;
+        write_into(out, format_args!("{integer}"));
+    } else if value.is_nan() {
+        out.push_str("NaN");
     } else if value.is_infinite() {
-        if value > 0.0 { "Infinity" } else { "-Infinity" }.to_owned()
-    } else if value != 0.0 && (value.abs() >= 1e21 || value.abs() < 1e-6) {
+        out.push_str(if value > 0.0 { "Infinity" } else { "-Infinity" });
+    } else if value.abs() >= 1e21 || value.abs() < 1e-6 {
         // JavaScript writes these with an exponent, and a `+` before a
         // positive one. Both sides write the shortest digits that read back
         // as the same double.
         let text = format!("{value:e}");
         match text.split_once('e') {
             Some((digits, exponent)) if !exponent.starts_with('-') => {
-                format!("{digits}e+{exponent}")
+                write_into(out, format_args!("{digits}e+{exponent}"));
             }
-            _ => text,
+            _ => out.push_str(&text),
         }
-    } else if value == 0.0 {
-        "0".to_owned()
     } else {
-        format!("{value}")
+        write_into(out, format_args!("{value}"));
     }
+}
+
+fn write_into(out: &mut String, args: std::fmt::Arguments<'_>) {
+    std::fmt::Write::write_fmt(out, args).expect("writing to a String does not fail");
 }
 
 /// `Math.round(value)` in JavaScript, which rounds a halfway value up.
@@ -287,20 +306,40 @@ pub(crate) fn js_string(value: &Value) -> String {
 
 /// `JSON.stringify(value)` in JavaScript, which writes integral numbers without a fraction.
 pub(crate) fn js_json(value: &Value) -> String {
+    let mut out = String::new();
+    write_js_json(&mut out, value);
+    out
+}
+
+/// Appends `JSON.stringify(value)`, as `js_json` returns it.
+pub(crate) fn write_js_json(out: &mut String, value: &Value) {
     match value {
-        Value::Number(n) => n.as_f64().map_or_else(|| "null".to_owned(), js_number),
-        Value::Array(items) => format!(
-            "[{}]",
-            items.iter().map(js_json).collect::<Vec<_>>().join(",")
-        ),
-        Value::Object(map) => format!(
-            "{{{}}}",
-            map.iter()
-                .map(|(key, value)| format!("{}:{}", Value::from(key.as_str()), js_json(value)))
-                .collect::<Vec<_>>()
-                .join(",")
-        ),
-        other => other.to_string(),
+        Value::Number(n) => match n.as_f64() {
+            Some(n) => write_js_number(out, n),
+            None => out.push_str("null"),
+        },
+        Value::Array(items) => {
+            out.push('[');
+            for (index, item) in items.iter().enumerate() {
+                if index > 0 {
+                    out.push(',');
+                }
+                write_js_json(out, item);
+            }
+            out.push(']');
+        }
+        Value::Object(map) => {
+            out.push('{');
+            for (index, (key, value)) in map.iter().enumerate() {
+                if index > 0 {
+                    out.push(',');
+                }
+                write_into(out, format_args!("{}:", Value::from(key.as_str())));
+                write_js_json(out, value);
+            }
+            out.push('}');
+        }
+        other => write_into(out, format_args!("{other}")),
     }
 }
 
@@ -727,6 +766,16 @@ mod tests {
         assert_eq!(js_string(&json!(-1.5e22)), "-1.5e+22");
         assert_eq!(js_string(&json!(1e-7)), "1e-7");
         assert_eq!(js_string(&json!(0.000_001)), "0.000001");
+        assert_eq!(js_string(&json!(-42)), "-42");
+        assert_eq!(
+            js_string(&json!(9_007_199_254_740_991_i64)),
+            "9007199254740991"
+        );
+        assert_eq!(
+            js_string(&json!(9_007_199_254_740_993_i64)),
+            "9007199254740992"
+        );
+        assert_eq!(js_json(&json!([1, -2.5, [3]])), "[1,-2.5,[3]]");
         assert_eq!(
             js_string(&json!(123_456_789_012_345_680_000.0)),
             "123456789012345680000"
