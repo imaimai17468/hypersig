@@ -1594,8 +1594,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "Action::get",
                             "struct.Action.html#method.get",
                             L {
-                                en: "An action served on `GET path`. Use it for a long-lived stream of patches.",
-                                ja: "差分を長いあいだ送り続けるストリームに使う、`GET path` で配信するアクション",
+                                en: "An action served on `GET path`, for a read that changes nothing.",
+                                ja: "何も変更しない読み取りに使う、`GET path` で配信するアクション",
                             },
                         ),
                         (
@@ -1675,19 +1675,55 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
-                            "reconnect",
-                            "struct.Call.html#method.reconnect",
-                            L {
-                                en: "Sends this call again when its connection fails or the server answers 5xx.",
-                                ja: "接続が失敗したときやサーバーが 5xx を返したときに、この呼び出しを送り直します。",
-                            },
-                        ),
-                        (
                             "then",
                             "struct.Call.html#method.then",
                             L {
                                 en: "Sends this call, then runs `next` without waiting for the answer.",
                                 ja: "この呼び出しを送り、応答を待たずに `next` を実行します。",
+                            },
+                        ),
+                    ],
+                },
+                Section {
+                    heading: L {
+                        en: "StreamAction and StreamCall",
+                        ja: "StreamAction と StreamCall",
+                    },
+                    text: L {
+                        en: "A stream of patches is served on `GET` with `RouterExt::stream`, and only its call can reconnect.",
+                        ja: "差分のストリームは `RouterExt::stream` で `GET` に配信し、その呼び出しだけが再接続できます。",
+                    },
+                    rows: &[
+                        (
+                            "StreamAction::new",
+                            "struct.StreamAction.html#method.new",
+                            L {
+                                en: "A stream served on `GET path`.",
+                                ja: "`GET path` で配信するストリーム",
+                            },
+                        ),
+                        (
+                            "call",
+                            "struct.StreamAction.html#method.call",
+                            L {
+                                en: "A call to this stream, which takes no arguments.",
+                                ja: "引数を取らないこのストリームの呼び出し",
+                            },
+                        ),
+                        (
+                            "call_with",
+                            "struct.StreamAction.html#method.call_with",
+                            L {
+                                en: "A call to this stream with `args`, evaluated in the browser when the call runs.",
+                                ja: "呼び出すときにブラウザで評価する引数 `args` を渡す、このストリームの呼び出し",
+                            },
+                        ),
+                        (
+                            "reconnect",
+                            "struct.StreamCall.html#method.reconnect",
+                            L {
+                                en: "Opens the stream again when its connection fails or the server answers 5xx.",
+                                ja: "接続が失敗したときやサーバーが 5xx を返したときに、ストリームを開き直します。",
                             },
                         ),
                     ],
@@ -2201,8 +2237,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "stream",
                         "trait.RouterExt.html#tymethod.stream",
                         L {
-                            en: "Serves `action` with a handler that returns a stream of patches.",
-                            ja: "差分のストリームを返すハンドラで `action` を配信します。",
+                            en: "Serves `stream` on `GET` with a handler that returns a stream of patches.",
+                            ja: "差分のストリームを返すハンドラで、`stream` を `GET` に配信します。",
                         },
                     ),
                     (

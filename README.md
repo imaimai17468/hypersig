@@ -58,7 +58,7 @@ In Remix and TanStack Start, each route's loader runs in parallel before the pag
 
 In hypersig, the first data is already in the page's HTML as the signal struct's JSON, so the browser fetches nothing to show the page. After a change, the action's handler returns only the values of the signals that changed, as in `Counter::count().patch(0)`, and the browser rewrites only what shows those values, so toggling one checkbox fetches neither the page nor the list again.
 
-Answers apply in the order they arrive. A search that runs as the visitor types marks its call with `latest()`, which aborts the earlier call to the same action if it is still waiting, so a slow answer cannot replace a newer one. A stream called from `on_load` with `reconnect()` is sent again when its connection drops, and its handler starts over from the current values.
+Answers apply in the order they arrive. A search that runs as the visitor types marks its call with `latest()`, which aborts the earlier call to the same action if it is still waiting, so a slow answer cannot replace a newer one. A `StreamAction` called from `on_load` with `reconnect()` is opened again when its connection drops, and its handler starts over from the current values. Only a stream's call has `reconnect()`, because sending a `POST` again could repeat a change.
 
 ## Forms
 

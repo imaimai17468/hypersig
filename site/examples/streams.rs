@@ -6,7 +6,7 @@ use std::time::Duration;
 use axum::Router;
 use futures::{Stream, stream};
 use hypersig::html::{p, span};
-use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
+use hypersig::{Page, Patches, Route, RouterExt, Signals, StreamAction};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -19,7 +19,7 @@ hypersig::routes! {
     const INDEX: Route = "/" => index;
 }
 
-const TICKS: Action<Clock> = Action::get("/ticks");
+const TICKS: StreamAction<Clock> = StreamAction::new("/ticks");
 
 async fn index((): (), (): ()) -> Page<Clock> {
     Page::new("Clock", Clock { seconds: 0 }).child(

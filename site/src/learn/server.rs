@@ -124,8 +124,8 @@ fn calls(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`Call::reconnect`](api:hypersig/struct.Call.html#method.reconnect) sends a call again when its connection fails, its stream breaks off, or the server answers with a 5xx status, as the clock above does. It waits 1 second, then twice as long each time up to 30 seconds. A stream the server ends, a 4xx answer, and an element that has left the page stop it. Each attempt runs the handler again with the same arguments, so start the stream with the current values, and the page catches up with what it missed. Sending a `POST` again could repeat a change, so `reconnect` panics on an action not served on `GET`.",
-                ja: "[`Call::reconnect`](api:hypersig/struct.Call.html#method.reconnect) は、接続が失敗したとき、ストリームが途中で切れたとき、サーバーが 5xx を返したときに、呼び出しを送り直します。上の時計がこの例です。1 秒待ち、そのあとは倍々に最大 30 秒まで待ちます。サーバーがストリームを閉じたとき、4xx の答え、要素がページから外れたときには送り直しません。送り直すたびにハンドラが同じ引数で実行されるので、ストリームの初めに現在の値を送ってください。ページは見逃した変更に追いつきます。`POST` を送り直すと変更を繰り返しうるので、`GET` 以外で配信するアクションに `reconnect` を付けると panic します。",
+                en: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) opens a stream again when its connection fails, it breaks off, or the server answers with a 5xx status, as the clock above does. It waits 1 second, then twice as long each time up to 30 seconds. A stream the server ends, a 4xx answer, and an element that has left the page stop it. Each attempt runs the handler again with the same arguments, so start the stream with the current values, and the page catches up with what it missed. Only a call to a `StreamAction`, which is always served on `GET`, has `reconnect`, because sending a `POST` again could repeat a change.",
+                ja: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) は、接続が失敗したとき、ストリームが途中で切れたとき、サーバーが 5xx を返したときに、ストリームを開き直します。上の時計がこの例です。1 秒待ち、そのあとは倍々に最大 30 秒まで待ちます。サーバーがストリームを閉じたとき、4xx の答え、要素がページから外れたときには送り直しません。送り直すたびにハンドラが同じ引数で実行されるので、ストリームの初めに現在の値を送ってください。ページは見逃した変更に追いつきます。`POST` を送り直すと変更を繰り返しうるので、`reconnect` があるのは、常に `GET` で配信する `StreamAction` の呼び出しだけです。",
             },
         ),
     ])
@@ -160,8 +160,8 @@ fn fragments(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Action::get` with `RouterExt::stream` serves a handler that returns a stream of patches. The response stays open until the stream ends or the browser leaves the page. Call it from `on_load` to send changes made elsewhere, such as by other users.",
-                ja: "`Action::get` と `RouterExt::stream` を使うと、差分のストリームを返すハンドラを配信できます。レスポンスは、ストリームが終わるかブラウザがページを離れるまで開いたままです。ほかのユーザーなど別の場所で起きた変更を送るには、`on_load` から呼び出してください。",
+                en: "A [`StreamAction`](api:hypersig/struct.StreamAction.html) served with `RouterExt::stream` runs a handler that returns a stream of patches, on `GET`. The response stays open until the stream ends or the browser leaves the page. Call it from `on_load` to send changes made elsewhere, such as by other users.",
+                ja: "[`StreamAction`](api:hypersig/struct.StreamAction.html) を `RouterExt::stream` で配信すると、差分のストリームを返すハンドラが `GET` で動きます。レスポンスは、ストリームが終わるかブラウザがページを離れるまで開いたままです。ほかのユーザーなど別の場所で起きた変更を送るには、`on_load` から呼び出してください。",
             },
         ),
         program(Program::Streams),

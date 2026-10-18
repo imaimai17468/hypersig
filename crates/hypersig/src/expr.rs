@@ -43,7 +43,8 @@
 //! | `route.link_with((p, q))` with search parameters | `["concat",path,["query",q]]` |
 //! | `route.link_with(rest)` for `"/files/{*path}"` | `["concat",["lit","/files/"],["uri_path",rest]]` |
 //! | `action.call()` | `["call",method,path,args,indicator,error]` |
-//! | `action.call().latest().reconnect()` | `["call",method,path,args,indicator,error,["latest","reconnect"]]` |
+//! | `action.call().latest()` | `["call",method,path,args,indicator,error,["latest"]]` |
+//! | `stream.call().reconnect()` | `["call","GET",path,args,indicator,error,["reconnect"]]` |
 //! | `node_ref.focus()` | `["dom","focus",name]` |
 //! | `link.navigate()` | `["navigate",url]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |

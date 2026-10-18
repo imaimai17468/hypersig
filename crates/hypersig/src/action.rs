@@ -71,7 +71,9 @@ impl<S, A> Action<S, A> {
         Self::new(Method::Post, path)
     }
 
-    /// An action served on `GET path`. Use it for a long-lived stream of patches.
+    /// An action served on `GET path`, for a read that changes nothing.
+    ///
+    /// A long-lived stream of patches is a [`StreamAction`].
     ///
     /// # Panics
     ///
@@ -165,7 +167,7 @@ pub struct Call<S> {
     indicator: Value,
     error: Value,
     latest: bool,
-    reconnect: bool,
+    resends: bool,
     marker: PhantomData<fn() -> S>,
 }
 
@@ -178,7 +180,7 @@ impl<S> Call<S> {
             indicator: Value::Null,
             error: Value::Null,
             latest: false,
-            reconnect: false,
+            resends: false,
             marker: PhantomData,
         }
     }
@@ -233,49 +235,6 @@ impl<S> Call<S> {
         self
     }
 
-    /// Sends this call again when its connection fails or the server answers 5xx.
-    ///
-    /// The first attempt waits 1 second, and each later one twice as long,
-    /// up to 30 seconds. A connection that the server answered with a 2xx
-    /// status starts the wait over. While the call is failing, the
-    /// [`error`](Call::error) signal holds the last failure.
-    ///
-    /// Use it for a stream served with `RouterExt::stream`. A stream the
-    /// server ends is not sent again, and neither is one whose element has
-    /// left the page. Each attempt runs the handler again with the same
-    /// arguments, so a stream that sends changes first sends the current
-    /// values, and the page catches up with what it missed.
-    ///
-    /// ```
-    /// use hypersig::html::div;
-    /// use hypersig::{Action, Signals};
-    /// use serde::{Deserialize, Serialize};
-    ///
-    /// #[derive(Signals, Serialize, Deserialize)]
-    /// struct Feed {
-    ///     items: Vec<String>,
-    /// }
-    ///
-    /// const UPDATES: Action<Feed> = Action::get("/updates");
-    /// let _feed = div().on_load(UPDATES.call().reconnect());
-    /// ```
-    ///
-    /// # Panics
-    ///
-    /// Panics if the action is not served on `GET`. Sending a `POST` again
-    /// could repeat a change the server already made.
-    #[must_use]
-    pub fn reconnect(mut self) -> Self {
-        assert!(
-            self.method == Method::Get,
-            "`reconnect` sends the request again, so it is for an action served on `GET`, and `{}` is served on `{}`",
-            self.path,
-            self.method.as_str(),
-        );
-        self.reconnect = true;
-        self
-    }
-
     /// Sends this call, then runs `next` without waiting for the answer.
     ///
     /// The arguments are evaluated when the call is sent, so `next` can
@@ -298,7 +257,7 @@ impl<S> IntoStmt<S> for Call<S> {
             call.indicator,
             call.error
         ]);
-        let flags: Vec<&str> = [("latest", call.latest), ("reconnect", call.reconnect)]
+        let flags: Vec<&str> = [("latest", call.latest), ("reconnect", call.resends)]
             .into_iter()
             .filter_map(|(flag, on)| on.then_some(flag))
             .collect();
@@ -318,6 +277,143 @@ impl<S> fmt::Debug for Call<S> {
             .field("method", &self.method)
             .field("path", &self.path)
             .finish_non_exhaustive()
+    }
+}
+
+/// A stream of patches on the page whose signals are `S`, which receives arguments `A`.
+///
+/// It is served on `GET` with `RouterExt::stream`, which accepts only this
+/// type, and an [`Action`] goes to `RouterExt::action`. A call to it can
+/// [`reconnect`](StreamCall::reconnect), which a call to an `Action` cannot,
+/// because sending a `POST` again could repeat a change the server already made.
+///
+/// ```
+/// use hypersig::html::div;
+/// use hypersig::{Signals, StreamAction};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Feed {
+///     items: Vec<String>,
+/// }
+///
+/// const UPDATES: StreamAction<Feed> = StreamAction::new("/updates");
+/// let _feed = div().on_load(UPDATES.call().reconnect());
+/// ```
+pub struct StreamAction<S, A = ()> {
+    path: &'static str,
+    marker: PhantomData<fn(S, A)>,
+}
+
+impl<S, A> StreamAction<S, A> {
+    /// A stream served on `GET path`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `path` does not start with `/`. In a `const`, that is a
+    /// compile error.
+    #[must_use]
+    pub const fn new(path: &'static str) -> Self {
+        assert!(
+            !path.is_empty() && path.as_bytes()[0] == b'/',
+            "a stream path starts with `/`"
+        );
+        Self {
+            path,
+            marker: PhantomData,
+        }
+    }
+
+    /// The path the stream is served on.
+    #[must_use]
+    pub fn path(&self) -> &'static str {
+        self.path
+    }
+
+    /// A call to this stream with `args`, evaluated in the browser when the call runs.
+    #[must_use]
+    pub fn call_with(&self, args: impl IntoExpr<S, A>) -> StreamCall<S> {
+        StreamCall(Call::new(
+            Method::Get,
+            self.path,
+            args.into_expr().into_json(),
+        ))
+    }
+}
+
+impl<S> StreamAction<S, ()> {
+    /// A call to this stream, which takes no arguments.
+    #[must_use]
+    pub fn call(&self) -> StreamCall<S> {
+        StreamCall(Call::new(Method::Get, self.path, Value::Null))
+    }
+}
+
+impl<S, A> Clone for StreamAction<S, A> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S, A> Copy for StreamAction<S, A> {}
+
+impl<S, A> fmt::Debug for StreamAction<S, A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("StreamAction")
+            .field("path", &self.path)
+            .finish()
+    }
+}
+
+/// A call to a [`StreamAction`], usable wherever a [`Stmt`] is.
+pub struct StreamCall<S>(Call<S>);
+
+impl<S> StreamCall<S> {
+    /// Sets `flag` to true while the stream is connecting or open, and to false after.
+    #[must_use]
+    pub fn indicator(self, flag: Sig<S, bool>) -> Self {
+        Self(self.0.indicator(flag))
+    }
+
+    /// Sets `message` as [`Call::error`] does, and to `""` when the stream connects.
+    #[must_use]
+    pub fn error(self, message: Sig<S, String>) -> Self {
+        Self(self.0.error(message))
+    }
+
+    /// Opens the stream again when its connection fails or the server answers 5xx.
+    ///
+    /// The first attempt waits 1 second, and each later one twice as long,
+    /// up to 30 seconds. A connection that the server answered with a 2xx
+    /// status starts the wait over. While the stream is failing, the
+    /// [`error`](StreamCall::error) signal holds the last failure.
+    ///
+    /// A stream the server ends is not opened again, and neither is one whose
+    /// element has left the page. Each attempt runs the handler again with
+    /// the same arguments, so a stream that sends changes first sends the
+    /// current values, and the page catches up with what it missed.
+    #[must_use]
+    pub fn reconnect(mut self) -> Self {
+        self.0.resends = true;
+        self
+    }
+
+    /// Opens this stream, then runs `next` without waiting for an answer.
+    #[must_use]
+    pub fn then(self, next: impl IntoStmt<S>) -> Stmt<S> {
+        self.0.then(next)
+    }
+}
+
+impl<S> IntoStmt<S> for StreamCall<S> {
+    fn into_stmt(self) -> Stmt<S> {
+        self.0.into_stmt()
+    }
+}
+
+impl<S> fmt::Debug for StreamCall<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("StreamCall").field(&self.0).finish()
     }
 }
 
@@ -435,6 +531,7 @@ mod tests {
 
     const FIND: Action<Page, String> = Action::get("/find");
     const SAVE: Action<Page> = Action::post("/save");
+    const FEED: StreamAction<Page> = StreamAction::new("/feed");
 
     #[test]
     fn a_call_without_flags_keeps_six_elements() {
@@ -447,11 +544,7 @@ mod tests {
     #[test]
     fn the_flags_follow_the_error_signal() {
         assert_eq!(
-            FIND.call_with("tea")
-                .latest()
-                .reconnect()
-                .into_stmt()
-                .as_json(),
+            FIND.call_with("tea").latest().into_stmt().as_json(),
             &json!([
                 "call",
                 "GET",
@@ -459,14 +552,16 @@ mod tests {
                 ["lit", "tea"],
                 null,
                 null,
-                ["latest", "reconnect"]
+                ["latest"]
             ])
         );
     }
 
     #[test]
-    #[should_panic(expected = "served on `GET`")]
-    fn reconnect_refuses_a_post() {
-        let _ = SAVE.call().reconnect();
+    fn a_stream_call_is_a_get_that_can_reconnect() {
+        assert_eq!(
+            FEED.call().reconnect().into_stmt().as_json(),
+            &json!(["call", "GET", "/feed", null, null, null, ["reconnect"]])
+        );
     }
 }

@@ -18,7 +18,7 @@ use axum::routing::{MethodRouter, get, post};
 use futures::{Stream, StreamExt as _, stream};
 use serde::de::DeserializeOwned;
 
-use crate::action::{Action, Method};
+use crate::action::{Action, Method, StreamAction};
 use crate::page::Page;
 use crate::patch::{PatchEvent, Patches, SignalPatch};
 use crate::route::{Params, Route, Search, Url};
@@ -64,14 +64,14 @@ pub trait RouterExt<St>: Sized {
         Fut: Future<Output = P> + Send + 'static,
         P: Into<ActionResponse<S>>;
 
-    /// Serves `action` with a handler that returns a stream of patches.
+    /// Serves `stream` on `GET` with a handler that returns a stream of patches.
     ///
     /// The response stays open until the stream ends or the browser leaves
     /// the page. Use it with [`El::on_load`](crate::html::El::on_load) to push
     /// changes made by other users. The request is refused as for
     /// [`RouterExt::action`].
     #[must_use]
-    fn stream<S, A, H, M, Str>(self, action: Action<S, A>, handler: H) -> Self
+    fn stream<S, A, H, M, Str>(self, stream: StreamAction<S, A>, handler: H) -> Self
     where
         S: Signals,
         A: DeserializeOwned + Send + 'static,
@@ -168,7 +168,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         self.route(action.path(), method_router(method, route))
     }
 
-    fn stream<S, A, H, M, Str>(self, action: Action<S, A>, handler: H) -> Self
+    fn stream<S, A, H, M, Str>(self, stream: StreamAction<S, A>, handler: H) -> Self
     where
         S: Signals,
         A: DeserializeOwned + Send + 'static,
@@ -176,7 +176,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         M: 'static,
         Str: Stream<Item = Patches<S>> + Send + 'static,
     {
-        let method = action.method();
+        let method = Method::Get;
         let route = move |State(state): State<St>,
                           Query(query): Query<HashMap<String, String>>,
                           request: Parts,
@@ -198,7 +198,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 )
             }
         };
-        self.route(action.path(), method_router(method, route))
+        self.route(stream.path(), method_router(method, route))
     }
 }
 

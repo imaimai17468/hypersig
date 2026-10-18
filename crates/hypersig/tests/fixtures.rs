@@ -15,7 +15,7 @@ use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
     Action, Expr, Form, Fragment, NodeRef, Page, Patches, Rest, Route, Rules, Search, Sig, Signals,
-    Stmt, Validate, if_else,
+    Stmt, StreamAction, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -212,7 +212,7 @@ struct Timers {
 
 const SEARCH: Action<Timers> = Action::post("/search");
 const LOOKUP: Action<Timers, String> = Action::get("/lookup");
-const FEED: Action<Timers> = Action::get("/feed");
+const FEED: StreamAction<Timers> = StreamAction::new("/feed");
 
 fn timers() -> (El<Timers>, Timers) {
     let ticks = Timers::ticks();

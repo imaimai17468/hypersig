@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use axum::Router;
 use futures::{Stream, StreamExt as _, stream};
 use hypersig::html::{El, a, button, div, form, h1, input, li, p, span, ul};
-use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals};
+use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, StreamAction};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
@@ -36,7 +36,7 @@ hypersig::routes! {
 const ADD: Action<TodoPage, String> = Action::post("/todos");
 const TOGGLE: Action<TodoPage, TodoId> = Action::post("/todos/toggle");
 const REMOVE: Action<TodoPage, TodoId> = Action::post("/todos/remove");
-const UPDATES: Action<TodoPage> = Action::get("/todos/updates");
+const UPDATES: StreamAction<TodoPage> = StreamAction::new("/todos/updates");
 
 #[derive(Clone)]
 struct Todo {

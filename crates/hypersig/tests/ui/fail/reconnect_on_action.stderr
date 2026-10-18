@@ -1,0 +1,5 @@
+error[E0599]: no method named `reconnect` found for struct `Call<S>` in the current scope
+  --> tests/ui/fail/reconnect_on_action.rs:14:53
+   |
+14 |     let _ = button::<Counter>().on_click(ADD.call().reconnect());
+   |                                                     ^^^^^^^^^ method not found in `Call<Counter>`
