@@ -329,6 +329,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "チャットアプリや SNS が、ページへのリンクに出すカードです。",
                             },
                         ),
+                        (
+                            "OpenGraphType",
+                            "enum.OpenGraphType.html",
+                            L {
+                                en: "What a page shows, the `og:type` of its `OpenGraph` card.",
+                                ja: "ページが何を見せるかを表す、`OpenGraph` のカードの `og:type` です。",
+                            },
+                        ),
+                        (
+                            "OpenGraphLocale",
+                            "struct.OpenGraphLocale.html",
+                            L {
+                                en: "A language and territory in the `ja_JP` form that `og:locale` takes.",
+                                ja: "`og:locale` が受け取る `ja_JP` の形の、言語と地域です。",
+                            },
+                        ),
                     ],
                 },
             ],

@@ -1,0 +1,25 @@
+error[E0080]: evaluation panicked: an Open Graph locale is a language, `_`, and a territory, such as `ja_JP`
+ --> tests/ui/fail/open_graph_locale_with_hyphen.rs:4:29
+  |
+4 | const EN: OpenGraphLocale = OpenGraphLocale::new("en-US");
+  |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `EN` failed inside this call
+  |
+note: inside `OpenGraphLocale::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/head.rs
+  |
+  | /         assert!(
+  | |             ok,
+  | |             "an Open Graph locale is a language, `_`, and a territory, such as `ja_JP`"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/open_graph_locale_with_hyphen.rs:7:13
+  |
+7 |     let _ = EN;
+  |             ^^

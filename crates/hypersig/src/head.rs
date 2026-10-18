@@ -228,8 +228,91 @@ const fn starts_with(bytes: &[u8], prefix: &[u8]) -> bool {
 /// ```
 #[derive(Debug, Clone, Default)]
 pub struct OpenGraph {
+    kind: OpenGraphType,
     site_name: Option<String>,
     image: Option<(String, String)>,
+    locale: Option<OpenGraphLocale>,
+    alternate_locales: Vec<OpenGraphLocale>,
+}
+
+/// What a page shows, the `og:type` of its [`OpenGraph`] card.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
+pub enum OpenGraphType {
+    /// A site or a page of it that none of the other types fits.
+    #[default]
+    Website,
+    /// A post, a news story, or another dated text.
+    Article,
+    /// A book.
+    Book,
+    /// A person's page.
+    Profile,
+    /// A product for sale, the type Facebook's catalogs read.
+    Product,
+}
+
+impl OpenGraphType {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Website => "website",
+            Self::Article => "article",
+            Self::Book => "book",
+            Self::Profile => "profile",
+            Self::Product => "product",
+        }
+    }
+}
+
+/// A language and territory in the `ja_JP` form that `og:locale` takes.
+///
+/// Open Graph writes a locale as a language, `_`, and a territory, so a BCP 47
+/// tag such as `ja` or `en-US` does not fit it.
+///
+/// ```
+/// use hypersig::OpenGraphLocale;
+///
+/// const JA: OpenGraphLocale = OpenGraphLocale::new("ja_JP");
+/// assert_eq!(JA.as_str(), "ja_JP");
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OpenGraphLocale(&'static str);
+
+impl OpenGraphLocale {
+    /// The locale `locale`: two or three lowercase letters, `_`, and two uppercase letters.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `locale` has another shape, such as `ja` or `en-US`. In a
+    /// `const` the panic is a compile error.
+    #[must_use]
+    pub const fn new(locale: &'static str) -> Self {
+        let bytes = locale.as_bytes();
+        let mut ok = matches!(bytes.len(), 5 | 6) && bytes[bytes.len() - 3] == b'_';
+        let language = bytes.len().saturating_sub(3);
+        let mut i = 0;
+        while ok && i < bytes.len() {
+            ok = if i < language {
+                bytes[i].is_ascii_lowercase()
+            } else if i > language {
+                bytes[i].is_ascii_uppercase()
+            } else {
+                true
+            };
+            i += 1;
+        }
+        assert!(
+            ok,
+            "an Open Graph locale is a language, `_`, and a territory, such as `ja_JP`"
+        );
+        Self(locale)
+    }
+
+    /// The locale as `og:locale` writes it.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        self.0
+    }
 }
 
 impl OpenGraph {
@@ -237,6 +320,47 @@ impl OpenGraph {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Sets what the page shows. A card without it is a [`OpenGraphType::Website`].
+    #[must_use]
+    pub fn kind(mut self, kind: OpenGraphType) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    /// Sets the locale the page is written in, the `og:locale` tag.
+    #[must_use]
+    pub fn locale(mut self, locale: OpenGraphLocale) -> Self {
+        self.locale = Some(locale);
+        self
+    }
+
+    /// Adds a locale the page is also served in, one `og:locale:alternate` tag per call.
+    ///
+    /// ```
+    /// use hypersig::{OpenGraph, OpenGraphLocale, OpenGraphType, Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Post {}
+    ///
+    /// let html = Page::new("Hello", Post {})
+    ///     .open_graph(
+    ///         OpenGraph::new()
+    ///             .kind(OpenGraphType::Article)
+    ///             .locale(OpenGraphLocale::new("en_US"))
+    ///             .alternate_locale(OpenGraphLocale::new("ja_JP")),
+    ///     )
+    ///     .render();
+    /// assert!(html.contains(r#"<meta property="og:type" content="article">"#));
+    /// assert!(html.contains(r#"<meta property="og:locale" content="en_US">"#));
+    /// assert!(html.contains(r#"<meta property="og:locale:alternate" content="ja_JP">"#));
+    /// ```
+    #[must_use]
+    pub fn alternate_locale(mut self, locale: OpenGraphLocale) -> Self {
+        self.alternate_locales.push(locale);
+        self
     }
 
     /// Sets the name of the site the page belongs to, shown above the title.
@@ -270,7 +394,7 @@ impl OpenGraph {
         description: Option<&str>,
         url: Option<&str>,
     ) {
-        meta(out, "property", "og:type", "website");
+        meta(out, "property", "og:type", self.kind.as_str());
         meta(out, "property", "og:title", title);
         if let Some(description) = description {
             meta(out, "property", "og:description", description);
@@ -280,6 +404,12 @@ impl OpenGraph {
         }
         if let Some(name) = &self.site_name {
             meta(out, "property", "og:site_name", name);
+        }
+        if let Some(locale) = self.locale {
+            meta(out, "property", "og:locale", locale.as_str());
+        }
+        for locale in &self.alternate_locales {
+            meta(out, "property", "og:locale:alternate", locale.as_str());
         }
         let card = if let Some((src, alt)) = &self.image {
             meta(out, "property", "og:image", src);
@@ -304,7 +434,7 @@ pub(crate) fn meta(out: &mut String, key: &str, name: &str, content: &str) {
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use super::{OpenGraph, Origin};
+    use super::{OpenGraph, OpenGraphLocale, Origin};
     use crate::{Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize)]
@@ -384,6 +514,32 @@ mod tests {
     #[should_panic(expected = "starts with `http://` or `https://`")]
     fn an_origin_without_a_scheme_panics() {
         let _ = Origin::new("example.com");
+    }
+
+    #[test]
+    fn a_card_is_a_website_until_given_another_type() {
+        let html = Page::new("Note", note())
+            .open_graph(OpenGraph::new())
+            .render();
+        assert!(html.contains(r#"<meta property="og:type" content="website">"#));
+        assert!(!html.contains("og:locale"));
+    }
+
+    #[test]
+    fn an_open_graph_locale_takes_a_three_letter_language() {
+        assert_eq!(OpenGraphLocale::new("fil_PH").as_str(), "fil_PH");
+    }
+
+    #[test]
+    #[should_panic(expected = "such as `ja_JP`")]
+    fn a_bcp_47_tag_is_not_an_open_graph_locale() {
+        let _ = OpenGraphLocale::new("en-US");
+    }
+
+    #[test]
+    #[should_panic(expected = "such as `ja_JP`")]
+    fn a_language_alone_is_not_an_open_graph_locale() {
+        let _ = OpenGraphLocale::new("ja");
     }
 
     #[test]
