@@ -3,20 +3,29 @@
 
 use std::fmt;
 
-/// The scheme and host a site is served from, such as `https://example.com`.
+/// The scheme and host a site is served from, such as `https://example.com`,
+/// and the path the site is served under, if any.
 ///
 /// A canonical URL and the URLs of a link preview must be absolute, and a
 /// route's [`Url`](crate::Url) is a path, so [`Page::canonical`](crate::Page::canonical)
-/// and [`OpenGraph::image`] join one to an `Origin`.
+/// and [`OpenGraph::image`] join one to an `Origin`. An application behind a
+/// proxy that serves it under `/blog` and strips that prefix sees its routes
+/// at `/`, so its `Url`s lack the prefix, and [`Origin::under`] adds it back.
 ///
 /// ```
 /// use hypersig::Origin;
 ///
 /// const SITE: Origin = Origin::new("https://example.com");
 /// assert_eq!(SITE.as_str(), "https://example.com");
+///
+/// const BLOG: Origin = SITE.under("/blog");
+/// assert_eq!(BLOG.to_string(), "https://example.com/blog");
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Origin(&'static str);
+pub struct Origin {
+    origin: &'static str,
+    prefix: &'static str,
+}
 
 impl Origin {
     /// The origin `origin`: `http://` or `https://`, a host, and an optional port.
@@ -45,25 +54,63 @@ impl Origin {
             );
             i += 1;
         }
-        Self(origin)
+        Self { origin, prefix: "" }
     }
 
-    /// The origin as text.
+    /// The same origin with the site served under `prefix`, such as `/blog`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `prefix` does not start with `/`, ends with `/`, holds
+    /// `//`, or holds a query, a fragment, a quote, or a space. In a `const`
+    /// the panic is a compile error.
+    #[must_use]
+    pub const fn under(self, prefix: &'static str) -> Self {
+        let bytes = prefix.as_bytes();
+        assert!(
+            bytes.len() > 1 && bytes[0] == b'/' && bytes[bytes.len() - 1] != b'/',
+            "a prefix starts with `/` and does not end with one"
+        );
+        let mut i = 1;
+        while i < bytes.len() {
+            let empty_segment = bytes[i] == b'/' && bytes[i - 1] == b'/';
+            assert!(
+                !empty_segment && !matches!(bytes[i], b'?' | b'#' | b'"' | b' '),
+                "a prefix is a path without a query, a fragment, or an empty segment"
+            );
+            i += 1;
+        }
+        Self {
+            origin: self.origin,
+            prefix,
+        }
+    }
+
+    /// The scheme, host, and port, without the prefix.
     #[must_use]
     pub fn as_str(self) -> &'static str {
-        self.0
+        self.origin
     }
 
-    /// `path` on this origin. `path` starts with `/`.
+    /// The path the site is served under, or `""` at the root of the host.
+    #[must_use]
+    pub fn prefix(self) -> &'static str {
+        self.prefix
+    }
+
+    /// `path` on this origin, under its prefix. `path` starts with `/`.
     pub(crate) fn join(self, path: &str) -> String {
         assert!(path.starts_with('/'), "a path on an origin starts with `/`");
-        format!("{}{path}", self.0)
+        format!("{}{}{path}", self.origin, self.prefix)
     }
 }
 
+/// Writes the origin and its prefix, the text every absolute URL on the site
+/// starts with.
 impl fmt::Display for Origin {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0)
+        f.write_str(self.origin)?;
+        f.write_str(self.prefix)
     }
 }
 
@@ -223,6 +270,38 @@ mod tests {
     #[test]
     fn an_origin_takes_a_port() {
         assert_eq!(SITE.join("/a"), "http://localhost:3000/a");
+    }
+
+    #[test]
+    fn a_prefix_goes_between_the_origin_and_the_path() {
+        const BLOG: Origin = SITE.under("/blog/en");
+        assert_eq!(
+            BLOG.join("/posts/3"),
+            "http://localhost:3000/blog/en/posts/3"
+        );
+        assert_eq!(BLOG.prefix(), "/blog/en");
+        assert_eq!(BLOG.as_str(), "http://localhost:3000");
+    }
+
+    #[test]
+    fn the_card_image_takes_the_prefix() {
+        const BLOG: Origin = SITE.under("/blog");
+        let html = Page::new("Note", note())
+            .open_graph(OpenGraph::new().image(BLOG, "/og.png", "A note"))
+            .render();
+        assert!(html.contains(r#"content="http://localhost:3000/blog/og.png""#));
+    }
+
+    #[test]
+    #[should_panic(expected = "a prefix starts with `/`")]
+    fn a_prefix_with_a_trailing_slash_panics() {
+        let _ = SITE.under("/blog/");
+    }
+
+    #[test]
+    #[should_panic(expected = "without a query, a fragment, or an empty segment")]
+    fn a_prefix_with_an_empty_segment_panics() {
+        let _ = SITE.under("/a//b");
     }
 
     #[test]

@@ -1,0 +1,25 @@
+error[E0080]: evaluation panicked: a prefix starts with `/` and does not end with one
+ --> tests/ui/fail/origin_prefix_with_slash.rs:4:22
+  |
+4 | const BLOG: Origin = Origin::new("https://example.com").under("/blog/");
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `BLOG` failed inside this call
+  |
+note: inside `Origin::under`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/head.rs
+  |
+  | /         assert!(
+  | |             bytes.len() > 1 && bytes[0] == b'/' && bytes[bytes.len() - 1] != b'/',
+  | |             "a prefix starts with `/` and does not end with one"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/origin_prefix_with_slash.rs:7:13
+  |
+7 |     let _ = BLOG;
+  |             ^^^^
