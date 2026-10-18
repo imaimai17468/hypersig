@@ -2145,6 +2145,24 @@ pub(crate) fn write_attr(out: &mut String, name: &str, value: &str) {
     out.push('"');
 }
 
+/// Writes an attribute whose value is the text `value` displays as, escaping
+/// each piece as `Display` hands it over rather than building the text first.
+pub(crate) fn write_display_attr(out: &mut String, name: &str, value: &impl fmt::Display) {
+    struct Escaped<'a>(&'a mut String);
+    impl fmt::Write for Escaped<'_> {
+        fn write_str(&mut self, s: &str) -> fmt::Result {
+            escape_into(self.0, s, true);
+            Ok(())
+        }
+    }
+    out.push(' ');
+    out.push_str(name);
+    out.push_str("=\"");
+    fmt::Write::write_fmt(&mut Escaped(out), format_args!("{value}"))
+        .expect("writing to a String does not fail");
+    out.push('"');
+}
+
 pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
     for c in text.chars() {
         match c {
