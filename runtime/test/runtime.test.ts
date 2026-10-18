@@ -751,6 +751,22 @@ describe("calls", () => {
       expect(fetch).toHaveBeenCalledTimes(3);
     });
 
+    it("evaluates the arguments again for each attempt, so the stream can start after what the page holds", async () => {
+      vi.useFakeTimers();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(droppedResponse(`event: hs-signals\ndata: {"last":7}\n\n`))
+        .mockReturnValueOnce(new Promise<Response>(() => {}));
+      vi.stubGlobal("fetch", fetch);
+      mount(`<p data-hs-on-load='["call","GET","/feed",["sig","last"],null,null,["reconnect"]]'></p>`, { last: 3 });
+      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      const sent = fetch.mock.calls.map(([url]) => (url as URL).searchParams.get("args"));
+      expect(sent).toEqual(["3", "7"]);
+    });
+
     it("sets a connected flag only while the stream's answer is open", async () => {
       vi.useFakeTimers();
       vi.spyOn(console, "error").mockImplementation(() => {});

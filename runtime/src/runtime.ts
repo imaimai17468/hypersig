@@ -418,28 +418,38 @@ export class Runtime implements Host {
     return null;
   }
 
-  /** Calls an action with `args` and applies the patches it streams back. */
+  /**
+   * Calls an action with the value of `args` and applies the patches it
+   * streams back. `args` runs again before each reconnect, so a stream can
+   * be told what the page already holds.
+   */
   async call(
     method: string,
     path: string,
-    args: unknown,
+    args: () => unknown,
     indicator: string | null,
     error: string | null,
     options: CallOptions,
   ): Promise<void> {
-    const url = new URL(path, document.baseURI);
-    const body = JSON.stringify(args ?? null);
     const init: RequestInit = { method, headers: { accept: "text/event-stream" } };
-    if (options.files !== undefined) {
-      // The server refuses an upload without this header, which a form on another site cannot add.
-      init.headers = { accept: "text/event-stream", [UPLOAD_HEADER]: "1" };
-      init.body = this.#uploadBody(body, options.files, options.origin);
-    } else if (method === "GET") {
-      if (args !== null && args !== undefined) url.searchParams.set("args", body);
-    } else {
-      init.headers = { accept: "text/event-stream", "content-type": "application/json" };
-      init.body = body;
-    }
+    const request = (): URL => {
+      const value = args();
+      const url = new URL(path, document.baseURI);
+      const body = JSON.stringify(value ?? null);
+      if (options.files !== undefined) {
+        // The server refuses an upload without this header, which a form on another site cannot add.
+        init.headers = { accept: "text/event-stream", [UPLOAD_HEADER]: "1" };
+        init.body = this.#uploadBody(body, options.files, options.origin);
+      } else if (method === "GET") {
+        if (value !== null && value !== undefined) url.searchParams.set("args", body);
+      } else {
+        init.headers = { accept: "text/event-stream", "content-type": "application/json" };
+        init.body = body;
+      }
+      return url;
+    };
+    // The first request is built before the call returns, so a statement after it can change what the arguments read.
+    let url = request();
     // The handler decides which signals an action patches, so two call sites of one action write the same signals, and the key is the action.
     const key = `${method} ${path}`;
     let latest: AbortController | undefined;
@@ -475,6 +485,7 @@ export class Runtime implements Host {
         await new Promise((resolve) => setTimeout(resolve, delay));
         delay = Math.min(delay * 2, LAST_RETRY_MS);
         if (abandoned()) return;
+        url = request();
       }
     } finally {
       if (latest !== undefined && this.#latest.get(key) === latest) this.#latest.delete(key);

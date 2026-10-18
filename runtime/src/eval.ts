@@ -46,7 +46,7 @@ export interface Host {
   call(
     method: string,
     path: string,
-    args: unknown,
+    args: () => unknown,
     indicator: string | null,
     error: string | null,
     options: CallOptions,
@@ -493,7 +493,7 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       await run(evaluate(rest[0], ctx) ? rest[1] : rest[2], ctx, host);
       return;
     case "call": {
-      const args = rest[2] === null ? null : evaluate(rest[2], ctx);
+      const args = (): unknown => (rest[2] === null ? null : evaluate(rest[2], ctx));
       // A call without flags has six elements, so `rest[5]` is absent.
       const flags = (rest[5] ?? []) as string[];
       const options = {
@@ -507,7 +507,7 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
     }
     case "upload": {
       // `["upload", path, args, indicator, error, file input, flags?]`, always a POST.
-      const args = rest[1] === null ? null : evaluate(rest[1], ctx);
+      const args = (): unknown => (rest[1] === null ? null : evaluate(rest[1], ctx));
       const flags = (rest[5] ?? []) as string[];
       const options = { latest: flags.includes("latest"), reconnect: false, connected: false, origin: ctx.origin, files: rest[4] as string };
       void host.call("POST", rest[0] as string, args, rest[2] as string | null, rest[3] as string | null, options);

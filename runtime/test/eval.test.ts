@@ -8,7 +8,7 @@ function context(values: Record<string, unknown>): Context {
 
 function host() {
   return {
-    call: vi.fn(async () => {}),
+    call: vi.fn(async (..._call: Parameters<Host["call"]>) => {}),
     dom: vi.fn(),
     clearFiles: vi.fn(),
     navigate: vi.fn((_url: string) => {}),
@@ -119,19 +119,20 @@ describe("run", () => {
       ctx,
       h,
     );
-    expect(h.call).toHaveBeenCalledWith("POST", "/save", 5, "busy", null, {
+    expect(h.call).toHaveBeenCalledWith("POST", "/save", expect.any(Function), "busy", null, {
       latest: false,
       reconnect: false,
       connected: false,
       origin: undefined,
     });
+    expect(h.call.mock.calls[0]![2]()).toBe(5);
     expect(ctx.store.get("count")).toBe(9);
   });
 
   it("passes the flags after the error signal to the call", async () => {
     const h = host();
     await run(["call", "GET", "/find", ["lit", "tea"], null, null, ["latest", "reconnect", "connected"]], context({}), h);
-    expect(h.call).toHaveBeenCalledWith("GET", "/find", "tea", null, null, {
+    expect(h.call).toHaveBeenCalledWith("GET", "/find", expect.any(Function), null, null, {
       latest: true,
       reconnect: true,
       connected: true,

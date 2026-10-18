@@ -368,6 +368,9 @@ impl<S, A> StreamAction<S, A> {
     }
 
     /// A call to this stream with `args`, evaluated in the browser when the call runs.
+    ///
+    /// A call that [reconnects](StreamCall::reconnect) evaluates `args`
+    /// again before each attempt.
     #[must_use]
     pub fn call_with(&self, args: impl IntoExpr<S, A>) -> StreamCall<S> {
         StreamCall(Call::new(
@@ -434,9 +437,28 @@ impl<S> StreamCall<S> {
     /// [`error`](StreamCall::error) signal holds the last failure.
     ///
     /// A stream the server ends is not opened again, and neither is one whose
-    /// element has left the page. Each attempt runs the handler again with
-    /// the same arguments, so a stream that sends changes first sends the
-    /// current values, and the page catches up with what it missed.
+    /// element has left the page. Each attempt evaluates the arguments again
+    /// and runs the handler with them. Pass a signal the stream's patches
+    /// keep up to date, such as the id of the last message received, and the
+    /// handler can send only what came after it. A stream whose arguments
+    /// do not change sends the current values first, so the page catches up
+    /// with what it missed.
+    ///
+    /// ```
+    /// use hypersig::html::div;
+    /// use hypersig::{Signals, StreamAction};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Chat {
+    ///     messages: Vec<String>,
+    ///     last_id: i32,
+    /// }
+    ///
+    /// // The handler sends the messages after `last_id` and patches `last_id`.
+    /// const SINCE: StreamAction<Chat, i32> = StreamAction::new("/messages");
+    /// let _feed = div().on_load(SINCE.call_with(Chat::last_id()).reconnect());
+    /// ```
     #[must_use]
     pub fn reconnect(mut self) -> Self {
         self.0.resends = true;
