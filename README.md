@@ -170,6 +170,8 @@ assert!(list.render().contains("/members/"));
 
 The second type of `Route<P, Q>` types the query string: `Q` is a struct with `#[derive(Signals, Search)]`, whose fields are each a string, a number, a `bool`, or an `Option` of one, and the links and the handler take `(P, Q)`. Following a link loads the next page from the server. A link to another site still goes through `attr("href", ...)`, unchecked.
 
+`fn pages(Router<()>) else missing;` names a handler that shows the application's own page, with a 404 or a 400, for a path no route matches, a segment that does not parse, a handler that answers `None`, and a query string that does not deserialize. `PageResponse::with_status` sends any page with another status. An application served under a path prefix names it once as `const APP: Base = Base::new("/app")`, writes `under APP` on the first line of `routes!` and `.under(APP)` on each action, and runs inside `Router::nest("/app", ...)` or behind a proxy that strips `/app`. The links, the action calls, the redirects, and the runtime's path then start with `/app`. The [`prefix`](examples/prefix) example serves a shop that way.
+
 ## Styling
 
 Styles are Rust values too. `Style` has one method per standard CSS property, generated from MDN's CSS data, and each declaration becomes one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. A misspelled property or keyword, or a value of the wrong type such as a color for `width`, is a compile error. The page writes the rules its elements use into `<head>`, and a patch that brings new elements brings their rules, placed so that a breakpoint still overrides the base value.
