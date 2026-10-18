@@ -23,10 +23,17 @@ use crate::route::{encode_uri_component, encode_uri_path, query_string};
 
 static NULL: Value = Value::Null;
 
-/// The signals an expression reads, and the store path of each enclosing list item.
+/// One enclosing list item: its value and its position in the list.
+#[derive(Clone, Copy)]
+pub(crate) struct Slot<'a> {
+    value: &'a Value,
+    index: usize,
+}
+
+/// The signals an expression reads, and the item of each enclosing list.
 pub(crate) struct Ctx<'a> {
     pub(crate) root: &'a Value,
-    pub(crate) scope: Vec<String>,
+    pub(crate) scope: Vec<Slot<'a>>,
     /// Whether the HTML being written is a copy of a template that the runtime
     /// takes over. A copy leaves out the `data-hs-*` attributes, because the
     /// runtime reads them from the template.
@@ -40,16 +47,34 @@ pub(crate) struct Ctx<'a> {
 }
 
 impl<'a> Ctx<'a> {
-    pub(crate) fn with_item(&self, depth: usize, path: String) -> Ctx<'a> {
-        let mut scope: Vec<String> = self.scope.iter().take(depth).cloned().collect();
-        scope.push(path);
-        Ctx {
+    /// Runs `each` once per item of `items`, the list at `depth`, with a
+    /// copy of this context standing on that item, and stops at the first
+    /// `None`. The copy is built once and moved from item to item.
+    pub(crate) fn for_each_item(
+        &self,
+        depth: usize,
+        items: &'a [Value],
+        mut each: impl FnMut(&Ctx<'a>, usize) -> Option<()>,
+    ) -> Option<()> {
+        let mut scope: Vec<Slot<'a>> = self.scope.iter().take(depth).copied().collect();
+        scope.push(Slot {
+            value: &NULL,
+            index: 0,
+        });
+        let mut item = Ctx {
             root: self.root,
             scope,
             copy: true,
             vars: self.vars.clone(),
             rules: self.rules,
+        };
+        for (index, value) in items.iter().enumerate() {
+            if let Some(last) = item.scope.last_mut() {
+                *last = Slot { value, index };
+            }
+            each(&item, index)?;
         }
+        Some(())
     }
 
     pub(crate) fn as_copy(&self) -> Ctx<'a> {
@@ -62,14 +87,15 @@ impl<'a> Ctx<'a> {
         }
     }
 
-    /// The store path a place names, as `resolve` in the runtime computes it.
-    pub(crate) fn resolve(&self, place: &Value) -> Option<String> {
+    /// The value a place names: a store path of a page signal, or
+    /// `["item",depth,field]` for a field of an enclosing list item.
+    pub(crate) fn lookup(&self, place: &Value) -> Option<&'a Value> {
         match place {
-            Value::String(path) => Some(path.clone()),
+            Value::String(path) => Some(self.get(path)),
             Value::Array(parts) if parts.first().and_then(Value::as_str) == Some("item") => {
                 let depth = usize::try_from(parts.get(1)?.as_u64()?).ok()?;
-                let base = self.scope.get(depth)?;
-                Some(join(base, parts.get(2)?.as_str()?))
+                let slot = self.scope.get(depth)?;
+                Some(get_path(slot.value, parts.get(2)?.as_str()?).unwrap_or(&NULL))
             }
             _ => None,
         }
@@ -77,14 +103,6 @@ impl<'a> Ctx<'a> {
 
     pub(crate) fn get(&self, path: &str) -> &'a Value {
         get_path(self.root, path).unwrap_or(&NULL)
-    }
-}
-
-pub(crate) fn join(base: &str, tail: &str) -> String {
-    match (base.is_empty(), tail.is_empty()) {
-        (true, _) => tail.to_owned(),
-        (_, true) => base.to_owned(),
-        _ => format!("{base}.{tail}"),
     }
 }
 
@@ -319,7 +337,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
     let eval = |i: usize| evaluate(arg(i)?, ctx);
     let value = match op {
         "sig" => return Some(Cow::Borrowed(ctx.get(arg(1)?.as_str()?))),
-        "item" => return Some(Cow::Borrowed(ctx.get(&ctx.resolve(ast)?))),
+        "item" => return ctx.lookup(ast).map(Cow::Borrowed),
         "lit" => return arg(1).map(Cow::Borrowed),
         "if" => return if truthy(&*eval(1)?) { eval(2) } else { eval(3) },
         "let" => return let_in(parts, ctx).map(Cow::Owned),
@@ -346,8 +364,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         }
         "index" => {
             let depth = usize::try_from(arg(1)?.as_u64()?).ok()?;
-            let path = ctx.scope.get(depth)?;
-            Value::from(path.rsplit('.').next()?.parse::<u64>().ok()?)
+            Value::from(ctx.scope.get(depth)?.index)
         }
         "tuple" => Value::Array(
             parts[1..]
@@ -475,23 +492,22 @@ fn let_in<'a>(parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
 /// `["count",place,depth,e]` and the other operations that evaluate `e`
 /// once per item of the list at `place`.
 fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
-    let path = ctx.resolve(parts.get(1)?)?;
+    let list = ctx.lookup(parts.get(1)?)?;
     let depth = usize::try_from(parts.get(2)?.as_u64()?).ok()?;
     let each = parts.get(3)?;
-    let len = ctx.get(&path).as_array().map_or(0, Vec::len);
+    let items = list.as_array().map_or(&[][..], Vec::as_slice);
     let mut count = 0_u64;
     let mut folded: Option<f64> = None;
     let mut mapped = Vec::new();
-    for index in 0..len {
-        let item = ctx.with_item(depth, join(&path, &index.to_string()));
-        let value = evaluate(each, &item)?;
+    ctx.for_each_item(depth, items, |item, _| {
+        let value = evaluate(each, item)?;
         if op == "map" {
             mapped.push(value.into_owned());
-            continue;
+            return Some(());
         }
         if op == "count" {
             count += u64::from(truthy(&value));
-            continue;
+            return Some(());
         }
         let value = f(&value)?;
         folded = Some(match (op, folded) {
@@ -500,7 +516,8 @@ fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
             ("max_of", Some(max)) => max.max(value),
             (_, Some(min)) => min.min(value),
         });
-    }
+        Some(())
+    })?;
     Some(match (op, folded) {
         ("map", _) => Value::Array(mapped),
         ("count", _) => Value::from(count),

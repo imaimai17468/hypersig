@@ -1843,21 +1843,20 @@ impl<S> El<S> {
     /// Writes one copy of this template per item of `list`, each marked with
     /// the key the runtime will compute for it, so the runtime adopts them.
     fn write_items(&self, out: &mut String, ctx: &Ctx<'_>, list: &Value, depth: usize) {
-        let Some(path) = ctx.resolve(list) else {
+        let Some(items) = ctx.lookup(list).and_then(Value::as_array) else {
             return;
         };
-        let len = ctx.get(&path).as_array().map_or(0, Vec::len);
-        for index in 0..len {
-            let item = ctx.with_item(depth, ssr::join(&path, &index.to_string()));
+        ctx.for_each_item(depth, items, |item, index| {
             let key = match &self.key {
                 None => format!("#{index}"),
-                Some(key) => match ssr::evaluate(key, &item) {
+                Some(key) => match ssr::evaluate(key, item) {
                     Some(value) => ssr::js_json(&value),
-                    None => continue,
+                    None => return Some(()),
                 },
             };
-            self.write(out, Some(&item), Some(&key));
-        }
+            self.write(out, Some(item), Some(&key));
+            Some(())
+        });
     }
 
     fn has_attr(&self, name: &str) -> bool {
@@ -1941,9 +1940,8 @@ impl<S> El<S> {
             .and_then(|text| eval_text(text.as_json()));
         let mut selected: Option<String> = None;
         if let (Some(ctx), Some(bind)) = (ctx, &self.bind)
-            && let Some(path) = bind.get(0).and_then(|place| ctx.resolve(place))
+            && let Some(value) = bind.get(0).and_then(|place| ctx.lookup(place))
         {
-            let value = ctx.get(&path);
             match bind.get(1).and_then(Value::as_str) {
                 Some("bool") if ssr::truthy(value) => computed.push(("checked", String::new())),
                 Some("radio") if bind.get(2).is_some_and(|choice| ssr::equal(choice, value)) => {
