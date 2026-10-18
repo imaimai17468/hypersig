@@ -487,6 +487,60 @@ fn post_json(path: &str, headers: &[(&str, &str)], body: &'static str) -> Reques
 }
 
 #[tokio::test]
+async fn a_post_whose_body_is_not_json_gets_415() {
+    let (status, body) = send(
+        Request::post("/add")
+            .header("content-type", "text/plain")
+            .body(Body::from("[4,3]"))
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+    assert_eq!(body, "the action's body is not `application/json`");
+}
+
+#[tokio::test]
+async fn a_json_media_type_with_parameters_is_accepted() {
+    let (status, _) = send(
+        Request::post("/add")
+            .header("content-type", "Application/JSON; charset=utf-8")
+            .body(Body::from("[4,3]"))
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_call_from_another_site_gets_403() {
+    for site in ["cross-site", "same-site"] {
+        let (status, body) = send(post_json("/add", &[("sec-fetch-site", site)], "[4,3]")).await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{site}");
+        assert_eq!(body, "the action was called from another site");
+    }
+    let (status, body) = send(
+        Request::get("/peek?args=5")
+            .header("sec-fetch-site", "cross-site")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "{body}");
+}
+
+#[tokio::test]
+async fn a_call_from_the_same_origin_is_served() {
+    let (status, body) = send(post_json(
+        "/add",
+        &[("sec-fetch-site", "same-origin")],
+        "[4,3]",
+    ))
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, "event: hs-signals\ndata: {\"count\":7}\n\n");
+}
+
+#[tokio::test]
 async fn an_action_reads_the_request_through_its_extractor() {
     let (status, _, body) =
         send_guarded(post_json("/greet", &[("x-visitor", "Ada")], "null")).await;

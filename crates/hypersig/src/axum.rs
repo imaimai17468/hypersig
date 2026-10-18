@@ -11,7 +11,7 @@ use axum::Router;
 use axum::body::Bytes;
 use axum::extract::{FromRequestParts, MatchedPath, Query, RawPathParams, State};
 use axum::http::request::Parts;
-use axum::http::{StatusCode, header};
+use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
 use axum::response::{Html, IntoResponse, IntoResponseParts, Redirect, Response};
 use axum::routing::{MethodRouter, get, post};
@@ -27,7 +27,7 @@ use crate::signal::Signals;
 /// Adds hypersig routes to an axum [`Router`].
 ///
 /// Each handler takes the router state and its arguments, and may take one
-/// [`FromRequestParts`] extractor between them, such as a `HeaderMap` or the
+/// [`FromRequestParts`] extractor between them, such as [`HeaderMap`] or the
 /// application's own signed-in user. A tuple of extractors counts as one.
 /// See [`Handler`].
 pub trait RouterExt<St>: Sized {
@@ -51,8 +51,9 @@ pub trait RouterExt<St>: Sized {
     ///
     /// The handler receives the router state and the arguments the call
     /// passed, already deserialized, and returns anything that converts into
-    /// an [`ActionResponse`]. A request whose arguments do not deserialize
-    /// gets a 400 before the handler runs.
+    /// an [`ActionResponse`]. A [`RequestError`] refuses the request before
+    /// the handler runs: a request from another site, a POST whose body is not
+    /// JSON, or arguments that do not deserialize.
     #[must_use]
     fn action<S, A, H, M, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
     where
@@ -157,7 +158,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                           body: Bytes| {
             let handler = handler.clone();
             async move {
-                let args = read_args::<A>(method, &query, &body)?;
+                let args = read_args::<A>(method, &request.headers, &query, &body)?;
                 Ok::<_, RequestError>(match handler.call(state, request, args).await {
                     Ok(reply) => reply.await.into().into_response(),
                     Err(rejection) => rejection,
@@ -182,7 +183,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                           body: Bytes| {
             let handler = handler.clone();
             async move {
-                let args = read_args::<A>(method, &query, &body)?;
+                let args = read_args::<A>(method, &request.headers, &query, &body)?;
                 let patches = match handler.call(state, request, args).await {
                     Ok(patches) => patches,
                     Err(rejection) => return Ok(rejection),
@@ -484,37 +485,66 @@ where
     }
 }
 
-/// Reads the arguments from the body of a POST and from the `args` query parameter of a GET.
+/// Refuses a request from another site and a POST whose body is not JSON,
+/// then reads the arguments from the body of a POST and from the `args`
+/// query parameter of a GET.
 fn read_args<A: DeserializeOwned>(
     method: Method,
+    headers: &HeaderMap,
     query: &HashMap<String, String>,
     body: &[u8],
 ) -> Result<A, RequestError> {
+    // `same-site` is refused too, because a cookie with `SameSite=Lax` rides
+    // along on a request from a sibling subdomain. A browser that sends no
+    // `Sec-Fetch-Site` still sends a preflight before a cross-origin POST of
+    // JSON, and this server answers no preflight.
+    let site = headers.get("sec-fetch-site");
+    if site.is_some_and(|site| site.as_bytes() != b"same-origin") {
+        return Err(RequestError::new(Refusal::CrossSite));
+    }
     match method {
-        Method::Post if !body.is_empty() => serde_json::from_slice(body),
-        Method::Post => serde_json::from_str("null"),
+        Method::Post => {
+            let json = headers
+                .get(header::CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok())
+                .and_then(|value| value.split(';').next())
+                .is_some_and(|media| media.trim().eq_ignore_ascii_case("application/json"));
+            if !json {
+                return Err(RequestError::new(Refusal::NotJson));
+            }
+            serde_json::from_slice(if body.is_empty() { b"null" } else { body })
+        }
         Method::Get => serde_json::from_str(query.get("args").map_or("null", String::as_str)),
     }
-    .map_err(RequestError::new)
+    .map_err(|source| RequestError::new(Refusal::Arguments(source)))
 }
 
 fn to_sse(event: &PatchEvent) -> SseEvent {
     SseEvent::default().event(event.name()).data(event.data())
 }
 
-/// A request to an action whose arguments did not deserialize.
+/// A request to an action that was refused before its handler ran.
 ///
-/// Its response is `400 Bad Request` with the serde message as the body.
+/// Its response is `403 Forbidden` for a request from another site, `415
+/// Unsupported Media Type` for a POST whose body is not JSON, and `400 Bad
+/// Request` with the serde message for arguments that do not deserialize.
 #[derive(Debug)]
 pub struct RequestError {
-    source: serde_json::Error,
+    refusal: Refusal,
     backtrace: Backtrace,
 }
 
+#[derive(Debug)]
+enum Refusal {
+    CrossSite,
+    NotJson,
+    Arguments(serde_json::Error),
+}
+
 impl RequestError {
-    fn new(source: serde_json::Error) -> Self {
+    fn new(refusal: Refusal) -> Self {
         Self {
-            source,
+            refusal,
             backtrace: Backtrace::capture(),
         }
     }
@@ -524,26 +554,41 @@ impl RequestError {
     pub fn backtrace(&self) -> &Backtrace {
         &self.backtrace
     }
+
+    /// The status of the response the error answers with.
+    #[must_use]
+    pub fn status(&self) -> StatusCode {
+        match self.refusal {
+            Refusal::CrossSite => StatusCode::FORBIDDEN,
+            Refusal::NotJson => StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            Refusal::Arguments(_) => StatusCode::BAD_REQUEST,
+        }
+    }
 }
 
 impl fmt::Display for RequestError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "the action's arguments did not deserialize: {}",
-            self.source
-        )
+        match &self.refusal {
+            Refusal::CrossSite => f.write_str("the action was called from another site"),
+            Refusal::NotJson => f.write_str("the action's body is not `application/json`"),
+            Refusal::Arguments(source) => {
+                write!(f, "the action's arguments did not deserialize: {source}")
+            }
+        }
     }
 }
 
 impl StdError for RequestError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        Some(&self.source)
+        match &self.refusal {
+            Refusal::Arguments(source) => Some(source),
+            Refusal::CrossSite | Refusal::NotJson => None,
+        }
     }
 }
 
 impl IntoResponse for RequestError {
     fn into_response(self) -> Response {
-        (StatusCode::BAD_REQUEST, self.to_string()).into_response()
+        (self.status(), self.to_string()).into_response()
     }
 }
