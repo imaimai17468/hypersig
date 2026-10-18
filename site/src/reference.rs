@@ -1728,8 +1728,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "is_touched",
                             "struct.Sig.html#method.is_touched",
                             L {
-                                en: "Whether the visitor has left `field`, or has submitted the form.",
-                                ja: "訪問者が `field` を離れたか、フォームを送信したかどうか",
+                                en: "Whether the visitor has left `field`, or has submitted the form while `field` has a rule.",
+                                ja: "訪問者が `field` を離れたか、`field` にルールがあってフォームを送信したかどうか",
                             },
                         ),
                         (

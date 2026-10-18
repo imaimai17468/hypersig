@@ -391,7 +391,7 @@ impl<S, T> Sig<S, Form<T>> {
         ]))
     }
 
-    /// Whether the visitor has left `field`, or has submitted the form.
+    /// Whether the visitor has left `field`, or has submitted the form while `field` has a rule.
     #[must_use]
     pub fn is_touched<U>(self, field: Sig<T, U>) -> Expr<S, bool> {
         let touched: Sig<S, Value> = self.at(part("touched"));
