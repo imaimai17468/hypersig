@@ -92,6 +92,42 @@ pub fn server(site: Site) -> Part {
             },
         ),
         fragments(site),
+        calls(site),
+    ])
+}
+
+/// The sections on calls that overlap and streams that drop.
+fn calls(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Calls that overlap",
+                ja: "重なった呼び出し",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Each call applies its patches when they arrive, so the answer to an earlier, slower search can overwrite the answer to a later one. [`Call::latest`](api:hypersig/struct.Call.html#method.latest) aborts the unfinished earlier `latest` call to the same action, and the patches it has not received are dropped. Calls from different elements to one action share it, because the handler decides which signals they patch. The server may stop the aborted handler at an `.await`, so mark only reads. A call without `latest` is never aborted, and an indicator stays true until every call that sets it has its answer.",
+                ja: "呼び出しは差分が届いた順に反映するので、前に送った遅い検索の答えが、あとの検索の答えを上書きすることがあります。[`Call::latest`](api:hypersig/struct.Call.html#method.latest) は、同じアクションへの `latest` の呼び出しで、まだ終わっていない前のものを取り消します。取り消した呼び出しの、まだ届いていない差分は捨てます。アクションがどのシグナルに差分を返すかはハンドラが決めるので、別々の要素から同じアクションを呼んでも、取り消しの対象は共通です。取り消されたハンドラはサーバーで `.await` の時点で止まることがあるので、`latest` は読み取りだけに付けてください。`latest` のない呼び出しは取り消されません。indicator は、それを使う呼び出しがすべて答えを受け取るまで真のままです。",
+            },
+        ),
+        show(Snippet::Latest),
+        heading(
+            site,
+            L {
+                en: "Streams that drop",
+                ja: "切れたストリーム",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "[`Call::reconnect`](api:hypersig/struct.Call.html#method.reconnect) sends a call again when its connection fails, its stream breaks off, or the server answers with a 5xx status, as the clock above does. It waits 1 second, then twice as long each time up to 30 seconds. A stream the server ends, a 4xx answer, and an element that has left the page stop it. Each attempt runs the handler again with the same arguments, so start the stream with the current values, and the page catches up with what it missed. Sending a `POST` again could repeat a change, so `reconnect` panics on an action not served on `GET`.",
+                ja: "[`Call::reconnect`](api:hypersig/struct.Call.html#method.reconnect) は、接続が失敗したとき、ストリームが途中で切れたとき、サーバーが 5xx を返したときに、呼び出しを送り直します。上の時計がこの例です。1 秒待ち、そのあとは倍々に最大 30 秒まで待ちます。サーバーがストリームを閉じたとき、4xx の答え、要素がページから外れたときには送り直しません。送り直すたびにハンドラが同じ引数で実行されるので、ストリームの初めに現在の値を送ってください。ページは見逃した変更に追いつきます。`POST` を送り直すと変更を繰り返しうるので、`GET` 以外で配信するアクションに `reconnect` を付けると panic します。",
+            },
+        ),
     ])
 }
 

@@ -1667,6 +1667,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "latest",
+                            "struct.Call.html#method.latest",
+                            L {
+                                en: "Aborts the unfinished earlier `latest` call to the same action.",
+                                ja: "同じアクションへの `latest` の呼び出しで、まだ終わっていない前のものを取り消します。",
+                            },
+                        ),
+                        (
+                            "reconnect",
+                            "struct.Call.html#method.reconnect",
+                            L {
+                                en: "Sends this call again when its connection fails or the server answers 5xx.",
+                                ja: "接続が失敗したときやサーバーが 5xx を返したときに、この呼び出しを送り直します。",
+                            },
+                        ),
+                        (
                             "then",
                             "struct.Call.html#method.then",
                             L {

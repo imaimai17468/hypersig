@@ -23,7 +23,7 @@ const TICKS: Action<Clock> = Action::get("/ticks");
 
 async fn index((): (), (): ()) -> Page<Clock> {
     Page::new("Clock", Clock { seconds: 0 }).child(
-        p().on_load(TICKS.call())
+        p().on_load(TICKS.call().reconnect())
             .text("Connected for ")
             .child(span().bind_text(Clock::seconds().to_text()))
             .text(" s"),

@@ -49,6 +49,7 @@ snippets! {
     ListStatements => "list_statements.rs";
     Patches => "patches.rs";
     Forms => "forms.rs";
+    Latest => "latest.rs";
     Links => "links.rs";
     WrongRoute => "wrong_route.rs", "compile_fail,E0080";
     ChildRoutes => "child_routes.rs";

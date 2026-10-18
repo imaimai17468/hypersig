@@ -184,6 +184,9 @@ impl<S> Call<S> {
     }
 
     /// Sets `flag` to true while the response is awaited and to false after.
+    ///
+    /// Several calls may set one flag. It turns false once every one of them
+    /// has its answer.
     #[must_use]
     pub fn indicator(mut self, flag: Sig<S, bool>) -> Self {
         self.indicator = Value::from(flag.path());
@@ -197,9 +200,11 @@ impl<S> Call<S> {
         self
     }
 
-    /// Aborts the earlier call of the same action that was also sent with
-    /// `latest` and has not finished, so a slow answer cannot overwrite a
-    /// newer one.
+    /// Aborts the unfinished earlier `latest` call to the same action.
+    ///
+    /// A slow answer to an earlier call then cannot overwrite the answer to
+    /// this one. The calls of every element to the action share the one
+    /// latest call, because the handler decides which signals they patch.
     ///
     /// Use it for a read whose answer replaces the previous one, such as a
     /// search that runs as the visitor types. The patches of the aborted call
@@ -228,16 +233,32 @@ impl<S> Call<S> {
         self
     }
 
-    /// Sends this call again after the connection fails or the server answers
-    /// with a 5xx status, waiting 1 second and then twice as long each time,
-    /// up to 30 seconds.
+    /// Sends this call again when its connection fails or the server answers 5xx.
+    ///
+    /// The first attempt waits 1 second, and each later one twice as long,
+    /// up to 30 seconds. A connection that the server answered with a 2xx
+    /// status starts the wait over. While the call is failing, the
+    /// [`error`](Call::error) signal holds the last failure.
     ///
     /// Use it for a stream served with `RouterExt::stream`. A stream the
     /// server ends is not sent again, and neither is one whose element has
     /// left the page. Each attempt runs the handler again with the same
-    /// arguments, so a stream that sends changes starts with the current
-    /// values. While the call is failing, the [`error`](Call::error) signal
-    /// holds the last failure.
+    /// arguments, so a stream that sends changes first sends the current
+    /// values, and the page catches up with what it missed.
+    ///
+    /// ```
+    /// use hypersig::html::div;
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Feed {
+    ///     items: Vec<String>,
+    /// }
+    ///
+    /// const UPDATES: Action<Feed> = Action::get("/updates");
+    /// let _feed = div().on_load(UPDATES.call().reconnect());
+    /// ```
     ///
     /// # Panics
     ///
