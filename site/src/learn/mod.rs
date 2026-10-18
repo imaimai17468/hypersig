@@ -1,6 +1,7 @@
 //! The Learn section, a guide read from top to bottom.
 
 mod basics;
+mod forms;
 mod server;
 pub mod snippet;
 mod state;
@@ -21,6 +22,7 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::Expressions => state::expressions(site),
         Learn::Lists => state::lists(site),
         Learn::Server => server::server(site),
+        Learn::Forms => forms::forms(site),
         Learn::Pages => server::pages(site),
         Learn::Styling => server::styling(site),
         Learn::EscapeHatches => server::escape_hatches(site),

@@ -4,6 +4,8 @@
 //! A demo runs on signals alone, since the site is served as static files
 //! and has no server to answer an action.
 
+use std::cell::Cell;
+
 use hypersig::Page;
 use hypersig::Signals;
 use hypersig::html::{div, el, p};
@@ -59,7 +61,7 @@ macro_rules! demos {
             /// The demo's page as an HTML document.
             pub fn render(self, site: Site) -> String {
                 match self {
-                    $(Self::$variant => frame_page(site, $module::page(site)),)*
+                    $(Self::$variant => rendering(site, || frame_page(site, $module::page(site))),)*
                 }
             }
         }
@@ -74,6 +76,7 @@ demos! {
     Todos => todos, "todos.rs", "19rem";
     Status => status, "status.rs", "8rem";
     Stopwatch => stopwatch, "stopwatch.rs", "6rem";
+    Signup => signup, "signup.rs", "28.5rem";
     Theme => theme, "ui/theme.rs", "21rem";
     Button => button, "ui/button.rs", "12rem";
     TextField => text_field, "ui/text_field.rs", "20rem";
@@ -100,6 +103,34 @@ demos! {
     Accent => accent, "style/accent.rs", "15rem";
     Layout => layout, "style/layout.rs", "14rem";
     Spinner => spinner, "style/spinner.rs", "6rem";
+}
+
+thread_local! {
+    /// The site the demo being rendered is for.
+    static RENDERING: Cell<Option<Site>> = const { Cell::new(None) };
+}
+
+impl Site {
+    /// The site the demo being rendered is for, read by the code that takes no
+    /// `site` argument: `Validate::rules` gets only the form and its rules,
+    /// and its messages are translated like every other text of a demo.
+    ///
+    /// # Panics
+    ///
+    /// Panics outside [`Demo::render`].
+    fn rendering() -> Self {
+        RENDERING
+            .get()
+            .expect("a demo's rules are built inside `Demo::render`")
+    }
+}
+
+/// `render()`, with [`Site::rendering`] returning `site` while it runs.
+fn rendering(site: Site, render: impl FnOnce() -> String) -> String {
+    let outer = RENDERING.replace(Some(site));
+    let page = render();
+    RENDERING.set(outer);
+    page
 }
 
 impl Demo {
@@ -205,7 +236,12 @@ fn shown_source(source: &str, lang: crate::Lang) -> String {
     }
     out.push_str(rest);
     out.lines()
-        .filter(|line| !matches!(line.trim(), "use crate::Site;" | "use crate::lang::L;"))
+        .filter(|line| {
+            !matches!(
+                line.trim(),
+                "use crate::Site;" | "use crate::lang::L;" | "let site = Site::rendering();"
+            )
+        })
         .map(|line| line.replace("(site: Site)", "()"))
         .collect::<Vec<_>>()
         .join("\n")
