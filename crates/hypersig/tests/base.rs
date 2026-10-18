@@ -6,7 +6,8 @@ use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt as _;
 use hypersig::html::{a, button, p};
 use hypersig::{
-    Action, Base, Page, PageResponse, Patches, Route, RouterExt, Signals, StreamAction, Unserved,
+    Action, Base, Page, PageResponse, Patches, Route, RouterExt, Search, Signals, StreamAction,
+    Unserved,
 };
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
@@ -17,6 +18,12 @@ struct Shop {
 }
 
 const APP: Base = Base::new("/app");
+
+#[derive(Signals, Search, Serialize, Deserialize)]
+struct Filter {
+    color: Vec<String>,
+    q: Option<String>,
+}
 
 hypersig::routes! {
     fn pages(Router<()>) under APP else missing;
@@ -32,6 +39,11 @@ hypersig::routes! {
     };
     const REVIEW: Route<(i32, i32)> = "/items/{id}/reviews/{review}" in ITEM =>
         |(), (id, review): (i32, i32)| async move { shop(&format!("Review {review} of {id}")) };
+    const FIND: Route<(), Filter> = "/find" => |(), filter: Filter| async move {
+        let fixed = Filter { color: vec!["a b".to_owned(), "c".to_owned()], q: None };
+        shop(&format!("{:?} {:?}", filter.color, filter.q))
+            .child(a().href(FIND.link_with(&fixed)).text("Fixed"))
+    };
     const OLD: Route<i32> = "/old/{id}" => |(), id: i32| async move {
         PageResponse::redirect(ITEM.url(id))
     };
@@ -107,6 +119,39 @@ async fn check_home(app: Router, home: &str) {
     );
     let runtime = format!(r#"src="/app{}""#, hypersig::RUNTIME_PATH);
     assert!(body.contains(&runtime), "{body}");
+}
+
+#[tokio::test]
+async fn a_list_search_field_repeats_its_key_after_the_base_and_reads_back() {
+    let filter = Filter {
+        color: vec!["red".to_owned(), "dark blue".to_owned()],
+        q: Some("x".to_owned()),
+    };
+    assert_eq!(
+        FIND.url(filter).as_str(),
+        "/app/find?color=red&color=dark%20blue&q=x"
+    );
+    let empty = Filter {
+        color: Vec::new(),
+        q: None,
+    };
+    assert_eq!(FIND.url(empty).as_str(), "/app/find");
+
+    let served = || Router::new().nest(APP.as_str(), app());
+    let (status, body, _) = get(served(), "/app/find?color=red&q=x&color=dark%20blue").await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert!(
+        body.contains(r#"<p>["red", "dark blue"] Some("x")</p>"#),
+        "{body}"
+    );
+    assert!(
+        body.contains(r#"href="/app/find?color=a%20b&amp;color=c""#),
+        "{body}"
+    );
+
+    let (status, body, _) = get(served(), "/app/find?q=x&q=y").await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body.contains("duplicate field `q`"), "{body}");
 }
 
 #[tokio::test]
