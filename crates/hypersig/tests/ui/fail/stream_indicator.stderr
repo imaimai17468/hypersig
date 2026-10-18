@@ -1,0 +1,5 @@
+error[E0599]: no method named `indicator` found for struct `StreamCall<S>` in the current scope
+  --> tests/ui/fail/stream_indicator.rs:14:50
+   |
+14 |     let _ = div::<Feed>().on_load(UPDATES.call().indicator(Feed::live()));
+   |                                                  ^^^^^^^^^ method not found in `StreamCall<Feed>`
