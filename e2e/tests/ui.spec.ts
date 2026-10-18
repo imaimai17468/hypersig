@@ -315,6 +315,20 @@ test("a toast is announced in the notifications region and stays until dismissed
   await expect(region.getByRole("listitem")).toContainText("Upload failed");
 });
 
+test("toasts pushed after one is dismissed get ids of their own, and one reads a signal", async ({ page }) => {
+  // The fixture fails the test on a console warning, which the runtime writes for a repeated key.
+  const region = page.getByRole("region", { name: "Notifications" });
+  await page.locator("#toast").click();
+  await page.locator("#toast-error").click();
+  await region.getByRole("listitem").last().getByRole("button", { name: "Dismiss" }).click();
+  await page.getByRole("textbox", { name: "Name" }).fill("Ada");
+  await page.locator("#toast-name").click();
+  await page.locator("#toast").click();
+  await expect(region.getByRole("listitem")).toHaveCount(3);
+  await expect(region.getByRole("listitem").nth(1)).toContainText("Your name is Ada");
+  await expect(region.getByRole("listitem").nth(2)).toContainText("Event created");
+});
+
 const payments = (page: import("@playwright/test").Page) => page.getByRole("table", { name: "Payments" });
 const dataTable = (page: import("@playwright/test").Page) => page.locator("section", { has: payments(page) });
 const emails = (page: import("@playwright/test").Page) =>

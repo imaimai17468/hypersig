@@ -11,7 +11,9 @@ use hypersig::style::Media;
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
-use hypersig::{Action, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals, if_else};
+use hypersig::{
+    Action, Expr, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals, if_else,
+};
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart, Column,
     Combobox, ComboboxState, DataTable, Dialog, DonutChart, InputKind, Level, Listbox, Menu,
@@ -128,7 +130,6 @@ struct Gallery {
     country: ComboboxState,
     volume: i32,
     toasts: Vec<Toast>,
-    next_toast: i32,
     payments: Vec<Payment>,
     payments_table: TableState,
     chosen_payments: Vec<i32>,
@@ -557,7 +558,6 @@ fn feedback() -> El<Gallery> {
 
 fn toasts() -> El<Gallery> {
     let toasts = Gallery::toasts();
-    let next = Gallery::next_toast();
     div()
         .css(wrap(rem(0.5)))
         .child(
@@ -566,8 +566,7 @@ fn toasts() -> El<Gallery> {
                 .on_click(
                     Toast::new("Event created")
                         .description("Sunday, December 3 at 9:00")
-                        .push(toasts, next)
-                        .then(next.set(next + 1)),
+                        .push(toasts),
                 )
                 .text("Show a toast"),
         )
@@ -578,10 +577,21 @@ fn toasts() -> El<Gallery> {
                     Toast::new("Upload failed")
                         .description("The file is larger than 10 MB.")
                         .variant(ToastVariant::Destructive)
-                        .push(toasts, next)
-                        .then(next.set(next + 1)),
+                        .push(toasts),
                 )
                 .text("Show an error"),
+        )
+        .child(
+            button(ButtonVariant::Outline, ButtonSize::Sm)
+                .id("toast-name")
+                .on_click(Toast::push_expr(
+                    toasts,
+                    Expr::lit(&Toast::new("Name")).with(
+                        Toast::body(),
+                        Expr::lit(&"Your name is ".to_owned()).concat(Gallery::name()),
+                    ),
+                ))
+                .text("Show the name"),
         )
         .child(Toaster::new(toasts))
 }
@@ -906,7 +916,6 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             country: ComboboxState::default(),
             volume: 40,
             toasts: Vec::new(),
-            next_toast: 1,
             payments: sample_payments(),
             payments_table: TableState::default(),
             chosen_payments: Vec::new(),

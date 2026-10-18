@@ -1805,8 +1805,8 @@ fn component_page(page: Component) -> Page {
                     "Toast::new",
                     "hypersig_ui/struct.Toast.html#method.new",
                     L {
-                        en: "A toast titled `title`, with the id 0.",
-                        ja: "`title` をタイトルに持ち、id が 0 のトースト",
+                        en: "A toast titled `title`, with an id no other toast of the process has.",
+                        ja: "`title` をタイトルに持ち、プロセスのほかのどのトーストとも違う id を持つトースト",
                     },
                 ),
                 (
@@ -1826,19 +1826,19 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
-                    "id",
-                    "hypersig_ui/struct.Toast.html#method.id",
-                    L {
-                        en: "Sets the id that tells this toast apart from the others in its list.",
-                        ja: "同じ一覧のほかのトーストとこのトーストを区別する id を設定します。",
-                    },
-                ),
-                (
                     "push",
                     "hypersig_ui/struct.Toast.html#method.push",
                     L {
-                        en: "A statement that adds this toast to `toasts` with the id `id`.",
-                        ja: "このトーストを id `id` で `toasts` に追加する文",
+                        en: "A statement that adds this toast to `toasts` in the browser.",
+                        ja: "ブラウザでこのトーストを `toasts` に追加する文",
+                    },
+                ),
+                (
+                    "Toast::push_expr",
+                    "hypersig_ui/struct.Toast.html#method.push_expr",
+                    L {
+                        en: "A statement that adds `toast`, which the browser evaluates, to `toasts`.",
+                        ja: "ブラウザが評価する `toast` を `toasts` に追加する文",
                     },
                 ),
             ],

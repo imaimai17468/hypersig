@@ -13,16 +13,11 @@ use crate::lang::L;
 #[derive(Signals, Serialize, Deserialize)]
 pub struct App {
     toasts: Vec<Toast>,
-    next: i32,
 }
 
 pub fn page(site: Site) -> Page<App> {
     let toasts = App::toasts();
-    let next = App::next();
-    let initial = App {
-        toasts: Vec::new(),
-        next: 0,
-    };
+    let initial = App { toasts: Vec::new() };
     Page::new(
         site.t(L {
             en: "App",
@@ -44,8 +39,7 @@ pub fn page(site: Site) -> Page<App> {
                             en: "Sunday, December 3 at 9:00",
                             ja: "12 月 3 日（日）9:00",
                         }))
-                        .push(toasts, next)
-                        .then(next.set(next + 1)),
+                        .push(toasts),
                     )
                     .text(site.t(L {
                         en: "Show a toast",
@@ -64,8 +58,8 @@ pub fn page(site: Site) -> Page<App> {
                             ja: "ファイルが 10 MB を超えています。",
                         }))
                         .variant(ToastVariant::Destructive)
-                        .push(toasts, next)
-                        .then(next.set(next + 1)),
+                        .push(toasts),
+
                     )
                     .text(site.t(L {
                         en: "Show an error",

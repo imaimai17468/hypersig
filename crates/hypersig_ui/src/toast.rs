@@ -1,5 +1,6 @@
 //! Toasts: short notices stacked in a corner of the page.
 
+use std::sync::atomic::{AtomicI32, Ordering};
 use std::time::Duration;
 
 use hypersig::html::{El, div, each_keyed, li, ol, p, section};
@@ -8,7 +9,7 @@ use hypersig::style::value::{
     AlignItems, BorderStyle, Display, FontWeight, Position, ZIndex, pct, px, raw, rem,
 };
 use hypersig::style::{Media, Style};
-use hypersig::{Expr, IntoExpr, Sig, Signals, Stmt};
+use hypersig::{IntoExpr, Sig, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 
 use crate::button::{ButtonVariant, icon_button};
@@ -28,46 +29,62 @@ pub enum ToastVariant {
 
 /// One notice in a [`Toaster`]: a title, an optional description, and an id.
 ///
-/// The id tells toasts apart while the list changes, so two toasts in one
-/// list need different ids, which nothing checks. The server adds a toast by
-/// patching the list, and a statement in the browser with [`Toast::push`].
+/// The id tells toasts apart while the list changes, and nothing outside
+/// this type sets it. On the server, [`Toast::new`] numbers each toast from
+/// a counter of the process, so toasts made in one process have different
+/// ids until 2³² of them have been made. In the browser, [`Toast::push`] and
+/// [`Toast::push_expr`] give a toast one more than the highest id in the
+/// list. A clone keeps its id, so a list that holds a toast and its clone
+/// repeats one; the runtime then tells the two apart by position and writes
+/// a warning to the console.
 ///
 /// ```
-/// use hypersig::Signals;
+/// use hypersig::{Expr, Signals};
 /// use hypersig_ui::{Toast, ToastVariant};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
 /// struct App {
 ///     toasts: Vec<Toast>,
-///     next: i32,
+///     name: String,
 /// }
 ///
 /// // On the server, in the list a patch sends.
-/// let failed = Toast::new("Upload failed").variant(ToastVariant::Destructive).id(7);
+/// let failed = App::toasts().patch(vec![
+///     Toast::new("Upload failed").variant(ToastVariant::Destructive),
+/// ]);
 ///
-/// // In the browser, numbered from a counter.
-/// let next = App::next();
-/// let saved = Toast::new("Saved")
-///     .description("Your changes are live.")
-///     .push(App::toasts(), next)
-///     .then(next.set(next + 1));
-/// # let _ = (failed, saved);
+/// // In the browser, with fixed text.
+/// let saved = Toast::new("Saved").description("Your changes are live.").push(App::toasts());
+///
+/// // In the browser, with text from a signal.
+/// let renamed = Toast::push_expr(
+///     App::toasts(),
+///     Expr::lit(&Toast::new("Renamed")).with(Toast::body(), App::name().concat(" is the new name.")),
+/// );
+/// # let _ = (failed, saved, renamed);
 /// ```
 #[derive(Signals, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub struct Toast {
     key: i32,
-    title: String,
-    body: String,
-    tone: ToastVariant,
+    /// The title, in bold.
+    pub title: String,
+    /// The line under the title, hidden while it is empty.
+    pub body: String,
+    /// How the toast is drawn.
+    pub tone: ToastVariant,
 }
 
+/// The id of the next toast [`Toast::new`] makes.
+static NEXT_KEY: AtomicI32 = AtomicI32::new(1);
+
 impl Toast {
-    /// A toast titled `title`, with the id 0.
+    /// A toast titled `title`, with an id no other toast of the process has.
     #[must_use]
     pub fn new(title: impl Into<String>) -> Self {
         Self {
-            key: 0,
+            key: NEXT_KEY.fetch_add(1, Ordering::Relaxed),
             title: title.into(),
             body: String::new(),
             tone: ToastVariant::Default,
@@ -88,17 +105,22 @@ impl Toast {
         self
     }
 
-    /// Sets the id that tells this toast apart from the others in its list.
+    /// A statement that adds this toast to `toasts` in the browser.
     #[must_use]
-    pub fn id(mut self, id: i32) -> Self {
-        self.key = id;
-        self
+    pub fn push<S>(self, toasts: Sig<S, Vec<Self>>) -> Stmt<S> {
+        Self::push_expr(toasts, &self)
     }
 
-    /// A statement that adds this toast to `toasts` with the id `id`.
+    /// A statement that adds `toast`, which the browser evaluates, to `toasts`.
+    ///
+    /// Build `toast` from a literal toast with [`Expr::with`](hypersig::Expr::with) on
+    /// [`Toast::title`], [`Toast::body`], or [`Toast::tone`], so that its
+    /// text can come from a signal. Its id is replaced by one more than the
+    /// highest id in `toasts`.
     #[must_use]
-    pub fn push<S>(self, toasts: Sig<S, Vec<Self>>, id: impl IntoExpr<S, i32>) -> Stmt<S> {
-        toasts.push(Expr::lit(&self).with(Self::key(), id))
+    pub fn push_expr<S>(toasts: Sig<S, Vec<Self>>, toast: impl IntoExpr<S, Self>) -> Stmt<S> {
+        let next = toasts.max_of(|toast| toast.at(Self::key())).unwrap_or(0) + 1;
+        toasts.push(toast.into_expr().with(Self::key(), next))
     }
 }
 
