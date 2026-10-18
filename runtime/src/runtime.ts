@@ -1,4 +1,4 @@
-import { type Compiled, compile, type Context, evaluate, type Host, resolve, resolveRead, run, type Slot } from "./eval.ts";
+import { type CallOptions, type Compiled, compile, type Context, evaluate, type Host, resolve, resolveRead, run, type Slot } from "./eval.ts";
 import { addRules } from "./css.ts";
 import { morph } from "./morph.ts";
 import { placeRead, type StaticRead, staticReads } from "./reads.ts";
@@ -40,6 +40,10 @@ type Bind = [place: unknown, kind: string, value?: unknown];
  * yields, in milliseconds. A task over 50 ms counts as blocking the page.
  */
 const ADOPT_BUDGET_MS = 30;
+
+/** The wait before a call sent with `reconnect` is sent again, doubling after each failure up to the last. */
+const FIRST_RETRY_MS = 1000;
+const LAST_RETRY_MS = 30_000;
 
 interface Instance {
   readonly element: Element;
@@ -230,6 +234,10 @@ export class Runtime implements Host {
   #patched = false;
   /** Whether the browser is loading another page, after which server events are not applied. */
   #leaving = false;
+  /** The unfinished call sent with `latest`, by method and action path. */
+  readonly #latest = new Map<string, AbortController>();
+  /** The number of calls awaiting an answer, by the indicator signal they set. */
+  readonly #calls = new Map<string, number>();
   readonly #mounted = new WeakMap<Element, Element>();
   readonly #timers = new WeakMap<Element, Map<string, ReturnType<typeof setTimeout>>>();
   /**
@@ -371,6 +379,7 @@ export class Runtime implements Host {
     args: unknown,
     indicator: string | null,
     error: string | null,
+    options: CallOptions,
   ): Promise<void> {
     const url = new URL(path, document.baseURI);
     const body = JSON.stringify(args ?? null);
@@ -381,21 +390,67 @@ export class Runtime implements Host {
       init.headers = { accept: "text/event-stream", "content-type": "application/json" };
       init.body = body;
     }
-    if (indicator !== null) this.store.set(indicator, true);
+    // The handler decides which signals an action patches, so two call sites of one action write the same signals, and the key is the action.
+    const key = `${method} ${path}`;
+    let latest: AbortController | undefined;
+    if (options.latest) {
+      this.#latest.get(key)?.abort();
+      latest = new AbortController();
+      this.#latest.set(key, latest);
+      init.signal = latest.signal;
+    }
+    const abandoned = (): boolean =>
+      this.#leaving || latest?.signal.aborted === true || options.origin?.isConnected === false;
+    if (indicator !== null) this.#busy(indicator, 1);
+    try {
+      let delay = FIRST_RETRY_MS;
+      for (;;) {
+        const failure = await this.#send(url, init, error, () => (delay = FIRST_RETRY_MS));
+        if (failure === null || latest?.signal.aborted === true) return;
+        this.#fail(method, path, failure.message, error, failure.status);
+        const again = options.reconnect && method === "GET" && (failure.status === 0 || failure.status >= 500);
+        if (!again || abandoned()) return;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay = Math.min(delay * 2, LAST_RETRY_MS);
+        if (abandoned()) return;
+      }
+    } finally {
+      if (latest !== undefined && this.#latest.get(key) === latest) this.#latest.delete(key);
+      if (indicator !== null) this.#busy(indicator, -1);
+    }
+  }
+
+  /**
+   * Sends one request and applies the events of its answer. Returns `null`
+   * once the server ends the stream, or the failure. `connected` runs when
+   * the server answers with a 2xx status.
+   */
+  async #send(
+    url: URL,
+    init: RequestInit,
+    error: string | null,
+    connected: () => void,
+  ): Promise<{ message: string; status: number } | null> {
     try {
       const response = await fetch(url, init);
       if (!response.ok || response.body === null) {
-        const detail = await response.text();
-        this.#fail(method, path, `${response.status}: ${detail}`, error, response.status);
-        return;
+        return { message: `${response.status}: ${await response.text()}`, status: response.status };
       }
+      connected();
       if (error !== null) this.store.set(error, "");
       await readEventStream(response.body, (event) => this.apply(event));
+      return null;
     } catch (cause) {
-      this.#fail(method, path, String(cause), error, 0);
-    } finally {
-      if (indicator !== null) this.store.set(indicator, false);
+      return { message: String(cause), status: 0 };
     }
+  }
+
+  /** Counts the calls awaiting an answer under `indicator`, which is true while any of them is. */
+  #busy(indicator: string, by: 1 | -1): void {
+    const count = (this.#calls.get(indicator) ?? 0) + by;
+    if (count === 0) this.#calls.delete(indicator);
+    else this.#calls.set(indicator, count);
+    this.store.set(indicator, count > 0);
   }
 
   /** Runs a DOM method on the element a node ref names, after the next render. */

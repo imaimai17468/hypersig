@@ -205,9 +205,14 @@ struct Timers {
     saving: bool,
     error: String,
     fired: i32,
+    find: String,
+    finding: bool,
+    found: String,
 }
 
 const SEARCH: Action<Timers> = Action::post("/search");
+const LOOKUP: Action<Timers, String> = Action::get("/lookup");
+const FEED: Action<Timers> = Action::get("/feed");
 
 fn timers() -> (El<Timers>, Timers) {
     let ticks = Timers::ticks();
@@ -240,6 +245,19 @@ fn timers() -> (El<Timers>, Timers) {
             ),
         )
         .child(
+            input().id("find").bind(Timers::find()).on_input(
+                LOOKUP
+                    .call_with(Timers::find())
+                    .indicator(Timers::finding())
+                    .latest(),
+            ),
+        )
+        .child(
+            button()
+                .id("follow")
+                .on_click(FEED.call().error(Timers::error()).reconnect()),
+        )
+        .child(
             span()
                 .id("soon")
                 .on_timeout(Duration::from_millis(100), fired.set(fired + 1)),
@@ -258,6 +276,9 @@ fn timers() -> (El<Timers>, Timers) {
         saving: false,
         error: String::new(),
         fired: 0,
+        find: String::new(),
+        finding: false,
+        found: String::new(),
     };
     (el, signals)
 }

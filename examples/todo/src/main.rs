@@ -206,7 +206,7 @@ async fn index(state: AppState, (): ()) -> Page<TodoPage> {
     .child(
         div()
             .css(styles::page())
-            .on_load(UPDATES.call())
+            .on_load(UPDATES.call().reconnect())
             .child(h1().text("Todo"))
             .child(
                 form()

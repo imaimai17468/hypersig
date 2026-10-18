@@ -27,6 +27,16 @@ export interface Context {
   readonly vars?: readonly unknown[];
 }
 
+/** What a call asks for beyond sending its request once. */
+export interface CallOptions {
+  /** Abort the unfinished earlier call of the same action that was also sent with `latest`. */
+  readonly latest: boolean;
+  /** Send the request again after the connection fails or the server answers with a 5xx status. */
+  readonly reconnect: boolean;
+  /** The element whose statement made the call. Reconnecting stops once it leaves the document. */
+  readonly origin: Element | undefined;
+}
+
 /** The side effects a statement can ask the runtime for. */
 export interface Host {
   call(
@@ -35,6 +45,7 @@ export interface Host {
     args: unknown,
     indicator: string | null,
     error: string | null,
+    options: CallOptions,
   ): Promise<void>;
   dom(op: string, name: string, origin: Element | undefined): void;
   navigate(url: string): void;
@@ -429,7 +440,10 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       return;
     case "call": {
       const args = rest[2] === null ? null : evaluate(rest[2], ctx);
-      void host.call(rest[0] as string, rest[1] as string, args, rest[3] as string | null, rest[4] as string | null);
+      // A call without flags has six elements, so `rest[5]` is absent.
+      const flags = (rest[5] ?? []) as string[];
+      const options = { latest: flags.includes("latest"), reconnect: flags.includes("reconnect"), origin: ctx.origin };
+      void host.call(rest[0] as string, rest[1] as string, args, rest[3] as string | null, rest[4] as string | null, options);
       return;
     }
     case "dom":

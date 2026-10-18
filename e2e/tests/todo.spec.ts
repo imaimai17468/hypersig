@@ -1,4 +1,5 @@
 import { url } from "../playwright.config.ts";
+import { test as baseTest } from "@playwright/test";
 import { expect, test, watch } from "./support.ts";
 
 test("two tabs see each other's changes over the update stream", async ({ page: a, context }) => {
@@ -32,6 +33,25 @@ test("two tabs see each other's changes over the update stream", async ({ page: 
   await items(b).nth(0).getByLabel("remove").click();
   await expect(items(a)).toHaveCount(1);
   expect(problems).toEqual([]);
+});
+
+// The refused connection logs an error by design, so this test runs without the check of `./support.ts`.
+baseTest("the update stream connects again after its first connection is refused", async ({ page: a, context }) => {
+  let attempts = 0;
+  await a.route("**/todos/updates", async (route) => {
+    attempts += 1;
+    if (attempts === 1) await route.abort("connectionrefused");
+    else await route.continue();
+  });
+  await a.goto(url("todo"));
+  await expect.poll(() => attempts, { timeout: 5000 }).toBe(2);
+
+  const b = await context.newPage();
+  await b.goto(url("todo"));
+  const draft = b.getByPlaceholder("What needs doing?");
+  await draft.fill("seen after a reconnect");
+  await draft.press("Enter");
+  await expect(a.locator("#todo-list li").getByText("seen after a reconnect")).toBeVisible();
 });
 
 test("a todo's title links to its own page, and an unknown id gets 404", async ({ page, request }) => {

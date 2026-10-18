@@ -164,6 +164,8 @@ pub struct Call<S> {
     args: Value,
     indicator: Value,
     error: Value,
+    latest: bool,
+    reconnect: bool,
     marker: PhantomData<fn() -> S>,
 }
 
@@ -175,6 +177,8 @@ impl<S> Call<S> {
             args,
             indicator: Value::Null,
             error: Value::Null,
+            latest: false,
+            reconnect: false,
             marker: PhantomData,
         }
     }
@@ -193,6 +197,64 @@ impl<S> Call<S> {
         self
     }
 
+    /// Aborts the earlier call of the same action that was also sent with
+    /// `latest` and has not finished, so a slow answer cannot overwrite a
+    /// newer one.
+    ///
+    /// Use it for a read whose answer replaces the previous one, such as a
+    /// search that runs as the visitor types. The patches of the aborted call
+    /// that have not arrived are dropped, and the server may stop its handler
+    /// at an `.await`, so leave it off a call that changes data. A call
+    /// without `latest` is never aborted.
+    ///
+    /// ```
+    /// use hypersig::html::input;
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Search {
+    ///     query: String,
+    ///     results: Vec<String>,
+    /// }
+    ///
+    /// const FIND: Action<Search, String> = Action::get("/find");
+    /// let query = Search::query();
+    /// let _field = input().bind(query).on_input(FIND.call_with(query).latest());
+    /// ```
+    #[must_use]
+    pub fn latest(mut self) -> Self {
+        self.latest = true;
+        self
+    }
+
+    /// Sends this call again after the connection fails or the server answers
+    /// with a 5xx status, waiting 1 second and then twice as long each time,
+    /// up to 30 seconds.
+    ///
+    /// Use it for a stream served with `RouterExt::stream`. A stream the
+    /// server ends is not sent again, and neither is one whose element has
+    /// left the page. Each attempt runs the handler again with the same
+    /// arguments, so a stream that sends changes starts with the current
+    /// values. While the call is failing, the [`error`](Call::error) signal
+    /// holds the last failure.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the action is not served on `GET`. Sending a `POST` again
+    /// could repeat a change the server already made.
+    #[must_use]
+    pub fn reconnect(mut self) -> Self {
+        assert!(
+            self.method == Method::Get,
+            "`reconnect` sends the request again, so it is for an action served on `GET`, and `{}` is served on `{}`",
+            self.path,
+            self.method.as_str(),
+        );
+        self.reconnect = true;
+        self
+    }
+
     /// Sends this call, then runs `next` without waiting for the answer.
     ///
     /// The arguments are evaluated when the call is sent, so `next` can
@@ -207,14 +269,25 @@ impl<S> Call<S> {
 impl<S> IntoStmt<S> for Call<S> {
     fn into_stmt(self) -> Stmt<S> {
         let call = self;
-        Stmt::new(json!([
+        let mut ast = json!([
             "call",
             call.method.as_str(),
             call.path,
             call.args,
             call.indicator,
             call.error
-        ]))
+        ]);
+        let flags: Vec<&str> = [("latest", call.latest), ("reconnect", call.reconnect)]
+            .into_iter()
+            .filter_map(|(flag, on)| on.then_some(flag))
+            .collect();
+        // A call without flags keeps the six-element form.
+        if !flags.is_empty()
+            && let Value::Array(items) = &mut ast
+        {
+            items.push(json!(flags));
+        }
+        Stmt::new(ast)
     }
 }
 
@@ -328,5 +401,51 @@ impl<S> Copy for NodeRef<S> {}
 impl<S> fmt::Debug for NodeRef<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("NodeRef").field(&self.name).finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    enum Page {}
+
+    const FIND: Action<Page, String> = Action::get("/find");
+    const SAVE: Action<Page> = Action::post("/save");
+
+    #[test]
+    fn a_call_without_flags_keeps_six_elements() {
+        assert_eq!(
+            SAVE.call().into_stmt().as_json(),
+            &json!(["call", "POST", "/save", null, null, null])
+        );
+    }
+
+    #[test]
+    fn the_flags_follow_the_error_signal() {
+        assert_eq!(
+            FIND.call_with("tea")
+                .latest()
+                .reconnect()
+                .into_stmt()
+                .as_json(),
+            &json!([
+                "call",
+                "GET",
+                "/find",
+                ["lit", "tea"],
+                null,
+                null,
+                ["latest", "reconnect"]
+            ])
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "served on `GET`")]
+    fn reconnect_refuses_a_post() {
+        let _ = SAVE.call().reconnect();
     }
 }

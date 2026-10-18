@@ -54,6 +54,30 @@ test("search waits for a pause in typing and shows an indicator", async ({ page 
   await expect(page.locator("#results li")).toHaveCount(13);
 });
 
+test("a slow answer to an earlier search does not overwrite the answer to a later one", async ({ page }) => {
+  const field = page.getByPlaceholder("Search fruit");
+  const sent: string[] = [];
+  const aborted: string[] = [];
+  page.on("requestfailed", (request) => {
+    if (request.url().endsWith("/search")) aborted.push(request.postData() ?? "");
+  });
+  await page.route("**/search", async (route) => {
+    const query = route.request().postData() ?? "";
+    sent.push(query);
+    // Holds the first search back until the second has been answered.
+    if (sent.length === 1) await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.continue().catch(() => {});
+  });
+  await field.pressSequentially("b");
+  await expect.poll(() => sent).toEqual(['"b"']);
+  await field.pressSequentially("err");
+  await expect(page.locator("#results li")).toHaveText(["blackberry", "blueberry"]);
+  await expect.poll(() => aborted).toEqual(['"b"']);
+  await page.waitForTimeout(1700);
+  await expect(page.locator("#results li")).toHaveText(["blackberry", "blueberry"]);
+  await expect(page.locator(".searching")).toBeHidden();
+});
+
 test("a form derives its total and disables submit while invalid or in flight", async ({ page }) => {
   await page.locator(".quantity").fill("3");
   await expect(page.locator(".price")).toHaveText("9.00 USD");

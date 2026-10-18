@@ -369,6 +369,46 @@ describe("timers, effects, and calls", () => {
     await vi.waitFor(() => expect(runtime.store.get("saving")).toBe(false));
     expect(runtime.store.get("error")).toBe("500: no");
   });
+
+  it("aborts the earlier latest call and applies only the newer answer", async () => {
+    const answers: ((response: Response) => void)[] = [];
+    const fetch = vi.fn(
+      (_url: URL, init: RequestInit) =>
+        new Promise<Response>((resolve, reject) => {
+          init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+          answers.push(resolve);
+        }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const runtime = mount("timers");
+    type($<HTMLInputElement>("#find"), "t");
+    type($<HTMLInputElement>("#find"), "te");
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(fetch.mock.calls.map(([url]) => url.searchParams.get("args"))).toEqual(['"t"', '"te"']);
+    expect(fetch.mock.calls[0]![1].signal!.aborted).toBe(true);
+    answers[1]!(new Response('event: hs-signals\ndata: {"found":"te"}\n\n', { status: 200 }));
+    answers[0]!(new Response('event: hs-signals\ndata: {"found":"t"}\n\n', { status: 200 }));
+    await vi.waitFor(() => expect(runtime.store.get("finding")).toBe(false));
+    expect(runtime.store.get("found")).toBe("te");
+  });
+
+  it("sends a reconnect call again after the connection fails", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetch = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce(new Response('event: hs-signals\ndata: {"found":"back"}\n\n', { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    const runtime = mount("timers");
+    $("#follow").click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(runtime.store.get("error")).toContain("Failed to fetch");
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(runtime.store.get("found")).toBe("back");
+    expect(runtime.store.get("error")).toBe("");
+  });
 });
 
 describe("list statements and browser values", () => {

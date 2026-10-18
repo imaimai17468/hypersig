@@ -240,13 +240,13 @@ fn search() -> El<Showcase> {
                         .on_debounced(
                             Event::Input,
                             Duration::from_millis(250),
-                            SEARCH.call_with(query).indicator(searching),
+                            SEARCH.call_with(query).indicator(searching).latest(),
                         )
                         .on_key(
                             Key::Escape,
                             query
                                 .set("")
-                                .then(SEARCH.call_with("").indicator(searching)),
+                                .then(SEARCH.call_with("").indicator(searching).latest()),
                         ),
                 )
                 .child(

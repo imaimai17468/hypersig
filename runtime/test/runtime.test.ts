@@ -569,3 +569,126 @@ describe("Runtime", () => {
     expect(document.getElementById("x")!.style.display).toBe("");
   });
 });
+
+describe("calls", () => {
+  /** A fetch whose answers the test settles one by one, which rejects once its request is aborted. */
+  function pendingFetch() {
+    const answers: ((body: string) => void)[] = [];
+    const fetch = vi.fn(
+      (_url: URL, init: RequestInit) =>
+        new Promise<Response>((resolve, reject) => {
+          init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+          answers.push((body) => resolve(sseResponse(body)));
+        }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    return { fetch, answers };
+  }
+
+  const signals = (results: string) => `event: hs-signals\ndata: {"results":"${results}"}\n\n`;
+
+  it("aborts the earlier latest call of the same action, so its answer cannot overwrite a newer one", async () => {
+    const { fetch, answers } = pendingFetch();
+    const runtime = mount(
+      `<input data-hs-bind='["q","text"]' data-hs-on-input='["call","GET","/find",["sig","q"],"busy",null,["latest"]]'>`,
+      { q: "", results: "", busy: false },
+    );
+    const input = document.querySelector("input")!;
+    for (const typed of ["t", "te"]) {
+      input.value = typed;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(fetch.mock.calls[0]![1].signal!.aborted).toBe(true);
+    expect(runtime.store.get("busy")).toBe(true);
+    answers[1]!(signals("te"));
+    answers[0]!(signals("t"));
+    await vi.waitFor(() => expect(runtime.store.get("busy")).toBe(false));
+    expect(runtime.store.get("results")).toBe("te");
+  });
+
+  it("aborts no call sent without latest, and keeps the indicator on until every call answers", async () => {
+    const { fetch, answers } = pendingFetch();
+    const runtime = mount(`<button data-hs-on-click='["call","POST","/save",null,"busy",null]'>save</button>`, {
+      results: "",
+      busy: false,
+    });
+    const button = document.querySelector("button")!;
+    button.click();
+    button.click();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(fetch.mock.calls.map(([, init]) => init.signal ?? null)).toEqual([null, null]);
+    answers[0]!(signals("first"));
+    await vi.waitFor(() => expect(runtime.store.get("results")).toBe("first"));
+    expect(runtime.store.get("busy")).toBe(true);
+    answers[1]!(signals("second"));
+    await vi.waitFor(() => expect(runtime.store.get("busy")).toBe(false));
+  });
+
+  describe("with reconnect", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    /** A stream that sends `body` and then fails, as a connection the server drops does. */
+    function droppedResponse(body: string): Response {
+      let sent = false;
+      // `error` drops the chunks still queued, so the stream fails only once `body` has been read.
+      const stream = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          if (sent) controller.error(new TypeError("network error"));
+          else controller.enqueue(new TextEncoder().encode(body));
+          sent = true;
+        },
+      });
+      return new Response(stream, { status: 200 });
+    }
+
+    const feed = `<p data-hs-on-load='["call","GET","/feed",null,null,"problem",["reconnect"]]'></p>`;
+
+    it("sends the request again after a dropped stream and a refused connection, waiting longer each time", async () => {
+      vi.useFakeTimers();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(droppedResponse(signals("one")))
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+        .mockResolvedValueOnce(sseResponse(signals("three")));
+      vi.stubGlobal("fetch", fetch);
+      const runtime = mount(feed, { results: "", problem: "" });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(runtime.store.get("results")).toBe("one");
+      expect(runtime.store.get("problem")).toContain("network error");
+      expect(fetch).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(runtime.store.get("results")).toBe("three");
+      expect(runtime.store.get("problem")).toBe("");
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
+
+    it("does not send the request again after a 4xx answer or once its element has left the page", async () => {
+      vi.useFakeTimers();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const fetch = vi.fn().mockResolvedValue(new Response("bad args", { status: 400 }));
+      vi.stubGlobal("fetch", fetch);
+      mount(feed, { results: "", problem: "" });
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      fetch.mockRejectedValue(new TypeError("Failed to fetch"));
+      mount(feed, { results: "", problem: "" });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      document.querySelector("p")!.remove();
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+});
