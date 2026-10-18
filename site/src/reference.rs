@@ -2210,79 +2210,165 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                 en: "`RouterExt` adds hypersig routes to an axum `Router`. It needs the `axum` feature, which is on by default.",
                 ja: "`RouterExt` は axum の `Router` に hypersig のルートを追加します。`axum` の feature が必要で、この feature は既定で有効です。",
             },
-            &[Section {
-                heading: L {
-                    en: "RouterExt",
-                    ja: "RouterExt",
+            &[
+                Section {
+                    heading: L {
+                        en: "RouterExt",
+                        ja: "RouterExt",
+                    },
+                    text: L { en: "", ja: "" },
+                    rows: &[
+                        (
+                            "hypersig_runtime",
+                            "trait.RouterExt.html#tymethod.hypersig_runtime",
+                            L {
+                                en: "Serves the browser runtime at `RUNTIME_PATH`.",
+                                ja: "ブラウザのランタイムを `RUNTIME_PATH` で配信します。",
+                            },
+                        ),
+                        (
+                            "action",
+                            "trait.RouterExt.html#tymethod.action",
+                            L {
+                                en: "Serves `action` with a handler that returns one batch of patches.",
+                                ja: "差分のまとまりを 1 つ返すハンドラで `action` を配信します。",
+                            },
+                        ),
+                        (
+                            "stream",
+                            "trait.RouterExt.html#tymethod.stream",
+                            L {
+                                en: "Serves `stream` on `GET` with a handler that returns a stream of patches.",
+                                ja: "差分のストリームを返すハンドラで、`stream` を `GET` に配信します。",
+                            },
+                        ),
+                        (
+                            "PageResponse",
+                            "struct.PageResponse.html",
+                            L {
+                                en: "What a page handler returns: a page, a redirect, or a 404.",
+                                ja: "ページのハンドラが返す値です。ページ、リダイレクト、404 のいずれかです。",
+                            },
+                        ),
+                        (
+                            "ActionResponse",
+                            "struct.ActionResponse.html",
+                            L {
+                                en: "What an action handler returns: patches for the page whose signals are `S`.",
+                                ja: "アクションのハンドラが返す値です。シグナルが `S` のページへの差分です。",
+                            },
+                        ),
+                        (
+                            "Handler",
+                            "trait.Handler.html",
+                            L {
+                                en: "A function that serves a page, an action, or a stream.",
+                                ja: "ページ、アクション、ストリームを配信する関数です。",
+                            },
+                        ),
+                        (
+                            "RequestError",
+                            "struct.RequestError.html",
+                            L {
+                                en: "A request to an action or an upload that was refused before its handler ran.",
+                                ja: "ハンドラが動く前に断られた、アクションかアップロードへのリクエストです。",
+                            },
+                        ),
+                        (
+                            "RequestError::status",
+                            "struct.RequestError.html#method.status",
+                            L {
+                                en: "The status of the response the error answers with.",
+                                ja: "このエラーが返す応答の状態です。",
+                            },
+                        ),
+                    ],
                 },
-                text: L { en: "", ja: "" },
-                rows: &[
-                    (
-                        "hypersig_runtime",
-                        "trait.RouterExt.html#tymethod.hypersig_runtime",
-                        L {
-                            en: "Serves the browser runtime at `RUNTIME_PATH`.",
-                            ja: "ブラウザのランタイムを `RUNTIME_PATH` で配信します。",
-                        },
-                    ),
-                    (
-                        "action",
-                        "trait.RouterExt.html#tymethod.action",
-                        L {
-                            en: "Serves `action` with a handler that returns one batch of patches.",
-                            ja: "差分のまとまりを 1 つ返すハンドラで `action` を配信します。",
-                        },
-                    ),
-                    (
-                        "stream",
-                        "trait.RouterExt.html#tymethod.stream",
-                        L {
-                            en: "Serves `stream` on `GET` with a handler that returns a stream of patches.",
-                            ja: "差分のストリームを返すハンドラで、`stream` を `GET` に配信します。",
-                        },
-                    ),
-                    (
-                        "PageResponse",
-                        "struct.PageResponse.html",
-                        L {
-                            en: "What a page handler returns: a page, a redirect, or a 404.",
-                            ja: "ページのハンドラが返す値です。ページ、リダイレクト、404 のいずれかです。",
-                        },
-                    ),
-                    (
-                        "ActionResponse",
-                        "struct.ActionResponse.html",
-                        L {
-                            en: "What an action handler returns: patches for the page whose signals are `S`.",
-                            ja: "アクションのハンドラが返す値です。シグナルが `S` のページへの差分です。",
-                        },
-                    ),
-                    (
-                        "Handler",
-                        "trait.Handler.html",
-                        L {
-                            en: "A function that serves a page, an action, or a stream.",
-                            ja: "ページ、アクション、ストリームを配信する関数です。",
-                        },
-                    ),
-                    (
-                        "RequestError",
-                        "struct.RequestError.html",
-                        L {
-                            en: "A request to an action that was refused before its handler ran.",
-                            ja: "ハンドラが動く前に断られた、アクションへのリクエストです。",
-                        },
-                    ),
-                    (
-                        "RequestError::status",
-                        "struct.RequestError.html#method.status",
-                        L {
-                            en: "The status of the response the error answers with.",
-                            ja: "このエラーが返す応答の状態です。",
-                        },
-                    ),
-                ],
-            }],
+                Section {
+                    heading: L {
+                        en: "Uploads",
+                        ja: "アップロード",
+                    },
+                    text: L {
+                        en: "An upload is an action that also receives the files picked in a file input. Both carry the page's type.",
+                        ja: "アップロードは、ファイル入力で選んだファイルも受け取るアクションです。どちらもページの型を持ちます。",
+                    },
+                    rows: &[
+                        (
+                            "upload",
+                            "trait.RouterExt.html#tymethod.upload",
+                            L {
+                                en: "Serves `upload` with a handler that receives its arguments and files as an `Uploaded`.",
+                                ja: "引数とファイルを `Uploaded` として受け取るハンドラで `upload` を配信します。",
+                            },
+                        ),
+                        (
+                            "Upload",
+                            "struct.Upload.html",
+                            L {
+                                en: "An endpoint that receives arguments `A` and the files picked in a `FileInput`.",
+                                ja: "引数 `A` と、`FileInput` で選んだファイルを受け取るエンドポイントです。",
+                            },
+                        ),
+                        (
+                            "Upload::max_bytes",
+                            "struct.Upload.html#method.max_bytes",
+                            L {
+                                en: "The same upload, accepting a body of at most `bytes` bytes. The default is 8 MiB.",
+                                ja: "本文を最大 `bytes` バイトまで受け付ける、同じアップロードです。既定は 8 MiB です。",
+                            },
+                        ),
+                        (
+                            "Upload::call_with",
+                            "struct.Upload.html#method.call_with",
+                            L {
+                                en: "A call that sends the files picked in `files` and `args`.",
+                                ja: "`files` で選んだファイルと `args` を送る呼び出しです。",
+                            },
+                        ),
+                        (
+                            "FileInput",
+                            "struct.FileInput.html",
+                            L {
+                                en: "A file input whose files an `Upload` sends.",
+                                ja: "`Upload` がそのファイルを送る、ファイル入力です。",
+                            },
+                        ),
+                        (
+                            "FileInput::input",
+                            "struct.FileInput.html#method.input",
+                            L {
+                                en: "The `<input type=\"file\">` element.",
+                                ja: "`<input type=\"file\">` の要素です。",
+                            },
+                        ),
+                        (
+                            "FileInput::clear",
+                            "struct.FileInput.html#method.clear",
+                            L {
+                                en: "A statement that empties the input, such as after its files were sent.",
+                                ja: "入力を空にする文です。ファイルを送ったあとなどに使います。",
+                            },
+                        ),
+                        (
+                            "Uploaded",
+                            "struct.Uploaded.html",
+                            L {
+                                en: "What an upload's handler receives: the arguments and the files.",
+                                ja: "アップロードのハンドラが受け取る値です。引数とファイルです。",
+                            },
+                        ),
+                        (
+                            "UploadedFile",
+                            "struct.UploadedFile.html",
+                            L {
+                                en: "One file of an upload, read into memory: its name, media type, and bytes.",
+                                ja: "メモリに読み込んだ、アップロードの 1 つのファイルです。名前、メディアタイプ、中身を持ちます。",
+                            },
+                        ),
+                    ],
+                },
+            ],
         ),
     }
 }

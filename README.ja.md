@@ -68,6 +68,10 @@ hypersig では、最初のデータはページの HTML にシグナル構造�
 
 ページとアクションのハンドラは、状態と引数のあいだに axum の extractor を 1 つ受け取れます。`async fn add(state: AppState, member: Member, note: String)` のように書けば、アプリケーションの `Member` を通してセッションの Cookie を読めます。extractor が失敗すると、その rejection が応答になり、ハンドラは動きません。`Set-Cookie` などのヘッダーは、`(headers, patches)` のようにページや差分と組にして返します。ハンドラは `E` が `IntoResponse` である `Result<_, E>` も返せるので、`?` が使えます。2xx 以外の状態で失敗したアクションは、ページの `Call::error` に届き、応答の本文が表示する文言になります。アクションは、ハンドラが動く前に 2 種類のリクエストを断ります。`Sec-Fetch-Site` が別のサイトを示すリクエストには 403 を、本文が `application/json` でない POST には 415 を返すので、別のサイトのフォームが訪問者の Cookie を付けて呼び出すことはできません。`Sec-Fetch-Site` を送らないブラウザからは、別のサイトのリンクで GET のアクションに届くので、GET のアクションでは何も変更しないでください。[`auth`](examples/auth) の例は、Cookie のセッションでサインインします。
 
+## ファイルのアップロード
+
+`Upload<S, A>` は、`FileInput<S>` で選んだファイルも受け取るアクションです。ページに `PICTURE.input()` を置いて `AVATAR.call(PICTURE)` で呼び出し、ルーターは `RouterExt::upload` で配信します。ハンドラは引数と、ファイルごとの名前、メディアタイプ、中身を `Uploaded<A>` として受け取ります。2 つの定数はどちらもページの型を持つので、別のページのファイル入力を渡すとコンパイルできません。`multipart/form-data` の本文は別のサイトのフォームからも送れるので、ランタイムはフォームでは付けられないヘッダーを付け、ルーターはそれがないアップロードを 403 で断ります。8 MiB（`Upload::max_bytes` で決めた上限があればその値）を超える本文には 413 を返します。[`auth`](examples/auth) の例は、会員の画像をアップロードし、その中身を検査します。
+
 ## クイックスタート
 
 `Cargo.toml` に依存を追加します。hypersig はまだ crates.io に公開していないので、Git から取得します。

@@ -68,6 +68,10 @@ A field of type `Form<T>` in the signal struct holds a form's values, the values
 
 A page or action handler may take one axum extractor between the state and its arguments, as `async fn add(state: AppState, member: Member, note: String)`, so it can read a session cookie through the application's own `Member`. When the extractor fails, its rejection is the response and the handler does not run. A handler adds headers such as `Set-Cookie` by returning them beside its page or patches, as `(headers, patches)`, and returns `Result<_, E>` where `E` is an `IntoResponse`, so `?` works. An action that fails with a status outside 2xx reaches the page's `Call::error`, which receives the response body as the message to show. Before any handler runs, an action refuses a request whose `Sec-Fetch-Site` names another site with a 403, and a POST whose body is not `application/json` with a 415, so a form on another site cannot call it with the visitor's cookie. A browser that sends no `Sec-Fetch-Site` still reaches a GET action from a link on another site, so a GET action should change nothing. The [`auth`](examples/auth) example signs in with a cookie session.
 
+## Uploads
+
+An `Upload<S, A>` is an action that also receives the files picked in a `FileInput<S>`. The page puts `PICTURE.input()` in the page and calls `AVATAR.call(PICTURE)`, and the router serves it with `RouterExt::upload`, whose handler gets the arguments and each file's name, media type, and bytes as an `Uploaded<A>`. Both constants carry the page's type, so a file input from another page does not compile. A cross-site form can send a `multipart/form-data` body, so the runtime adds a header no form can set, and the router refuses an upload without it with a 403. A body longer than 8 MiB, or the limit `Upload::max_bytes` sets, gets a 413. The [`auth`](examples/auth) example uploads a member's picture and checks its bytes.
+
 ## Quick start
 
 Add the dependencies to `Cargo.toml`. hypersig is not on crates.io yet, so it comes from Git.

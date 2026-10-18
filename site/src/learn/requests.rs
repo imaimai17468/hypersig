@@ -76,5 +76,42 @@ pub fn requests(site: Site) -> Part {
                 ja: "`Sec-Fetch-Site` を送らないブラウザからは、別のサイトのリンクで GET のアクションに届くので、GET のアクションでは何も変更しないでください。リポジトリの `auth` の例は、Cookie のセッションでのサインインを最初から最後まで示します。",
             },
         ),
+        uploads(site),
+    ])
+}
+
+/// The section on uploads, apart from `requests` because clippy rejects an
+/// array of parts larger than 16 KiB on the stack.
+fn uploads(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Uploads",
+                ja: "ファイルのアップロード",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "An [`Upload<S, A>`](api:hypersig/struct.Upload.html) is an action that also receives the files picked in a [`FileInput<S>`](api:hypersig/struct.FileInput.html). Put `FileInput::input` on the page and pass the same constant to `call` or `call_with`. `RouterExt::upload` serves it, and its handler receives an `Uploaded<A>` with the arguments and each file's name, media type, and bytes. It answers as an action's handler does, so it can return a `Result` and take an extractor.",
+                ja: "[`Upload<S, A>`](api:hypersig/struct.Upload.html) は、[`FileInput<S>`](api:hypersig/struct.FileInput.html) で選んだファイルも受け取るアクションです。ページに `FileInput::input` を置き、同じ定数を `call` か `call_with` に渡します。`RouterExt::upload` で配信し、そのハンドラは引数と、ファイルごとの名前、メディアタイプ、中身を持つ `Uploaded<A>` を受け取ります。応答はアクションのハンドラと同じなので、`Result` を返したり extractor を受け取ったりできます。",
+            },
+        ),
+        show(Snippet::Uploads),
+        para(
+            site,
+            L {
+                en: "A form on another site can send a `multipart/form-data` body without a preflight, so the runtime adds the `hypersig-upload` header, which no form can set, and the router refuses an upload without it with a 403. An ordinary action still refuses a multipart body with a 415. A body longer than `Upload::DEFAULT_MAX_BYTES` (8 MiB), or the limit `max_bytes` sets, gets a 413, before it is read when its `Content-Length` says so.",
+                ja: "`multipart/form-data` の本文は、別のサイトのフォームからプリフライトなしで送れます。そこでランタイムはフォームでは付けられない `hypersig-upload` ヘッダーを付け、ルーターはそれがないアップロードを 403 で断ります。普通のアクションは、これまでどおりマルチパートの本文を 415 で断ります。`Upload::DEFAULT_MAX_BYTES`（8 MiB）か、`max_bytes` で決めた上限を超える本文には 413 を返します。`Content-Length` が上限を超えていれば、本文を読む前に返します。",
+            },
+        ),
+        note(
+            site,
+            L {
+                en: "The handler receives each file read into memory, so keep the limit near the largest file you accept. The file name and the media type come from the visitor's browser, so check the bytes before trusting them. The `auth` example accepts a picture only when its first bytes are those of a PNG or a JPEG.",
+                ja: "ハンドラは各ファイルをメモリに読み込んだ状態で受け取るので、上限は受け付ける最大のファイルに近い値にしてください。ファイル名とメディアタイプは訪問者のブラウザが決めるので、信用する前に中身を検査してください。`auth` の例は、先頭のバイトが PNG か JPEG のものである画像だけを受け付けます。",
+            },
+        ),
     ])
 }
