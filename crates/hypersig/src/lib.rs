@@ -71,7 +71,7 @@ pub use expr::{
     Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };
 pub use form::{FieldErrors, Form, Rules, Validate};
-pub use head::{OpenGraph, Origin};
+pub use head::{OpenGraph, Origin, OriginError};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use page::Page;
 pub use patch::{Fragment, Patches, SignalPatch, fragment};

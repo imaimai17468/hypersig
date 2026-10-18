@@ -39,22 +39,8 @@ impl Origin {
     /// a compile error.
     #[must_use]
     pub const fn new(origin: &'static str) -> Self {
-        let bytes = origin.as_bytes();
-        let host = if starts_with(bytes, b"https://") {
-            8
-        } else if starts_with(bytes, b"http://") {
-            7
-        } else {
-            panic!("an origin starts with `http://` or `https://`")
-        };
-        assert!(bytes.len() > host, "an origin has a host");
-        let mut i = host;
-        while i < bytes.len() {
-            assert!(
-                !matches!(bytes[i], b'/' | b'?' | b'#' | b'"' | b' '),
-                "an origin ends at the host and port"
-            );
-            i += 1;
+        if let Err(reason) = check_origin(origin.as_bytes()) {
+            panic!("{}", reason);
         }
         Self { origin, prefix: "" }
     }
@@ -68,24 +54,50 @@ impl Origin {
     /// the panic is a compile error.
     #[must_use]
     pub const fn under(self, prefix: &'static str) -> Self {
-        let bytes = prefix.as_bytes();
-        assert!(
-            bytes.len() > 1 && bytes[0] == b'/' && bytes[bytes.len() - 1] != b'/',
-            "a prefix starts with `/` and does not end with one"
-        );
-        let mut i = 1;
-        while i < bytes.len() {
-            let empty_segment = bytes[i] == b'/' && bytes[i - 1] == b'/';
-            assert!(
-                !empty_segment && !matches!(bytes[i], b'?' | b'#' | b'"' | b' '),
-                "a prefix is a path without a query, a fragment, or an empty segment"
-            );
-            i += 1;
+        if let Err(reason) = check_prefix(prefix.as_bytes()) {
+            panic!("{}", reason);
         }
         Self {
             origin: self.origin,
             prefix,
         }
+    }
+
+    /// Reads an origin and an optional prefix from configuration, such as
+    /// `https://example.com/blog`.
+    ///
+    /// It checks what [`Origin::new`] and [`Origin::under`] check, and
+    /// returns an error in place of their panic. One trailing `/` after the
+    /// host is allowed and means no prefix. The text must live for the rest of
+    /// the program, so a value read at startup is leaked once with
+    /// [`String::leak`].
+    ///
+    /// ```
+    /// use hypersig::Origin;
+    ///
+    /// let site = Origin::parse("https://example.com/blog")?;
+    /// assert_eq!((site.as_str(), site.prefix()), ("https://example.com", "/blog"));
+    /// assert!(Origin::parse("example.com").is_err());
+    /// # Ok::<(), hypersig::OriginError>(())
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OriginError`] when `text` is not an origin followed by an
+    /// optional prefix.
+    pub fn parse(text: &'static str) -> Result<Self, OriginError> {
+        let error = |reason| OriginError { text, reason };
+        let host = scheme_len(text.as_bytes()).ok_or_else(|| error(NO_SCHEME))?;
+        let (origin, prefix) = match text[host..].find('/') {
+            Some(at) => text.split_at(host + at),
+            None => (text, ""),
+        };
+        check_origin(origin.as_bytes()).map_err(error)?;
+        let prefix = if prefix == "/" { "" } else { prefix };
+        if !prefix.is_empty() {
+            check_prefix(prefix.as_bytes()).map_err(error)?;
+        }
+        Ok(Self { origin, prefix })
     }
 
     /// The scheme, host, and port, without the prefix.
@@ -115,6 +127,68 @@ impl fmt::Display for Origin {
         f.write_str(self.prefix)
     }
 }
+
+const NO_SCHEME: &str = "an origin starts with `http://` or `https://`";
+
+/// The length of the scheme and `://` that `bytes` starts with.
+const fn scheme_len(bytes: &[u8]) -> Option<usize> {
+    if starts_with(bytes, b"https://") {
+        Some(8)
+    } else if starts_with(bytes, b"http://") {
+        Some(7)
+    } else {
+        None
+    }
+}
+
+/// Checks that `bytes` is a scheme, a host, and an optional port.
+const fn check_origin(bytes: &[u8]) -> Result<(), &'static str> {
+    let Some(host) = scheme_len(bytes) else {
+        return Err(NO_SCHEME);
+    };
+    if bytes.len() <= host {
+        return Err("an origin has a host");
+    }
+    let mut i = host;
+    while i < bytes.len() {
+        if matches!(bytes[i], b'/' | b'?' | b'#' | b'"' | b' ') {
+            return Err("an origin ends at the host and port");
+        }
+        i += 1;
+    }
+    Ok(())
+}
+
+/// Checks that `bytes` is a path prefix such as `/blog`.
+const fn check_prefix(bytes: &[u8]) -> Result<(), &'static str> {
+    if bytes.len() <= 1 || bytes[0] != b'/' || bytes[bytes.len() - 1] == b'/' {
+        return Err("a prefix starts with `/` and does not end with one");
+    }
+    let mut i = 1;
+    while i < bytes.len() {
+        let empty_segment = bytes[i] == b'/' && bytes[i - 1] == b'/';
+        if empty_segment || matches!(bytes[i], b'?' | b'#' | b'"' | b' ') {
+            return Err("a prefix is a path without a query, a fragment, or an empty segment");
+        }
+        i += 1;
+    }
+    Ok(())
+}
+
+/// Text that [`Origin::parse`] refused, with the rule it broke.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OriginError {
+    text: &'static str,
+    reason: &'static str,
+}
+
+impl fmt::Display for OriginError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "`{}` is not an origin: {}", self.text, self.reason)
+    }
+}
+
+impl std::error::Error for OriginError {}
 
 const fn starts_with(bytes: &[u8], prefix: &[u8]) -> bool {
     if bytes.len() < prefix.len() {
