@@ -25,7 +25,18 @@ Adding a page to a Rust server leaves two choices today. Leptos type-checks what
 | Links checked against routes at compile time | Yes | No (`href` takes a string) | No (no router) | Opt-in (`typedRoutes`) | Yes | Experimental (`typedPages`) | No |
 | State kept in the browser | Yes | Yes | Yes | Yes | Yes | Yes | No |
 
-In a 2000-item TodoMVC that stores every add, toggle, and delete on the server, hypersig sends 13.4 KB of JS (gzip) and has a Total Blocking Time of 0 ms. The conditions and the other frameworks' numbers are in [`bench/compare`](bench/compare).
+## Benchmarks
+
+A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request.
+
+| | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
+|---|---|---|---|---|---|---|---|
+| JS (gzip) | 17.9 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
+| First Contentful Paint | 185 ms | 200 ms | 187 ms | 198 ms | 186 ms | 178 ms | 235 ms |
+| Total Blocking Time | 0 ms | 29 ms | 8 ms | 9 ms | 0 ms | 32 ms | 266 ms |
+| Interaction to Next Paint | 24 ms | 24 ms | 16 ms | 24 ms | 24 ms | 24 ms | 16 ms |
+
+The apps and the harness are in [`bench/compare`](bench/compare). Results of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), which compares list operations in the browser alone, are in [`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md).
 
 ## Quick start
 
