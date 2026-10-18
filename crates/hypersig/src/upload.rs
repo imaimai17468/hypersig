@@ -311,12 +311,12 @@ impl UploadedFile {
 #[derive(Debug)]
 pub struct UploadStream<A> {
     args: A,
-    multipart: axum::extract::Multipart,
+    multipart: multer::Multipart<'static>,
 }
 
 #[cfg(feature = "axum")]
 impl<A> UploadStream<A> {
-    pub(crate) fn new(args: A, multipart: axum::extract::Multipart) -> Self {
+    pub(crate) fn new(args: A, multipart: multer::Multipart<'static>) -> Self {
         Self { args, multipart }
     }
 
@@ -329,24 +329,31 @@ impl<A> UploadStream<A> {
     /// The next file, in the order the visitor picked them, or `None` after
     /// the last one.
     ///
-    /// The part of the previous file that was not read is skipped.
+    /// The part of the previous file that was not read is skipped, and so is
+    /// a part other than a file, as [`RouterExt::upload`](crate::RouterExt::upload)
+    /// skips it.
     ///
     /// # Errors
     ///
     /// Returns a [`RequestError`](crate::RequestError) when the body is
-    /// malformed, holds a part other than a file after the arguments, or is
-    /// longer than the upload's limit.
+    /// malformed or longer than the upload's limit.
     pub async fn next_file(&mut self) -> Result<Option<StreamedFile<'_>>, crate::RequestError> {
-        let field = self
+        // A multer field owns its part, so a part skipped here holds no
+        // borrow into the next turn of the loop.
+        while let Some(field) = self
             .multipart
             .next_field()
             .await
-            .map_err(crate::RequestError::from_multipart)?;
-        match field {
-            None => Ok(None),
-            Some(field) if field.name() == Some(FILES_PART) => Ok(Some(StreamedFile { field })),
-            Some(_) => Err(crate::RequestError::unexpected_part()),
+            .map_err(crate::RequestError::from_multer)?
+        {
+            if field.name() == Some(FILES_PART) {
+                return Ok(Some(StreamedFile {
+                    field,
+                    upload: PhantomData,
+                }));
+            }
         }
+        Ok(None)
     }
 }
 
@@ -354,7 +361,10 @@ impl<A> UploadStream<A> {
 #[cfg(feature = "axum")]
 #[derive(Debug)]
 pub struct StreamedFile<'a> {
-    field: axum::extract::multipart::Field<'a>,
+    field: multer::Field<'static>,
+    /// Ties the file to the `&mut` borrow of the stream it came from, so the
+    /// next file cannot be asked for while this one is held.
+    upload: PhantomData<&'a mut ()>,
 }
 
 #[cfg(feature = "axum")]
@@ -371,7 +381,7 @@ impl StreamedFile<'_> {
     /// guesses it from the file name, so check the bytes before trusting it.
     #[must_use]
     pub fn content_type(&self) -> Option<&str> {
-        self.field.content_type()
+        self.field.content_type().map(AsRef::as_ref)
     }
 
     /// The next chunk of the file's contents, or `None` after the last one.
@@ -384,7 +394,7 @@ impl StreamedFile<'_> {
         self.field
             .chunk()
             .await
-            .map_err(crate::RequestError::from_multipart)
+            .map_err(crate::RequestError::from_multer)
     }
 }
 

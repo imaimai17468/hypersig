@@ -319,10 +319,52 @@ mod streaming {
         );
         let (status, text) = send(chunked(&[FROM_PAGE], &body, 64)).await;
         assert_eq!(status, StatusCode::BAD_REQUEST);
-        assert_eq!(
-            text,
-            "the upload's parts are not the arguments followed by files"
+        assert_eq!(text, "the upload's first part is not the arguments");
+    }
+
+    #[tokio::test]
+    async fn a_part_other_than_a_file_is_skipped() {
+        let body = format!(
+            "--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"args\"\r\n\r\n\"mixed\"\r\n\
+             --{BOUNDARY}\r\nContent-Disposition: form-data; name=\"files\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\none\r\n\
+             --{BOUNDARY}\r\nContent-Disposition: form-data; name=\"note\"\r\n\r\nnot a file\r\n\
+             --{BOUNDARY}\r\nContent-Disposition: form-data; name=\"files\"; filename=\"b.txt\"\r\nContent-Type: text/plain\r\n\r\ntwo!\r\n\
+             --{BOUNDARY}--\r\n"
         );
+        let (status, text) = send(chunked(&[FROM_PAGE], &body, 16)).await;
+        assert_eq!(status, StatusCode::OK, "{text}");
+        assert!(
+            text.contains(r#""summary":"mixed a.txt:3:1,b.txt:4:1""#),
+            "{text}"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_streaming_upload_whose_body_is_not_multipart_gets_415() {
+        let request = Request::post("/stream")
+            .header(header::CONTENT_TYPE, "text/plain")
+            .header(FROM_PAGE.0, FROM_PAGE.1)
+            .body(Body::from("hello"))
+            .expect("request");
+        let (status, text) = send(request).await;
+        assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+        assert_eq!(text, "the upload's body is not `multipart/form-data`");
+    }
+
+    #[tokio::test]
+    async fn a_streaming_upload_that_says_it_is_too_long_gets_413() {
+        let body = multipart("\"x\"", &[]);
+        let request = Request::post("/stream")
+            .header(
+                header::CONTENT_TYPE,
+                format!("multipart/form-data; boundary={BOUNDARY}"),
+            )
+            .header(header::CONTENT_LENGTH, 1024 * 1024)
+            .header(FROM_PAGE.0, FROM_PAGE.1)
+            .body(Body::from(body))
+            .expect("request");
+        let (status, _) = send(request).await;
+        assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
     }
 
     #[tokio::test]

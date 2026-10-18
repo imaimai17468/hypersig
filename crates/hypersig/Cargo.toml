@@ -13,11 +13,15 @@ readme = "../../README.md"
 
 [features]
 default = ["axum"]
-axum = ["dep:axum", "dep:futures"]
+axum = ["dep:axum", "dep:futures", "dep:multer"]
 
 [dependencies]
 axum = { workspace = true, optional = true, features = ["multipart"] }
 futures = { workspace = true, optional = true }
+# `upload_stream` reads its parts with multer directly, because axum's `Field`
+# borrows the `Multipart` it came from and so cannot be skipped in a loop that
+# returns the next one.
+multer = { workspace = true, optional = true }
 hypersig_proc.workspace = true
 hypersig_style.workspace = true
 serde.workspace = true
