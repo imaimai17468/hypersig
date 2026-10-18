@@ -972,6 +972,20 @@ describe("uploads", () => {
     expect(runtime.store.get("uploading")).toBe(false);
   });
 
+  it("looks up the file input apart from a node ref of the same name", async () => {
+    const fetch = vi.fn((_url: URL, _init: RequestInit) => Promise.resolve(new Response("", { status: 200 })));
+    vi.stubGlobal("fetch", fetch);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mount("upload");
+    pick([new File(["one"], "a.png", { type: "image/png" })]);
+    $("#send").click();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(((fetch.mock.calls[0]![1].body as FormData).getAll("files") as File[]).map((file) => file.name)).toEqual(["a.png"]);
+    $("#focus").click();
+    await vi.waitFor(() => expect(document.activeElement).toBe($("#note")));
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it("sends no file part when nothing is picked, and empties the input after sending", async () => {
     const fetch = vi.fn((_url: URL, _init: RequestInit) => Promise.resolve(new Response("", { status: 200 })));
     vi.stubGlobal("fetch", fetch);

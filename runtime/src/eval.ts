@@ -35,7 +35,7 @@ export interface CallOptions {
   readonly reconnect: boolean;
   /** The element whose statement made the call. Reconnecting stops once it leaves the document. */
   readonly origin: Element | undefined;
-  /** The node ref name of the file input whose files go with the arguments, for an upload. */
+  /** The name of the file input whose files go with the arguments, for an upload. */
   readonly files?: string;
 }
 
@@ -50,6 +50,7 @@ export interface Host {
     options: CallOptions,
   ): Promise<void>;
   dom(op: string, name: string, origin: Element | undefined): void;
+  clearFiles(name: string, origin: Element | undefined): void;
   navigate(url: string): void;
   debounce(origin: Element | undefined, key: string, ms: number, action: () => void): void;
 }
@@ -458,6 +459,9 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
     }
     case "dom":
       host.dom(rest[0] as string, rest[1] as string, ctx.origin);
+      return;
+    case "clear-files":
+      host.clearFiles(rest[0] as string, ctx.origin);
       return;
     case "navigate":
       host.navigate(String(evaluate(rest[0], ctx)));

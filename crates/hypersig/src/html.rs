@@ -277,6 +277,7 @@ pub struct El<S> {
     style: Vec<(String, Expr<S, String>)>,
     key: Option<Value>,
     node_ref: Option<&'static str>,
+    file_input: Option<&'static str>,
     effects: Vec<Stmt<S>>,
     watches: Vec<(Value, Stmt<S>)>,
     interval: Option<(u128, Stmt<S>)>,
@@ -677,6 +678,7 @@ impl<S> El<S> {
             style: Vec::new(),
             key: None,
             node_ref: None,
+            file_input: None,
             effects: Vec::new(),
             watches: Vec::new(),
             interval: None,
@@ -934,6 +936,12 @@ impl<S> El<S> {
     #[must_use]
     pub fn node_ref(mut self, node_ref: NodeRef<S>) -> Self {
         self.node_ref = Some(node_ref.name());
+        self
+    }
+
+    /// Names this element as the file input `name`, which uploads read.
+    pub(crate) fn file_input(mut self, name: &'static str) -> Self {
+        self.file_input = Some(name);
         self
     }
 
@@ -1487,6 +1495,9 @@ impl<S> El<S> {
         }
         if let Some(name) = self.node_ref {
             write_attr(out, "data-hs-ref", name);
+        }
+        if let Some(name) = self.file_input {
+            write_attr(out, "data-hs-files", name);
         }
         if !self.effects.is_empty() {
             let effects: Vec<&Value> = self.effects.iter().map(Stmt::as_json).collect();

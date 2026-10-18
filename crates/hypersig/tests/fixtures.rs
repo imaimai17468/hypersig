@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, Orientation, a, button, div, each, each_keyed, el, input, label, li, main,
+    El, Event, Key, Orientation, a, button, div, each, each_keyed, el, input, label, li, main, p,
     select, span, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
@@ -971,9 +971,18 @@ struct Uploads {
 
 const PICTURES: FileInput<Uploads> = FileInput::new("pictures");
 const SEND: Upload<Uploads, String> = Upload::post("/pictures");
+// The same name as the file input, which the browser looks up apart from it.
+const PICTURES_NOTE: NodeRef<Uploads> = NodeRef::new("pictures");
 
 fn uploads() -> (El<Uploads>, Uploads) {
     let el = main()
+        .child(
+            p().id("note")
+                .attr("tabindex", "-1")
+                .node_ref(PICTURES_NOTE)
+                .text("Pick pictures"),
+        )
+        .child(button().id("focus").on_click(PICTURES_NOTE.focus()))
         .child(PICTURES.input().id("pictures").attr("multiple", ""))
         .child(input().id("caption").bind(Uploads::caption()))
         .child(

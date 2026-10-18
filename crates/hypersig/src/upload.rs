@@ -3,7 +3,9 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use crate::action::{Call, NodeRef};
+use serde_json::json;
+
+use crate::action::Call;
 use crate::expr::{IntoExpr, Stmt};
 use crate::html::{El, input};
 
@@ -130,14 +132,17 @@ impl<S, A> fmt::Debug for Upload<S, A> {
 ///
 /// Declare one as a `const`, put [`FileInput::input`] on the page, and pass
 /// the same value to the call. Inside a list item the browser looks for the
-/// input in the same item first, as for a [`NodeRef`].
+/// input in the same item first, as for a [`NodeRef`](crate::NodeRef). The
+/// browser looks up file inputs apart from node refs, so the two never share
+/// a name. Two file inputs with one name are the same mistake as two node
+/// refs with one name.
 pub struct FileInput<S> {
     name: &'static str,
     marker: PhantomData<fn() -> S>,
 }
 
 impl<S> FileInput<S> {
-    /// A file input named `name`, a name no [`NodeRef`] on the page shares.
+    /// A file input named `name`.
     ///
     /// # Panics
     ///
@@ -154,15 +159,13 @@ impl<S> FileInput<S> {
     /// The `<input type="file">` element. Add `multiple` or `accept` to it as to any element.
     #[must_use]
     pub fn input(self) -> El<S> {
-        input()
-            .attr("type", "file")
-            .node_ref(NodeRef::new(self.name))
+        input().attr("type", "file").file_input(self.name)
     }
 
     /// A statement that empties the input, such as after its files were sent.
     #[must_use]
     pub fn clear(self) -> Stmt<S> {
-        NodeRef::new(self.name).clear_files()
+        Stmt::new(json!(["clear-files", self.name]))
     }
 }
 

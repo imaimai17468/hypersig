@@ -45,6 +45,16 @@ const ADOPT_BUDGET_MS = 30;
 const FIRST_RETRY_MS = 1000;
 const LAST_RETRY_MS = 30_000;
 
+/** The attribute `El::node_ref` writes, which DOM statements look elements up by. */
+const REF = "data-hs-ref";
+/**
+ * The attribute `FileInput::input` writes, which uploads look file inputs up
+ * by. It is apart from `REF`, so a file input and a node ref never share a name.
+ */
+const FILES = "data-hs-files";
+/** The attributes that name an element, which a list item's copy keeps from its template. */
+const NAMES = [REF, FILES];
+
 /** The header an upload carries, which `crates/hypersig/src/axum.rs` requires. */
 const UPLOAD_HEADER = "hypersig-upload";
 
@@ -326,8 +336,10 @@ export class Runtime implements Host {
     const nodes = row === undefined ? [] : new Array<Element | undefined>(row.shape.parts.length);
     locate(planOf(proto), root, rendered, (element, source, reactive) => {
       state(element).source = source;
-      if (source.hasAttribute("data-hs-ref") && !element.hasAttribute("data-hs-ref")) {
-        element.setAttribute("data-hs-ref", source.getAttribute("data-hs-ref")!);
+      for (const attribute of NAMES) {
+        if (source.hasAttribute(attribute) && !element.hasAttribute(attribute)) {
+          element.setAttribute(attribute, source.getAttribute(attribute)!);
+        }
       }
       if (!reactive) return;
       members.push(element);
@@ -462,11 +474,11 @@ export class Runtime implements Host {
   #uploadBody(args: string, files: string, origin: Element | undefined): FormData {
     const data = new FormData();
     data.append("args", new Blob([args], { type: "application/json" }));
-    const input = this.#findRef(files, origin);
+    const input = this.#findNamed(FILES, files, origin);
     if (input instanceof HTMLInputElement && input.files !== null) {
       for (const file of input.files) data.append("files", file, file.name);
     } else if (!(input instanceof HTMLInputElement)) {
-      console.warn(`hypersig: no file input with node ref "${files}"`);
+      console.warn(`hypersig: no file input named "${files}"`);
     }
     return data;
   }
@@ -481,24 +493,41 @@ export class Runtime implements Host {
 
   /** Runs a DOM method on the element a node ref names, after the next render. */
   dom(op: string, name: string, origin: Element | undefined): void {
+    this.#afterRender(REF, name, origin, (target) => {
+      if (op === "focus" && target instanceof HTMLElement) target.focus();
+      else if (op === "blur" && target instanceof HTMLElement) target.blur();
+      else if (op === "select" && (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) target.select();
+      else if (op === "scroll") target.scrollIntoView({ block: "nearest" });
+      else if (op === "hide-popover" && target instanceof HTMLElement && target.matches(":popover-open")) target.hidePopover();
+      else if (op === "show-popover" && target instanceof HTMLElement && target.hasAttribute("popover") && !target.matches(":popover-open")) target.showPopover();
+    });
+  }
+
+  /** Empties the file input named `name`, after the next render. */
+  clearFiles(name: string, origin: Element | undefined): void {
+    this.#afterRender(FILES, name, origin, (target) => {
+      if (target instanceof HTMLInputElement && target.type === "file") target.value = "";
+    });
+  }
+
+  /**
+   * Calls `act` with the element whose `attribute` is `name` once the render
+   * the current statement started has run, mounting waiting list items first
+   * when the element is not in the document yet.
+   */
+  #afterRender(attribute: string, name: string, origin: Element | undefined, act: (target: Element) => void): void {
     queueMicrotask(() =>
       queueMicrotask(() => {
-        let target = this.#findRef(name, origin);
+        let target = this.#findNamed(attribute, name, origin);
         if (target === null && this.#waiting.size > 0) {
           for (const mount of this.#waiting.values()) mount();
-          target = this.#findRef(name, origin);
+          target = this.#findNamed(attribute, name, origin);
         }
         if (target === null) {
-          console.warn(`hypersig: no element with node ref "${name}"`);
+          console.warn(`hypersig: no element with ${attribute}="${name}"`);
           return;
         }
-        if (op === "focus" && target instanceof HTMLElement) target.focus();
-        else if (op === "blur" && target instanceof HTMLElement) target.blur();
-        else if (op === "select" && (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) target.select();
-        else if (op === "scroll") target.scrollIntoView({ block: "nearest" });
-        else if (op === "hide-popover" && target instanceof HTMLElement && target.matches(":popover-open")) target.hidePopover();
-        else if (op === "clear-files" && target instanceof HTMLInputElement && target.type === "file") target.value = "";
-        else if (op === "show-popover" && target instanceof HTMLElement && target.hasAttribute("popover") && !target.matches(":popover-open")) target.showPopover();
+        act(target);
       }),
     );
   }
@@ -1495,7 +1524,15 @@ export class Runtime implements Host {
   }
 
   #findRef(name: string, origin: Element | undefined): Element | null {
-    const selector = `[data-hs-ref="${CSS.escape(name)}"]`;
+    return this.#findNamed(REF, name, origin);
+  }
+
+  /**
+   * The element whose `attribute` is `name`, looked for first in the list
+   * items around `origin`, innermost first, then in the whole page.
+   */
+  #findNamed(attribute: string, name: string, origin: Element | undefined): Element | null {
+    const selector = `[${attribute}="${CSS.escape(name)}"]`;
     for (let at = origin ?? null; at !== null; at = at.parentElement) {
       if (own(at)?.root !== true) continue;
       const found = at.matches(selector) ? at : at.querySelector(selector);
@@ -1655,7 +1692,7 @@ function build(element: Element): Plan | null {
     if (plan !== null) children.push([index, plan]);
   });
   const reactive = element.matches(REACTIVE);
-  const carries = reactive || element.hasAttribute("data-hs-ref");
+  const carries = reactive || NAMES.some((attribute) => element.hasAttribute(attribute));
   return carries || children.length > 0 ? { tag: element.tagName, source: carries ? element : null, reactive, children } : null;
 }
 

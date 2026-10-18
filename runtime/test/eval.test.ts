@@ -10,6 +10,7 @@ function host() {
   return {
     call: vi.fn(async () => {}),
     dom: vi.fn(),
+    clearFiles: vi.fn(),
     navigate: vi.fn((_url: string) => {}),
     debounce: vi.fn(),
   } satisfies Host;

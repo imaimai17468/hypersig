@@ -168,7 +168,7 @@ pub struct Call<S> {
     error: Value,
     latest: bool,
     resends: bool,
-    /// The node ref name of the file input whose files an upload sends.
+    /// The name of the [`FileInput`](crate::FileInput) whose files an upload sends.
     files: Option<&'static str>,
     marker: PhantomData<fn() -> S>,
 }
@@ -189,7 +189,7 @@ impl<S> Call<S> {
     }
 
     /// A `POST` to `path` that sends `args` with the files picked in the
-    /// file input whose node ref name is `files`.
+    /// file input named `files`.
     pub(crate) fn upload(path: &'static str, args: Value, files: &'static str) -> Self {
         Self {
             files: Some(files),
@@ -452,6 +452,11 @@ impl<S> fmt::Debug for StreamCall<S> {
 /// handlers. Inside a list item the browser looks for the element in the same
 /// item first, so one `NodeRef` serves every item.
 ///
+/// Outside a list, give each `NodeRef` its own name. Two with one name both
+/// reach the first element that carries it, which the types do not check.
+/// A [`FileInput`](crate::FileInput) name is looked up apart from these, so
+/// it never collides with one.
+///
 /// ```
 /// use hypersig::html::{button, div, input};
 /// use hypersig::{NodeRef, Signals};
@@ -526,11 +531,6 @@ impl<S> NodeRef<S> {
     #[must_use]
     pub fn hide_popover(self) -> Stmt<S> {
         self.dom("hide-popover")
-    }
-
-    /// A statement that empties the element if it is a file input.
-    pub(crate) fn clear_files(self) -> Stmt<S> {
-        self.dom("clear-files")
     }
 
     /// A statement that shows the element if it is a popover that is not open.
