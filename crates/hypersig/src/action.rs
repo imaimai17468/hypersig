@@ -168,6 +168,8 @@ pub struct Call<S> {
     error: Value,
     latest: bool,
     resends: bool,
+    /// Whether `indicator` says that a stream's answer is open, rather than that an answer is awaited.
+    connected: bool,
     /// The name of the [`FileInput`](crate::FileInput) whose files an upload sends.
     files: Option<&'static str>,
     marker: PhantomData<fn() -> S>,
@@ -183,6 +185,7 @@ impl<S> Call<S> {
             error: Value::Null,
             latest: false,
             resends: false,
+            connected: false,
             files: None,
             marker: PhantomData,
         }
@@ -287,8 +290,12 @@ impl<S> IntoStmt<S> for Call<S> {
                 call.error
             ]),
         };
-        let flags: Vec<&str> = [("latest", call.latest), ("reconnect", call.resends)]
-            .into_iter()
+        let flags: Vec<&str> = [
+            ("latest", call.latest),
+            ("reconnect", call.resends),
+            ("connected", call.connected),
+        ]
+        .into_iter()
             .filter_map(|(flag, on)| on.then_some(flag))
             .collect();
         // A call without flags keeps the six-element form.
@@ -399,10 +406,18 @@ impl<S, A> fmt::Debug for StreamAction<S, A> {
 pub struct StreamCall<S>(Call<S>);
 
 impl<S> StreamCall<S> {
-    /// Sets `flag` to true while the stream is connecting or open, and to false after.
+    /// Sets `flag` to true while the server's answer is open, and to false otherwise.
+    ///
+    /// The flag turns true when the server answers with a 2xx status and
+    /// false when the stream ends or breaks off. It stays false while the
+    /// stream connects and while [`reconnect`](StreamCall::reconnect) waits to
+    /// open it again, so a page can show whether it is receiving changes.
+    /// Several streams may set one flag, which is true while any of them is open.
     #[must_use]
-    pub fn indicator(self, flag: Sig<S, bool>) -> Self {
-        Self(self.0.indicator(flag))
+    pub fn connected(mut self, flag: Sig<S, bool>) -> Self {
+        self.0 = self.0.indicator(flag);
+        self.0.connected = true;
+        self
     }
 
     /// Sets `message` as [`Call::error`] does, and to `""` when the stream connects.
@@ -594,6 +609,15 @@ mod tests {
                 null,
                 ["latest"]
             ])
+        );
+    }
+
+    #[test]
+    fn a_stream_call_marks_its_flag_as_a_connection() {
+        let live = Sig::<Page, bool>::from_path(crate::signal::Path::field("live"));
+        assert_eq!(
+            FEED.call().connected(live).into_stmt().as_json(),
+            &json!(["call", "GET", "/feed", null, "live", null, ["connected"]])
         );
     }
 

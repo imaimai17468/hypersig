@@ -453,11 +453,21 @@ export class Runtime implements Host {
       this.#leaving || latest?.signal.aborted === true || options.origin?.isConnected === false;
     // The store notifies only a change, so a failure that repeats the last message would go unnoticed if the signal kept it.
     if (error !== null) this.store.set(error, "");
-    if (indicator !== null) this.#busy(indicator, 1);
+    // A stream's indicator says whether its answer is open, so it is false while the stream connects and while it waits to reconnect.
+    const busy = options.connected ? null : indicator;
+    const open = options.connected ? indicator : null;
+    if (busy !== null) this.#busy(busy, 1);
     try {
       let delay = FIRST_RETRY_MS;
       for (;;) {
-        const failure = await this.#send(url, init, error, () => (delay = FIRST_RETRY_MS));
+        let opened = false;
+        const failure = await this.#send(url, init, error, () => {
+          delay = FIRST_RETRY_MS;
+          if (open === null) return;
+          opened = true;
+          this.#busy(open, 1);
+        });
+        if (opened) this.#busy(open!, -1);
         if (failure === null || latest?.signal.aborted === true) return;
         this.#fail(method, path, failure.message, error, failure.status);
         const again = options.reconnect && method === "GET" && (failure.status === 0 || failure.status >= 500);
@@ -468,7 +478,7 @@ export class Runtime implements Host {
       }
     } finally {
       if (latest !== undefined && this.#latest.get(key) === latest) this.#latest.delete(key);
-      if (indicator !== null) this.#busy(indicator, -1);
+      if (busy !== null) this.#busy(busy, -1);
     }
   }
 

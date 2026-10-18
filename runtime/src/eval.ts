@@ -33,6 +33,8 @@ export interface CallOptions {
   readonly latest: boolean;
   /** Send the request again after the connection fails or the server answers with a 5xx status. */
   readonly reconnect: boolean;
+  /** Set the indicator while the server's answer is open, rather than from sending until the answer ends. */
+  readonly connected: boolean;
   /** The element whose statement made the call. Reconnecting stops once it leaves the document. */
   readonly origin: Element | undefined;
   /** The name of the file input whose files go with the arguments, for an upload. */
@@ -494,7 +496,12 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       const args = rest[2] === null ? null : evaluate(rest[2], ctx);
       // A call without flags has six elements, so `rest[5]` is absent.
       const flags = (rest[5] ?? []) as string[];
-      const options = { latest: flags.includes("latest"), reconnect: flags.includes("reconnect"), origin: ctx.origin };
+      const options = {
+        latest: flags.includes("latest"),
+        reconnect: flags.includes("reconnect"),
+        connected: flags.includes("connected"),
+        origin: ctx.origin,
+      };
       void host.call(rest[0] as string, rest[1] as string, args, rest[3] as string | null, rest[4] as string | null, options);
       return;
     }
@@ -502,7 +509,7 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       // `["upload", path, args, indicator, error, file input, flags?]`, always a POST.
       const args = rest[1] === null ? null : evaluate(rest[1], ctx);
       const flags = (rest[5] ?? []) as string[];
-      const options = { latest: flags.includes("latest"), reconnect: false, origin: ctx.origin, files: rest[4] as string };
+      const options = { latest: flags.includes("latest"), reconnect: false, connected: false, origin: ctx.origin, files: rest[4] as string };
       void host.call("POST", rest[0] as string, args, rest[2] as string | null, rest[3] as string | null, options);
       return;
     }

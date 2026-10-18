@@ -122,6 +122,7 @@ describe("run", () => {
     expect(h.call).toHaveBeenCalledWith("POST", "/save", 5, "busy", null, {
       latest: false,
       reconnect: false,
+      connected: false,
       origin: undefined,
     });
     expect(ctx.store.get("count")).toBe(9);
@@ -129,10 +130,11 @@ describe("run", () => {
 
   it("passes the flags after the error signal to the call", async () => {
     const h = host();
-    await run(["call", "GET", "/find", ["lit", "tea"], null, null, ["latest", "reconnect"]], context({}), h);
+    await run(["call", "GET", "/find", ["lit", "tea"], null, null, ["latest", "reconnect", "connected"]], context({}), h);
     expect(h.call).toHaveBeenCalledWith("GET", "/find", "tea", null, null, {
       latest: true,
       reconnect: true,
+      connected: true,
       origin: undefined,
     });
   });

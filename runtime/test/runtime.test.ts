@@ -751,6 +751,38 @@ describe("calls", () => {
       expect(fetch).toHaveBeenCalledTimes(3);
     });
 
+    it("sets a connected flag only while the stream's answer is open", async () => {
+      vi.useFakeTimers();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      let drop!: () => void;
+      const open = new ReadableStream<Uint8Array>({
+        start(controller) {
+          drop = () => controller.error(new TypeError("network error"));
+        },
+      });
+      let connect!: (response: Response) => void;
+      const fetch = vi
+        .fn()
+        .mockReturnValueOnce(new Promise<Response>((resolve) => (connect = resolve)))
+        .mockReturnValueOnce(new Promise<Response>(() => {}));
+      vi.stubGlobal("fetch", fetch);
+      const runtime = mount(`<p data-hs-on-load='["call","GET","/feed",null,"live",null,["reconnect","connected"]]'></p>`, {
+        live: false,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(runtime.store.get("live")).toBe(false);
+      connect(new Response(open, { status: 200 }));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(runtime.store.get("live")).toBe(true);
+      drop();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(runtime.store.get("live")).toBe(false);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(runtime.store.get("live")).toBe(false);
+    });
+
     it("does not send the request again after a 4xx answer or once its element has left the page", async () => {
       vi.useFakeTimers();
       vi.spyOn(console, "error").mockImplementation(() => {});

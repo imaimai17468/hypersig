@@ -1791,6 +1791,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "connected",
+                            "struct.StreamCall.html#method.connected",
+                            L {
+                                en: "Sets `flag` to true while the server's answer is open, and to false otherwise.",
+                                ja: "サーバーの応答が開いている間は `flag` を真にし、それ以外のときは偽にします。",
+                            },
+                        ),
+                        (
                             "reconnect",
                             "struct.StreamCall.html#method.reconnect",
                             L {
