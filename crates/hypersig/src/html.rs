@@ -1884,18 +1884,6 @@ impl<S> El<S> {
         }
         let eval_bool =
             |expr: &Value| ctx.and_then(|ctx| ssr::evaluate(expr, ctx).map(|v| ssr::truthy(&v)));
-        let mut classes: Vec<&str> = self.classes.clone();
-        for (class, when) in &self.class_when {
-            if eval_bool(when.as_json()) == Some(true) {
-                classes.push(class);
-            }
-        }
-        classes.extend(self.css_names.iter().map(String::as_str));
-        for (_, names, when) in &self.css_when {
-            if eval_bool(when.as_json()) == Some(true) {
-                classes.extend(names.iter().map(String::as_str));
-            }
-        }
         let mut style: Vec<String> = Vec::new();
         let mut rule = String::new();
         let rules = ctx.and_then(|ctx| ctx.rules);
@@ -1978,8 +1966,31 @@ impl<S> El<S> {
         if let Some(id) = &self.id {
             write_attr(out, "id", id);
         }
-        if !classes.is_empty() {
-            write_attr(out, "class", &classes.join(" "));
+        let classes = self
+            .classes
+            .iter()
+            .copied()
+            .chain(
+                self.class_when
+                    .iter()
+                    .filter(|(_, when)| eval_bool(when.as_json()) == Some(true))
+                    .map(|(class, _)| *class),
+            )
+            .chain(self.css_names.iter().map(String::as_str))
+            .chain(
+                self.css_when
+                    .iter()
+                    .filter(|(_, _, when)| eval_bool(when.as_json()) == Some(true))
+                    .flat_map(|(_, names, _)| names.iter().map(String::as_str)),
+            );
+        let mut any_class = false;
+        for class in classes {
+            out.push_str(if any_class { " " } else { " class=\"" });
+            escape_into(out, class, true);
+            any_class = true;
+        }
+        if any_class {
+            out.push('"');
         }
         for (name, value) in &self.attrs {
             if *name == "style" && !style.is_empty() {
