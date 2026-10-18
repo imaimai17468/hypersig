@@ -323,6 +323,20 @@ pub fn pages(site: Site) -> Part {
                 },
             ),
             show(Snippet::History),
+            heading(
+                site,
+                L {
+                    en: "Pages for missing paths",
+                    ja: "見つからないパスのページ",
+                },
+            ),
+            para(
+                site,
+                L {
+                    en: "`fn pages(Router<State>) else missing;` on the first line of `routes!` names a handler for each page request that reaches no page: a path no route matches, a segment that does not parse, a handler that answers `None`, and a query string that does not deserialize. The handler receives an [`Unserved`](api:hypersig/struct.Unserved.html) and may take an extractor, and its page is sent with the 404 or 400 that `Unserved::status` names. `Unserved::within(HOME)` reads the parameters of `HOME` from the start of the path, so a site under `/{lang}` shows the page in the language of the path. A page with another status is `PageResponse::with_status(status, page)`.",
+                    ja: "`routes!` の 1 行目に `fn pages(Router<State>) else missing;` と書くと、どのページにも届かなかったページのリクエストを受け取るハンドラを指定できます。対象は、どのルートにも合わないパス、パースできないセグメント、`None` を返したハンドラ、デシリアライズできないクエリ文字列です。ハンドラは [`Unserved`](api:hypersig/struct.Unserved.html) を受け取り、extractor も受け取れます。返したページは `Unserved::status` が示す 404 か 400 で送られます。`Unserved::within(HOME)` はパスの先頭から `HOME` のパラメータを読むので、`/{lang}` の下にあるサイトはパスの言語でページを出せます。ほかの状態を付けたページは `PageResponse::with_status(status, page)` で返します。",
+                },
+            ),
             head(site),
             heading(
                 site,

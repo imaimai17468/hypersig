@@ -6,6 +6,8 @@ use std::convert::Infallible;
 use std::error::Error as StdError;
 use std::fmt;
 use std::marker::PhantomData;
+use std::pin::Pin;
+use std::sync::Arc;
 
 use axum::Router;
 use axum::body::{Body, Bytes};
@@ -42,7 +44,12 @@ pub trait RouterExt<St>: Sized {
     /// Serves the page at `route` on `GET`. `routes!` calls it for each page it declares.
     #[doc(hidden)]
     #[must_use]
-    fn page<P, Q, H, M, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
+    fn page<P, Q, H, M, Fut, R>(
+        self,
+        route: Route<P, Q>,
+        handler: H,
+        unserved: Option<UnservedPage<St>>,
+    ) -> Self
     where
         P: Params + Send + 'static,
         Q: Search + DeserializeOwned + Send + 'static,
@@ -141,7 +148,12 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         )
     }
 
-    fn page<P, Q, H, M, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
+    fn page<P, Q, H, M, Fut, R>(
+        self,
+        route: Route<P, Q>,
+        handler: H,
+        unserved: Option<UnservedPage<St>>,
+    ) -> Self
     where
         P: Params + Send + 'static,
         Q: Search + DeserializeOwned + Send + 'static,
@@ -157,6 +169,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                                   params: RawPathParams,
                                   request: Parts| {
             let handler = handler.clone();
+            let unserved = unserved.clone();
             let nested = matched.as_str() != path;
             let segments: Vec<&str> = params.iter().map(|(_, value)| value).collect();
             let params = P::from_segments(&segments);
@@ -175,18 +188,36 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                     )
                         .into_response();
                 }
-                let Some(params) = params else {
-                    return StatusCode::NOT_FOUND.into_response();
+                let refused = match (params, search) {
+                    (None, _) => Err(Reason::Segments),
+                    (Some(_), Err(rejection)) => Err(Reason::Query(rejection.body_text())),
+                    (Some(params), Ok(search)) => Ok(Q::join(params, search)),
                 };
-                let search = match search {
-                    Ok(search) => search,
-                    Err(rejection) => return rejection.into_response(),
+                let args = match (refused, &unserved) {
+                    (Ok(args), _) => args,
+                    (Err(reason), Some(page)) => {
+                        let unserved = Unserved::new(reason, &request);
+                        return page.answer(state, request, unserved).await;
+                    }
+                    (Err(Reason::Query(text)), None) => {
+                        return (StatusCode::BAD_REQUEST, text).into_response();
+                    }
+                    (Err(_), None) => return StatusCode::NOT_FOUND.into_response(),
                 };
-                match handler
-                    .call(state, request, ready(Q::join(params, search)))
-                    .await
-                {
-                    Ok(page) => page.await.into().into_response(),
+                // The router's page for a 404 reads the request, which the
+                // handler takes, so it keeps a copy only where there is one.
+                let kept = unserved
+                    .as_ref()
+                    .map(|page| (page, state.clone(), request.clone()));
+                match handler.call(state, request, ready(args)).await {
+                    Ok(page) => {
+                        let kept = kept.map(|(page, state, request)| Unanswered {
+                            page,
+                            state,
+                            request,
+                        });
+                        page.await.into().finish(kept).await
+                    }
                     Err(rejection) => rejection,
                 }
             }
@@ -429,13 +460,17 @@ where
     }
 }
 
-/// What a page handler returns: a page, a redirect, or a 404.
+/// What a page handler returns: a page, a page with a status, a redirect, or a 404.
 ///
 /// A handler that only ever renders returns `Page` or `Option<Page>`, which
 /// convert into this. One that sometimes sends the browser elsewhere returns
 /// this type, built from either. A pair of [`IntoResponseParts`] and one of
 /// these adds headers, such as a `Set-Cookie`. A `Result` whose error is
 /// [`IntoResponse`] answers with the error, so a handler can use `?`.
+///
+/// A 404 from `None` or [`PageResponse::not_found`] shows the page of the
+/// handler [`routes!`](crate::routes) names after `else`, and has an empty
+/// body where it names none.
 ///
 /// ```
 /// use hypersig::html::h1;
@@ -462,10 +497,46 @@ where
 /// }
 /// # let _ = (profile(true), pages);
 /// ```
-#[derive(Debug)]
-pub struct PageResponse(Response);
+pub struct PageResponse {
+    reply: Reply,
+    /// Header parts added around the reply, innermost first.
+    parts: Vec<AddParts>,
+}
+
+/// Adds the header parts of a pair to the response the reply becomes.
+type AddParts = Box<dyn FnOnce(Response) -> Response + Send>;
+
+enum Reply {
+    /// A page, rendered once the router knows where it is served.
+    Page {
+        render: Box<dyn FnOnce() -> String + Send>,
+        status: Option<StatusCode>,
+    },
+    /// A 404 that shows the router's page for a request it serves no page for.
+    NotFound,
+    Response(Response),
+}
+
+impl fmt::Debug for PageResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut tuple = f.debug_tuple("PageResponse");
+        match &self.reply {
+            Reply::Page { status, .. } => tuple.field(&format_args!("Page({status:?})")),
+            Reply::NotFound => tuple.field(&format_args!("NotFound")),
+            Reply::Response(response) => tuple.field(response),
+        };
+        tuple.finish()
+    }
+}
 
 impl PageResponse {
+    fn new(reply: Reply) -> Self {
+        Self {
+            reply,
+            parts: Vec::new(),
+        }
+    }
+
     /// Sends the browser to `url` with a `303 See Other`.
     #[must_use]
     #[expect(
@@ -473,43 +544,344 @@ impl PageResponse {
         reason = "callers build the URL in the call, as `redirect(LOGIN.url(()))`"
     )]
     pub fn redirect(url: Url) -> Self {
-        Self(Redirect::to(url.as_str()).into_response())
+        Self::new(Reply::Response(Redirect::to(url.as_str()).into_response()))
     }
 
     /// Answers with a `404 Not Found`.
     #[must_use]
     pub fn not_found() -> Self {
-        Self(StatusCode::NOT_FOUND.into_response())
+        Self::new(Reply::NotFound)
+    }
+
+    /// Answers with `page` and the status `status`, such as a styled `404 Not Found`.
+    ///
+    /// ```
+    /// use axum::http::StatusCode;
+    /// use hypersig::html::p;
+    /// use hypersig::{Page, PageResponse, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Missing {}
+    ///
+    /// let page = Page::new("Not found", Missing {}).child(p().text("No such order."));
+    /// let _response = PageResponse::with_status(StatusCode::NOT_FOUND, page);
+    /// ```
+    #[must_use]
+    pub fn with_status<S: Signals + Send + 'static>(status: StatusCode, page: Page<S>) -> Self {
+        Self::new(Reply::Page {
+            render: Box::new(move || page.render()),
+            status: Some(status),
+        })
+    }
+
+    /// Gives a page without a status of its own the status `status`.
+    fn or_status(mut self, status: StatusCode) -> Self {
+        if let Reply::Page { status: own, .. } = &mut self.reply {
+            own.get_or_insert(status);
+        }
+        self
+    }
+
+    /// The response, with `unserved` answering a 404 where the router names a page for it.
+    async fn finish<St: Clone + Send + Sync + 'static>(
+        self,
+        unserved: Option<Unanswered<'_, St>>,
+    ) -> Response {
+        let Self { reply, parts } = self;
+        let response = match (reply, unserved) {
+            (
+                Reply::NotFound,
+                Some(Unanswered {
+                    page,
+                    state,
+                    request,
+                }),
+            ) => {
+                let unserved = Unserved::new(Reason::NoPage, &request);
+                Box::pin(page.answer(state, request, unserved)).await
+            }
+            (reply, _) => reply.into_response(),
+        };
+        parts
+            .into_iter()
+            .fold(response, |response, add| add(response))
     }
 }
 
-impl<S: Signals> From<Page<S>> for PageResponse {
+/// What a 404 needs to show the page the router names for it.
+struct Unanswered<'a, St> {
+    page: &'a UnservedPage<St>,
+    state: St,
+    request: Parts,
+}
+
+impl Reply {
+    /// The response outside a route, where a 404 has an empty body.
+    fn into_response(self) -> Response {
+        match self {
+            Self::Page { render, status } => {
+                (status.unwrap_or(StatusCode::OK), Html(render())).into_response()
+            }
+            Self::NotFound => StatusCode::NOT_FOUND.into_response(),
+            Self::Response(response) => response,
+        }
+    }
+}
+
+impl<S: Signals + Send + 'static> From<Page<S>> for PageResponse {
     fn from(page: Page<S>) -> Self {
-        Self(Html(page.render()).into_response())
+        Self::new(Reply::Page {
+            render: Box::new(move || page.render()),
+            status: None,
+        })
     }
 }
 
-impl<S: Signals> From<Option<Page<S>>> for PageResponse {
+impl<S: Signals + Send + 'static> From<Option<Page<S>>> for PageResponse {
     fn from(page: Option<Page<S>>) -> Self {
         page.map_or_else(Self::not_found, Self::from)
     }
 }
 
-impl<H: IntoResponseParts, R: Into<PageResponse>> From<(H, R)> for PageResponse {
+impl<H: IntoResponseParts + Send + 'static, R: Into<PageResponse>> From<(H, R)> for PageResponse {
     fn from((parts, page): (H, R)) -> Self {
-        Self((parts, page.into().0).into_response())
+        let mut response = page.into();
+        response
+            .parts
+            .push(Box::new(move |inner| (parts, inner).into_response()));
+        response
     }
 }
 
 impl<R: Into<PageResponse>, E: IntoResponse> From<Result<R, E>> for PageResponse {
     fn from(result: Result<R, E>) -> Self {
-        result.map_or_else(|error| Self(error.into_response()), Into::into)
+        result.map_or_else(
+            |error| Self::new(Reply::Response(error.into_response())),
+            Into::into,
+        )
     }
 }
 
 impl IntoResponse for PageResponse {
     fn into_response(self) -> Response {
-        self.0
+        let Self { reply, parts } = self;
+        parts
+            .into_iter()
+            .fold(reply.into_response(), |response, add| add(response))
+    }
+}
+
+/// A page request that reached no page, handed to the `else` handler of [`routes!`](crate::routes).
+///
+/// Its [`status`](Unserved::status) is `404 Not Found` for a path no route
+/// matches, a path whose segments do not parse into its route's
+/// parameters, and a handler that answers `None`, and `400 Bad Request` for
+/// a query string that does not deserialize into the route's search
+/// parameters. A page the handler returns is sent with that status, unless
+/// it comes from [`PageResponse::with_status`].
+#[derive(Debug)]
+pub struct Unserved {
+    reason: Reason,
+    path: String,
+}
+
+#[derive(Debug)]
+enum Reason {
+    NoRoute,
+    Segments,
+    NoPage,
+    Query(String),
+}
+
+impl Unserved {
+    fn new(reason: Reason, request: &Parts) -> Self {
+        Self {
+            reason,
+            path: request.uri.path().to_owned(),
+        }
+    }
+
+    /// The status the page for this request is sent with: 404 or 400.
+    #[must_use]
+    pub fn status(&self) -> StatusCode {
+        match self.reason {
+            Reason::NoRoute | Reason::Segments | Reason::NoPage => StatusCode::NOT_FOUND,
+            Reason::Query(_) => StatusCode::BAD_REQUEST,
+        }
+    }
+
+    /// The parameters of `route`, where the request's path starts with that route's path.
+    ///
+    /// A `{name}` segment of `route` takes the request's segment at its
+    /// place, percent-decoded, and a literal segment must be equal. A page
+    /// for a missing path under `/{lang}` reads its language this way.
+    ///
+    /// ```
+    /// use hypersig::html::p;
+    /// use hypersig::{Page, Route, Signals, Unserved};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Missing {}
+    ///
+    /// # async fn home((): (), _: String) -> Option<Page<Missing>> { None }
+    /// hypersig::routes! {
+    ///     fn pages(Router<()>) else missing;
+    ///     const HOME: Route<String> = "/{lang}" => home;
+    /// }
+    ///
+    /// async fn missing((): (), unserved: Unserved) -> Page<Missing> {
+    ///     let lang = unserved.within(HOME).unwrap_or_else(|| "en".to_owned());
+    ///     let text = if lang == "ja" { "ページが見つかりません。" } else { "No such page." };
+    ///     Page::new(text, Missing {}).lang(lang).child(p().text(text))
+    /// }
+    /// # let _ = pages;
+    /// ```
+    #[must_use]
+    pub fn within<P: Params, Q: Search>(&self, route: Route<P, Q>) -> Option<P> {
+        route.prefix_of(&self.path)
+    }
+}
+
+impl fmt::Display for Unserved {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let path = &self.path;
+        match &self.reason {
+            Reason::NoRoute => write!(f, "no page is served at `{path}`"),
+            Reason::Segments => write!(
+                f,
+                "a segment of `{path}` does not parse into its route's parameters"
+            ),
+            Reason::NoPage => write!(f, "the handler of `{path}` answered with no page"),
+            Reason::Query(rejection) => f.write_str(rejection),
+        }
+    }
+}
+
+/// The handler [`routes!`](crate::routes) names after `else`, which each page and the router's fallback keep.
+#[doc(hidden)]
+pub struct UnservedPage<St>(Arc<UnservedFn<St>>);
+
+/// The handler behind an [`UnservedPage`], with its types erased.
+type UnservedFn<St> = dyn Fn(St, Parts, Unserved) -> Pin<Box<dyn Future<Output = Result<PageResponse, Response>> + Send>>
+    + Send
+    + Sync;
+
+impl<St> Clone for UnservedPage<St> {
+    fn clone(&self) -> Self {
+        Self(Arc::clone(&self.0))
+    }
+}
+
+impl<St> fmt::Debug for UnservedPage<St> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("UnservedPage")
+    }
+}
+
+impl<St: Clone + Send + Sync + 'static> UnservedPage<St> {
+    /// Keeps `handler` to answer a page request that reached no page.
+    #[doc(hidden)]
+    pub fn new<H, M, Fut, R>(handler: H) -> Self
+    where
+        H: Handler<St, Unserved, M, Output = Fut>,
+        M: 'static,
+        Fut: Future<Output = R> + Send + 'static,
+        R: Into<PageResponse>,
+    {
+        Self(Arc::new(move |state, request, unserved| {
+            let handler = handler.clone();
+            Box::pin(async move {
+                let page = handler.call(state, request, ready(unserved)).await?;
+                Ok(page.await.into())
+            })
+        }))
+    }
+
+    /// The handler's page, sent with the status of `unserved` unless it sets its own.
+    async fn answer(&self, state: St, request: Parts, unserved: Unserved) -> Response {
+        let status = unserved.status();
+        match (self.0)(state, request, unserved).await {
+            // A handler here that answers `None` has no page to fall back on.
+            Ok(page) => page.or_status(status).finish::<St>(None).await,
+            Err(rejection) => rejection,
+        }
+    }
+
+    /// Serves the handler's page as the fallback of `router`, for a path no route matches.
+    #[doc(hidden)]
+    pub fn fallback(self, router: Router<St>) -> Router<St> {
+        router.fallback(move |State(state): State<St>, request: Parts| {
+            let page = self.clone();
+            async move {
+                // The runtime could not apply a page, so a call to an action
+                // that does not exist gets the bare status.
+                if RequestKind::of(&request) == RequestKind::Runtime {
+                    return StatusCode::NOT_FOUND.into_response();
+                }
+                let unserved = Unserved::new(Reason::NoRoute, &request);
+                page.answer(state, request, unserved).await
+            }
+        })
+    }
+}
+
+/// What sent a request: the browser loading a page, or the runtime calling an action.
+///
+/// The runtime asks for `text/event-stream` when it calls an action, a
+/// stream, or an upload, and a browser loading a page asks for HTML. An
+/// extractor that refuses a visitor reads it to choose the refusal: a page
+/// can send the browser to a sign-in page, and an action answers with a
+/// status the page shows through [`Call::error`](crate::Call::error),
+/// because `fetch` would follow a redirect and hand the page HTML it cannot
+/// apply.
+///
+/// ```
+/// use axum::http::{Request, header};
+/// use hypersig::RequestKind;
+///
+/// let (parts, ()) = Request::post("/notes")
+///     .header(header::ACCEPT, "text/event-stream")
+///     .body(())
+///     .expect("request")
+///     .into_parts();
+/// assert_eq!(RequestKind::of(&parts), RequestKind::Runtime);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RequestKind {
+    /// The browser loading a page, by following a link or opening a URL.
+    Navigation,
+    /// The runtime calling an action, a stream, or an upload.
+    Runtime,
+}
+
+impl RequestKind {
+    /// The kind of the request whose head is `request`.
+    #[must_use]
+    pub fn of(request: &Parts) -> Self {
+        // The runtime and `EventSource` send this header value and no other.
+        let event_stream = request
+            .headers
+            .get_all(header::ACCEPT)
+            .iter()
+            .any(|accept| accept.as_bytes() == b"text/event-stream");
+        if event_stream {
+            Self::Runtime
+        } else {
+            Self::Navigation
+        }
+    }
+}
+
+impl<St: Sync> FromRequestParts<St> for RequestKind {
+    type Rejection = Infallible;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &St,
+    ) -> impl Future<Output = Result<Self, Infallible>> + Send {
+        std::future::ready(Ok(Self::of(parts)))
     }
 }
 

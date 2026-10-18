@@ -50,6 +50,18 @@ base("signs in with a cookie, shows the handler's error, and asks to sign in aga
   expect(problems.filter((problem) => !problem.startsWith("4") && !problem.startsWith("hypersig:") && !problem.startsWith("Failed to load resource"))).toEqual([]);
 });
 
+// The page answers 404 on purpose, so this test checks the failures it logs itself.
+base("shows the router's page with a 404 for a path that names no page", async ({ page }) => {
+  const problems = watch(page);
+  const response = await page.goto(`${url("auth")}nowhere`);
+  expect(response?.status()).toBe(404);
+  await expect(page.locator("#missing")).toHaveText("There is no page here.");
+  await expect(page.getByText("no page is served at `/nowhere`")).toBeVisible();
+  await page.getByRole("link", { name: "Back to your notes" }).click();
+  await expect(page).toHaveURL(`${url("auth")}login`);
+  expect(problems.filter((problem) => !problem.startsWith("404") && !problem.startsWith("Failed to load resource"))).toEqual([]);
+});
+
 test("signs out, which removes the cookie and the session", async ({ page, context }) => {
   await page.goto(`${url("auth")}login`);
   await page.getByRole("textbox", { name: "Name", exact: true }).fill("grace");

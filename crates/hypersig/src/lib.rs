@@ -66,7 +66,9 @@ struct ReadmeJa;
 
 pub use action::{Action, Call, DialogRef, Method, NodeRef, StreamAction, StreamCall};
 #[cfg(feature = "axum")]
-pub use axum::{ActionResponse, Handler, PageResponse, RequestError, RouterExt};
+pub use axum::{
+    ActionResponse, Handler, PageResponse, RequestError, RequestKind, RouterExt, Unserved,
+};
 pub use expr::{
     Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };
@@ -140,6 +142,9 @@ const RUNTIME_PATH_BYTES: [u8; 38] = {
 pub mod _private {
     #[cfg(feature = "axum")]
     pub use ::axum::Router;
+
+    #[cfg(feature = "axum")]
+    pub use crate::axum::UnservedPage;
 
     pub use crate::route::SearchFields;
     pub use crate::route::sealed::Sealed;

@@ -15,14 +15,14 @@ use axum::Router;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::{HeaderName, StatusCode, header};
-use axum::response::{IntoResponse, Redirect, Response};
-use hypersig::html::{El, div, each, form, h1, label, li, p, span, ul};
+use axum::response::{IntoResponse, Response};
+use hypersig::html::{El, a, div, each, form, h1, label, li, p, span, ul};
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::rem;
 use hypersig::{
-    Action, ActionResponse, FieldErrors, FileInput, Form, Page, Patches, Route, RouterExt, Rules,
-    Sig, Signals, Upload, Uploaded, Validate, if_else,
+    Action, ActionResponse, FieldErrors, FileInput, Form, Page, PageResponse, Patches, RequestKind,
+    Route, RouterExt, Rules, Sig, Signals, Unserved, Upload, Uploaded, Validate, if_else,
 };
 use hypersig_ui::{
     Autocomplete, ButtonSize, ButtonVariant, InputKind, Level, TextField, button, card,
@@ -75,7 +75,7 @@ struct Home {
 }
 
 hypersig::routes! {
-    fn pages(Router<AppState>);
+    fn pages(Router<AppState>) else missing;
     const HOME: Route = "/" => home;
     const LOGIN: Route = "/login" => login;
 }
@@ -192,10 +192,7 @@ impl Member {
         match (token, name) {
             (Some(token), Some(name)) => Ok(Self { name, token }),
             _ => Err(SignedOut {
-                from_action: parts
-                    .headers
-                    .get(header::ACCEPT)
-                    .is_some_and(|accept| accept.as_bytes() == b"text/event-stream"),
+                kind: RequestKind::of(parts),
             }),
         }
     }
@@ -207,16 +204,17 @@ impl Member {
 /// 401 instead, because `fetch` would follow a redirect and hand the page
 /// the sign-in page's HTML, which it cannot apply.
 struct SignedOut {
-    from_action: bool,
+    kind: RequestKind,
 }
 
 impl IntoResponse for SignedOut {
     fn into_response(self) -> Response {
-        if self.from_action {
-            let message = "Your session has ended. Sign in again.";
-            (StatusCode::UNAUTHORIZED, message).into_response()
-        } else {
-            Redirect::to(LOGIN.url(()).as_str()).into_response()
+        match self.kind {
+            RequestKind::Runtime => {
+                let message = "Your session has ended. Sign in again.";
+                (StatusCode::UNAUTHORIZED, message).into_response()
+            }
+            RequestKind::Navigation => PageResponse::redirect(LOGIN.url(())).into_response(),
         }
     }
 }
@@ -259,6 +257,32 @@ async fn home(state: AppState, member: Member, (): ()) -> Page<Home> {
     Page::new("hypersig notes", signals)
         .theme(hypersig_ui::theme())
         .child(frame(home_card()))
+}
+
+/// The page for a path that names no page, sent with a 404.
+#[derive(Signals, Serialize, Deserialize)]
+struct Missing {
+    problem: String,
+}
+
+async fn missing(_state: AppState, unserved: Unserved) -> Page<Missing> {
+    let signals = Missing {
+        problem: unserved.to_string(),
+    };
+    Page::new("Not found", signals)
+        .theme(hypersig_ui::theme())
+        .child(frame(
+            card().child(
+                card_content()
+                    .css(stack(rem(1)))
+                    .child(p().id("missing").text("There is no page here."))
+                    .child(
+                        p().css(Style::new().color(token::muted_foreground().var()))
+                            .bind_text(Missing::problem()),
+                    )
+                    .child(a().href(HOME.link()).text("Back to your notes")),
+            ),
+        ))
 }
 
 async fn login(_state: AppState, (): ()) -> Page<Login> {

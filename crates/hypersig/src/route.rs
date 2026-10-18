@@ -181,6 +181,58 @@ impl<P: Params, Q: Search> Route<P, Q> {
         url.push_str(&search.query());
         Url(url)
     }
+
+    /// The parameters this route's path takes from the start of `path`, percent-decoded.
+    #[cfg(feature = "axum")]
+    pub(crate) fn prefix_of(&self, path: &str) -> Option<P> {
+        let wanted: Vec<&str> = match self.path {
+            "/" => Vec::new(),
+            route => route[1..].split('/').collect(),
+        };
+        let mut given = path.strip_prefix('/')?.split('/');
+        let mut values = Vec::new();
+        for part in wanted {
+            let segment = given.next()?;
+            if part.starts_with("{*") {
+                let rest = std::iter::once(segment).chain(given.by_ref());
+                values.push(percent_decode(&rest.collect::<Vec<_>>().join("/"))?);
+            } else if part.starts_with('{') {
+                values.push(percent_decode(segment)?);
+            } else if part != segment {
+                return None;
+            }
+        }
+        let values: Vec<&str> = values.iter().map(String::as_str).collect();
+        P::from_segments(&values)
+    }
+}
+
+/// Decodes the `%XX` escapes of `text`, or `None` where the bytes are not UTF-8.
+///
+/// A `%` without two hex digits after it stays as it is.
+#[cfg(feature = "axum")]
+fn percent_decode(text: &str) -> Option<String> {
+    let bytes = text.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        let hex = |at: usize| {
+            bytes
+                .get(at)
+                .and_then(|byte| char::from(*byte).to_digit(16))
+        };
+        match (bytes[i], hex(i + 1), hex(i + 2)) {
+            (b'%', Some(high), Some(low)) => {
+                out.push(u8::try_from(high * 16 + low).ok()?);
+                i += 3;
+            }
+            (byte, _, _) => {
+                out.push(byte);
+                i += 1;
+            }
+        }
+    }
+    String::from_utf8(out).ok()
 }
 
 impl Route<(), ()> {
@@ -245,6 +297,43 @@ impl Route<(), ()> {
 /// and a query string that does not deserialize into the search parameters
 /// gets a 400.
 ///
+/// # A page for a request that reaches no page
+///
+/// Write `else HANDLER` after the first line to show a page for each such
+/// request, and for a path no route matches. The handler receives an
+/// [`Unserved`](crate::Unserved), may take an extractor as a page's handler
+/// does, and its page is sent with the status the `Unserved` names. The
+/// generated function registers it as the router's fallback, so a later
+/// `Router::fallback` replaces it for paths no route matches, and merging
+/// the router with another that has a fallback panics, as axum does for any
+/// two fallbacks. A call from the runtime to a path no route matches gets a
+/// bare 404, because the runtime cannot apply a page.
+///
+/// ```
+/// use axum::Router;
+/// use hypersig::html::p;
+/// use hypersig::{Page, Route, Signals, Unserved};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Shop {}
+///
+/// hypersig::routes! {
+///     fn pages(Router<()>) else missing;
+///     const ORDER: Route<u32> = "/orders/{id}" => order;
+/// }
+///
+/// async fn order((): (), id: u32) -> Option<Page<Shop>> {
+///     (id < 100).then(|| Page::new(format!("Order {id}"), Shop {}))
+/// }
+///
+/// async fn missing((): (), unserved: Unserved) -> Page<Shop> {
+///     Page::new("Not found", Shop {}).child(p().text(format!("{unserved}.")))
+/// }
+///
+/// let _app: Router = pages(Router::new());
+/// ```
+///
 /// # What stays unchecked
 ///
 /// The macro guarantees that each route has a handler, and nothing checks
@@ -285,7 +374,7 @@ macro_rules! routes {
     };
     (
         $(#[$fn_attr:meta])*
-        $fn_vis:vis fn $fn_name:ident(Router<$state:ty>);
+        $fn_vis:vis fn $fn_name:ident(Router<$state:ty>) $(else $unserved:expr)?;
         $(
             $(#[$attr:meta])*
             $vis:vis const $name:ident: $ty:ty = $path:literal $(in $parent:ident)? => $handler:expr;
@@ -300,17 +389,23 @@ macro_rules! routes {
         $fn_vis fn $fn_name(
             router: $crate::_private::Router<$state>,
         ) -> $crate::_private::Router<$state> {
+            let unserved: ::core::option::Option<$crate::_private::UnservedPage<$state>> =
+                ::core::option::Option::None
+                $(.or(::core::option::Option::Some($crate::_private::UnservedPage::new($unserved))))?;
             $(
                 let router = <$crate::_private::Router<$state> as $crate::RouterExt<$state>>::page(
-                    router, $name, $handler,
+                    router, $name, $handler, unserved.clone(),
                 );
             )+
-            router
+            match unserved {
+                ::core::option::Option::Some(unserved) => unserved.fallback(router),
+                ::core::option::Option::None => router,
+            }
         }
     };
     ($($input:tt)*) => {
         ::core::compile_error!(
-            "`routes!` takes `fn NAME(Router<STATE>);`, then one `const NAME: Route<..> = \"/path\" => handler;` per page, each naming its handler after `=>`"
+            "`routes!` takes `fn NAME(Router<STATE>);` or `fn NAME(Router<STATE>) else HANDLER;`, then one `const NAME: Route<..> = \"/path\" => handler;` per page, each naming its handler after `=>`"
         );
     };
 }

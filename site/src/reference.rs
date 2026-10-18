@@ -2516,8 +2516,56 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "PageResponse",
                             "struct.PageResponse.html",
                             L {
-                                en: "What a page handler returns: a page, a redirect, or a 404.",
-                                ja: "ページのハンドラが返す値です。ページ、リダイレクト、404 のいずれかです。",
+                                en: "What a page handler returns: a page, a page with a status, a redirect, or a 404.",
+                                ja: "ページのハンドラが返す値です。ページ、状態を付けたページ、リダイレクト、404 のいずれかです。",
+                            },
+                        ),
+                        (
+                            "PageResponse::with_status",
+                            "struct.PageResponse.html#method.with_status",
+                            L {
+                                en: "Answers with `page` and the status `status`, such as a styled `404 Not Found`.",
+                                ja: "`page` を状態 `status` で返します。見た目を整えた `404 Not Found` などに使います。",
+                            },
+                        ),
+                        (
+                            "Unserved",
+                            "struct.Unserved.html",
+                            L {
+                                en: "A page request that reached no page, handed to the `else` handler of `routes!`.",
+                                ja: "どのページにも届かなかったページのリクエストです。`routes!` の `else` に書いたハンドラが受け取ります。",
+                            },
+                        ),
+                        (
+                            "Unserved::status",
+                            "struct.Unserved.html#method.status",
+                            L {
+                                en: "The status the page for this request is sent with: 404 or 400.",
+                                ja: "このリクエストに返すページの状態です。404 か 400 になります。",
+                            },
+                        ),
+                        (
+                            "Unserved::within",
+                            "struct.Unserved.html#method.within",
+                            L {
+                                en: "The parameters of `route`, where the request's path starts with that route's path.",
+                                ja: "リクエストのパスが `route` のパスで始まるときの、`route` のパラメータです。",
+                            },
+                        ),
+                        (
+                            "RequestKind",
+                            "enum.RequestKind.html",
+                            L {
+                                en: "What sent a request: the browser loading a page, or the runtime calling an action.",
+                                ja: "リクエストの送り手です。ページを読み込むブラウザか、アクションを呼ぶランタイムのどちらかです。",
+                            },
+                        ),
+                        (
+                            "RequestKind::of",
+                            "enum.RequestKind.html#method.of",
+                            L {
+                                en: "The kind of the request whose head is `request`.",
+                                ja: "ヘッダ部が `request` であるリクエストの種類です。",
                             },
                         ),
                         (

@@ -1,4 +1,4 @@
-error: `routes!` takes `fn NAME(Router<STATE>);`, then one `const NAME: Route<..> = "/path" => handler;` per page, each naming its handler after `=>`
+error: `routes!` takes `fn NAME(Router<STATE>);` or `fn NAME(Router<STATE>) else HANDLER;`, then one `const NAME: Route<..> = "/path" => handler;` per page, each naming its handler after `=>`
  --> tests/ui/fail/route_without_handler.rs:3:1
   |
 3 | / hypersig::routes! {

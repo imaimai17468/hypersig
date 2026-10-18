@@ -1,0 +1,20 @@
+error[E0277]: `fn((), u32) -> impl std::future::Future<Output = hypersig::Page<Shop>> {missing}` cannot serve this page or action
+  --> tests/ui/fail/unserved_handler_args.rs:17:31
+   |
+16 | / hypersig::routes! {
+17 | |     fn pages(Router<()>) else missing;
+   | |                               ^^^^^^^ not a handler of the router's state and the arguments `Unserved`
+18 | |     const ORDER: Route<u32> = "/orders/{id}" => order;
+19 | | }
+   | |_- required by a bound introduced by this call
+   |
+   = help: the trait `Handler<_, Unserved, _>` is not implemented for fn item `fn((), u32) -> impl std::future::Future<Output = hypersig::Page<Shop>> {missing}`
+   = note: a handler is `fn(state, args)` or `fn(state, extractor, args)`, where the state is the router's and the extractor implements `FromRequestParts` for it
+note: required by a bound in `hypersig::_private::UnservedPage::<St>::new`
+  --> src/axum.rs
+   |
+   |     pub fn new<H, M, Fut, R>(handler: H) -> Self
+   |            --- required by a bound in this associated function
+   |     where
+   |         H: Handler<St, Unserved, M, Output = Fut>,
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `UnservedPage::<St>::new`
