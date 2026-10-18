@@ -78,8 +78,8 @@ pub fn forms(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A component you write yourself takes `form.field(f)` like any signal. [`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) is `focusout`, which bubbles, so `on_blur(form.touch(f))` on the element the component returns runs when the control inside it loses focus. Put the message on an element of its own with `bind_text(form.error(f))`, and point the control's `aria-describedby` at that element's id so that a screen reader reads the message as the control's description.",
-                ja: "自作のコンポーネントには、ほかのシグナルと同じように `form.field(f)` を渡します。[`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) は伝播する `focusout` なので、コンポーネントが返す要素に `on_blur(form.touch(f))` を付けると、中のコントロールからフォーカスが外れたときに実行されます。メッセージは `bind_text(form.error(f))` を付けた別の要素に出し、コントロールの `aria-describedby` でその要素の id を指してください。そうするとスクリーンリーダーが、メッセージをコントロールの説明として読みます。",
+                en: "A component you write yourself takes `form.field(f)` like any signal. [`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) runs when focus leaves the element and everything inside it, so `on_blur(form.touch(f))` on the element the component returns runs when focus leaves the component, and not while it moves between the controls inside. Put the message on an element of its own with `bind_text(form.error(f))`, and point the control's `aria-describedby` at that element's id so that a screen reader reads the message as the control's description.",
+                ja: "自作のコンポーネントには、ほかのシグナルと同じように `form.field(f)` を渡します。[`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) は、フォーカスが要素とその中のすべてから外れたときに実行されます。そのため、コンポーネントが返す要素に `on_blur(form.touch(f))` を付けると、フォーカスがコンポーネントの外へ出たときに実行されます。中のコントロールどうしでフォーカスが移っても実行されません。メッセージは `bind_text(form.error(f))` を付けた別の要素に出し、コントロールの `aria-describedby` でその要素の id を指してください。そうするとスクリーンリーダーが、メッセージをコントロールの説明として読みます。",
             },
         ),
         heading(

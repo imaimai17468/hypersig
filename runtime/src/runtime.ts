@@ -1388,6 +1388,8 @@ export class Runtime implements Host {
     }
     const found = this.#closest(target, `data-hs-on-${type}`);
     if (found === null) return;
+    // Focus moving between two elements inside the handler's element neither enters nor leaves it.
+    if ((type === "focusin" || type === "focusout") && event instanceof FocusEvent && within(found[0], event.relatedTarget)) return;
     if (type === "submit") event.preventDefault();
     this.#runAttribute(found[1], found[0]);
   }
@@ -1534,6 +1536,11 @@ const parsed = new Map<string, unknown>();
  * attribute and `evaluate` builds each expression once. The result is never
  * modified, because the store copies a value before changing it.
  */
+/** Whether `node` is `element` or inside it. */
+function within(element: Element, node: EventTarget | null): boolean {
+  return node instanceof Node && element.contains(node);
+}
+
 function parse(source: string | null): unknown {
   if (source === null) return undefined;
   let value = parsed.get(source);

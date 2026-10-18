@@ -508,6 +508,26 @@ describe("nested lists and direct events", () => {
     $("#field input").dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
     expect(runtime.store.get("focused")).toBe(false);
   });
+
+  it("runs focus and blur only when focus enters or leaves the element", () => {
+    const runtime = mount("nested");
+    const [first, second] = $$("#field input");
+    const move = (type: string, target: Element, related: Element | null) =>
+      target.dispatchEvent(new FocusEvent(type, { bubbles: true, relatedTarget: related }));
+    move("focusin", first!, document.body);
+    expect(runtime.store.get("focused")).toBe(true);
+
+    // From the first input to the second, as an arrow key moves between radios.
+    runtime.store.set("focused", "unchanged");
+    move("focusout", first!, second!);
+    move("focusin", second!, first!);
+    expect(runtime.store.get("focused")).toBe("unchanged");
+
+    move("focusout", second!, document.body);
+    expect(runtime.store.get("focused")).toBe(false);
+    move("focusin", second!, null);
+    expect(runtime.store.get("focused")).toBe(true);
+  });
 });
 
 describe("dependency tracking", () => {

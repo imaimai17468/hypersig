@@ -481,9 +481,14 @@ pub enum Event {
     Submit,
     /// `keydown`, for any key. Use [`El::on_key`] for one key.
     KeyDown,
-    /// The element or one inside it gains focus (`focusin`).
+    /// Focus enters the element or one inside it from outside (`focusin`).
+    ///
+    /// Focus moving between two elements inside it does not run it again.
     Focus,
-    /// The element or one inside it loses focus (`focusout`).
+    /// Focus leaves the element and everything inside it (`focusout`).
+    ///
+    /// Focus moving between two elements inside it, such as an arrow key
+    /// moving between radios in a group, does not run it.
     Blur,
     /// The pointer enters the element (`mouseenter`).
     MouseEnter,
@@ -1084,7 +1089,7 @@ impl<S> El<S> {
         self.on(Event::Change, stmt)
     }
 
-    /// Runs `stmt` when focus leaves the element.
+    /// Runs `stmt` when focus leaves the element and everything inside it.
     #[must_use]
     pub fn on_blur(self, stmt: impl IntoStmt<S>) -> Self {
         self.on(Event::Blur, stmt)

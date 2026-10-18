@@ -356,7 +356,8 @@ pub fn radio_group<S, T: Serialize + PartialEq, L: Into<String>>(
 /// under it. ARIA allows `aria-invalid` on a radio group but not on a plain
 /// group, so the `<fieldset>` takes `role="radiogroup"`, is named by its
 /// legend through `aria-labelledby`, and carries `aria-describedby` and
-/// `aria-invalid`. The field is marked touched when focus leaves a radio.
+/// `aria-invalid`. The field is marked touched when focus leaves the group,
+/// and not while the arrow keys move it between the radios.
 ///
 /// ```
 /// use hypersig::{Form, Rules, Sig, Signals, Validate};

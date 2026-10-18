@@ -412,6 +412,7 @@ fn nested() -> (El<Nested>, Nested) {
                 .id("field")
                 .on(Event::Focus, Nested::focused().set(true))
                 .on_blur(Nested::focused().set(false))
+                .child(input())
                 .child(input()),
         );
     let tag = |label: &str, on: bool| Tag {
