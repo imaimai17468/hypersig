@@ -682,6 +682,27 @@ describe("calls", () => {
     await vi.waitFor(() => expect(runtime.store.get("busy")).toBe(false));
   });
 
+  it("empties the error signal when a call is sent, so the same failure twice changes it twice", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("Name taken", { status: 409 })),
+    );
+    const runtime = mount(`<button data-hs-on-click='["call","POST","/save",null,null,"problem"]'>save</button>`, {
+      problem: "",
+    });
+    const seen: unknown[] = [];
+    runtime.store.subscribe((changes) => {
+      if (changes.has("problem")) seen.push(runtime.store.get("problem"));
+    });
+    const button = document.querySelector("button")!;
+    button.click();
+    await vi.waitFor(() => expect(seen).toEqual(["Name taken"]));
+    button.click();
+    await vi.waitFor(() => expect(seen).toEqual(["Name taken", "", "Name taken"]));
+    vi.restoreAllMocks();
+  });
+
   describe("with reconnect", () => {
     afterEach(() => {
       vi.useRealTimers();

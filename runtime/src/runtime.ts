@@ -451,6 +451,8 @@ export class Runtime implements Host {
     }
     const abandoned = (): boolean =>
       this.#leaving || latest?.signal.aborted === true || options.origin?.isConnected === false;
+    // The store notifies only a change, so a failure that repeats the last message would go unnoticed if the signal kept it.
+    if (error !== null) this.store.set(error, "");
     if (indicator !== null) this.#busy(indicator, 1);
     try {
       let delay = FIRST_RETRY_MS;

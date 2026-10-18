@@ -207,9 +207,11 @@ impl<S> Call<S> {
         self
     }
 
-    /// Sets `message` to the error text when the call fails, and to `""` when it succeeds.
+    /// Sets `message` to the error text when the call fails, and to `""` when it is sent.
     ///
-    /// The text is the body of an answer whose status is outside 2xx, so a
+    /// Emptying it on each send lets a handler of
+    /// [`El::on_signal_change`](crate::html::El::on_signal_change) see a
+    /// failure that repeats the last one. The text is the body of an answer whose status is outside 2xx, so a
     /// handler that fails writes the sentence the page shows. When that body
     /// is empty, it is the status and its reason, such as `502 Bad Gateway`,
     /// and when no answer arrives, it is the browser's message. The status

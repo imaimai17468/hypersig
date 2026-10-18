@@ -51,8 +51,8 @@ pub fn server(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`indicator(flag)` sets a `bool` signal to true while the request waits for its response, which the example uses to disable the button. `error(message)` sets a `String` signal to the error text when the call fails, which is a network error or a response that is not a success, and to `\"\"` when it succeeds.",
-                ja: "`indicator(flag)` は、リクエストの応答を待つ間 `bool` のシグナルを真にします。この例ではそれを使ってボタンを無効にしています。`error(message)` は、呼び出しが失敗したときに `String` のシグナルへエラーの文を入れ、成功したときに `\"\"` を入れます。失敗とはネットワークのエラーか、成功ではない応答のことです。",
+                en: "`indicator(flag)` sets a `bool` signal to true while the request waits for its response, which the example uses to disable the button. `error(message)` sets a `String` signal to the error text when the call fails, which is a network error or a response that is not a success, and to `\"\"` each time the call is sent, so the same failure twice changes the signal twice.",
+                ja: "`indicator(flag)` は、リクエストの応答を待つ間 `bool` のシグナルを真にします。この例ではそれを使ってボタンを無効にしています。`error(message)` は、呼び出しが失敗したときに `String` のシグナルへエラーの文を入れ、呼び出しを送るたびに `\"\"` に戻します。失敗とはネットワークのエラーか、成功ではない応答のことです。戻してから入れ直すので、同じ失敗が 2 回続いてもシグナルは 2 回変わります。",
             },
         ),
         subheading(

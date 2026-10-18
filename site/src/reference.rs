@@ -1734,8 +1734,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "error",
                             "struct.Call.html#method.error",
                             L {
-                                en: "Sets `message` to the error text when the call fails, and to `\"\"` when it succeeds.",
-                                ja: "呼び出しが失敗すると `message` をエラーの文言にし、成功すると `\"\"` にします。",
+                                en: "Sets `message` to the error text when the call fails, and to `\"\"` when it is sent.",
+                                ja: "呼び出しが失敗すると `message` をエラーの文言にし、送るときに `\"\"` にします。",
                             },
                         ),
                         (
