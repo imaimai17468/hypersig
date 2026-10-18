@@ -970,8 +970,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "patch_upsert",
                             "struct.Sig.html#method.patch_upsert",
                             L {
-                                en: "A patch that replaces each item whose key matches one in `items`, and appends the rest.",
-                                ja: "`items` の項目とキーが一致する項目を置き換え、残りを末尾に加える差分",
+                                en: "A patch that replaces items by key and appends those with new keys.",
+                                ja: "キーで項目を置き換え、新しいキーの項目を末尾に加える差分",
                             },
                         ),
                         (
@@ -2103,8 +2103,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "ListPatch",
                             "struct.ListPatch.html",
                             L {
-                                en: "Changes to the items of one or more list signals of `S`, sent without the rest of each list.",
-                                ja: "`S` の 1 つ以上のリストのシグナルの項目への変更です。リストの残りの項目は送りません。",
+                                en: "Item changes to list signals of `S`, sent without the rest of each list.",
+                                ja: "`S` のリストのシグナルの項目への変更です。リストの残りの項目は送りません。",
                             },
                         ),
                         (

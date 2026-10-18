@@ -108,7 +108,7 @@ impl<S> fmt::Debug for SignalPatch<S> {
     }
 }
 
-/// Changes to the items of one or more list signals of `S`, sent without the rest of each list.
+/// Item changes to list signals of `S`, sent without the rest of each list.
 ///
 /// Build one with [`Sig::patch_append`], [`Sig::patch_prepend`],
 /// [`Sig::patch_upsert`], or [`Sig::patch_remove`], and combine with
@@ -195,7 +195,7 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
         ListPatch::single(json!(["prepend", self.path(), literal(items)]))
     }
 
-    /// A patch that replaces each item whose key matches one in `items`, and appends the rest.
+    /// A patch that replaces items by key and appends those with new keys.
     ///
     /// The browser computes `key` for the items it holds and for each of
     /// `items`, as [`each_keyed`](crate::html::each_keyed) computes the key of
