@@ -468,11 +468,27 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "checkbox_in_form",
+                    "hypersig_ui/fn.checkbox_in_form.html",
+                    L {
+                        en: "A checkbox labeled `text`, bound to `field` of `form`.",
+                        ja: "`form` の `field` に束縛し、`text` をラベルに持つチェックボックス",
+                    },
+                ),
+                (
                     "switch",
                     "hypersig_ui/fn.switch.html",
                     L {
                         en: "An on and off switch labeled `text`, bound to `on`.",
                         ja: "`on` に束縛し、`text` をラベルに持つ、オンとオフを切り替えるスイッチ",
+                    },
+                ),
+                (
+                    "switch_in_form",
+                    "hypersig_ui/fn.switch_in_form.html",
+                    L {
+                        en: "An on and off switch labeled `text`, bound to `field` of `form`.",
+                        ja: "`form` の `field` に束縛し、`text` をラベルに持つ、オンとオフを切り替えるスイッチ",
                     },
                 ),
             ],
@@ -509,14 +525,24 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
             ],
-            items: &[(
-                "radio_group",
-                "hypersig_ui/fn.radio_group.html",
-                L {
-                    en: "A group of radio buttons with `title` in its `<legend>`, one per option, that sets `selected` to the option's value.",
-                    ja: "`title` を `<legend>` に表示し、選択肢ごとに 1 つのラジオボタンを並べて、選んだ選択肢の値を `selected` に入れるグループ",
-                },
-            )],
+            items: &[
+                (
+                    "radio_group",
+                    "hypersig_ui/fn.radio_group.html",
+                    L {
+                        en: "A group of radio buttons with `title` in its `<legend>`, one per option, that sets `selected` to the option's value.",
+                        ja: "`title` を `<legend>` に表示し、選択肢ごとに 1 つのラジオボタンを並べて、選んだ選択肢の値を `selected` に入れるグループ",
+                    },
+                ),
+                (
+                    "radio_group_in_form",
+                    "hypersig_ui/fn.radio_group_in_form.html",
+                    L {
+                        en: "A group of radio buttons with `title` in its `<legend>`, bound to `field` of `form`.",
+                        ja: "`title` を `<legend>` に表示し、`form` の `field` に束縛したラジオボタンのグループ",
+                    },
+                ),
+            ],
         },
         Component::Select => Page {
             lead: L {
@@ -544,14 +570,24 @@ fn component_page(page: Component) -> Page {
                     ja: "ネイティブの `<select>` はプラットフォームのキー操作に従うので、使えるキーはシステムごとに異なります。",
                 },
             )],
-            items: &[(
-                "select_field",
-                "hypersig_ui/fn.select_field.html",
-                L {
-                    en: "A select labeled `title`, offering `options`, that sets `selected` to the chosen option's value.",
-                    ja: "`title` をラベルに持ち、`options` を選択肢として出して、選んだ選択肢の値を `selected` に入れるセレクト",
-                },
-            )],
+            items: &[
+                (
+                    "select_field",
+                    "hypersig_ui/fn.select_field.html",
+                    L {
+                        en: "A select labeled `title`, offering `options`, that sets `selected` to the chosen option's value.",
+                        ja: "`title` をラベルに持ち、`options` を選択肢として出して、選んだ選択肢の値を `selected` に入れるセレクト",
+                    },
+                ),
+                (
+                    "select_field_in_form",
+                    "hypersig_ui/fn.select_field_in_form.html",
+                    L {
+                        en: "A select labeled `title`, offering `options`, bound to `field` of `form`.",
+                        ja: "`title` をラベルに持ち、`options` を選択肢として出す、`form` の `field` に束縛したセレクト",
+                    },
+                ),
+            ],
         },
         Component::Slider => Page {
             lead: L {

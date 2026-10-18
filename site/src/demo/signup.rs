@@ -1,14 +1,14 @@
 //! A sign-up form checked by its rules as the visitor types, with a select
 //! and a checkbox beside the text fields, for the page on forms.
 
-use hypersig::html::{El, div, p};
+use hypersig::html::{div, p};
 use hypersig::style::Style;
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::rem;
-use hypersig::{Expr, Form, Page, Rules, Sig, Signals, Validate};
+use hypersig::{Form, Page, Rules, Sig, Signals, Validate};
 use hypersig_ui::{
-    Autocomplete, ButtonSize, ButtonVariant, InputKind, TextField, button, checkbox,
-    select_field, submit_button, token,
+    Autocomplete, ButtonSize, ButtonVariant, InputKind, TextField, button, checkbox_in_form,
+    select_field_in_form, submit_button, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -87,20 +87,6 @@ pub struct Join {
     joined: bool,
 }
 
-/// `control` with a line for `message` under it, for a control that has no
-/// place for one.
-fn with_error(control: El<Join>, message: Expr<Join, String>) -> El<Join> {
-    div().css(stack(rem(0.5))).child(control).child(
-        p().attr("aria-live", "polite")
-            .css(
-                Style::new()
-                    .font_size(rem(0.875))
-                    .color(token::destructive().var()),
-            )
-            .bind_text(message),
-    )
-}
-
 pub fn page(site: Site) -> Page<Join> {
     let signup = Join::signup();
     let joined = Join::joined();
@@ -157,41 +143,32 @@ pub fn page(site: Site) -> Page<Join> {
                 .kind(InputKind::Password)
                 .autocomplete(Autocomplete::NewPassword),
             )
-            // `select_field` and `checkbox` take the field like any signal.
-            // The blur of the control inside reaches the element they return,
-            // which touches the field, and the message goes on a line of its own.
-            .child(with_error(
-                select_field(
-                    site.t(L {
-                        en: "Plan",
-                        ja: "プラン",
-                    }),
-                    signup.field(Signup::plan()),
-                    [
-                        (
-                            Plan::Unset,
-                            site.t(L {
-                                en: "Choose…",
-                                ja: "選んでください",
-                            }),
-                        ),
-                        (Plan::Free, "Free"),
-                        (Plan::Pro, "Pro"),
-                    ],
-                )
-                .on_blur(signup.touch(Signup::plan())),
-                signup.error(Signup::plan()),
+            .child(select_field_in_form(
+                site.t(L {
+                    en: "Plan",
+                    ja: "プラン",
+                }),
+                signup,
+                Signup::plan(),
+                [
+                    (
+                        Plan::Unset,
+                        site.t(L {
+                            en: "Choose…",
+                            ja: "選んでください",
+                        }),
+                    ),
+                    (Plan::Free, "Free"),
+                    (Plan::Pro, "Pro"),
+                ],
             ))
-            .child(with_error(
-                checkbox(
-                    site.t(L {
-                        en: "I accept the terms",
-                        ja: "規約に同意します",
-                    }),
-                    signup.field(Signup::terms()),
-                )
-                .on_blur(signup.touch(Signup::terms())),
-                signup.error(Signup::terms()),
+            .child(checkbox_in_form(
+                site.t(L {
+                    en: "I accept the terms",
+                    ja: "規約に同意します",
+                }),
+                signup,
+                Signup::terms(),
             ))
             .child(
                 div()

@@ -6,7 +6,7 @@ use crate::Site;
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
-use crate::prose::{Part, heading, lead, note, para, parts, title};
+use crate::prose::{Part, heading, lead, para, parts, title};
 
 pub fn forms(site: Site) -> Part {
     parts([
@@ -71,15 +71,15 @@ pub fn forms(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`field`, `touch`, `error`, and `Rules::check` take a field of any type, so the plan in the demo is an enum and the terms are a `bool`. A control that takes a `Sig`, from `hypersig_ui` or one you write, takes `form.field(f)`. [`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) is `focusout`, which bubbles, so `on_blur(form.touch(f))` on the element a component returns runs when the control inside it loses focus. The message goes on an element of its own with `bind_text(form.error(f))`.",
-                ja: "`field`、`touch`、`error`、`Rules::check` はどの型のフィールドも受け取るので、デモのプランは列挙型、規約への同意は `bool` です。`Sig` を受け取るコントロールには、`hypersig_ui` のものでも自作のものでも、`form.field(f)` を渡せます。[`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) は伝播する `focusout` なので、コンポーネントが返す要素に `on_blur(form.touch(f))` を付けると、中のコントロールからフォーカスが外れたときに実行されます。メッセージは、`bind_text(form.error(f))` を付けた別の要素に出します。",
+                en: "`field`, `touch`, `error`, and `Rules::check` take a field of any type, so the plan in the demo is an enum and the terms are a `bool`. `hypersig_ui` has a form variant of each of its form controls: [`select_field_in_form`](api:hypersig_ui/fn.select_field_in_form.html), [`radio_group_in_form`](api:hypersig_ui/fn.radio_group_in_form.html), [`checkbox_in_form`](api:hypersig_ui/fn.checkbox_in_form.html), and [`switch_in_form`](api:hypersig_ui/fn.switch_in_form.html). Like `TextField::in_form`, each binds the control to the field, touches it when the visitor leaves, and shows the message under the control, tied to it by `aria-describedby` and `aria-invalid`. A checkbox or a switch takes only a `bool` field, which the compiler checks.",
+                ja: "`field`、`touch`、`error`、`Rules::check` はどの型のフィールドも受け取るので、デモのプランは列挙型、規約への同意は `bool` です。`hypersig_ui` のフォーム用のコントロールには、それぞれフォーム版があります。[`select_field_in_form`](api:hypersig_ui/fn.select_field_in_form.html)、[`radio_group_in_form`](api:hypersig_ui/fn.radio_group_in_form.html)、[`checkbox_in_form`](api:hypersig_ui/fn.checkbox_in_form.html)、[`switch_in_form`](api:hypersig_ui/fn.switch_in_form.html) です。どれも `TextField::in_form` と同じく、コントロールをフィールドに束縛し、離れたときに touch し、メッセージをコントロールの下に出して `aria-describedby` と `aria-invalid` で結び付けます。チェックボックスとスイッチは `bool` のフィールドしか受け取らず、コンパイラがそれを検査します。",
             },
         ),
-        note(
+        para(
             site,
             L {
-                en: "Only `TextField::in_form` sets `aria-invalid` and points `aria-describedby` at the message. With another control, a screen reader announces the message line when it has `aria-live`, but does not read it as the control's description.",
-                ja: "`aria-invalid` を付け、`aria-describedby` でメッセージを指すのは `TextField::in_form` だけです。ほかのコントロールでは、メッセージの行に `aria-live` があればスクリーンリーダーが読み上げますが、コントロールの説明としては読まれません。",
+                en: "A component you write yourself takes `form.field(f)` like any signal. [`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) is `focusout`, which bubbles, so `on_blur(form.touch(f))` on the element the component returns runs when the control inside it loses focus. Put the message on an element of its own with `bind_text(form.error(f))`, and point the control's `aria-describedby` at that element's id so that a screen reader reads the message as the control's description.",
+                ja: "自作のコンポーネントには、ほかのシグナルと同じように `form.field(f)` を渡します。[`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) は伝播する `focusout` なので、コンポーネントが返す要素に `on_blur(form.touch(f))` を付けると、中のコントロールからフォーカスが外れたときに実行されます。メッセージは `bind_text(form.error(f))` を付けた別の要素に出し、コントロールの `aria-describedby` でその要素の id を指してください。そうするとスクリーンリーダーが、メッセージをコントロールの説明として読みます。",
             },
         ),
         heading(
