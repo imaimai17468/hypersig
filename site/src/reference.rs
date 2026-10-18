@@ -290,6 +290,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Origin::parse",
+                            "struct.Origin.html#method.parse",
+                            L {
+                                en: "Reads an origin and an optional prefix from configuration, such as `https://example.com/blog`.",
+                                ja: "`https://example.com/blog` のような設定の値から、オリジンと省略できる接頭辞を読みます。",
+                            },
+                        ),
+                        (
+                            "OriginError",
+                            "struct.OriginError.html",
+                            L {
+                                en: "Text that `Origin::parse` refused, with the rule it broke.",
+                                ja: "`Origin::parse` が受け付けなかった文字列と、破っていた規則です。",
+                            },
+                        ),
+                        (
                             "OpenGraph",
                             "struct.OpenGraph.html",
                             L {

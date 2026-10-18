@@ -70,9 +70,9 @@ fn main() -> ExitCode {
 fn run(args: &Args) -> io::Result<bool> {
     let mut site = Site::new(String::leak(args.base.clone()));
     if let Some(origin) = &args.origin {
-        // `Origin::new` panics on a malformed origin, as `Site::new` does on
-        // a malformed base path.
-        site = site.with_origin(Origin::new(String::leak(origin.clone())));
+        let origin = Origin::parse(String::leak(origin.clone()))
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
+        site = site.with_origin(origin);
     }
     let files = render(site);
     if args.out.exists() {
