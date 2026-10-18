@@ -2390,6 +2390,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "メモリに読み込んだ、アップロードの 1 つのファイルです。名前、メディアタイプ、中身を持ちます。",
                             },
                         ),
+                        (
+                            "upload_stream",
+                            "trait.RouterExt.html#tymethod.upload_stream",
+                            L {
+                                en: "Serves `upload` with a handler that reads the files in chunks from an `UploadStream`.",
+                                ja: "ファイルを `UploadStream` からチャンクで読むハンドラで、`upload` を配信します。",
+                            },
+                        ),
+                        (
+                            "UploadStream",
+                            "struct.UploadStream.html",
+                            L {
+                                en: "What a streaming upload's handler receives: the arguments, then the files one at a time.",
+                                ja: "ストリームで受け取るアップロードのハンドラが受け取る値です。引数と、1 つずつ取り出すファイルです。",
+                            },
+                        ),
+                        (
+                            "StreamedFile",
+                            "struct.StreamedFile.html",
+                            L {
+                                en: "One file of a streaming upload, read in chunks.",
+                                ja: "チャンクで読む、ストリームのアップロードの 1 つのファイルです。",
+                            },
+                        ),
                     ],
                 },
             ],
