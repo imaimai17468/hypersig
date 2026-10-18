@@ -264,7 +264,8 @@ impl<S: Signals> Page<S> {
     /// struct Note {}
     ///
     /// let html = Page::new("Note", Note {}).csp_nonce("2726c7f26c").render();
-    /// assert!(html.contains(r#"<script type="module" src="/_hypersig/runtime.js" nonce="2726c7f26c">"#));
+    /// let script = format!(r#"<script type="module" src="{}" nonce="2726c7f26c">"#, hypersig::RUNTIME_PATH);
+    /// assert!(html.contains(&script));
     /// ```
     ///
     /// # Panics

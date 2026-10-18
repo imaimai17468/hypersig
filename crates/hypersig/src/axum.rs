@@ -33,6 +33,9 @@ use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, Uploa
 /// See [`Handler`].
 pub trait RouterExt<St>: Sized {
     /// Serves the browser runtime at [`RUNTIME_PATH`](crate::RUNTIME_PATH).
+    ///
+    /// The response tells the browser to keep the file for a year without
+    /// asking again, which holds because the path changes with the file.
     #[must_use]
     fn hypersig_runtime(self) -> Self;
 
@@ -126,7 +129,12 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             crate::RUNTIME_PATH,
             get(|| async {
                 (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
+                    [
+                        (header::CONTENT_TYPE, "text/javascript; charset=utf-8"),
+                        // The path names a hash of the file, so a changed
+                        // runtime is served at another path.
+                        (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+                    ],
                     crate::RUNTIME_JS,
                 )
             }),

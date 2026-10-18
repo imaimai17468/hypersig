@@ -182,8 +182,8 @@ pub fn describing_the_page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`Page`](api:hypersig/struct.Page.html) wraps the tree in a full document. `Page::new` takes the title and the initial values of the signals, `child` appends to `<body>`, and `render` returns the HTML a handler sends. The document loads the runtime from `/_hypersig/runtime.js`, which `RouterExt::hypersig_runtime` serves.",
-                ja: "[`Page`](api:hypersig/struct.Page.html) は木を包んで完全な HTML 文書にします。`Page::new` はタイトルとシグナルの初期値を受け取り、`child` は `<body>` に要素を追加し、`render` はハンドラが送る HTML を返します。文書は `/_hypersig/runtime.js` からランタイムを読み込み、`RouterExt::hypersig_runtime` がそのファイルを配信します。",
+                en: "[`Page`](api:hypersig/struct.Page.html) wraps the tree in a full document. `Page::new` takes the title and the initial values of the signals, `child` appends to `<body>`, and `render` returns the HTML a handler sends. The document loads the runtime from `RUNTIME_PATH`, a path under `/_hypersig/` that names a hash of the file, and `RouterExt::hypersig_runtime` serves it there.",
+                ja: "[`Page`](api:hypersig/struct.Page.html) は木を包んで完全な HTML 文書にします。`Page::new` はタイトルとシグナルの初期値を受け取り、`child` は `<body>` に要素を追加し、`render` はハンドラが送る HTML を返します。文書は `RUNTIME_PATH` からランタイムを読み込みます。このパスは `/_hypersig/` の下にあり、ファイルのハッシュを名前に含みます。`RouterExt::hypersig_runtime` がそのパスでファイルを配信します。",
             },
         ),
         heading(

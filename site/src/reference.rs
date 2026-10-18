@@ -241,8 +241,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "RUNTIME_PATH",
                             "constant.RUNTIME_PATH.html",
                             L {
-                                en: "The path `Page` loads the runtime from.",
-                                ja: "`Page` がランタイムを読み込むパスです。",
+                                en: "The path `Page` loads the runtime from, which names a hash of `RUNTIME_JS`.",
+                                ja: "`Page` がランタイムを読み込むパスです。パスには `RUNTIME_JS` のハッシュが入ります。",
                             },
                         ),
                         (

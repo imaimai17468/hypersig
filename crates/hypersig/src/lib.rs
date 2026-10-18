@@ -88,11 +88,53 @@ pub use upload::{StreamedFile, UploadStream, Uploaded, UploadedFile};
 #[doc(inline)]
 pub use hypersig_style as style;
 
-/// The path [`Page`] loads the runtime from.
-pub const RUNTIME_PATH: &str = "/_hypersig/runtime.js";
+/// The path [`Page`] loads the runtime from, which names a hash of [`RUNTIME_JS`].
+///
+/// It reads `/_hypersig/runtime.` followed by 16 hex digits and `.js`. The
+/// digits change whenever the runtime does, so a browser may keep the file
+/// for as long as it likes, and `RouterExt::hypersig_runtime` tells it to.
+pub const RUNTIME_PATH: &str = match std::str::from_utf8(&RUNTIME_PATH_BYTES) {
+    Ok(path) => path,
+    Err(_) => panic!("the runtime path is ASCII"),
+};
 
 /// The browser runtime, built from `runtime/` in the repository.
 pub const RUNTIME_JS: &str = include_str!("../assets/hypersig.js");
+
+/// [`RUNTIME_PATH`] as bytes, with the FNV-1a hash of [`RUNTIME_JS`] in hex.
+///
+/// The compiler computes it, so the path needs no build script and changes
+/// in the same build as the runtime.
+const RUNTIME_PATH_BYTES: [u8; 38] = {
+    const PREFIX: &[u8] = b"/_hypersig/runtime.";
+    const SUFFIX: &[u8] = b".js";
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let js = RUNTIME_JS.as_bytes();
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    let mut i = 0;
+    while i < js.len() {
+        hash ^= js[i] as u64;
+        hash = hash.wrapping_mul(0x0100_0000_01b3);
+        i += 1;
+    }
+    let mut out = [0u8; 38];
+    let mut i = 0;
+    while i < PREFIX.len() {
+        out[i] = PREFIX[i];
+        i += 1;
+    }
+    let mut digit = 0;
+    while digit < 16 {
+        out[PREFIX.len() + digit] = HEX[((hash >> (60 - 4 * digit)) & 0xf) as usize];
+        digit += 1;
+    }
+    let mut i = 0;
+    while i < SUFFIX.len() {
+        out[PREFIX.len() + 16 + i] = SUFFIX[i];
+        i += 1;
+    }
+    out
+};
 
 #[doc(hidden)]
 pub mod _private {

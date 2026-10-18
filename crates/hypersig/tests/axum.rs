@@ -170,15 +170,41 @@ async fn missing_arguments_get_400() {
 }
 
 #[tokio::test]
-async fn serves_the_runtime() {
-    let (status, body) = send(
-        Request::get(hypersig::RUNTIME_PATH)
-            .body(Body::empty())
-            .expect("request"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, hypersig::RUNTIME_JS);
+async fn serves_the_runtime_at_a_path_named_after_its_hash_for_a_year() {
+    let hash = hypersig::RUNTIME_PATH
+        .strip_prefix("/_hypersig/runtime.")
+        .and_then(|rest| rest.strip_suffix(".js"));
+    assert!(
+        hash.is_some_and(|hash| hash.len() == 16 && hash.bytes().all(|b| b.is_ascii_hexdigit())),
+        "{}",
+        hypersig::RUNTIME_PATH
+    );
+    let response = app()
+        .oneshot(
+            Request::get(hypersig::RUNTIME_PATH)
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("infallible");
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers()[header::CACHE_CONTROL],
+        "public, max-age=31536000, immutable"
+    );
+    let body = response
+        .into_body()
+        .collect()
+        .await
+        .expect("body")
+        .to_bytes();
+    assert_eq!(body, hypersig::RUNTIME_JS.as_bytes());
+
+    let html = Page::new("Home", Counter { count: 0 }).render();
+    assert!(html.contains(&format!(
+        r#"<script type="module" src="{}">"#,
+        hypersig::RUNTIME_PATH
+    )));
 }
 
 #[tokio::test]

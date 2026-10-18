@@ -750,6 +750,7 @@ fn computed_page() -> String {
             doubled: 0,
         },
     )
+    .runtime_src(RUNTIME_SRC)
     .computed(sum, a + b)
     .computed(doubled, sum * 2)
     .bind_title(doubled.to_text().concat(" doubled"))
@@ -783,6 +784,7 @@ fn shortcuts_page() -> String {
             text: String::new(),
         },
     )
+    .runtime_src(RUNTIME_SRC)
     .on_key(
         Key::Char('k').primary(),
         Shortcuts::palette().set(Shortcuts::palette() + 1),
@@ -968,9 +970,16 @@ fn filter() -> Filter {
     }
 }
 
+/// The runtime's path in a page fixture, fixed so that a change to the
+/// runtime, which changes `RUNTIME_PATH`, leaves the fixtures as they are.
+const RUNTIME_SRC: &str = "/_hypersig/runtime.js";
+
 /// Writes the page as `Page::render` serves it, with the server-side values applied.
 fn check_page<S: Signals>(name: &str, el: El<S>, signals: S) {
-    let html = Page::new(name, signals).child(el).render();
+    let html = Page::new(name, signals)
+        .runtime_src(RUNTIME_SRC)
+        .child(el)
+        .render();
     write_or_compare(
         name,
         &format!(
