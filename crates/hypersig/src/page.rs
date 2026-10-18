@@ -6,7 +6,9 @@ use std::fmt;
 use serde_json::{Value, json};
 
 use crate::expr::IntoExpr;
+use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{Node, Stylesheet, escape_into, write_attr};
+use crate::route::Url;
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
 use crate::style::{Global, Sheet, Theme};
@@ -30,6 +32,10 @@ pub struct Page<S> {
     body: Vec<Node<S>>,
     runtime: &'static str,
     lang: Option<String>,
+    description: Option<String>,
+    canonical: Option<String>,
+    icon: Option<&'static str>,
+    open_graph: Option<OpenGraph>,
 }
 
 impl<S> fmt::Debug for Page<S> {
@@ -55,7 +61,74 @@ impl<S: Signals> Page<S> {
             body: Vec::new(),
             runtime: crate::RUNTIME_PATH,
             lang: None,
+            description: None,
+            canonical: None,
+            icon: None,
+            open_graph: None,
         }
+    }
+
+    /// Sets the summary of the page that search results and link previews show.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Note {}
+    ///
+    /// let html = Page::new("Note", Note {}).description("Notes & lists").render();
+    /// assert!(html.contains(r#"<meta name="description" content="Notes &amp; lists">"#));
+    /// ```
+    #[must_use]
+    pub fn description(mut self, text: impl Into<String>) -> Self {
+        self.description = Some(text.into());
+        self
+    }
+
+    /// Names `url` on `origin` as the page's one address, for a page that
+    /// several URLs serve, such as with and without search parameters.
+    ///
+    /// ```
+    /// use hypersig::{Origin, Page, Route, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Post {}
+    ///
+    /// # async fn post((): (), _: u32) -> Page<Post> { Page::new("Post", Post {}) }
+    /// hypersig::routes! {
+    ///     fn pages(Router<()>);
+    ///     const POST: Route<u32> = "/posts/{id}" => post;
+    /// }
+    ///
+    /// const SITE: Origin = Origin::new("https://example.com");
+    ///
+    /// let html = Page::new("Post", Post {}).canonical(SITE, &POST.url(3)).render();
+    /// assert!(html.contains(r#"<link rel="canonical" href="https://example.com/posts/3">"#));
+    /// # let _ = pages;
+    /// ```
+    #[must_use]
+    pub fn canonical(mut self, origin: Origin, url: &Url) -> Self {
+        self.canonical = Some(origin.join(url.as_str()));
+        self
+    }
+
+    /// Uses the file at `href` as the page's icon in tabs and bookmarks.
+    ///
+    /// A page without it declares an empty icon, so the browser does not
+    /// request `/favicon.ico`.
+    #[must_use]
+    pub fn icon(mut self, href: &'static str) -> Self {
+        self.icon = Some(href);
+        self
+    }
+
+    /// Adds the card a link to the page shows in chat apps and social sites.
+    #[must_use]
+    pub fn open_graph(mut self, card: OpenGraph) -> Self {
+        self.open_graph = Some(card);
+        self
     }
 
     /// Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.
@@ -229,10 +302,28 @@ impl<S: Signals> Page<S> {
         }
         out.push_str("><head><meta charset=\"utf-8\">");
         out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-        out.push_str("<link rel=\"icon\" href=\"data:,\">");
+        out.push_str("<link rel=\"icon\"");
+        write_attr(&mut out, "href", self.icon.unwrap_or("data:,"));
+        out.push('>');
         out.push_str("<title>");
         escape_into(&mut out, &self.title, false);
         out.push_str("</title>");
+        if let Some(description) = &self.description {
+            meta(&mut out, "name", "description", description);
+        }
+        if let Some(url) = &self.canonical {
+            out.push_str("<link rel=\"canonical\"");
+            write_attr(&mut out, "href", url);
+            out.push('>');
+        }
+        if let Some(card) = &self.open_graph {
+            card.write(
+                &mut out,
+                &self.title,
+                self.description.as_deref(),
+                self.canonical.as_deref(),
+            );
+        }
         if !self.global.is_empty() {
             out.push_str("<style data-hs-global>");
             out.push_str(&self.global.to_css());
