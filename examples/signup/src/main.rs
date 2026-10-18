@@ -17,9 +17,18 @@ use hypersig::{
 };
 use hypersig_ui::{
     Autocomplete, ButtonSize, ButtonVariant, InputKind, Level, TextField, button, card,
-    card_content, card_description, card_footer, card_header, card_title, submit_button, token,
+    card_content, card_description, card_footer, card_header, card_title, radio_group_in_form,
+    submit_button, token,
 };
 use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Default)]
+enum Plan {
+    #[default]
+    Unset,
+    Personal,
+    Team,
+}
 
 #[derive(Signals, Serialize, Deserialize, Clone, Default)]
 struct Signup {
@@ -27,6 +36,7 @@ struct Signup {
     email: String,
     password: String,
     confirm: String,
+    plan: Plan,
 }
 
 impl Validate for Signup {
@@ -58,6 +68,11 @@ impl Validate for Signup {
                 Signup::confirm(),
                 form.at(Signup::confirm()).equals(password),
                 "The passwords differ.",
+            )
+            .check(
+                Signup::plan(),
+                !form.at(Signup::plan()).equals(&Plan::Unset),
+                "Choose a plan.",
             );
     }
 }
@@ -143,7 +158,13 @@ fn signup() -> El<Join> {
                             .kind(InputKind::Password)
                             .autocomplete(Autocomplete::NewPassword)
                             .required(),
-                    ),
+                    )
+                    .child(radio_group_in_form(
+                        "Plan",
+                        signup,
+                        Signup::plan(),
+                        [(Plan::Personal, "Personal"), (Plan::Team, "Team")],
+                    )),
             )
             .child(
                 card_footer()

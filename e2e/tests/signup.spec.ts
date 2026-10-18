@@ -37,6 +37,7 @@ test("shows the server's message for a taken address, then signs up and starts o
   await email.fill("taken@example.com");
   await page.getByRole("textbox", { name: "Password", exact: true }).fill("correct horse");
   await page.getByRole("textbox", { name: "Confirm password", exact: true }).fill("correct horse");
+  await page.getByRole("radio", { name: "Team" }).check();
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(emailError).toHaveText("That address is already registered.");
 
@@ -46,4 +47,41 @@ test("shows the server's message for a taken address, then signs up and starts o
   await expect(email).toHaveValue("");
   await expect(emailError).toHaveText("");
   await expect(page.locator("#unsaved")).toBeHidden();
+});
+
+test("touches the plan when focus leaves the radio group, not while the arrow keys move inside it", async ({ page }) => {
+  await page.goto(url("signup"));
+  const group = page.getByRole("radiogroup", { name: "Plan" });
+  const planError = page.locator("#ui-signup-value-plan-error");
+  // Records every value aria-invalid takes, so a message shown for a moment is caught too.
+  await group.evaluate((element) => {
+    const seen: string[] = [];
+    (window as unknown as { seen: string[] }).seen = seen;
+    new MutationObserver(() => seen.push(element.getAttribute("aria-invalid") ?? "")).observe(element, {
+      attributeFilter: ["aria-invalid"],
+    });
+  });
+
+  await page.getByRole("radio", { name: "Personal" }).focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("radio", { name: "Team" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "Team" })).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByRole("radio", { name: "Personal" })).toBeChecked();
+  await expect(planError).toHaveText("");
+  expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen)).not.toContain("true");
+
+  await page.keyboard.press("Tab");
+  await expect(planError).toHaveText("");
+  await expect(group).toHaveAttribute("aria-invalid", "false");
+});
+
+test("shows the plan's message when focus leaves the group with nothing chosen", async ({ page }) => {
+  await page.goto(url("signup"));
+  const planError = page.locator("#ui-signup-value-plan-error");
+  await page.getByRole("radio", { name: "Personal" }).focus();
+  await expect(planError).toHaveText("");
+  await page.keyboard.press("Tab");
+  await expect(planError).toHaveText("Choose a plan.");
+  await expect(page.getByRole("radiogroup", { name: "Plan" })).toHaveAttribute("aria-invalid", "true");
 });
