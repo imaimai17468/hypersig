@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 /** Each example runs as its own server on its own port, built once in release mode. */
-const examples = { counter: 3100, todo: 3101, todomvc: 3102, showcase: 3103, style: 3104, ui: 3105, signup: 3106, auth: 3107 } as const;
+const examples = { counter: 3100, todo: 3101, todomvc: 3102, showcase: 3103, style: 3104, ui: 3105, signup: 3106, auth: 3107, prefix: 3109 } as const;
 
 export const url = (example: keyof typeof examples): string => `http://127.0.0.1:${examples[example]}/`;
 

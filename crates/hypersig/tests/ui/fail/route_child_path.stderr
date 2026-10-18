@@ -37,7 +37,7 @@ note: erroneous constant encountered
 13 | | }
    | |_^
    |
-   = note: this note originates in the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this note originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 note: erroneous constant encountered
   --> tests/ui/fail/route_child_path.rs:21:13

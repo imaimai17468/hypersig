@@ -7,6 +7,7 @@ use serde_json::{Value, json};
 
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::html::El;
+use crate::route::Base;
 use crate::signal::Sig;
 
 /// The HTTP method an [`Action`] is served on.
@@ -56,6 +57,7 @@ impl Method {
 /// ```
 pub struct Action<S, A = ()> {
     method: Method,
+    base: Base,
     path: &'static str,
     marker: PhantomData<fn(S, A)>,
 }
@@ -92,12 +94,22 @@ impl<S, A> Action<S, A> {
         );
         Self {
             method,
+            base: Base::ROOT,
             path,
             marker: PhantomData,
         }
     }
 
-    /// The path the action is served on.
+    /// The same action under `base`, which the page's calls put before the path.
+    ///
+    /// The router registers [`Action::path`] without it, as it does a
+    /// route's path. See [`Base`].
+    #[must_use]
+    pub const fn under(self, base: Base) -> Self {
+        Self { base, ..self }
+    }
+
+    /// The path the action is served on, without its [`Base`].
     #[must_use]
     pub fn path(&self) -> &'static str {
         self.path
@@ -114,7 +126,7 @@ impl<S> Action<S, ()> {
     /// A call to this action, which takes no arguments.
     #[must_use]
     pub fn call(&self) -> Call<S> {
-        Call::new(self.method, self.path, Value::Null)
+        Call::new(self.method, self.base, self.path, Value::Null)
     }
 }
 
@@ -125,7 +137,12 @@ impl<S, A> Action<S, A> {
     /// literal such as `&id` or an expression such as `item.at(Todo::id())`.
     #[must_use]
     pub fn call_with(&self, args: impl IntoExpr<S, A>) -> Call<S> {
-        Call::new(self.method, self.path, args.into_expr().into_json())
+        Call::new(
+            self.method,
+            self.base,
+            self.path,
+            args.into_expr().into_json(),
+        )
     }
 }
 
@@ -141,6 +158,7 @@ impl<S, A> fmt::Debug for Action<S, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Action")
             .field("method", &self.method)
+            .field("base", &self.base.as_str())
             .field("path", &self.path)
             .finish()
     }
@@ -163,6 +181,7 @@ impl<S, A> fmt::Debug for Action<S, A> {
 /// ```
 pub struct Call<S> {
     method: Method,
+    base: Base,
     path: &'static str,
     args: Value,
     indicator: Value,
@@ -177,9 +196,10 @@ pub struct Call<S> {
 }
 
 impl<S> Call<S> {
-    fn new(method: Method, path: &'static str, args: Value) -> Self {
+    fn new(method: Method, base: Base, path: &'static str, args: Value) -> Self {
         Self {
             method,
+            base,
             path,
             args,
             indicator: Value::Null,
@@ -194,10 +214,10 @@ impl<S> Call<S> {
 
     /// A `POST` to `path` that sends `args` with the files picked in the
     /// file input named `files`.
-    pub(crate) fn upload(path: &'static str, args: Value, files: &'static str) -> Self {
+    pub(crate) fn upload(base: Base, path: &'static str, args: Value, files: &'static str) -> Self {
         Self {
             files: Some(files),
-            ..Self::new(Method::Post, path, args)
+            ..Self::new(Method::Post, base, path, args)
         }
     }
 
@@ -273,19 +293,13 @@ impl<S> Call<S> {
 impl<S> IntoStmt<S> for Call<S> {
     fn into_stmt(self) -> Stmt<S> {
         let call = self;
+        let path = call.base.join(call.path);
         let mut ast = match call.files {
-            Some(files) => json!([
-                "upload",
-                call.path,
-                call.args,
-                call.indicator,
-                call.error,
-                files
-            ]),
+            Some(files) => json!(["upload", path, call.args, call.indicator, call.error, files]),
             None => json!([
                 "call",
                 call.method.as_str(),
-                call.path,
+                path,
                 call.args,
                 call.indicator,
                 call.error
@@ -339,6 +353,7 @@ impl<S> fmt::Debug for Call<S> {
 /// let _feed = div().on_load(UPDATES.call().reconnect());
 /// ```
 pub struct StreamAction<S, A = ()> {
+    base: Base,
     path: &'static str,
     marker: PhantomData<fn(S, A)>,
 }
@@ -357,12 +372,21 @@ impl<S, A> StreamAction<S, A> {
             "a stream path starts with `/`"
         );
         Self {
+            base: Base::ROOT,
             path,
             marker: PhantomData,
         }
     }
 
-    /// The path the stream is served on.
+    /// The same stream under `base`, which the page's calls put before the path.
+    ///
+    /// The router registers [`StreamAction::path`] without it. See [`Base`].
+    #[must_use]
+    pub const fn under(self, base: Base) -> Self {
+        Self { base, ..self }
+    }
+
+    /// The path the stream is served on, without its [`Base`].
     #[must_use]
     pub fn path(&self) -> &'static str {
         self.path
@@ -376,6 +400,7 @@ impl<S, A> StreamAction<S, A> {
     pub fn call_with(&self, args: impl IntoExpr<S, A>) -> StreamCall<S> {
         StreamCall(Call::new(
             Method::Get,
+            self.base,
             self.path,
             args.into_expr().into_json(),
         ))
@@ -386,7 +411,7 @@ impl<S> StreamAction<S, ()> {
     /// A call to this stream, which takes no arguments.
     #[must_use]
     pub fn call(&self) -> StreamCall<S> {
-        StreamCall(Call::new(Method::Get, self.path, Value::Null))
+        StreamCall(Call::new(Method::Get, self.base, self.path, Value::Null))
     }
 }
 
@@ -401,6 +426,7 @@ impl<S, A> Copy for StreamAction<S, A> {}
 impl<S, A> fmt::Debug for StreamAction<S, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("StreamAction")
+            .field("base", &self.base.as_str())
             .field("path", &self.path)
             .finish()
     }

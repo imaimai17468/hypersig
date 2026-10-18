@@ -77,7 +77,7 @@ pub use head::{OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use page::Page;
 pub use patch::{Fragment, ListPatch, Patches, SignalPatch, fragment};
-pub use route::{Extends, Link, Params, Rest, Route, Search, SearchValue, Segment, Url};
+pub use route::{Base, Extends, Link, Params, Rest, Route, Search, SearchValue, Segment, Url};
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 pub use upload::{FileInput, Upload};
 #[cfg(feature = "axum")]
@@ -148,13 +148,13 @@ pub mod _private {
 
     pub use crate::route::SearchFields;
     pub use crate::route::sealed::Sealed;
-    use crate::route::{Extends, Params, Route, Search};
+    use crate::route::{Base, Extends, Params, Route, Search};
     use crate::signal::{Path, Sig};
 
-    /// Called by `routes!` for a page at `path`.
+    /// Called by `routes!` for a page at `path` under `base`.
     #[must_use]
-    pub const fn route<P: Params, Q: Search>(path: &'static str) -> Route<P, Q> {
-        Route::new(path)
+    pub const fn route<P: Params, Q: Search>(base: Base, path: &'static str) -> Route<P, Q> {
+        Route::new(path).under(base)
     }
 
     /// Called by `routes!` for a page at `path` under `parent`.

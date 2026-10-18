@@ -1824,8 +1824,16 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "path",
                             "struct.Action.html#method.path",
                             L {
-                                en: "The path the action is served on.",
-                                ja: "アクションを配信するパス",
+                                en: "The path the action is served on, without its `Base`.",
+                                ja: "アクションを配信するパス（`Base` を除く）",
+                            },
+                        ),
+                        (
+                            "under",
+                            "struct.Action.html#method.under",
+                            L {
+                                en: "The same action under `base`, which the page's calls put before the path.",
+                                ja: "ページからの呼び出しがパスの前に `base` を付ける、`base` の下の同じアクション",
                             },
                         ),
                         (
@@ -1906,6 +1914,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A stream served on `GET path`.",
                                 ja: "`GET path` で配信するストリーム",
+                            },
+                        ),
+                        (
+                            "under",
+                            "struct.StreamAction.html#method.under",
+                            L {
+                                en: "The same stream under `base`, which the page's calls put before the path.",
+                                ja: "ページからの呼び出しがパスの前に `base` を付ける、`base` の下の同じストリーム",
                             },
                         ),
                         (
@@ -2358,6 +2374,38 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "axum が照合する形のパスです。各パラメータは `{name}` のまま残ります。",
                             },
                         ),
+                        (
+                            "Base",
+                            "struct.Base.html",
+                            L {
+                                en: "The path prefix an application is served under, such as `/app` behind a proxy.",
+                                ja: "アプリケーションを配信するパスの接頭辞です。プロキシの裏の `/app` などに使います。",
+                            },
+                        ),
+                        (
+                            "Base::new",
+                            "struct.Base.html#method.new",
+                            L {
+                                en: "The prefix `path`, which starts with `/` and does not end with one.",
+                                ja: "接頭辞 `path` です。`/` で始まり、`/` で終わりません。",
+                            },
+                        ),
+                        (
+                            "Base::ROOT",
+                            "struct.Base.html#associatedconstant.ROOT",
+                            L {
+                                en: "No prefix: the application is served at the root of its host.",
+                                ja: "接頭辞なしです。アプリケーションをホストのルートで配信します。",
+                            },
+                        ),
+                        (
+                            "Base::as_str",
+                            "struct.Base.html#method.as_str",
+                            L {
+                                en: "The prefix as text, empty for `Base::ROOT`.",
+                                ja: "接頭辞の文字列です。`Base::ROOT` では空になります。",
+                            },
+                        ),
                     ],
                 },
                 Section {
@@ -2634,6 +2682,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The same upload, accepting a body of at most `bytes` bytes. The default is 8 MiB.",
                                 ja: "本文を最大 `bytes` バイトまで受け付ける、同じアップロードです。既定は 8 MiB です。",
+                            },
+                        ),
+                        (
+                            "Upload::under",
+                            "struct.Upload.html#method.under",
+                            L {
+                                en: "The same upload under `base`, which the page's calls put before the path.",
+                                ja: "`base` の下に置いた同じアップロードです。ページからの呼び出しは、パスの前に `base` を付けます。",
                             },
                         ),
                         (

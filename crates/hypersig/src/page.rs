@@ -10,7 +10,7 @@ use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
     HIDE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr,
 };
-use crate::route::Url;
+use crate::route::{Base, Url};
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
 use crate::style::{Global, Sheet, Theme};
@@ -18,7 +18,8 @@ use crate::style::{Global, Sheet, Theme};
 /// A full HTML document for a page whose signals are `S`.
 ///
 /// The document loads the runtime from [`RUNTIME_PATH`](crate::RUNTIME_PATH),
-/// or from [`Page::runtime_src`], and puts the initial signal values on
+/// under the [`Base`] of the route that serves it, or from
+/// [`Page::runtime_src`], and puts the initial signal values on
 /// `<body>`. It is rendered with those
 /// values already applied: text, visibility, classes, attributes, form
 /// values, list items, and conditional elements show before the runtime
@@ -34,7 +35,8 @@ pub struct Page<S> {
     computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
     keys: Vec<(Shortcut, Stmt<S>)>,
-    runtime: &'static str,
+    /// The path given to [`Page::runtime_src`], if any.
+    runtime: Option<&'static str>,
     lang: Option<String>,
     description: Option<String>,
     canonical: Option<String>,
@@ -72,7 +74,7 @@ impl<S: Signals> Page<S> {
             computed: Vec::new(),
             body: Vec::new(),
             keys: Vec::new(),
-            runtime: crate::RUNTIME_PATH,
+            runtime: None,
             lang: None,
             description: None,
             canonical: None,
@@ -398,7 +400,7 @@ impl<S: Signals> Page<S> {
     /// [`RUNTIME_JS`](crate::RUNTIME_JS).
     #[must_use]
     pub fn runtime_src(mut self, src: &'static str) -> Self {
-        self.runtime = src;
+        self.runtime = Some(src);
         self
     }
 
@@ -578,6 +580,11 @@ impl<S: Signals> Page<S> {
     /// name.
     #[must_use]
     pub fn render(&self) -> String {
+        self.render_under(Base::ROOT)
+    }
+
+    /// Renders the document for a route under `base`, which the runtime's path starts with.
+    pub(crate) fn render_under(&self, base: Base) -> String {
         check_names(&self.body);
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
@@ -609,7 +616,12 @@ impl<S: Signals> Page<S> {
         let styles_at = out.len();
         self.write_styles(&mut out);
         out.push_str("<script type=\"module\"");
-        write_attr(&mut out, "src", self.runtime);
+        let runtime: Cow<'_, str> = match self.runtime {
+            Some(src) => Cow::Borrowed(src),
+            None if base == Base::ROOT => Cow::Borrowed(crate::RUNTIME_PATH),
+            None => Cow::Owned(base.join(crate::RUNTIME_PATH)),
+        };
+        write_attr(&mut out, "src", &runtime);
         self.write_nonce(&mut out);
         out.push_str("></script></head><body");
         self.write_body_attrs(&mut out, &root);

@@ -10,7 +10,7 @@ error[E0080]: evaluation panicked: the route's `{name}` segments differ in numbe
 note: inside `hypersig::_private::route::<i32, ()>`
   --> src/lib.rs
    |
-   |         Route::new(path)
+   |         Route::new(path).under(base)
    |         ^^^^^^^^^^^^^^^^
 note: inside `Route::<i32>::new`
   --> $RUST/core/src/panic.rs
@@ -35,7 +35,7 @@ note: erroneous constant encountered
 10 | | }
    | |_^
    |
-   = note: this note originates in the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this note originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 note: erroneous constant encountered
   --> tests/ui/fail/route_params_mismatch.rs:18:13

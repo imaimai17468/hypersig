@@ -58,8 +58,128 @@ use crate::signal::Signals;
 /// # let _ = pages;
 /// ```
 pub struct Route<P = (), Q = ()> {
+    base: Base,
     path: &'static str,
     marker: PhantomData<fn(P, Q)>,
+}
+
+/// The path prefix an application is served under, such as `/app` behind a proxy.
+///
+/// Name it once, as a `const`, after `under` on the first line of
+/// [`routes!`](crate::routes), and on each action, stream, and upload with
+/// their `under`. Links, [`Url`]s, action calls, and the path a page loads
+/// the runtime from then start with it, and the router still registers each
+/// path without it, so the application runs either inside
+/// `Router::nest(BASE.as_str(), ...)` or behind a proxy that strips the
+/// prefix before the request arrives.
+///
+/// It is a constant because the routes and actions it prefixes are, so a
+/// prefix read from the environment at run time cannot reach them. Choose it
+/// when the program is built, with `option_env!` where a build sets it.
+///
+/// ```
+/// use axum::Router;
+/// use hypersig::html::a;
+/// use hypersig::{Action, Base, Page, Patches, RouterExt, Route, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Shop {
+///     count: i32,
+/// }
+///
+/// const APP: Base = Base::new("/app");
+///
+/// hypersig::routes! {
+///     fn pages(Router<()>) under APP;
+///     const HOME: Route = "/" => home;
+///     const ITEM: Route<u32> = "/items/{id}" => item;
+/// }
+///
+/// const ADD: Action<Shop> = Action::post("/add").under(APP);
+///
+/// async fn home((): (), (): ()) -> Page<Shop> {
+///     Page::new("Shop", Shop { count: 0 }).child(a().href(ITEM.link_with(&3_u32)).text("Tea"))
+/// }
+///
+/// async fn item((): (), id: u32) -> Page<Shop> {
+///     Page::new("Item", Shop { count: 0 }).child(a().href(HOME.link()).text(format!("Back from {id}")))
+/// }
+///
+/// assert_eq!(ITEM.url(3).as_str(), "/app/items/3");
+/// assert_eq!(HOME.url(()).as_str(), "/app");
+/// assert_eq!(ITEM.path(), "/items/{id}");
+///
+/// let app = pages(Router::new())
+///     .hypersig_runtime()
+///     .action(ADD, |(), (): ()| async { Patches::from(Shop::count().patch(1)) });
+/// let _served: Router = Router::new().nest(APP.as_str(), app);
+/// ```
+///
+/// # What stays unchecked
+///
+/// The compiler does not check that an action, a stream, or an upload a
+/// page calls is under the same base as the page. One declared without
+/// `under(APP)` calls its path without the prefix, which a proxy answers
+/// with its own 404, and which the router answers with 404 inside `nest`.
+/// A page served by a router nested at a path other than its base answers
+/// with a 500 that names both. The paths given to
+/// [`Page::stylesheet`](crate::Page::stylesheet),
+/// [`Page::icon`](crate::Page::icon), and
+/// [`Page::runtime_src`](crate::Page::runtime_src) are written as given.
+/// A [`Url`] already starts with the base, so a canonical URL takes an
+/// [`Origin`](crate::Origin) without [`Origin::under`](crate::Origin::under).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Base(&'static str);
+
+impl Base {
+    /// No prefix: the application is served at the root of its host.
+    pub const ROOT: Self = Self("");
+
+    /// The prefix `path`, which starts with `/` and does not end with one.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `path` does not start with `/`, ends with `/`, is `/`
+    /// alone, or holds `{`, `}`, `?`, `#`, `%`, or `//`. In a `const`, each
+    /// is a compile error.
+    #[must_use]
+    pub const fn new(path: &'static str) -> Self {
+        let bytes = path.as_bytes();
+        assert!(
+            bytes.len() > 1 && bytes[0] == b'/' && bytes[bytes.len() - 1] != b'/',
+            "a base path starts with `/`, does not end with `/`, and is not `/` alone"
+        );
+        let mut i = 0;
+        while i < bytes.len() {
+            assert!(
+                !matches!(bytes[i], b'{' | b'}' | b'?' | b'#' | b'%'),
+                "a base path is literal segments, without `{{`, `}}`, `?`, `#`, or `%`"
+            );
+            assert!(
+                !(bytes[i] == b'/' && i + 1 < bytes.len() && bytes[i + 1] == b'/'),
+                "a base path has no empty segment"
+            );
+            i += 1;
+        }
+        Self(path)
+    }
+
+    /// The prefix as text, empty for [`Base::ROOT`].
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        self.0
+    }
+
+    /// `path` under this prefix, as axum's `nest` serves it: the prefix
+    /// alone for `/`.
+    pub(crate) fn join(self, path: &str) -> String {
+        match (self.0, path) {
+            ("", path) => path.to_owned(),
+            (base, "/") => base.to_owned(),
+            (base, path) => format!("{base}{path}"),
+        }
+    }
 }
 
 impl<P: Params, Q: Search> Route<P, Q> {
@@ -88,15 +208,45 @@ impl<P: Params, Q: Search> Route<P, Q> {
             "a `{{*name}}` segment and a last parameter of type `Rest` go together"
         );
         Self {
+            base: Base::ROOT,
             path,
             marker: PhantomData,
         }
     }
 
+    /// The same page, served under `base`.
+    #[must_use]
+    pub(crate) const fn under(self, base: Base) -> Self {
+        Self { base, ..self }
+    }
+
     /// The path as axum matches it, with each parameter still written `{name}`.
+    ///
+    /// It leaves out the route's [`Base`], because the router registers the
+    /// path without it.
     #[must_use]
     pub fn path(&self) -> &'static str {
         self.path
+    }
+
+    /// The prefix the route's links and URLs start with.
+    #[cfg(feature = "axum")]
+    pub(crate) fn base(&self) -> Base {
+        self.base
+    }
+
+    /// The literal parts of the path around its parameters, the first one under the base.
+    fn parts(&self) -> Vec<String> {
+        let mut parts: Vec<String> = literal_parts(self.path)
+            .into_iter()
+            .map(str::to_owned)
+            .collect();
+        parts[0] = if parts.len() == 1 {
+            self.base.join(&parts[0])
+        } else {
+            format!("{}{}", self.base.as_str(), parts[0])
+        };
+        parts
     }
 
     /// A page under this one, served at the whole path `path`.
@@ -115,7 +265,7 @@ impl<P: Params, Q: Search> Route<P, Q> {
             continues(path, self.path),
             "a child route's path is its parent's path followed by `/` and more segments"
         );
-        Route::new(path)
+        Route::new(path).under(self.base)
     }
 
     /// A link to this page with the arguments `args`.
@@ -142,7 +292,7 @@ impl<P: Params, Q: Search> Route<P, Q> {
             1 => vec![params],
             count => split_tuple(params, count),
         };
-        Link::new(self.path, values, search, P::REST_LAST)
+        Link::new(&self.parts(), values, search, P::REST_LAST)
     }
 
     /// The URL of this page with the arguments `args`, written on the server.
@@ -168,8 +318,8 @@ impl<P: Params, Q: Search> Route<P, Q> {
     #[must_use]
     pub fn url(&self, args: Q::Args<P>) -> Url {
         let (params, search) = Q::split(args);
-        let parts = literal_parts(self.path);
-        let mut url = parts[0].to_owned();
+        let parts = self.parts();
+        let mut url = parts[0].clone();
         let segments = params.segments();
         for (index, (segment, part)) in segments.iter().zip(&parts[1..]).enumerate() {
             url.push_str(&encode_segment(
@@ -239,7 +389,7 @@ impl Route<(), ()> {
     /// A link to this page, which has no parameters.
     #[must_use]
     pub fn link<S>(&self) -> Link<S> {
-        Link::new(self.path, Vec::new(), None, false)
+        Link::new(&self.parts(), Vec::new(), None, false)
     }
 }
 
@@ -252,6 +402,11 @@ impl Route<(), ()> {
 /// `in PARENT` after the path to declare a page under another page of an
 /// earlier line: its path continues the parent's and its parameters start
 /// with the parent's.
+///
+/// Write `under BASE` after `Router<STATE>` to serve every page of the block
+/// under the path prefix that `BASE` names, which every link and URL to the
+/// pages then starts with. `BASE` is the name of a [`Base`] constant in
+/// scope, without a path before it.
 ///
 /// ```
 /// use axum::Router;
@@ -346,10 +501,10 @@ impl Route<(), ()> {
 /// one block: the application then calls one function, and a missing call
 /// shows on its first page.
 ///
-/// Call the function on the router the application serves, never on one
-/// passed to `Router::nest`. The links point to each route's path, and a
-/// nested router would serve the pages under a longer one, so such a page
-/// answers every request with a 500 that names the two paths.
+/// A router passed to `Router::nest` serves its pages under a longer path
+/// than their links point to, unless it is nested at the [`Base`] the first
+/// line names after `under`. Such a page answers every request with a 500
+/// that names the two paths.
 ///
 /// A parent after `in` is a page itself. A path prefix that has no page of
 /// its own cannot be a parent.
@@ -366,13 +521,14 @@ impl Route<(), ()> {
 #[cfg(feature = "axum")]
 #[macro_export]
 macro_rules! routes {
-    (@route $path:literal) => {
-        $crate::_private::route($path)
+    (@route $base:expr, $path:literal) => {
+        $crate::_private::route($base, $path)
     };
-    (@route $path:literal, $parent:ident) => {
+    (@route $base:expr, $path:literal, $parent:ident) => {
         $crate::_private::child(&$parent, $path)
     };
     (
+        @main [$base:expr]
         $(#[$fn_attr:meta])*
         $fn_vis:vis fn $fn_name:ident(Router<$state:ty>) $(else $unserved:expr)?;
         $(
@@ -382,7 +538,7 @@ macro_rules! routes {
     ) => {
         $(
             $(#[$attr])*
-            $vis const $name: $ty = $crate::routes!(@route $path $(, $parent)?);
+            $vis const $name: $ty = $crate::routes!(@route $base, $path $(, $parent)?);
         )+
 
         $(#[$fn_attr])*
@@ -391,7 +547,7 @@ macro_rules! routes {
         ) -> $crate::_private::Router<$state> {
             let unserved: ::core::option::Option<$crate::_private::UnservedPage<$state>> =
                 ::core::option::Option::None
-                $(.or(::core::option::Option::Some($crate::_private::UnservedPage::new($unserved))))?;
+                $(.or(::core::option::Option::Some($crate::_private::UnservedPage::new($base, $unserved))))?;
             $(
                 let router = <$crate::_private::Router<$state> as $crate::RouterExt<$state>>::page(
                     router, $name, $handler, unserved.clone(),
@@ -403,10 +559,27 @@ macro_rules! routes {
             }
         }
     };
-    ($($input:tt)*) => {
+    (@main $($input:tt)*) => {
         ::core::compile_error!(
-            "`routes!` takes `fn NAME(Router<STATE>);` or `fn NAME(Router<STATE>) else HANDLER;`, then one `const NAME: Route<..> = \"/path\" => handler;` per page, each naming its handler after `=>`"
+            "`routes!` takes `fn NAME(Router<STATE>);`, with `under BASE` and `else HANDLER` before the `;` where wanted, then one `const NAME: Route<..> = \"/path\" => handler;` per page, each naming its handler after `=>`"
         );
+    };
+    (
+        $(#[$fn_attr:meta])*
+        $fn_vis:vis fn $fn_name:ident(Router<$state:ty>) under $base:ident $($rest:tt)*
+    ) => {
+        $crate::routes!(@main [$base] $(#[$fn_attr])* $fn_vis fn $fn_name(Router<$state>) $($rest)*);
+    };
+    (
+        $(#[$fn_attr:meta])*
+        $fn_vis:vis fn $fn_name:ident(Router<$state:ty>) $($rest:tt)*
+    ) => {
+        $crate::routes!(
+            @main [$crate::Base::ROOT] $(#[$fn_attr])* $fn_vis fn $fn_name(Router<$state>) $($rest)*
+        );
+    };
+    ($($input:tt)*) => {
+        $crate::routes!(@main $($input)*);
     };
 }
 
@@ -450,7 +623,10 @@ impl<P, Q> Copy for Route<P, Q> {}
 
 impl<P, Q> fmt::Debug for Route<P, Q> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Route").field(&self.path).finish()
+        f.debug_struct("Route")
+            .field("base", &self.base.as_str())
+            .field("path", &self.path)
+            .finish()
     }
 }
 
@@ -549,10 +725,10 @@ enum LinkKind<S> {
 }
 
 impl<S> Link<S> {
-    fn new(path: &'static str, values: Vec<Value>, search: Option<Value>, rest_last: bool) -> Self {
+    /// A link to the path whose literal parts are `parts`, with `values` between them.
+    fn new(parts: &[String], values: Vec<Value>, search: Option<Value>, rest_last: bool) -> Self {
         let count = values.len();
         let is_rest = |index: usize| rest_last && index + 1 == count;
-        let parts = literal_parts(path);
         let literal = |value: &Value| match value.as_array().map(Vec::as_slice) {
             Some([op, literal]) if op == "lit" => Some(literal.clone()),
             _ => None,
@@ -560,7 +736,7 @@ impl<S> Link<S> {
         let literals: Option<Vec<Value>> = values.iter().map(literal).collect();
         let search_literal = search.as_ref().map(literal);
         if let (Some(literals), None | Some(Some(_))) = (literals, &search_literal) {
-            let mut url = parts[0].to_owned();
+            let mut url = parts[0].clone();
             for (index, (literal, part)) in literals.iter().zip(&parts[1..]).enumerate() {
                 url.push_str(&encode_segment(
                     &crate::ssr::js_string(literal),

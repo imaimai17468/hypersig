@@ -8,6 +8,7 @@ use serde_json::json;
 use crate::action::Call;
 use crate::expr::{IntoExpr, Stmt};
 use crate::html::{El, input};
+use crate::route::Base;
 
 /// A server endpoint on the page whose signals are `S`, which receives
 /// arguments `A` and the files picked in a [`FileInput`].
@@ -42,6 +43,7 @@ use crate::html::{El, input};
 ///     .child(button().on_click(AVATAR.call(PICTURE).indicator(Profile::uploading())).text("Upload"));
 /// ```
 pub struct Upload<S, A = ()> {
+    base: Base,
     path: &'static str,
     max_bytes: usize,
     marker: PhantomData<fn(S, A)>,
@@ -64,6 +66,7 @@ impl<S, A> Upload<S, A> {
             "an upload path starts with `/`"
         );
         Self {
+            base: Base::ROOT,
             path,
             max_bytes: Self::DEFAULT_MAX_BYTES,
             marker: PhantomData,
@@ -80,7 +83,15 @@ impl<S, A> Upload<S, A> {
         }
     }
 
-    /// The path the upload is served on.
+    /// The same upload under `base`, which the page's calls put before the path.
+    ///
+    /// The router registers [`Upload::path`] without it. See [`Base`].
+    #[must_use]
+    pub const fn under(self, base: Base) -> Self {
+        Self { base, ..self }
+    }
+
+    /// The path the upload is served on, without its [`Base`].
     #[must_use]
     pub fn path(&self) -> &'static str {
         self.path
@@ -99,7 +110,12 @@ impl<S, A> Upload<S, A> {
     /// no file picked sends no file.
     #[must_use]
     pub fn call_with(&self, files: FileInput<S>, args: impl IntoExpr<S, A>) -> Call<S> {
-        Call::upload(self.path, args.into_expr().into_json(), files.name)
+        Call::upload(
+            self.base,
+            self.path,
+            args.into_expr().into_json(),
+            files.name,
+        )
     }
 }
 
@@ -107,7 +123,7 @@ impl<S> Upload<S, ()> {
     /// A call that sends the files picked in `files`, for an upload that takes no arguments.
     #[must_use]
     pub fn call(&self, files: FileInput<S>) -> Call<S> {
-        Call::upload(self.path, serde_json::Value::Null, files.name)
+        Call::upload(self.base, self.path, serde_json::Value::Null, files.name)
     }
 }
 
@@ -122,6 +138,7 @@ impl<S, A> Copy for Upload<S, A> {}
 impl<S, A> fmt::Debug for Upload<S, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Upload")
+            .field("base", &self.base.as_str())
             .field("path", &self.path)
             .field("max_bytes", &self.max_bytes)
             .finish()

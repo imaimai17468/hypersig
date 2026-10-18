@@ -216,6 +216,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-prefix"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "hypersig",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "example-showcase"
 version = "0.0.0"
 dependencies = [

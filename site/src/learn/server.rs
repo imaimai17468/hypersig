@@ -264,8 +264,8 @@ pub fn pages(site: Site) -> Part {
             para(
                 site,
                 L {
-                    en: "Call the function `routes!` writes on the router the application serves. Called on a router passed to axum's `nest`, it serves the pages under a longer path than their links point to, so each of them answers every request with a 500 that names both paths.",
-                    ja: "`routes!` が書く関数は、アプリケーションが配信するルーターに対して呼び出してください。axum の `nest` に渡すルーターに対して呼び出すと、ページはリンクが指すパスより長いパスの下で配信されます。そのため、どのページもすべてのリクエストに、両方のパスを示す 500 を返します。",
+                    en: "An application served under a path prefix, such as `/app` behind a proxy, names it once as a [`Base`](api:hypersig/struct.Base.html) constant: `fn pages(Router<State>) under APP;` on the first line of `routes!`, and `Action::post(\"/save\").under(APP)` on each action, stream, and upload. Links, URLs, redirects, action calls, and the path a page loads the runtime from then start with `/app`, and the router still registers each path without it. The same router then runs inside `Router::nest(APP.as_str(), ...)` or behind a proxy that strips `/app`. The prefix is a constant because the routes and actions it prefixes are, so it is chosen when the program is built. A page served by a router nested under any other path answers every request with a 500 that names both paths, and the compiler does not check that an action a page calls was declared under the same base.",
+                    ja: "プロキシの裏の `/app` のようにパスの接頭辞の下で配信するアプリケーションは、接頭辞を [`Base`](api:hypersig/struct.Base.html) の定数として 1 か所で宣言します。`routes!` の 1 行目に `fn pages(Router<State>) under APP;` と書き、アクション、ストリーム、アップロードにはそれぞれ `Action::post(\"/save\").under(APP)` のように付けます。するとリンク、URL、リダイレクト、アクションの呼び出し、ページがランタイムを読み込むパスが `/app` で始まり、ルーターは各パスを接頭辞なしで登録します。同じルーターを `Router::nest(APP.as_str(), ...)` の中でも、`/app` を取り除くプロキシの裏でも動かせます。接頭辞を付けるルートとアクションが定数なので、接頭辞も定数で、プログラムをビルドするときに決まります。ほかのパスに `nest` したルーターのページは、すべてのリクエストに両方のパスを示す 500 を返します。ページが呼ぶアクションが同じ接頭辞で宣言されているかどうかは、コンパイラは検査しません。",
                 },
             ),
         ]

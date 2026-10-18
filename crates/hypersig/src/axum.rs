@@ -23,7 +23,7 @@ use serde::de::DeserializeOwned;
 use crate::action::{Action, Method, StreamAction};
 use crate::page::Page;
 use crate::patch::{ListPatch, PatchEvent, Patches, SignalPatch};
-use crate::route::{Params, Route, Search, Url};
+use crate::route::{Base, Params, Route, Search, Url};
 use crate::signal::Signals;
 use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
 
@@ -164,13 +164,17 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         R: Into<PageResponse>,
     {
         let path = route.path();
+        let base = route.base();
+        // The page is served at its path behind a proxy that strips the
+        // base, and at this one inside a router nested at the base.
+        let under_base = base.join(path);
         let route_handler = move |State(state): State<St>,
                                   matched: MatchedPath,
                                   params: RawPathParams,
                                   request: Parts| {
             let handler = handler.clone();
             let unserved = unserved.clone();
-            let nested = matched.as_str() != path;
+            let nested = matched.as_str() != path && matched.as_str() != under_base;
             let segments: Vec<&str> = params.iter().map(|(_, value)| value).collect();
             let params = P::from_segments(&segments);
             let search = Q::unit().map_or_else(
@@ -180,10 +184,14 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             let served_at = matched.as_str().to_owned();
             async move {
                 if nested {
+                    let links = match base.as_str() {
+                        "" => format!("`{path}`"),
+                        base => format!("`{base}` and `{path}`"),
+                    };
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         format!(
-                            "the page at `{path}` is registered on a nested router, which serves it at `{served_at}`"
+                            "the page whose links point to {links} is registered on a nested router, which serves it at `{served_at}`"
                         ),
                     )
                         .into_response();
@@ -216,7 +224,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                             state,
                             request,
                         });
-                        page.await.into().finish(kept).await
+                        page.await.into().finish(base, kept).await
                     }
                     Err(rejection) => rejection,
                 }
@@ -509,7 +517,7 @@ type AddParts = Box<dyn FnOnce(Response) -> Response + Send>;
 enum Reply {
     /// A page, rendered once the router knows where it is served.
     Page {
-        render: Box<dyn FnOnce() -> String + Send>,
+        render: Box<dyn FnOnce(Base) -> String + Send>,
         status: Option<StatusCode>,
     },
     /// A 404 that shows the router's page for a request it serves no page for.
@@ -570,7 +578,7 @@ impl PageResponse {
     #[must_use]
     pub fn with_status<S: Signals + Send + 'static>(status: StatusCode, page: Page<S>) -> Self {
         Self::new(Reply::Page {
-            render: Box::new(move || page.render()),
+            render: Box::new(move |base| page.render_under(base)),
             status: Some(status),
         })
     }
@@ -583,9 +591,11 @@ impl PageResponse {
         self
     }
 
-    /// The response, with `unserved` answering a 404 where the router names a page for it.
+    /// The response of a page under `base`, with `unserved` answering a 404
+    /// where the router names a page for it.
     async fn finish<St: Clone + Send + Sync + 'static>(
         self,
+        base: Base,
         unserved: Option<Unanswered<'_, St>>,
     ) -> Response {
         let Self { reply, parts } = self;
@@ -601,7 +611,7 @@ impl PageResponse {
                 let unserved = Unserved::new(Reason::NoPage, &request);
                 Box::pin(page.answer(state, request, unserved)).await
             }
-            (reply, _) => reply.into_response(),
+            (reply, _) => reply.into_response(base),
         };
         parts
             .into_iter()
@@ -617,11 +627,11 @@ struct Unanswered<'a, St> {
 }
 
 impl Reply {
-    /// The response outside a route, where a 404 has an empty body.
-    fn into_response(self) -> Response {
+    /// The response of a page under `base`, where a 404 has an empty body.
+    fn into_response(self, base: Base) -> Response {
         match self {
             Self::Page { render, status } => {
-                (status.unwrap_or(StatusCode::OK), Html(render())).into_response()
+                (status.unwrap_or(StatusCode::OK), Html(render(base))).into_response()
             }
             Self::NotFound => StatusCode::NOT_FOUND.into_response(),
             Self::Response(response) => response,
@@ -632,7 +642,7 @@ impl Reply {
 impl<S: Signals + Send + 'static> From<Page<S>> for PageResponse {
     fn from(page: Page<S>) -> Self {
         Self::new(Reply::Page {
-            render: Box::new(move || page.render()),
+            render: Box::new(move |base| page.render_under(base)),
             status: None,
         })
     }
@@ -668,7 +678,9 @@ impl IntoResponse for PageResponse {
         let Self { reply, parts } = self;
         parts
             .into_iter()
-            .fold(reply.into_response(), |response, add| add(response))
+            .fold(reply.into_response(Base::ROOT), |response, add| {
+                add(response)
+            })
     }
 }
 
@@ -761,7 +773,11 @@ impl fmt::Display for Unserved {
 
 /// The handler [`routes!`](crate::routes) names after `else`, which each page and the router's fallback keep.
 #[doc(hidden)]
-pub struct UnservedPage<St>(Arc<UnservedFn<St>>);
+pub struct UnservedPage<St> {
+    handler: Arc<UnservedFn<St>>,
+    /// The base of the routes, which the page's runtime path starts with.
+    base: Base,
+}
 
 /// The handler behind an [`UnservedPage`], with its types erased.
 type UnservedFn<St> = dyn Fn(St, Parts, Unserved) -> Pin<Box<dyn Future<Output = Result<PageResponse, Response>> + Send>>
@@ -770,7 +786,10 @@ type UnservedFn<St> = dyn Fn(St, Parts, Unserved) -> Pin<Box<dyn Future<Output =
 
 impl<St> Clone for UnservedPage<St> {
     fn clone(&self) -> Self {
-        Self(Arc::clone(&self.0))
+        Self {
+            handler: Arc::clone(&self.handler),
+            base: self.base,
+        }
     }
 }
 
@@ -783,28 +802,29 @@ impl<St> fmt::Debug for UnservedPage<St> {
 impl<St: Clone + Send + Sync + 'static> UnservedPage<St> {
     /// Keeps `handler` to answer a page request that reached no page.
     #[doc(hidden)]
-    pub fn new<H, M, Fut, R>(handler: H) -> Self
+    pub fn new<H, M, Fut, R>(base: Base, handler: H) -> Self
     where
         H: Handler<St, Unserved, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = R> + Send + 'static,
         R: Into<PageResponse>,
     {
-        Self(Arc::new(move |state, request, unserved| {
+        let handler: Arc<UnservedFn<St>> = Arc::new(move |state, request, unserved| {
             let handler = handler.clone();
             Box::pin(async move {
                 let page = handler.call(state, request, ready(unserved)).await?;
                 Ok(page.await.into())
             })
-        }))
+        });
+        Self { handler, base }
     }
 
     /// The handler's page, sent with the status of `unserved` unless it sets its own.
     async fn answer(&self, state: St, request: Parts, unserved: Unserved) -> Response {
         let status = unserved.status();
-        match (self.0)(state, request, unserved).await {
+        match (self.handler)(state, request, unserved).await {
             // A handler here that answers `None` has no page to fall back on.
-            Ok(page) => page.or_status(status).finish::<St>(None).await,
+            Ok(page) => page.or_status(status).finish::<St>(self.base, None).await,
             Err(rejection) => rejection,
         }
     }

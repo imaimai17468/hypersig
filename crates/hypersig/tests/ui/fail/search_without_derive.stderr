@@ -22,7 +22,7 @@ help: the trait `hypersig::Search` is implemented for `()`
 note: required by a bound in `hypersig::_private::route`
   --> src/lib.rs
    |
-   |     pub const fn route<P: Params, Q: Search>(path: &'static str) -> Route<P, Q> {
+   |     pub const fn route<P: Params, Q: Search>(base: Base, path: &'static str) -> Route<P, Q> {
    |                                      ^^^^^^ required by this bound in `route`
    = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
 
@@ -58,7 +58,7 @@ note: required by a bound in `hypersig::RouterExt::page`
 ...
    |         Q: Search + DeserializeOwned + Send + 'static,
    |            ^^^^^^ required by this bound in `RouterExt::page`
-   = note: this error originates in the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0599]: the method `path` exists for struct `Route<(), Filter>`, but its trait bounds were not satisfied
   --> tests/ui/fail/search_without_derive.rs:25:18
