@@ -44,6 +44,7 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
+use std::io;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -2145,22 +2146,71 @@ pub(crate) fn write_attr(out: &mut String, name: &str, value: &str) {
     out.push('"');
 }
 
-/// Writes an attribute whose value is the text `value` displays as, escaping
-/// each piece as `Display` hands it over rather than building the text first.
-pub(crate) fn write_display_attr(out: &mut String, name: &str, value: &impl fmt::Display) {
-    struct Escaped<'a>(&'a mut String);
-    impl fmt::Write for Escaped<'_> {
-        fn write_str(&mut self, s: &str) -> fmt::Result {
-            escape_into(self.0, s, true);
-            Ok(())
-        }
-    }
+/// Writes an attribute whose value is `value` as JSON, already escaped for
+/// HTML, without building the unescaped text first.
+pub(crate) fn write_json_attr(out: &mut String, name: &str, value: &impl Serialize) {
     out.push(' ');
     out.push_str(name);
     out.push_str("=\"");
-    fmt::Write::write_fmt(&mut Escaped(out), format_args!("{value}"))
-        .expect("writing to a String does not fail");
+    // `serde_json` writes bytes, so `out` is lent to it as a `Vec<u8>` and
+    // checked as UTF-8 once when it comes back. The check reads all of
+    // `out`, which `Page` keeps short by writing `data-hs-signals` before
+    // the body.
+    let mut bytes = std::mem::take(out).into_bytes();
+    let mut serializer = serde_json::Serializer::with_formatter(&mut bytes, AttrJson);
+    value
+        .serialize(&mut serializer)
+        .expect("JSON values and strings serialize");
+    *out = String::from_utf8(bytes).expect("serde_json and AttrJson write UTF-8");
     out.push('"');
+}
+
+/// Compact JSON with the HTML escapes of an attribute value written in
+/// place: the quotes around a string as `&quot;`, and `&`, `<`, `>`, and
+/// `'` inside it as entities. JSON escapes a `"` inside a string as `\"`,
+/// so that one is written as `\&quot;`.
+struct AttrJson;
+
+impl serde_json::ser::Formatter for AttrJson {
+    fn begin_string<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        writer.write_all(b"&quot;")
+    }
+
+    fn end_string<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
+        writer.write_all(b"&quot;")
+    }
+
+    fn write_string_fragment<W: ?Sized + io::Write>(
+        &mut self,
+        writer: &mut W,
+        fragment: &str,
+    ) -> io::Result<()> {
+        let mut start = 0;
+        for (index, byte) in fragment.bytes().enumerate() {
+            let entity: &[u8] = match byte {
+                b'&' => b"&amp;",
+                b'<' => b"&lt;",
+                b'>' => b"&gt;",
+                b'\'' => b"&#39;",
+                _ => continue,
+            };
+            writer.write_all(&fragment.as_bytes()[start..index])?;
+            writer.write_all(entity)?;
+            start = index + 1;
+        }
+        writer.write_all(&fragment.as_bytes()[start..])
+    }
+
+    fn write_char_escape<W: ?Sized + io::Write>(
+        &mut self,
+        writer: &mut W,
+        char_escape: serde_json::ser::CharEscape,
+    ) -> io::Result<()> {
+        match char_escape {
+            serde_json::ser::CharEscape::Quote => writer.write_all(b"\\&quot;"),
+            other => serde_json::ser::CompactFormatter.write_char_escape(writer, other),
+        }
+    }
 }
 
 pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
@@ -2272,6 +2322,19 @@ mod tests {
                 "</div>"
             )
         );
+    }
+
+    #[test]
+    fn writes_json_attributes_as_escaping_the_json_text_would() {
+        let value = serde_json::json!({
+            "a\"b": ["<&>'", "\\ \u{1}\n\t", "日本😀", 1.5, -3, null, true],
+            "": { "x": "</script>" },
+        });
+        let mut streamed = String::new();
+        super::write_json_attr(&mut streamed, "data-x", &value);
+        let mut escaped = String::new();
+        super::write_attr(&mut escaped, "data-x", &value.to_string());
+        assert_eq!(streamed, escaped);
     }
 
     #[test]

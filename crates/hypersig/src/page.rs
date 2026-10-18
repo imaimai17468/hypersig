@@ -11,7 +11,7 @@ use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
     HIDE, INLINE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr,
-    write_display_attr,
+    write_json_attr,
 };
 use crate::patch::at_path;
 use crate::route::{Base, Url};
@@ -715,7 +715,7 @@ impl<S: Signals> Page<S> {
 
     /// Writes the attributes of `<body>`, which the runtime reads when it starts.
     fn write_body_attrs(&self, out: &mut String, root: &Value) {
-        write_display_attr(out, "data-hs-signals", root);
+        write_json_attr(out, "data-hs-signals", root);
         if !self.computed.is_empty() {
             let computed: Vec<Value> = self
                 .computed
