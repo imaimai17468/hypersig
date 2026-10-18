@@ -1417,6 +1417,22 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "open",
+                    "hypersig_ui/struct.Dialog.html#method.open",
+                    L {
+                        en: "A statement that opens the dialog, as its trigger button does.",
+                        ja: "トリガーのボタンと同じようにダイアログを開く文",
+                    },
+                ),
+                (
+                    "dismiss",
+                    "hypersig_ui/struct.Dialog.html#method.dismiss",
+                    L {
+                        en: "A statement that closes the dialog, as its close button does.",
+                        ja: "閉じるボタンと同じようにダイアログを閉じる文",
+                    },
+                ),
+                (
                     "close",
                     "hypersig_ui/struct.Dialog.html#method.close",
                     L {

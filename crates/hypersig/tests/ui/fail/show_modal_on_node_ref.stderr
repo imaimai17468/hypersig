@@ -1,0 +1,5 @@
+error[E0599]: no method named `show_modal` found for struct `NodeRef<S>` in the current scope
+  --> tests/ui/fail/show_modal_on_node_ref.rs:14:50
+   |
+14 |     let _ = button::<Palette>().on_click(PALETTE.show_modal());
+   |                                                  ^^^^^^^^^^ method not found in `NodeRef<Palette>`

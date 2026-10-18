@@ -94,6 +94,18 @@ test("each answered search is a history entry, Back loads the earlier search fro
   expect(shown()).toBe("/?q=berr");
 });
 
+test("a statement opens a dialog as a modal and another closes it", async ({ page }) => {
+  const dialog = page.getByRole("dialog", { name: "Commands" });
+  await expect(dialog).toBeHidden();
+  await page.locator(".open-palette").click();
+  await expect(dialog).toBeVisible();
+  expect(await dialog.evaluate((element) => element.matches(":modal"))).toBe(true);
+  await expect(page.getByPlaceholder("Type a command")).toBeFocused();
+  await page.locator(".close-palette").click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".open-palette")).toBeFocused();
+});
+
 test("a slow answer to an earlier search does not overwrite the answer to a later one", async ({ page }) => {
   const field = page.getByPlaceholder("Search fruit");
   const sent: string[] = [];

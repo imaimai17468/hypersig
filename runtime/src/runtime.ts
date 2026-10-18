@@ -554,6 +554,9 @@ export class Runtime implements Host {
       else if (op === "scroll") target.scrollIntoView({ block: "nearest" });
       else if (op === "hide-popover" && target instanceof HTMLElement && target.matches(":popover-open")) target.hidePopover();
       else if (op === "show-popover" && target instanceof HTMLElement && target.hasAttribute("popover") && !target.matches(":popover-open")) target.showPopover();
+      // `showModal` throws on a dialog that is already open.
+      else if (op === "show-modal" && target instanceof HTMLDialogElement && !target.open) target.showModal();
+      else if (op === "close" && target instanceof HTMLDialogElement && target.open) target.close();
     });
   }
 

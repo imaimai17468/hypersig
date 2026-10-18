@@ -11,7 +11,8 @@ use hypersig::html::{
     section, select, small, span, textarea, ul,
 };
 use hypersig::{
-    Action, Fragment, NodeRef, Page, Patches, Route, RouterExt, Sig, Signals, Stmt, if_else,
+    Action, DialogRef, Fragment, NodeRef, Page, Patches, Route, RouterExt, Sig, Signals, Stmt,
+    if_else,
 };
 use serde::{Deserialize, Serialize};
 
@@ -111,6 +112,7 @@ struct Showcase {
     order: Order,
     feed: Feed,
     look: Look,
+    command: String,
 }
 
 hypersig::routes! {
@@ -129,6 +131,8 @@ const DISMISS: Action<Showcase, i32> = Action::post("/feed/dismiss");
 /// The notes the feed shows first, and the number one click adds.
 const FEED_START: i32 = 41;
 const FEED_PAGE: i32 = 5;
+
+const PALETTE: DialogRef<Showcase> = DialogRef::new("palette");
 
 const NOTE_LIMIT: i32 = 40;
 
@@ -313,6 +317,35 @@ fn search(find: &Find) -> El<Showcase> {
         .child(hypersig::fragment(&Results::for_query(
             find.q.as_deref().unwrap_or_default(),
         )))
+}
+
+/// A dialog that a statement opens and closes.
+fn palette() -> El<Showcase> {
+    section()
+        .id("palette")
+        .child(h2().text("Dialogs"))
+        .child(
+            button()
+                .class(class::OPEN_PALETTE)
+                .on_click(PALETTE.show_modal())
+                .text("Commands"),
+        )
+        .child(
+            PALETTE
+                .dialog()
+                .attr("aria-label", "Commands")
+                .child(
+                    input()
+                        .attr("placeholder", "Type a command")
+                        .bind(Showcase::command()),
+                )
+                .child(
+                    button()
+                        .class(class::CLOSE_PALETTE)
+                        .on_click(PALETTE.close())
+                        .text("Close"),
+                ),
+        )
 }
 
 fn order_form() -> El<Showcase> {
@@ -619,6 +652,7 @@ async fn index((): (), find: Find) -> Page<Showcase> {
             dark: false,
             tone: Tone::Calm,
         },
+        command: String::new(),
     };
     let query = Showcase::search().at(Search::query());
     Page::new("hypersig showcase", signals)
@@ -633,6 +667,7 @@ async fn index((): (), find: Find) -> Page<Showcase> {
         .child(components())
         .child(stopwatch())
         .child(search(&find))
+        .child(palette())
         .child(order_form())
         .child(feed())
         .child(styles())
@@ -734,6 +769,8 @@ mod class {
     pub const NEWER: Class = Class::new("newer");
     pub const STAR: Class = Class::new("star");
     pub const DISMISS: Class = Class::new("dismiss");
+    pub const OPEN_PALETTE: Class = Class::new("open-palette");
+    pub const CLOSE_PALETTE: Class = Class::new("close-palette");
 }
 
 const STYLE: Stylesheet = Stylesheet::new("

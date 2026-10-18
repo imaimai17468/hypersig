@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use serde_json::{Value, json};
 
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
+use crate::html::El;
 use crate::signal::Sig;
 
 /// The HTTP method an [`Action`] is served on.
@@ -296,8 +297,8 @@ impl<S> IntoStmt<S> for Call<S> {
             ("connected", call.connected),
         ]
         .into_iter()
-            .filter_map(|(flag, on)| on.then_some(flag))
-            .collect();
+        .filter_map(|(flag, on)| on.then_some(flag))
+        .collect();
         // A call without flags keeps the six-element form.
         if !flags.is_empty()
             && let Value::Array(items) = &mut ast
@@ -595,6 +596,96 @@ impl<S> Copy for NodeRef<S> {}
 impl<S> fmt::Debug for NodeRef<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("NodeRef").field(&self.name).finish()
+    }
+}
+
+/// A named `<dialog>` on a page whose signals are `S`, which statements open and close.
+///
+/// [`DialogRef::dialog`] is the only way to attach one, and it builds the
+/// `<dialog>` element itself, so [`show_modal`](DialogRef::show_modal) and
+/// [`close`](DialogRef::close) always name a dialog. A [`NodeRef`] has
+/// neither, since it may sit on any element.
+///
+/// The name shares one namespace with the names of [`NodeRef`]s, and
+/// rendering panics where two elements the browser can both reach carry one.
+///
+/// ```
+/// use hypersig::html::{button, div, input};
+/// use hypersig::{DialogRef, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Palette {
+///     query: String,
+/// }
+///
+/// const PALETTE: DialogRef<Palette> = DialogRef::new("palette");
+/// let page = div()
+///     .child(button().on_click(PALETTE.show_modal()).text("Commands"))
+///     .child(
+///         PALETTE
+///             .dialog()
+///             .child(input().bind(Palette::query()))
+///             .child(button().on_click(PALETTE.close()).text("Close")),
+///     );
+/// assert!(page.render().contains(r#"<dialog data-hs-ref="palette">"#));
+/// ```
+pub struct DialogRef<S> {
+    name: &'static str,
+    marker: PhantomData<fn() -> S>,
+}
+
+impl<S> DialogRef<S> {
+    /// A reference named `name`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` is empty. In a `const`, that is a compile error.
+    #[must_use]
+    pub const fn new(name: &'static str) -> Self {
+        assert!(!name.is_empty(), "a dialog ref name is never empty");
+        Self {
+            name,
+            marker: PhantomData,
+        }
+    }
+
+    /// An empty `<dialog>` that this reference names.
+    #[must_use]
+    pub fn dialog(self) -> El<S> {
+        crate::html::dialog().node_ref(NodeRef::new(self.name))
+    }
+
+    /// A statement that opens the dialog with `showModal()`, unless it is open.
+    ///
+    /// The browser makes the rest of the page inert, moves focus into the
+    /// dialog, and closes it on Escape.
+    #[must_use]
+    pub fn show_modal(self) -> Stmt<S> {
+        NodeRef::new(self.name).dom("show-modal")
+    }
+
+    /// A statement that closes the dialog, if it is open.
+    ///
+    /// The browser then returns focus to the element that had it before the
+    /// dialog opened.
+    #[must_use]
+    pub fn close(self) -> Stmt<S> {
+        NodeRef::new(self.name).dom("close")
+    }
+}
+
+impl<S> Clone for DialogRef<S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for DialogRef<S> {}
+
+impl<S> fmt::Debug for DialogRef<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("DialogRef").field(&self.name).finish()
     }
 }
 

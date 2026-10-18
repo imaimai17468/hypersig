@@ -64,7 +64,7 @@ struct Readme;
 #[doc = include_str!("../../../README.ja.md")]
 struct ReadmeJa;
 
-pub use action::{Action, Call, Method, NodeRef, StreamAction, StreamCall};
+pub use action::{Action, Call, DialogRef, Method, NodeRef, StreamAction, StreamCall};
 #[cfg(feature = "axum")]
 pub use axum::{ActionResponse, Handler, PageResponse, RequestError, RouterExt};
 pub use expr::{

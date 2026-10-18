@@ -3,12 +3,13 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Node, button as button_el, dialog as dialog_el, div, h2, p};
+use hypersig::html::{El, Node, button as button_el, div, h2, p};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{
     BorderStyle, Color, FontWeight, JustifyContent, LineHeight, Position, px, raw, rem,
 };
 use hypersig::style::{PseudoElement, Style};
+use hypersig::{DialogRef, Stmt};
 
 use crate::button::{ButtonSize, ButtonVariant, button};
 use crate::id::check_name;
@@ -81,6 +82,22 @@ impl<S> Dialog<S> {
             .attr("command", "show-modal")
     }
 
+    /// A statement that opens the dialog, as its trigger button does.
+    ///
+    /// Use it where no button opens the dialog, such as a keyboard shortcut
+    /// on the page. Focus returns to the element that had it when the dialog
+    /// closes.
+    #[must_use]
+    pub fn open(self) -> Stmt<S> {
+        DialogRef::new(self.name).show_modal()
+    }
+
+    /// A statement that closes the dialog, as its close button does.
+    #[must_use]
+    pub fn dismiss(self) -> Stmt<S> {
+        DialogRef::new(self.name).close()
+    }
+
     /// A button that closes the dialog. Put it inside the dialog.
     #[must_use]
     pub fn close(self, variant: ButtonVariant, size: ButtonSize) -> El<S> {
@@ -136,7 +153,8 @@ impl<S> Dialog<S> {
     fn frame(self, title: String, description: String, content: Node<S>) -> El<S> {
         let title_id = format!("{}-title", self.name);
         let description_id = format!("{}-description", self.name);
-        dialog_el()
+        DialogRef::new(self.name)
+            .dialog()
             .id(self.name)
             .attr("aria-labelledby", title_id.clone())
             .attr("aria-describedby", description_id.clone())

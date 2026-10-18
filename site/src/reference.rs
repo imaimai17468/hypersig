@@ -1569,74 +1569,120 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                 en: "`NodeRef<S>` names an element on a page whose signals are `S`, for calling the element's DOM methods imperatively.",
                 ja: "`NodeRef<S>` は、シグナルが `S` のページにある要素に付ける名前で、その要素の DOM のメソッドを命令的に呼び出すときに使います。",
             },
-            &[Section {
-                heading: L {
-                    en: "NodeRef",
-                    ja: "NodeRef",
+            &[
+                Section {
+                    heading: L {
+                        en: "NodeRef",
+                        ja: "NodeRef",
+                    },
+                    text: L {
+                        en: "Attach one to an element with `El::node_ref`.",
+                        ja: "`El::node_ref` で要素に付けます。",
+                    },
+                    rows: &[
+                        (
+                            "NodeRef::new",
+                            "struct.NodeRef.html#method.new",
+                            L {
+                                en: "A reference named `name`.",
+                                ja: "`name` という名前の参照",
+                            },
+                        ),
+                        (
+                            "focus",
+                            "struct.NodeRef.html#method.focus",
+                            L {
+                                en: "A statement that focuses the element after the next render.",
+                                ja: "次の描画の後に要素へフォーカスを移す文",
+                            },
+                        ),
+                        (
+                            "blur",
+                            "struct.NodeRef.html#method.blur",
+                            L {
+                                en: "A statement that removes focus from the element.",
+                                ja: "要素からフォーカスを外す文",
+                            },
+                        ),
+                        (
+                            "select",
+                            "struct.NodeRef.html#method.select",
+                            L {
+                                en: "A statement that selects the element's text, for an `<input>`.",
+                                ja: "`<input>` 向けの、要素のテキストを選択する文",
+                            },
+                        ),
+                        (
+                            "scroll_into_view",
+                            "struct.NodeRef.html#method.scroll_into_view",
+                            L {
+                                en: "A statement that scrolls the element into view.",
+                                ja: "要素が見える位置までスクロールする文",
+                            },
+                        ),
+                        (
+                            "show_popover",
+                            "struct.NodeRef.html#method.show_popover",
+                            L {
+                                en: "A statement that shows the element if it is a popover that is not open.",
+                                ja: "要素が開いていないポップオーバーなら、それを表示する文",
+                            },
+                        ),
+                        (
+                            "hide_popover",
+                            "struct.NodeRef.html#method.hide_popover",
+                            L {
+                                en: "A statement that hides the element if it is an open popover.",
+                                ja: "要素が開いているポップオーバーなら、それを隠す文",
+                            },
+                        ),
+                    ],
                 },
-                text: L {
-                    en: "Attach one to an element with `El::node_ref`.",
-                    ja: "`El::node_ref` で要素に付けます。",
+                Section {
+                    heading: L {
+                        en: "DialogRef",
+                        ja: "DialogRef",
+                    },
+                    text: L {
+                        en: "`DialogRef::dialog` builds the `<dialog>` it names, so its statements always act on a dialog.",
+                        ja: "`DialogRef::dialog` が名前を付けた `<dialog>` を作るので、その文はいつもダイアログに働きます。",
+                    },
+                    rows: &[
+                        (
+                            "DialogRef::new",
+                            "struct.DialogRef.html#method.new",
+                            L {
+                                en: "A reference named `name`.",
+                                ja: "`name` という名前の参照",
+                            },
+                        ),
+                        (
+                            "dialog",
+                            "struct.DialogRef.html#method.dialog",
+                            L {
+                                en: "An empty `<dialog>` that this reference names.",
+                                ja: "この参照が名前を付けた空の `<dialog>`",
+                            },
+                        ),
+                        (
+                            "show_modal",
+                            "struct.DialogRef.html#method.show_modal",
+                            L {
+                                en: "A statement that opens the dialog with `showModal()`, unless it is open.",
+                                ja: "ダイアログが開いていなければ、`showModal()` で開く文",
+                            },
+                        ),
+                        (
+                            "close",
+                            "struct.DialogRef.html#method.close",
+                            L {
+                                en: "A statement that closes the dialog, if it is open.",
+                                ja: "ダイアログが開いていれば、それを閉じる文",
+                            },
+                        ),
+                    ],
                 },
-                rows: &[
-                    (
-                        "NodeRef::new",
-                        "struct.NodeRef.html#method.new",
-                        L {
-                            en: "A reference named `name`.",
-                            ja: "`name` という名前の参照",
-                        },
-                    ),
-                    (
-                        "focus",
-                        "struct.NodeRef.html#method.focus",
-                        L {
-                            en: "A statement that focuses the element after the next render.",
-                            ja: "次の描画の後に要素へフォーカスを移す文",
-                        },
-                    ),
-                    (
-                        "blur",
-                        "struct.NodeRef.html#method.blur",
-                        L {
-                            en: "A statement that removes focus from the element.",
-                            ja: "要素からフォーカスを外す文",
-                        },
-                    ),
-                    (
-                        "select",
-                        "struct.NodeRef.html#method.select",
-                        L {
-                            en: "A statement that selects the element's text, for an `<input>`.",
-                            ja: "`<input>` 向けの、要素のテキストを選択する文",
-                        },
-                    ),
-                    (
-                        "scroll_into_view",
-                        "struct.NodeRef.html#method.scroll_into_view",
-                        L {
-                            en: "A statement that scrolls the element into view.",
-                            ja: "要素が見える位置までスクロールする文",
-                        },
-                    ),
-                    (
-                        "show_popover",
-                        "struct.NodeRef.html#method.show_popover",
-                        L {
-                            en: "A statement that shows the element if it is a popover that is not open.",
-                            ja: "要素が開いていないポップオーバーなら、それを表示する文",
-                        },
-                    ),
-                    (
-                        "hide_popover",
-                        "struct.NodeRef.html#method.hide_popover",
-                        L {
-                            en: "A statement that hides the element if it is an open popover.",
-                            ja: "要素が開いているポップオーバーなら、それを隠す文",
-                        },
-                    ),
-                ],
-            }],
+            ],
         ),
         Reference::Action => (
             L {
