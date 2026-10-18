@@ -58,6 +58,10 @@ In Remix and TanStack Start, each route's loader runs in parallel before the pag
 
 In hypersig, the first data is already in the page's HTML as the signal struct's JSON, so the browser fetches nothing to show the page. After a change, the action's handler returns only the values of the signals that changed, as in `Counter::count().patch(0)`, and the browser rewrites only what shows those values, so toggling one checkbox fetches neither the page nor the list again.
 
+## Forms
+
+A field of type `Form<T>` in the signal struct holds a form's values, the values it started from, which fields the visitor has left, and the messages the server sent, covering what React Hook Form's `formState`, `reset`, and `setError` cover. The rules are written once, in `Validate::rules`, as expressions over the fields of `T`. The browser evaluates them as the visitor types, and `Form::validate` in the action handler evaluates the same expressions with the evaluator that writes the first HTML, so the server does not keep a second copy of the rules. A check that only the server can make, such as whether an email address is taken, goes back to the field with `reject`. A rule on a field of another struct is a compile error. The [`signup`](examples/signup) example is a complete form.
+
 ## Quick start
 
 Add the dependencies to `Cargo.toml`. hypersig is not on crates.io yet, so it comes from Git.

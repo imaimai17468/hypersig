@@ -1616,6 +1616,202 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                 },
             ],
         ),
+        Reference::Form => (
+            L {
+                en: "`Form<T>` holds a form's values, the values it started from, and what the visitor has done to it. `Validate` gives the rules that the browser and the server both evaluate.",
+                ja: "`Form<T>` は、フォームの値、開始時の値、訪問者がフォームにしたことを持ちます。`Validate` は、ブラウザとサーバーの両方が評価するルールを与えます。",
+            },
+            &[
+                Section {
+                    heading: L {
+                        en: "Form",
+                        ja: "Form",
+                    },
+                    text: L {
+                        en: "Put one in the page's signal struct as a field of type `Form<T>`.",
+                        ja: "ページのシグナルの構造体に、型が `Form<T>` のフィールドとして置きます。",
+                    },
+                    rows: &[
+                        (
+                            "Form::new",
+                            "struct.Form.html#method.new",
+                            L {
+                                en: "A form that starts from `value`, untouched and not yet submitted.",
+                                ja: "`value` から始まる、まだ触れられておらず送信もされていないフォーム",
+                            },
+                        ),
+                        (
+                            "Form::validate",
+                            "struct.Form.html#method.validate",
+                            L {
+                                en: "Checks `value` against the rules of `T` on the server.",
+                                ja: "サーバーで、`value` を `T` のルールで検査します。",
+                            },
+                        ),
+                    ],
+                },
+                Section {
+                    heading: L {
+                        en: "Sig<S, Form<T>>",
+                        ja: "Sig<S, Form<T>>",
+                    },
+                    text: L {
+                        en: "The methods on the form's signal read and change it on the page.",
+                        ja: "フォームのシグナルのメソッドが、ページでフォームを読み書きします。",
+                    },
+                    rows: &[
+                        (
+                            "value",
+                            "struct.Sig.html#method.value",
+                            L {
+                                en: "The values of the form.",
+                                ja: "フォームの値",
+                            },
+                        ),
+                        (
+                            "field",
+                            "struct.Sig.html#method.field",
+                            L {
+                                en: "The field `field` of the form's values, for binding a control to it.",
+                                ja: "コントロールを束縛するための、フォームの値のフィールド `field`",
+                            },
+                        ),
+                        (
+                            "error",
+                            "struct.Sig.html#method.error",
+                            L {
+                                en: "The message to show under `field`, or `\"\"`.",
+                                ja: "`field` の下に表示するメッセージ。ないときは `\"\"`",
+                            },
+                        ),
+                        (
+                            "form",
+                            "struct.Sig.html#method.form",
+                            L {
+                                en: "A `<form>` that, on submit, touches every field with a rule and runs `then` if every rule passes.",
+                                ja: "送信すると、ルールのあるフィールドをすべて触れたことにし、すべてのルールが通れば `then` を実行する `<form>`",
+                            },
+                        ),
+                        (
+                            "touch",
+                            "struct.Sig.html#method.touch",
+                            L {
+                                en: "A statement that marks `field` as left by the visitor.",
+                                ja: "`field` を訪問者が離れたフィールドとして記録する文",
+                            },
+                        ),
+                        (
+                            "reset",
+                            "struct.Sig.html#method.reset",
+                            L {
+                                en: "A statement that puts back the starting values and forgets what the visitor has done.",
+                                ja: "開始時の値に戻し、訪問者の操作の記録を消す文",
+                            },
+                        ),
+                        (
+                            "is_dirty",
+                            "struct.Sig.html#method.is_dirty",
+                            L {
+                                en: "Whether the form's values differ from the values it started from.",
+                                ja: "フォームの値が開始時の値と違うかどうか",
+                            },
+                        ),
+                        (
+                            "is_field_dirty",
+                            "struct.Sig.html#method.is_field_dirty",
+                            L {
+                                en: "Whether `field` differs from the value it started from.",
+                                ja: "`field` が開始時の値と違うかどうか",
+                            },
+                        ),
+                        (
+                            "is_touched",
+                            "struct.Sig.html#method.is_touched",
+                            L {
+                                en: "Whether the visitor has left `field`, or has submitted the form.",
+                                ja: "訪問者が `field` を離れたか、フォームを送信したかどうか",
+                            },
+                        ),
+                        (
+                            "is_submitted",
+                            "struct.Sig.html#method.is_submitted",
+                            L {
+                                en: "Whether the visitor has submitted the form since it started or was reset.",
+                                ja: "開始またはリセットのあと、訪問者がフォームを送信したかどうか",
+                            },
+                        ),
+                        (
+                            "is_valid",
+                            "struct.Sig.html#method.is_valid",
+                            L {
+                                en: "Whether every rule of `T` passes for the form's values.",
+                                ja: "フォームの値が `T` のルールをすべて通るかどうか",
+                            },
+                        ),
+                        (
+                            "reject",
+                            "struct.Sig.html#method.reject",
+                            L {
+                                en: "A patch that shows `errors` under their fields until the next submit.",
+                                ja: "次の送信まで、`errors` をそれぞれのフィールドの下に表示する差分",
+                            },
+                        ),
+                    ],
+                },
+                Section {
+                    heading: L {
+                        en: "Validate and Rules",
+                        ja: "Validate と Rules",
+                    },
+                    text: L {
+                        en: "`rules` is generic over the page, so the same expressions are built for the browser and for `Form::validate`.",
+                        ja: "`rules` はページについて総称的なので、ブラウザ用と `Form::validate` 用に同じ式を作ります。",
+                    },
+                    rows: &[
+                        (
+                            "Validate::rules",
+                            "trait.Validate.html#method.rules",
+                            L {
+                                en: "Adds a check to `rules` for each field of `form` that can be wrong.",
+                                ja: "`form` のうち誤りうるフィールドごとに、`rules` へ検査を足します。",
+                            },
+                        ),
+                        (
+                            "Rules::check",
+                            "struct.Rules.html#method.check",
+                            L {
+                                en: "Reports `message` for `field` while `ok` is false.",
+                                ja: "`ok` が偽のあいだ、`field` に `message` を出します。",
+                            },
+                        ),
+                        (
+                            "FieldErrors::new",
+                            "struct.FieldErrors.html#method.new",
+                            L {
+                                en: "No messages.",
+                                ja: "メッセージのない状態",
+                            },
+                        ),
+                        (
+                            "FieldErrors::add",
+                            "struct.FieldErrors.html#method.add",
+                            L {
+                                en: "These messages, with `message` for `field` in place of any it had.",
+                                ja: "`field` のメッセージを `message` に置き換えたメッセージの集まり",
+                            },
+                        ),
+                        (
+                            "FieldErrors::message",
+                            "struct.FieldErrors.html#method.message",
+                            L {
+                                en: "The message for `field`, if it has one.",
+                                ja: "`field` のメッセージ。あれば返します。",
+                            },
+                        ),
+                    ],
+                },
+            ],
+        ),
         Reference::Patches => (
             L {
                 en: "`Patches<S>` is what a handler returns: new signal values and re-rendered fragments, which the browser applies in order.",

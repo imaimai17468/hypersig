@@ -343,6 +343,14 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "TextField::in_form",
+                    "hypersig_ui/struct.TextField.html#method.in_form",
+                    L {
+                        en: "A single-line text field labeled `label`, bound to `field` of `form`.",
+                        ja: "`form` の `field` に束縛し、`label` をラベルに持つ 1 行のテキストフィールド",
+                    },
+                ),
+                (
                     "kind",
                     "hypersig_ui/struct.TextField.html#method.kind",
                     L {

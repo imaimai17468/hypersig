@@ -91,6 +91,50 @@ pub fn server(site: Site) -> Part {
                 ja: "差分は 1 つずつ Server-Sent Event として送られます。axum を使わないサーバーには、`to_event_stream` がレスポンスの本文を返します。",
             },
         ),
+        forms(site),
+        fragments(site),
+    ])
+}
+
+/// The section on forms. It and `fragments` are apart from `server` because
+/// clippy rejects an array of parts larger than 16 KiB on the stack.
+fn forms(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Forms",
+                ja: "フォーム",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A field of type [`Form<T>`](api:hypersig/struct.Form.html) holds a form's values, the values it started from, which fields the visitor has left, and the messages the server sent. `T` is a signal struct of the values that implements [`Validate`](api:hypersig/trait.Validate.html), whose `rules` adds a check per field: an expression that must be true, and the message shown while it is false.",
+                ja: "型が [`Form<T>`](api:hypersig/struct.Form.html) のフィールドは、フォームの値、開始時の値、訪問者が離れたフィールド、サーバーが送ったメッセージを持ちます。`T` は値を持つシグナルの構造体で、[`Validate`](api:hypersig/trait.Validate.html) を実装します。`Validate` の `rules` は、フィールドごとに検査を足します。検査は、真であるべき式と、偽のあいだ表示するメッセージの組です。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`rules` is generic over the page `S`, so the same code builds the expressions twice. On the page, the browser evaluates them as the visitor types. In the handler, `Form::validate` evaluates them with the evaluator that writes the first HTML, so a value the browser accepted passes on the server too. What only the server can check, such as an address that is already taken, goes back as `FieldErrors` through `reject`.",
+                ja: "`rules` はページの型 `S` について総称的なので、同じコードから式を 2 回作ります。ページでは、訪問者の入力に合わせてブラウザが式を評価します。ハンドラでは、`Form::validate` が最初の HTML を書く評価器で同じ式を評価するので、ブラウザが受け付けた値はサーバーでも通ります。登録済みのメールアドレスのようにサーバーにしか検査できないことは、`FieldErrors` にして `reject` で返します。",
+            },
+        ),
+        show(Snippet::Forms),
+        para(
+            site,
+            L {
+                en: "`error(field)` shows a rule's message once the visitor has left the field, which `touch` records, or has submitted the form. `form(then)` returns a `<form novalidate>` that touches every field with a rule on submit and runs `then` only when every rule passes. `is_dirty` compares the values with the values the form started from, and `reset` puts those back. A patch of one field leaves the starting values alone, so a handler that has saved the values patches the whole form with `Form::new(saved)`.",
+                ja: "`error(field)` は、訪問者がそのフィールドを離れたか（`touch` が記録します）、フォームを送信したあとに、ルールのメッセージを返します。`form(then)` は `<form novalidate>` を返します。送信すると、ルールのあるフィールドをすべて触れたことにし、すべてのルールが通るときだけ `then` を実行します。`is_dirty` は値を開始時の値と比べ、`reset` は開始時の値に戻します。1 つのフィールドへの差分は開始時の値を変えないので、値を保存したハンドラは `Form::new(saved)` でフォーム全体に差分を送ります。",
+            },
+        ),
+    ])
+}
+
+/// The sections on fragments and streams.
+fn fragments(site: Site) -> Part {
+    parts([
         heading(
             site,
             L {
