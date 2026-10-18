@@ -6,7 +6,7 @@ use crate::Site;
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
-use crate::prose::{Part, heading, lead, para, parts, title};
+use crate::prose::{Part, heading, lead, note, para, parts, title};
 
 pub fn forms(site: Site) -> Part {
     parts([
@@ -50,8 +50,8 @@ pub fn forms(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`error(field)` shows a rule's message once the visitor has left the field, which `touch` records, or has submitted the form. `TextField::in_form` binds a text field to the form's value and wires both. Other controls take `bind(form.field(f))` and `on_blur(form.touch(f))` themselves.",
-                ja: "`error(field)` は、訪問者がそのフィールドを離れたか（`touch` が記録します）、フォームを送信したあとに、ルールのメッセージを返します。`TextField::in_form` はテキストフィールドをフォームの値に束縛し、この 2 つを付けます。ほかのコントロールには、`bind(form.field(f))` と `on_blur(form.touch(f))` を自分で付けてください。",
+                en: "`error(field)` shows a rule's message once the visitor has left the field, which `touch` records, or has submitted the form. `TextField::in_form` binds a text field to the form's value and wires both.",
+                ja: "`error(field)` は、訪問者がそのフィールドを離れたか（`touch` が記録します）、フォームを送信したあとに、ルールのメッセージを返します。`TextField::in_form` はテキストフィールドをフォームの値に束縛し、この 2 つを付けます。",
             },
         ),
         para(
@@ -59,6 +59,27 @@ pub fn forms(site: Site) -> Part {
             L {
                 en: "`form(then)` returns a `<form novalidate>` that touches every field with a rule on submit and runs `then` only when every rule passes. The browser's own checks are off because they would stop the submit before the rules run. `is_dirty` compares the values with the values the form started from, and `reset` puts those back.",
                 ja: "`form(then)` は `<form novalidate>` を返します。送信すると、ルールのあるフィールドをすべて触れたことにし、すべてのルールが通るときだけ `then` を実行します。ブラウザ自身の検査を止めているのは、それがルールより先に送信を止めてしまうからです。`is_dirty` は値を開始時の値と比べ、`reset` は開始時の値に戻します。",
+            },
+        ),
+        heading(
+            site,
+            L {
+                en: "Other controls and your own components",
+                ja: "テキスト以外のコントロールと自作のコンポーネント",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`field`, `touch`, `error`, and `Rules::check` take a field of any type, so the plan in the demo is an enum and the terms are a `bool`. A control that takes a `Sig`, from `hypersig_ui` or one you write, takes `form.field(f)`. [`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) is `focusout`, which bubbles, so `on_blur(form.touch(f))` on the element a component returns runs when the control inside it loses focus. The message goes on an element of its own with `bind_text(form.error(f))`.",
+                ja: "`field`、`touch`、`error`、`Rules::check` はどの型のフィールドも受け取るので、デモのプランは列挙型、規約への同意は `bool` です。`Sig` を受け取るコントロールには、`hypersig_ui` のものでも自作のものでも、`form.field(f)` を渡せます。[`Event::Blur`](api:hypersig/html/enum.Event.html#variant.Blur) は伝播する `focusout` なので、コンポーネントが返す要素に `on_blur(form.touch(f))` を付けると、中のコントロールからフォーカスが外れたときに実行されます。メッセージは、`bind_text(form.error(f))` を付けた別の要素に出します。",
+            },
+        ),
+        note(
+            site,
+            L {
+                en: "Only `TextField::in_form` sets `aria-invalid` and points `aria-describedby` at the message. With another control, a screen reader announces the message line when it has `aria-live`, but does not read it as the control's description.",
+                ja: "`aria-invalid` を付け、`aria-describedby` でメッセージを指すのは `TextField::in_form` だけです。ほかのコントロールでは、メッセージの行に `aria-live` があればスクリーンリーダーが読み上げますが、コントロールの説明としては読まれません。",
             },
         ),
         heading(

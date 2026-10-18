@@ -76,7 +76,7 @@ demos! {
     Todos => todos, "todos.rs", "19rem";
     Status => status, "status.rs", "8rem";
     Stopwatch => stopwatch, "stopwatch.rs", "6rem";
-    Signup => signup, "signup.rs", "28.5rem";
+    Signup => signup, "signup.rs", "38.5rem";
     Theme => theme, "ui/theme.rs", "21rem";
     Button => button, "ui/button.rs", "12rem";
     TextField => text_field, "ui/text_field.rs", "20rem";
