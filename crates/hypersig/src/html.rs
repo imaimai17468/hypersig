@@ -144,8 +144,9 @@ impl<S> Node<S> {
     }
 }
 
-/// Panics if two elements in `nodes` carry one node ref name, or one file
-/// input name, where the runtime could find either.
+/// Panics if two elements in `nodes` carry one node ref name, one file
+/// input name, or one id, where the runtime could find either, or if an
+/// element inside a list template carries a fixed id.
 ///
 /// The runtime looks a name up in the list items and conditional copies
 /// around the statement first, innermost first, and then in the whole page
@@ -153,7 +154,9 @@ impl<S> Node<S> {
 /// they sit in one template or one of them sits in a template that encloses
 /// the other, counting the page as the outermost template, because one
 /// lookup can then reach both. Elements in sibling templates never meet, so
-/// every item of a list may carry the same name.
+/// every item of a list may carry the same name. Ids follow the same rule,
+/// except that every item of a list writes the template's id again, so a
+/// fixed id inside a list template is a duplicate on its own.
 pub(crate) fn check_names<S>(nodes: &[Node<S>]) {
     let mut names = Names::default();
     for node in nodes {
@@ -165,8 +168,8 @@ pub(crate) fn check_names<S>(nodes: &[Node<S>]) {
 /// The names that elements carry, each with the templates it sits in,
 /// outermost first, numbered in the order the walk enters them.
 #[derive(Default)]
-struct Names {
-    found: Vec<(&'static str, &'static str, Vec<u32>)>,
+struct Names<'a> {
+    found: Vec<(&'static str, &'a str, Vec<u32>)>,
     templates: u32,
 }
 
@@ -174,6 +177,7 @@ struct Names {
 /// call stack so that a page whose elements carry no name allocates nothing.
 struct Scope<'a> {
     template: u32,
+    each: bool,
     outer: Option<&'a Scope<'a>>,
 }
 
@@ -191,20 +195,34 @@ impl Scope<'_> {
     }
 }
 
-impl Names {
-    fn el<S>(&mut self, el: &El<S>, scope: Option<&Scope<'_>>) {
+impl<'a> Names<'a> {
+    fn el<S>(&mut self, el: &'a El<S>, scope: Option<&Scope<'_>>) {
         if let Some(name) = el.node_ref {
-            self.found.push(("node ref", name, Scope::path(scope)));
+            self.found.push(("node ref name", name, Scope::path(scope)));
         }
         if let Some(name) = el.file_input {
-            self.found.push(("file input", name, Scope::path(scope)));
+            self.found
+                .push(("file input name", name, Scope::path(scope)));
+        }
+        if let Some(id) = &el.id {
+            let mut at = scope;
+            while let Some(scope) = at {
+                assert!(
+                    !scope.each,
+                    "an element inside a list template carries the fixed id `{id}`, which \
+                     every item of the list repeats: bind the id to the item with `bind_attr`, \
+                     or move the element out of the list"
+                );
+                at = scope.outer;
+            }
+            self.found.push(("id", id, Scope::path(scope)));
         }
         for child in &el.children {
             self.node(child, scope);
         }
     }
 
-    fn node<S>(&mut self, node: &Node<S>, scope: Option<&Scope<'_>>) {
+    fn node<S>(&mut self, node: &'a Node<S>, scope: Option<&Scope<'_>>) {
         match &node.0 {
             NodeKind::Element(el) => self.el(el, scope),
             NodeKind::Text(_) => {}
@@ -212,6 +230,7 @@ impl Names {
                 self.templates += 1;
                 let inner = Scope {
                     template: self.templates,
+                    each: matches!(node.0, NodeKind::Each { .. }),
                     outer: scope,
                 };
                 self.el(template, Some(&inner));
@@ -227,7 +246,7 @@ impl Names {
                 let meets = |(_, _, b): &(_, _, Vec<u32>)| a.starts_with(b) || b.starts_with(a);
                 assert!(
                     !group[i + 1..].iter().any(meets),
-                    "two elements carry the {kind} name `{name}` where the runtime can \
+                    "two elements carry the {kind} `{name}` where the runtime can \
                      reach both, so its statements act on whichever comes first: give one \
                      of them another name"
                 );
@@ -888,7 +907,9 @@ impl<S> El<S> {
     /// Sets the element's `id`.
     ///
     /// An element rendered through a [`Fragment`](crate::Fragment) gets the
-    /// fragment's id instead.
+    /// fragment's id instead. Rendering panics if another element the runtime
+    /// can reach carries the same id, or if the element sits inside a list
+    /// template, whose every item would repeat it.
     #[must_use]
     pub fn id(mut self, id: impl Into<String>) -> Self {
         self.id = Some(id.into());
@@ -1383,9 +1404,10 @@ impl<S> El<S> {
     ///
     /// # Panics
     ///
-    /// Panics if two elements carry one [`NodeRef`] name, or one
-    /// [`FileInput`](crate::FileInput) name, where the runtime can reach
-    /// both. Each item of a list may carry the same name.
+    /// Panics if two elements carry one [`NodeRef`] name, one
+    /// [`FileInput`](crate::FileInput) name, or one id, where the runtime can
+    /// reach both, or if an element inside a list template has an id set with
+    /// [`El::id`]. Each item of a list may carry the same name.
     #[must_use]
     pub fn render(&self) -> String {
         let mut names = Names::default();
@@ -1887,6 +1909,31 @@ mod tests {
             let _ = div::<Page>()
                 .child(when(count().gt(0), input().node_ref(FIELD)))
                 .child(input().node_ref(FIELD))
+                .render();
+        }
+
+        #[test]
+        #[should_panic(expected = "id `total`")]
+        fn one_id_twice_panics() {
+            let _ = div::<Page>()
+                .child(div().id("total"))
+                .child(div().id("total"))
+                .render();
+        }
+
+        #[test]
+        #[should_panic(expected = "list template carries the fixed id `row`")]
+        fn a_fixed_id_in_a_list_template_panics() {
+            let _ = ul::<Page>()
+                .child(each(rows(), |_| li().id("row")))
+                .render();
+        }
+
+        #[test]
+        fn sibling_conditional_copies_may_carry_one_id() {
+            let _ = div::<Page>()
+                .child(when(count().gt(0), div().id("total")))
+                .child(when(count().le(0), div().id("total")))
                 .render();
         }
     }

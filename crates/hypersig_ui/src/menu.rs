@@ -245,7 +245,7 @@ mod tests {
     const ACTIONS: Menu<Page> = Menu::new("actions");
 
     #[test]
-    #[should_panic(expected = "node ref name `actions`")]
+    #[should_panic(expected = "`actions` where the runtime can reach both")]
     fn two_menus_with_one_name_panic_when_rendered() {
         let _ = div::<Page>()
             .child(ACTIONS.menu([]))

@@ -29,7 +29,7 @@ use crate::token;
 ///
 /// The dialog is labeled by its title and described by its description
 /// through ids derived from the name. Two dialogs with the same name on one
-/// page share an id, which nothing checks.
+/// page share an id, and rendering the page panics.
 ///
 /// ```
 /// use hypersig::Signals;
