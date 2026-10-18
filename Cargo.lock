@@ -175,6 +175,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-auth"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "hypersig",
+ "hypersig_ui",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "example-counter"
 version = "0.0.0"
 dependencies = [
