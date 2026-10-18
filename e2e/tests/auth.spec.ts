@@ -106,7 +106,7 @@ base("uploads a picture from the file input and shows the handler's refusal of a
 
   await file.setInputFiles({ name: "notes.png", mimeType: "image/png", buffer: Buffer.from("not a picture") });
   await page.getByRole("button", { name: "Upload picture" }).click();
-  await expect(page.locator("#picture-problem")).toHaveText("422: Choose one PNG or JPEG picture.");
+  await expect(page.locator("#picture-problem")).toHaveText("Choose one PNG or JPEG picture.");
   await expect(page.locator("#picture")).toHaveText("Your picture: cat.png, 12 bytes");
 
   await page.reload();
