@@ -56,8 +56,9 @@ use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
 use crate::route::Link;
 use crate::signal::{Item, Part, Sig, in_item_scope, in_part};
-use crate::ssr::{self, Ctx};
+use crate::ssr::{self, Ctx, Val};
 use crate::style::{Property, Sheet, Style, Token, TokenValue};
+use crate::tape::Ref;
 
 const RESERVED_PREFIX: &str = "data-hs-";
 
@@ -1845,7 +1846,7 @@ impl<S> El<S> {
     /// Writes one copy of this template per item of `list`, each marked with
     /// the key the runtime will compute for it, so the runtime adopts them.
     fn write_items(&self, out: &mut String, ctx: &Ctx<'_>, list: &Value, depth: usize) {
-        let Some(items) = ctx.lookup(list).and_then(Value::as_array) else {
+        let Some(items) = ctx.lookup(list).and_then(Ref::items) else {
             return;
         };
         let mut key = String::new();
@@ -1950,7 +1951,7 @@ impl<S> El<S> {
                 Some("text" | "int" | "float" | "opt_text" | "opt_int" | "opt_float")
                     if !value.is_null() =>
                 {
-                    let text = ssr::js_str(Cow::Borrowed(value));
+                    let text = ssr::js_str(Val::Ref(value));
                     match self.tag {
                         "textarea" => content = Some(text),
                         "select" => selected = Some(text.into_owned()),

@@ -132,7 +132,7 @@ impl<T: Validate> Form<T> {
         T::rules(Sig::from_path(Path::field("value")), &mut rules);
         let root = json!({ "value": value });
         let ctx = Ctx {
-            root: &root,
+            root: (&root).into(),
             scope: Vec::new(),
             copy: false,
             vars: Vec::new(),

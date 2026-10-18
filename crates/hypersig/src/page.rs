@@ -13,11 +13,11 @@ use crate::html::{
     HIDE, INLINE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr,
     write_json_attr,
 };
-use crate::patch::at_path;
 use crate::route::{Base, Url};
 use crate::signal::{Sig, Signals};
-use crate::ssr::{self, Ctx};
+use crate::ssr::{self, Ctx, Val};
 use crate::style::{Global, Sheet, Theme};
+use crate::tape::{Ref, Tape};
 
 /// A full HTML document for a page whose signals are `S`.
 ///
@@ -519,19 +519,19 @@ impl<S: Signals> Page<S> {
     }
 
     /// The signals as JSON, with each computed signal set from the others.
-    fn initial_values(&self) -> Value {
-        let mut root = serde_json::to_value(&self.signals)
-            .expect("a Signals struct serializes to a JSON object");
+    fn initial_values(&self) -> Tape {
+        let mut root =
+            Tape::new(&self.signals).expect("a Signals struct serializes to a JSON object");
         for (path, value) in &self.computed {
             let ctx = Ctx {
-                root: &root,
+                root: root.root(),
                 scope: Vec::new(),
                 copy: false,
                 vars: Vec::new(),
                 rules: None,
             };
-            if let Some(value) = ssr::evaluate(value, &ctx).map(Cow::into_owned) {
-                root = ssr::set_path(&root, path, value);
+            if let Some(value) = ssr::evaluate(value, &ctx).map(Val::into_value) {
+                root = root.replaced(path, &value);
             }
         }
         root
@@ -604,9 +604,10 @@ impl<S: Signals> Page<S> {
     #[must_use]
     pub fn value_of<T: DeserializeOwned>(&self, signal: Sig<S, T>) -> T {
         let root = self.initial_values();
-        let value = at_path(&root, &signal.dotted())
-            .cloned()
-            .unwrap_or(Value::Null);
+        let value = root
+            .root()
+            .get_path(&signal.dotted())
+            .map_or(Value::Null, Ref::to_value);
         serde_json::from_value(value)
             .expect("a signal's initial value deserializes into the signal's type")
     }
@@ -642,7 +643,7 @@ impl<S: Signals> Page<S> {
         out.push('>');
         let rules = RefCell::new(Vec::new());
         let ctx = Ctx {
-            root: &root,
+            root: root.root(),
             scope: Vec::new(),
             copy: false,
             vars: Vec::new(),
@@ -714,10 +715,10 @@ impl<S: Signals> Page<S> {
     }
 
     /// Writes the attributes of `<body>`, which the runtime reads when it starts.
-    fn write_body_attrs(&self, out: &mut String, root: &Value) {
+    fn write_body_attrs(&self, out: &mut String, root: &Tape) {
         // `write_json_attr` reads all of `out` once, which here holds only
         // the head, because the body attributes come before the body.
-        write_json_attr(out, "data-hs-signals", root);
+        write_json_attr(out, "data-hs-signals", &root.root());
         if !self.computed.is_empty() {
             let computed: Vec<Value> = self
                 .computed

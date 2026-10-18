@@ -59,6 +59,7 @@ mod query;
 mod route;
 mod signal;
 mod ssr;
+mod tape;
 mod upload;
 
 #[cfg(doctest)]

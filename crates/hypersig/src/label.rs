@@ -136,14 +136,14 @@ mod tests {
         ] {
             let root = json!({ "status": value });
             let ctx = Ctx {
-                root: &root,
+                root: (&root).into(),
                 scope: Vec::new(),
                 copy: false,
                 vars: Vec::new(),
                 rules: None,
             };
             let text = evaluate(label.as_json(), &ctx).expect("evaluates");
-            assert_eq!(*text, json!(shown));
+            assert_eq!(text.into_value(), json!(shown));
         }
     }
 

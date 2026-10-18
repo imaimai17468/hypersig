@@ -20,19 +20,52 @@ use std::cell::RefCell;
 use serde_json::{Map, Number, Value};
 
 use crate::route::{encode_uri_component, encode_uri_path, query_string};
+use crate::tape::{Ref, View};
 
-static NULL: Value = Value::Null;
+/// What an expression evaluates to: a value read from the signals or from
+/// the expression itself, or one the expression computed.
+pub(crate) enum Val<'a> {
+    Ref(Ref<'a>),
+    Owned(Value),
+}
+
+impl<'b> From<&'b Val<'_>> for Ref<'b> {
+    fn from(value: &'b Val<'_>) -> Self {
+        match value {
+            Val::Ref(read) => *read,
+            Val::Owned(value) => Ref::Json(value),
+        }
+    }
+}
+
+impl Val<'_> {
+    pub(crate) fn into_value(self) -> Value {
+        match self {
+            Val::Ref(read) => read.to_value(),
+            Val::Owned(value) => value,
+        }
+    }
+
+    /// The value as a `serde_json::Value`, copied only where it sits in a tape.
+    fn to_json(&self) -> Cow<'_, Value> {
+        match self {
+            Val::Ref(Ref::Json(value)) => Cow::Borrowed(value),
+            Val::Owned(value) => Cow::Borrowed(value),
+            Val::Ref(read) => Cow::Owned(read.to_value()),
+        }
+    }
+}
 
 /// One enclosing list item: its value and its position in the list.
 #[derive(Clone, Copy)]
 pub(crate) struct Slot<'a> {
-    value: &'a Value,
+    value: Ref<'a>,
     index: usize,
 }
 
 /// The signals an expression reads, and the item of each enclosing list.
 pub(crate) struct Ctx<'a> {
-    pub(crate) root: &'a Value,
+    pub(crate) root: Ref<'a>,
     pub(crate) scope: Vec<Slot<'a>>,
     /// Whether the HTML being written is a copy of a template that the runtime
     /// takes over. A copy leaves out the `data-hs-*` attributes, because the
@@ -53,12 +86,12 @@ impl<'a> Ctx<'a> {
     pub(crate) fn for_each_item(
         &self,
         depth: usize,
-        items: &'a [Value],
+        items: impl Iterator<Item = Ref<'a>>,
         mut each: impl FnMut(&Ctx<'a>, usize) -> Option<()>,
     ) -> Option<()> {
         let mut scope: Vec<Slot<'a>> = self.scope.iter().take(depth).copied().collect();
         scope.push(Slot {
-            value: &NULL,
+            value: Ref::NULL,
             index: 0,
         });
         let mut item = Ctx {
@@ -68,7 +101,7 @@ impl<'a> Ctx<'a> {
             vars: self.vars.clone(),
             rules: self.rules,
         };
-        for (index, value) in items.iter().enumerate() {
+        for (index, value) in items.enumerate() {
             if let Some(last) = item.scope.last_mut() {
                 *last = Slot { value, index };
             }
@@ -89,33 +122,25 @@ impl<'a> Ctx<'a> {
 
     /// The value a place names: a store path of a page signal, or
     /// `["item",depth,field]` for a field of an enclosing list item.
-    pub(crate) fn lookup(&self, place: &Value) -> Option<&'a Value> {
+    pub(crate) fn lookup(&self, place: &Value) -> Option<Ref<'a>> {
         match place {
             Value::String(path) => Some(self.get(path)),
             Value::Array(parts) if parts.first().and_then(Value::as_str) == Some("item") => {
                 let depth = usize::try_from(parts.get(1)?.as_u64()?).ok()?;
                 let slot = self.scope.get(depth)?;
-                Some(get_path(slot.value, parts.get(2)?.as_str()?).unwrap_or(&NULL))
+                Some(
+                    slot.value
+                        .get_path(parts.get(2)?.as_str()?)
+                        .unwrap_or(Ref::NULL),
+                )
             }
             _ => None,
         }
     }
 
-    pub(crate) fn get(&self, path: &str) -> &'a Value {
-        get_path(self.root, path).unwrap_or(&NULL)
+    pub(crate) fn get(&self, path: &str) -> Ref<'a> {
+        self.root.get_path(path).unwrap_or(Ref::NULL)
     }
-}
-
-fn get_path<'v>(value: &'v Value, path: &str) -> Option<&'v Value> {
-    if path.is_empty() {
-        return Some(value);
-    }
-    path.split('.')
-        .try_fold(value, |current, segment| match current {
-            Value::Object(map) => map.get(segment),
-            Value::Array(items) => items.get(segment.parse::<usize>().ok()?),
-            _ => None,
-        })
 }
 
 pub(crate) fn set_path(value: &Value, path: &str, next: Value) -> Value {
@@ -148,13 +173,13 @@ pub(crate) fn set_path(value: &Value, path: &str, next: Value) -> Value {
 }
 
 /// JavaScript's truthiness for a JSON value.
-pub(crate) fn truthy(value: &Value) -> bool {
-    match value {
-        Value::Null => false,
-        Value::Bool(b) => *b,
-        Value::Number(n) => n.as_f64().is_some_and(|n| n != 0.0 && !n.is_nan()),
-        Value::String(s) => !s.is_empty(),
-        Value::Array(_) | Value::Object(_) => true,
+pub(crate) fn truthy<'b>(value: impl Into<Ref<'b>>) -> bool {
+    match value.into().view() {
+        View::Null => false,
+        View::Bool(b) => b,
+        View::Number(n) => n.as_f64().is_some_and(|n| n != 0.0 && !n.is_nan()),
+        View::Str(s) => !s.is_empty(),
+        View::Array | View::Object => true,
     }
 }
 
@@ -286,50 +311,59 @@ pub(crate) fn format_number(
 }
 
 /// `String(value)` in JavaScript.
-pub(crate) fn js_string(value: &Value) -> String {
-    match value {
-        Value::Null => "null".to_owned(),
-        Value::Bool(b) => b.to_string(),
-        Value::Number(n) => js_number(n.as_f64().unwrap_or(f64::NAN)),
-        Value::String(s) => s.clone(),
-        Value::Array(items) => items
-            .iter()
-            .map(|item| match item {
-                Value::Null => String::new(),
-                other => js_string(other),
+pub(crate) fn js_string<'b>(value: impl Into<Ref<'b>>) -> String {
+    let value = value.into();
+    match value.view() {
+        View::Null => "null".to_owned(),
+        View::Bool(b) => b.to_string(),
+        View::Number(n) => js_number(n.as_f64().unwrap_or(f64::NAN)),
+        View::Str(s) => s.to_owned(),
+        View::Array => value
+            .items()
+            .into_iter()
+            .flatten()
+            .map(|item| {
+                if item.is_null() {
+                    String::new()
+                } else {
+                    js_string(item)
+                }
             })
             .collect::<Vec<_>>()
             .join(","),
-        Value::Object(_) => "[object Object]".to_owned(),
+        View::Object => "[object Object]".to_owned(),
     }
 }
 
 /// `String(value)` in JavaScript, borrowing the text of a string rather than copying it.
-pub(crate) fn js_str(value: Cow<'_, Value>) -> Cow<'_, str> {
+pub(crate) fn js_str(value: Val<'_>) -> Cow<'_, str> {
     match value {
-        Cow::Borrowed(Value::String(text)) => Cow::Borrowed(text),
-        Cow::Owned(Value::String(text)) => Cow::Owned(text),
-        other => Cow::Owned(js_string(&other)),
+        Val::Ref(read) => read
+            .as_str()
+            .map_or_else(|| Cow::Owned(js_string(read)), Cow::Borrowed),
+        Val::Owned(Value::String(text)) => Cow::Owned(text),
+        Val::Owned(other) => Cow::Owned(js_string(&other)),
     }
 }
 
 /// `JSON.stringify(value)` in JavaScript, which writes integral numbers without a fraction.
-pub(crate) fn js_json(value: &Value) -> String {
+pub(crate) fn js_json<'b>(value: impl Into<Ref<'b>>) -> String {
     let mut out = String::new();
     write_js_json(&mut out, value);
     out
 }
 
 /// Appends `JSON.stringify(value)`, as `js_json` returns it.
-pub(crate) fn write_js_json(out: &mut String, value: &Value) {
-    match value {
-        Value::Number(n) => match n.as_f64() {
+pub(crate) fn write_js_json<'b>(out: &mut String, value: impl Into<Ref<'b>>) {
+    let value = value.into();
+    match value.view() {
+        View::Number(n) => match n.as_f64() {
             Some(n) => write_js_number(out, n),
             None => out.push_str("null"),
         },
-        Value::Array(items) => {
+        View::Array => {
             out.push('[');
-            for (index, item) in items.iter().enumerate() {
+            for (index, item) in value.items().into_iter().flatten().enumerate() {
                 if index > 0 {
                     out.push(',');
                 }
@@ -337,74 +371,93 @@ pub(crate) fn write_js_json(out: &mut String, value: &Value) {
             }
             out.push(']');
         }
-        Value::Object(map) => {
+        View::Object => {
             out.push('{');
-            for (index, (key, value)) in map.iter().enumerate() {
+            for (index, (key, value)) in value.entries().into_iter().flatten().enumerate() {
                 if index > 0 {
                     out.push(',');
                 }
-                write_into(out, format_args!("{}:", Value::from(key.as_str())));
+                write_into(out, format_args!("{}:", Value::from(key)));
                 write_js_json(out, value);
             }
             out.push('}');
         }
-        other => write_into(out, format_args!("{other}")),
+        View::Null => out.push_str("null"),
+        View::Bool(b) => out.push_str(if b { "true" } else { "false" }),
+        View::Str(s) => write_into(out, format_args!("{}", Value::from(s))),
     }
 }
 
 /// Structural equality, comparing numbers by value.
-pub(crate) fn equal(a: &Value, b: &Value) -> bool {
-    match (a, b) {
-        (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
-        (Value::Array(x), Value::Array(y)) => {
-            x.len() == y.len() && x.iter().zip(y).all(|(x, y)| equal(x, y))
+pub(crate) fn equal<'b, 'c>(a: impl Into<Ref<'b>>, b: impl Into<Ref<'c>>) -> bool {
+    let (a, b) = (a.into(), b.into());
+    match (a.view(), b.view()) {
+        (View::Null, View::Null) => true,
+        (View::Bool(x), View::Bool(y)) => x == y,
+        (View::Number(x), View::Number(y)) => x.as_f64() == y.as_f64(),
+        (View::Str(x), View::Str(y)) => x == y,
+        (View::Array, View::Array) => {
+            a.len() == b.len()
+                && a.items()
+                    .into_iter()
+                    .flatten()
+                    .zip(b.items().into_iter().flatten())
+                    .all(|(x, y)| equal(x, y))
         }
-        (Value::Object(x), Value::Object(y)) => {
-            x.len() == y.len()
-                && x.iter()
-                    .all(|(key, value)| y.get(key).is_some_and(|other| equal(value, other)))
+        (View::Object, View::Object) => {
+            a.len() == b.len()
+                && a.entries()
+                    .into_iter()
+                    .flatten()
+                    .all(|(key, value)| b.field(key).is_some_and(|other| equal(value, other)))
         }
-        _ => a == b,
+        _ => false,
     }
 }
 
-fn f(value: &Value) -> Option<f64> {
-    value.as_f64()
+fn f<'b>(value: impl Into<Ref<'b>>) -> Option<f64> {
+    value.into().as_f64()
 }
 
-fn s(value: &Value) -> Option<&str> {
-    value.as_str()
+fn s<'b>(value: impl Into<Ref<'b>>) -> Option<&'b str> {
+    value.into().as_str()
 }
 
 /// Evaluates `ast`. `None` means the server cannot compute it, and the
 /// runtime fills it in.
-pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Value>> {
+#[expect(
+    clippy::too_many_lines,
+    reason = "one arm per operation, in the order `build` in runtime/src/eval.ts takes them"
+)]
+pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Val<'a>> {
     let parts = ast.as_array()?;
     let op = parts.first()?.as_str()?;
     let arg = |i: usize| parts.get(i);
     let eval = |i: usize| evaluate(arg(i)?, ctx);
     let value = match op {
-        "sig" => return Some(Cow::Borrowed(ctx.get(arg(1)?.as_str()?))),
-        "item" => return ctx.lookup(ast).map(Cow::Borrowed),
-        "lit" => return arg(1).map(Cow::Borrowed),
-        "if" => return if truthy(&*eval(1)?) { eval(2) } else { eval(3) },
-        "let" => return let_in(parts, ctx).map(Cow::Owned),
+        "sig" => return Some(Val::Ref(ctx.get(arg(1)?.as_str()?))),
+        "item" => return ctx.lookup(ast).map(Val::Ref),
+        "lit" => return arg(1).map(|value| Val::Ref(Ref::Json(value))),
+        "if" => return if truthy(&eval(1)?) { eval(2) } else { eval(3) },
+        "let" => return let_in(parts, ctx).map(Val::Owned),
         "var" => {
             let depth = usize::try_from(arg(1)?.as_u64()?).ok()?;
-            return ctx.vars.get(depth).cloned().map(Cow::Owned);
+            return ctx.vars.get(depth).cloned().map(Val::Owned);
         }
         "get" => {
             let tail = arg(2)?.as_str()?;
             return Some(match eval(1)? {
-                Cow::Borrowed(value) => Cow::Borrowed(get_path(value, tail).unwrap_or(&NULL)),
-                Cow::Owned(value) => {
-                    Cow::Owned(get_path(&value, tail).cloned().unwrap_or(Value::Null))
-                }
+                Val::Ref(read) => Val::Ref(read.get_path(tail).unwrap_or(Ref::NULL)),
+                Val::Owned(value) => Val::Owned(
+                    Ref::Json(&value)
+                        .get_path(tail)
+                        .map_or(Value::Null, Ref::to_value),
+                ),
             });
         }
         "or_else" => {
             let value = eval(1)?;
-            return if value.is_null() {
+            return if Ref::from(&value).is_null() {
                 eval(2)
             } else {
                 Some(value)
@@ -417,30 +470,32 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
         "tuple" => Value::Array(
             parts[1..]
                 .iter()
-                .map(|part| evaluate(part, ctx).map(Cow::into_owned))
+                .map(|part| evaluate(part, ctx).map(Val::into_value))
                 .collect::<Option<_>>()?,
         ),
         "nth" => {
-            let index = usize::try_from(eval(2)?.as_i64()?).ok();
-            index
-                .and_then(|index| eval(1)?.as_array()?.get(index).cloned())
-                .unwrap_or(Value::Null)
+            let index = usize::try_from(Ref::from(&eval(2)?).as_i64()?).ok();
+            let item = index.and_then(|index| match eval(1)? {
+                Val::Ref(list) => Some(Val::Ref(list.items()?.nth(index)?)),
+                Val::Owned(list) => Some(Val::Owned(list.as_array()?.get(index)?.clone())),
+            });
+            return Some(item.unwrap_or(Val::Ref(Ref::NULL)));
         }
-        "and" => Value::Bool(truthy(&*eval(1)?) && truthy(&*eval(2)?)),
-        "or" => Value::Bool(truthy(&*eval(1)?) || truthy(&*eval(2)?)),
-        "not" => Value::Bool(!truthy(&*eval(1)?)),
-        "str" => Value::from(js_string(&*eval(1)?)),
-        "uri" => Value::from(encode_uri_component(&js_string(&*eval(1)?))),
-        "uri_path" => Value::from(encode_uri_path(&js_string(&*eval(1)?))),
-        "query" => Value::from(query_string(&*eval(1)?)),
+        "and" => Value::Bool(truthy(&eval(1)?) && truthy(&eval(2)?)),
+        "or" => Value::Bool(truthy(&eval(1)?) || truthy(&eval(2)?)),
+        "not" => Value::Bool(!truthy(&eval(1)?)),
+        "str" => Value::from(js_string(&eval(1)?)),
+        "uri" => Value::from(encode_uri_component(&js_string(&eval(1)?))),
+        "uri_path" => Value::from(encode_uri_path(&js_string(&eval(1)?))),
+        "query" => Value::from(query_string(&eval(1)?.to_json())),
         "fixed" => {
             let digits = u8::try_from(arg(2)?.as_u64()?).ok()?;
-            Value::from(js_fixed(f(&*eval(1)?)?, digits))
+            Value::from(js_fixed(f(&eval(1)?)?, digits))
         }
         "format" => {
             let digits = u8::try_from(arg(2)?.as_u64()?).ok()?;
             Value::from(format_number(
-                f(&*eval(1)?)?,
+                f(&eval(1)?)?,
                 digits,
                 arg(3)?.as_str()?,
                 arg(4)?.as_str()?,
@@ -448,35 +503,39 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Cow<'a, Valu
                 arg(6)?.as_str()?,
             ))
         }
-        "with" => set_path(&*eval(1)?, arg(2)?.as_str()?, eval(3)?.into_owned()),
+        "with" => set_path(
+            &eval(1)?.to_json(),
+            arg(2)?.as_str()?,
+            eval(3)?.into_value(),
+        ),
         "count" | "sum_of" | "max_of" | "min_of" | "map" => fold(op, parts, ctx)?,
-        "floor" => number(f(&*eval(1)?)?.floor()),
-        "ceil" => number(f(&*eval(1)?)?.ceil()),
-        "round" => number(js_round(f(&*eval(1)?)?)),
-        "log10" => number(f(&*eval(1)?)?.log10()),
-        "trim" => Value::from(s(&*eval(1)?)?.trim()),
-        "lower" => Value::from(s(&*eval(1)?)?.to_lowercase()),
-        "upper" => Value::from(s(&*eval(1)?)?.to_uppercase()),
-        "chars" => Value::from(s(&*eval(1)?)?.chars().count()),
-        "chars_all" | "chars_any" => test_chars(op, &*eval(1)?, arg(2)?)?,
+        "floor" => number(f(&eval(1)?)?.floor()),
+        "ceil" => number(f(&eval(1)?)?.ceil()),
+        "round" => number(js_round(f(&eval(1)?)?)),
+        "log10" => number(f(&eval(1)?)?.log10()),
+        "trim" => Value::from(s(&eval(1)?)?.trim()),
+        "lower" => Value::from(s(&eval(1)?)?.to_lowercase()),
+        "upper" => Value::from(s(&eval(1)?)?.to_uppercase()),
+        "chars" => Value::from(s(&eval(1)?)?.chars().count()),
+        "chars_all" | "chars_any" => test_chars(op, &eval(1)?, arg(2)?)?,
         "date" | "reltime" | "plural" => return localized(op, parts, ctx),
-        "len" => Value::from(eval(1)?.as_array().map_or(0, Vec::len)),
-        "eq" => Value::Bool(equal(&*eval(1)?, &*eval(2)?)),
-        "ne" => Value::Bool(!equal(&*eval(1)?, &*eval(2)?)),
-        "concat" => Value::from(format!("{}{}", s(&*eval(1)?)?, s(&*eval(2)?)?)),
-        "contains" => Value::Bool(s(&*eval(1)?)?.contains(s(&*eval(2)?)?)),
-        "starts" => Value::Bool(s(&*eval(1)?)?.starts_with(s(&*eval(2)?)?)),
-        "gt" | "ge" | "lt" | "le" => compare(op, &*eval(1)?, &*eval(2)?)?,
+        "len" => Value::from(Ref::from(&eval(1)?).items().map_or(0, Iterator::count)),
+        "eq" => Value::Bool(equal(&eval(1)?, &eval(2)?)),
+        "ne" => Value::Bool(!equal(&eval(1)?, &eval(2)?)),
+        "concat" => Value::from(format!("{}{}", s(&eval(1)?)?, s(&eval(2)?)?)),
+        "contains" => Value::Bool(s(&eval(1)?)?.contains(s(&eval(2)?)?)),
+        "starts" => Value::Bool(s(&eval(1)?)?.starts_with(s(&eval(2)?)?)),
+        "gt" | "ge" | "lt" | "le" => compare(op, &eval(1)?, &eval(2)?)?,
         "add" | "sub" | "mul" | "div" | "rem" | "min" | "max" | "pow" => {
-            arithmetic(op, f(&*eval(1)?)?, f(&*eval(2)?)?)
+            arithmetic(op, f(&eval(1)?)?, f(&eval(2)?)?)
         }
         _ => return None,
     };
-    Some(Cow::Owned(value))
+    Some(Val::Owned(value))
 }
 
 /// `["chars_all",text,class]` and `["chars_any",text,class]`.
-fn test_chars(op: &str, text: &Value, class: &Value) -> Option<Value> {
+fn test_chars<'b>(op: &str, text: impl Into<Ref<'b>>, class: &Value) -> Option<Value> {
     let (text, class) = (s(text)?, char_class(class.as_str()?)?);
     Some(Value::Bool(if op == "chars_all" {
         text.chars().all(class)
@@ -500,33 +559,35 @@ fn char_class(name: &str) -> Option<fn(char) -> bool> {
 }
 
 /// `["date",...]`, `["reltime",...]`, and `["plural",...]`, whose text depends on the locale they name.
-fn localized<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Cow<'a, Value>> {
+fn localized<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Val<'a>> {
     let arg = |i: usize| parts.get(i);
     let eval = |i: usize| evaluate(arg(i)?, ctx);
     let text = match op {
         "date" => {
             let offset = i64::from(i16::try_from(arg(5)?.as_i64()?).ok()?);
-            let millis = eval(1)?.as_i64()?.checked_add(offset * 60_000)?;
+            let millis = Ref::from(&eval(1)?)
+                .as_i64()?
+                .checked_add(offset * 60_000)?;
             let (date, time) = (arg(3)?.as_str(), arg(4)?.as_str());
             crate::date::write_date(arg(2)?.as_str()?, date, time, millis)?
         }
         "reltime" => {
-            let millis = f(&*eval(1)?)? - f(&*eval(2)?)?;
+            let millis = f(&eval(1)?)? - f(&eval(2)?)?;
             crate::date::write_relative(arg(3)?.as_str()?, millis)?
         }
         _ => {
-            let index = crate::intl::plural_index(arg(2)?.as_str()?, f(&*eval(1)?)?)?;
+            let index = crate::intl::plural_index(arg(2)?.as_str()?, f(&eval(1)?)?)?;
             return evaluate(arg(3)?.as_array()?.get(index)?, ctx);
         }
     };
-    Some(Cow::Owned(Value::from(text)))
+    Some(Val::Owned(Value::from(text)))
 }
 
 /// `["let",value,depth,body]`: `body` with `["var",depth]` standing for `value`.
 fn let_in<'a>(parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
     let depth = usize::try_from(parts.get(2)?.as_u64()?).ok()?;
     let mut vars: Vec<Value> = ctx.vars.iter().take(depth).cloned().collect();
-    vars.push(evaluate(parts.get(1)?, ctx)?.into_owned());
+    vars.push(evaluate(parts.get(1)?, ctx)?.into_value());
     let inner = Ctx {
         root: ctx.root,
         scope: ctx.scope.clone(),
@@ -534,7 +595,7 @@ fn let_in<'a>(parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
         vars,
         rules: ctx.rules,
     };
-    Some(evaluate(parts.get(3)?, &inner)?.into_owned())
+    Some(evaluate(parts.get(3)?, &inner)?.into_value())
 }
 
 /// `["count",place,depth,e]` and the other operations that evaluate `e`
@@ -543,14 +604,14 @@ fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
     let list = ctx.lookup(parts.get(1)?)?;
     let depth = usize::try_from(parts.get(2)?.as_u64()?).ok()?;
     let each = parts.get(3)?;
-    let items = list.as_array().map_or(&[][..], Vec::as_slice);
+    let items = list.items().into_iter().flatten();
     let mut count = 0_u64;
     let mut folded: Option<f64> = None;
     let mut mapped = Vec::new();
     ctx.for_each_item(depth, items, |item, _| {
         let value = evaluate(each, item)?;
         if op == "map" {
-            mapped.push(value.into_owned());
+            mapped.push(value.into_value());
             return Some(());
         }
         if op == "count" {
@@ -575,9 +636,10 @@ fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
 }
 
 /// `a < b` and friends: strings in code point order, anything else as numbers.
-fn compare(op: &str, a: &Value, b: &Value) -> Option<Value> {
-    let order = match (a, b) {
-        (Value::String(a), Value::String(b)) => a.cmp(b),
+fn compare<'b, 'c>(op: &str, a: impl Into<Ref<'b>>, b: impl Into<Ref<'c>>) -> Option<Value> {
+    let (a, b) = (a.into(), b.into());
+    let order = match (a.view(), b.view()) {
+        (View::Str(a), View::Str(b)) => a.cmp(b),
         _ => f(a)?.partial_cmp(&f(b)?)?,
     };
     Some(Value::Bool(match op {
@@ -611,7 +673,7 @@ mod tests {
         evaluate(
             ast,
             &Ctx {
-                root,
+                root: root.into(),
                 scope: Vec::new(),
                 copy: false,
                 vars: Vec::new(),
@@ -619,7 +681,7 @@ mod tests {
             },
         )
         .expect("evaluates")
-        .into_owned()
+        .into_value()
     }
 
     #[test]
