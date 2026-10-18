@@ -100,7 +100,7 @@ pub use choice::{
 pub use combobox::{Combobox, ComboboxState};
 pub use dialog::{Dialog, dialog_footer};
 pub use donut::DonutChart;
-pub use field::{Autocomplete, InputKind, TextField};
+pub use field::{Autocomplete, InputKind, InputMode, TextField};
 pub use listbox::Listbox;
 pub use menu::{Menu, MenuItem};
 pub use progress::{progress, skeleton};

@@ -43,6 +43,46 @@ impl InputKind {
     }
 }
 
+/// The on-screen keyboard a [`TextField`] asks for, as `inputmode` names it.
+///
+/// It changes only the keyboard. What the browser accepts and checks stays
+/// with the field's [`InputKind`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum InputMode {
+    /// `none`: no on-screen keyboard, for a field with its own picker.
+    None,
+    /// `text`: the keyboard of the visitor's language.
+    Text,
+    /// `decimal`: digits and the decimal separator.
+    Decimal,
+    /// `numeric`: digits only, for a code or a card number.
+    Numeric,
+    /// `tel`: digits, `*`, and `#`.
+    Tel,
+    /// `search`: a keyboard whose enter key reads "Search".
+    Search,
+    /// `email`: a keyboard with `@`.
+    Email,
+    /// `url`: a keyboard with `/` and `.`.
+    Url,
+}
+
+impl InputMode {
+    fn name(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Text => "text",
+            Self::Decimal => "decimal",
+            Self::Numeric => "numeric",
+            Self::Tel => "tel",
+            Self::Search => "search",
+            Self::Email => "email",
+            Self::Url => "url",
+        }
+    }
+}
+
 /// What a [`TextField`] holds, as `autocomplete` names it for the browser
 /// and for WCAG 1.3.5.
 ///
@@ -201,8 +241,8 @@ impl Autocomplete {
 /// not empty. The error sits in an `aria-live="polite"` region, so a screen
 /// reader reads a new message when it appears.
 ///
-/// Two fields bound to the same signal on one page get the same ids, which
-/// nothing checks.
+/// Two fields bound to the same signal on one page get the same ids, and
+/// rendering the page panics.
 ///
 /// ```
 /// use hypersig::{Signals, if_else};
@@ -232,6 +272,9 @@ pub struct TextField<S> {
     kind: InputKind,
     multiline: bool,
     autocomplete: Option<Autocomplete>,
+    input_mode: Option<InputMode>,
+    min_length: Option<u32>,
+    max_length: Option<u32>,
     placeholder: Option<String>,
     description: Option<String>,
     error: Option<Expr<S, String>>,
@@ -250,6 +293,9 @@ impl<S> TextField<S> {
             kind: InputKind::Text,
             multiline: false,
             autocomplete: None,
+            input_mode: None,
+            min_length: None,
+            max_length: None,
             placeholder: None,
             description: None,
             error: None,
@@ -321,6 +367,50 @@ impl<S> TextField<S> {
     #[must_use]
     pub fn autocomplete(mut self, autocomplete: Autocomplete) -> Self {
         self.autocomplete = Some(autocomplete);
+        self
+    }
+
+    /// Asks for the on-screen keyboard `mode`, as `inputmode` does.
+    ///
+    /// ```
+    /// use hypersig::Signals;
+    /// use hypersig_ui::{Autocomplete, InputMode, TextField};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Login {
+    ///     code: String,
+    /// }
+    ///
+    /// let code = TextField::new("Code", Login::code())
+    ///     .input_mode(InputMode::Numeric)
+    ///     .autocomplete(Autocomplete::OneTimeCode)
+    ///     .max_length(6);
+    /// let html = code.render().render();
+    /// assert!(html.contains(r#"inputmode="numeric""#));
+    /// assert!(html.contains(r#"maxlength="6""#));
+    /// ```
+    #[must_use]
+    pub fn input_mode(mut self, mode: InputMode) -> Self {
+        self.input_mode = Some(mode);
+        self
+    }
+
+    /// Stops the visitor from typing more than `count` characters, as
+    /// `maxlength` does.
+    #[must_use]
+    pub fn max_length(mut self, count: u32) -> Self {
+        self.max_length = Some(count);
+        self
+    }
+
+    /// Makes the browser refuse to submit fewer than `count` characters, as
+    /// `minlength` does.
+    ///
+    /// An empty field passes unless it is [`required`](Self::required).
+    #[must_use]
+    pub fn min_length(mut self, count: u32) -> Self {
+        self.min_length = Some(count);
         self
     }
 
@@ -398,6 +488,15 @@ impl<S> TextField<S> {
         }
         if let Some(autocomplete) = self.autocomplete {
             control = control.attr("autocomplete", autocomplete.name());
+        }
+        if let Some(mode) = self.input_mode {
+            control = control.attr("inputmode", mode.name());
+        }
+        if let Some(count) = self.min_length {
+            control = control.attr("minlength", count.to_string());
+        }
+        if let Some(count) = self.max_length {
+            control = control.attr("maxlength", count.to_string());
         }
         if let Some(placeholder) = self.placeholder {
             control = control.attr("placeholder", placeholder);

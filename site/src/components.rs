@@ -375,6 +375,30 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "input_mode",
+                    "hypersig_ui/struct.TextField.html#method.input_mode",
+                    L {
+                        en: "Asks for the on-screen keyboard `mode`, as `inputmode` does.",
+                        ja: "`inputmode` と同じく、画面上のキーボードを `mode` にするよう求めます。",
+                    },
+                ),
+                (
+                    "max_length",
+                    "hypersig_ui/struct.TextField.html#method.max_length",
+                    L {
+                        en: "Stops the visitor from typing more than `count` characters, as `maxlength` does.",
+                        ja: "`maxlength` と同じく、`count` 文字より多く入力できないようにします。",
+                    },
+                ),
+                (
+                    "min_length",
+                    "hypersig_ui/struct.TextField.html#method.min_length",
+                    L {
+                        en: "Makes the browser refuse to submit fewer than `count` characters, as `minlength` does.",
+                        ja: "`minlength` と同じく、`count` 文字に満たない値をブラウザが送信させないようにします。",
+                    },
+                ),
+                (
                     "placeholder",
                     "hypersig_ui/struct.TextField.html#method.placeholder",
                     L {
@@ -420,6 +444,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "The `type` of a single-line `TextField`.",
                         ja: "1 行の `TextField` の `type`",
+                    },
+                ),
+                (
+                    "InputMode",
+                    "hypersig_ui/enum.InputMode.html",
+                    L {
+                        en: "The on-screen keyboard a `TextField` asks for, as `inputmode` names it.",
+                        ja: "`TextField` が求める画面上のキーボードを、`inputmode` の値で表したもの",
                     },
                 ),
                 (
