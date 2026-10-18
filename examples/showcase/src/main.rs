@@ -12,7 +12,8 @@ use hypersig::html::{
 };
 use hypersig::{
     Action, DateFormat, DateStyle, DialogRef, Expr, Fragment, IntlLocale, NodeRef, Page, Patches,
-    PluralCategory, Route, RouterExt, Sig, Signals, Stmt, TimeStyle, TimeZone, Timestamp, if_else,
+    PluralCategory, Route, RouterExt, Segment, Sig, Signals, Stmt, TimeStyle, TimeZone, Timestamp,
+    if_else,
 };
 use serde::{Deserialize, Serialize};
 
@@ -89,7 +90,7 @@ struct Feed {
     newest: i32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
 enum Tone {
     Calm,
     Loud,
@@ -538,7 +539,10 @@ fn styles() -> El<Showcase> {
                             tone,
                             [(Tone::Calm, look::calm()), (Tone::Loud, look::loud())],
                         )
-                        .bind_text(if_else(tone.equals(&Tone::Loud), "LOUD", "calm")),
+                        .bind_text(tone.label(|tone| match tone {
+                            Tone::Calm => "calm",
+                            Tone::Loud => "LOUD",
+                        })),
                 )
                 .child(div().id("spinner").css(look::spinner())),
         ),
