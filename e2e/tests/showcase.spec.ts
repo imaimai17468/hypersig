@@ -171,3 +171,56 @@ test("typed styles follow the viewport, a container, tokens a signal switches, a
 
   await expect(page.locator("#spinner")).toHaveCSS("animation-name", "spin");
 });
+
+test("the server adds, changes, and removes notes of the feed one at a time", async ({ page }) => {
+  const items = page.locator(".feed li");
+  const notes = page.locator(".feed li span");
+  await expect(notes).toHaveCount(20);
+  await items.first().evaluate((li) => li.setAttribute("data-kept", ""));
+  const answers: Promise<string>[] = [];
+  page.on("response", (response) => {
+    if (response.url().includes("/feed/")) answers.push(response.text());
+  });
+
+  await page.locator(".newer").click();
+  await expect(notes.last()).toHaveText("Note 61");
+  await items.nth(1).locator(".star").click();
+  await expect(notes.nth(1)).toHaveText("Note 42 (starred)");
+  await items.nth(2).locator(".dismiss").click();
+  await expect(notes).toHaveCount(20);
+  await expect(notes.nth(2)).toHaveText("Note 44");
+  // The element of the first note stayed, so the list changed in place.
+  await expect(items.first()).toHaveAttribute("data-kept", "");
+  // Each answer carries at most the one note it changes.
+  const bodies = await Promise.all(answers);
+  expect(bodies).toHaveLength(3);
+  for (const body of bodies) expect(body.match(/"id":/g)?.length ?? 0).toBeLessThanOrEqual(1);
+});
+
+test("loading older notes keeps the notes in view where they were", async ({ page }) => {
+  const feed = page.locator(".feed");
+  const items = page.locator(".feed li");
+  const top = (id: number) =>
+    page
+      .locator(".feed li span")
+      .getByText(`Note ${id}`, { exact: true })
+      .evaluate((span) => span.getBoundingClientRect().top);
+  const scrollTop = () => feed.evaluate((element) => element.scrollTop);
+  // `dispatchEvent` clicks without scrolling the button into view first.
+  const older = () => page.locator(".older").dispatchEvent("click");
+
+  // Chrome's own scroll anchoring does nothing while the feed is at the very top.
+  expect(await scrollTop()).toBe(0);
+  const first = await top(41);
+  await older();
+  await expect(items).toHaveCount(25);
+  expect(await top(41)).toBeCloseTo(first, 0);
+  expect(await scrollTop()).toBeGreaterThan(0);
+
+  // Scrolled partway, Chrome anchors the content itself, and the runtime scrolls no further.
+  await feed.evaluate((element) => (element.scrollTop -= 10));
+  const partway = await top(36);
+  await older();
+  await expect(items).toHaveCount(30);
+  expect(await top(36)).toBeCloseTo(partway, 0);
+});

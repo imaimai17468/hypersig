@@ -1,5 +1,5 @@
-//! Components with their own state, intervals, server search, forms, and typed
-//! styles, one section each.
+//! Components with their own state, intervals, server search, forms, a feed
+//! the server changes item by item, and typed styles, one section each.
 //!
 //! Run with `cargo run -p example-showcase` and open <http://localhost:3003>.
 
@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use axum::Router;
 use hypersig::html::{
-    El, Event, Key, Stylesheet, button, div, form, h1, h2, input, label, li, p, section, select,
-    small, span, textarea, ul,
+    El, Event, Key, Stylesheet, button, div, each_keyed, form, h1, h2, input, label, li, p,
+    section, select, small, span, textarea, ul,
 };
 use hypersig::{
     Action, Fragment, NodeRef, Page, Patches, Route, RouterExt, Sig, Signals, Stmt, if_else,
@@ -65,6 +65,29 @@ struct Order {
     error: String,
 }
 
+#[derive(Signals, Serialize, Deserialize, Clone)]
+struct Note {
+    id: i32,
+    text: String,
+}
+
+impl Note {
+    fn new(id: i32) -> Self {
+        Self {
+            id,
+            text: format!("Note {id}"),
+        }
+    }
+}
+
+/// A list the server adds to, changes, and removes from one note at a time.
+#[derive(Signals, Serialize, Deserialize)]
+struct Feed {
+    notes: Vec<Note>,
+    oldest: i32,
+    newest: i32,
+}
+
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
 enum Tone {
     Calm,
@@ -86,6 +109,7 @@ struct Showcase {
     stopwatch: Stopwatch,
     search: Search,
     order: Order,
+    feed: Feed,
     look: Look,
 }
 
@@ -97,6 +121,14 @@ hypersig::routes! {
 const SEARCH: Action<Showcase, String> = Action::post("/search");
 const ORDER: Action<Showcase, (i32, Size, bool)> = Action::post("/order");
 const SEARCH_FIELD: NodeRef<Showcase> = NodeRef::new("search");
+const OLDER: Action<Showcase, i32> = Action::get("/feed/older");
+const NEWER: Action<Showcase, i32> = Action::post("/feed/newer");
+const STAR: Action<Showcase, i32> = Action::post("/feed/star");
+const DISMISS: Action<Showcase, i32> = Action::post("/feed/dismiss");
+
+/// The notes the feed shows first, and the number one click adds.
+const FEED_START: i32 = 41;
+const FEED_PAGE: i32 = 5;
 
 const NOTE_LIMIT: i32 = 40;
 
@@ -422,6 +454,52 @@ fn styles() -> El<Showcase> {
     )
 }
 
+fn feed() -> El<Showcase> {
+    let feed = Showcase::feed();
+    let notes = feed.at(Feed::notes());
+    let oldest = feed.at(Feed::oldest());
+    section()
+        .id("feed")
+        .child(h2().text("A feed the server changes item by item"))
+        .child(
+            div()
+                .class(class::FEED)
+                .child(
+                    button()
+                        .class(class::OLDER)
+                        .attr_when("disabled", oldest.le(1))
+                        .on_click(OLDER.call_with(oldest))
+                        .text("Load older"),
+                )
+                .child(ul().child(each_keyed(
+                    notes,
+                    |note| note.at(Note::id()),
+                    |note| {
+                        let id = note.at(Note::id());
+                        li().child(span().bind_text(note.at(Note::text())))
+                            .child(
+                                button()
+                                    .class(class::STAR)
+                                    .on_click(STAR.call_with(id))
+                                    .text("Star"),
+                            )
+                            .child(
+                                button()
+                                    .class(class::DISMISS)
+                                    .on_click(DISMISS.call_with(id))
+                                    .text("Dismiss"),
+                            )
+                    },
+                ))),
+        )
+        .child(
+            button()
+                .class(class::NEWER)
+                .on_click(NEWER.call_with(feed.at(Feed::newest())))
+                .text("Add newer"),
+        )
+}
+
 /// The styles of the typed-styles section.
 mod look {
     use hypersig::style::pattern::{circle, hstack, stack};
@@ -532,6 +610,11 @@ async fn index((): (), find: Find) -> Page<Showcase> {
             status: String::new(),
             error: String::new(),
         },
+        feed: Feed {
+            notes: (FEED_START..FEED_START + 20).map(Note::new).collect(),
+            oldest: FEED_START,
+            newest: FEED_START + 19,
+        },
         look: Look {
             dark: false,
             tone: Tone::Calm,
@@ -551,7 +634,49 @@ async fn index((): (), find: Find) -> Page<Showcase> {
         .child(stopwatch())
         .child(search(&find))
         .child(order_form())
+        .child(feed())
         .child(styles())
+}
+
+/// Sends only the notes before `oldest`, which the browser puts above the ones it shows.
+async fn older((): (), oldest: i32) -> Patches<Showcase> {
+    let from = (oldest - FEED_PAGE).max(1);
+    let feed = Showcase::feed();
+    Patches::new()
+        .list(
+            feed.at(Feed::notes())
+                .patch_prepend(&(from..oldest).map(Note::new).collect::<Vec<_>>()),
+        )
+        .signals(feed.at(Feed::oldest()).patch(from))
+}
+
+async fn newer((): (), newest: i32) -> Patches<Showcase> {
+    let feed = Showcase::feed();
+    Patches::new()
+        .list(
+            feed.at(Feed::notes())
+                .patch_append(&[Note::new(newest + 1)]),
+        )
+        .signals(feed.at(Feed::newest()).patch(newest + 1))
+}
+
+/// Replaces the note with `id` by its starred copy, leaving the other notes as the browser holds them.
+async fn star((): (), id: i32) -> Patches<Showcase> {
+    let starred = Note {
+        id,
+        text: format!("Note {id} (starred)"),
+    };
+    Showcase::feed()
+        .at(Feed::notes())
+        .patch_upsert(&[starred], |note| note.at(Note::id()))
+        .into()
+}
+
+async fn dismiss((): (), id: i32) -> Patches<Showcase> {
+    Showcase::feed()
+        .at(Feed::notes())
+        .patch_remove(&[id], |note| note.at(Note::id()))
+        .into()
 }
 
 async fn search_fruit((): (), query: String) -> Patches<Showcase> {
@@ -590,6 +715,7 @@ mod class {
     pub const OVER: Class = STYLE.class("over");
     pub const PRICE: Class = STYLE.class("price");
     pub const ERROR: Class = STYLE.class("error");
+    pub const FEED: Class = STYLE.class("feed");
 
     // No rule in `STYLE` styles the classes below.
     pub const DISCLOSURE: Class = Class::new("disclosure");
@@ -604,6 +730,10 @@ mod class {
     pub const NOTE: Class = Class::new("note");
     pub const PLACE: Class = Class::new("place");
     pub const STATUS: Class = Class::new("status");
+    pub const OLDER: Class = Class::new("older");
+    pub const NEWER: Class = Class::new("newer");
+    pub const STAR: Class = Class::new("star");
+    pub const DISMISS: Class = Class::new("dismiss");
 }
 
 const STYLE: Stylesheet = Stylesheet::new("
@@ -625,6 +755,9 @@ textarea { font: inherit; min-height: 3rem; }
 .count.over { color: crimson; font-weight: bold; }
 .price { font-weight: bold; }
 .error { color: crimson; }
+.feed { height: 12rem; overflow-y: auto; border: 1px solid #ddd; margin-bottom: .5rem; }
+.feed li { display: flex; gap: .5rem; align-items: center; padding: .25rem 0; }
+.feed li span { flex: 1; }
 ");
 
 #[tokio::main]
@@ -632,7 +765,11 @@ async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
         .action(SEARCH, search_fruit)
-        .action(ORDER, order);
+        .action(ORDER, order)
+        .action(OLDER, older)
+        .action(NEWER, newer)
+        .action(STAR, star)
+        .action(DISMISS, dismiss);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3003".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");
