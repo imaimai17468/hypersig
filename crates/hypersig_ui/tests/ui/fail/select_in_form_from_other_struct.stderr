@@ -1,0 +1,16 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/select_in_form_from_other_struct.rs:27:9
+   |
+24 |     let _ = select_field_in_form(
+   |             -------------------- arguments to this function are incorrect
+...
+27 |         Login::plan(),
+   |         ^^^^^^^^^^^^^ expected `Sig<Signup, String>`, found `Sig<Login, String>`
+   |
+   = note: expected struct `Sig<Signup, String>`
+              found struct `Sig<Login, String>`
+note: function defined here
+  --> src/select.rs
+   |
+   | pub fn select_field_in_form<S, T: Validate, U: Serialize + PartialEq, L: Into<String>>(
+   |        ^^^^^^^^^^^^^^^^^^^^

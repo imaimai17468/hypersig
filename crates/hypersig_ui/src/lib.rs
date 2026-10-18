@@ -16,6 +16,7 @@
 //! | [`checkbox`], [`switch`] | `<input type="checkbox">`, the switch with `role="switch"` |
 //! | [`radio_group`] | `<fieldset>`, `<legend>`, and radios that share a name |
 //! | [`select_field`] | `<label>` and `<select>`, with a `base-select` picker where supported |
+//! | [`TextField::in_form`], [`select_field_in_form`], [`radio_group_in_form`], [`checkbox_in_form`], [`switch_in_form`] | the control above bound to a field of a [`Form`](hypersig::Form), with its message tied by `aria-describedby` and `aria-invalid` |
 //! | [`Slider`] | `<input type="range">` over a drawn track and thumb |
 //! | [`Listbox`] | the listbox pattern, with roving focus |
 //! | [`Combobox`] | the combobox pattern with list autocomplete and `aria-activedescendant` |
@@ -93,7 +94,9 @@ pub use badge::{BadgeVariant, badge};
 pub use button::{ButtonSize, ButtonVariant, button, button_style, icon_button, submit_button};
 pub use card::{Level, card, card_content, card_description, card_footer, card_header, card_title};
 pub use chart::Chart;
-pub use choice::{checkbox, radio_group, switch};
+pub use choice::{
+    checkbox, checkbox_in_form, radio_group, radio_group_in_form, switch, switch_in_form,
+};
 pub use combobox::{Combobox, ComboboxState};
 pub use dialog::{Dialog, dialog_footer};
 pub use donut::DonutChart;
@@ -101,7 +104,7 @@ pub use field::{Autocomplete, InputKind, TextField};
 pub use listbox::Listbox;
 pub use menu::{Menu, MenuItem};
 pub use progress::{progress, skeleton};
-pub use select::select_field;
+pub use select::{select_field, select_field_in_form};
 pub use separator::separator;
 pub use slider::Slider;
 pub use table::{Column, DataTable, ServerTable, SortOrder, TableState, TableText};

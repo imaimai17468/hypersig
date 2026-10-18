@@ -5,16 +5,16 @@
 //! keyboard handling, and its place in a form, and the drawn box follows its
 //! state through `Style::peer`.
 
-use hypersig::Sig;
-use hypersig::html::{El, fieldset, input, label, legend, span};
+use hypersig::html::{El, div, fieldset, input, label, legend, span};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{
     Appearance, BorderStyle, Color, Cursor, Display, Opacity, Position, TextAlign, px, rem,
 };
 use hypersig::style::{Condition, PseudoClass, Style};
+use hypersig::{Form, Sig, Validate};
 use serde::Serialize;
 
-use crate::field::label_style;
+use crate::field::{Feedback, label_style};
 use crate::look::{self, icon};
 use crate::token;
 
@@ -88,6 +88,61 @@ pub fn checkbox<S, R>(text: impl Into<String>, checked: Sig<S, bool, R>) -> El<S
     wrapper.child(check_control(input(), checked)).child(text)
 }
 
+/// A checkbox labeled `text`, bound to `field` of `form`.
+///
+/// It is [`checkbox`] with the form's [`error`](Sig::error) for `field`
+/// under it, tied to the input by `aria-describedby` and `aria-invalid`, and
+/// it marks the field touched when the visitor leaves the checkbox.
+///
+/// ```
+/// use hypersig::{Form, Rules, Sig, Signals, Validate};
+/// use hypersig_ui::checkbox_in_form;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize, Clone)]
+/// struct Signup {
+///     terms: bool,
+/// }
+///
+/// impl Validate for Signup {
+///     fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+///         rules.check(Signup::terms(), form.at(Signup::terms()), "Accept the terms.");
+///     }
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Join {
+///     signup: Form<Signup>,
+/// }
+///
+/// let terms = checkbox_in_form("I accept the terms", Join::signup(), Signup::terms());
+/// assert!(terms.render().contains(r#"aria-describedby="ui-signup-value-terms-error""#));
+/// ```
+#[must_use]
+pub fn checkbox_in_form<S, T: Validate>(
+    text: impl Into<String>,
+    form: Sig<S, Form<T>>,
+    field: Sig<T, bool>,
+) -> El<S> {
+    let feedback = Feedback::of(form, field);
+    let control = feedback.describe(input()).on_blur(feedback.touch());
+    let (wrapper, text) = row(text.into());
+    with_message(
+        wrapper
+            .child(check_control(control, form.field(field)))
+            .child(text),
+        feedback,
+    )
+}
+
+/// `control` with the message of `feedback` under it.
+fn with_message<S>(control: El<S>, feedback: Feedback<S>) -> El<S> {
+    div()
+        .css(stack(rem(0.5)))
+        .child(control)
+        .child(feedback.message())
+}
+
 /// The box of a checkbox with `input` laid over it, bound to `checked`.
 ///
 /// `input` comes from the caller, which names it where no `<label>` holds it.
@@ -154,7 +209,56 @@ pub(crate) fn check_box_checked() -> Style {
 /// ```
 #[must_use]
 pub fn switch<S, R>(text: impl Into<String>, on: Sig<S, bool, R>) -> El<S> {
-    let (wrapper, text) = row(text.into());
+    switch_with(text.into(), on, input())
+}
+
+/// An on and off switch labeled `text`, bound to `field` of `form`.
+///
+/// It is [`switch`] with the form's [`error`](Sig::error) for `field` under
+/// it, tied to the input by `aria-describedby` and `aria-invalid`, and it
+/// marks the field touched when the visitor leaves the switch.
+///
+/// ```
+/// use hypersig::{Form, Rules, Sig, Signals, Validate};
+/// use hypersig_ui::switch_in_form;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize, Clone)]
+/// struct Settings {
+///     backups: bool,
+/// }
+///
+/// impl Validate for Settings {
+///     fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+///         rules.check(Settings::backups(), form.at(Settings::backups()), "Keep backups on.");
+///     }
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Page {
+///     settings: Form<Settings>,
+/// }
+///
+/// let backups = switch_in_form("Backups", Page::settings(), Settings::backups());
+/// assert!(backups.render().contains(r#"role="switch""#));
+/// ```
+#[must_use]
+pub fn switch_in_form<S, T: Validate>(
+    text: impl Into<String>,
+    form: Sig<S, Form<T>>,
+    field: Sig<T, bool>,
+) -> El<S> {
+    let feedback = Feedback::of(form, field);
+    let control = feedback.describe(input()).on_blur(feedback.touch());
+    with_message(
+        switch_with(text.into(), form.field(field), control),
+        feedback,
+    )
+}
+
+/// A switch labeled `text` with `input` as its checkbox, bound to `on`.
+fn switch_with<S, R>(text: String, on: Sig<S, bool, R>, input: El<S>) -> El<S> {
+    let (wrapper, text) = row(text);
     let track = span().attr("aria-hidden", "true").css(
         Style::new()
             .display(Display::Block)
@@ -198,7 +302,7 @@ pub fn switch<S, R>(text: impl Into<String>, on: Sig<S, bool, R>) -> El<S> {
                         .text_align(TextAlign::Start),
                 )
                 .child(
-                    input()
+                    input
                         .attr("type", "checkbox")
                         .attr("role", "switch")
                         .css(hidden_input())
@@ -242,6 +346,79 @@ pub fn radio_group<S, T: Serialize + PartialEq, L: Into<String>>(
     selected: Sig<S, T>,
     options: impl IntoIterator<Item = (T, L)>,
 ) -> El<S> {
+    radio_with(title.into(), selected, options, None)
+}
+
+/// A group of radio buttons with `title` in its `<legend>`, bound to `field`
+/// of `form`.
+///
+/// It is [`radio_group`] with the form's [`error`](Sig::error) for `field`
+/// under it. ARIA allows `aria-invalid` on a radio group but not on a plain
+/// group, so the `<fieldset>` takes `role="radiogroup"`, is named by its
+/// legend through `aria-labelledby`, and carries `aria-describedby` and
+/// `aria-invalid`. The field is marked touched when focus leaves a radio.
+///
+/// ```
+/// use hypersig::{Form, Rules, Sig, Signals, Validate};
+/// use hypersig_ui::radio_group_in_form;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Default)]
+/// enum Plan {
+///     #[default]
+///     Unset,
+///     Free,
+///     Pro,
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize, Clone)]
+/// struct Signup {
+///     plan: Plan,
+/// }
+///
+/// impl Validate for Signup {
+///     fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+///         let chosen = !form.at(Signup::plan()).equals(&Plan::Unset);
+///         rules.check(Signup::plan(), chosen, "Choose a plan.");
+///     }
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Join {
+///     signup: Form<Signup>,
+/// }
+///
+/// let plans = radio_group_in_form(
+///     "Plan",
+///     Join::signup(),
+///     Signup::plan(),
+///     [(Plan::Free, "Free"), (Plan::Pro, "Pro")],
+/// );
+/// let html = plans.render();
+/// assert!(html.contains(r#"role="radiogroup""#));
+/// assert!(html.contains(r#"aria-describedby="ui-signup-value-plan-error""#));
+/// ```
+#[must_use]
+pub fn radio_group_in_form<S, T: Validate, U: Serialize + PartialEq, L: Into<String>>(
+    title: impl Into<String>,
+    form: Sig<S, Form<T>>,
+    field: Sig<T, U>,
+    options: impl IntoIterator<Item = (U, L)>,
+) -> El<S> {
+    radio_with(
+        title.into(),
+        form.field(field),
+        options,
+        Some(Feedback::of(form, field)),
+    )
+}
+
+fn radio_with<S, T: Serialize + PartialEq, L: Into<String>>(
+    title: String,
+    selected: Sig<S, T>,
+    options: impl IntoIterator<Item = (T, L)>,
+    feedback: Option<Feedback<S>>,
+) -> El<S> {
     let name = crate::id::of(selected, "radio");
     let radio = |value: T, text: L| {
         let (wrapper, text) = row(text.into());
@@ -278,17 +455,25 @@ pub fn radio_group<S, T: Serialize + PartialEq, L: Into<String>>(
             )
             .child(text)
     };
-    fieldset()
-        .css(
-            stack(rem(0.75))
-                .border_style(BorderStyle::None)
-                .padding(px(0))
-                .min_width(hypersig::style::value::MinWidth::from(px(0))),
-        )
-        .child(
-            legend()
-                .css(label_style().padding(px(0)).margin_bottom(rem(0.75)))
-                .text(title),
-        )
+    let mut caption = legend()
+        .css(label_style().padding(px(0)).margin_bottom(rem(0.75)))
+        .text(title);
+    let mut group = fieldset().css(
+        stack(rem(0.75))
+            .border_style(BorderStyle::None)
+            .padding(px(0))
+            .min_width(hypersig::style::value::MinWidth::from(px(0))),
+    );
+    if let Some(feedback) = &feedback {
+        let legend_id = crate::id::of(selected, "legend");
+        caption = caption.id(legend_id.clone());
+        group = feedback
+            .describe(group.attr("role", "radiogroup"))
+            .attr("aria-labelledby", legend_id)
+            .on_blur(feedback.touch());
+    }
+    group
+        .child(caption)
         .children(options.into_iter().map(|(value, text)| radio(value, text)))
+        .children(feedback.map(Feedback::message))
 }

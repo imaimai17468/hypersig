@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/checkbox_in_form_on_text.rs:19:55
+   |
+19 |     let _ = checkbox_in_form("Email", Join::signup(), Signup::email());
+   |             ----------------                          ^^^^^^^^^^^^^^^ expected `Sig<Signup, bool>`, found `Sig<Signup, String>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `Sig<Signup, bool>`
+              found struct `Sig<Signup, String>`
+note: function defined here
+  --> src/choice.rs
+   |
+   | pub fn checkbox_in_form<S, T: Validate>(
+   |        ^^^^^^^^^^^^^^^^

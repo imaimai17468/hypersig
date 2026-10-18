@@ -356,6 +356,52 @@ impl<S> TextField<S> {
     }
 }
 
+/// What a control bound to a field of a [`Form`] adds: the form's message
+/// for the field, under the control and tied to it, and the statement that
+/// marks the field touched.
+pub(crate) struct Feedback<S> {
+    error: Expr<S, String>,
+    touch: Stmt<S>,
+    error_id: String,
+}
+
+impl<S> Feedback<S> {
+    /// The message and the touch for `field` of `form`.
+    pub(crate) fn of<T: Validate, U>(form: Sig<S, Form<T>>, field: Sig<T, U>) -> Self {
+        Self {
+            error: form.error(field),
+            touch: form.touch(field),
+            error_id: crate::id::of(form.field(field), "error"),
+        }
+    }
+
+    /// The statement that marks the field touched.
+    pub(crate) fn touch(&self) -> Stmt<S> {
+        self.touch.clone()
+    }
+
+    /// Whether the message is not empty.
+    pub(crate) fn invalid(&self) -> Expr<S, bool> {
+        !self.error.clone().is_empty()
+    }
+
+    /// `control` with `aria-describedby` pointing at the message, and
+    /// `aria-invalid` true while the message is not empty.
+    pub(crate) fn describe(&self, control: El<S>) -> El<S> {
+        control
+            .attr("aria-describedby", self.error_id.clone())
+            .bind_attr("aria-invalid", if_else(self.invalid(), "true", "false"))
+    }
+
+    /// The message, in an `aria-live="polite"` region as [`TextField`] shows it.
+    pub(crate) fn message(self) -> El<S> {
+        p().id(self.error_id)
+            .attr("aria-live", "polite")
+            .css(look::small_text().color(token::destructive().var()))
+            .bind_text(self.error)
+    }
+}
+
 impl<S> From<TextField<S>> for El<S> {
     fn from(field: TextField<S>) -> Self {
         field.render()
