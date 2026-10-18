@@ -158,6 +158,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "bind_title",
+                            "struct.Page.html#method.bind_title",
+                            L {
+                                en: "Keeps the document's title, the text of the browser tab, equal to `title`.",
+                                ja: "文書のタイトル（ブラウザのタブに出る文字列）を `title` と等しく保ちます。",
+                            },
+                        ),
+                        (
                             "theme",
                             "struct.Page.html#method.theme",
                             L {

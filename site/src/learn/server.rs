@@ -339,6 +339,13 @@ fn head(site: Site) -> Part {
             },
         ),
         show(Snippet::Head),
+        para(
+            site,
+            L {
+                en: "`Page::bind_title(expr)` makes the tab's title follow a `String` expression, such as an unread count. The server writes its first value into `<title>`, and the runtime writes each later value into `document.title`. The card of `OpenGraph` keeps the title given to `Page::new`.",
+                ja: "`Page::bind_title(expr)` は、未読の件数のように変わる `String` の式にタブのタイトルを合わせます。最初の値はサーバーが `<title>` に書き、その後の値はランタイムが `document.title` に書きます。`OpenGraph` のカードには `Page::new` に渡したタイトルが残ります。",
+            },
+        ),
     ])
 }
 

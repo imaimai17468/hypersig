@@ -23,6 +23,7 @@ use crate::style::{Global, Sheet, Theme};
 /// loads, and the runtime adopts the elements instead of rebuilding them.
 pub struct Page<S> {
     title: String,
+    bound_title: Option<Value>,
     signals: S,
     stylesheets: Vec<&'static str>,
     styles: Vec<&'static str>,
@@ -52,6 +53,7 @@ impl<S: Signals> Page<S> {
     pub fn new(title: impl Into<String>, signals: S) -> Self {
         Self {
             title: title.into(),
+            bound_title: None,
             signals,
             stylesheets: Vec::new(),
             styles: Vec::new(),
@@ -190,6 +192,35 @@ impl<S: Signals> Page<S> {
         self
     }
 
+    /// Keeps the document's title, the text of the browser tab, equal to `title`.
+    ///
+    /// The server writes the first value into `<title>`, and the runtime
+    /// writes each later one into `document.title`, so a tab can show a count
+    /// that changes while the page is open. A search engine reads the HTML,
+    /// so it shows the first value, and an [`OpenGraph`] card keeps the
+    /// title of [`Page::new`].
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals, if_else};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Inbox {
+    ///     unread: i32,
+    /// }
+    ///
+    /// let unread = Inbox::unread();
+    /// let html = Page::new("Inbox", Inbox { unread: 3 })
+    ///     .bind_title(if_else(unread.gt(0), unread.to_text().concat(" unread - Inbox"), "Inbox"))
+    ///     .render();
+    /// assert!(html.contains("<title>3 unread - Inbox</title>"));
+    /// ```
+    #[must_use]
+    pub fn bind_title(mut self, title: impl IntoExpr<S, String>) -> Self {
+        self.bound_title = Some(title.into_expr().into_json());
+        self
+    }
+
     /// Loads the runtime from `src` instead of [`RUNTIME_PATH`](crate::RUNTIME_PATH),
     /// for a page served as a static file next to a copy of
     /// [`RUNTIME_JS`](crate::RUNTIME_JS).
@@ -317,8 +348,21 @@ impl<S: Signals> Page<S> {
         out.push_str("<link rel=\"icon\"");
         write_attr(&mut out, "href", self.icon.unwrap_or("data:,"));
         out.push('>');
+        let ctx = Ctx {
+            root: &root,
+            scope: Vec::new(),
+            copy: false,
+            vars: Vec::new(),
+        };
+        let title = self
+            .bound_title
+            .as_ref()
+            .and_then(|title| ssr::evaluate(title, &ctx))
+            .map_or(Cow::Borrowed(self.title.as_str()), |title| {
+                Cow::Owned(ssr::js_string(&title))
+            });
         out.push_str("<title>");
-        escape_into(&mut out, &self.title, false);
+        escape_into(&mut out, &title, false);
         out.push_str("</title>");
         if let Some(description) = &self.description {
             meta(&mut out, "name", "description", description);
@@ -383,13 +427,10 @@ impl<S: Signals> Page<S> {
                 &Value::from(computed).to_string(),
             );
         }
+        if let Some(title) = &self.bound_title {
+            write_attr(&mut out, "data-hs-title", &title.to_string());
+        }
         out.push('>');
-        let ctx = Ctx {
-            root: &root,
-            scope: Vec::new(),
-            copy: false,
-            vars: Vec::new(),
-        };
         for child in &self.body {
             child.write(&mut out, Some(&ctx));
         }

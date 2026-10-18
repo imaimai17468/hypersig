@@ -1,0 +1,21 @@
+error[E0277]: `Sig<Inbox, i32>` is not an expression of type `String` on the page whose signals are `Inbox`
+  --> tests/ui/fail/title_needs_string.rs:10:64
+   |
+10 |     let _ = Page::new("Inbox", Inbox { unread: 3 }).bind_title(Inbox::unread());
+   |                                                     ---------- ^^^^^^^^^^^^^^^ the trait `IntoExpr<Inbox, String>` is not implemented for `Sig<Inbox, i32>`
+   |                                                     |
+   |                                                     required by a bound introduced by this call
+   |
+   = note: an expression must have the type the attribute expects, and use signals of the same page
+help: the trait `IntoExpr<Inbox, String>` is not implemented for `Sig<Inbox, i32>`
+      but trait `IntoExpr<Inbox, i32>` is implemented for it
+  --> src/expr.rs
+   |
+   | impl<S, T, R> IntoExpr<S, T> for Sig<S, T, R> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `i32`, found `String`
+note: required by a bound in `hypersig::Page::<S>::bind_title`
+  --> src/page.rs
+   |
+   |     pub fn bind_title(mut self, title: impl IntoExpr<S, String>) -> Self {
+   |                                             ^^^^^^^^^^^^^^^^^^^ required by this bound in `Page::<S>::bind_title`

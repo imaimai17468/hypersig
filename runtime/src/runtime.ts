@@ -295,6 +295,7 @@ export class Runtime implements Host {
       root.addEventListener(type, (event) => this.#onDirect(type, event), { capture: true });
     }
     this.#computed(root);
+    this.#title(root);
     upgradeTemplates(root);
     this.scan(root, []);
     this.#render(new Map());
@@ -317,6 +318,25 @@ export class Runtime implements Host {
       selector: null,
     }));
     this.#fresh.push(...effects);
+  }
+
+  /** Registers the title binding on `root`, after the computed signals so it can read them. */
+  #title(root: Element): void {
+    const source = root.getAttribute("data-hs-title");
+    if (source === null) return;
+    const expr = parse(source);
+    const ctx: Context = { store: this.store, scope: [] };
+    this.#fresh.push({
+      id: this.#nextId++,
+      element: root,
+      run: () => {
+        const next = String(evaluate(expr, ctx));
+        if (document.title !== next) document.title = next;
+      },
+      deps: null,
+      nodes: new Map(),
+      selector: null,
+    });
   }
 
   /**

@@ -612,6 +612,7 @@ function serve(name: string): void {
   document.head.append(...parsed.head.querySelectorAll("style[data-hs-css]"));
   for (const { name } of [...document.body.attributes]) document.body.removeAttribute(name);
   for (const { name, value } of [...parsed.body.attributes]) document.body.setAttribute(name, value);
+  document.title = parsed.title;
 }
 
 function start(): Runtime {
@@ -759,6 +760,19 @@ describe("computed signals", () => {
     expect(runtime.store.get("sum")).toBe(7);
     expect(written.size).toBe(0);
     observer.disconnect();
+  });
+});
+
+describe("title", () => {
+  it("is written by the server and rewritten when a computed signal it reads changes", async () => {
+    serve("computed_page");
+    expect(document.title).toBe("6 doubled");
+    const runtime = start();
+    await tick();
+    expect(document.title).toBe("6 doubled");
+
+    runtime.store.set("b", 4);
+    await vi.waitFor(() => expect(document.title).toBe("10 doubled"));
   });
 });
 

@@ -751,6 +751,7 @@ fn computed_page() -> String {
     )
     .computed(sum, a + b)
     .computed(doubled, sum * 2)
+    .bind_title(doubled.to_text().concat(" doubled"))
     .child(
         main()
             .child(span().id("sum").bind_text(sum.to_text()))
