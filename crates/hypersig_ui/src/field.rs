@@ -6,7 +6,7 @@ use hypersig::style::value::{
     BorderStyle, Color, FontWeight, LineHeight, MinWidth, Resize, pct, px, rem,
 };
 use hypersig::style::{PseudoClass, PseudoElement, Style};
-use hypersig::{Expr, IntoExpr, Sig, if_else};
+use hypersig::{Expr, Form, IntoExpr, Sig, Stmt, Validate, if_else};
 
 use crate::look;
 use crate::token;
@@ -141,6 +141,7 @@ pub struct TextField<S> {
     error: Option<Expr<S, String>>,
     required: bool,
     disabled: Option<Expr<S, bool>>,
+    on_blur: Option<Stmt<S>>,
 }
 
 impl<S> TextField<S> {
@@ -158,6 +159,51 @@ impl<S> TextField<S> {
             error: None,
             required: false,
             disabled: None,
+            on_blur: None,
+        }
+    }
+
+    /// A single-line text field labeled `label`, bound to `field` of `form`.
+    ///
+    /// It shows [`error`](Sig::error) of the form for `field` and marks the
+    /// field touched when the visitor leaves it, so a rule's message waits
+    /// until the visitor has finished typing.
+    ///
+    /// ```
+    /// use hypersig::{Form, Rules, Sig, Signals, Validate};
+    /// use hypersig_ui::TextField;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize, Clone)]
+    /// struct Signup {
+    ///     email: String,
+    /// }
+    ///
+    /// impl Validate for Signup {
+    ///     fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+    ///         let email = form.at(Signup::email());
+    ///         rules.check(Signup::email(), email.contains("@"), "Enter an email address.");
+    ///     }
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Join {
+    ///     signup: Form<Signup>,
+    /// }
+    ///
+    /// let html = TextField::in_form("Email", Join::signup(), Signup::email()).render().render();
+    /// assert!(html.contains("signup.touched.email"));
+    /// ```
+    #[must_use]
+    pub fn in_form<T: Validate>(
+        label: impl Into<String>,
+        form: Sig<S, Form<T>>,
+        field: Sig<T, String>,
+    ) -> Self {
+        Self {
+            error: Some(form.error(field)),
+            on_blur: Some(form.touch(field)),
+            ..Self::new(label, form.field(field))
         }
     }
 
@@ -265,6 +311,9 @@ impl<S> TextField<S> {
         }
         if let Some(disabled) = self.disabled {
             control = control.attr_when("disabled", disabled);
+        }
+        if let Some(touch) = self.on_blur {
+            control = control.on_blur(touch);
         }
         if let Some(error) = &self.error {
             let invalid = !error.clone().is_empty();
