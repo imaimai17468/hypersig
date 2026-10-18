@@ -27,6 +27,7 @@ mod style;
 use std::collections::BTreeSet;
 use std::path::Path;
 
+use hypersig::{Origin, PageResponse, Rest, Route, Url};
 use hypersig_i18n::Locale as _;
 
 pub use doc::Doc;
@@ -39,6 +40,20 @@ pub struct Site {
     base: &'static str,
     runtime: &'static str,
     lang: Lang,
+    origin: Option<Origin>,
+}
+
+// The site is written as files and nothing serves these routes, so the
+// generated function goes unused. `PAGE` names a page's directory inside the
+// site and builds the `Url` its canonical link takes.
+hypersig::routes! {
+    fn pages(Router<()>);
+    const PAGE: Route<Rest> = "/{*path}" => unserved;
+}
+
+#[expect(dead_code, reason = "the site is written as files, not served")]
+async fn unserved((): (), _path: Rest) -> PageResponse {
+    PageResponse::not_found()
 }
 
 impl Site {
@@ -62,7 +77,33 @@ impl Site {
             base,
             runtime,
             lang: Lang::En,
+            origin: None,
         }
+    }
+
+    /// The same site, served from `origin`, such as
+    /// `https://imaimai17468.github.io`, so that each page names its
+    /// canonical URL. The site's base path goes under `origin`.
+    #[must_use]
+    pub fn with_origin(self, origin: Origin) -> Self {
+        let origin = if self.base.is_empty() {
+            origin
+        } else {
+            origin.under(self.base)
+        };
+        Self {
+            origin: Some(origin),
+            ..self
+        }
+    }
+
+    /// The absolute URL of the page at `path` in the language the pages are
+    /// rendered in, when the site knows its origin.
+    fn canonical(self, path: &str) -> Option<(Origin, Url)> {
+        self.origin.map(|origin| {
+            let url = PAGE.url(Rest::new(format!("{}{path}", self.lang.dir())));
+            (origin, url)
+        })
     }
 
     /// The same site, rendering its pages in `lang`.
@@ -262,6 +303,20 @@ mod tests {
                 html.contains(&format!("<title>{}", doc.title(site))),
                 "{doc:?}"
             );
+            assert!(!html.contains(r#"rel="canonical""#), "{doc:?}");
         }
+    }
+
+    #[test]
+    fn a_site_that_knows_its_origin_names_each_page_under_its_base() {
+        let site = Site::new("/hypersig")
+            .with_origin(Origin::new("https://example.com"))
+            .with_lang(Lang::Ja);
+        let html = Doc::Learn(doc::Learn::Forms).render(site);
+        let url = "https://example.com/hypersig/ja/learn/forms/";
+        assert!(html.contains(&format!(r#"<link rel="canonical" href="{url}">"#)));
+        assert!(html.contains(&format!(r#"<meta property="og:url" content="{url}">"#)));
+        let home = Doc::Home.render(Site::new("").with_origin(Origin::new("https://example.com")));
+        assert!(home.contains(r#"<link rel="canonical" href="https://example.com/">"#));
     }
 }

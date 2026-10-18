@@ -6,17 +6,23 @@
 //!
 //! `--rustdoc` copies the output of `cargo doc` into `api/` and checks each
 //! link into it. Without it, those links are left unchecked.
+//!
+//! `--origin https://imaimai17468.github.io` gives each page a canonical URL
+//! and an `og:url`, joined from the origin, the base path, and the page's
+//! directory. A local preview leaves it out, and its pages have neither.
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::{env, fs, io};
 
+use hypersig::Origin;
 use site::{API_DIR, File, Site, check_links, render};
 
 struct Args {
     out: PathBuf,
     base: String,
     rustdoc: Option<PathBuf>,
+    origin: Option<String>,
 }
 
 fn parse_args() -> Result<Args, String> {
@@ -24,6 +30,7 @@ fn parse_args() -> Result<Args, String> {
         out: PathBuf::from("target/site"),
         base: "/hypersig".to_owned(),
         rustdoc: None,
+        origin: None,
     };
     let mut rest = env::args().skip(1);
     while let Some(flag) = rest.next() {
@@ -32,6 +39,7 @@ fn parse_args() -> Result<Args, String> {
             "--out" => args.out = PathBuf::from(value()?),
             "--base" => args.base = value()?,
             "--rustdoc" => args.rustdoc = Some(PathBuf::from(value()?)),
+            "--origin" => args.origin = Some(value()?),
             _ => return Err(format!("unknown argument {flag}")),
         }
     }
@@ -42,7 +50,9 @@ fn main() -> ExitCode {
     let args = match parse_args() {
         Ok(args) => args,
         Err(message) => {
-            eprintln!("{message}\nusage: site [--out DIR] [--base /PATH] [--rustdoc DIR]");
+            eprintln!(
+                "{message}\nusage: site [--out DIR] [--base /PATH] [--rustdoc DIR] [--origin https://HOST]"
+            );
             return ExitCode::FAILURE;
         }
     };
@@ -58,7 +68,12 @@ fn main() -> ExitCode {
 
 /// Writes the site and reports whether every link inside it resolves.
 fn run(args: &Args) -> io::Result<bool> {
-    let site = Site::new(String::leak(args.base.clone()));
+    let mut site = Site::new(String::leak(args.base.clone()));
+    if let Some(origin) = &args.origin {
+        // `Origin::new` panics on a malformed origin, as `Site::new` does on
+        // a malformed base path.
+        site = site.with_origin(Origin::new(String::leak(origin.clone())));
+    }
     let files = render(site);
     if args.out.exists() {
         fs::remove_dir_all(&args.out)?;

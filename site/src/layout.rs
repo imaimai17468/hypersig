@@ -30,10 +30,13 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
     } else {
         format!("{} | {}", doc.title(site), doc.library().home().title(site))
     };
-    Page::new(title, Docs::default())
+    let mut page = Page::new(title, Docs::default())
         .lang(site.lang().tag())
-        .description(doc.library().description(site))
-        .open_graph(OpenGraph::new().site_name("hypersig"))
+        .description(doc.library().description(site));
+    if let Some((origin, url)) = site.canonical(&doc.path()) {
+        page = page.canonical(origin, &url);
+    }
+    page.open_graph(OpenGraph::new().site_name("hypersig"))
         .runtime_src(site.runtime())
         .global(hypersig_ui::global())
         .global(

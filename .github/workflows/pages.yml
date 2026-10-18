@@ -28,7 +28,7 @@ jobs:
           RUSTDOCFLAGS: -D warnings
       # Fails on a link inside the site, or into the rustdoc output, that
       # reaches no file.
-      - run: cargo run -p site -- --out _site --base /hypersig --rustdoc target/doc
+      - run: cargo run -p site -- --out _site --base /hypersig --origin https://imaimai17468.github.io --rustdoc target/doc
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
