@@ -2,7 +2,9 @@
 
 use axum::Router;
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
+use axum::extract::FromRequestParts;
+use axum::http::request::Parts;
+use axum::http::{HeaderMap, HeaderName, Request, StatusCode, header};
 use http_body_util::BodyExt as _;
 use hypersig::html::{a, p};
 use hypersig::{
@@ -139,6 +141,7 @@ async fn get_reads_the_arguments_from_the_query() {
 async fn arguments_of_the_wrong_type_get_400() {
     let (status, body) = send(
         Request::post("/add")
+            .header("content-type", "application/json")
             .body(Body::from(r#"["four",3]"#))
             .expect("request"),
     )
@@ -152,7 +155,13 @@ async fn arguments_of_the_wrong_type_get_400() {
 
 #[tokio::test]
 async fn missing_arguments_get_400() {
-    let (status, body) = send(Request::post("/add").body(Body::empty()).expect("request")).await;
+    let (status, body) = send(
+        Request::post("/add")
+            .header("content-type", "application/json")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert!(
         body.starts_with("the action's arguments did not deserialize"),
@@ -387,4 +396,154 @@ fn a_renamed_segment_matches_what_serde_writes() {
             Some(locale)
         );
     }
+}
+
+/// The name in the `x-visitor` header, refused with a 401 when it is missing.
+struct Visitor(String);
+
+impl<St: Sync> FromRequestParts<St> for Visitor {
+    type Rejection = (StatusCode, &'static str);
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &St,
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
+        let visitor = parts
+            .headers
+            .get("x-visitor")
+            .and_then(|name| name.to_str().ok())
+            .map(|name| Self(name.to_owned()))
+            .ok_or((StatusCode::UNAUTHORIZED, "sign in first"));
+        std::future::ready(visitor)
+    }
+}
+
+const GREET: Action<Counter> = Action::post("/greet");
+const SIGN_IN: Action<Counter> = Action::post("/sign-in");
+const FAIL: Action<Counter, i32> = Action::post("/fail");
+
+hypersig::routes! {
+    fn guarded_pages(Router<()>);
+    const WHO: Route = "/who" => who;
+    const BROKEN: Route = "/broken" => |(), ()| async {
+        Err::<Page<Counter>, _>((StatusCode::SERVICE_UNAVAILABLE, "the database is down"))
+    };
+}
+
+async fn who(
+    (): (),
+    Visitor(name): Visitor,
+    (): (),
+) -> ([(HeaderName, &'static str); 1], Page<Counter>) {
+    let page = Page::new("Who", Counter { count: 0 }).child(p().text(name));
+    ([(header::SET_COOKIE, "seen=1; Path=/")], page)
+}
+
+fn guarded() -> Router {
+    guarded_pages(Router::new())
+        .action(GREET, |(), Visitor(name): Visitor, ()| async move {
+            Patches::from(Counter::count().patch(i32::try_from(name.len()).unwrap_or(0)))
+        })
+        .action(SIGN_IN, |(), ()| async {
+            (
+                [(header::SET_COOKIE, "session=abc; HttpOnly; Path=/")],
+                Counter::count().patch(1),
+            )
+        })
+        .action(FAIL, |(), count: i32| async move {
+            let full = (StatusCode::CONFLICT, "the count is full".to_owned());
+            let next = (count < 3).then_some(count + 1).ok_or(full)?;
+            Ok::<_, (StatusCode, String)>(Counter::count().patch(next))
+        })
+}
+
+async fn send_guarded(request: Request<Body>) -> (StatusCode, HeaderMap, String) {
+    let response = guarded()
+        .oneshot(request)
+        .await
+        .expect("the router is infallible");
+    let status = response.status();
+    let headers = response.headers().clone();
+    let body = response
+        .into_body()
+        .collect()
+        .await
+        .expect("body")
+        .to_bytes();
+    (
+        status,
+        headers,
+        String::from_utf8(body.to_vec()).expect("utf-8 body"),
+    )
+}
+
+/// A POST of `body` as JSON to `path`, with `headers`.
+fn post_json(path: &str, headers: &[(&str, &str)], body: &'static str) -> Request<Body> {
+    let mut request = Request::post(path).header("content-type", "application/json");
+    for &(name, value) in headers {
+        request = request.header(name, value);
+    }
+    request.body(Body::from(body)).expect("request")
+}
+
+#[tokio::test]
+async fn an_action_reads_the_request_through_its_extractor() {
+    let (status, _, body) =
+        send_guarded(post_json("/greet", &[("x-visitor", "Ada")], "null")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, "event: hs-signals\ndata: {\"count\":3}\n\n");
+}
+
+#[tokio::test]
+async fn an_extractor_that_fails_answers_with_its_rejection() {
+    let (status, _, body) = send_guarded(post_json("/greet", &[], "null")).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(body, "sign in first");
+}
+
+#[tokio::test]
+async fn an_action_sets_a_cookie_beside_its_patches() {
+    let (status, headers, body) = send_guarded(post_json("/sign-in", &[], "null")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers[header::SET_COOKIE], "session=abc; HttpOnly; Path=/");
+    assert_eq!(body, "event: hs-signals\ndata: {\"count\":1}\n\n");
+}
+
+#[tokio::test]
+async fn an_action_that_returns_an_error_answers_with_it() {
+    let (status, _, body) = send_guarded(post_json("/fail", &[], "2")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, "event: hs-signals\ndata: {\"count\":3}\n\n");
+    let (status, _, body) = send_guarded(post_json("/fail", &[], "3")).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(body, "the count is full");
+}
+
+#[tokio::test]
+async fn a_page_reads_the_request_and_sets_a_cookie() {
+    let (status, headers, body) = send_guarded(
+        Request::get("/who")
+            .header("x-visitor", "Grace")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers[header::SET_COOKIE], "seen=1; Path=/");
+    assert!(body.contains("<p>Grace</p>"), "{body}");
+    let (status, _, _) =
+        send_guarded(Request::get("/who").body(Body::empty()).expect("request")).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn a_page_that_returns_an_error_answers_with_it() {
+    let (status, _, body) = send_guarded(
+        Request::get("/broken")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(body, "the database is down");
 }

@@ -1,0 +1,18 @@
+error[E0277]: `fn((), CurrentUser, ()) -> impl std::future::Future<Output = Patches<Counter>> {add}` cannot serve this page or action
+  --> tests/ui/fail/extractor_for_other_state.rs:34:47
+   |
+34 |     let _: Router = Router::new().action(ADD, add);
+   |                                   ------      ^^^ not a handler of the router's state and the arguments `()`
+   |                                   |
+   |                                   required by a bound introduced by this call
+   |
+   = help: the trait `hypersig::Handler<_, (), _>` is not implemented for fn item `fn((), CurrentUser, ()) -> impl std::future::Future<Output = Patches<Counter>> {add}`
+   = note: a handler is `fn(state, args)` or `fn(state, extractor, args)`, where the state is the router's and the extractor implements `FromRequestParts` for it
+note: required by a bound in `action`
+  --> src/axum.rs
+   |
+   |     fn action<S, A, H, M, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
+   |        ------ required by a bound in this associated function
+...
+   |         H: Handler<St, A, M, Output = Fut>,
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `RouterExt::action`

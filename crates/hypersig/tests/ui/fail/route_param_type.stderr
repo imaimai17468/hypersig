@@ -59,7 +59,7 @@ help: the following other types implement trait `Segment`
 note: required by a bound in `hypersig::RouterExt::page`
   --> src/axum.rs
    |
-   |     fn page<P, Q, H, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
+   |     fn page<P, Q, H, M, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
    |        ---- required by a bound in this associated function
    |     where
    |         P: Params + Send + 'static,

@@ -29,7 +29,7 @@ The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, wi
 
 **A public item has one public path** (M-SINGLE-ITEM-PATH). An item re-exported at the crate root lives in a private module, as `Page` lives in `page.rs` behind `pub use page::Page`. A public module such as `html` holds the items a reader reaches through its name.
 
-**Third-party types in the public API are limited to `serde`'s traits and, behind the `axum` feature, axum's `Router`** (M-DONT-LEAK-TYPES).
+**Third-party types in the public API are limited to `serde`'s traits and, behind the `axum` feature, axum's `Router` and the traits and types a handler reads the request and writes the response with: `FromRequestParts`, `IntoResponse`, `IntoResponseParts`, `Parts`, `Response`, and `StatusCode`** (M-DONT-LEAK-TYPES). A handler that reads a cookie or answers with its own error is written against axum's own traits, so wrapping them would only make the reader translate between two names for one thing.
 
 ## Performance
 

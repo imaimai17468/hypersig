@@ -53,7 +53,7 @@ help: the trait `hypersig::Search` is implemented for `()`
 note: required by a bound in `hypersig::RouterExt::page`
   --> src/axum.rs
    |
-   |     fn page<P, Q, H, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
+   |     fn page<P, Q, H, M, Fut, R>(self, route: Route<P, Q>, handler: H) -> Self
    |        ---- required by a bound in this associated function
 ...
    |         Q: Search + DeserializeOwned + Send + 'static,

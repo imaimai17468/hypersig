@@ -65,7 +65,7 @@ struct ReadmeJa;
 
 pub use action::{Action, Call, Method, NodeRef};
 #[cfg(feature = "axum")]
-pub use axum::{PageResponse, RequestError, RouterExt};
+pub use axum::{ActionResponse, Handler, PageResponse, RequestError, RouterExt};
 pub use expr::{
     Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };
