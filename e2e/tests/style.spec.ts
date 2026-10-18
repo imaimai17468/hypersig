@@ -62,3 +62,31 @@ test("rules a patch brings take their place among the page's rules", async ({ pa
   await page.setViewportSize({ width: 600, height: 900 });
   await expect.poll(share).toBe(100);
 });
+
+test("the page runs under a policy that allows styles only by nonce", async ({ page }) => {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { violations: string[] }).violations = seen;
+    document.addEventListener("securitypolicyviolation", (event) => seen.push(`${event.violatedDirective} ${event.blockedURI}`));
+  });
+  const response = await page.goto(url("style"));
+  const policy = response!.headers()["content-security-policy"] ?? "";
+  expect(policy).toMatch(/style-src 'nonce-[0-9a-f]{32}'/);
+  expect(policy).not.toContain("unsafe-inline");
+
+  // The note is hidden on the server, under a rule that outranks its own `display`.
+  const note = page.locator("#dark-note");
+  await expect(note).toBeHidden();
+  await page.locator("#switch-theme").click();
+  await expect(note).toBeVisible();
+  await expect(note).toHaveCSS("display", "flex");
+  await page.locator("#switch-theme").click();
+  await expect(note).toBeHidden();
+
+  // The rules a patch brings go into a `<style>` the runtime adds with the nonce.
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.locator("#load").click();
+  await expect(page.locator("#more > div").first()).toHaveCSS("padding-top", "16px");
+
+  expect(await page.evaluate(() => (window as unknown as { violations: string[] }).violations)).toEqual([]);
+});

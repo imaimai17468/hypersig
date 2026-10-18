@@ -1951,6 +1951,9 @@ function write(element: Element, kind: Write, name: string, value: unknown): voi
   if (!writable(element, kind)) return;
   switch (kind) {
     case "show": {
+      // The server marks an element it hid with `data-hs-hide` in place of
+      // an inline style, and from here on `style.display` decides.
+      element.removeAttribute("data-hs-hide");
       const next = value ? "" : "none";
       if ((element as HTMLElement).style.display !== next) (element as HTMLElement).style.display = next;
       return;
@@ -2277,7 +2280,7 @@ function inPlace(path: string, known: ReadonlyMap<string, Instance>): boolean {
 /** Whether `element`, or an element between it and `root`, is hidden by `data-hs-show` or the `hidden` attribute. */
 function hiddenWithin(element: HTMLElement, root: Element): boolean {
   for (let at: Element | null = element; at !== null && at !== root; at = at.parentElement) {
-    if (at instanceof HTMLElement && (at.hidden || at.style.display === "none")) return true;
+    if (at instanceof HTMLElement && (at.hidden || at.style.display === "none" || at.hasAttribute("data-hs-hide"))) return true;
   }
   return false;
 }

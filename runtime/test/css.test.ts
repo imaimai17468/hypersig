@@ -21,4 +21,15 @@ describe("addRules", () => {
     expect(keys()).toEqual(["0 k--00", "0 k-4019-00", "0 k01--00", "1 k--00"]);
     expect(document.head.querySelector('style[data-hs-css="0 k01--00"]')?.textContent).toBe(".md{}.md{}.md2{}");
   });
+
+  it("gives a new bucket the nonce of the runtime's script, and none without one", () => {
+    addRules([["0 k--00", ".a{}"]]);
+    expect(document.head.querySelector("style")!.hasAttribute("nonce")).toBe(false);
+    const script = document.createElement("script");
+    script.setAttribute("nonce", "n0nce");
+    document.head.append(script);
+    addRules([["1 k--00", ".b{}"]]);
+    const added = document.head.querySelector<HTMLStyleElement>('style[data-hs-css="1 k--00"]')!;
+    expect(added.getAttribute("nonce")).toBe("n0nce");
+  });
 });

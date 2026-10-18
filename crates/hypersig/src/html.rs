@@ -879,6 +879,9 @@ mod sealed {
     }
 }
 
+/// The attribute a server-rendered element hidden by [`El::show`] carries.
+pub(crate) const HIDE: &str = "data-hs-hide";
+
 /// Creates an element with any tag.
 ///
 /// Use the named constructors such as [`div`] where one exists. A tag the
@@ -1703,12 +1706,14 @@ impl<S> El<S> {
                 style.push(format!("{property}: {value}"));
             }
         }
+        let mut computed: Vec<(&str, String)> = Vec::new();
+        // A strict Content-Security-Policy ignores a `style` attribute, so a
+        // hidden element carries `HIDE`, which a rule `Page` writes hides.
         if let Some(show) = &self.show
             && eval_bool(show.as_json()) == Some(false)
         {
-            style.push("display: none".to_owned());
+            computed.push((HIDE, String::new()));
         }
-        let mut computed: Vec<(&str, String)> = Vec::new();
         for (name, value) in &self.attr_bind {
             if let Some(value) = eval_text(value.as_json()) {
                 computed.push((name, value));

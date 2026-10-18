@@ -665,8 +665,8 @@ function serve(name: string): void {
   const { document: html } = JSON.parse(readFileSync(path, "utf8")) as { document: string };
   const parsed = new DOMParser().parseFromString(html, "text/html");
   document.body.replaceChildren(...parsed.body.childNodes);
-  for (const old of document.head.querySelectorAll("style[data-hs-css]")) old.remove();
-  document.head.append(...parsed.head.querySelectorAll("style[data-hs-css]"));
+  for (const old of document.head.querySelectorAll("style")) old.remove();
+  document.head.append(...parsed.head.querySelectorAll("style"));
   for (const { name } of [...document.body.attributes]) document.body.removeAttribute(name);
   for (const { name, value } of [...parsed.body.attributes]) document.body.setAttribute(name, value);
   document.title = parsed.title;
@@ -737,10 +737,14 @@ describe("server rendering", () => {
     const item = $("#list li");
     expect($$("#list li label").map((label) => label.textContent)).toEqual(["tea"]);
     expect($("#left").textContent).toBe("1");
-    expect($("#clear").style.display).toBe("none");
+    expect($("#clear").hasAttribute("data-hs-hide")).toBe(true);
+    expect($("#clear").getAttribute("style")).toBeNull();
+    expect(getComputedStyle($("#clear")).display).toBe("none");
 
     const runtime = start();
     await tick();
+    expect($("#clear").hasAttribute("data-hs-hide")).toBe(false);
+    expect($("#clear").style.display).toBe("none");
     expect($$("#list li")).toEqual([item]);
     item.querySelector<HTMLInputElement>("input[type=checkbox]")!.click();
     await tick();
@@ -1085,8 +1089,8 @@ describe("forms", () => {
   it("renders the form on the server with no message and the runtime adopts it", async () => {
     serve("join_page");
     expect($("#email-error").textContent).toBe("");
-    expect($("#dirty").style.display).toBe("none");
-    expect($("#valid").style.display).toBe("none");
+    expect(getComputedStyle($("#dirty")).display).toBe("none");
+    expect(getComputedStyle($("#valid")).display).toBe("none");
     start();
     type($<HTMLInputElement>("#email"), "x");
     blur($("#email"));

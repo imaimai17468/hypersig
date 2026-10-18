@@ -20,10 +20,24 @@ export function addRules(buckets: readonly (readonly [key: string, css: string])
     }
     const style = document.createElement("style");
     style.dataset.hsCss = key;
+    const nonce = pageNonce();
+    if (nonce !== "") style.setAttribute("nonce", nonce);
     style.textContent = css;
     const after = styles.find((existing) => (existing.dataset.hsCss ?? "") > key);
     if (after !== undefined) after.before(style);
     else if (styles.length > 0) styles[styles.length - 1]!.after(style);
     else head.prepend(style);
   }
+}
+
+/**
+ * The nonce `Page::csp_nonce` put on the runtime's `<script>`, or `""`.
+ *
+ * A browser that enforces a Content-Security-Policy hides the attribute's
+ * value and keeps it in the `nonce` property, so the property is read first.
+ */
+function pageNonce(): string {
+  const script = document.querySelector<HTMLScriptElement>("script[nonce]");
+  if (script === null) return "";
+  return script.nonce || (script.getAttribute("nonce") ?? "");
 }

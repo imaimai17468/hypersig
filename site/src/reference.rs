@@ -222,6 +222,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "csp_nonce",
+                            "struct.Page.html#method.csp_nonce",
+                            L {
+                                en: "Puts `nonce` on the page's `<style>` and `<script>` elements, for a Content-Security-Policy that allows styles by nonce.",
+                                ja: "スタイルを nonce で許す Content-Security-Policy に向けて、ページの `<style>` と `<script>` に `nonce` を付けます。",
+                            },
+                        ),
+                        (
                             "render",
                             "struct.Page.html#method.render",
                             L {

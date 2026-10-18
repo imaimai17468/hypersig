@@ -7,7 +7,9 @@ use serde_json::{Value, json};
 
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
-use crate::html::{Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr};
+use crate::html::{
+    HIDE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr,
+};
 use crate::route::Url;
 use crate::signal::{Sig, Signals};
 use crate::ssr::{self, Ctx};
@@ -44,6 +46,7 @@ pub struct Page<S> {
     alternates: Vec<(Option<String>, String)>,
     /// Each JSON-LD block, serialized with `<` escaped.
     json_ld: Vec<String>,
+    nonce: Option<String>,
 }
 
 impl<S> fmt::Debug for Page<S> {
@@ -79,6 +82,7 @@ impl<S: Signals> Page<S> {
             nofollow: false,
             alternates: Vec::new(),
             json_ld: Vec::new(),
+            nonce: None,
         }
     }
 
@@ -232,6 +236,54 @@ impl<S: Signals> Page<S> {
     pub fn json_ld(mut self, data: &impl serde::Serialize) -> Self {
         let json = serde_json::to_string(data).expect("JSON-LD data serializes to JSON");
         self.json_ld.push(json.replace('<', "\\u003c"));
+        self
+    }
+
+    /// Puts `nonce` on the page's `<style>` and `<script>` elements, for a
+    /// Content-Security-Policy that allows styles by nonce.
+    ///
+    /// With it, a page runs under `style-src 'nonce-…'` and `script-src
+    /// 'self'` without `'unsafe-inline'`. The runtime puts the same nonce on
+    /// each `<style>` it adds for the rules a patch brings. `nonce` is the
+    /// value the server generated for this response and wrote into its
+    /// `Content-Security-Policy` header, at least 128 random bits.
+    ///
+    /// A nonce does not reach a `style` attribute, so a page with
+    /// [`El::bind_style`](crate::html::El::bind_style),
+    /// [`El::bind_token`](crate::html::El::bind_token), or a `style` set with
+    /// [`El::attr`](crate::html::El::attr) also needs `style-src-attr
+    /// 'unsafe-inline'`. Without it, the browser drops the server-rendered
+    /// value and the element shows without it until the runtime sets the
+    /// property.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Note {}
+    ///
+    /// let html = Page::new("Note", Note {}).csp_nonce("2726c7f26c").render();
+    /// assert!(html.contains(r#"<script type="module" src="/_hypersig/runtime.js" nonce="2726c7f26c">"#));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `nonce` is empty or holds a character other than a letter,
+    /// a digit, `+`, `/`, `-`, `_`, or a trailing `=`, which a
+    /// Content-Security-Policy nonce cannot hold.
+    #[must_use]
+    pub fn csp_nonce(mut self, nonce: impl Into<String>) -> Self {
+        let nonce = nonce.into();
+        let body = nonce.trim_end_matches('=');
+        assert!(
+            !body.is_empty()
+                && body
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'-' | b'_')),
+            "a CSP nonce is base64 or base64url text"
+        );
+        self.nonce = Some(nonce);
         self
     }
 
@@ -553,44 +605,29 @@ impl<S: Signals> Page<S> {
         escape_into(&mut out, &title, false);
         out.push_str("</title>");
         self.write_metadata(&mut out);
-        if !self.global.is_empty() {
-            out.push_str("<style data-hs-global>");
-            out.push_str(&self.global.to_css());
-            out.push_str("</style>");
-        }
-        if !self.theme.is_empty() {
-            out.push_str("<style data-hs-theme>");
-            out.push_str(&self.theme.to_css());
-            out.push_str("</style>");
-        }
-        let mut sheet = Sheet::new();
-        for child in &self.body {
-            child.collect_css(&mut sheet);
-        }
-        for bucket in sheet.buckets() {
-            out.push_str("<style");
-            write_attr(&mut out, "data-hs-css", bucket.sort_key());
-            out.push('>');
-            out.push_str(bucket.css());
-            out.push_str("</style>");
-        }
-        for href in &self.stylesheets {
-            out.push_str("<link rel=\"stylesheet\"");
-            write_attr(&mut out, "href", href);
-            out.push('>');
-        }
-        for css in &self.styles {
-            out.push_str("<style>");
-            out.push_str(css);
-            out.push_str("</style>");
-        }
+        let styles_at = out.len();
+        self.write_styles(&mut out);
         out.push_str("<script type=\"module\"");
         write_attr(&mut out, "src", self.runtime);
+        self.write_nonce(&mut out);
         out.push_str("></script></head><body");
         self.write_body_attrs(&mut out, &root);
         out.push('>');
+        let body_at = out.len();
         for child in &self.body {
             child.write(&mut out, Some(&ctx));
+        }
+        // An element `El::show` hides on the server carries `HIDE` in place
+        // of a `style` attribute, and this rule hides it. `!important` gives
+        // the rule the precedence an inline style would have over the page's
+        // other rules.
+        if out[body_at..].contains(HIDE) {
+            let mut rule = String::from("<style");
+            self.write_nonce(&mut rule);
+            rule.push_str(">[");
+            rule.push_str(HIDE);
+            rule.push_str("]{display:none!important}</style>");
+            out.insert_str(styles_at, &rule);
         }
         out.push_str("</body></html>");
         out
@@ -614,13 +651,65 @@ impl<S: Signals> Page<S> {
             write_attr(out, "data-hs-on-key", &keys_json(&self.keys));
         }
     }
+
+    /// Writes the `nonce` attribute, if the page has a nonce.
+    fn write_nonce(&self, out: &mut String) {
+        if let Some(nonce) = &self.nonce {
+            write_attr(out, "nonce", nonce);
+        }
+    }
+
+    /// Writes the global rules, the theme, the atomic classes of the body,
+    /// and the page's stylesheets into `<head>`.
+    fn write_styles(&self, out: &mut String) {
+        if !self.global.is_empty() {
+            out.push_str("<style data-hs-global");
+            self.write_nonce(out);
+            out.push('>');
+            out.push_str(&self.global.to_css());
+            out.push_str("</style>");
+        }
+        if !self.theme.is_empty() {
+            out.push_str("<style data-hs-theme");
+            self.write_nonce(out);
+            out.push('>');
+            out.push_str(&self.theme.to_css());
+            out.push_str("</style>");
+        }
+        let mut sheet = Sheet::new();
+        for child in &self.body {
+            child.collect_css(&mut sheet);
+        }
+        for bucket in sheet.buckets() {
+            out.push_str("<style");
+            write_attr(out, "data-hs-css", bucket.sort_key());
+            self.write_nonce(out);
+            out.push('>');
+            out.push_str(bucket.css());
+            out.push_str("</style>");
+        }
+        for href in &self.stylesheets {
+            out.push_str("<link rel=\"stylesheet\"");
+            write_attr(out, "href", href);
+            out.push('>');
+        }
+        for css in &self.styles {
+            out.push_str("<style");
+            self.write_nonce(out);
+            out.push('>');
+            out.push_str(css);
+            out.push_str("</style>");
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use crate::html::input;
+    use crate::html::{Stylesheet, input, p};
+    use crate::style::value::Color;
+    use crate::style::{Global, Style, Theme, Token};
     use crate::{NodeRef, Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize, Default)]
@@ -629,6 +718,51 @@ mod tests {
     }
 
     const FIELD: NodeRef<Search> = NodeRef::new("field");
+
+    #[test]
+    fn a_hidden_element_has_no_style_attribute_and_the_page_hides_it_by_rule() {
+        let html = Page::new("Search", Search::default())
+            .csp_nonce("abc+/=")
+            .child(p().show(!Search::query().is_empty()).text("Results"))
+            .render();
+        assert!(
+            html.contains(
+                r#"<style nonce="abc+/=">[data-hs-hide]{display:none!important}</style>"#
+            )
+        );
+        assert!(html.contains("<p data-hs-hide=\"\""));
+        assert!(!html.contains("style=\""));
+    }
+
+    #[test]
+    fn a_page_without_a_hidden_element_has_no_hide_rule() {
+        let html = Page::new("Search", Search::default())
+            .child(p().show(Search::query().is_empty()).text("Nothing yet"))
+            .render();
+        assert!(!html.contains("display:none"));
+    }
+
+    #[test]
+    fn the_nonce_is_on_every_style_and_the_runtime_script() {
+        let html = Page::new("Search", Search::default())
+            .csp_nonce("n0nce")
+            .global(Global::preflight())
+            .theme(Theme::new().set(&Token::new("ink", Color::RED), Color::BLUE))
+            .style(Stylesheet::new(".x{}"))
+            .child(p().css(Style::new().color(Color::RED)))
+            .render();
+        assert_eq!(
+            html.matches("<style").count(),
+            html.matches(r#" nonce="n0nce">"#).count() - 1
+        );
+        assert_eq!(html.matches("<style").count(), 4);
+    }
+
+    #[test]
+    #[should_panic(expected = "a CSP nonce is base64")]
+    fn a_nonce_that_could_end_the_attribute_panics() {
+        let _ = Page::new("Search", Search::default()).csp_nonce("a\" onload=\"x");
+    }
 
     #[test]
     fn robots_lists_only_what_the_page_asks() {

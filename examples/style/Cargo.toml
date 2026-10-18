@@ -7,6 +7,7 @@ publish = false
 
 [dependencies]
 axum.workspace = true
+getrandom.workspace = true
 hypersig.workspace = true
 serde.workspace = true
 tokio.workspace = true
