@@ -95,7 +95,7 @@ demos! {
     Progress => progress, "ui/progress.rs", "10.5rem";
     Separator => separator, "ui/separator.rs", "12.5rem";
     DataTable => data_table, "ui/data_table.rs", "25rem";
-    Chart => chart, "ui/chart.rs", "27rem";
+    Chart => chart, "ui/chart.rs", "29rem";
     Hover => hover, "style/hover.rs", "12rem";
     Accent => accent, "style/accent.rs", "15rem";
     Layout => layout, "style/layout.rs", "14rem";
