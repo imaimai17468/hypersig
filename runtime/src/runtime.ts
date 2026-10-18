@@ -1,5 +1,6 @@
 import { type CallOptions, type Compiled, compile, type Context, evaluate, type Host, resolve, resolveRead, run, type Slot } from "./eval.ts";
 import { addRules } from "./css.ts";
+import { keepInView } from "./anchor.ts";
 import { morph } from "./morph.ts";
 import { placeRead, type StaticRead, staticReads } from "./reads.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
@@ -617,6 +618,9 @@ export class Runtime implements Host {
       case "hs-signals":
         this.store.merge(JSON.parse(event.data) as Values);
         return;
+      case "hs-list":
+        run(JSON.parse(event.data), { store: this.store, scope: [] }, this).catch((error: unknown) => console.error("hypersig:", error));
+        return;
       case "hs-element": {
         const { html, css } = JSON.parse(event.data) as { html: string; css?: [string, string][] };
         if (css !== undefined) addRules(css);
@@ -875,10 +879,13 @@ export class Runtime implements Host {
     const previous = known ?? this.#adoptItems(template, shape);
     const next = new Map<string, Instance>();
     const order = items.map((_, index) => match(index, previous, next));
+    const restore = known === undefined ? null : prepended(known, order, created);
     for (const [key, instance] of previous) {
       if (next.get(key) !== instance) this.#unmountItem(instance);
     }
     arrange(parent, template, previous, order);
+    // The new items get their text when the rows are flushed later in this render, so their height is known after it.
+    if (restore !== null) queueMicrotask(restore);
     register(order);
     this.#lists.set(template, next);
   }
@@ -2109,6 +2116,22 @@ function increasing(values: readonly number[]): Set<number> {
   const run = new Set<number>();
   for (let at = tails.length === 0 ? -1 : tails[tails.length - 1]!; at !== -1; at = previous[at]!) run.add(at);
   return run;
+}
+
+/**
+ * Where items were only added before the items of `known`, which stay in
+ * their order after them, the function that scrolls them back to where they
+ * were on screen once the new items are in the document. Null otherwise.
+ */
+function prepended(known: ReadonlyMap<string, Instance>, order: readonly Instance[], created: ReadonlySet<Instance>): (() => void) | null {
+  const first = known.values().next().value;
+  if (first === undefined || !first.element.isConnected) return null;
+  const at = order.indexOf(first);
+  if (at <= 0 || at + known.size > order.length) return null;
+  for (let index = 0; index < at; index++) if (!created.has(order[index]!)) return null;
+  let index = at;
+  for (const instance of known.values()) if (order[index++] !== instance) return null;
+  return keepInView(first.element);
 }
 
 /**

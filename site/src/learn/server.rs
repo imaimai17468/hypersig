@@ -91,6 +91,28 @@ pub fn server(site: Site) -> Part {
                 ja: "差分は 1 つずつ Server-Sent Event として送られます。axum を使わないサーバーには、`to_event_stream` がレスポンスの本文を返します。",
             },
         ),
+        subheading(
+            site,
+            L {
+                en: "List patches",
+                ja: "リストの差分",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`patch` sends a list whole, so a chat that sends each message with `patch` sends every earlier one again. [`ListPatch`](api:hypersig/struct.ListPatch.html) sends only the items that change: `patch_append` and `patch_prepend` add items at either end of the list the browser holds, `patch_upsert` replaces the item with the same key or appends it, and `patch_remove` removes the items with the given keys. The key is an expression of the item, as in `each_keyed`, and the browser computes it for each item. As with `patch`, only a page-rooted `Vec` signal has these methods.",
+                ja: "`patch` はリストを丸ごと送るので、チャットのメッセージを 1 件ずつ `patch` で送ると、それまでのメッセージも毎回送り直すことになります。[`ListPatch`](api:hypersig/struct.ListPatch.html) は変わる項目だけを送ります。`patch_append` と `patch_prepend` はブラウザが持つリストの末尾と先頭に項目を加え、`patch_upsert` は同じキーの項目を置き換えるか末尾に加え、`patch_remove` は指定したキーの項目を取り除きます。キーは `each_keyed` と同じく項目の式で、ブラウザが項目ごとに計算します。`patch` と同じく、これらのメソッドはページを起点とする `Vec` のシグナルにだけあります。",
+            },
+        ),
+        show(Snippet::ListPatches),
+        para(
+            site,
+            L {
+                en: "Items added before an `each_keyed` list keep the items already on screen where they were: the runtime scrolls the nearest scrollable ancestor by the height of the new items. Chrome's scroll anchoring does the same once the list is scrolled, but not at the very top, which is where a list that loads older items is when it loads them. `Sig::prepend` does the same in the browser. A list drawn with `each` matches its elements by position, so its first element shows the first new item and nothing scrolls.",
+                ja: "`each_keyed` のリストの先頭に項目を加えると、画面に出ていた項目はその位置に残ります。ランタイムが、いちばん近いスクロールできる祖先要素を、新しい項目の高さの分だけスクロールします。Chrome のスクロールアンカリングもリストをスクロールした後なら同じことをしますが、いちばん上では働きません。古い項目を読み込むリストは、ちょうどいちばん上にあるときに読み込みます。ブラウザの中では `Sig::prepend` が同じように動きます。`each` で描いたリストは要素を位置で対応させるので、先頭の要素に新しい最初の項目が表示され、スクロールはしません。",
+            },
+        ),
         fragments(site),
         calls(site),
     ])

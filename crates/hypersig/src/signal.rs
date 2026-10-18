@@ -263,6 +263,23 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
         )
     }
 
+    /// A statement that adds every item of `items` before the items of this list.
+    ///
+    /// Where the list is drawn with [`each_keyed`](crate::html::each_keyed),
+    /// the runtime keeps the items that were already on screen where they
+    /// were, scrolling the nearest scrollable ancestor by the height of the
+    /// items added above them. A list drawn with [`each`](crate::html::each)
+    /// matches its elements by position, so its first element shows the first
+    /// new item and nothing is scrolled.
+    #[must_use]
+    pub fn prepend(self, items: impl IntoExpr<S, Vec<T>>) -> Stmt<S> {
+        Stmt::list(
+            "prepend",
+            self.path.place_json(),
+            items.into_expr().into_json(),
+        )
+    }
+
     /// A statement that removes the item at `index`, if there is one.
     #[must_use]
     pub fn remove_at(self, index: impl IntoExpr<S, i32>) -> Stmt<S> {

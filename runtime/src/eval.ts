@@ -1,4 +1,4 @@
-import { equal, getPath, join, setPath, type Store } from "./store.ts";
+import { equal, getPath, join, setPath, Store, type Values } from "./store.ts";
 
 /**
  * The JSON form of an expression or statement, as `crates/hypersig/src/expr.rs` writes it.
@@ -189,6 +189,11 @@ function testItems(ctx: Context, depth: number, [path, items, read]: [string, re
   });
 }
 
+/** The key of each item of the list at `path`, as `JSON.stringify` writes it, the way a keyed list compares keys. */
+function itemKeys(ctx: Context, depth: number, found: [string, readonly unknown[], string], key: Compiled): string[] {
+  return ctx.store.untracked(() => mapItems(ctx, depth, found, key).map((value) => JSON.stringify(value)));
+}
+
 /** The value of `each` for each item of the list at `path`, with one context reused for every item. */
 function mapItems(ctx: Context, depth: number, [path, items, read]: [string, readonly unknown[], string], each: Compiled): unknown[] {
   const [slot, at] = walker(path, read);
@@ -360,6 +365,49 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       const [path, items] = list(ctx, rest[0]);
       const added = evaluate(rest[1], ctx);
       if (Array.isArray(added) && added.length > 0) store.set(path, [...items, ...(added as unknown[])]);
+      return;
+    }
+    case "prepend": {
+      const [path, items] = list(ctx, rest[0]);
+      const added = evaluate(rest[1], ctx);
+      if (Array.isArray(added) && added.length > 0) store.set(path, [...(added as unknown[]), ...items]);
+      return;
+    }
+    case "upsert": {
+      // `["upsert", place, depth, key, items]`: an item replaces the held item with its key, or goes at the end.
+      const [path, items, read] = list(ctx, rest[0]);
+      const added = evaluate(rest[3], ctx);
+      if (!Array.isArray(added) || added.length === 0) return;
+      // The key may read the item and the page's signals, so the added items are keyed in a copy of the store that holds them after the list's items.
+      const all = [...items, ...(added as unknown[])];
+      const copy = new Store(setPath(store.untracked(() => store.get("")), path, all) as Values);
+      const keys = itemKeys({ ...ctx, store: copy }, rest[1] as number, [path, all, read], compile(rest[2]));
+      const next = [...items];
+      const at = new Map<string, number>();
+      items.forEach((_, index) => {
+        if (!at.has(keys[index]!)) at.set(keys[index]!, index);
+      });
+      added.forEach((item: unknown, offset) => {
+        const key = keys[items.length + offset]!;
+        const index = at.get(key);
+        if (index === undefined) {
+          at.set(key, next.length);
+          next.push(item);
+        } else next[index] = item;
+      });
+      store.set(path, next);
+      return;
+    }
+    case "remove_keys": {
+      // `["remove_keys", place, depth, key, keys]`: the keys arrive as JSON values, and are compared as `JSON.stringify` writes them.
+      const found = list(ctx, rest[0]);
+      const [path, items] = found;
+      const removed = evaluate(rest[3], ctx);
+      if (!Array.isArray(removed) || removed.length === 0) return;
+      const gone = new Set(removed.map((key: unknown) => JSON.stringify(key)));
+      const keys = itemKeys(ctx, rest[1] as number, found, compile(rest[2]));
+      const kept = items.filter((_, index) => !gone.has(keys[index]!));
+      if (kept.length !== items.length) store.set(path, kept);
       return;
     }
     case "remove": {

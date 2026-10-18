@@ -74,7 +74,7 @@ pub use form::{FieldErrors, Form, Rules, Validate};
 pub use head::{OpenGraph, Origin, OriginError};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use page::Page;
-pub use patch::{Fragment, Patches, SignalPatch, fragment};
+pub use patch::{Fragment, ListPatch, Patches, SignalPatch, fragment};
 pub use route::{Extends, Link, Params, Rest, Route, Search, SearchValue, Segment, Url};
 pub use signal::{Item, Local, MAX_DEPTH, Root, Sig, Signals};
 pub use upload::{FileInput, Upload};

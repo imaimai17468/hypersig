@@ -48,6 +48,7 @@ snippets! {
     Each => "each.rs";
     ListStatements => "list_statements.rs";
     Patches => "patches.rs";
+    ListPatches => "list_patches.rs";
     Forms => "forms.rs";
     Latest => "latest.rs";
     Extractors => "extractors.rs";

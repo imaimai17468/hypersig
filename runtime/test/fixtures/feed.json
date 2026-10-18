@@ -1,0 +1,25 @@
+{
+  "html": "<main><button id=\"older\" data-hs-on-click=\"[&quot;prepend&quot;,&quot;notes&quot;,[&quot;sig&quot;,&quot;older&quot;]]\">Older</button><ul id=\"feed\"><template data-hs-each=\"[&quot;notes&quot;,0]\"><li data-hs-text=\"[&quot;item&quot;,0,&quot;body&quot;]\" data-hs-key=\"[&quot;item&quot;,0,&quot;id&quot;]\"></li></template></ul></main>",
+  "signals": {
+    "notes": [
+      {
+        "body": "one",
+        "id": 1
+      },
+      {
+        "body": "two",
+        "id": 2
+      }
+    ],
+    "older": [
+      {
+        "body": "minus one",
+        "id": -1
+      },
+      {
+        "body": "zero",
+        "id": 0
+      }
+    ]
+  }
+}

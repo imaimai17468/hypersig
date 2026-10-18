@@ -916,6 +916,59 @@ fn check_page<S: Signals>(name: &str, el: El<S>, signals: S) {
     );
 }
 
+#[derive(Signals, Serialize, Deserialize, Clone)]
+struct Note {
+    id: i32,
+    body: String,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Feed {
+    notes: Vec<Note>,
+    older: Vec<Note>,
+}
+
+fn note(id: i32, body: &str) -> Note {
+    Note {
+        id,
+        body: body.to_owned(),
+    }
+}
+
+fn feed() -> (El<Feed>, Feed) {
+    let el = main()
+        .child(
+            button()
+                .id("older")
+                .on_click(Feed::notes().prepend(Feed::older()))
+                .text("Older"),
+        )
+        .child(ul().id("feed").child(each_keyed(
+            Feed::notes(),
+            |note| note.at(Note::id()),
+            |note| li().bind_text(note.at(Note::body())),
+        )));
+    let signals = Feed {
+        notes: vec![note(1, "one"), note(2, "two")],
+        older: vec![note(-1, "minus one"), note(0, "zero")],
+    };
+    (el, signals)
+}
+
+fn feed_patches() -> String {
+    let notes = Feed::notes();
+    let by_id = |note: hypersig::Item<Feed, Note>| note.at(Note::id());
+    Patches::<Feed>::new()
+        .list(notes.patch_append(&[note(3, "three")]))
+        .list(
+            notes
+                .patch_prepend(&[note(0, "zero")])
+                .and(notes.patch_upsert(&[note(1, "one!"), note(4, "four")], by_id)),
+        )
+        .list(notes.patch_remove(&[2, 3], by_id))
+        .to_event_stream()
+}
+
 #[test]
 fn fixtures_match_the_builder() {
     let (el, signals) = todos();
@@ -973,6 +1026,16 @@ fn fixtures_match_the_builder() {
                     .to_event_stream()
             }))
             .expect("fixture JSON")
+        ),
+    );
+    let (el, signals) = feed();
+    check("feed", &el, &signals);
+    write_or_compare(
+        "feed_patches",
+        &format!(
+            "{}\n",
+            serde_json::to_string_pretty(&json!({ "stream": feed_patches() }))
+                .expect("fixture JSON")
         ),
     );
     let document = computed_page();

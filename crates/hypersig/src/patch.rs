@@ -1,11 +1,12 @@
 //! Patches the server sends back to the page, and the fragments they replace.
 //!
 //! On the wire each patch is one Server-Sent Event with a single-line JSON
-//! payload. The runtime in `runtime/src/runtime.ts` reads three event names:
+//! payload. The runtime in `runtime/src/runtime.ts` reads five event names:
 //!
 //! | Event | Data |
 //! |---|---|
 //! | `hs-signals` | `{"path": value, ...}`, merged into the signal store |
+//! | `hs-list` | a list statement, `["append" \| "prepend", "path", ["lit", items]]`, `["upsert", "path", depth, key, ["lit", items]]`, or `["remove_keys", "path", depth, key, ["lit", keys]]`, run against the signal store |
 //! | `hs-element` | `{"html": "...", "css": [[sort key, css], ...]}`, morphed into the element with the root's `id` |
 //! | `hs-navigate` | `{"url": "..."}`, the page the browser loads next |
 //! | `hs-history` | `{"url": "...", "replace": bool}`, the URL the address bar shows, without loading it |
@@ -22,9 +23,10 @@ use std::marker::PhantomData;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
 
+use crate::expr::IntoExpr;
 use crate::html::El;
 use crate::route::Url;
-use crate::signal::Signals;
+use crate::signal::{Item, Root, Sig, Signals, in_item_scope};
 use crate::style::Sheet;
 
 /// A part of the page that the server can re-render and replace without the rest of the page.
@@ -106,9 +108,182 @@ impl<S> fmt::Debug for SignalPatch<S> {
     }
 }
 
+/// Changes to the items of one or more list signals of `S`, sent without the rest of each list.
+///
+/// Build one with [`Sig::patch_append`], [`Sig::patch_prepend`],
+/// [`Sig::patch_upsert`], or [`Sig::patch_remove`], and combine with
+/// [`ListPatch::and`]. The browser applies the changes in order to the list
+/// it holds, so a list the server sends one message of at a time grows in
+/// the browser without the server keeping a copy of it.
+///
+/// ```
+/// use hypersig::{Patches, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Message {
+///     body: String,
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Room {
+///     messages: Vec<Message>,
+/// }
+///
+/// let hello = Message { body: "hello".into() };
+/// let patches: Patches<Room> = Room::messages().patch_append(&[hello]).into();
+/// assert_eq!(
+///     patches.to_event_stream(),
+///     "event: hs-list\ndata: [\"append\",\"messages\",[\"lit\",[{\"body\":\"hello\"}]]]\n\n",
+/// );
+/// ```
+pub struct ListPatch<S> {
+    statements: Vec<Value>,
+    marker: PhantomData<fn() -> S>,
+}
+
+impl<S> ListPatch<S> {
+    fn single(statement: Value) -> Self {
+        Self {
+            statements: vec![statement],
+            marker: PhantomData,
+        }
+    }
+
+    /// Adds the changes in `other`, applied after the ones in `self`.
+    #[must_use]
+    pub fn and(mut self, other: Self) -> Self {
+        self.statements.extend(other.statements);
+        self
+    }
+}
+
+impl<S> fmt::Debug for ListPatch<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ListPatch").field(&self.statements).finish()
+    }
+}
+
+/// The list patches exist only on a signal reached from the page root, as
+/// [`Sig::patch`] does, because the server cannot name the item of an
+/// enclosing list that the browser is rendering.
+impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
+    /// A patch that adds `items` after the items the browser holds.
+    ///
+    /// # Panics
+    ///
+    /// Panics if an item fails to serialize to JSON, which only happens for a
+    /// `Serialize` impl that returns an error.
+    #[must_use]
+    pub fn patch_append(self, items: &[T]) -> ListPatch<S> {
+        ListPatch::single(json!(["append", self.path(), literal(items)]))
+    }
+
+    /// A patch that adds `items` before the items the browser holds.
+    ///
+    /// Where the list is drawn with [`each_keyed`](crate::html::each_keyed),
+    /// the runtime keeps the items that were already on screen where they
+    /// were, scrolling the nearest scrollable ancestor by the height of the
+    /// items added above them, as [`Sig::prepend`] does.
+    ///
+    /// # Panics
+    ///
+    /// Panics if an item fails to serialize to JSON, which only happens for a
+    /// `Serialize` impl that returns an error.
+    #[must_use]
+    pub fn patch_prepend(self, items: &[T]) -> ListPatch<S> {
+        ListPatch::single(json!(["prepend", self.path(), literal(items)]))
+    }
+
+    /// A patch that replaces each item whose key matches one in `items`, and appends the rest.
+    ///
+    /// The browser computes `key` for the items it holds and for each of
+    /// `items`, as [`each_keyed`](crate::html::each_keyed) computes the key of
+    /// a row, and compares the keys as JSON. An item of `items` replaces the
+    /// first held item with its key, and an item whose key no held item has
+    /// goes at the end. Of two items in `items` with one key, the later wins.
+    ///
+    /// ```
+    /// use hypersig::{Patches, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Server {
+    ///     name: String,
+    ///     load: f64,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Dashboard {
+    ///     servers: Vec<Server>,
+    /// }
+    ///
+    /// let busy = Server { name: "db-1".into(), load: 0.9 };
+    /// let _: Patches<Dashboard> = Dashboard::servers()
+    ///     .patch_upsert(&[busy], |server| server.at(Server::name()))
+    ///     .into();
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if an item fails to serialize to JSON, which only happens for a
+    /// `Serialize` impl that returns an error.
+    #[must_use]
+    pub fn patch_upsert<K, E: IntoExpr<S, K>>(
+        self,
+        items: &[T],
+        key: impl FnOnce(Item<S, T>) -> E,
+    ) -> ListPatch<S> {
+        let (depth, key) = self.key(key);
+        ListPatch::single(json!(["upsert", self.path(), depth, key, literal(items)]))
+    }
+
+    /// A patch that removes each item whose key is one of `keys`.
+    ///
+    /// The browser computes `key` for the items it holds, as
+    /// [`patch_upsert`](Sig::patch_upsert) does, and compares it with each of
+    /// `keys` as JSON.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a key fails to serialize to JSON, which only happens for a
+    /// `Serialize` impl that returns an error.
+    #[must_use]
+    pub fn patch_remove<K: Serialize, E: IntoExpr<S, K>>(
+        self,
+        keys: &[K],
+        key: impl FnOnce(Item<S, T>) -> E,
+    ) -> ListPatch<S> {
+        let (depth, key) = self.key(key);
+        ListPatch::single(json!([
+            "remove_keys",
+            self.path(),
+            depth,
+            key,
+            literal(keys)
+        ]))
+    }
+
+    /// The depth of the item scope `key` is built in, and the key's expression.
+    fn key<K, E: IntoExpr<S, K>>(self, key: impl FnOnce(Item<S, T>) -> E) -> (u8, Value) {
+        in_item_scope(|depth| {
+            let item = Item::new(self.raw_path(), depth);
+            (depth, key(item).into_expr().into_json())
+        })
+    }
+}
+
+fn literal<T: Serialize>(values: &[T]) -> Value {
+    json!([
+        "lit",
+        serde_json::to_value(values).expect("a list item serializes to JSON")
+    ])
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum PatchEvent {
     Signals(Map<String, Value>),
+    List(Value),
     Element {
         html: String,
         css: Vec<(String, String)>,
@@ -124,6 +299,7 @@ impl PatchEvent {
     pub(crate) fn name(&self) -> &'static str {
         match self {
             Self::Signals(_) => "hs-signals",
+            Self::List(_) => "hs-list",
             Self::Element { .. } => "hs-element",
             Self::Navigate(_) => "hs-navigate",
             Self::History { .. } => "hs-history",
@@ -133,6 +309,7 @@ impl PatchEvent {
     pub(crate) fn data(&self) -> String {
         match self {
             Self::Signals(values) => Value::Object(values.clone()).to_string(),
+            Self::List(statement) => statement.to_string(),
             Self::Element { html, css } if css.is_empty() => json!({ "html": html }).to_string(),
             Self::Element { html, css } => json!({ "html": html, "css": css }).to_string(),
             Self::Navigate(url) => json!({ "url": url.as_str() }).to_string(),
@@ -175,6 +352,14 @@ impl<S: Signals> Patches<S> {
     #[must_use]
     pub fn signals(mut self, patch: SignalPatch<S>) -> Self {
         self.events.push(PatchEvent::Signals(patch.values));
+        self
+    }
+
+    /// Changes items of list signals in the browser, sending only the items that change.
+    #[must_use]
+    pub fn list(mut self, patch: ListPatch<S>) -> Self {
+        self.events
+            .extend(patch.statements.into_iter().map(PatchEvent::List));
         self
     }
 
@@ -315,5 +500,11 @@ impl<S: Signals> Patches<S> {
 impl<S: Signals> From<SignalPatch<S>> for Patches<S> {
     fn from(patch: SignalPatch<S>) -> Self {
         Self::new().signals(patch)
+    }
+}
+
+impl<S: Signals> From<ListPatch<S>> for Patches<S> {
+    fn from(patch: ListPatch<S>) -> Self {
+        Self::new().list(patch)
     }
 }

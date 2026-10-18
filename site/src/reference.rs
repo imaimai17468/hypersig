@@ -943,6 +943,46 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "prepend",
+                            "struct.Sig.html#method.prepend",
+                            L {
+                                en: "A statement that adds every item of `items` before the items of this list.",
+                                ja: "このリストの項目の前に `items` のすべての項目を加える文",
+                            },
+                        ),
+                        (
+                            "patch_append",
+                            "struct.Sig.html#method.patch_append",
+                            L {
+                                en: "A patch that adds `items` after the items the browser holds.",
+                                ja: "ブラウザが持つ項目の後ろに `items` を加える差分",
+                            },
+                        ),
+                        (
+                            "patch_prepend",
+                            "struct.Sig.html#method.patch_prepend",
+                            L {
+                                en: "A patch that adds `items` before the items the browser holds.",
+                                ja: "ブラウザが持つ項目の前に `items` を加える差分",
+                            },
+                        ),
+                        (
+                            "patch_upsert",
+                            "struct.Sig.html#method.patch_upsert",
+                            L {
+                                en: "A patch that replaces each item whose key matches one in `items`, and appends the rest.",
+                                ja: "`items` の項目とキーが一致する項目を置き換え、残りを末尾に加える差分",
+                            },
+                        ),
+                        (
+                            "patch_remove",
+                            "struct.Sig.html#method.patch_remove",
+                            L {
+                                en: "A patch that removes each item whose key is one of `keys`.",
+                                ja: "キーが `keys` のどれかに一致する項目を取り除く差分",
+                            },
+                        ),
+                        (
                             "extend",
                             "struct.Sig.html#method.extend",
                             L {
@@ -1988,6 +2028,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "list",
+                            "struct.Patches.html#method.list",
+                            L {
+                                en: "Changes items of list signals in the browser, sending only the items that change.",
+                                ja: "変わる項目だけを送って、ブラウザのリストのシグナルの項目を変えます。",
+                            },
+                        ),
+                        (
                             "all_signals",
                             "struct.Patches.html#method.all_signals",
                             L {
@@ -2049,6 +2097,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "Adds the values in `other`. A signal present in both takes `other`'s value.",
                                 ja: "`other` の値を加えます。両方にあるシグナルは `other` の値になります。",
+                            },
+                        ),
+                        (
+                            "ListPatch",
+                            "struct.ListPatch.html",
+                            L {
+                                en: "Changes to the items of one or more list signals of `S`, sent without the rest of each list.",
+                                ja: "`S` の 1 つ以上のリストのシグナルの項目への変更です。リストの残りの項目は送りません。",
+                            },
+                        ),
+                        (
+                            "ListPatch::and",
+                            "struct.ListPatch.html#method.and",
+                            L {
+                                en: "Adds the changes in `other`, applied after the ones in `self`.",
+                                ja: "`other` の変更を加えます。`self` の変更の後に適用されます。",
                             },
                         ),
                     ],

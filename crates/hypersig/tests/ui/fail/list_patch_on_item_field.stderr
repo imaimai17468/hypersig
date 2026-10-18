@@ -1,0 +1,11 @@
+error[E0599]: no method named `patch_append` found for struct `Sig<Todos, Vec<String>, hypersig::Local>` in the current scope
+  --> tests/ui/fail/list_patch_on_item_field.rs:19:55
+   |
+19 |         let _: Patches<Todos> = todo.at(Todo::tags()).patch_append(&["new".to_owned()]).into();
+   |                                                       ^^^^^^^^^^^^
+   |
+help: there is a method `append` with a similar name
+   |
+19 -         let _: Patches<Todos> = todo.at(Todo::tags()).patch_append(&["new".to_owned()]).into();
+19 +         let _: Patches<Todos> = todo.at(Todo::tags()).append(&["new".to_owned()]).into();
+   |

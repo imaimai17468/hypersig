@@ -20,7 +20,7 @@ use serde::de::DeserializeOwned;
 
 use crate::action::{Action, Method, StreamAction};
 use crate::page::Page;
-use crate::patch::{PatchEvent, Patches, SignalPatch};
+use crate::patch::{ListPatch, PatchEvent, Patches, SignalPatch};
 use crate::route::{Params, Route, Search, Url};
 use crate::signal::Signals;
 use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
@@ -507,7 +507,7 @@ impl IntoResponse for PageResponse {
 
 /// What an action handler returns: patches for the page whose signals are `S`.
 ///
-/// [`Patches`] and [`SignalPatch`] convert into this and go out as
+/// [`Patches`], [`SignalPatch`], and [`ListPatch`] convert into this and go out as
 /// Server-Sent Events. A pair of [`IntoResponseParts`] and one of these adds
 /// headers, such as a `Set-Cookie`. A `Result` whose error is
 /// [`IntoResponse`] answers with the error, so a handler can use `?`. The
@@ -568,6 +568,12 @@ impl<S: Signals> From<Patches<S>> for ActionResponse<S> {
 
 impl<S: Signals> From<SignalPatch<S>> for ActionResponse<S> {
     fn from(patch: SignalPatch<S>) -> Self {
+        Patches::from(patch).into()
+    }
+}
+
+impl<S: Signals> From<ListPatch<S>> for ActionResponse<S> {
+    fn from(patch: ListPatch<S>) -> Self {
         Patches::from(patch).into()
     }
 }
