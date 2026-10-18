@@ -4,7 +4,7 @@ use hypersig::html::div;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals, if_else};
-use hypersig_ui::{Autocomplete, InputKind, TextField};
+use hypersig_ui::{Autocomplete, InputKind, NumberField, TextField};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
@@ -14,6 +14,7 @@ use crate::lang::L;
 pub struct Signup {
     email: String,
     bio: String,
+    guests: i32,
 }
 
 pub fn page(site: Site) -> Page<Signup> {
@@ -22,6 +23,7 @@ pub fn page(site: Site) -> Page<Signup> {
     let initial = Signup {
         email: String::new(),
         bio: String::new(),
+        guests: 1,
     };
     Page::new(
         site.t(L {
@@ -71,6 +73,22 @@ pub fn page(site: Site) -> Page<Signup> {
                     en: "A sentence or two for your profile.",
                     ja: "プロフィールに載せる 1、2 文です。",
                 })),
+            )
+            .child(
+                NumberField::new(
+                    site.t(L {
+                        en: "Guests",
+                        ja: "人数",
+                    }),
+                    Signup::guests(),
+                )
+                .min(1)
+                .max(10)
+                .description(site.t(L {
+                    en: "Up to 10 people.",
+                    ja: "10 人まで入れられます。",
+                })),
             ),
+
     )
 }

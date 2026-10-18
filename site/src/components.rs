@@ -331,6 +331,10 @@ fn component_page(page: Component) -> Page {
                     en: "The error sits in an `aria-live=\"polite\"` region, so a screen reader reads a new message when it appears. A screen reader reads \"required\" from the field itself, so it skips the asterisk that a required field shows. `autocomplete` tells the browser what the field holds, to meet WCAG 1.3.5.",
                     ja: "エラーは `aria-live=\"polite\"` の領域に入るので、新しいメッセージが出るとスクリーンリーダーが読み上げます。スクリーンリーダーは「必須」であることをフィールド自体から読み取るので、必須のフィールドに付くアスタリスクは読み飛ばします。`autocomplete` は WCAG 1.3.5 を満たすために、フィールドに何が入るかをブラウザに伝えます。",
                 },
+                L {
+                    en: "`NumberField` is an `<input type=\"number\">` bound to an `i32` or `f64` signal, with the same label, ids, and messages. Its `min`, `max`, and `step` take the signal's own type. A field whose minimum is 0 or more asks for a keyboard of digits.",
+                    ja: "`NumberField` は `i32` か `f64` のシグナルに束縛した `<input type=\"number\">` で、ラベル、id、メッセージはテキストフィールドと同じです。`min`、`max`、`step` はシグナルと同じ型の値を取ります。最小値が 0 以上のフィールドは、数字のキーボードを求めます。",
+                },
             ],
             keys: &[],
             items: &[
@@ -452,6 +456,54 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "The on-screen keyboard a `TextField` asks for, as `inputmode` names it.",
                         ja: "`TextField` が求める画面上のキーボードを、`inputmode` の値で表したもの",
+                    },
+                ),
+                (
+                    "NumberField::new",
+                    "hypersig_ui/struct.NumberField.html#method.new",
+                    L {
+                        en: "A number field labeled `label`, bound to `value`.",
+                        ja: "`value` に束縛し、`label` をラベルに持つ数値フィールド",
+                    },
+                ),
+                (
+                    "NumberField::in_form",
+                    "hypersig_ui/struct.NumberField.html#method.in_form",
+                    L {
+                        en: "A number field labeled `label`, bound to `field` of `form`.",
+                        ja: "`form` の `field` に束縛し、`label` をラベルに持つ数値フィールド",
+                    },
+                ),
+                (
+                    "min",
+                    "hypersig_ui/struct.NumberField.html#method.min",
+                    L {
+                        en: "Sets the lowest value the browser accepts.",
+                        ja: "ブラウザが受け付ける最小値を設定します。",
+                    },
+                ),
+                (
+                    "max",
+                    "hypersig_ui/struct.NumberField.html#method.max",
+                    L {
+                        en: "Sets the highest value the browser accepts.",
+                        ja: "ブラウザが受け付ける最大値を設定します。",
+                    },
+                ),
+                (
+                    "step",
+                    "hypersig_ui/struct.NumberField.html#method.step",
+                    L {
+                        en: "Sets how far the arrow keys move the value, and which values the browser accepts.",
+                        ja: "矢印キーで値が動く幅と、ブラウザが受け付ける値を設定します。",
+                    },
+                ),
+                (
+                    "Numeric",
+                    "hypersig_ui/trait.Numeric.html",
+                    L {
+                        en: "A number type a `NumberField` can be bound to: `i32` or `f64`.",
+                        ja: "`NumberField` を束縛できる数値の型（`i32` か `f64`）",
                     },
                 ),
                 (

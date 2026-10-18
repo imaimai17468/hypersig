@@ -15,10 +15,10 @@ use hypersig::{Action, NumberFormat, Page, Patches, Route, RouterExt, Segment, S
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, ButtonSize, ButtonVariant, Chart, Column,
     Combobox, ComboboxState, DataTable, Dialog, DonutChart, InputKind, Level, Listbox, Menu,
-    MenuItem, ServerTable, Slider, SortOrder, TableState, Tabs, TextField, Toast, ToastVariant,
-    Toaster, Tooltip, alert, alert_description, alert_title, badge, button, card, card_content,
-    card_description, card_footer, card_header, card_title, checkbox, dialog_footer, progress,
-    radio_group, select_field, separator, skeleton, submit_button, switch, token,
+    MenuItem, NumberField, ServerTable, Slider, SortOrder, TableState, Tabs, TextField, Toast,
+    ToastVariant, Toaster, Tooltip, alert, alert_description, alert_title, badge, button, card,
+    card_content, card_description, card_footer, card_header, card_title, checkbox, dialog_footer,
+    progress, radio_group, select_field, separator, skeleton, submit_button, switch, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -113,6 +113,7 @@ struct Gallery {
     nickname: String,
     email: String,
     bio: String,
+    seats: i32,
     email_error: String,
     saving: bool,
     saved: String,
@@ -300,6 +301,12 @@ fn profile() -> El<Gallery> {
                         TextField::new("Bio", Gallery::bio())
                             .multiline()
                             .description("A sentence or two for your profile page."),
+                    )
+                    .child(
+                        NumberField::new("Seats", Gallery::seats())
+                            .min(1)
+                            .max(8)
+                            .description("Up to 8 seats."),
                     ),
             )
             .child(
@@ -855,6 +862,22 @@ fn sample_payments() -> Vec<Payment> {
         .collect()
 }
 
+fn browsers() -> Vec<Browser> {
+    [
+        ("Chrome", 275),
+        ("Safari", 200),
+        ("Firefox", 187),
+        ("Edge", 173),
+        ("Other", 90),
+    ]
+    .into_iter()
+    .map(|(name, visitors)| Browser {
+        name: name.to_owned(),
+        visitors,
+    })
+    .collect()
+}
+
 async fn index((): (), (): ()) -> Page<Gallery> {
     let (orders, orders_total) = query_orders(&TableState::default());
     Page::new(
@@ -865,6 +888,7 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             nickname: String::new(),
             email: String::new(),
             bio: String::new(),
+            seats: 2,
             email_error: String::new(),
             saving: false,
             saved: String::new(),
@@ -893,19 +917,7 @@ async fn index((): (), (): ()) -> Page<Gallery> {
             orders_table: TableState::default(),
             chosen_orders: Vec::new(),
             months: first_half(),
-            browsers: [
-                ("Chrome", 275),
-                ("Safari", 200),
-                ("Firefox", 187),
-                ("Edge", 173),
-                ("Other", 90),
-            ]
-            .into_iter()
-            .map(|(name, visitors)| Browser {
-                name: name.to_owned(),
-                visitors,
-            })
-            .collect(),
+            browsers: browsers(),
         },
     )
     .global(hypersig_ui::global())

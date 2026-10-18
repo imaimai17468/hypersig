@@ -1,0 +1,38 @@
+error[E0277]: a number field cannot be bound to a `String` signal
+  --> tests/ui/fail/number_field_on_text.rs:12:42
+   |
+12 |     let _ = NumberField::new("Quantity", Cart::note()).render();
+   |             ----------------             ^^^^^^^^^^^^ the trait `hypersig_ui::Numeric` is not implemented for `String`
+   |             |
+   |             required by a bound introduced by this call
+   |
+   = note: bind an `i32` or `f64` signal; text goes in a `TextField`
+help: the following other types implement trait `hypersig_ui::Numeric`
+  --> src/number.rs
+   |
+   | impl Numeric for i32 {}
+   | ^^^^^^^^^^^^^^^^^^^^ `i32`
+   | impl Numeric for f64 {}
+   | ^^^^^^^^^^^^^^^^^^^^ `f64`
+note: required by a bound in `NumberField::<S, T>::new`
+  --> src/number.rs
+   |
+   | impl<S, T: Numeric> NumberField<S, T> {
+   |            ^^^^^^^ required by this bound in `NumberField::<S, T>::new`
+...
+   |     pub fn new(label: impl Into<String>, value: Sig<S, T>) -> Self {
+   |            --- required by a bound in this associated function
+
+error[E0599]: the method `render` exists for struct `NumberField<Cart, String>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/number_field_on_text.rs:12:56
+   |
+12 |     let _ = NumberField::new("Quantity", Cart::note()).render();
+   |                                                        ^^^^^^ method cannot be called on `NumberField<Cart, String>` due to unsatisfied trait bounds
+   |
+  ::: $RUST/alloc/src/string.rs
+   |
+   | pub struct String {
+   | ----------------- doesn't satisfy `String: hypersig_ui::Numeric`
+   |
+   = note: the following trait bounds were not satisfied:
+           `String: hypersig_ui::Numeric`

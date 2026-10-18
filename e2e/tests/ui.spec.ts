@@ -39,6 +39,19 @@ test("a text field is labeled, described, and marked invalid by the server's err
   await expect(email).toHaveAttribute("aria-invalid", "false");
 });
 
+test("a number field is a labeled spin button that starts at its signal and keeps to its range", async ({ page }) => {
+  const seats = page.getByRole("spinbutton", { name: "Seats" });
+  await expect(seats).toHaveValue("2");
+  await expect(seats).toHaveAccessibleDescription("Up to 8 seats.");
+  await expect(seats).toHaveAttribute("inputmode", "numeric");
+  await seats.fill("8");
+  await seats.press("ArrowUp");
+  await expect(seats).toHaveValue("8");
+  await seats.fill("1");
+  await seats.press("ArrowDown");
+  await expect(seats).toHaveValue("1");
+});
+
 test("a checkbox, a switch, and radios keep their native roles and keys", async ({ page }) => {
   const newsletter = page.getByRole("checkbox", { name: "Email me about new releases" });
   await expect(newsletter).not.toBeChecked();

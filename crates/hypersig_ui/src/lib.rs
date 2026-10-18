@@ -13,6 +13,7 @@
 //! |---|---|
 //! | [`button`], [`submit_button`], [`icon_button`] | `<button>`, with the icon button's name required |
 //! | [`TextField`] | `<label>`, `<input>` or `<textarea>`, `aria-describedby`, `aria-invalid`, a live error |
+//! | [`NumberField`] | the same, on `<input type="number">` with typed `min`, `max`, and `step` |
 //! | [`checkbox`], [`switch`] | `<input type="checkbox">`, the switch with `role="switch"` |
 //! | [`radio_group`] | `<fieldset>`, `<legend>`, and radios that share a name |
 //! | [`select_field`] | `<label>` and `<select>`, with a `base-select` picker where supported |
@@ -77,6 +78,7 @@ mod id;
 mod listbox;
 mod look;
 mod menu;
+mod number;
 mod progress;
 mod select;
 mod separator;
@@ -103,6 +105,7 @@ pub use donut::DonutChart;
 pub use field::{Autocomplete, InputKind, InputMode, TextField};
 pub use listbox::Listbox;
 pub use menu::{Menu, MenuItem};
+pub use number::{NumberField, Numeric};
 pub use progress::{progress, skeleton};
 pub use select::{select_field, select_field_in_form};
 pub use separator::separator;

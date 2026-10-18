@@ -267,7 +267,6 @@ impl Autocomplete {
 /// ```
 #[derive(Debug)]
 pub struct TextField<S> {
-    label: String,
     value: Sig<S, String>,
     kind: InputKind,
     multiline: bool,
@@ -276,11 +275,7 @@ pub struct TextField<S> {
     min_length: Option<u32>,
     max_length: Option<u32>,
     placeholder: Option<String>,
-    description: Option<String>,
-    error: Option<Expr<S, String>>,
-    required: bool,
-    disabled: Option<Expr<S, bool>>,
-    on_blur: Option<Stmt<S>>,
+    frame: Frame<S>,
 }
 
 impl<S> TextField<S> {
@@ -288,7 +283,6 @@ impl<S> TextField<S> {
     #[must_use]
     pub fn new(label: impl Into<String>, value: Sig<S, String>) -> Self {
         Self {
-            label: label.into(),
             value,
             kind: InputKind::Text,
             multiline: false,
@@ -297,11 +291,7 @@ impl<S> TextField<S> {
             min_length: None,
             max_length: None,
             placeholder: None,
-            description: None,
-            error: None,
-            required: false,
-            disabled: None,
-            on_blur: None,
+            frame: Frame::new(label.into()),
         }
     }
 
@@ -342,11 +332,9 @@ impl<S> TextField<S> {
         form: Sig<S, Form<T>>,
         field: Sig<T, String>,
     ) -> Self {
-        Self {
-            error: Some(form.error(field)),
-            on_blur: Some(form.touch(field)),
-            ..Self::new(label, form.field(field))
-        }
+        let mut out = Self::new(label, form.field(field));
+        out.frame = out.frame.in_form(form, field);
+        out
     }
 
     /// Sets the `type` of the input. A multiline field ignores it.
@@ -427,7 +415,7 @@ impl<S> TextField<S> {
     /// Adds a line under the field that `aria-describedby` points at.
     #[must_use]
     pub fn description(mut self, text: impl Into<String>) -> Self {
-        self.description = Some(text.into());
+        self.frame.description = Some(text.into());
         self
     }
 
@@ -439,7 +427,7 @@ impl<S> TextField<S> {
     /// expression that checks the value in the browser.
     #[must_use]
     pub fn error(mut self, message: impl IntoExpr<S, String>) -> Self {
-        self.error = Some(message.into_expr());
+        self.frame.error = Some(message.into_expr());
         self
     }
 
@@ -447,33 +435,20 @@ impl<S> TextField<S> {
     /// that a screen reader skips, since it reads "required" from the field.
     #[must_use]
     pub fn required(mut self) -> Self {
-        self.required = true;
+        self.frame.required = true;
         self
     }
 
     /// Disables the field while `when` is true.
     #[must_use]
     pub fn disabled(mut self, when: impl IntoExpr<S, bool>) -> Self {
-        self.disabled = Some(when.into_expr());
+        self.frame.disabled = Some(when.into_expr());
         self
     }
 
     /// The label, the field, the description, and the error, in a `<div>`.
     #[must_use]
     pub fn render(self) -> El<S> {
-        let base = crate::id::of(self.value, "");
-        let field_id = format!("{base}input");
-        let description_id = format!("{base}description");
-        let error_id = format!("{base}error");
-
-        let mut described = Vec::new();
-        if self.description.is_some() {
-            described.push(description_id.as_str());
-        }
-        if self.error.is_some() {
-            described.push(error_id.as_str());
-        }
-
         let mut control = if self.multiline {
             textarea().css(field_style().min_height(rem(4)).resize(Resize::Vertical))
         } else {
@@ -481,11 +456,7 @@ impl<S> TextField<S> {
                 .attr("type", self.kind.name())
                 .css(field_style().height(rem(2.25)))
         }
-        .id(field_id.clone())
         .bind(self.value);
-        if !described.is_empty() {
-            control = control.attr("aria-describedby", described.join(" "));
-        }
         if let Some(autocomplete) = self.autocomplete {
             control = control.attr("autocomplete", autocomplete.name());
         }
@@ -500,6 +471,63 @@ impl<S> TextField<S> {
         }
         if let Some(placeholder) = self.placeholder {
             control = control.attr("placeholder", placeholder);
+        }
+        self.frame.render(&crate::id::of(self.value, ""), control)
+    }
+}
+
+/// The label, the description, and the error around a text or number
+/// field, and the attributes of the control that tie them to it.
+#[derive(Debug)]
+pub(crate) struct Frame<S> {
+    label: String,
+    pub(crate) description: Option<String>,
+    pub(crate) error: Option<Expr<S, String>>,
+    pub(crate) required: bool,
+    pub(crate) disabled: Option<Expr<S, bool>>,
+    on_blur: Option<Stmt<S>>,
+}
+
+impl<S> Frame<S> {
+    pub(crate) fn new(label: String) -> Self {
+        Self {
+            label,
+            description: None,
+            error: None,
+            required: false,
+            disabled: None,
+            on_blur: None,
+        }
+    }
+
+    /// The frame with the form's message for `field`, and the statement that
+    /// marks `field` touched when the visitor leaves the control.
+    pub(crate) fn in_form<T: Validate, U>(self, form: Sig<S, Form<T>>, field: Sig<T, U>) -> Self {
+        Self {
+            error: Some(form.error(field)),
+            on_blur: Some(form.touch(field)),
+            ..self
+        }
+    }
+
+    /// `control` with its id and its ties to the label, the description, and
+    /// the error, in a `<div>` with them. The ids start with `base`.
+    pub(crate) fn render(self, base: &str, control: El<S>) -> El<S> {
+        let field_id = format!("{base}input");
+        let description_id = format!("{base}description");
+        let error_id = format!("{base}error");
+
+        let mut described = Vec::new();
+        if self.description.is_some() {
+            described.push(description_id.as_str());
+        }
+        if self.error.is_some() {
+            described.push(error_id.as_str());
+        }
+
+        let mut control = control.id(field_id.clone());
+        if !described.is_empty() {
+            control = control.attr("aria-describedby", described.join(" "));
         }
         if self.required {
             control = control.attr("required", "");
