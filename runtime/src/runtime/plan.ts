@@ -34,6 +34,12 @@ function build(element: Element): Plan | null {
     : null;
 }
 
+// The getters, taken once, so that `locate` calls them directly rather than looking them up on each element.
+const firstElementChild = Object.getOwnPropertyDescriptor(Element.prototype, "firstElementChild")!
+  .get as (this: Element) => Element | null;
+const nextElementSibling = Object.getOwnPropertyDescriptor(Element.prototype, "nextElementSibling")!
+  .get as (this: Element) => Element | null;
+
 /**
  * Calls `found` with each element of `copy` that `plan` names, and the
  * template element it was built from. Where the server `rendered` `copy`, a
@@ -51,16 +57,16 @@ export function locate(
   if (plan.source !== null) found(copy, plan.source, plan.reactive);
   if (plan.children.length === 0) return;
   // Walks the siblings, because reading `children` makes the element keep an HTMLCollection.
-  let at = copy.firstElementChild;
+  let at = firstElementChild.call(copy);
   let position = 0;
   for (const [index, child] of plan.children) {
-    for (; at !== null; at = at.nextElementSibling) {
+    for (; at !== null; at = nextElementSibling.call(at)) {
       if (rendered && data(at).hsSsr !== undefined) continue;
       if (position++ === index) break;
     }
     if (at === null) return;
     if (!rendered || at.tagName === child.tag) locate(child, at, rendered, found);
-    at = at.nextElementSibling;
+    at = nextElementSibling.call(at);
   }
 }
 
