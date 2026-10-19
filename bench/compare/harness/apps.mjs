@@ -14,16 +14,19 @@ export const APPS = {
     build: ["cargo", "build", "--release", "--quiet", "--manifest-path", "hypersig/Cargo.toml"],
     cmd: ["hypersig/target/release/bench-hypersig"],
   },
-  leptos: {
+  // `topcoat asset bundle` builds the release binary and writes the runtime script it
+  // embeds as an asset!() into target/release/assets, where the binary loads it from.
+  // The CLI has no --manifest-path, so it runs inside topcoat/.
+  topcoat: {
     port: 4104,
-    cmd: ["leptos/target/release/bench-leptos"],
-    env: { LEPTOS_SITE_ROOT: "leptos/target/site", LEPTOS_SITE_ADDR: "127.0.0.1:4104" },
+    build: ["sh", "-c", "cd topcoat && topcoat asset bundle --release"],
+    cmd: ["topcoat/target/release/bench-topcoat"],
   },
   react: { port: 4105, cmd: ["npm", "--prefix", "react", "run", "start"] },
   next: { port: 4103, cmd: ["npm", "--prefix", "next", "run", "start"] },
   "tanstack-start": { port: 4106, cmd: ["npm", "--prefix", "tanstack-start", "run", "start"] },
   nuxt: { port: 4107, cmd: ["npm", "--prefix", "nuxt", "run", "start"] },
-  htmx: { port: 4102, cmd: ["htmx/target/release/bench-htmx"] },
+  datastar: { port: 4102, cmd: ["datastar/target/release/bench-datastar"] },
 };
 
 export const url = (name) => `http://127.0.0.1:${APPS[name].port}/`;

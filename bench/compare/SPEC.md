@@ -1,6 +1,6 @@
 # TodoMVC-2000
 
-The same TodoMVC written in hypersig, Leptos, Next.js, React, TanStack Start, Nuxt, and htmx, measured in one harness. This file is the contract every implementation follows.
+The same TodoMVC written in hypersig, Topcoat, Next.js, React, TanStack Start, Nuxt, and Datastar, measured in one harness. This file is the contract every implementation follows.
 
 ## Data
 
@@ -39,9 +39,9 @@ Each app is written the way an experienced user of that framework would write it
 | App | Port | Version | Pattern |
 |---|---|---|---|
 | `hypersig/` | 4100 | this repository | The list is a signal updated in the browser. Each add, toggle, and delete also calls an action with that change's typed arguments |
-| `htmx/` | 4102 | htmx 2.0.11, axum | The server answers each request with the changed item and an out-of-band count |
+| `datastar/` | 4102 | Datastar 1.0.4, datastar SDK 0.4.1, axum | The server answers each action with server-sent events that patch the changed item and the count |
 | `next/` | 4103 | Next.js 16.4.1, React 19.3.1 | A server component renders the list into a client component that holds it in state, with memoized items. Each change calls a server action |
-| `leptos/` | 4104 | Leptos 0.8.22, leptos_axum 0.8.10 | Server rendering with hydration, a signal per item, and a server function per change |
+| `topcoat/` | 4104 | Topcoat 0.10.0 | The list is a shard rendered on the server. Each add, toggle, and delete awaits a procedure with that change's typed arguments, then changes a signal the shard reads, so the server renders the list again |
 | `react/` | 4105 | React 19.3.1, Vite 8.3.4 | A single-page app. The HTML is empty, the app fetches the list from a JSON API, holds it in state with memoized items, and sends each change to the API |
 | `tanstack-start/` | 4106 | TanStack Start 1.169.2, TanStack Query 5.104.2 | Server rendering with a route loader that fills the query cache. Each change is a `useMutation` that updates the cache before the server function answers |
 | `nuxt/` | 4107 | Nuxt 4.6.1, Vue 3.5.44 | Server rendering with `useFetch`, the list in a reactive ref with a component per item, and a server API route per change |

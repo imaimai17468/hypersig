@@ -1,12 +1,11 @@
 [package]
-name = "bench-htmx"
+name = "bench-topcoat"
 version = "0.0.0"
 edition = "2024"
 publish = false
 
 [dependencies]
-axum = "0.8.9"
-serde = { version = "1.0.229", features = ["derive"] }
 tokio = { version = "1.53.3", features = ["macros", "rt-multi-thread", "net"] }
+topcoat = { version = "0.10.0", default-features = false, features = ["asset", "discover", "router", "runtime", "serve", "view"] }
 
 [workspace]
