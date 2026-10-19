@@ -72,3 +72,24 @@ it("a deep read of a path wins over a shallow read of it in the same binding", (
   });
   expect(reads.get("todos")).toBe(true);
 });
+
+it("records a write that replaces most items of a list as one change to the list, and an append item by item", async () => {
+  const store = new Store({ rows: [1, 2, 3], more: [1] });
+  const seen: [string, boolean][][] = [];
+  store.subscribe((changes) => seen.push([...changes]));
+  store.set("rows", [4, 5, 3]);
+  await Promise.resolve();
+  store.set("rows", [4]);
+  await Promise.resolve();
+  store.set("more", [1, 2, 3]);
+  await Promise.resolve();
+  expect(seen).toEqual([
+    [["rows", true]],
+    [["rows", true]],
+    [
+      ["more", false],
+      ["more.1", true],
+      ["more.2", true],
+    ],
+  ]);
+});

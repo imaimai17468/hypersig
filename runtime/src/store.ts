@@ -113,13 +113,9 @@ export class Store {
       isContainer(value) &&
       Array.isArray(previous) === Array.isArray(value)
     ) {
-      this.#record(path, false);
-      if (Array.isArray(previous) && Array.isArray(value)) {
-        for (let index = 0; index < Math.max(previous.length, value.length); index++) {
-          if (!Object.is(previous[index], value[index]))
-            this.#record(join(path, String(index)), true);
-        }
-      } else {
+      if (Array.isArray(previous) && Array.isArray(value)) this.#recordItems(path, previous, value);
+      else {
+        this.#record(path, false);
         for (const key of new Set([...Object.keys(previous), ...Object.keys(value)])) {
           if (!Object.is(previous[key], value[key])) this.#record(join(path, key), true);
         }
@@ -127,6 +123,25 @@ export class Store {
     } else {
       this.#record(path, true);
     }
+  }
+
+  /** Records the write of the list `value` over the list `previous` at `path`. */
+  #recordItems(path: string, previous: readonly unknown[], value: readonly unknown[]): void {
+    const length = Math.max(previous.length, value.length);
+    const differing: number[] = [];
+    for (let index = 0; index < length; index++)
+      if (!Object.is(previous[index], value[index])) differing.push(index);
+    // Where most items differ and the write is not an append onto items already there, one change for the list
+    // costs less than one per item, and a list that renders it compares each item with the one it drew.
+    if (
+      differing.length * 2 > length &&
+      (previous.length === 0 || differing[0]! < previous.length)
+    ) {
+      this.#record(path, true);
+      return;
+    }
+    this.#record(path, false);
+    for (const index of differing) this.#record(join(path, String(index)), true);
   }
 
   #record(path: string, inside: boolean): void {
