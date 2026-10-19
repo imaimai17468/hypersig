@@ -41,6 +41,7 @@ pub struct Site {
     base: &'static str,
     runtime: &'static str,
     icon: &'static str,
+    star_rating: &'static str,
     lang: Lang,
     origin: Option<Origin>,
 }
@@ -76,10 +77,12 @@ impl Site {
         // and the generator builds one `Site` per run.
         let runtime = String::leak(format!("{base}/{RUNTIME_FILE}"));
         let icon = String::leak(format!("{base}/{ICON_FILE}"));
+        let star_rating = String::leak(format!("{base}/{STAR_RATING_FILE}"));
         Self {
             base,
             runtime,
             icon,
+            star_rating,
             lang: Lang::En,
             origin: None,
         }
@@ -153,6 +156,11 @@ impl Site {
     fn icon(self) -> &'static str {
         self.icon
     }
+
+    /// The URL of the script that defines the custom element of the rating demo.
+    fn star_rating(self) -> &'static str {
+        self.star_rating
+    }
 }
 
 /// A file of the site.
@@ -169,6 +177,9 @@ const RUNTIME_FILE: &str = "hypersig.js";
 
 /// The file of the hypersig icon.
 const ICON_FILE: &str = "icon.svg";
+
+/// The script that defines `<star-rating>`, which the rating demo loads.
+const STAR_RATING_FILE: &str = "star-rating.js";
 
 /// The list of the site's pages that search engines read.
 const SITEMAP_FILE: &str = "sitemap.xml";
@@ -193,9 +204,11 @@ fn og_image(lang: Lang) -> (&'static str, &'static [u8]) {
 /// The directory the rustdoc output is copied into, inside the site.
 pub const API_DIR: &str = "api";
 
-/// Every file of the site: the pages, the live demos, the runtime, the
-/// icon, the link preview pictures, the Search Console file, and, for a site
-/// that knows its origin, the sitemap.
+/// Every file of the site.
+///
+/// These are the pages, the live demos and the script of the rating demo,
+/// the runtime, the icon, the link preview pictures, the Search Console file,
+/// and, for a site that knows its origin, the sitemap.
 #[must_use]
 pub fn render(site: Site) -> Vec<File> {
     let mut files = Vec::new();
@@ -218,6 +231,10 @@ pub fn render(site: Site) -> Vec<File> {
     files.push(File {
         path: RUNTIME_FILE.to_owned(),
         contents: hypersig::RUNTIME_JS.as_bytes().to_vec(),
+    });
+    files.push(File {
+        path: STAR_RATING_FILE.to_owned(),
+        contents: demo::STAR_RATING_JS.as_bytes().to_vec(),
     });
     files.push(File {
         path: ICON_FILE.to_owned(),

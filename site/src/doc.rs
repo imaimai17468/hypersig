@@ -671,8 +671,8 @@ impl Doc {
                     ja: "スタイルも Rust の値です。プロパティやキーワードの打ち間違いや、型の違う値はコンパイルエラーになります。",
                 },
                 Learn::EscapeHatches => L {
-                    en: "Most pages need only bindings and statements. These cover focus, timers, and reactions to a change, links outside the router, and serving a page as a static file.",
-                    ja: "たいていのページは束縛と文だけで書けます。ここで扱うのは、フォーカス、タイマー、変化への反応、ルーターの外へのリンク、ページを静的ファイルとして配信する方法です。",
+                    en: "Most pages need only bindings and statements. These cover focus, timers, and reactions to a change, JavaScript libraries, links outside the router, and serving a page as a static file.",
+                    ja: "たいていのページは束縛と文だけで書けます。ここで扱うのは、フォーカス、タイマー、変化への反応、JavaScript のライブラリ、ルーターの外へのリンク、ページを静的ファイルとして配信する方法です。",
                 },
                 Learn::Signals => L {
                     en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",

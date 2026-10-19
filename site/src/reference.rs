@@ -206,6 +206,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "script",
+                            "struct.Page.html#method.script",
+                            L {
+                                en: "Adds a `<script type=\"module\">` for the file at `src` to `<head>`.",
+                                ja: "`src` にあるファイルを読み込む `<script type=\"module\">` を `<head>` に追加します。",
+                            },
+                        ),
+                        (
                             "lang",
                             "struct.Page.html#method.lang",
                             L {
@@ -491,6 +499,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "foreign",
+                            "html/struct.El.html#method.foreign",
+                            L {
+                                en: "Leaves this element's attributes and children to a script, and names it `node_ref`.",
+                                ja: "この要素の属性と子要素をスクリプトに任せ、`node_ref` の名前を付けます。",
+                            },
+                        ),
+                        (
                             "render",
                             "html/struct.El.html#method.render",
                             L {
@@ -711,6 +727,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "`event` が発生しないまま `quiet` だけ経ったら `stmt` を実行します。",
                             },
                         ),
+                        (
+                            "on_custom",
+                            "html/struct.El.html#method.on_custom",
+                            L {
+                                en: "Runs the statement `handle` builds whenever `event` reaches this element.",
+                                ja: "`event` がこの要素に届くたびに、`handle` が組み立てた文を実行します。",
+                            },
+                        ),
                     ],
                 },
                 Section {
@@ -867,6 +891,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A DOM event a statement can run on.",
                                 ja: "文を実行するきっかけにできる DOM イベント",
+                            },
+                        ),
+                        (
+                            "CustomEvent",
+                            "html/struct.CustomEvent.html",
+                            L {
+                                en: "An event that a script, such as a custom element, dispatches on an element.",
+                                ja: "カスタム要素などのスクリプトが要素に対して投げるイベント",
                             },
                         ),
                         (

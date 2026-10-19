@@ -19,6 +19,8 @@ pub enum Lang {
     Shell,
     /// HTML, shown without colors.
     Html,
+    /// JavaScript, shown without colors.
+    JavaScript,
 }
 
 /// The kinds of token the tokenizer colors.
@@ -121,7 +123,7 @@ pub fn without_header(source: &str) -> &str {
 
 /// `source` as text nodes and colored spans.
 fn highlight(lang: Lang, source: &str) -> Vec<Node<Docs>> {
-    if lang == Lang::Html {
+    if matches!(lang, Lang::Html | Lang::JavaScript) {
         return vec![source.into()];
     }
     tokens(lang, source)

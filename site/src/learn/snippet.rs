@@ -35,6 +35,7 @@ macro_rules! snippets {
 
 snippets! {
     Elements => "elements.rs";
+    Foreign => "foreign.rs";
     Component => "component.rs";
     Bindings => "bindings.rs";
     SignalPaths => "signal_paths.rs";

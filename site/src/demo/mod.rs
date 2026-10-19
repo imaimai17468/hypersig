@@ -76,6 +76,7 @@ demos! {
     Todos => todos, "todos.rs", "19rem";
     Status => status, "status.rs", "8rem";
     Stopwatch => stopwatch, "stopwatch.rs", "6rem";
+    Rating => rating, "rating.rs", "6rem";
     Signup => signup, "signup.rs", "38.5rem";
     Theme => theme, "ui/theme.rs", "21rem";
     Button => button, "ui/button.rs", "12rem";
@@ -105,6 +106,10 @@ demos! {
     Layout => layout, "style/layout.rs", "14rem";
     Spinner => spinner, "style/spinner.rs", "6rem";
 }
+
+/// The script of `<star-rating>`, which the rating demo loads and the page
+/// on what bindings and statements do not cover shows.
+pub const STAR_RATING_JS: &str = include_str!("star-rating.js");
 
 thread_local! {
     /// The site the demo being rendered is for.

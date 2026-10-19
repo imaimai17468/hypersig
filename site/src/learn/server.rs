@@ -4,6 +4,7 @@
 use super::snippet::{Snippet, show};
 use super::{Program, program};
 use crate::Site;
+use crate::code::{self, Lang};
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
@@ -494,7 +495,7 @@ pub fn styling(site: Site) -> Part {
 }
 
 pub fn escape_hatches(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Learn(Learn::EscapeHatches).title(site)),
         lead(site, Doc::Learn(Learn::EscapeHatches).leads()),
         heading(
@@ -591,6 +592,41 @@ pub fn escape_hatches(site: Site) -> Part {
         heading(
             site,
             L {
+                en: "JavaScript libraries",
+                ja: "JavaScript のライブラリ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A map, a chart, or a rich text editor runs in the browser as a JavaScript library. Wrap it in a custom element, and the page passes it values and takes its events with three methods. `Page::script` loads the script that defines the element, `bind_attr` keeps an attribute of the element equal to a signal, and `El::on_custom` runs a statement on an event the element dispatches, with the event's `detail` as a typed expression. Declare the event once as a [`CustomEvent`](api:hypersig/html/struct.CustomEvent.html) whose type parameter is the type of its `detail`. The rating below is a custom element written in 34 lines of JavaScript. A click on a star dispatches `rate`, and the page's signal goes back into the element's `value` attribute.",
+                ja: "地図、グラフ、リッチテキストエディタは、ブラウザで JavaScript のライブラリとして動きます。カスタム要素で包めば、ページは 3 つのメソッドで値を渡し、イベントを受け取れます。`Page::script` は要素を定義するスクリプトを読み込み、`bind_attr` は要素の属性をシグナルの値に合わせ、`El::on_custom` は要素が投げたイベントで文を実行します。イベントの `detail` は型付きの式として文に渡ります。イベントは、型引数を `detail` の型にした [`CustomEvent`](api:hypersig/html/struct.CustomEvent.html) として 1 回宣言します。下の評価は、34 行の JavaScript で書いたカスタム要素です。星をクリックすると `rate` を投げ、ページのシグナルが要素の `value` 属性に戻ります。",
+            },
+        ),
+        demo::show(site, Demo::Rating),
+        code::block(
+            Lang::JavaScript,
+            Some("star-rating.js"),
+            demo::STAR_RATING_JS,
+        ),
+        para(
+            site,
+            L {
+                en: "The event's name and the type of its `detail` describe the script, so nothing checks them against it. An event the script never dispatches runs nothing, and a field the `detail` lacks reads as `null`. What the page does with the `detail` is checked: putting it into a signal of another type is a compile error.",
+                ja: "イベント名と `detail` の型はスクリプトの側の取り決めなので、スクリプトと突き合わせる検査はありません。スクリプトが投げないイベントでは何も実行されず、`detail` にないフィールドを読むと `null` になります。検査するのは、ページが `detail` をどう使うかです。型の違うシグナルに入れると、コンパイルエラーになります。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A library that is not a custom element, such as Leaflet, draws into the element it is given and adds children, classes, and inline styles to it. A server patch that reaches the element would set it back to what the server rendered. Mark the element with `El::foreign`, and a patch keeps it as it is while its bindings keep running.",
+                ja: "Leaflet のようにカスタム要素ではないライブラリは、渡された要素の中に描き、子要素やクラス、インラインスタイルを足します。サーバーのパッチがその要素に届くと、サーバーが描いた形に戻してしまいます。`El::foreign` を付けると、パッチはその要素をそのまま残し、要素の束縛は動き続けます。",
+            },
+        ),
+        show(Snippet::Foreign),
+        heading(
+            site,
+            L {
                 en: "Where hypersig does not fit",
                 ja: "hypersig が向かない場面",
             },
@@ -598,16 +634,16 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The server holds the state, and the browser runs only the operations hypersig provides. It does not suit these applications:",
-                ja: "状態はサーバーが持ち、ブラウザは hypersig が用意した操作しか実行しません。そのため、次のようなアプリケーションには向きません。",
+                en: "The server holds the state, and the browser runs only the operations hypersig provides and the scripts a page loads. It does not suit these applications:",
+                ja: "状態はサーバーが持ち、ブラウザは hypersig が用意した操作と、ページが読み込んだスクリプトしか実行しません。そのため、次のようなアプリケーションには向きません。",
             },
         ),
         bullets(
             site,
             &[
                 L {
-                    en: "An application that runs a JavaScript library in the browser, such as a map, a chart, or a rich text editor. These have to run inside the browser, and the server cannot run them instead.",
-                    ja: "地図、グラフ、リッチテキストエディタのように、ブラウザで JavaScript のライブラリを動かすアプリケーション。これらはブラウザの中で動く必要があり、サーバーで代わりに動かすことはできません。",
+                    en: "An application whose main work runs inside a JavaScript library, such as a drawing tool or a spreadsheet. hypersig only passes values in and out of the library, and the state the library keeps is not among the page's signals.",
+                    ja: "お絵かきツールや表計算ソフトのように、主な処理が JavaScript のライブラリの中で動くアプリケーション。hypersig はライブラリと値をやり取りするだけで、ライブラリが持つ状態はページのシグナルに入りません。",
                 },
                 L {
                     en: "An application that works without a connection to the server, such as one used offline.",
