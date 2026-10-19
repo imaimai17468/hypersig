@@ -33,6 +33,7 @@ pub struct Page<S> {
     bound_title: Option<Value>,
     signals: S,
     stylesheets: Vec<&'static str>,
+    scripts: Vec<&'static str>,
     styles: Vec<&'static str>,
     theme: Theme,
     global: Global,
@@ -72,6 +73,7 @@ impl<S: Signals> Page<S> {
             bound_title: None,
             signals,
             stylesheets: Vec::new(),
+            scripts: Vec::new(),
             styles: Vec::new(),
             theme: Theme::new(),
             global: Global::new(),
@@ -417,6 +419,30 @@ impl<S: Signals> Page<S> {
         self
     }
 
+    /// Adds a `<script type="module">` for the file at `src` to `<head>`.
+    ///
+    /// It is for a script the page's elements need, such as one that defines
+    /// a custom element. The scripts run after the runtime, in the order they
+    /// were added. A custom element defined then is upgraded in place, so it
+    /// keeps the attributes and the listeners the runtime gave it. It carries
+    /// the page's [`csp_nonce`](Page::csp_nonce), if there is one.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Place {}
+    ///
+    /// let html = Page::new("Place", Place {}).script("/map.js").render();
+    /// assert!(html.contains(r#"<script type="module" src="/map.js"></script>"#));
+    /// ```
+    #[must_use]
+    pub fn script(mut self, src: &'static str) -> Self {
+        self.scripts.push(src);
+        self
+    }
+
     /// Adds `sheet` to `<head>` as a `<style>` block.
     ///
     /// Its rules sit outside any cascade layer, so they override the classes
@@ -670,7 +696,14 @@ impl<S: Signals> Page<S> {
         };
         write_attr(&mut out, "src", &runtime);
         self.write_nonce(&mut out);
-        out.push_str("></script></head><body");
+        out.push_str("></script>");
+        for src in &self.scripts {
+            out.push_str("<script type=\"module\"");
+            write_attr(&mut out, "src", src);
+            self.write_nonce(&mut out);
+            out.push_str("></script>");
+        }
+        out.push_str("</head><body");
         self.write_body_attrs(&mut out, &root);
         out.push('>');
         let body_at = out.len();
@@ -882,6 +915,23 @@ mod tests {
             html.matches(r#" nonce="n0nce">"#).count() - 1
         );
         assert_eq!(html.matches("<style").count(), 4);
+    }
+
+    #[test]
+    fn scripts_follow_the_runtime_in_order_with_the_nonce() {
+        let html = Page::new("Search", Search::default())
+            .csp_nonce("n0nce")
+            .script("/map.js")
+            .script("/editor.js")
+            .render();
+        let runtime = html.find(crate::RUNTIME_PATH).expect("the runtime script");
+        let map = html
+            .find(r#"<script type="module" src="/map.js" nonce="n0nce"></script>"#)
+            .expect("the map script");
+        let editor = html
+            .find(r#"<script type="module" src="/editor.js" nonce="n0nce"></script>"#)
+            .expect("the editor script");
+        assert!(runtime < map && map < editor && editor < html.find("</head>").unwrap());
     }
 
     #[test]
