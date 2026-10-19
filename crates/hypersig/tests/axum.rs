@@ -177,6 +177,44 @@ async fn missing_arguments_get_400() {
 }
 
 #[tokio::test]
+async fn serves_the_runtime_compressed_with_brotli_to_a_browser_that_accepts_it() {
+    let fetch = |accept: &'static str| async move {
+        let response = app()
+            .oneshot(
+                Request::get(hypersig::RUNTIME_PATH)
+                    .header(header::ACCEPT_ENCODING, accept)
+                    .body(Body::empty())
+                    .expect("request"),
+            )
+            .await
+            .expect("infallible");
+        assert_eq!(response.headers()[header::VARY], "accept-encoding");
+        let encoding = response
+            .headers()
+            .get(header::CONTENT_ENCODING)
+            .map(|value| value.to_str().expect("ascii").to_owned());
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        (encoding, body)
+    };
+    let brotli: &[u8] = include_bytes!("../assets/hypersig.js.br");
+    for accept in ["gzip, deflate, br, zstd", "BR;q=0.5", "gzip;q=1.0, br;q=1"] {
+        let (encoding, body) = fetch(accept).await;
+        assert_eq!(encoding.as_deref(), Some("br"), "{accept}");
+        assert_eq!(body, brotli, "{accept}");
+    }
+    for accept in ["gzip, deflate", "br;q=0", "brotli", ""] {
+        let (encoding, body) = fetch(accept).await;
+        assert_eq!(encoding, None, "{accept}");
+        assert_eq!(body, hypersig::RUNTIME_JS.as_bytes(), "{accept}");
+    }
+}
+
+#[tokio::test]
 async fn serves_the_runtime_at_a_path_named_after_its_hash_for_a_year() {
     let hash = hypersig::RUNTIME_PATH
         .strip_prefix("/_hypersig/runtime.")

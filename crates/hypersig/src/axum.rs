@@ -38,7 +38,9 @@ pub trait RouterExt<St>: Sized {
     /// Serves the browser runtime at [`RUNTIME_PATH`](crate::RUNTIME_PATH).
     ///
     /// The response tells the browser to keep the file for a year without
-    /// asking again, which holds because the path changes with the file.
+    /// asking again, which holds because the path changes with the file. A
+    /// request whose `Accept-Encoding` names `br` receives the file
+    /// compressed with Brotli at build time, so the server compresses nothing.
     #[must_use]
     fn hypersig_runtime(self) -> Self;
 
@@ -131,20 +133,42 @@ pub trait RouterExt<St>: Sized {
         P: Into<ActionResponse<S>>;
 }
 
+/// Whether `Accept-Encoding` names `br` with a weight above zero.
+fn accepts_brotli(headers: &HeaderMap) -> bool {
+    headers
+        .get_all(header::ACCEPT_ENCODING)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|value| value.split(','))
+        .any(|coding| {
+            let mut params = coding.split(';');
+            let name = params.next().unwrap_or("").trim();
+            name.eq_ignore_ascii_case("br")
+                && params.all(|param| {
+                    let (key, weight) = param.split_once('=').unwrap_or((param, ""));
+                    !key.trim().eq_ignore_ascii_case("q")
+                        || weight.trim().parse::<f32>().is_ok_and(|q| q > 0.0)
+                })
+        })
+}
+
 impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
     fn hypersig_runtime(self) -> Self {
         self.route(
             crate::RUNTIME_PATH,
-            get(|| async {
-                (
-                    [
-                        (header::CONTENT_TYPE, "text/javascript; charset=utf-8"),
-                        // The path names a hash of the file, so a changed
-                        // runtime is served at another path.
-                        (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
-                    ],
-                    crate::RUNTIME_JS,
-                )
+            get(|headers: HeaderMap| async move {
+                let head = [
+                    (header::CONTENT_TYPE, "text/javascript; charset=utf-8"),
+                    // The path names a hash of the file, so a changed
+                    // runtime is served at another path.
+                    (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+                    (header::VARY, "accept-encoding"),
+                ];
+                if accepts_brotli(&headers) {
+                    (head, [(header::CONTENT_ENCODING, "br")], crate::RUNTIME_BR).into_response()
+                } else {
+                    (head, crate::RUNTIME_JS).into_response()
+                }
             }),
         )
     }

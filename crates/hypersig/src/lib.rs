@@ -114,6 +114,10 @@ pub const RUNTIME_PATH: &str = match std::str::from_utf8(&RUNTIME_PATH_BYTES) {
 /// The browser runtime, built from `runtime/` in the repository.
 pub const RUNTIME_JS: &str = include_str!("../assets/hypersig.js");
 
+/// [`RUNTIME_JS`] compressed with Brotli by the same `pnpm build`, for a browser that accepts it.
+#[cfg(feature = "axum")]
+const RUNTIME_BR: &[u8] = include_bytes!("../assets/hypersig.js.br");
+
 /// [`RUNTIME_PATH`] as bytes, with the FNV-1a hash of [`RUNTIME_JS`] in hex.
 ///
 /// The compiler computes it, so the path needs no build script and changes

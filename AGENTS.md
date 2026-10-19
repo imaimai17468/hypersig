@@ -17,7 +17,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `crates/hypersig/benches/render.rs` | divan benchmarks of `Page::render` over list pages, with allocation counts |
 | `crates/hypersig/tests/ui` | trybuild cases. Each `fail/*.rs` is a mistake that must not compile |
 | `crates/hypersig/tests/fixtures.rs` | Builds pages with the Rust builder and writes them to `runtime/test/fixtures/`, which the runtime tests load |
-| `runtime/` | The browser runtime in TypeScript. `pnpm build` writes `crates/hypersig/assets/hypersig.js`, which is committed so that `cargo build` needs no Node |
+| `runtime/` | The browser runtime in TypeScript. `pnpm build` writes `crates/hypersig/assets/hypersig.js` and its Brotli copy `hypersig.js.br`, both committed so that `cargo build` needs no Node |
 | `examples/` | Runnable axum applications |
 | `e2e/` | Playwright tests that start every example and drive it in Chrome |
 | `site/` | The documentation site, built with hypersig and `hypersig_ui` and published to GitHub Pages by `.github/workflows/pages.yml`. `cargo run -p site -- --out DIR --base ""` writes it for a local preview. Its code samples are doctests under `site/snippets/`, programs under `site/examples/`, or live demos under `site/src/demo/`. Every page renders once per language of `site/src/lang.rs`, English at the root and Japanese under `ja/`, and a text of a page is an `L { en, ja }`, so a change to the English text changes the Japanese text in the same commit |
