@@ -175,11 +175,13 @@ export class DepIndex {
     const found = new Set<Effect>();
     for (const [path, inside] of changes) {
       let node: PathNode | undefined = this.#root;
-      const segments = path.split(".");
-      for (const [i, segment] of segments.entries()) {
-        node = node.children?.get(segment);
-        if (node === undefined) break;
-        if (i < segments.length - 1) for (const effect of node.deep ?? []) found.add(effect);
+      // Walks the segments by their dots, because a list write records one path per item and splitting each would allocate an array.
+      for (let start = 0; ; ) {
+        const dot = path.indexOf(".", start);
+        node = node.children?.get(dot === -1 ? path.slice(start) : path.slice(start, dot));
+        if (node === undefined || dot === -1) break;
+        for (const effect of node.deep ?? []) found.add(effect);
+        start = dot + 1;
       }
       if (node === undefined) continue;
       if (inside) {

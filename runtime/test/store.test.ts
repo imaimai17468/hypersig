@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { affects, ChangeLookup, setPath, Store } from "../src/store.ts";
+import { affects, ChangeLookup, getPath, setPath, Store } from "../src/store.ts";
 
 it("setPath copies each container on the way and leaves the value it was given unchanged", () => {
   const value = { rows: [{ id: 1, tags: ["a"] }], name: "n" };
@@ -9,6 +9,16 @@ it("setPath copies each container on the way and leaves the value it was given u
   expect(next.rows).not.toBe(value.rows);
   expect(setPath(null, "a.b", 1)).toEqual({ a: { b: 1 } });
   expect(setPath(value, "", 2)).toBe(2);
+});
+
+it("getPath reads one, two, and more segments, and nothing through a scalar", () => {
+  const value = { rows: [{ id: 1, tags: ["a"] }], n: 2 };
+  expect(getPath(value, "n")).toBe(2);
+  expect(getPath(value, "rows.0")).toEqual({ id: 1, tags: ["a"] });
+  expect(getPath(value, "rows.0.tags.0")).toBe("a");
+  expect(getPath(value, "n.x")).toBeUndefined();
+  expect(getPath(value, "missing.0")).toBeUndefined();
+  expect(getPath(null, "a.b")).toBeUndefined();
 });
 
 it("getIn reads a field inside the value at a path and records it under the given name", () => {

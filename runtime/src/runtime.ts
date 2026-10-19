@@ -841,7 +841,7 @@ export class Runtime implements Host {
           keySlot.path = itemPath;
           if (itemAt === itemPath) delete keySlot.read;
           else keySlot.read = itemAt;
-          key = JSON.stringify(this.store.untracked(() => evaluate(keyAst, keyCtx!)));
+          key = keyOf(this.store.untracked(() => evaluate(keyAst, keyCtx!)));
           keyReads = NO_READS;
           named = itemAt;
         } else {
@@ -1827,6 +1827,8 @@ function parse(source: string | null): unknown {
 
 /** The key `DepIndex.select` files a value under. */
 function keyOf(value: unknown): string {
+  // `String` writes a finite number or a boolean as `JSON.stringify` does, without its checks for other types.
+  if ((typeof value === "number" && Number.isFinite(value)) || typeof value === "boolean") return String(value);
   return JSON.stringify(value) ?? "undefined";
 }
 

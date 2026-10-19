@@ -26,7 +26,13 @@ function segmentsOf(path: string): readonly string[] {
 export function getPath(value: unknown, path: string): unknown {
   if (path === "") return value;
   // A field of an item is read once per item, and most fields are one segment.
-  if (!path.includes(".")) return value !== null && typeof value === "object" ? (value as Record<string, unknown>)[path] : undefined;
+  const dot = path.indexOf(".");
+  if (dot === -1) return value !== null && typeof value === "object" ? (value as Record<string, unknown>)[path] : undefined;
+  // An item's own path, such as `rows.12`, has two segments and is new for each item, so it is split here without being remembered.
+  if (path.indexOf(".", dot + 1) === -1) {
+    const head = value !== null && typeof value === "object" ? (value as Record<string, unknown>)[path.slice(0, dot)] : undefined;
+    return head !== null && typeof head === "object" ? (head as Record<string, unknown>)[path.slice(dot + 1)] : undefined;
+  }
   let current = value;
   for (const segment of segmentsOf(path)) {
     if (current === null || typeof current !== "object") return undefined;
