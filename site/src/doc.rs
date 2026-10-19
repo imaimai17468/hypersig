@@ -151,10 +151,10 @@ impl Library {
         })
     }
 
-    /// What the library is, as the description of each of its pages that
+    /// What the library is, as the description of its landing page that
     /// search results and link previews show.
-    pub fn description(self, site: Site) -> &'static str {
-        site.t(match self {
+    fn descriptions(self) -> L<&'static str> {
+        match self {
             Self::Framework => L {
                 en: "hypersig is a server-driven hypermedia library for Rust. Signal names, expressions, actions, and links are built from Rust types, so a mistake in one is a compile error.",
                 ja: "hypersig は Rust のサーバー駆動のハイパーメディアライブラリです。シグナル名、式、アクション、リンクを Rust の型から作るので、その誤りはコンパイルエラーになります。",
@@ -171,7 +171,7 @@ impl Library {
                 en: "Typed translations for hypersig, with the language picked from Accept-Language.",
                 ja: "hypersig の型付きの翻訳です。言語は Accept-Language から選びます。",
             },
-        })
+        }
     }
 
     /// The library's landing page.
@@ -630,6 +630,132 @@ impl Doc {
             },
         };
         L { en, ja }
+    }
+
+    /// The paragraph under the page's title that says what it covers, and
+    /// the description search results and link previews show for it. A
+    /// landing page has no such paragraph and takes its library's
+    /// description.
+    pub(crate) fn leads(self) -> L<&'static str> {
+        match self {
+            Self::Home | Self::StyleHome | Self::ComponentsHome | Self::I18nHome => {
+                self.library().descriptions()
+            }
+            Self::Learn(page) => match page {
+                Learn::QuickStart => L {
+                    en: "Build a counter that counts in the browser and resets on the server, in one Rust file.",
+                    ja: "ブラウザで数を数え、サーバーで 0 に戻すカウンターを、Rust のファイル 1 つで作ります。",
+                },
+                Learn::DescribingThePage => L {
+                    en: "A page is a tree of `El` values built with Rust functions and rendered to HTML on the server.",
+                    ja: "ページは Rust の関数で組み立てた `El` の値の木で、サーバーが HTML に描画します。",
+                },
+                Learn::Forms => L {
+                    en: "A form's rules are written once in Rust. The browser checks them as the visitor types, and the handler checks the same rules before it trusts the values.",
+                    ja: "フォームのルールは Rust で 1 回だけ書きます。ブラウザは入力に合わせてそのルールを検査し、ハンドラは値を使う前に同じルールで検査します。",
+                },
+                Learn::Requests => L {
+                    en: "A handler reads the request through an axum extractor, sets cookies by returning headers beside its answer, and fails with `?`.",
+                    ja: "ハンドラは axum の extractor でリクエストを読み、答えと組にしたヘッダーで Cookie を設定し、`?` で失敗を返します。",
+                },
+                Learn::Server => L {
+                    en: "The browser calls an action, and the server answers with patches: new values for signals, or new HTML for a part of the page.",
+                    ja: "ブラウザがアクションを呼び出すと、サーバーは差分で答えます。差分はシグナルの新しい値か、ページの一部の新しい HTML です。",
+                },
+                Learn::Pages => L {
+                    en: "A route is a page the server renders at a path. The router serves it and the links on other pages point to it from the same value, so a parameter of the wrong type or in the wrong number is a compile error.",
+                    ja: "ルートは、サーバーがあるパスで描画するページです。ルーターの配信もほかのページからのリンクも同じ値から作るので、パラメータの型や数の誤りはコンパイルエラーになります。",
+                },
+                Learn::Styling => L {
+                    en: "Styles are Rust values too. A misspelled property or keyword, or a value of the wrong type, is a compile error.",
+                    ja: "スタイルも Rust の値です。プロパティやキーワードの打ち間違いや、型の違う値はコンパイルエラーになります。",
+                },
+                Learn::EscapeHatches => L {
+                    en: "Most pages need only bindings and statements. These cover focus, timers, and reactions to a change, links outside the router, and serving a page as a static file.",
+                    ja: "たいていのページは束縛と文だけで書けます。ここで扱うのは、フォーカス、タイマー、変化への反応、ルーターの外へのリンク、ページを静的ファイルとして配信する方法です。",
+                },
+                Learn::Signals => L {
+                    en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
+                    ja: "ページの状態は Rust の構造体 1 つで表し、シグナルはそのフィールド 1 つを指す型付きの参照です。",
+                },
+                Learn::Expressions => L {
+                    en: "An expression computes a value from the signals, and a statement changes them. Both are Rust values that the browser receives as JSON.",
+                    ja: "式はシグナルから値を計算し、文はシグナルを変更します。どちらも Rust の値で、ブラウザは JSON として受け取ります。",
+                },
+                Learn::Lists => L {
+                    en: "A `Vec` field is a list. `each` renders an element per item in the browser, and list statements change it without a request.",
+                    ja: "`Vec` のフィールドはリストです。`each` はブラウザで項目ごとに要素を描画し、リストの文はリクエストを送らずにリストを変更します。",
+                },
+                Learn::Why => L {
+                    en: "hypersig renders the page on the server and writes its behavior into the HTML. Every string the browser acts on comes from a Rust type, so the page needs no browser build, no hydration, and no string typed by hand.",
+                    ja: "hypersig はページをサーバーで描画し、その動きを HTML に書き込みます。ブラウザが扱う文字列はすべて Rust の型から作られるので、ブラウザ向けのビルドもハイドレーションも要らず、手で書く文字列もありません。",
+                },
+            },
+            Self::Style(page) => match page {
+                StylePage::Overview => L {
+                    en: "`hypersig::style` is typed atomic CSS. A misspelled property name or keyword, or a value of the wrong type, is a compile error. Each declaration becomes one class.",
+                    ja: "`hypersig::style` は型の付いた atomic CSS です。プロパティ名やキーワードの綴りを間違えたり、型の違う値を渡したりするとコンパイルエラーになります。宣言は 1 つごとに 1 つのクラスになります。",
+                },
+                StylePage::Values => L {
+                    en: "Each property method takes its own value type, which has the property's keywords and accepts values in the units the property allows.",
+                    ja: "プロパティのメソッドはそれぞれ専用の値の型を受け取ります。その型はプロパティのキーワードを持ち、プロパティで使える単位の値を受け付けます。",
+                },
+                StylePage::Conditions => L {
+                    en: "`Style::on` applies part of a style only under a condition. The condition can be a pseudo-class, a media feature, a container width, or the state of a marked ancestor or sibling.",
+                    ja: "`Style::on` はスタイルの一部を条件の下でだけ適用します。条件には擬似クラス、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態を使えます。",
+                },
+                StylePage::Tokens => L {
+                    en: "A token is a named value written as a CSS custom property. A theme sets its value for the whole page, and a style sets it for one element.",
+                    ja: "トークンは CSS のカスタムプロパティとして書かれる名前付きの値です。テーマはページ全体に、スタイルは 1 つの要素にトークンの値を設定します。",
+                },
+                StylePage::Global => L {
+                    en: "A `Global` holds rules that select elements by tag, a small reset, and the fonts the page loads.",
+                    ja: "`Global` には、タグで要素を選ぶルール、小さなリセット、ページが読み込むフォントが入ります。",
+                },
+                StylePage::Patterns => L {
+                    en: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) has functions that return the styles of common layouts. Merge the returned style with your own.",
+                    ja: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) には、よく使うレイアウトのスタイルを返す関数があります。返されたスタイルは自分のスタイルと `merge` して使います。",
+                },
+                StylePage::Animation => L {
+                    en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element.",
+                    ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。",
+                },
+                StylePage::Unchecked => L {
+                    en: "A few forms reach the browser without a check. Each has its own name, so searching for that name finds every place that uses an unchecked value.",
+                    ja: "いくつかの書き方は検査を受けずにブラウザへ渡ります。どの書き方にも決まった名前があるので、その名前で検索すれば、検査なしの値を使う箇所をすべて見つけられます。",
+                },
+            },
+            Self::I18n(page) => match page {
+                I18nPage::Overview => L {
+                    en: "`hypersig_i18n` keeps a text and its translations together in one value, so a text missing a translation into any language fails to compile.",
+                    ja: "`hypersig_i18n` は 1 つの文とその訳を 1 つの値にまとめて持ちます。そのため、どれかの言語の訳が欠けた文はコンパイルエラーになります。",
+                },
+                I18nPage::Pages => L {
+                    en: "The language is the first segment of each page's route, so the page in another language is the same route with only the language changed.",
+                    ja: "言語は各ページのルートの最初のセグメントに置きます。そのため、別の言語のページは言語だけを変えた同じルートになります。",
+                },
+                I18nPage::Negotiation => L {
+                    en: "A visitor who opens `/` is redirected to the page in the language their browser asks for.",
+                    ja: "`/` を開いた訪問者を、ブラウザが求める言語のページへリダイレクトします。",
+                },
+            },
+            Self::Components(page) => match page {
+                Component::Installation => L {
+                    en: "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
+                    ja: "`hypersig_ui` は、shadcn/ui に似た見た目を持ち、振る舞いはブラウザのネイティブ要素と WAI-ARIA Authoring Practices に従うコンポーネント集です。",
+                },
+                Component::Theming => L {
+                    en: "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
+                    ja: "コンポーネントは色と角の丸みをデザイントークンから読みます。トークンの値は、ページ全体にはテーマが、1 つの要素にはスタイルが設定します。",
+                },
+                _ => components::component_lead(page),
+            },
+            Self::Reference(Reference::Overview) => L {
+                en: "The items of the `hypersig` crate, grouped by what they build. Each name links to its full documentation.",
+                ja: "`hypersig` クレートの項目を、組み立てるものごとにまとめています。名前をクリックすると、その項目の完全なドキュメントを開けます。",
+            },
+            Self::Reference(page) => reference::page_lead(page),
+        }
     }
 
     /// The library whose docs the page belongs to.

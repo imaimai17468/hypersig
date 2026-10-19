@@ -8,12 +8,12 @@ use hypersig::style::value::{
     JustifyContent, LineHeight, OverflowY, Position, TextDecorationLine, ZIndex, px, raw, rem,
 };
 use hypersig::style::{Element, Global, Media, PseudoClass, Style};
-use hypersig::{OpenGraph, Page, if_else};
+use hypersig::{OpenGraph, OpenGraphType, Page, if_else};
 use hypersig_ui::{ButtonVariant, icon_button, token};
 
 use crate::doc::{Doc, Library};
 use crate::lang::{L, Lang};
-use crate::prose::{Docs, Part, href};
+use crate::prose::{self, Docs, Part, href};
 use crate::{Site, code};
 use hypersig_i18n::Locale as _;
 
@@ -32,11 +32,40 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
     };
     let mut page = Page::new(title, Docs::default())
         .lang(site.lang().tag())
-        .description(doc.library().description(site));
+        .description(prose::plain(site.t(doc.leads())));
+    let mut card = OpenGraph::new()
+        .site_name("hypersig")
+        .kind(if doc.is_landing() {
+            OpenGraphType::Website
+        } else {
+            OpenGraphType::Article
+        })
+        .locale(site.lang().og_locale());
     if let Some((origin, url)) = site.canonical(&doc.path()) {
         page = page.canonical(origin, &url);
+        card = card.image(
+            origin,
+            format!("/{}", crate::og_image(site.lang()).0),
+            site.t(L {
+                en: "hypersig, a web framework on axum written all in Rust",
+                ja: "hypersig、Rust だけで書く axum の上の Web フレームワーク",
+            }),
+        );
+        for &lang in Lang::ALL {
+            let (origin, url) = site
+                .with_lang(lang)
+                .canonical(&doc.path())
+                .expect("every language of a site shares its origin");
+            page = page.alternate(origin, &url, lang.tag());
+            if lang == Lang::En {
+                page = page.alternate_default(origin, &url);
+            }
+        }
     }
-    page.open_graph(OpenGraph::new().site_name("hypersig"))
+    for &lang in Lang::ALL.iter().filter(|&&lang| lang != site.lang()) {
+        card = card.alternate_locale(lang.og_locale());
+    }
+    page.open_graph(card)
         .runtime_src(site.runtime())
         .icon(site.icon())
         .global(hypersig_ui::global())

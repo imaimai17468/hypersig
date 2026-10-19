@@ -25,6 +25,7 @@ mod reference;
 mod style;
 
 use std::collections::BTreeSet;
+use std::fmt::Write as _;
 use std::path::Path;
 
 use hypersig::{Origin, PageResponse, Rest, Route, Url};
@@ -160,7 +161,7 @@ pub struct File {
     /// The path inside the output directory, without a leading `/`.
     pub path: String,
     /// The file's contents.
-    pub contents: String,
+    pub contents: Vec<u8>,
 }
 
 /// The file the pages load the runtime from.
@@ -169,11 +170,27 @@ const RUNTIME_FILE: &str = "hypersig.js";
 /// The file of the hypersig icon.
 const ICON_FILE: &str = "icon.svg";
 
+/// The list of the site's pages that search engines read.
+const SITEMAP_FILE: &str = "sitemap.xml";
+
+/// The picture a link preview shows for a page in `lang`, and its contents.
+///
+/// `assets/og-en.svg` and `assets/og-ja.svg` are the sources of the PNG files,
+/// which headless Chrome draws at 1200×630, since link previews do not show
+/// SVG.
+fn og_image(lang: Lang) -> (&'static str, &'static [u8]) {
+    match lang {
+        Lang::En => ("og-en.png", include_bytes!("../../assets/og-en.png")),
+        Lang::Ja => ("og-ja.png", include_bytes!("../../assets/og-ja.png")),
+    }
+}
+
 /// The directory the rustdoc output is copied into, inside the site.
 pub const API_DIR: &str = "api";
 
-/// Every file of the site: the pages, the live demos, the runtime, and the
-/// icon.
+/// Every file of the site: the pages, the live demos, the runtime, the
+/// icon, the link preview pictures, and, for a site that knows its origin,
+/// the sitemap.
 #[must_use]
 pub fn render(site: Site) -> Vec<File> {
     let mut files = Vec::new();
@@ -181,22 +198,74 @@ pub fn render(site: Site) -> Vec<File> {
         let site = site.with_lang(lang);
         files.extend(Doc::ALL.iter().map(|&doc| File {
             path: format!("{}{}index.html", lang.dir(), doc.path()),
-            contents: doc.render(site),
+            contents: doc.render(site).into_bytes(),
         }));
         files.extend(demo::Demo::ALL.iter().map(|&demo| File {
             path: format!("{}{}index.html", lang.dir(), demo.path()),
-            contents: demo.render(site),
+            contents: demo.render(site).into_bytes(),
         }));
+        let (path, contents) = og_image(lang);
+        files.push(File {
+            path: path.to_owned(),
+            contents: contents.to_vec(),
+        });
     }
     files.push(File {
         path: RUNTIME_FILE.to_owned(),
-        contents: hypersig::RUNTIME_JS.to_owned(),
+        contents: hypersig::RUNTIME_JS.as_bytes().to_vec(),
     });
     files.push(File {
         path: ICON_FILE.to_owned(),
-        contents: include_str!("../../assets/hypersig.svg").to_owned(),
+        contents: include_bytes!("../../assets/hypersig.svg").to_vec(),
     });
+    if let Some(sitemap) = sitemap(site) {
+        files.push(File {
+            path: SITEMAP_FILE.to_owned(),
+            contents: sitemap.into_bytes(),
+        });
+    }
     files
+}
+
+/// The absolute URL of the page at `path` in each language, English first.
+fn absolute_urls(site: Site, path: &str) -> Option<Vec<(Lang, String)>> {
+    Lang::ALL
+        .iter()
+        .map(|&lang| {
+            let (origin, url) = site.with_lang(lang).canonical(path)?;
+            Some((lang, format!("{origin}{url}")))
+        })
+        .collect()
+}
+
+/// The sitemap of every page in every language, each naming its
+/// translations, or `None` for a site that does not know its origin, since a
+/// sitemap holds absolute URLs. The demos are left out, as their pages ask
+/// not to be indexed.
+fn sitemap(site: Site) -> Option<String> {
+    let mut xml = String::from(concat!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>"#,
+        "\n",
+        r#"<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">"#,
+        "\n",
+    ));
+    for &doc in Doc::ALL {
+        let urls = absolute_urls(site, &doc.path())?;
+        for (_, loc) in &urls {
+            writeln!(xml, "  <url>\n    <loc>{loc}</loc>").ok()?;
+            for (lang, href) in &urls {
+                writeln!(
+                    xml,
+                    r#"    <xhtml:link rel="alternate" hreflang="{}" href="{href}"/>"#,
+                    lang.tag()
+                )
+                .ok()?;
+            }
+            xml.push_str("  </url>\n");
+        }
+    }
+    xml.push_str("</urlset>\n");
+    Some(xml)
 }
 
 /// A link inside the site that names no file of the site.
@@ -214,6 +283,10 @@ pub struct BrokenLink {
 /// A link into [`API_DIR`] is checked by `api`, which receives the path after
 /// `api/` and the fragment after `#`, if any. Pass a function that returns
 /// `true` to leave those links unchecked.
+///
+/// # Panics
+///
+/// Panics if a page of `files`, a file ending in `.html`, is not UTF-8.
 #[must_use]
 pub fn check_links(
     site: Site,
@@ -228,7 +301,8 @@ pub fn check_links(
             .extension()
             .is_some_and(|ext| ext == "html")
     }) {
-        for target in links(&file.contents) {
+        let html = str::from_utf8(&file.contents).expect("a page is UTF-8");
+        for target in links(html) {
             let Some(inside) = target
                 .strip_prefix(site.base)
                 .and_then(|t| t.strip_prefix('/'))
@@ -297,7 +371,7 @@ mod tests {
         let site = Site::new("/hypersig");
         let files = vec![File {
             path: "index.html".to_owned(),
-            contents: r#"<a href="/hypersig/learn/">Learn</a><a href="/hypersig/">Home</a><a href="https://example.com/">out</a><code>href="/hypersig/x"</code>"#.to_owned(),
+            contents: r#"<a href="/hypersig/learn/">Learn</a><a href="/hypersig/">Home</a><a href="https://example.com/">out</a><code>href="/hypersig/x"</code>"#.as_bytes().to_vec(),
         }];
         let broken = check_links(site, &files, |_, _| true);
         assert_eq!(
@@ -334,5 +408,41 @@ mod tests {
         assert!(html.contains(&format!(r#"<meta property="og:url" content="{url}">"#)));
         let home = Doc::Home.render(Site::new("").with_origin(Origin::new("https://example.com")));
         assert!(home.contains(r#"<link rel="canonical" href="https://example.com/">"#));
+    }
+
+    #[test]
+    fn a_page_names_its_translations_and_its_picture_under_the_base() {
+        let site = Site::new("/hypersig").with_origin(Origin::new("https://example.com"));
+        let html = Doc::Learn(doc::Learn::Forms).render(site);
+        for (lang, url) in [
+            ("en", "https://example.com/hypersig/learn/forms/"),
+            ("ja", "https://example.com/hypersig/ja/learn/forms/"),
+            ("x-default", "https://example.com/hypersig/learn/forms/"),
+        ] {
+            assert!(
+                html.contains(&format!(
+                    r#"<link rel="alternate" hreflang="{lang}" href="{url}">"#
+                )),
+                "{lang}"
+            );
+        }
+        assert!(html.contains(
+            r#"<meta property="og:image" content="https://example.com/hypersig/og-en.png">"#
+        ));
+        assert!(html.contains(r#"<meta property="og:locale" content="en_US">"#));
+        assert!(html.contains(r#"<meta property="og:type" content="article">"#));
+        assert!(html.contains(r#"<meta name="description" content="A form"#));
+    }
+
+    #[test]
+    fn the_sitemap_lists_every_page_in_every_language() {
+        let site = Site::new("/hypersig").with_origin(Origin::new("https://example.com"));
+        let xml = sitemap(site).expect("the site knows its origin");
+        assert_eq!(
+            xml.matches("<loc>").count(),
+            Doc::ALL.len() * Lang::ALL.len()
+        );
+        assert!(xml.contains("<loc>https://example.com/hypersig/ja/</loc>"));
+        assert!(sitemap(Site::new("/hypersig")).is_none());
     }
 }

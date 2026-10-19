@@ -25,13 +25,7 @@ pub fn content(site: Site, page: StylePage) -> Part {
 fn overview(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "`hypersig::style` is typed atomic CSS. A misspelled property name or keyword, or a value of the wrong type, is a compile error. Each declaration becomes one class.",
-                ja: "`hypersig::style` は型の付いた atomic CSS です。プロパティ名やキーワードの綴りを間違えたり、型の違う値を渡したりするとコンパイルエラーになります。宣言は 1 つごとに 1 つのクラスになります。",
-            },
-        ),
+        lead(site, Doc::Style(StylePage::Overview).leads()),
         heading(
             site,
             L {
@@ -132,13 +126,7 @@ fn overview(site: Site, head: Part) -> Part {
 fn values(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "Each property method takes its own value type, which has the property's keywords and accepts values in the units the property allows.",
-                ja: "プロパティのメソッドはそれぞれ専用の値の型を受け取ります。その型はプロパティのキーワードを持ち、プロパティで使える単位の値を受け付けます。",
-            },
-        ),
+        lead(site, Doc::Style(StylePage::Values).leads()),
         heading(
             site,
             L {
@@ -228,13 +216,7 @@ fn values(site: Site, head: Part) -> Part {
 fn conditions(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "`Style::on` applies part of a style only under a condition. The condition can be a pseudo-class, a media feature, a container width, or the state of a marked ancestor or sibling.",
-                ja: "`Style::on` はスタイルの一部を条件の下でだけ適用します。条件には擬似クラス、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態を使えます。",
-            },
-        ),
+        lead(site, Doc::Style(StylePage::Conditions).leads()),
         heading(
             site,
             L {
@@ -290,13 +272,7 @@ fn conditions(site: Site, head: Part) -> Part {
 fn tokens(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "A token is a named value written as a CSS custom property. A theme sets its value for the whole page, and a style sets it for one element.",
-                ja: "トークンは CSS のカスタムプロパティとして書かれる名前付きの値です。テーマはページ全体に、スタイルは 1 つの要素にトークンの値を設定します。",
-            },
-        ),
+        lead(site, Doc::Style(StylePage::Tokens).leads()),
         heading(
             site,
             L {
@@ -350,13 +326,7 @@ fn tokens(site: Site, head: Part) -> Part {
 fn global(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "A `Global` holds rules that select elements by tag, a small reset, and the fonts the page loads.",
-                ja: "`Global` には、タグで要素を選ぶルール、小さなリセット、ページが読み込むフォントが入ります。",
-            },
-        ),
+        lead(site, Doc::Style(StylePage::Global).leads()),
         heading(
             site,
             L {
@@ -395,13 +365,7 @@ fn global(site: Site, head: Part) -> Part {
 fn patterns(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) has functions that return the styles of common layouts. Merge the returned style with your own.",
-                ja: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) には、よく使うレイアウトのスタイルを返す関数があります。返されたスタイルは自分のスタイルと `merge` して使います。",
-            },
-        ),
+        lead(site, Doc::Style(StylePage::Patterns).leads()),
         show(Snippet::Patterns),
         table_of(
             site,
@@ -491,13 +455,7 @@ fn patterns(site: Site, head: Part) -> Part {
 fn animation(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element.",
-                ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。",
-            },
-        ),
+        lead(site, Doc::Style(StylePage::Animation).leads()),
         heading(
             site,
             L {
@@ -541,13 +499,7 @@ fn animation(site: Site, head: Part) -> Part {
 fn unchecked(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "A few forms reach the browser without a check. Each has its own name, so searching for that name finds every place that uses an unchecked value.",
-                ja: "いくつかの書き方は検査を受けずにブラウザへ渡ります。どの書き方にも決まった名前があるので、その名前で検索すれば、検査なしの値を使う箇所をすべて見つけられます。",
-            },
-        ),
+        lead(site, Doc::Style(StylePage::Unchecked).leads()),
         show(Snippet::Unchecked),
         bullets(
             site,

@@ -4,7 +4,7 @@
 //! is an [`L`], a struct with one field per language, so a text without its
 //! Japanese translation fails to compile.
 
-use hypersig::Segment;
+use hypersig::{OpenGraphLocale, Segment};
 use hypersig_i18n::Locale;
 use serde::{Deserialize, Serialize};
 
@@ -43,6 +43,15 @@ impl Lang {
         match self {
             Self::En => "",
             Self::Ja => "ja/",
+        }
+    }
+
+    /// The locale link previews read the language from, the `og:locale` tag.
+    #[must_use]
+    pub fn og_locale(self) -> OpenGraphLocale {
+        match self {
+            Self::En => OpenGraphLocale::new("en_US"),
+            Self::Ja => OpenGraphLocale::new("ja_JP"),
         }
     }
 

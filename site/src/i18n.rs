@@ -20,13 +20,7 @@ pub fn content(site: Site, page: I18nPage) -> Part {
 fn overview(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "`hypersig_i18n` keeps a text and its translations together in one value, so a text missing a translation into any language fails to compile.",
-                ja: "`hypersig_i18n` は 1 つの文とその訳を 1 つの値にまとめて持ちます。そのため、どれかの言語の訳が欠けた文はコンパイルエラーになります。",
-            },
-        ),
+        lead(site, Doc::I18n(I18nPage::Overview).leads()),
         heading(
             site,
             L {
@@ -115,13 +109,7 @@ hypersig_i18n = { git = "https://github.com/imaimai17468/hypersig" }"#,
 fn pages(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "The language is the first segment of each page's route, so the page in another language is the same route with only the language changed.",
-                ja: "言語は各ページのルートの最初のセグメントに置きます。そのため、別の言語のページは言語だけを変えた同じルートになります。",
-            },
-        ),
+        lead(site, Doc::I18n(I18nPage::Pages).leads()),
         heading(
             site,
             L {
@@ -178,13 +166,7 @@ fn pages(site: Site, head: Part) -> Part {
 fn negotiation(site: Site, head: Part) -> Part {
     parts([
         head,
-        lead(
-            site,
-            L {
-                en: "A visitor who opens `/` is redirected to the page in the language their browser asks for.",
-                ja: "`/` を開いた訪問者を、ブラウザが求める言語のページへリダイレクトします。",
-            },
-        ),
+        lead(site, Doc::I18n(I18nPage::Negotiation).leads()),
         heading(
             site,
             L {

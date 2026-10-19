@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#09090b"/>
+  <path d="M600 548h180l26-52 40 104 26-52h328" fill="none" stroke="#38bdf8" stroke-opacity="0.18" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(96 96) scale(1.75)">
+    <rect width="64" height="64" rx="14" fill="#27272a"/>
+    <path d="M17 20 9 32l8 12M47 20l8 12-8 12" fill="none" stroke="#fafafa" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M21 32h4l4-10 6 20 4-10h4" fill="none" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="240" y="178" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-size="80" font-weight="700" letter-spacing="-2" fill="#fafafa">hypersig</text>
+  <text x="96" y="330" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-size="40" font-weight="600" fill="#fafafa">Rust だけで書く、axum の上の Web フレームワーク</text>
+  <text y="400" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-size="32" fill="#a1a1aa"><tspan x="96" dy="0">ブラウザが扱う文字列はすべて Rust の型から作るので、</tspan><tspan x="96" dy="58">その書き間違いはコンパイルエラーになります。</tspan></text>
+  <text x="96" y="560" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-size="26" fill="#71717a">imaimai17468.github.io/hypersig/ja</text>
+</svg>

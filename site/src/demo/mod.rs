@@ -142,9 +142,13 @@ impl Demo {
 }
 
 /// `page` with the components' theme and room around its content.
+///
+/// A demo is shown inside a page of the docs, so search engines are asked
+/// not to list it on its own.
 fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
     page.runtime_src(site.runtime())
         .icon(site.icon())
+        .noindex()
         .global(hypersig_ui::global())
         .global(
             Global::new()

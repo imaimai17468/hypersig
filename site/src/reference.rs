@@ -80,13 +80,7 @@ fn overview(site: Site) -> Part {
     let rows: Vec<&[&str]> = rows.iter().map(Vec::as_slice).collect();
     parts([
         title(Doc::Reference(Reference::Overview).title(site)),
-        lead(
-            site,
-            L {
-                en: "The items of the `hypersig` crate, grouped by what they build. Each name links to its full documentation.",
-                ja: "`hypersig` クレートの項目を、組み立てるものごとにまとめています。名前をクリックすると、その項目の完全なドキュメントを開けます。",
-            },
-        ),
+        lead(site, Doc::Reference(Reference::Overview).leads()),
         para(
             site,
             L {
@@ -110,6 +104,12 @@ fn overview(site: Site) -> Part {
             },
         ),
     ])
+}
+
+/// The lead of the page of `page`, a group of items rather than the
+/// overview.
+pub(crate) fn page_lead(page: Reference) -> L<&'static str> {
+    page_items(page).0
 }
 
 /// The summary and the sections of `page`.

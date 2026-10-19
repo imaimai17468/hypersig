@@ -241,6 +241,34 @@ pub fn inline(site: Site, text: &str) -> Vec<Node<Docs>> {
     nodes
 }
 
+/// `text` with the marks [`inline`] reads taken out, for a place that shows
+/// no markup, such as a page's description.
+pub fn plain(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(at) = rest.find(['`', '*', '[']) {
+        let (before, mark) = rest.split_at(at);
+        out.push_str(before);
+        if let Some(after) = mark.strip_prefix('`') {
+            let end = after.find('`').expect("a code mark is closed");
+            out.push_str(&after[..end]);
+            rest = &after[end + 1..];
+        } else if let Some(after) = mark.strip_prefix("**") {
+            let end = after.find("**").expect("a bold mark is closed");
+            out.push_str(&after[..end]);
+            rest = &after[end + 2..];
+        } else if let Some((label, _, after)) = split_link(mark) {
+            out.push_str(&plain(label));
+            rest = after;
+        } else {
+            out.push_str(&mark[..1]);
+            rest = &mark[1..];
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 /// The label, the target, and the text after a link at the start of `text`,
 /// or `None` where `text` does not start with one, as in `[i32]`.
 fn split_link(text: &str) -> Option<(&str, &str, &str)> {

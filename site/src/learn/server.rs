@@ -12,13 +12,7 @@ use crate::prose::{Part, bullets, heading, lead, note, para, parts, subheading, 
 pub fn server(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Server).title(site)),
-        lead(
-            site,
-            L {
-                en: "The browser calls an action, and the server answers with patches: new values for signals, or new HTML for a part of the page.",
-                ja: "ブラウザがアクションを呼び出すと、サーバーは差分で答えます。差分はシグナルの新しい値か、ページの一部の新しい HTML です。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::Server).leads()),
         heading(
             site,
             L {
@@ -230,13 +224,7 @@ pub fn pages(site: Site) -> Part {
     parts(
         [
             title(Doc::Learn(Learn::Pages).title(site)),
-            lead(
-                site,
-                L {
-                    en: "A route is a page the server renders at a path. The router serves it and the links on other pages point to it from the same value, so a parameter of the wrong type or in the wrong number is a compile error.",
-                    ja: "ルートは、サーバーがあるパスで描画するページです。ルーターの配信もほかのページからのリンクも同じ値から作るので、パラメータの型や数の誤りはコンパイルエラーになります。",
-                },
-            ),
+            lead(site, Doc::Learn(Learn::Pages).leads()),
             heading(
                 site,
                 L {
@@ -436,13 +424,7 @@ fn head(site: Site) -> Part {
 pub fn styling(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Styling).title(site)),
-        lead(
-            site,
-            L {
-                en: "Styles are Rust values too. A misspelled property or keyword, or a value of the wrong type, is a compile error.",
-                ja: "スタイルも Rust の値です。プロパティやキーワードの打ち間違いや、型の違う値はコンパイルエラーになります。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::Styling).leads()),
         heading(
             site,
             L {
@@ -514,13 +496,7 @@ pub fn styling(site: Site) -> Part {
 pub fn escape_hatches(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::EscapeHatches).title(site)),
-        lead(
-            site,
-            L {
-                en: "Most pages need only bindings and statements. These cover focus, timers, and reactions to a change, links outside the router, and serving a page as a static file.",
-                ja: "たいていのページは束縛と文だけで書けます。ここで扱うのは、フォーカス、タイマー、変化への反応、ルーターの外へのリンク、ページを静的ファイルとして配信する方法です。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::EscapeHatches).leads()),
         heading(
             site,
             L {

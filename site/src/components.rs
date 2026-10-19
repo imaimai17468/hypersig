@@ -103,13 +103,7 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
 fn installation(site: Site) -> Part {
     parts([
         title(Doc::Components(Component::Installation).title(site)),
-        lead(
-            site,
-            L {
-                en: "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
-                ja: "`hypersig_ui` は、shadcn/ui に似た見た目を持ち、振る舞いはブラウザのネイティブ要素と WAI-ARIA Authoring Practices に従うコンポーネント集です。",
-            },
-        ),
+        lead(site, Doc::Components(Component::Installation).leads()),
         heading(
             site,
             L {
@@ -187,13 +181,7 @@ hypersig_ui = { git = "https://github.com/imaimai17468/hypersig" }"#,
 fn theming(site: Site) -> Part {
     parts([
         title(Doc::Components(Component::Theming).title(site)),
-        lead(
-            site,
-            L {
-                en: "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
-                ja: "コンポーネントは色と角の丸みをデザイントークンから読みます。トークンの値は、ページ全体にはテーマが、1 つの要素にはスタイルが設定します。",
-            },
-        ),
+        lead(site, Doc::Components(Component::Theming).leads()),
         heading(
             site,
             L {
@@ -232,6 +220,12 @@ fn theming(site: Site) -> Part {
             },
         ),
     ])
+}
+
+/// The lead of the page of `page`, a component rather than Installation or
+/// Theming.
+pub(crate) fn component_lead(page: Component) -> L<&'static str> {
+    component_page(page).lead
 }
 
 /// The content of a component page.

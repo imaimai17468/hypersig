@@ -11,13 +11,7 @@ use crate::prose::{Part, heading, lead, para, parts, title};
 pub fn forms(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Forms).title(site)),
-        lead(
-            site,
-            L {
-                en: "A form's rules are written once in Rust. The browser checks them as the visitor types, and the handler checks the same rules before it trusts the values.",
-                ja: "フォームのルールは Rust で 1 回だけ書きます。ブラウザは入力に合わせてそのルールを検査し、ハンドラは値を使う前に同じルールで検査します。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::Forms).leads()),
         heading(
             site,
             L {

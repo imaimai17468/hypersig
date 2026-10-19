@@ -11,13 +11,7 @@ use crate::prose::{Part, heading, lead, note, para, parts, subheading, title};
 pub fn requests(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Requests).title(site)),
-        lead(
-            site,
-            L {
-                en: "A handler reads the request through an axum extractor, sets cookies by returning headers beside its answer, and fails with `?`.",
-                ja: "ハンドラは axum の extractor でリクエストを読み、答えと組にしたヘッダーで Cookie を設定し、`?` で失敗を返します。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::Requests).leads()),
         heading(
             site,
             L {

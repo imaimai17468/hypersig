@@ -10,13 +10,7 @@ use crate::prose::{Part, heading, lead, note, para, parts, subheading, table_of,
 pub fn signals(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Signals).title(site)),
-        lead(
-            site,
-            L {
-                en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
-                ja: "ページの状態は Rust の構造体 1 つで表し、シグナルはそのフィールド 1 つを指す型付きの参照です。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::Signals).leads()),
         heading(
             site,
             L {
@@ -111,13 +105,7 @@ pub fn signals(site: Site) -> Part {
 pub fn expressions(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Expressions).title(site)),
-        lead(
-            site,
-            L {
-                en: "An expression computes a value from the signals, and a statement changes them. Both are Rust values that the browser receives as JSON.",
-                ja: "式はシグナルから値を計算し、文はシグナルを変更します。どちらも Rust の値で、ブラウザは JSON として受け取ります。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::Expressions).leads()),
         heading(
             site,
             L {
@@ -254,13 +242,7 @@ pub fn expressions(site: Site) -> Part {
 pub fn lists(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Lists).title(site)),
-        lead(
-            site,
-            L {
-                en: "A `Vec` field is a list. `each` renders an element per item in the browser, and list statements change it without a request.",
-                ja: "`Vec` のフィールドはリストです。`each` はブラウザで項目ごとに要素を描画し、リストの文はリクエストを送らずにリストを変更します。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::Lists).leads()),
         heading(
             site,
             L {

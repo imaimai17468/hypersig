@@ -37,13 +37,7 @@ pub fn why(site: Site) -> Part {
 fn intro(site: Site) -> [Part; 2] {
     [
         title(Doc::Learn(Learn::Why).title(site)),
-        lead(
-            site,
-            L {
-                en: "hypersig renders the page on the server and writes its behavior into the HTML. Every string the browser acts on comes from a Rust type, so the page needs no browser build, no hydration, and no string typed by hand.",
-                ja: "hypersig はページをサーバーで描画し、その動きを HTML に書き込みます。ブラウザが扱う文字列はすべて Rust の型から作られるので、ブラウザ向けのビルドもハイドレーションも要らず、手で書く文字列もありません。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::Why).leads()),
     ]
 }
 

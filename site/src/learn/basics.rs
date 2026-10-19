@@ -12,13 +12,7 @@ use crate::prose::{Part, bullets, heading, lead, note, para, parts, title};
 pub fn quick_start(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::QuickStart).title(site)),
-        lead(
-            site,
-            L {
-                en: "Build a counter that counts in the browser and resets on the server, in one Rust file.",
-                ja: "ブラウザで数を数え、サーバーで 0 に戻すカウンターを、Rust のファイル 1 つで作ります。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::QuickStart).leads()),
         heading(
             site,
             L {
@@ -143,13 +137,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
 pub fn describing_the_page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::DescribingThePage).title(site)),
-        lead(
-            site,
-            L {
-                en: "A page is a tree of `El` values built with Rust functions and rendered to HTML on the server.",
-                ja: "ページは Rust の関数で組み立てた `El` の値の木で、サーバーが HTML に描画します。",
-            },
-        ),
+        lead(site, Doc::Learn(Learn::DescribingThePage).leads()),
         heading(
             site,
             L {
