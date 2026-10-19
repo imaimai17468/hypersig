@@ -280,7 +280,7 @@ dependencies = [
 
 [[package]]
 name = "hypersig"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axum",
  "futures",
@@ -293,14 +293,14 @@ dependencies = [
 
 [[package]]
 name = "hypersig_proc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "hypersig_proc_impl",
 ]
 
 [[package]]
 name = "hypersig_proc_impl"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -309,7 +309,7 @@ dependencies = [
 
 [[package]]
 name = "hypersig_style"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "itoa"
