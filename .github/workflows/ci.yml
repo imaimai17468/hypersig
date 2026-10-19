@@ -90,3 +90,48 @@ jobs:
           tool: cargo-udeps
       - run: cargo +nightly-2026-10-14 udeps --workspace --all-targets
       - run: cargo +nightly-2026-10-14 miri test -p hypersig --lib
+
+  # Publishes to crates.io every library crate whose workspace version is not
+  # there yet, so a push to main that raises the version releases it and any
+  # other push publishes nothing.
+  publish:
+    needs: [rust, runtime, e2e, nightly]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    # Two pushes close together would otherwise both try the same version.
+    concurrency:
+      group: publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99
+      - uses: Swatinem/rust-cache@v2
+      - id: pending
+        name: List the crates whose version crates.io does not have
+        run: |
+          args=""
+          while read -r name version; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' \
+              -A 'hypersig-ci (https://github.com/imaimai17468/hypersig)' \
+              "https://crates.io/api/v1/crates/$name/$version")
+            case "$status" in
+              200) ;;
+              404) args="$args -p $name" ;;
+              *) echo "crates.io answered $status for $name $version"; exit 1 ;;
+            esac
+          done < <(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(.publish != []) | "\(.name) \(.version)"')
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+      # Trusted publishing: crates.io trades the job's OIDC token for a
+      # short-lived one, which works only for a crate that already exists and
+      # names this repository and ci.yml as its trusted publisher.
+      - id: auth
+        if: steps.pending.outputs.args != ''
+        uses: rust-lang/crates-io-auth-action@v1
+      - if: steps.pending.outputs.args != ''
+        run: cargo publish ${{ steps.pending.outputs.args }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
