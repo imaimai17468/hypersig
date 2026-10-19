@@ -10,7 +10,7 @@ use crate::lang::L;
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, subheading, title};
 
 pub fn server(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Learn(Learn::Server).title(site)),
         lead(site, Doc::Learn(Learn::Server).leads()),
         heading(

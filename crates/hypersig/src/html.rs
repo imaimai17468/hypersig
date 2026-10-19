@@ -46,6 +46,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::io;
+use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -53,7 +54,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::action::NodeRef;
-use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
+use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
 use crate::route::Link;
 use crate::signal::{Item, Part, Sig, in_item_scope, in_part};
 use crate::ssr::{self, Ctx, Val};
@@ -453,6 +454,11 @@ impl<S> El<S> {
             interval: self.interval.map(|(ms, stmt)| (ms, retype_stmt(stmt))),
             timeout: self.timeout.map(|(ms, stmt)| (ms, retype_stmt(stmt))),
             on: retype_stmts(self.on),
+            custom: self
+                .custom
+                .into_iter()
+                .map(|(name, depth, stmt)| (name, depth, retype_stmt(stmt)))
+                .collect(),
             keys: retype_stmts(self.keys),
             roving: self.roving,
             active: self.active,
@@ -507,6 +513,7 @@ pub struct El<S> {
     interval: Option<(u128, Stmt<S>)>,
     timeout: Option<(u128, Stmt<S>)>,
     on: BTreeMap<Event, Stmt<S>>,
+    custom: Vec<(&'static str, u8, Stmt<S>)>,
     keys: Vec<(Shortcut, Stmt<S>)>,
     roving: Option<Orientation>,
     active: Option<(&'static str, Value)>,
@@ -741,6 +748,85 @@ impl Event {
             Self::Load => "data-hs-on-load",
             Self::Visible => "data-hs-on-visible",
         }
+    }
+}
+
+/// An event that a script, such as a custom element, dispatches on an element.
+///
+/// Declare it once as a `const` next to the element that dispatches it, and
+/// run a statement on it with [`El::on_custom`], which hands the statement
+/// the event's `detail` as an [`Expr`] of type `T`.
+///
+/// The name and `T` describe code outside hypersig, so nothing checks them:
+/// an event the script never dispatches runs nothing, and a `detail` of
+/// another shape reaches the statement as it is, where reading a field it
+/// lacks gives `null`.
+///
+/// ```
+/// use hypersig::html::{CustomEvent, el};
+/// use hypersig::{Page, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Rating {
+///     stars: i32,
+/// }
+///
+/// const RATE: CustomEvent<i32> = CustomEvent::new("rate");
+///
+/// let html = Page::new("Rating", Rating { stars: 0 })
+///     .child(el("star-rating").on_custom(RATE, |stars| Rating::stars().set(stars)))
+///     .render();
+/// assert!(html.contains("data-hs-on-custom"));
+/// ```
+pub struct CustomEvent<T> {
+    name: &'static str,
+    marker: PhantomData<fn() -> T>,
+}
+
+impl<T> CustomEvent<T> {
+    /// An event of type `name`, as the script passes it to `new CustomEvent`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `name` is empty or holds whitespace. In a `const`, that is a
+    /// compile error.
+    #[must_use]
+    pub const fn new(name: &'static str) -> Self {
+        let bytes = name.as_bytes();
+        assert!(!bytes.is_empty(), "an event name is never empty");
+        let mut i = 0;
+        while i < bytes.len() {
+            assert!(
+                !bytes[i].is_ascii_whitespace(),
+                "an event name holds no whitespace"
+            );
+            i += 1;
+        }
+        Self {
+            name,
+            marker: PhantomData,
+        }
+    }
+
+    /// The event's type, as the script dispatches it.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        self.name
+    }
+}
+
+impl<T> Clone for CustomEvent<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for CustomEvent<T> {}
+
+impl<T> fmt::Debug for CustomEvent<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("CustomEvent").field(&self.name).finish()
     }
 }
 
@@ -1121,6 +1207,7 @@ impl<S> El<S> {
             interval: None,
             timeout: None,
             on: BTreeMap::new(),
+            custom: Vec::new(),
             keys: Vec::new(),
             roving: None,
             active: None,
@@ -1566,6 +1653,27 @@ impl<S> El<S> {
     #[must_use]
     pub fn on_blur(self, stmt: impl IntoStmt<S>) -> Self {
         self.on(Event::Blur, stmt)
+    }
+
+    /// Runs the statement `handle` builds whenever `event` reaches this element.
+    ///
+    /// `handle` receives the event's `detail`. The runtime listens on this
+    /// element itself, so an event dispatched without `bubbles` runs it when
+    /// the script dispatches it on this element, and one with `bubbles` also
+    /// when it is dispatched inside. Calling it twice for one event runs both
+    /// statements in order. [`CustomEvent`] has an example.
+    #[must_use]
+    pub fn on_custom<T, B: IntoStmt<S>>(
+        mut self,
+        event: CustomEvent<T>,
+        handle: impl FnOnce(Expr<S, T>) -> B,
+    ) -> Self {
+        let (depth, stmt) = in_let_scope(|depth| {
+            let detail = Expr::from_json(json!(["var", depth]));
+            (depth, handle(detail).into_stmt())
+        });
+        self.custom.push((event.name, depth, stmt));
+        self
     }
 
     /// Runs `stmt` once when the element is added to the document.
@@ -2117,6 +2225,14 @@ impl<S> El<S> {
         }
         for (event, stmt) in &self.on {
             write_attr(out, event.attribute(), &stmt.to_json());
+        }
+        if !self.custom.is_empty() {
+            let custom: Vec<(&str, u8, &Value)> = self
+                .custom
+                .iter()
+                .map(|(name, depth, stmt)| (*name, *depth, stmt.as_json()))
+                .collect();
+            write_attr(out, "data-hs-on-custom", &json_text(&custom));
         }
         if !self.keys.is_empty() {
             write_attr(out, "data-hs-on-key", &keys_json(&self.keys));

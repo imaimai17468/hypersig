@@ -88,9 +88,9 @@ export class Attributes {
     this.#start(element);
   }
 
-  /** Starts the statements of `element` that run on their own: on load, on a timer, and on becoming visible. */
+  /** Starts the statements of `element` that run on their own: on load, on a timer, on becoming visible, and on a custom event. */
   #start(element: Element): void {
-    const { statements, timers } = this.#rt.bindings;
+    const { statements, timers, events } = this.#rt.bindings;
     const load = attr(element, "hsOnLoad");
     if (load !== undefined) statements.runAttribute(load, element);
     const interval = parse(attr(element, "hsOnInterval"));
@@ -98,6 +98,8 @@ export class Attributes {
     const timeout = parse(attr(element, "hsOnTimeout"));
     if (Array.isArray(timeout)) timers.timeout(element, timeout[0] as number, timeout[1]);
     if (attr(element, "hsOnVisible") !== undefined) this.#visibility?.observe(element);
+    const custom = parse(attr(element, "hsOnCustom"));
+    if (Array.isArray(custom)) events.custom(element, custom as [string, number, unknown][]);
   }
 
   #effectsFor(element: Element, scope: readonly Slot[]): Effect[] {

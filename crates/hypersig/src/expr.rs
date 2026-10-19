@@ -58,6 +58,7 @@
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |
 //! | `a.let_in(\|v\| e)`, and `v` inside `e` | `["let",a,depth,e]`, `["var",depth]` |
 //! | `a.let_in_stmt(\|v\| s)` | `["let",a,depth,s]` |
+//! | `el.on_custom(event, \|detail\| s)`, and `detail` inside `s` | `[name,depth,s]`, one entry of `data-hs-on-custom`, and `["var",depth]` |
 //! | `call.on_error(\|message\| s)`, `call.on_success(t)`, a call inside a `Part` | `["call",...,flags,{"error":[depth,s],"ok":t,"part":"field"}]` |
 //!
 //! A place is `"dotted.path"` for a page signal and `["item",depth,"path"]`

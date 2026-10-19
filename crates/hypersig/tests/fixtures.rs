@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Key, Orientation, a, button, div, each, each_keyed, el, input, label, li, main, p,
-    select, span, textarea, ul, when,
+    CustomEvent, El, Event, Key, Orientation, a, button, div, each, each_keyed, el, input, label,
+    li, main, p, select, span, textarea, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
@@ -1322,8 +1322,72 @@ fn feed_patches() -> String {
         .to_event_stream()
 }
 
+#[derive(Signals, Serialize, Deserialize)]
+struct Point {
+    lat: f64,
+    lng: f64,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Pin {
+    name: String,
+    picked: bool,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Widgets {
+    stars: i32,
+    center: Point,
+    pins: Vec<Pin>,
+}
+
+const RATE: CustomEvent<i32> = CustomEvent::new("rate");
+const MOVED: CustomEvent<Point> = CustomEvent::new("map-moved");
+const PICK: CustomEvent<()> = CustomEvent::new("pick");
+
+fn widgets() -> (El<Widgets>, Widgets) {
+    let center = Widgets::center();
+    let el = main()
+        .child(
+            el("x-rating")
+                .id("rating")
+                .on_custom(RATE, |stars| Widgets::stars().set(stars))
+                .on_custom(RATE, |stars| Widgets::stars().set(Widgets::stars() + stars)),
+        )
+        .child(el("x-map").id("map").on_custom(MOVED, |point| {
+            center
+                .at(Point::lat())
+                .set(point.clone().at(Point::lat()))
+                .then(center.at(Point::lng()).set(point.at(Point::lng())))
+        }))
+        .child(ul().id("pins").child(each(Widgets::pins(), |pin| {
+            li().child(
+                el("x-pin")
+                    .on_custom(PICK, move |_| pin.at(Pin::picked()).set(true))
+                    .bind_text(pin.at(Pin::name())),
+            )
+        })));
+    let signals = Widgets {
+        stars: 0,
+        center: Point { lat: 0.0, lng: 0.0 },
+        pins: vec![
+            Pin {
+                name: "a".to_owned(),
+                picked: false,
+            },
+            Pin {
+                name: "b".to_owned(),
+                picked: false,
+            },
+        ],
+    };
+    (el, signals)
+}
+
 #[test]
 fn fixtures_match_the_builder() {
+    let (el, signals) = widgets();
+    check("widgets", &el, &signals);
     let (el, signals) = todos();
     check("todos", &el, &signals);
     let (el, signals) = controls();

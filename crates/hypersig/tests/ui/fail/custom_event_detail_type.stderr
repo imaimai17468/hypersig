@@ -1,0 +1,21 @@
+error[E0277]: `Expr<Map, i32>` is not an expression of type `String` on the page whose signals are `Map`
+  --> tests/ui/fail/custom_event_detail_type.rs:16:74
+   |
+16 |     let _ = el::<Map>("x-map").on_custom(ZOOMED, |zoom| Map::label().set(zoom));
+   |                                                                      --- ^^^^ the trait `IntoExpr<Map, String>` is not implemented for `Expr<Map, i32>`
+   |                                                                      |
+   |                                                                      required by a bound introduced by this call
+   |
+   = note: an expression must have the type the attribute expects, and use signals of the same page
+help: the trait `IntoExpr<Map, String>` is not implemented for `Expr<Map, i32>`
+      but trait `IntoExpr<Map, i32>` is implemented for it
+  --> src/expr.rs
+   |
+   | impl<S, T> IntoExpr<S, T> for Expr<S, T> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `i32`, found `String`
+note: required by a bound in `Sig::<S, T, R>::set`
+  --> src/signal.rs
+   |
+   |     pub fn set(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
+   |                                  ^^^^^^^^^^^^^^ required by this bound in `Sig::<S, T, R>::set`

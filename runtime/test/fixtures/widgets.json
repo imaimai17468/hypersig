@@ -1,0 +1,20 @@
+{
+  "html": "<main><x-rating id=\"rating\" data-hs-on-custom=\"[[&quot;rate&quot;,0,[&quot;set&quot;,&quot;stars&quot;,[&quot;var&quot;,0]]],[&quot;rate&quot;,0,[&quot;set&quot;,&quot;stars&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;stars&quot;],[&quot;var&quot;,0]]]]]\"></x-rating><x-map id=\"map\" data-hs-on-custom=\"[[&quot;map-moved&quot;,0,[&quot;seq&quot;,[[&quot;set&quot;,&quot;center.lat&quot;,[&quot;get&quot;,[&quot;var&quot;,0],&quot;lat&quot;]],[&quot;set&quot;,&quot;center.lng&quot;,[&quot;get&quot;,[&quot;var&quot;,0],&quot;lng&quot;]]]]]]\"></x-map><ul id=\"pins\"><template data-hs-each=\"[&quot;pins&quot;,0]\"><li><x-pin data-hs-text=\"[&quot;item&quot;,0,&quot;name&quot;]\" data-hs-on-custom=\"[[&quot;pick&quot;,0,[&quot;set&quot;,[&quot;item&quot;,0,&quot;picked&quot;],[&quot;lit&quot;,true]]]]\"></x-pin></li></template></ul></main>",
+  "signals": {
+    "center": {
+      "lat": 0.0,
+      "lng": 0.0
+    },
+    "pins": [
+      {
+        "name": "a",
+        "picked": false
+      },
+      {
+        "name": "b",
+        "picked": false
+      }
+    ],
+    "stars": 0
+  }
+}

@@ -34,6 +34,26 @@ export class Events {
     return null;
   }
 
+  /**
+   * Listens on `element` for the custom events of `handlers`, the entries of
+   * its `data-hs-on-custom`: an event's type, the depth its `detail` takes
+   * among the statement's variables, and the statement.
+   */
+  custom(element: Element, handlers: readonly [string, number, unknown][]): void {
+    const { statements } = this.#rt.bindings;
+    for (const [type, depth, stmt] of handlers) {
+      element.addEventListener(type, (event) => {
+        this.#rt.lists.adoption.around(element);
+        const ctx = statements.context(element);
+        const detail = event instanceof CustomEvent ? (event.detail as unknown) : null;
+        statements.run(stmt, {
+          ...ctx,
+          vars: [...(ctx.vars ?? []).slice(0, depth), detail ?? null],
+        });
+      });
+    }
+  }
+
   #bubbled(type: (typeof BUBBLING)[number], event: Event): void {
     const target = event.target;
     if (!(target instanceof Element)) return;

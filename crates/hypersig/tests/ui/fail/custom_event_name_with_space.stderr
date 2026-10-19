@@ -1,0 +1,19 @@
+error[E0080]: evaluation panicked: an event name holds no whitespace
+ --> tests/ui/fail/custom_event_name_with_space.rs:5:32
+  |
+5 | const MOVED: CustomEvent<()> = CustomEvent::new("map moved");
+  |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `MOVED` failed inside this call
+  |
+note: inside `CustomEvent::<()>::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/html.rs
+  |
+  | /             assert!(
+  | |                 !bytes[i].is_ascii_whitespace(),
+  | |                 "an event name holds no whitespace"
+  | |             );
+  | |_____________- in this macro invocation

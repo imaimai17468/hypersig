@@ -162,7 +162,7 @@ function add(found: Collected, part: Part, reads: readonly StaticRead[], depth: 
 }
 
 /** The statements that start when an element is registered, which keep its bindings effects of their own. */
-const STARTED = ["hsOnLoad", "hsOnInterval", "hsOnTimeout", "hsOnVisible"];
+const STARTED = ["hsOnLoad", "hsOnInterval", "hsOnTimeout", "hsOnVisible", "hsOnCustom"];
 
 /**
  * The parts of the bindings of `source`, an element of a list template at

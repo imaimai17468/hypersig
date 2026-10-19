@@ -30,6 +30,7 @@ const ATTRIBUTES = [
   "on-load",
   "on-visible",
   "on-key",
+  "on-custom",
   ...BUBBLING.map((type) => `on-${type}`),
   ...DIRECT.map((type) => `on-${type}`),
 ];
