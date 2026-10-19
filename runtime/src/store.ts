@@ -1,12 +1,8 @@
 export type Values = Record<string, unknown>;
 
-/** Joins dotted path parts, skipping empty ones. */
-export function join(...parts: string[]): string {
-  let joined = "";
-  for (const part of parts) {
-    if (part !== "") joined = joined === "" ? part : `${joined}.${part}`;
-  }
-  return joined;
+/** Joins two dotted paths, skipping an empty one. */
+export function join(a: string, b: string): string {
+  return a === "" ? b : b === "" ? a : `${a}.${b}`;
 }
 
 const splits = new Map<string, readonly string[]>();
@@ -44,6 +40,11 @@ export function getPath(value: unknown, path: string): unknown {
 /** Returns a copy of `value` with the value at `path` replaced, copying each container on the way. */
 export function setPath(value: unknown, path: string, next: unknown): unknown {
   return path === "" ? next : setAt(value, segmentsOf(path), 0, next);
+}
+
+/** `setPath` for a path already split into its segments, for a caller that writes at one path many times. */
+export function setSegments(value: unknown, segments: readonly string[], next: unknown): unknown {
+  return setAt(value, segments, 0, next);
 }
 
 /** `setPath` for the path whose segments from `at` on are left in `segments`. */

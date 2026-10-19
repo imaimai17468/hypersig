@@ -1,4 +1,4 @@
-import { equal, getPath, join, setPath, Store, type Values } from "./store.ts";
+import { equal, getPath, join, setPath, setSegments, Store, type Values } from "./store.ts";
 
 /**
  * The JSON form of an expression or statement, as `crates/hypersig/src/expr.rs` writes it.
@@ -14,7 +14,7 @@ export interface Slot {
    * `path`. The runtime gives each list item it renders a name of its own, so
    * the reads of the item's bindings stay valid when the item moves.
    */
-  read?: string;
+  read?: string | undefined;
 }
 
 /** What an expression is evaluated against: the store, and one slot per enclosing list. */
@@ -393,7 +393,9 @@ function build(ast: Ast): Compiled {
     }
     case "with": {
       const [value, path, next] = [compile(rest[0]), rest[1] as string, compile(rest[2])];
-      return (ctx) => setPath(value(ctx), path, next(ctx));
+      if (path === "") return next;
+      const segments = path.split(".");
+      return (ctx) => setSegments(value(ctx), segments, next(ctx));
     }
     case "count": {
       const [place, depth, test] = [rest[0], rest[1] as number, compile(rest[2])];
@@ -579,7 +581,7 @@ export function run(ast: unknown, ctx: Context, host: Host): void {
       items.forEach((_, index) => {
         if (!when[index]) return;
         at(index);
-        writes.push([join(path, String(index), field), value(itemCtx)]);
+        writes.push([join(join(path, String(index)), field), value(itemCtx)]);
       });
       store.setMany(writes);
       return;
@@ -611,7 +613,7 @@ export function run(ast: unknown, ctx: Context, host: Host): void {
     case "set_all": {
       const [path, items] = list(ctx, rest[0]);
       const value = evaluate(rest[2], ctx);
-      store.setMany(items.map((_, i) => [join(path, String(i), rest[1] as string), value]));
+      store.setMany(items.map((_, i) => [join(join(path, String(i)), rest[1] as string), value]));
       return;
     }
     case "if":

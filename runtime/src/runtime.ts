@@ -252,8 +252,6 @@ export class Runtime implements Host {
    * item's path is looked up here to reach them.
    */
   readonly #slots = new Map<string, Slot | Slot[]>();
-  /** The root element of the item each slot belongs to. */
-  readonly #owners = new WeakMap<Slot, Element>();
   #nextSlot = 0;
   /** Whether a patch has replaced elements since the last `#sweep`, which may have taken list items with them. */
   #patched = false;
@@ -822,16 +820,19 @@ export class Runtime implements Host {
     /** The key `match` filed its last item under. */
     let matched = "";
     /** The slot and context a key that reads only the item is evaluated in, moved to each item in turn. */
-    const keySlot: Slot = { path: "" };
+    const keySlot: Slot = { path: "", read: undefined };
     let keyCtx: Context | null = null;
+    const key = keyAst === undefined ? null : compile(keyAst);
+    const evaluateKey = (): unknown => key!(keyCtx!);
     const match = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>, appending = false): Instance => {
       const itemPath = join(path, String(index));
       const itemAt = read === path ? itemPath : join(read, String(index));
-      let key = `#${index}`;
+      let key = "";
       let keyReads: Reads = new Map();
       /** The name `keyReads` read the item under, where they read nothing else. */
       let named: string | null = null;
-      if (keyAst !== undefined) {
+      if (keyAst === undefined) key = `#${index}`;
+      else {
         // An appended item has no previous item at its position, and is rarely one moved from elsewhere in the list.
         const same = appending ? undefined : sameValue(previous, index);
         if (same !== undefined) {
@@ -842,9 +843,8 @@ export class Runtime implements Host {
           // A key that reads only the item's fields is watched through the item's row, so its reads are not recorded.
           keyCtx ??= { store: this.store, scope: [...scope.slice(0, depth), keySlot] };
           keySlot.path = itemPath;
-          if (itemAt === itemPath) delete keySlot.read;
-          else keySlot.read = itemAt;
-          key = keyOf(this.store.untracked(() => evaluate(keyAst, keyCtx!)));
+          keySlot.read = itemAt === itemPath ? undefined : itemAt;
+          key = keyOf(this.store.untracked(evaluateKey));
           keyReads = NO_READS;
           named = itemAt;
         } else {
@@ -871,7 +871,6 @@ export class Runtime implements Host {
         if (named !== null) keyReads = rebased(keyReads, named, slot.read!);
         const element = proto.cloneNode(true) as Element;
         instance = { element, slot, scanned: true, key: raw, keyReads, watch: null, local, value: items[index], row: this.#row(element, slot, shape, template) };
-        this.#owners.set(slot, instance.element);
         state(instance.element).root = true;
         created.add(instance);
         this.#watchKey(instance, list);
@@ -1034,7 +1033,6 @@ export class Runtime implements Host {
       state(at).root = true;
       const key = at.getAttribute("data-hs-ssr")!;
       const slot: Slot = { path: "", read: `@${this.#nextSlot++}` };
-      this.#owners.set(slot, at);
       adopted.set(key, { element: at, slot, scanned: false, key, keyReads: new Map(), watch: null, local: false, value: undefined, row: this.#row(at, slot, shape, template) });
     }
     return adopted;
@@ -1558,7 +1556,8 @@ export class Runtime implements Host {
       // A patch removes the elements it replaces without unmounting them, so the items among them are found by their slots.
       for (const filed of [...this.#slots.values()]) {
         for (const slot of Array.isArray(filed) ? [...filed] : [filed]) {
-          const owner = this.#owners.get(slot);
+          // Every filed slot belongs to an item whose row is filed under the slot's name until the item is forgotten.
+          const owner = this.#rows.get(slot.read!)?.element;
           if (owner === undefined || owner.isConnected) continue;
           this.#unfile(slot);
           this.#removed.push(owner);
