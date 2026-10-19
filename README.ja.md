@@ -16,26 +16,26 @@ axum の上で動き、画面もブラウザでの動きもサーバーの処理
 
 ## フレームワークの比較
 
-Rust のサーバーに画面を付けようとすると、今は 2 通りの選び方になります。Leptos なら画面とサーバーの間で型が検査される代わりに、wasm とそのビルドが要ります。htmx ならビルドは要りませんが、属性に書く URL や式は型で検査されません。
+hypersig に近いのは Topcoat と Datastar です。どちらもブラウザの中にシグナルを持ち、ブラウザ向けのビルドなしにサーバーから画面を更新します。Datastar の式や URL は HTML の属性に書く文字列なので、シグナル名や URL の打ち間違いは、ブラウザが実行するまで分かりません。hypersig はそうした属性を Rust の値から書くので、同じ間違いで `cargo build` が止まります。Topcoat は hypersig と同じく、ブラウザで動く式を Rust で書きます。違いは 2 か所です。Topcoat の `href!` はリンク先のハンドラがあるかは検査しますが、パスパラメータを照合するのはページを描くときです。パラメータが足りないか多いとパニックになり、そのリクエストは 500 を返します。hypersig の `Route` はパラメータを型の付いた値で受け取るので、間違えるとコンパイルエラーになります。また、Topcoat の式からは一覧に項目を足せないので、一覧はサーバーが答えて描き直したときに変わります。hypersig は一覧をシグナルに持つので、サーバーが答える前にブラウザが変更を表示します。
 
-| | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
+| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
 |---|---|---|---|---|---|---|---|
 | 画面を書く言語 | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript と Vue のテンプレート | HTML の属性 |
 | サーバーを書く言語 | Rust | Rust | 任意 | TypeScript | TypeScript | TypeScript | 任意 |
-| ブラウザ向けのビルドが不要 | はい | いいえ（wasm と cargo-leptos） | いいえ（Vite） | いいえ（Node のバンドラー） | いいえ（Vite） | いいえ（Vite） | はい |
+| ブラウザ向けのビルドが不要 | はい | はい | いいえ（Vite） | いいえ（Node のバンドラー） | いいえ（Vite） | いいえ（Vite） | はい |
 | 送る値の型をコンパイル時に検査 | はい | はい | いいえ | はい | はい | いいえ | いいえ |
-| リンクの行き先をコンパイル時に検査 | はい | いいえ（`href` は文字列） | いいえ（ルーターなし） | 設定で有効化（`typedRoutes`） | はい | 実験的（`typedPages`） | いいえ |
-| ブラウザの中で状態を持てる | はい | はい | はい | はい | はい | はい | いいえ |
+| リンクの行き先をコンパイル時に検査 | はい | ハンドラだけ（パラメータは実行時） | いいえ（ルーターなし） | 設定で有効化（`typedRoutes`） | はい | 実験的（`typedPages`） | いいえ |
+| ブラウザの中で状態を持てる | はい | はい | はい | はい | はい | はい | はい |
 
 ## ベンチマーク
 
 追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。
 
-| | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
+| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
 |---|---|---|---|---|---|---|---|
-| JS（gzip） | 19.2 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
-| First Contentful Paint | 186 ms | 203 ms | 196 ms | 198 ms | 193 ms | 177 ms | 236 ms |
-| Total Blocking Time | 0 ms | 26 ms | 5 ms | 10 ms | 0 ms | 29 ms | 268 ms |
+| JS（gzip） | 19.2 KB | 14.8 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 13.1 KB |
+| First Contentful Paint | 186 ms | 165 ms | 196 ms | 198 ms | 193 ms | 177 ms | 182 ms |
+| Total Blocking Time | 0 ms | 313 ms | 5 ms | 10 ms | 0 ms | 29 ms | 16 ms |
 | Interaction to Next Paint | 24 ms | 24 ms | 24 ms | 24 ms | 24 ms | 16 ms | 16 ms |
 
 測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。

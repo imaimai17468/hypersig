@@ -163,12 +163,12 @@ fn comparison(site: Site) -> Part {
     let header = &[
         "",
         "hypersig",
-        "Leptos",
+        "Topcoat",
         "React",
         "Next.js",
         "TanStack Start",
         "Nuxt",
-        "htmx",
+        "Datastar",
     ];
     titled(
         site,
@@ -180,8 +180,8 @@ fn comparison(site: Site) -> Part {
             para(
                 site,
                 L {
-                    en: "There are two ways today to add a page to a Rust server. Leptos type-checks what passes between the page and the server, and needs wasm and its build. htmx needs no build, but the URLs and expressions written in its attributes are not type-checked.",
-                    ja: "Rust のサーバーに画面を付けるには、今は 2 通りの選び方があります。Leptos なら画面とサーバーの間で型が検査される代わりに、wasm とそのビルドが要ります。htmx ならビルドは要りませんが、属性に書く URL や式は型で検査されません。",
+                    en: "Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build. Datastar's expressions and URLs are strings in HTML attributes, so a misspelled signal name or URL shows up only when the browser runs it. hypersig writes those attributes from Rust values, so the same mistake stops `cargo build`. Topcoat writes the browser's expressions in Rust, as hypersig does, and differs in two places. Its `href!` checks that the linked handler exists, but matches the path parameters only when the page renders: a missing or extra parameter panics, and the request answers 500. A hypersig `Route` takes its parameters as a typed value, so a wrong one is a compile error. Topcoat's expressions also cannot add an item to a list, so a list changes only when the server renders it again, after the server answers. hypersig keeps a list in a signal, so the browser shows the change before the server answers.",
+                    ja: "hypersig に近いのは Topcoat と Datastar です。どちらもブラウザの中にシグナルを持ち、ブラウザ向けのビルドなしにサーバーから画面を更新します。Datastar の式や URL は HTML の属性に書く文字列なので、シグナル名や URL の打ち間違いは、ブラウザが実行するまで分かりません。hypersig はそうした属性を Rust の値から書くので、同じ間違いで `cargo build` が止まります。Topcoat は hypersig と同じく、ブラウザで動く式を Rust で書きます。違いは 2 か所です。Topcoat の `href!` はリンク先のハンドラがあるかは検査しますが、パスパラメータを照合するのはページを描くときです。パラメータが足りないか多いとパニックになり、そのリクエストは 500 を返します。hypersig の `Route` はパラメータを型の付いた値で受け取るので、間違えるとコンパイルエラーになります。また、Topcoat の式からは一覧に項目を足せないので、一覧はサーバーが答えて描き直したときに変わります。hypersig は一覧をシグナルに持つので、サーバーが答える前にブラウザが変更を表示します。",
                 },
             ),
             table_of(
@@ -215,7 +215,7 @@ fn comparison(site: Site) -> Part {
                         &[
                             "No browser build",
                             "Yes",
-                            "No (wasm and cargo-leptos)",
+                            "Yes",
                             "No (Vite)",
                             "No (Node bundler)",
                             "No (Vite)",
@@ -235,7 +235,7 @@ fn comparison(site: Site) -> Part {
                         &[
                             "Links checked against routes at compile time",
                             "Yes",
-                            "No (`href` takes a string)",
+                            "Handler only (parameters at run time)",
                             "No (no router)",
                             "Opt-in (`typedRoutes`)",
                             "Yes",
@@ -250,7 +250,7 @@ fn comparison(site: Site) -> Part {
                             "Yes",
                             "Yes",
                             "Yes",
-                            "No",
+                            "Yes",
                         ],
                     ],
                     ja: &[
@@ -277,7 +277,7 @@ fn comparison(site: Site) -> Part {
                         &[
                             "ブラウザ向けのビルドが不要",
                             "はい",
-                            "いいえ（wasm と cargo-leptos）",
+                            "はい",
                             "いいえ（Vite）",
                             "いいえ（Node のバンドラー）",
                             "いいえ（Vite）",
@@ -297,7 +297,7 @@ fn comparison(site: Site) -> Part {
                         &[
                             "リンクの行き先をコンパイル時に検査",
                             "はい",
-                            "いいえ（`href` は文字列）",
+                            "ハンドラだけ（パラメータは実行時）",
                             "いいえ（ルーターなし）",
                             "設定で有効化（`typedRoutes`）",
                             "はい",
@@ -312,7 +312,7 @@ fn comparison(site: Site) -> Part {
                             "はい",
                             "はい",
                             "はい",
-                            "いいえ",
+                            "はい",
                         ],
                     ],
                 },
@@ -326,12 +326,12 @@ fn benchmarks(site: Site) -> Part {
     let header = &[
         "",
         "hypersig",
-        "Leptos",
+        "Topcoat",
         "React",
         "Next.js",
         "TanStack Start",
         "Nuxt",
-        "htmx",
+        "Datastar",
     ];
     titled(
         site,
@@ -362,32 +362,32 @@ fn benchmarks(site: Site) -> Part {
                             ja: "JS（gzip）",
                         }),
                         "19.2 KB",
-                        "140.5 KB",
+                        "14.8 KB",
                         "67.1 KB",
                         "133.3 KB",
                         "119.5 KB",
                         "59.2 KB",
-                        "16.5 KB",
+                        "13.1 KB",
                     ],
                     &[
                         "First Contentful Paint",
                         "186 ms",
-                        "203 ms",
+                        "165 ms",
                         "196 ms",
                         "198 ms",
                         "193 ms",
                         "177 ms",
-                        "236 ms",
+                        "182 ms",
                     ],
                     &[
                         "Total Blocking Time",
                         "0 ms",
-                        "26 ms",
+                        "313 ms",
                         "5 ms",
                         "10 ms",
                         "0 ms",
                         "29 ms",
-                        "268 ms",
+                        "16 ms",
                     ],
                     &[
                         "Interaction to Next Paint",
