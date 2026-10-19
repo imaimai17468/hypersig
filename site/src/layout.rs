@@ -1,7 +1,7 @@
 //! The frame around every page: the header, the sidebar, and the links to
 //! the previous and the next page.
 
-use hypersig::html::{a, div, el, footer, header, main, nav, p, span};
+use hypersig::html::{a, div, el, footer, header, img, main, nav, p, span};
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, BorderStyle, BorderTopStyle, Display, FontWeight,
@@ -38,6 +38,7 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
     }
     page.open_graph(OpenGraph::new().site_name("hypersig"))
         .runtime_src(site.runtime())
+        .icon(site.icon())
         .global(hypersig_ui::global())
         .global(
             Global::new().rule(
@@ -187,8 +188,9 @@ fn other_language(site: Site, doc: Doc) -> Part {
         .text(other.name())
 }
 
-/// The name in the corner of the header: hypersig, followed by the library
-/// for the Style and Components docs, each linking to its landing page.
+/// The name in the corner of the header: the icon and hypersig, followed by
+/// the library for the Style and Components docs, each linking to its
+/// landing page.
 fn brand(site: Site, library: Library) -> Part {
     let name = Style::new()
         .font_weight(FontWeight::Number(700.0))
@@ -198,7 +200,14 @@ fn brand(site: Site, library: Library) -> Part {
         .css(hstack(rem(0.5)))
         .child(
             a().attr("href", Doc::Home.url(site))
-                .css(name.clone())
+                .css(name.clone().merge(hstack(rem(0.5))))
+                .child(
+                    img()
+                        .attr("src", site.icon())
+                        .attr("alt", "")
+                        .attr("width", "24")
+                        .attr("height", "24"),
+                )
                 .text("hypersig"),
         )
         .children((library != Library::Framework).then(|| {

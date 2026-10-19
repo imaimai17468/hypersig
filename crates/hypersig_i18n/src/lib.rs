@@ -66,6 +66,10 @@
 //!
 //! With the `axum` feature (on by default), [`LocaleRouterExt`] sends a
 //! visitor who opens `/` to the page in the language their browser asks for.
+#![doc(
+    html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
+    html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"
+)]
 
 #[cfg(feature = "axum")]
 mod axum;

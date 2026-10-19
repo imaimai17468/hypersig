@@ -63,6 +63,10 @@
 //!     .render();
 //! assert!(html.contains(r#"for="ui-name-input""#));
 //! ```
+#![doc(
+    html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
+    html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"
+)]
 
 mod accordion;
 mod alert;

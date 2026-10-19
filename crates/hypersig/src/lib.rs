@@ -39,6 +39,10 @@
 //! With the `axum` feature (on by default), [`routes!`] declares the pages
 //! at their [`Route`]s together with their handlers, and `RouterExt` serves
 //! the runtime and the actions.
+#![doc(
+    html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
+    html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"
+)]
 
 extern crate self as hypersig;
 

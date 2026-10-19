@@ -16,6 +16,10 @@
 //! negative width is accepted and the browser drops it.
 //!
 //! Use it through the `hypersig` crate.
+#![doc(
+    html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
+    html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"
+)]
 
 mod condition;
 // Written by tests/generate.rs, whose output is kept as it writes it.

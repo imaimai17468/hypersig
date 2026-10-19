@@ -39,6 +39,7 @@ use lang::{L, Text};
 pub struct Site {
     base: &'static str,
     runtime: &'static str,
+    icon: &'static str,
     lang: Lang,
     origin: Option<Origin>,
 }
@@ -73,9 +74,11 @@ impl Site {
         // `Page::runtime_src` keeps the URL for as long as the page lives,
         // and the generator builds one `Site` per run.
         let runtime = String::leak(format!("{base}/{RUNTIME_FILE}"));
+        let icon = String::leak(format!("{base}/{ICON_FILE}"));
         Self {
             base,
             runtime,
+            icon,
             lang: Lang::En,
             origin: None,
         }
@@ -144,6 +147,11 @@ impl Site {
     fn runtime(self) -> &'static str {
         self.runtime
     }
+
+    /// The URL of the hypersig icon, which the pages use as their tab icon.
+    fn icon(self) -> &'static str {
+        self.icon
+    }
 }
 
 /// A file of the site.
@@ -158,10 +166,14 @@ pub struct File {
 /// The file the pages load the runtime from.
 const RUNTIME_FILE: &str = "hypersig.js";
 
+/// The file of the hypersig icon.
+const ICON_FILE: &str = "icon.svg";
+
 /// The directory the rustdoc output is copied into, inside the site.
 pub const API_DIR: &str = "api";
 
-/// Every file of the site: the pages, the live demos, and the runtime.
+/// Every file of the site: the pages, the live demos, the runtime, and the
+/// icon.
 #[must_use]
 pub fn render(site: Site) -> Vec<File> {
     let mut files = Vec::new();
@@ -179,6 +191,10 @@ pub fn render(site: Site) -> Vec<File> {
     files.push(File {
         path: RUNTIME_FILE.to_owned(),
         contents: hypersig::RUNTIME_JS.to_owned(),
+    });
+    files.push(File {
+        path: ICON_FILE.to_owned(),
+        contents: include_str!("../../assets/hypersig.svg").to_owned(),
     });
     files
 }

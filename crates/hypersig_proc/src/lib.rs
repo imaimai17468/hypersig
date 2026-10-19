@@ -1,4 +1,8 @@
 //! Derive macros for hypersig. Depend on `hypersig` and use the re-export there.
+#![doc(
+    html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
+    html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"
+)]
 
 use proc_macro::TokenStream;
 

@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/imaimai17468/hypersig/main/assets/hypersig.svg" alt="" width="96" height="96">
+
 # hypersig
 
 [English](README.md) | [ドキュメント](https://imaimai17468.github.io/hypersig/ja/)
