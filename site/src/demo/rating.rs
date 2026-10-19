@@ -1,5 +1,5 @@
 //! A star rating drawn by a custom element that a script defines, for the
-//! page on what bindings and statements do not cover.
+//! page on JavaScript libraries.
 
 use hypersig::html::{CustomEvent, div, el, p};
 use hypersig::style::pattern::hstack;

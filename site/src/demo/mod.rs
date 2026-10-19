@@ -108,7 +108,7 @@ demos! {
 }
 
 /// The script of `<star-rating>`, which the rating demo loads and the page
-/// on what bindings and statements do not cover shows.
+/// on JavaScript libraries shows.
 pub const STAR_RATING_JS: &str = include_str!("star-rating.js");
 
 thread_local! {
