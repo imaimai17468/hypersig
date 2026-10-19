@@ -25,7 +25,18 @@ const SIDEBAR: &str = "sidebar";
 
 /// A page of `doc` with the header and `body` below it, full width.
 pub fn document(site: Site, doc: Doc, body: Part) -> String {
-    let title = if doc.is_landing() {
+    let title = if doc == Doc::Home {
+        // The title search results show for the site, so it says what
+        // hypersig is. The other pages end in the bare name.
+        format!(
+            "{} | {}",
+            doc.title(site),
+            site.t(L {
+                en: "A Rust web framework that type-checks the page and the server",
+                ja: "画面とサーバーを型で検査する Rust の Web フレームワーク",
+            })
+        )
+    } else if doc.is_landing() {
         doc.title(site).to_owned()
     } else {
         format!("{} | {}", doc.title(site), doc.library().home().title(site))
