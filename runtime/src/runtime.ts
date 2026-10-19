@@ -404,9 +404,12 @@ export class Runtime implements Host {
     const nodes = row === undefined ? [] : new Array<Element | undefined>(row.shape.parts.length);
     locate(planOf(proto), root, rendered, (element, source, reactive) => {
       state(element).source = source;
-      for (const attribute of NAMES) {
-        if (source.hasAttribute(attribute) && !element.hasAttribute(attribute)) {
-          element.setAttribute(attribute, source.getAttribute(attribute)!);
+      // A clone of `proto` already carries every attribute of its source.
+      if (rendered) {
+        for (const attribute of NAMES) {
+          if (source.hasAttribute(attribute) && !element.hasAttribute(attribute)) {
+            element.setAttribute(attribute, source.getAttribute(attribute)!);
+          }
         }
       }
       if (!reactive) return;
@@ -901,11 +904,16 @@ export class Runtime implements Host {
       matched = key;
       return instance;
     };
+    /** Registers the bindings of the items in `order`, writing the parts of the created ones while they are still out of the document. */
     const register = (order: readonly Instance[]): void => {
+      const rows: Row[] = [];
       for (const instance of order) {
-        if (created.has(instance)) this.#mount(instance.element, proto, [...scope.slice(0, depth), instance.slot], false, instance.row);
-        else if (!instance.scanned && !this.#waiting.has(instance.element)) this.#wait(instance, proto, [...scope.slice(0, depth), instance.slot]);
+        if (created.has(instance)) {
+          this.#mount(instance.element, proto, [...scope.slice(0, depth), instance.slot], false, instance.row);
+          rows.push(instance.row);
+        } else if (!instance.scanned && !this.#waiting.has(instance.element)) this.#wait(instance, proto, [...scope.slice(0, depth), instance.slot]);
       }
+      this.#fill(rows);
     };
 
     if (known !== undefined && appended(this.#changes, path, known, items.length)) {
@@ -914,10 +922,10 @@ export class Runtime implements Host {
       const next = known;
       const added: Instance[] = [];
       for (let index = known.size; index < items.length; index++) added.push(match(index, known, next, true));
+      register(added);
       const fragment = document.createDocumentFragment();
       for (const instance of added) fragment.append(instance.element);
       parent.insertBefore(fragment, anchor.nextSibling);
-      register(added);
       this.#lists.set(template, next);
       return;
     }
@@ -939,13 +947,13 @@ export class Runtime implements Host {
       const next = new Map<string, Instance>();
       order.forEach((instance, index) => next.set(keys[index]!, instance));
       for (const index of at) if (next.get(wasKeys[index]!) !== was[index]) this.#unmountItem(was[index]!);
+      register(at.map((index) => order[index]!));
       for (let i = at.length - 1; i >= 0; i--) {
         const index = at[i]!;
         const element = order[index]!.element;
         const before = index + 1 < order.length ? order[index + 1]!.element : end;
         if (element.parentNode !== parent || element.nextSibling !== before) parent.insertBefore(element, before);
       }
-      register(at.map((index) => order[index]!));
       this.#lists.set(template, next);
       return;
     }
@@ -957,10 +965,10 @@ export class Runtime implements Host {
     const gone = [...previous].filter(([key, instance]) => next.get(key) !== instance).map(([, instance]) => instance);
     if (gone.length === previous.size && gone.length > 1 && filling(parent, template, gone)) this.#unmountAll(parent, template, gone);
     else for (const instance of gone) this.#unmountItem(instance);
-    arrange(parent, template, previous, order);
-    // The new items get their text when the rows are flushed later in this render, so their height is known after it.
-    if (restore !== null) queueMicrotask(restore);
     register(order);
+    arrange(parent, template, previous, order);
+    // The new items' bindings outside their parts run later in this render, so their height is known after it.
+    if (restore !== null) queueMicrotask(restore);
     this.#lists.set(template, next);
   }
 
@@ -1343,21 +1351,38 @@ export class Runtime implements Host {
         const batch = this.#queue;
         this.#queue = [];
         for (const row of batch) {
-          const mask = row.dirty;
-          row.dirty = 0;
           row.queued = false;
-          if (row.ctx === null || !row.element.isConnected) continue;
-          for (let index = 0; mask >>> index !== 0; index++) {
-            if ((mask & (1 << index)) === 0) continue;
-            try {
-              this.#runPart(row, index);
-            } catch (error) {
-              console.error("hypersig:", error);
-            }
-          }
+          if (row.element.isConnected) this.#runParts(row);
+          else row.dirty = 0;
         }
       }
     });
+  }
+
+  /**
+   * Runs the marked parts of `rows`, which `#renderList` created and has not
+   * put into the document yet, so the browser lays each one out once, with
+   * its content. They stay queued with nothing marked.
+   */
+  #fill(rows: readonly Row[]): void {
+    if (rows.length === 0) return;
+    this.store.untracked(() => {
+      for (const row of rows) this.#runParts(row);
+    });
+  }
+
+  #runParts(row: Row): void {
+    const mask = row.dirty;
+    row.dirty = 0;
+    if (row.ctx === null) return;
+    for (let index = 0; mask >>> index !== 0; index++) {
+      if ((mask & (1 << index)) === 0) continue;
+      try {
+        this.#runPart(row, index);
+      } catch (error) {
+        console.error("hypersig:", error);
+      }
+    }
   }
 
   #runPart(row: Row, index: number): void {
