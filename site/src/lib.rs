@@ -173,6 +173,11 @@ const ICON_FILE: &str = "icon.svg";
 /// The list of the site's pages that search engines read.
 const SITEMAP_FILE: &str = "sitemap.xml";
 
+/// The file Google Search Console reads to confirm that the owner of the
+/// site added it, under the name Search Console gave for
+/// `https://imaimai17468.github.io/hypersig/`.
+const SEARCH_CONSOLE_FILE: &str = "google925053ed05204fb8.html";
+
 /// The picture a link preview shows for a page in `lang`, and its contents.
 ///
 /// `assets/og-en.svg` and `assets/og-ja.svg` are the sources of the PNG files,
@@ -189,8 +194,8 @@ fn og_image(lang: Lang) -> (&'static str, &'static [u8]) {
 pub const API_DIR: &str = "api";
 
 /// Every file of the site: the pages, the live demos, the runtime, the
-/// icon, the link preview pictures, and, for a site that knows its origin,
-/// the sitemap.
+/// icon, the link preview pictures, the Search Console file, and, for a site
+/// that knows its origin, the sitemap.
 #[must_use]
 pub fn render(site: Site) -> Vec<File> {
     let mut files = Vec::new();
@@ -217,6 +222,10 @@ pub fn render(site: Site) -> Vec<File> {
     files.push(File {
         path: ICON_FILE.to_owned(),
         contents: include_bytes!("../../assets/hypersig.svg").to_vec(),
+    });
+    files.push(File {
+        path: SEARCH_CONSOLE_FILE.to_owned(),
+        contents: format!("google-site-verification: {SEARCH_CONSOLE_FILE}").into_bytes(),
     });
     if let Some(sitemap) = sitemap(site) {
         files.push(File {
