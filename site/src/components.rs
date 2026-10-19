@@ -114,16 +114,16 @@ fn installation(site: Site) -> Part {
         para(
             site,
             L {
-                en: "It lives in the hypersig repository and is not on crates.io yet. Add it next to `hypersig`:",
-                ja: "このクレートは hypersig のリポジトリにあり、まだ crates.io には公開していません。次のように `hypersig` と並べて追加します。",
+                en: "Add it next to `hypersig`:",
+                ja: "次のように `hypersig` と並べて追加します。",
             },
         ),
         code::block(
             Lang::Toml,
             Some("Cargo.toml"),
             r#"[dependencies]
-hypersig = { git = "https://github.com/imaimai17468/hypersig" }
-hypersig_ui = { git = "https://github.com/imaimai17468/hypersig" }"#,
+hypersig = "0.1"
+hypersig_ui = "0.1""#,
         ),
         heading(
             site,

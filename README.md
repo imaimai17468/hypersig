@@ -42,11 +42,11 @@ The apps and the harness are in [`bench/compare`](bench/compare). Results of [js
 
 ## Quick start
 
-Add the dependencies to `Cargo.toml`. hypersig is not on crates.io yet, so it comes from Git.
+Add the dependencies to `Cargo.toml`:
 
 ```toml
 [dependencies]
-hypersig = { git = "https://github.com/imaimai17468/hypersig" }
+hypersig = "0.1"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }

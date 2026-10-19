@@ -31,16 +31,16 @@ fn overview(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "The crate is in the hypersig repository and is not published on crates.io yet. Add it next to `hypersig` from Git. Its `axum` feature, on by default, adds the redirect from `/` that [Choosing the language](i18n/negotiation/) describes.",
-                ja: "このクレートは hypersig のリポジトリにあり、まだ crates.io には公開していません。`hypersig` と並べて Git から追加します。既定で有効な `axum` の feature は、[言語の選び方](i18n/negotiation/) で説明する `/` からのリダイレクトを追加します。",
+                en: "Add it next to `hypersig`. Its `axum` feature, on by default, adds the redirect from `/` that [Choosing the language](i18n/negotiation/) describes.",
+                ja: "`hypersig` と並べて追加します。既定で有効な `axum` の feature は、[言語の選び方](i18n/negotiation/) で説明する `/` からのリダイレクトを追加します。",
             },
         ),
         code::block(
             Lang::Toml,
             Some("Cargo.toml"),
             r#"[dependencies]
-hypersig = { git = "https://github.com/imaimai17468/hypersig" }
-hypersig_i18n = { git = "https://github.com/imaimai17468/hypersig" }"#,
+hypersig = "0.1"
+hypersig_i18n = "0.1""#,
         ),
         heading(
             site,

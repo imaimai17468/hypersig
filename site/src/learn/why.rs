@@ -335,8 +335,8 @@ fn costs(site: Site) -> [Part; 3] {
                     ja: "リンクをたどると、次のページをサーバーから読み込みます。今のページを画面に残したまま移るクライアント側の遷移はありません。",
                 },
                 L {
-                    en: "Pages are served through axum, and hypersig is not on crates.io yet.",
-                    ja: "ページは axum で配信し、hypersig はまだ crates.io にありません。",
+                    en: "Pages are served through axum, which is the only server hypersig integrates with.",
+                    ja: "ページは axum で配信します。hypersig が組み込みで対応しているサーバーは axum だけです。",
                 },
             ],
         ),

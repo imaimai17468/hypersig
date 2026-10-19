@@ -23,15 +23,15 @@ pub fn quick_start(site: Site) -> Part {
         para(
             site,
             L {
-                en: "hypersig is not on crates.io yet, so it comes from Git. Add it to `Cargo.toml` with axum, serde, and tokio:",
-                ja: "hypersig はまだ crates.io に公開していないので、Git から取得します。axum、serde、tokio と一緒に `Cargo.toml` に追加してください。",
+                en: "Add hypersig to `Cargo.toml` with axum, serde, and tokio:",
+                ja: "hypersig を axum、serde、tokio と一緒に `Cargo.toml` に追加してください。",
             },
         ),
         code::block(
             Lang::Toml,
             Some("Cargo.toml"),
             r#"[dependencies]
-hypersig = { git = "https://github.com/imaimai17468/hypersig" }
+hypersig = "0.1"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,

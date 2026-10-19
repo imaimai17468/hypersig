@@ -42,11 +42,11 @@ Rust のサーバーに画面を付けようとすると、今は 2 通りの選
 
 ## クイックスタート
 
-`Cargo.toml` に依存を追加します。hypersig はまだ crates.io に公開していないので、Git から取得します。
+`Cargo.toml` に依存を追加します。
 
 ```toml
 [dependencies]
-hypersig = { git = "https://github.com/imaimai17468/hypersig" }
+hypersig = "0.1"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
