@@ -53,28 +53,28 @@ fn halves(site: Site) -> [Part; 4] {
         para(
             site,
             L {
-                en: "A page served by a Rust server splits into a server side and a browser side. The server side builds the HTML and answers requests. The browser side reacts to clicks and typing, and the browser runs only JavaScript or wasm. Two designs are common today, and each gives up something.",
-                ja: "Rust のサーバーが配信するページは、サーバー側とブラウザ側の 2 つに分かれます。サーバー側は HTML を組み立ててリクエストに答えます。ブラウザ側はクリックや入力に反応し、ブラウザが実行できるのは JavaScript か wasm だけです。今よく使われる作り方は 2 つあり、どちらにも引き換えにあきらめるものがあります。",
+                en: "A page served by a Rust server splits into a server side and a browser side. The server side builds the HTML and answers requests. The browser side reacts to clicks and typing, and the browser runs only JavaScript or wasm. Two frameworks close to hypersig keep signals in the browser and build nothing for it, and each leaves something unchecked.",
+                ja: "Rust のサーバーが配信するページは、サーバー側とブラウザ側の 2 つに分かれます。サーバー側は HTML を組み立ててリクエストに答えます。ブラウザ側はクリックや入力に反応し、ブラウザが実行できるのは JavaScript か wasm だけです。hypersig に近いフレームワークが 2 つあり、どちらもブラウザの中にシグナルを持ち、ブラウザ向けには何もビルドしません。ただ、どちらにも検査されずに残るものがあります。",
             },
         ),
         bullets(
             site,
             &[
                 L {
-                    en: "Compile the browser side from Rust to wasm, as Leptos does. The page and the server share types, so a mismatch between them is a compile error. The browser downloads the wasm and hydrates: it runs the page's components again to attach listeners and to rebuild the state the server already had, and the build needs `cargo-leptos`.",
-                    ja: "Leptos のように、ブラウザ側を Rust から wasm にコンパイルする作り方です。画面とサーバーが型を共有するので、両者の食い違いはコンパイルエラーになります。ブラウザは wasm をダウンロードしてハイドレーションします。つまり、ページのコンポーネントをもう一度実行してリスナーを付け直し、サーバーがすでに持っていた状態を組み立て直します。ビルドには `cargo-leptos` が要ります。",
+                    en: "Datastar sends HTML and describes the behavior in attributes. Nothing hydrates, and the server patches elements and signals over server-sent events. The signal names, the URLs, and the expressions in the attributes are strings, so a typo in one shows up when the browser runs it.",
+                    ja: "Datastar は HTML を送り、動きを属性に書きます。ハイドレーションはなく、サーバーは Server-Sent Events で要素とシグナルをパッチします。ただ、属性に書くシグナル名、URL、式は文字列なので、どれかに打ち間違いがあっても、ブラウザが実行するまで分かりません。",
                 },
                 L {
-                    en: "Send HTML and describe the behavior in attributes, as htmx does. Nothing is built for the browser and nothing hydrates. The URLs, the target selectors, and the expressions in the attributes are strings, so a typo in one shows up when someone clicks.",
-                    ja: "htmx のように、HTML を送って動きを属性に書く作り方です。ブラウザ向けには何もビルドせず、ハイドレーションもありません。ただ、属性に書く URL、対象のセレクタ、式は文字列なので、どれかに打ち間違いがあっても、誰かがクリックするまで分かりません。",
+                    en: "Topcoat writes the browser's expressions in Rust and translates them to JavaScript, so they are type-checked. Its `href!` checks only the handler a link points to, and a missing or extra path parameter panics when the page renders. Its expressions cannot add an item to a list, so a list changes only when the server answers and renders it again.",
+                    ja: "Topcoat はブラウザで動く式を Rust で書き、JavaScript に変換するので、式の型は検査されます。ただ、`href!` が検査するのはリンク先のハンドラだけで、パスパラメータが足りないか多いと、ページを描くときにパニックします。また、式から一覧に項目を足せないので、一覧はサーバーが答えて描き直したときにしか変わりません。",
                 },
             ],
         ),
         para(
             site,
             L {
-                en: "hypersig takes the structure of the page from the second design and the checks from the first. The page is HTML with attributes, and Rust writes every attribute from a typed value.",
-                ja: "hypersig はページの作りを 2 つ目の作り方から、検査を 1 つ目の作り方から取り入れています。ページは属性付きの HTML で、Rust がすべての属性を型の付いた値から書きます。",
+                en: "hypersig builds the page as Datastar does, as HTML with attributes, and Rust writes every attribute from a typed value. A link takes its route's parameters as a typed value, and a list is a signal the browser can change before the server answers.",
+                ja: "hypersig は Datastar と同じく、ページを属性付きの HTML で組み立て、Rust がすべての属性を型の付いた値から書きます。リンクはルートのパラメータを型の付いた値で受け取り、一覧はサーバーが答える前にブラウザが変えられるシグナルです。",
             },
         ),
     ]

@@ -16,7 +16,13 @@ A web framework on axum where the page, its behavior in the browser, and the ser
 
 ## Framework comparison
 
-Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build. Datastar's expressions and URLs are strings in HTML attributes, so a misspelled signal name or URL shows up only when the browser runs it. hypersig writes those attributes from Rust values, so the same mistake stops `cargo build`. Topcoat writes the browser's expressions in Rust, as hypersig does, and differs in two places. Its `href!` checks that the linked handler exists, but matches the path parameters only when the page renders: a missing or extra parameter panics, and the request answers 500. A hypersig `Route` takes its parameters as a typed value, so a wrong one is a compile error. Topcoat's expressions also cannot add an item to a list, so a list changes only when the server renders it again, after the server answers. hypersig keeps a list in a signal, so the browser shows the change before the server answers.
+Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build, and Topcoat writes the browser's expressions in Rust too.
+
+|  | Topcoat and Datastar | hypersig |
+|---|---|---|
+| Signal names and URLs (Datastar) | Strings in HTML attributes. A typo shows up when the browser runs it | Written from Rust values. A typo stops `cargo build` |
+| Link parameters (Topcoat) | `href!` checks only the handler. A missing or extra path parameter panics when the page renders, and the request answers 500 | `Route` takes its parameters as a typed value. A wrong one is a compile error |
+| Adding to a list (Topcoat) | Expressions cannot add an item, so the list changes once the server answers and renders it again | The list is a signal, so the browser shows the change before the server answers |
 
 | | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
 |---|---|---|---|---|---|---|---|

@@ -180,8 +180,51 @@ fn comparison(site: Site) -> Part {
             para(
                 site,
                 L {
-                    en: "Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build. Datastar's expressions and URLs are strings in HTML attributes, so a misspelled signal name or URL shows up only when the browser runs it. hypersig writes those attributes from Rust values, so the same mistake stops `cargo build`. Topcoat writes the browser's expressions in Rust, as hypersig does, and differs in two places. Its `href!` checks that the linked handler exists, but matches the path parameters only when the page renders: a missing or extra parameter panics, and the request answers 500. A hypersig `Route` takes its parameters as a typed value, so a wrong one is a compile error. Topcoat's expressions also cannot add an item to a list, so a list changes only when the server renders it again, after the server answers. hypersig keeps a list in a signal, so the browser shows the change before the server answers.",
-                    ja: "hypersig に近いのは Topcoat と Datastar です。どちらもブラウザの中にシグナルを持ち、ブラウザ向けのビルドなしにサーバーから画面を更新します。Datastar の式や URL は HTML の属性に書く文字列なので、シグナル名や URL の打ち間違いは、ブラウザが実行するまで分かりません。hypersig はそうした属性を Rust の値から書くので、同じ間違いで `cargo build` が止まります。Topcoat は hypersig と同じく、ブラウザで動く式を Rust で書きます。違いは 2 か所です。Topcoat の `href!` はリンク先のハンドラがあるかは検査しますが、パスパラメータを照合するのはページを描くときです。パラメータが足りないか多いとパニックになり、そのリクエストは 500 を返します。hypersig の `Route` はパラメータを型の付いた値で受け取るので、間違えるとコンパイルエラーになります。また、Topcoat の式からは一覧に項目を足せないので、一覧はサーバーが答えて描き直したときに変わります。hypersig は一覧をシグナルに持つので、サーバーが答える前にブラウザが変更を表示します。",
+                    en: "Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build, and Topcoat writes the browser's expressions in Rust too.",
+                    ja: "hypersig に近いのは Topcoat と Datastar です。どちらもブラウザの中にシグナルを持ち、ブラウザ向けのビルドなしにサーバーから画面を更新します。Topcoat はブラウザで動く式も Rust で書きます。",
+                },
+            ),
+            table_of(
+                site,
+                L {
+                    en: &["", "Topcoat and Datastar", "hypersig"],
+                    ja: &["", "Topcoat と Datastar", "hypersig"],
+                },
+                L {
+                    en: &[
+                        &[
+                            "Signal names and URLs (Datastar)",
+                            "Strings in HTML attributes. A typo shows up when the browser runs it",
+                            "Written from Rust values. A typo stops `cargo build`",
+                        ],
+                        &[
+                            "Link parameters (Topcoat)",
+                            "`href!` checks only the handler. A missing or extra path parameter panics when the page renders, and the request answers 500",
+                            "`Route` takes its parameters as a typed value. A wrong one is a compile error",
+                        ],
+                        &[
+                            "Adding to a list (Topcoat)",
+                            "Expressions cannot add an item, so the list changes once the server answers and renders it again",
+                            "The list is a signal, so the browser shows the change before the server answers",
+                        ],
+                    ],
+                    ja: &[
+                        &[
+                            "シグナル名と URL（Datastar）",
+                            "HTML の属性に文字列で書きます。打ち間違いはブラウザが実行するまで分かりません",
+                            "Rust の値から書きます。打ち間違いがあると `cargo build` が止まります",
+                        ],
+                        &[
+                            "リンクのパラメータ（Topcoat）",
+                            "`href!` が検査するのはハンドラだけです。パスパラメータが足りないか多いと、ページを描くときにパニックし、リクエストは 500 を返します",
+                            "`Route` がパラメータを型の付いた値で受け取ります。間違えるとコンパイルエラーになります",
+                        ],
+                        &[
+                            "一覧への追加（Topcoat）",
+                            "式から項目を足せないので、サーバーが答えて描き直したときに一覧が変わります",
+                            "一覧をシグナルに持つので、サーバーが答える前にブラウザが変更を表示します",
+                        ],
+                    ],
                 },
             ),
             table_of(
