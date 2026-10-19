@@ -954,9 +954,9 @@ export class Runtime implements Host {
     const next = new Map<string, Instance>();
     const order = items.map((_, index) => match(index, previous, next));
     const restore = known === undefined ? null : prepended(known, order, created);
-    for (const [key, instance] of previous) {
-      if (next.get(key) !== instance) this.#unmountItem(instance);
-    }
+    const gone = [...previous].filter(([key, instance]) => next.get(key) !== instance).map(([, instance]) => instance);
+    if (gone.length === previous.size && gone.length > 1 && filling(parent, template, gone)) this.#unmountAll(parent, template, gone);
+    else for (const instance of gone) this.#unmountItem(instance);
     arrange(parent, template, previous, order);
     // The new items get their text when the rows are flushed later in this render, so their height is known after it.
     if (restore !== null) queueMicrotask(restore);
@@ -1473,6 +1473,17 @@ export class Runtime implements Host {
   #unmountItem(instance: Instance): void {
     this.#unfile(instance.slot);
     this.#unmount(instance.element);
+  }
+
+  /** Removes every item of the list at `template`, which `filling` found to be all of `parent` but `template`, in one call to the DOM. */
+  #unmountAll(parent: Node, template: HTMLTemplateElement, instances: readonly Instance[]): void {
+    parent.textContent = "";
+    parent.appendChild(template);
+    for (const instance of instances) {
+      this.#unfile(instance.slot);
+      this.#removed.push(instance.element);
+    }
+    this.#sweepLater();
   }
 
   /** Removes `root` from the document, and the bindings inside it after the next paint. */
@@ -2227,6 +2238,17 @@ function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, 
     if (!stay.has(index - start)) parent.insertBefore(element, before);
     before = element;
   }
+}
+
+/** Whether `parent` holds `template` followed by the items' elements in order, and nothing else. */
+function filling(parent: Node, template: Element, instances: readonly Instance[]): boolean {
+  if (parent.firstChild !== template || parent.lastChild !== instances.at(-1)!.element) return false;
+  let at: Node | null = template;
+  for (const instance of instances) {
+    at = at.nextSibling;
+    if (at !== instance.element) return false;
+  }
+  return true;
 }
 
 /** `reads`, made by a key that read only the item, under the name `from`, as if it had read it under `to`. */
