@@ -450,14 +450,32 @@ function outcomes(spec: unknown, ctx: Context, host: Host): Pick<CallOptions, "f
       : {
           failed: (message: string) => {
             const [depth, stmt] = error;
-            run(stmt, { ...ctx, vars: [...(ctx.vars ?? []).slice(0, depth), message] }, host).catch(report);
+            try {
+              run(stmt, { ...ctx, vars: [...(ctx.vars ?? []).slice(0, depth), message] }, host);
+            } catch (cause) {
+              report(cause);
+            }
           },
         }),
-    ...(ok === undefined ? {} : { succeeded: () => void run(ok, ctx, host).catch(report) }),
+    ...(ok === undefined
+      ? {}
+      : {
+          succeeded: () => {
+            try {
+              run(ok, ctx, host);
+            } catch (cause) {
+              report(cause);
+            }
+          },
+        }),
   };
 }
 
-export async function run(ast: unknown, ctx: Context, host: Host): Promise<void> {
+/**
+ * Runs a statement. Every step runs before the store notifies its listeners,
+ * so the page renders once for the whole statement.
+ */
+export function run(ast: unknown, ctx: Context, host: Host): void {
   if (!isAst(ast)) throw new AstError(ast);
   const [op, ...rest] = ast;
   const store = ctx.store;
@@ -597,7 +615,7 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       return;
     }
     case "if":
-      await run(evaluate(rest[0], ctx) ? rest[1] : rest[2], ctx, host);
+      run(evaluate(rest[0], ctx) ? rest[1] : rest[2], ctx, host);
       return;
     case "call": {
       const args = (): unknown => (rest[2] === null ? null : evaluate(rest[2], ctx));
@@ -632,7 +650,7 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       // `["let", value, depth, statement]`: the statement form of the `let` expression.
       const value = evaluate(rest[0], ctx);
       const depth = rest[1] as number;
-      await run(rest[2], { ...ctx, vars: [...(ctx.vars ?? []).slice(0, depth), value] }, host);
+      run(rest[2], { ...ctx, vars: [...(ctx.vars ?? []).slice(0, depth), value] }, host);
       return;
     }
     case "dom":
@@ -649,11 +667,18 @@ export async function run(ast: unknown, ctx: Context, host: Host): Promise<void>
       return;
     case "debounce":
       host.debounce(ctx.origin, JSON.stringify(rest[1]), rest[0] as number, () => {
-        run(rest[1], ctx, host).catch((error: unknown) => console.error("hypersig:", error));
+        try {
+          run(rest[1], ctx, host);
+        } catch (error) {
+          console.error("hypersig:", error);
+        }
       });
       return;
     case "seq":
-      for (const step of rest[0] as unknown[]) await run(step, ctx, host);
+      (rest[0] as unknown[]).forEach((step, index) => {
+        if (index > 0) store.settle();
+        run(step, ctx, host);
+      });
       return;
     default:
       throw new AstError(ast);

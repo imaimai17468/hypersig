@@ -288,6 +288,8 @@ export class Runtime implements Host {
   readonly #rows = new Map<string, Row>();
   /** The rows with parts to run, in the order they were marked. */
   #queue: Row[] = [];
+  /** The computed signals of `data-hs-computed`, in the order they run. */
+  #derived: Effect[] = [];
   readonly #listParts = new WeakMap<HTMLTemplateElement, ListParts>();
   /**
    * Reports each element with an on-visible statement as it enters or leaves
@@ -309,6 +311,7 @@ export class Runtime implements Host {
     this.#root = root;
     this.store = new Store(initial);
     this.store.subscribe((changes) => this.#render(changes));
+    this.store.derive((changes) => this.#derive(changes));
     for (const type of BUBBLING) {
       root.addEventListener(type, (event) => this.#onEvent(type, event));
     }
@@ -338,7 +341,23 @@ export class Runtime implements Host {
       nodes: new Map(),
       selector: null,
     }));
+    this.#derived = effects;
     this.#fresh.push(...effects);
+  }
+
+  /**
+   * Runs the computed signals whose last reads `changes` affects, oldest
+   * first. Their own writes join `changes`, so a computed signal that reads
+   * an earlier one sees its new value.
+   */
+  #derive(changes: Changes): void {
+    let lookup = new ChangeLookup(changes);
+    for (const effect of this.#derived) {
+      const deps = effect.deps;
+      if (deps === null || ![...deps].some(([read, deep]) => lookup.affects(read, deep))) continue;
+      this.store.untracked(effect.run);
+      lookup = new ChangeLookup(changes);
+    }
   }
 
   /** Registers the title binding on `root`, after the computed signals so it can read them. */
@@ -670,7 +689,11 @@ export class Runtime implements Host {
         this.store.merge(JSON.parse(event.data) as Values);
         return;
       case "hs-list":
-        run(JSON.parse(event.data), { store: this.store, scope: [] }, this).catch((error: unknown) => console.error("hypersig:", error));
+        try {
+          run(JSON.parse(event.data), { store: this.store, scope: [] }, this);
+        } catch (error) {
+          console.error("hypersig:", error);
+        }
         return;
       case "hs-element": {
         const { html, css } = JSON.parse(event.data) as { html: string; css?: [string, string][] };
@@ -1720,11 +1743,13 @@ export class Runtime implements Host {
     this.store.untracked(() => this.#runTracked(ast, ctx));
   }
 
-  /** Runs a statement, recording the reads of its synchronous part in the enclosing binding. */
+  /** Runs a statement, recording its reads in the enclosing binding. */
   #runTracked(ast: unknown, ctx: Context): void {
-    run(ast, ctx, this).catch((error: unknown) => {
+    try {
+      run(ast, ctx, this);
+    } catch (error) {
       console.error("hypersig:", error);
-    });
+    }
   }
 }
 

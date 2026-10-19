@@ -170,6 +170,7 @@ export class Store {
   #reads: Reads | null = null;
   /** The prefixes, each a path and a dot, under which `fold` records no reads of its own. */
   #folds: string[] = [];
+  #derive: ((changes: Changes) => void) | null = null;
 
   constructor(initial: Values) {
     this.#values = { ...initial };
@@ -317,6 +318,20 @@ export class Store {
     } finally {
       this.#reads = outer;
     }
+  }
+
+  /** Sets what `settle` runs: the update of the values computed from others. */
+  derive(update: (changes: Changes) => void): void {
+    this.#derive = update;
+  }
+
+  /**
+   * Updates the computed values that the writes since the last notification
+   * affect, so a later step of the same statement reads them up to date
+   * before the page renders.
+   */
+  settle(): void {
+    if (this.#changes.size > 0) this.#derive?.(this.#changes);
   }
 
   subscribe(listener: (changes: Changes) => void): void {
