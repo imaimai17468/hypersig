@@ -448,6 +448,7 @@ impl<S> El<S> {
             style: retype_pairs(self.style),
             key: self.key,
             node_ref: self.node_ref,
+            foreign: self.foreign,
             file_input: self.file_input,
             effects: self.effects.into_iter().map(retype_stmt).collect(),
             watches: retype_stmts(self.watches),
@@ -507,6 +508,7 @@ pub struct El<S> {
     style: Vec<(String, Expr<S, String>)>,
     key: Option<Value>,
     node_ref: Option<&'static str>,
+    foreign: bool,
     file_input: Option<&'static str>,
     effects: Vec<Stmt<S>>,
     watches: Vec<(Value, Stmt<S>)>,
@@ -1201,6 +1203,7 @@ impl<S> El<S> {
             style: Vec::new(),
             key: None,
             node_ref: None,
+            foreign: false,
             file_input: None,
             effects: Vec::new(),
             watches: Vec::new(),
@@ -1488,6 +1491,41 @@ impl<S> El<S> {
     #[must_use]
     pub fn node_ref(mut self, node_ref: NodeRef<S>) -> Self {
         self.node_ref = Some(node_ref.name());
+        self
+    }
+
+    /// Leaves this element's attributes and children to a script, and names it `node_ref`.
+    ///
+    /// A library such as a map or a text editor adds elements, classes, and
+    /// inline styles to the element it is given. A server patch that reaches
+    /// this element keeps all of them and keeps the element as it is, so the
+    /// page renders its children and its static attributes once. Its bindings,
+    /// such as [`El::bind_attr`] and [`El::on_custom`], keep running, so the
+    /// values a script reads change through signals. Among its siblings a
+    /// patch finds it by its id, or by the name of `node_ref` where it has none,
+    /// so a sibling added before it does not take its place. A list item or a
+    /// condition that holds it is built anew with it when the runtime renders
+    /// the item or the condition again.
+    ///
+    /// ```
+    /// use hypersig::html::{El, div};
+    /// use hypersig::{NodeRef, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Place {
+    ///     zoom: i32,
+    /// }
+    ///
+    /// const MAP: NodeRef<Place> = NodeRef::new("map");
+    ///
+    /// let map: El<Place> = div().foreign(MAP).bind_attr("data-zoom", Place::zoom().to_text());
+    /// assert!(map.render().contains(r#"data-hs-foreign="map""#));
+    /// ```
+    #[must_use]
+    pub fn foreign(mut self, node_ref: NodeRef<S>) -> Self {
+        self.node_ref = Some(node_ref.name());
+        self.foreign = true;
         self
     }
 
@@ -2191,6 +2229,9 @@ impl<S> El<S> {
         }
         if let Some(name) = self.node_ref {
             write_attr(out, "data-hs-ref", name);
+        }
+        if let (true, Some(name)) = (self.foreign, self.node_ref) {
+            write_attr(out, "data-hs-foreign", name);
         }
         if let Some(name) = self.file_input {
             write_attr(out, "data-hs-files", name);

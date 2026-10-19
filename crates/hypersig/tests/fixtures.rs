@@ -1344,6 +1344,23 @@ struct Widgets {
 const RATE: CustomEvent<i32> = CustomEvent::new("rate");
 const MOVED: CustomEvent<Point> = CustomEvent::new("map-moved");
 const PICK: CustomEvent<()> = CustomEvent::new("pick");
+const MAP: NodeRef<Widgets> = NodeRef::new("map");
+
+/// A fragment holding a map that a script draws into, which a patch replaces around it.
+struct Atlas(&'static str);
+
+impl Fragment for Atlas {
+    type Signals = Widgets;
+    const ID: &'static str = "atlas";
+
+    fn render(&self) -> El<Widgets> {
+        div().child(p().text(self.0)).child(
+            div()
+                .foreign(MAP)
+                .bind_attr("data-stars", Widgets::stars().to_text()),
+        )
+    }
+}
 
 fn widgets() -> (El<Widgets>, Widgets) {
     let center = Widgets::center();
@@ -1360,6 +1377,7 @@ fn widgets() -> (El<Widgets>, Widgets) {
                 .set(point.clone().at(Point::lat()))
                 .then(center.at(Point::lng()).set(point.at(Point::lng())))
         }))
+        .child(Atlas("Tokyo").render().id(Atlas::ID))
         .child(ul().id("pins").child(each(Widgets::pins(), |pin| {
             li().child(
                 el("x-pin")
@@ -1385,9 +1403,23 @@ fn widgets() -> (El<Widgets>, Widgets) {
 }
 
 #[test]
-fn fixtures_match_the_builder() {
+fn the_widget_fixtures_match_the_builder() {
     let (el, signals) = widgets();
     check("widgets", &el, &signals);
+    write_or_compare(
+        "widgets_patch",
+        &format!(
+            "{}\n",
+            serde_json::to_string_pretty(&json!({
+                "stream": Patches::<Widgets>::new().element(&Atlas("Kyoto")).to_event_stream()
+            }))
+            .expect("fixture JSON")
+        ),
+    );
+}
+
+#[test]
+fn fixtures_match_the_builder() {
     let (el, signals) = todos();
     check("todos", &el, &signals);
     let (el, signals) = controls();

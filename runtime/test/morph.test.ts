@@ -64,3 +64,31 @@ it("collects the elements it takes out of the document", () => {
   [a, p, i].forEach((child, index) => expect(removed[index]).toBe(child));
   expect(a!.isConnected).toBe(true);
 });
+
+it("keeps a foreign element's attributes and children, and finds it by its name", () => {
+  document.body.innerHTML =
+    '<div id="root"><p>1</p><div data-hs-foreign="map" data-hs-ref="map"></div></div>';
+  const map = document.querySelector("[data-hs-foreign]")!;
+  map.classList.add("leaflet-container");
+  map.append(document.createElement("canvas"));
+  morph(
+    document.querySelector("#root")!,
+    element(
+      '<div id="root"><p>0</p><p>1</p><div data-hs-foreign="map" data-hs-ref="map"></div></div>',
+    ),
+  );
+  expect(document.body.innerHTML).toBe(
+    '<div id="root"><p>0</p><p>1</p><div data-hs-foreign="map" data-hs-ref="map" class="leaflet-container"><canvas></canvas></div></div>',
+  );
+  expect(document.querySelector("[data-hs-foreign]")).toBe(map);
+});
+
+it("replaces a foreign element with one of another name", () => {
+  document.body.innerHTML =
+    '<div id="root"><div data-hs-foreign="map"><canvas></canvas></div></div>';
+  morph(
+    document.querySelector("#root")!,
+    element('<div id="root"><div data-hs-foreign="chart"></div></div>'),
+  );
+  expect(document.body.innerHTML).toBe('<div id="root"><div data-hs-foreign="chart"></div></div>');
+});
