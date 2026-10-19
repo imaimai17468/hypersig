@@ -156,10 +156,10 @@ export class Matcher {
         if (changed) rt.render.index.within(name, rt.render.again);
         else rt.render.index.at(positionOf(name), rt.render.again);
       }
-      rt.lists.rows.mark(instance.row, changed ? shape.all : shape.moved);
+      rt.lists.rows.mark(instance, changed ? shape.all : shape.moved);
     } else if (changed) {
       if (owned) rt.render.index.within(name, rt.render.again);
-      rt.lists.rows.mark(instance.row, shape.all);
+      rt.lists.rows.mark(instance, shape.all);
     }
     instance.value = this.#items[index];
   }

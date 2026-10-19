@@ -82,8 +82,8 @@ export class ListWatches {
     if (existing !== undefined) {
       // The rows filed themselves in the selections being replaced, so they run every part again to file themselves in the new ones.
       for (const instance of this.#rt.lists.items(template)) {
-        instance.row.keys = null;
-        this.#rt.lists.rows.mark(instance.row, shape.all);
+        instance.keys = null;
+        this.#rt.lists.rows.mark(instance, shape.all);
       }
     }
     const effects: Effect[] = [];
@@ -91,7 +91,7 @@ export class ListWatches {
       effects.push(
         this.#effect(template, new Map([[readName(read, outer), true]]), () => {
           for (const instance of this.#rt.lists.items(template))
-            this.#rt.lists.rows.mark(instance.row, mask);
+            this.#rt.lists.rows.mark(instance, mask);
         }),
       );
     }

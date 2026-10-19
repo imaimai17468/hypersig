@@ -35,7 +35,7 @@ export class Adoption {
       this.#waiting.delete(instance.element);
       if (instance.scanned || !instance.element.isConnected) return;
       instance.scanned = true;
-      this.#rt.bindings.attributes.mount(instance.element, proto, scope, true, instance.row);
+      this.#rt.bindings.attributes.mount(instance.element, proto, scope, true, instance);
     });
     if (this.#draining) return;
     this.#draining = true;

@@ -154,9 +154,9 @@ export class ListRender {
           proto,
           [...pass.outer, instance.slot],
           false,
-          instance.row,
+          instance,
         );
-        filled.push(instance.row);
+        filled.push(instance);
       } else if (!instance.scanned && !adoption.has(instance.element))
         adoption.wait(instance, proto, [...pass.outer, instance.slot]);
     }

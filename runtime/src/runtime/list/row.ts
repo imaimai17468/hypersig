@@ -44,22 +44,9 @@ export class Rows {
     this.#rt = rt;
   }
 
-  /** Makes the row of a list item whose root is `element`, filed under its slot's name. The caller puts it on the element. */
-  create(element: Element, slot: Slot, shape: Shape, template: HTMLTemplateElement): Row {
-    const row: Row = {
-      element,
-      slot,
-      shape,
-      template,
-      nodes: null,
-      ctx: null,
-      dirty: 0,
-      queued: false,
-      keys: null,
-      lists: null,
-    };
-    this.#rows.set(slot.read!, row);
-    return row;
+  /** Files `row` under its slot's name, where the changes `Slots.named` names reach it. */
+  add(row: Row): void {
+    this.#rows.set(row.slot.read!, row);
   }
 
   /** The row filed under the slot name `name`, until its item is forgotten. */

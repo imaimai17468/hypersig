@@ -7,10 +7,8 @@ import { data } from "../spec.ts";
 import type { Row } from "./row.ts";
 import type { Shape } from "./shape.ts";
 
-/** One rendered item of a list. */
-export interface Instance {
-  readonly element: Element;
-  readonly slot: Slot;
+/** One rendered item of a list, which is also the `Row` that runs its parts, so an item takes one object. */
+export interface Instance extends Row {
   /** False for an item the server rendered, until the runtime registers its bindings. */
   scanned: boolean;
   /** The item's key as its key expression evaluated it, before a duplicate is told apart by position. */
@@ -30,7 +28,6 @@ export interface Instance {
   local: boolean;
   /** The item's value when the list last matched it, to tell a move from a change. */
   value: unknown;
-  readonly row: Row;
 }
 
 /** What `Matcher` found for an item's key: the key, what evaluating it read, and the name it read the item under. */
@@ -49,7 +46,7 @@ export interface Origin {
   readonly list: Effect;
 }
 
-/** The item whose root is `element`, at `slot`, with its row filed under the slot's name and put on the element. */
+/** The item whose root is `element`, at `slot`, filed under the slot's name and put on the element. */
 function item(
   rt: Runtime,
   element: Element,
@@ -57,20 +54,28 @@ function item(
   origin: Pick<Origin, "shape" | "template">,
   key: Pick<Instance, "scanned" | "key" | "keyReads" | "local" | "value">,
 ): Instance {
-  const row = rt.lists.rows.create(element, slot, origin.shape, origin.template);
-  state(element).root = true;
-  state(element).row = row;
-  return {
+  const instance: Instance = {
     element,
     slot,
+    shape: origin.shape,
+    template: origin.template,
+    nodes: null,
+    ctx: null,
+    dirty: 0,
+    queued: false,
+    keys: null,
+    lists: null,
     scanned: key.scanned,
     key: key.key,
     keyReads: key.keyReads,
     watch: null,
     local: key.local,
     value: key.value,
-    row,
   };
+  rt.lists.rows.add(instance);
+  state(element).root = true;
+  state(element).row = instance;
+  return instance;
 }
 
 /** `reads`, made by a key that read only the item, under the name `from`, as if it had read it under `to`. */
