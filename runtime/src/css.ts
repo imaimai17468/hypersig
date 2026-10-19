@@ -8,7 +8,10 @@
  * before the first `<style>` whose key sorts after it. `crates/hypersig_style`
  * defines the keys so that comparing them as strings orders the buckets.
  */
-export function addRules(buckets: readonly (readonly [key: string, css: string])[], head: HTMLHeadElement = document.head): void {
+export function addRules(
+  buckets: readonly (readonly [key: string, css: string])[],
+  head: HTMLHeadElement = document.head,
+): void {
   for (const [key, css] of buckets) {
     const styles = [...head.querySelectorAll<HTMLStyleElement>("style[data-hs-css]")];
     const same = styles.find((style) => style.dataset.hsCss === key);

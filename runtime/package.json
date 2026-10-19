@@ -2,17 +2,19 @@
   "name": "hypersig-runtime",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.0.0",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit && oxfmt --check src test scripts vitest.config.ts",
+    "format": "oxfmt src test scripts vitest.config.ts",
     "test": "vitest run"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
     "happy-dom": "21.0.1",
+    "oxfmt": "0.72.0",
     "terser": "5.51.2",
     "typescript": "7.0.2",
     "vitest": "5.0.4"
-  }
+  },
+  "packageManager": "pnpm@10.0.0"
 }

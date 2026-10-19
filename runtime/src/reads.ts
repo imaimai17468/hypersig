@@ -20,7 +20,12 @@ export function staticReads(ast: unknown): StaticRead[] | null {
 /** The read of the value at `place`: `"a.b"` for a page signal, `["item",depth,"a"]` for an item field. */
 export function placeRead(place: unknown): StaticRead | null {
   if (typeof place === "string") return { kind: "sig", path: place };
-  if (Array.isArray(place) && place[0] === "item" && typeof place[1] === "number" && typeof place[2] === "string") {
+  if (
+    Array.isArray(place) &&
+    place[0] === "item" &&
+    typeof place[1] === "number" &&
+    typeof place[2] === "string"
+  ) {
     return { kind: "item", depth: place[1], field: place[2] };
   }
   return null;

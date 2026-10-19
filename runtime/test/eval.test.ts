@@ -27,12 +27,22 @@ describe("evaluate", () => {
   });
 
   it("matches the operators expr.rs writes", () => {
-    expect(evaluate(["gt", ["add", ["sig", "count"], ["lit", 1]], ["mul", ["sig", "count"], ["lit", 2]]], ctx)).toBe(false);
+    expect(
+      evaluate(
+        ["gt", ["add", ["sig", "count"], ["lit", 1]], ["mul", ["sig", "count"], ["lit", 2]]],
+        ctx,
+      ),
+    ).toBe(false);
     expect(evaluate(["concat", ["sig", "name"], ["str", ["sig", "count"]]], ctx)).toBe(" Tea 3");
     expect(evaluate(["rem", ["lit", -7], ["lit", 3]], ctx)).toBe(-1);
     expect(evaluate(["lower", ["trim", ["sig", "name"]]], ctx)).toBe("tea");
     expect(evaluate(["chars", ["lit", "a😀"]], ctx)).toBe(2);
-    expect(evaluate(["if", ["eq", ["sig", "filter"], ["lit", "Active"]], ["lit", "a"], ["lit", "b"]], ctx)).toBe("a");
+    expect(
+      evaluate(
+        ["if", ["eq", ["sig", "filter"], ["lit", "Active"]], ["lit", "a"], ["lit", "b"]],
+        ctx,
+      ),
+    ).toBe("a");
     expect(evaluate(["fixed", ["lit", 2.5], 2], ctx)).toBe("2.50");
     expect(evaluate(["fixed", ["lit", 2.5], 0], ctx)).toBe("3");
     expect(evaluate(["or_else", ["lit", null], ["lit", 4]], ctx)).toBe(4);
@@ -46,7 +56,9 @@ describe("evaluate", () => {
     expect(plain(-1234567)).toBe("-1,234,567");
     expect(plain(-0.4)).toBe("0");
     expect(evaluate(["format", ["lit", -1234.5], 2, ",", ".", "$", ""], ctx)).toBe("-$1,234.50");
-    expect(evaluate(["format", ["lit", 1234567.891], 2, ".", ",", "", " €"], ctx)).toBe("1.234.567,89 €");
+    expect(evaluate(["format", ["lit", 1234567.891], 2, ".", ",", "", " €"], ctx)).toBe(
+      "1.234.567,89 €",
+    );
     expect(evaluate(["format", ["lit", 12345], 0, "", ".", "", "%"], ctx)).toBe("12345%");
     expect(evaluate(["format", ["lit", Number.NaN], 0, ",", ".", "¥", ""], ctx)).toBe("¥NaN");
     expect(evaluate(["format", ["lit", 2e21], 0, ",", ".", "", ""], ctx)).toBe("2e+21");
@@ -54,10 +66,13 @@ describe("evaluate", () => {
 
   it("writes dates in a fixed offset and relative times as date.rs does", () => {
     const at = Date.UTC(2026, 0, 5, 15, 4, 5);
-    expect(evaluate(["date", ["lit", at], "en", "medium", "short", 0], ctx)).toBe("Jan 5, 2026, 3:04 PM");
+    expect(evaluate(["date", ["lit", at], "en", "medium", "short", 0], ctx)).toBe(
+      "Jan 5, 2026, 3:04 PM",
+    );
     expect(evaluate(["date", ["lit", at], "ja", null, "medium", 540], ctx)).toBe("0:04:05");
     expect(evaluate(["date", ["lit", at], "en", "long", null, -300], ctx)).toBe("January 5, 2026");
-    const ago = (millis: number, locale = "en") => evaluate(["reltime", ["lit", at + millis], ["lit", at], locale], ctx);
+    const ago = (millis: number, locale = "en") =>
+      evaluate(["reltime", ["lit", at + millis], ["lit", at], locale], ctx);
     expect(ago(-500)).toBe("0 seconds ago");
     expect(ago(59_999)).toBe("in 59 seconds");
     expect(ago(-3_600_000)).toBe("1 hour ago");
@@ -68,7 +83,8 @@ describe("evaluate", () => {
 
   it("picks the plural form as ssr.rs does", () => {
     const forms = ["z", "1", "2", "f", "m", "o"].map((form) => ["lit", form]);
-    const plural = (locale: string, n: number) => evaluate(["plural", ["lit", n], locale, forms], ctx);
+    const plural = (locale: string, n: number) =>
+      evaluate(["plural", ["lit", n], locale, forms], ctx);
     expect([1, -1, 0, 1.5, 2].map((n) => plural("en", n))).toEqual(["1", "1", "o", "o", "o"]);
     expect(plural("ja", 1)).toBe("o");
   });
@@ -90,7 +106,12 @@ describe("evaluate", () => {
     const rows = context({ rows: [{ v: 3 }, { v: 7 }] });
     const best = ["max_of", "rows", 0, ["item", 0, "v"]];
     expect(evaluate(["let", best, 0, ["add", ["var", 0], ["var", 0]]], rows)).toBe(14);
-    expect(evaluate(["let", ["lit", 2], 0, ["let", ["lit", 5], 1, ["sub", ["var", 1], ["var", 0]]]], rows)).toBe(3);
+    expect(
+      evaluate(
+        ["let", ["lit", 2], 0, ["let", ["lit", 5], 1, ["sub", ["var", 1], ["var", 0]]]],
+        rows,
+      ),
+    ).toBe(3);
   });
 
   it("folds a list and rounds as ssr.rs does", () => {
@@ -111,7 +132,9 @@ describe("evaluate", () => {
   });
 
   it("builds a tuple into an array, as serde writes one", () => {
-    expect(evaluate(["tuple", ["sig", "count"], ["lit", "x"], ["not", ["lit", false]]], ctx)).toEqual([3, "x", true]);
+    expect(
+      evaluate(["tuple", ["sig", "count"], ["lit", "x"], ["not", ["lit", false]]], ctx),
+    ).toEqual([3, "x", true]);
   });
 
   it("draws random integers below the bound, reads the clock, and indexes lists", () => {
@@ -125,13 +148,17 @@ describe("evaluate", () => {
   });
 
   it("compares records structurally", () => {
-    expect(evaluate(["eq", ["lit", { a: [1, { b: 2 }] }], ["lit", { a: [1, { b: 2 }] }]], ctx)).toBe(true);
+    expect(
+      evaluate(["eq", ["lit", { a: [1, { b: 2 }] }], ["lit", { a: [1, { b: 2 }] }]], ctx),
+    ).toBe(true);
     expect(evaluate(["ne", ["lit", { a: 1 }], ["lit", { a: 1, b: 2 }]], ctx)).toBe(true);
   });
 
   it("reads and updates record fields", () => {
     expect(evaluate(["get", ["sig", "panel"], "open"], ctx)).toBe(true);
-    expect(evaluate(["with", ["lit", { title: "", done: false }], "title", ["lit", "x"]], ctx)).toEqual({ title: "x", done: false });
+    expect(
+      evaluate(["with", ["lit", { title: "", done: false }], "title", ["lit", "x"]], ctx),
+    ).toEqual({ title: "x", done: false });
   });
 
   it("counts list items with the item bound at its depth", () => {
@@ -149,7 +176,14 @@ describe("run", () => {
     const ctx = context({ count: 0 });
     const h = host();
     await run(
-      ["seq", [["set", "count", ["add", ["sig", "count"], ["lit", 1]]], ["call", "POST", "/save", ["lit", 5], "busy", null], ["set", "count", ["lit", 9]]]],
+      [
+        "seq",
+        [
+          ["set", "count", ["add", ["sig", "count"], ["lit", 1]]],
+          ["call", "POST", "/save", ["lit", 5], "busy", null],
+          ["set", "count", ["lit", 9]],
+        ],
+      ],
       ctx,
       h,
     );
@@ -165,7 +199,11 @@ describe("run", () => {
 
   it("passes the flags after the error signal to the call", async () => {
     const h = host();
-    await run(["call", "GET", "/find", ["lit", "tea"], null, null, ["latest", "reconnect", "connected"]], context({}), h);
+    await run(
+      ["call", "GET", "/find", ["lit", "tea"], null, null, ["latest", "reconnect", "connected"]],
+      context({}),
+      h,
+    );
     expect(h.call).toHaveBeenCalledWith("GET", "/find", expect.any(Function), null, null, {
       latest: true,
       reconnect: true,
@@ -177,15 +215,46 @@ describe("run", () => {
   it("extends, updates, swaps, and sorts lists", async () => {
     const ctx = context({ rows: [{ id: 1, label: "b" }], next: 2 });
     const h = host();
-    await run(["extend", "rows", ["lit", 3], 0, ["with", ["with", ["lit", { id: 0, label: "" }], "id", ["add", ["sig", "next"], ["index", 0]]], "label", ["str", ["index", 0]]]], ctx, h);
+    await run(
+      [
+        "extend",
+        "rows",
+        ["lit", 3],
+        0,
+        [
+          "with",
+          ["with", ["lit", { id: 0, label: "" }], "id", ["add", ["sig", "next"], ["index", 0]]],
+          "label",
+          ["str", ["index", 0]],
+        ],
+      ],
+      ctx,
+      h,
+    );
     expect(ctx.store.get("rows")).toEqual([
       { id: 1, label: "b" },
       { id: 2, label: "0" },
       { id: 3, label: "1" },
       { id: 4, label: "2" },
     ]);
-    await run(["update", "rows", 0, ["eq", ["rem", ["index", 0], ["lit", 2]], ["lit", 0]], "label", ["concat", ["item", 0, "label"], ["lit", "!"]]], ctx, h);
-    expect((ctx.store.get("rows") as { label: string }[]).map((row) => row.label)).toEqual(["b!", "0", "1!", "2"]);
+    await run(
+      [
+        "update",
+        "rows",
+        0,
+        ["eq", ["rem", ["index", 0], ["lit", 2]], ["lit", 0]],
+        "label",
+        ["concat", ["item", 0, "label"], ["lit", "!"]],
+      ],
+      ctx,
+      h,
+    );
+    expect((ctx.store.get("rows") as { label: string }[]).map((row) => row.label)).toEqual([
+      "b!",
+      "0",
+      "1!",
+      "2",
+    ]);
     await run(["swap", "rows", ["lit", 0], ["lit", 3]], ctx, h);
     expect((ctx.store.get("rows") as { id: number }[]).map((row) => row.id)).toEqual([4, 2, 3, 1]);
     await run(["swap", "rows", ["lit", 0], ["lit", 9]], ctx, h);
@@ -199,18 +268,47 @@ describe("run", () => {
   });
 
   it("edits lists", async () => {
-    const ctx = context({ todos: [{ t: "a", done: true }, { t: "b", done: false }] });
+    const ctx = context({
+      todos: [
+        { t: "a", done: true },
+        { t: "b", done: false },
+      ],
+    });
     const h = host();
     await run(["push", "todos", ["lit", { t: "c", done: false }]], ctx, h);
     await run(["remove", "todos", ["lit", 0]], ctx, h);
-    expect(ctx.store.get("todos")).toEqual([{ t: "b", done: false }, { t: "c", done: false }]);
+    expect(ctx.store.get("todos")).toEqual([
+      { t: "b", done: false },
+      { t: "c", done: false },
+    ]);
     await run(["set_all", "todos", "done", ["lit", true]], ctx, h);
     await run(["set", ["item", 0, "t"], ["lit", "B"]], { ...ctx, scope: [{ path: "todos.0" }] }, h);
-    expect(ctx.store.get("todos")).toEqual([{ t: "B", done: true }, { t: "c", done: true }]);
+    expect(ctx.store.get("todos")).toEqual([
+      { t: "B", done: true },
+      { t: "c", done: true },
+    ]);
     await run(["retain", "todos", 0, ["eq", ["item", 0, "t"], ["lit", "c"]]], ctx, h);
     expect(ctx.store.get("todos")).toEqual([{ t: "c", done: true }]);
-    await run(["append", "todos", ["lit", [{ t: "d", done: false }, { t: "e", done: false }]]], ctx, h);
-    expect((ctx.store.get("todos") as { t: string }[]).map((todo) => todo.t)).toEqual(["c", "d", "e"]);
+    await run(
+      [
+        "append",
+        "todos",
+        [
+          "lit",
+          [
+            { t: "d", done: false },
+            { t: "e", done: false },
+          ],
+        ],
+      ],
+      ctx,
+      h,
+    );
+    expect((ctx.store.get("todos") as { t: string }[]).map((todo) => todo.t)).toEqual([
+      "c",
+      "d",
+      "e",
+    ]);
   });
 
   it("encodes each part of a rest of a path and keeps its slashes", () => {
@@ -219,7 +317,11 @@ describe("run", () => {
 
   it("hands the evaluated URL to the host to navigate", async () => {
     const h = host();
-    await run(["navigate", ["concat", ["lit", "/members/"], ["uri", ["sig", "id"]]]], context({ id: "a b" }), h);
+    await run(
+      ["navigate", ["concat", ["lit", "/members/"], ["uri", ["sig", "id"]]]],
+      context({ id: "a b" }),
+      h,
+    );
     expect(h.navigate).toHaveBeenCalledWith("/members/a%20b");
   });
 
@@ -236,7 +338,11 @@ describe("run", () => {
 
   it("runs the branch the condition picks", async () => {
     const ctx = context({ n: 10 });
-    await run(["if", ["gt", ["sig", "n"], ["lit", 9]], ["set", "n", ["lit", 0]], ["seq", []]], ctx, host());
+    await run(
+      ["if", ["gt", ["sig", "n"], ["lit", 9]], ["set", "n", ["lit", 0]], ["seq", []]],
+      ctx,
+      host(),
+    );
     expect(ctx.store.get("n")).toBe(0);
   });
 });

@@ -48,7 +48,8 @@ describe("Runtime", () => {
       { rows: [1, 2, 3, 4].map((id) => ({ id })), selected: 2 },
     );
     await tick();
-    const on = () => [...document.querySelectorAll("#l li")].map((li) => li.classList.contains("on"));
+    const on = () =>
+      [...document.querySelectorAll("#l li")].map((li) => li.classList.contains("on"));
     expect(on()).toEqual([false, true, false, false]);
     const get = runtime.store.get.bind(runtime.store);
     const reads = spyReads(runtime);
@@ -117,7 +118,9 @@ describe("Runtime", () => {
     expect(items().map((li) => li.textContent)).toEqual(["r1", "r2", "r3"]);
     expect(items().some((li) => before.includes(li))).toBe(false);
 
-    const byIndex = mount(list('["index",0]'), { rows: [1, 2, 3].map((id) => ({ id, label: `r${id}` })) });
+    const byIndex = mount(list('["index",0]'), {
+      rows: [1, 2, 3].map((id) => ({ id, label: `r${id}` })),
+    });
     await tick();
     const placed = items();
     byIndex.store.set("rows", [...(byIndex.store.get("rows") as unknown[])].reverse());
@@ -134,7 +137,10 @@ describe("Runtime", () => {
     await tick();
     const byId = new Map([...document.querySelectorAll("#l li")].map((li) => [li.textContent, li]));
     const rows = runtime.store.get("rows") as unknown[];
-    runtime.store.set("rows", [0, 1, 4, 3, 2, 5].map((at) => rows[at]));
+    runtime.store.set(
+      "rows",
+      [0, 1, 4, 3, 2, 5].map((at) => rows[at]),
+    );
     await tick();
     const after = [...document.querySelectorAll("#l li")];
     expect(after.map((li) => li.textContent)).toEqual(["1", "2", "5", "4", "3", "6"]);
@@ -155,7 +161,12 @@ describe("Runtime", () => {
     expect(items()).toEqual([0, 4, 2, 3, 1, 5].map((at) => before[at]));
 
     const swapped = runtime.store.get("rows") as { id: number; label: string }[];
-    runtime.store.set("rows", swapped.map((row, at) => (at === 2 ? { id: 3, label: "x" } : at === 3 ? { id: 9, label: "new" } : row)));
+    runtime.store.set(
+      "rows",
+      swapped.map((row, at) =>
+        at === 2 ? { id: 3, label: "x" } : at === 3 ? { id: 9, label: "new" } : row,
+      ),
+    );
     await tick();
     const after = items();
     expect(after.map((li) => li.textContent)).toEqual(["r1", "r5", "x", "new", "r2", "r6"]);
@@ -175,7 +186,15 @@ describe("Runtime", () => {
         `<ol><template data-hs-each='[["item",0,"tags"],1]'><i data-hs-key='["item",1,"id"]' data-hs-text='["item",1,"name"]'></i></template></ol>` +
         `</li></template></ul>`,
       {
-        rows: [1, 2, 3].map((id) => ({ id, label: `r${id}`, done: false, tags: [{ id: 1, name: `t${id}` }, { id: 2, name: `u${id}` }] })),
+        rows: [1, 2, 3].map((id) => ({
+          id,
+          label: `r${id}`,
+          done: false,
+          tags: [
+            { id: 1, name: `t${id}` },
+            { id: 2, name: `u${id}` },
+          ],
+        })),
       },
     );
     await tick();
@@ -210,9 +229,12 @@ describe("Runtime", () => {
   it("reaches the items of every list over one signal through a write at an item's path", async () => {
     const list = (id: string) =>
       `<ul id="${id}"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></li></template></ul>`;
-    const runtime = mount(list("a") + list("b"), { rows: [1, 2, 3].map((id) => ({ id, label: `r${id}` })) });
+    const runtime = mount(list("a") + list("b"), {
+      rows: [1, 2, 3].map((id) => ({ id, label: `r${id}` })),
+    });
     await tick();
-    const labels = (id: string) => [...document.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
+    const labels = (id: string) =>
+      [...document.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
     runtime.store.set("rows", (runtime.store.get("rows") as unknown[]).slice(1));
     await tick();
     runtime.store.set("rows.0.label", "x");
@@ -222,10 +244,13 @@ describe("Runtime", () => {
   });
 
   it("counts the items of a list with one read of the list, and still reads the signals the test compares with", async () => {
-    const runtime = mount(`<b id="n" data-hs-text='["str",["count","rows",0,["eq",["item",0,"done"],["sig","want"]]]]'></b>`, {
-      rows: [false, true, false].map((done) => ({ done })),
-      want: false,
-    });
+    const runtime = mount(
+      `<b id="n" data-hs-text='["str",["count","rows",0,["eq",["item",0,"done"],["sig","want"]]]]'></b>`,
+      {
+        rows: [false, true, false].map((done) => ({ done })),
+        want: false,
+      },
+    );
     await tick();
     const count = () => document.getElementById("n")!.textContent;
     expect(count()).toBe("2");
@@ -265,7 +290,8 @@ describe("Runtime", () => {
       { rows: [1, 2, 3, 4].map((id) => ({ id, title: `t${id}` })), editing: 2 },
     );
     await tick();
-    const editing = () => [...document.querySelectorAll("#l li")].map((li) => li.querySelector("input")?.value ?? null);
+    const editing = () =>
+      [...document.querySelectorAll("#l li")].map((li) => li.querySelector("input")?.value ?? null);
     expect(editing()).toEqual([null, "t2", null, null]);
     const reads = spyReads(runtime);
     runtime.store.set("editing", 4);
@@ -273,7 +299,10 @@ describe("Runtime", () => {
     expect(editing()).toEqual([null, null, null, "t4"]);
     expect(reads.filter((path) => path.endsWith(".id")).sort()).toEqual(["rows.1.id", "rows.3.id"]);
 
-    runtime.store.set("rows", [4, 3, 2, 1].map((id) => ({ id, title: `t${id}` })));
+    runtime.store.set(
+      "rows",
+      [4, 3, 2, 1].map((id) => ({ id, title: `t${id}` })),
+    );
     await tick();
     expect(editing()).toEqual(["t4", null, null, null]);
     runtime.store.set("rows.0.title", "renamed");
@@ -290,7 +319,13 @@ describe("Runtime", () => {
       `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
         `<template data-hs-each='[["item",0,"cells"],1]'><span data-hs-text='["concat",["concat",["item",0,"label"],["item",1,""]],["sig","suffix"]]'></span></template>` +
         `</li></template></ul>`,
-      { rows: [{ id: 1, label: "a", cells: ["x", "y"] }, { id: 2, label: "b", cells: ["z"] }], suffix: "" },
+      {
+        rows: [
+          { id: 1, label: "a", cells: ["x", "y"] },
+          { id: 2, label: "b", cells: ["z"] },
+        ],
+        suffix: "",
+      },
     );
     await tick();
     const texts = () => [...document.querySelectorAll("#l span")].map((span) => span.textContent);
@@ -311,10 +346,18 @@ describe("Runtime", () => {
       `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'>` +
         `<template data-hs-each='[["item",0,"tags"],1]'><b data-hs-key='["item",1,"name"]' data-hs-text='["item",1,"name"]'></b></template>` +
         `</li></template></ul>`,
-      { rows: [{ id: 1, tags: [{ name: "a" }, { name: "b" }] }, { id: 2, tags: [{ name: "c" }] }] },
+      {
+        rows: [
+          { id: 1, tags: [{ name: "a" }, { name: "b" }] },
+          { id: 2, tags: [{ name: "c" }] },
+        ],
+      },
     );
     await tick();
-    const tags = () => [...document.querySelectorAll("#l li")].map((li) => [...li.querySelectorAll("b")].map((b) => b.textContent).join(""));
+    const tags = () =>
+      [...document.querySelectorAll("#l li")].map((li) =>
+        [...li.querySelectorAll("b")].map((b) => b.textContent).join(""),
+      );
     expect(tags()).toEqual(["ab", "c"]);
     const first = document.querySelector("#l b")!;
     const reads = spyReads(runtime);
@@ -356,7 +399,8 @@ describe("Runtime", () => {
       `data-hs-class='[["on",["eq",["sig","selected"],["item",0,"id"]]]]'></li></template></ul></div>`;
     const runtime = mount(html, { rows: [1, 2, 3].map((id) => ({ id })), selected: 1 });
     await tick();
-    const on = () => [...document.querySelectorAll("#frag li")].map((li) => li.classList.contains("on"));
+    const on = () =>
+      [...document.querySelectorAll("#frag li")].map((li) => li.classList.contains("on"));
     expect(on()).toEqual([true, false, false]);
     runtime.apply({ event: "hs-element", data: JSON.stringify({ html }) });
     await tick();
@@ -367,18 +411,30 @@ describe("Runtime", () => {
 
   it("keeps the items of a list and their bindings when a patch keeps its template", async () => {
     const list = `<ul><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]' data-hs-text='["item",0,"label"]'></li></template></ul>`;
-    const runtime = mount(`<div id="frag"><p>a</p>${list}</div>`, { rows: [1, 2].map((id) => ({ id, label: `r${id}` })) });
+    const runtime = mount(`<div id="frag"><p>a</p>${list}</div>`, {
+      rows: [1, 2].map((id) => ({ id, label: `r${id}` })),
+    });
     await tick();
     const items = [...document.querySelectorAll("#frag li")];
-    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p>b</p>${list}</div>` }) });
+    runtime.apply({
+      event: "hs-element",
+      data: JSON.stringify({ html: `<div id="frag"><p>b</p>${list}</div>` }),
+    });
     await tick();
     expect(document.querySelector("#frag p")!.textContent).toBe("b");
     expect([...document.querySelectorAll("#frag li")]).toEqual(items);
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
     runtime.store.set("rows.1.label", "x");
-    runtime.store.set("rows", [...(runtime.store.get("rows") as unknown[]), { id: 3, label: "r3" }]);
+    runtime.store.set("rows", [
+      ...(runtime.store.get("rows") as unknown[]),
+      { id: 3, label: "r3" },
+    ]);
     await tick();
-    expect([...document.querySelectorAll("#frag li")].map((li) => li.textContent)).toEqual(["r1", "x", "r3"]);
+    expect([...document.querySelectorAll("#frag li")].map((li) => li.textContent)).toEqual([
+      "r1",
+      "x",
+      "r3",
+    ]);
     expect(document.querySelector("#frag li")).toBe(items[0]);
   });
 
@@ -386,7 +442,12 @@ describe("Runtime", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const runtime = mount(`<p id="total"></p><input data-hs-ref="field"><div id="frag"></div>`, {});
     await tick();
-    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p id="total"></p><input data-hs-ref="field"></div>` }) });
+    runtime.apply({
+      event: "hs-element",
+      data: JSON.stringify({
+        html: `<div id="frag"><p id="total"></p><input data-hs-ref="field"></div>`,
+      }),
+    });
     expect(warn.mock.calls.map(([message]) => message)).toEqual([
       'hypersig: the patch for #frag adds a second element with the id "total"',
       'hypersig: the patch for #frag adds a second element with data-hs-ref="field"',
@@ -414,7 +475,10 @@ describe("Runtime", () => {
     runtime.apply({ event: "hs-element", data: JSON.stringify({ html: list("b") }) });
     await tick();
     expect(document.querySelectorAll("#frag li")).toHaveLength(0);
-    expect([...document.querySelectorAll("#frag b")].map((b) => b.textContent)).toEqual(["r1", "r2"]);
+    expect([...document.querySelectorAll("#frag b")].map((b) => b.textContent)).toEqual([
+      "r1",
+      "r2",
+    ]);
   });
 
   it("keeps the content of a condition, with its focus, when a patch keeps its template", async () => {
@@ -439,11 +503,22 @@ describe("Runtime", () => {
     );
     await tick();
     const removed = document.querySelector("#frag li")!;
-    const key = Object.getOwnPropertySymbols(removed).find((symbol) => symbol.description === "hypersig")!;
+    const key = Object.getOwnPropertySymbols(removed).find(
+      (symbol) => symbol.description === "hypersig",
+    )!;
     // An item's bindings live in its row rather than in an `Effect` per binding.
-    const bound = () => (removed as unknown as Record<symbol, { effects?: unknown[]; watch?: unknown; row?: unknown }>)[key]!;
+    const bound = () =>
+      (
+        removed as unknown as Record<
+          symbol,
+          { effects?: unknown[]; watch?: unknown; row?: unknown }
+        >
+      )[key]!;
     expect(bound().row).toBeDefined();
-    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p>gone</p></div>` }) });
+    runtime.apply({
+      event: "hs-element",
+      data: JSON.stringify({ html: `<div id="frag"><p>gone</p></div>` }),
+    });
     expect(removed.isConnected).toBe(false);
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
     expect(bound().row).toBeUndefined();
@@ -462,11 +537,17 @@ describe("Runtime", () => {
     await tick();
     const span = document.querySelector("#frag span")!;
     const b = document.querySelector("#frag b")!;
-    const key = Object.getOwnPropertySymbols(span).find((symbol) => symbol.description === "hypersig")!;
-    const bound = (element: Element) => (element as unknown as Record<symbol, { effects?: unknown[] }>)[key]!.effects;
+    const key = Object.getOwnPropertySymbols(span).find(
+      (symbol) => symbol.description === "hypersig",
+    )!;
+    const bound = (element: Element) =>
+      (element as unknown as Record<symbol, { effects?: unknown[] }>)[key]!.effects;
     expect(bound(span)).toHaveLength(1);
     expect(bound(b)).toHaveLength(1);
-    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="frag"><p>gone</p></div>` }) });
+    runtime.apply({
+      event: "hs-element",
+      data: JSON.stringify({ html: `<div id="frag"><p>gone</p></div>` }),
+    });
     expect(span.isConnected).toBe(false);
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
     expect(bound(span)).toBeUndefined();
@@ -480,12 +561,16 @@ describe("Runtime", () => {
     );
     await tick();
     const kept = document.getElementById("kept")!;
-    const key = Object.getOwnPropertySymbols(kept).find((symbol) => symbol.description === "hypersig")!;
+    const key = Object.getOwnPropertySymbols(kept).find(
+      (symbol) => symbol.description === "hypersig",
+    )!;
     const bound = () => (kept as unknown as Record<symbol, { effects?: unknown[] }>)[key]!.effects;
     // The morph replaces the span at the first position with the <b>, then finds it by id and moves it to the second.
     runtime.apply({
       event: "hs-element",
-      data: JSON.stringify({ html: `<div id="frag"><b>y</b><span id="kept" data-hs-text='["sig","label"]'></span></div>` }),
+      data: JSON.stringify({
+        html: `<div id="frag"><b>y</b><span id="kept" data-hs-text='["sig","label"]'></span></div>`,
+      }),
     });
     expect(document.getElementById("kept")).toBe(kept);
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
@@ -496,12 +581,18 @@ describe("Runtime", () => {
   });
 
   it("forgets the bindings inside a removed condition after the next frame", async () => {
-    const runtime = mount(`<template data-hs-if='["sig","on"]'><b id="b" data-hs-text='["sig","label"]'></b></template>`, { on: true, label: "x" });
+    const runtime = mount(
+      `<template data-hs-if='["sig","on"]'><b id="b" data-hs-text='["sig","label"]'></b></template>`,
+      { on: true, label: "x" },
+    );
     await tick();
     const removed = document.getElementById("b")!;
     // The runtime keeps what it knows about an element under the symbol `hypersig`.
-    const key = Object.getOwnPropertySymbols(removed).find((symbol) => symbol.description === "hypersig")!;
-    const bound = () => (removed as unknown as Record<symbol, { effects?: unknown[] }>)[key]!.effects;
+    const key = Object.getOwnPropertySymbols(removed).find(
+      (symbol) => symbol.description === "hypersig",
+    )!;
+    const bound = () =>
+      (removed as unknown as Record<symbol, { effects?: unknown[] }>)[key]!.effects;
     expect(bound()).toHaveLength(1);
     runtime.store.set("on", false);
     await tick();
@@ -550,7 +641,9 @@ describe("Runtime", () => {
       `<form data-hs-on-submit='["call","POST","/add",["lit",{"id":3}],null,null]'><input data-hs-bind='["draft","text"]'><button id="go">go</button></form><ul id="list"></ul>`,
       { draft: "tea" },
     );
-    document.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    document
+      .querySelector("form")!
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     await vi.waitFor(() => expect(document.getElementById("list")!.innerHTML).toBe("<li>tea</li>"));
 
     const [url, init] = fetch.mock.calls[0]!;
@@ -562,7 +655,10 @@ describe("Runtime", () => {
   });
 
   it("runs the statement after a call without waiting for the answer", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
     const runtime = mount(
       `<button data-hs-on-click='["seq",[["call","POST","/slow",["sig","n"],null,null],["set","n",["lit",2]]]]'>go</button>`,
       { n: 1 },
@@ -584,7 +680,10 @@ describe("Runtime", () => {
   it("pushes and replaces the URL without loading it, and loads the page Back moves to", async () => {
     history.replaceState(null, "", "/fruit");
     const reload = vi.spyOn(location, "reload").mockImplementation(() => {});
-    const runtime = mount(`<button data-hs-on-click='["history","push",["lit","/fruit?q=fig"]]'>go</button>`, { n: 1 });
+    const runtime = mount(
+      `<button data-hs-on-click='["history","push",["lit","/fruit?q=fig"]]'>go</button>`,
+      { n: 1 },
+    );
     const length = history.length;
     document.querySelector("button")!.click();
     await tick();
@@ -595,7 +694,10 @@ describe("Runtime", () => {
     await tick();
     expect(history.length).toBe(length + 1);
 
-    runtime.apply({ event: "hs-history", data: JSON.stringify({ url: "/fruit?q=kiwi", replace: true }) });
+    runtime.apply({
+      event: "hs-history",
+      data: JSON.stringify({ url: "/fruit?q=kiwi", replace: true }),
+    });
     runtime.apply({ event: "hs-signals", data: JSON.stringify({ n: 2 }) });
     expect(location.pathname + location.search).toBe("/fruit?q=kiwi");
     expect(history.length).toBe(length + 1);
@@ -618,7 +720,9 @@ describe("Runtime", () => {
     const runtime = mount(`<div id="frag"></div>`, { on: false });
     runtime.apply({
       event: "hs-element",
-      data: JSON.stringify({ html: `<div id="frag"><b id="x" data-hs-show='["sig","on"]'>x</b></div>` }),
+      data: JSON.stringify({
+        html: `<div id="frag"><b id="x" data-hs-show='["sig","on"]'>x</b></div>`,
+      }),
     });
     expect(document.getElementById("x")!.style.display).toBe("none");
     runtime.store.set("on", true);
@@ -644,7 +748,10 @@ describe("visibility", () => {
       }
     }
     vi.stubGlobal("IntersectionObserver", Observer);
-    const runtime = mount(`<p id="end" data-hs-on-visible='["set","loads",["add",["sig","loads"],["lit",1]]]'></p>`, { loads: 0 });
+    const runtime = mount(
+      `<p id="end" data-hs-on-visible='["set","loads",["add",["sig","loads"],["lit",1]]]'></p>`,
+      { loads: 0 },
+    );
     const end = document.getElementById("end")!;
     expect(observed).toEqual([end]);
     report([{ target: end, isIntersecting: true }]);
@@ -665,7 +772,9 @@ describe("calls", () => {
     const fetch = vi.fn(
       (_url: URL, init: RequestInit) =>
         new Promise<Response>((resolve, reject) => {
-          init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
           answers.push((body) => resolve(sseResponse(body)));
         }),
     );
@@ -697,10 +806,13 @@ describe("calls", () => {
 
   it("aborts no call sent without latest, and keeps the indicator on until every call answers", async () => {
     const { fetch, answers } = pendingFetch();
-    const runtime = mount(`<button data-hs-on-click='["call","POST","/save",null,"busy",null]'>save</button>`, {
-      results: "",
-      busy: false,
-    });
+    const runtime = mount(
+      `<button data-hs-on-click='["call","POST","/save",null,"busy",null]'>save</button>`,
+      {
+        results: "",
+        busy: false,
+      },
+    );
     const button = document.querySelector("button")!;
     button.click();
     button.click();
@@ -719,9 +831,12 @@ describe("calls", () => {
       "fetch",
       vi.fn(async () => new Response("Name taken", { status: 409 })),
     );
-    const runtime = mount(`<button data-hs-on-click='["call","POST","/save",null,null,"problem"]'>save</button>`, {
-      problem: "",
-    });
+    const runtime = mount(
+      `<button data-hs-on-click='["call","POST","/save",null,null,"problem"]'>save</button>`,
+      {
+        problem: "",
+      },
+    );
     const seen: unknown[] = [];
     runtime.store.subscribe((changes) => {
       if (changes.has("problem")) seen.push(runtime.store.get("problem"));
@@ -790,7 +905,10 @@ describe("calls", () => {
         .mockResolvedValueOnce(droppedResponse(`event: hs-signals\ndata: {"last":7}\n\n`))
         .mockReturnValueOnce(new Promise<Response>(() => {}));
       vi.stubGlobal("fetch", fetch);
-      mount(`<p data-hs-on-load='["call","GET","/feed",["sig","last"],null,null,["reconnect"]]'></p>`, { last: 3 });
+      mount(
+        `<p data-hs-on-load='["call","GET","/feed",["sig","last"],null,null,["reconnect"]]'></p>`,
+        { last: 3 },
+      );
       await vi.advanceTimersByTimeAsync(0);
       await vi.advanceTimersByTimeAsync(1000);
       expect(fetch).toHaveBeenCalledTimes(2);
@@ -813,9 +931,12 @@ describe("calls", () => {
         .mockReturnValueOnce(new Promise<Response>((resolve) => (connect = resolve)))
         .mockReturnValueOnce(new Promise<Response>(() => {}));
       vi.stubGlobal("fetch", fetch);
-      const runtime = mount(`<p data-hs-on-load='["call","GET","/feed",null,"live",null,["reconnect","connected"]]'></p>`, {
-        live: false,
-      });
+      const runtime = mount(
+        `<p data-hs-on-load='["call","GET","/feed",null,"live",null,["reconnect","connected"]]'></p>`,
+        {
+          live: false,
+        },
+      );
       await vi.advanceTimersByTimeAsync(0);
       expect(fetch).toHaveBeenCalledTimes(1);
       expect(runtime.store.get("live")).toBe(false);
@@ -858,9 +979,13 @@ describe("lists", () => {
       { rows: [1, 2, 3].map((id) => ({ id, label: `r${id}` })) },
     );
     await tick();
-    runtime.store.set("rows", [4, 5].map((id) => ({ id, label: `r${id}` })));
+    runtime.store.set(
+      "rows",
+      [4, 5].map((id) => ({ id, label: `r${id}` })),
+    );
     await tick();
-    const texts = (id: string) => [...document.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
+    const texts = (id: string) =>
+      [...document.querySelectorAll(`#${id} li`)].map((li) => li.textContent);
     expect(texts("l")).toEqual(["r4", "r5"]);
     expect(texts("m")).toEqual(["head", "r4", "r5"]);
     runtime.store.set("rows", []);
@@ -890,7 +1015,10 @@ describe("statements", () => {
 
   it("read a computed signal that an earlier step of the sequence changed", async () => {
     const root = document.createElement("main");
-    root.setAttribute("data-hs-computed", JSON.stringify([["total", ["add", ["sig", "n"], ["lit", 1]]]]));
+    root.setAttribute(
+      "data-hs-computed",
+      JSON.stringify([["total", ["add", ["sig", "n"], ["lit", 1]]]]),
+    );
     root.innerHTML = `<button data-hs-on-click='["seq",[["set","n",["lit",5]],["set","copy",["sig","total"]]]]'></button>`;
     document.body.replaceChildren(root);
     const runtime = new Runtime(root, { n: 0, total: 1, copy: 0 });
@@ -901,12 +1029,15 @@ describe("statements", () => {
   });
 
   it("record in an effect the reads of every step of a sequence", async () => {
-    const runtime = mount(`<div data-hs-effect='[["seq",[["set","a",["sig","x"]],["set","b",["sig","y"]]]]]'></div>`, {
-      x: 1,
-      y: 2,
-      a: 0,
-      b: 0,
-    });
+    const runtime = mount(
+      `<div data-hs-effect='[["seq",[["set","a",["sig","x"]],["set","b",["sig","y"]]]]]'></div>`,
+      {
+        x: 1,
+        y: 2,
+        a: 0,
+        b: 0,
+      },
+    );
     await tick();
     runtime.store.set("y", 3);
     await tick();

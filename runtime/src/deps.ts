@@ -131,7 +131,11 @@ export class DepIndex {
    * path that `touched` says a change reached, the ones registered under a
    * key seen there before or under `keyAt(path)`, the key of its value now.
    */
-  selected(touched: (path: string) => boolean, keyAt: (path: string) => string, found: Set<Effect>): void {
+  selected(
+    touched: (path: string) => boolean,
+    keyAt: (path: string) => string,
+    found: Set<Effect>,
+  ): void {
     for (const [path, selection] of this.#selections) {
       if (!touched(path)) continue;
       const now = keyAt(path);
@@ -162,7 +166,12 @@ export class DepIndex {
 
   /** Drops `node` and the nodes above it while they hold nothing. */
   #drop(node: PathNode): void {
-    for (let at = node; at.parent !== null && (at.deep?.size ?? 0) + (at.shallow?.size ?? 0) + (at.children?.size ?? 0) === 0; at = at.parent) {
+    for (
+      let at = node;
+      at.parent !== null &&
+      (at.deep?.size ?? 0) + (at.shallow?.size ?? 0) + (at.children?.size ?? 0) === 0;
+      at = at.parent
+    ) {
       // A node dropped earlier stays out of the tree, and one put back since is a different node.
       if (this.#nodes.get(at.path) !== at) return;
       at.parent.children!.delete(at.segment);
@@ -176,7 +185,7 @@ export class DepIndex {
     for (const [path, inside] of changes) {
       let node: PathNode | undefined = this.#root;
       // Walks the segments by their dots, because a list write records one path per item and splitting each would allocate an array.
-      for (let start = 0; ; ) {
+      for (let start = 0; ;) {
         const dot = path.indexOf(".", start);
         node = node.children?.get(dot === -1 ? path.slice(start) : path.slice(start, dot));
         if (node === undefined || dot === -1) break;

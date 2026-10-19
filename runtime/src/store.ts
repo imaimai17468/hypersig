@@ -23,11 +23,19 @@ export function getPath(value: unknown, path: string): unknown {
   if (path === "") return value;
   // A field of an item is read once per item, and most fields are one segment.
   const dot = path.indexOf(".");
-  if (dot === -1) return value !== null && typeof value === "object" ? (value as Record<string, unknown>)[path] : undefined;
+  if (dot === -1)
+    return value !== null && typeof value === "object"
+      ? (value as Record<string, unknown>)[path]
+      : undefined;
   // An item's own path, such as `rows.12`, has two segments and is new for each item, so it is split here without being remembered.
   if (path.indexOf(".", dot + 1) === -1) {
-    const head = value !== null && typeof value === "object" ? (value as Record<string, unknown>)[path.slice(0, dot)] : undefined;
-    return head !== null && typeof head === "object" ? (head as Record<string, unknown>)[path.slice(dot + 1)] : undefined;
+    const head =
+      value !== null && typeof value === "object"
+        ? (value as Record<string, unknown>)[path.slice(0, dot)]
+        : undefined;
+    return head !== null && typeof head === "object"
+      ? (head as Record<string, unknown>)[path.slice(dot + 1)]
+      : undefined;
   }
   let current = value;
   for (const segment of segmentsOf(path)) {
@@ -65,7 +73,11 @@ function setCopied(root: unknown, path: string, next: unknown, copied: Set<unkno
   if (path === "") return next;
   const own = (value: unknown): Record<string, unknown> => {
     if (copied.has(value)) return value as Record<string, unknown>;
-    const copy = Array.isArray(value) ? [...value] : value !== null && typeof value === "object" ? { ...(value as Values) } : {};
+    const copy = Array.isArray(value)
+      ? [...value]
+      : value !== null && typeof value === "object"
+        ? { ...(value as Values) }
+        : {};
     copied.add(copy);
     return copy as Record<string, unknown>;
   };
@@ -139,7 +151,8 @@ export class ChangeLookup {
   constructor(changes: Changes) {
     this.#changes = changes;
     for (const path of changes.keys()) {
-      for (let dot = path.indexOf("."); dot !== -1; dot = path.indexOf(".", dot + 1)) this.#above.add(path.slice(0, dot));
+      for (let dot = path.indexOf("."); dot !== -1; dot = path.indexOf(".", dot + 1))
+        this.#above.add(path.slice(0, dot));
     }
   }
 
@@ -266,13 +279,22 @@ export class Store {
   #write(path: string, value: unknown, copied: Set<unknown> | null): void {
     const previous = getPath(this.#values, path);
     if (Object.is(previous, value)) return;
-    this.#values = (copied === null ? setPath(this.#values, path, value) : setCopied(this.#values, path, value, copied)) as Values;
+    this.#values = (
+      copied === null
+        ? setPath(this.#values, path, value)
+        : setCopied(this.#values, path, value, copied)
+    ) as Values;
     if (this.#changes.size === 0) queueMicrotask(() => this.#notify());
-    if (isContainer(previous) && isContainer(value) && Array.isArray(previous) === Array.isArray(value)) {
+    if (
+      isContainer(previous) &&
+      isContainer(value) &&
+      Array.isArray(previous) === Array.isArray(value)
+    ) {
       this.#record(path, false);
       if (Array.isArray(previous) && Array.isArray(value)) {
         for (let index = 0; index < Math.max(previous.length, value.length); index++) {
-          if (!Object.is(previous[index], value[index])) this.#record(join(path, String(index)), true);
+          if (!Object.is(previous[index], value[index]))
+            this.#record(join(path, String(index)), true);
         }
       } else {
         for (const key of new Set([...Object.keys(previous), ...Object.keys(value)])) {
@@ -312,7 +334,8 @@ export class Store {
   replay(reads: Reads): void {
     if (this.#reads === null) return;
     for (const [path, deep] of reads) {
-      if (deep || !this.#reads.has(path)) this.#reads.set(path, deep || this.#reads.get(path) === true);
+      if (deep || !this.#reads.has(path))
+        this.#reads.set(path, deep || this.#reads.get(path) === true);
     }
   }
 

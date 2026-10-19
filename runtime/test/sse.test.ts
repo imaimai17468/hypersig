@@ -14,7 +14,10 @@ function streamOf(...chunks: string[]): ReadableStream<Uint8Array> {
 it("reassembles events split across chunks", async () => {
   const events: ServerEvent[] = [];
   await readEventStream(
-    streamOf("event: hs-sig", "nals\ndata: {\"a\":1}\n\n: keep-alive\n\nevent: hs-element\ndata: {\"html\":\"<p id=x></p>\"}\n\n"),
+    streamOf(
+      "event: hs-sig",
+      'nals\ndata: {"a":1}\n\n: keep-alive\n\nevent: hs-element\ndata: {"html":"<p id=x></p>"}\n\n',
+    ),
     (event) => events.push(event),
   );
   expect(events).toEqual([

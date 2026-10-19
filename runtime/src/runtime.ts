@@ -1,14 +1,44 @@
-import { type CallOptions, type Compiled, compile, type Context, evaluate, type Host, resolve, resolveRead, run, type Slot } from "./eval.ts";
+import {
+  type CallOptions,
+  type Compiled,
+  compile,
+  type Context,
+  evaluate,
+  type Host,
+  resolve,
+  resolveRead,
+  run,
+  type Slot,
+} from "./eval.ts";
 import { addRules } from "./css.ts";
 import { keepInView } from "./anchor.ts";
 import { morph } from "./morph.ts";
 import { placeRead, type StaticRead, staticReads } from "./reads.ts";
 import { readEventStream, type ServerEvent } from "./sse.ts";
 import { DepIndex, type Effect, type Selector } from "./deps.ts";
-import { ChangeLookup, type Changes, equal, join, overlaps, positionOf, type Reads, Store, type Values } from "./store.ts";
+import {
+  ChangeLookup,
+  type Changes,
+  equal,
+  join,
+  overlaps,
+  positionOf,
+  type Reads,
+  Store,
+  type Values,
+} from "./store.ts";
 
 /** Events handled by one listener on the root, matched to the closest element with a handler. */
-const BUBBLING = ["click", "dblclick", "input", "change", "submit", "keydown", "focusin", "focusout"] as const;
+const BUBBLING = [
+  "click",
+  "dblclick",
+  "input",
+  "change",
+  "submit",
+  "keydown",
+  "focusin",
+  "focusout",
+] as const;
 /** Events that do not bubble, caught in the capture phase and matched to the target only. */
 const DIRECT = ["mouseenter", "mouseleave"] as const;
 
@@ -99,7 +129,17 @@ interface Part {
    * a condition, which it shows or removes, and `each` a nested list over a
    * field of the item.
    */
-  readonly kind: "show" | "text" | "checked" | "class" | "attr" | "toggle" | "style" | "bind" | "if" | "each";
+  readonly kind:
+    | "show"
+    | "text"
+    | "checked"
+    | "class"
+    | "attr"
+    | "toggle"
+    | "style"
+    | "bind"
+    | "if"
+    | "each";
   /** The class, attribute, or CSS property it writes. */
   readonly name: string;
   /** The expression, for `bind` the `Bind`, and for `each` the list's place and item depth. */
@@ -301,7 +341,8 @@ export class Runtime implements Host {
           for (const { target, isIntersecting } of entries) {
             // An element leaves the viewport as it leaves the document, so it is reported once more then.
             if (!target.isConnected) observer.unobserve(target);
-            else if (isIntersecting) this.#runAttribute(this.#attr(target, "data-hs-on-visible")!, target);
+            else if (isIntersecting)
+              this.#runAttribute(this.#attr(target, "data-hs-on-visible")!, target);
           }
         });
 
@@ -397,7 +438,13 @@ export class Runtime implements Host {
    * are parts of its `row` are left to the row, which runs them all in the
    * next render.
    */
-  #mount(root: Element, proto: Element, scope: readonly Slot[], rendered: boolean, row?: Row): void {
+  #mount(
+    root: Element,
+    proto: Element,
+    scope: readonly Slot[],
+    rendered: boolean,
+    row?: Row,
+  ): void {
     const members: Element[] = [];
     const nodes = row === undefined ? [] : new Array<Element | undefined>(row.shape.parts.length);
     locate(planOf(proto), root, rendered, (element, source, reactive) => {
@@ -485,7 +532,8 @@ export class Runtime implements Host {
         init.headers = { accept: "text/event-stream", "content-type": "application/json" };
         init.body = body;
       }
-      if (options.part !== undefined) init.headers = { ...(init.headers as Record<string, string>), [PART_HEADER]: options.part };
+      if (options.part !== undefined)
+        init.headers = { ...(init.headers as Record<string, string>), [PART_HEADER]: options.part };
       return url;
     };
     // The first request is built before the call returns, so a statement after it can change what the arguments read.
@@ -525,7 +573,8 @@ export class Runtime implements Host {
         }
         this.#fail(method, path, failure.message, error, failure.status);
         options.failed?.(failure.message);
-        const again = options.reconnect && method === "GET" && (failure.status === 0 || failure.status >= 500);
+        const again =
+          options.reconnect && method === "GET" && (failure.status === 0 || failure.status >= 500);
         if (!again || abandoned()) return;
         await new Promise((resolve) => setTimeout(resolve, delay));
         delay = Math.min(delay * 2, LAST_RETRY_MS);
@@ -595,12 +644,28 @@ export class Runtime implements Host {
     this.#afterRender(REF, name, origin, (target) => {
       if (op === "focus" && target instanceof HTMLElement) target.focus();
       else if (op === "blur" && target instanceof HTMLElement) target.blur();
-      else if (op === "select" && (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) target.select();
+      else if (
+        op === "select" &&
+        (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)
+      )
+        target.select();
       else if (op === "scroll") target.scrollIntoView({ block: "nearest" });
-      else if (op === "hide-popover" && target instanceof HTMLElement && target.matches(":popover-open")) target.hidePopover();
-      else if (op === "show-popover" && target instanceof HTMLElement && target.hasAttribute("popover") && !target.matches(":popover-open")) target.showPopover();
+      else if (
+        op === "hide-popover" &&
+        target instanceof HTMLElement &&
+        target.matches(":popover-open")
+      )
+        target.hidePopover();
+      else if (
+        op === "show-popover" &&
+        target instanceof HTMLElement &&
+        target.hasAttribute("popover") &&
+        !target.matches(":popover-open")
+      )
+        target.showPopover();
       // `showModal` throws on a dialog that is already open.
-      else if (op === "show-modal" && target instanceof HTMLDialogElement && !target.open) target.showModal();
+      else if (op === "show-modal" && target instanceof HTMLDialogElement && !target.open)
+        target.showModal();
       else if (op === "close" && target instanceof HTMLDialogElement && target.open) target.close();
     });
   }
@@ -617,7 +682,12 @@ export class Runtime implements Host {
    * the current statement started has run, mounting waiting list items first
    * when the element is not in the document yet.
    */
-  #afterRender(attribute: string, name: string, origin: Element | undefined, act: (target: Element) => void): void {
+  #afterRender(
+    attribute: string,
+    name: string,
+    origin: Element | undefined,
+    act: (target: Element) => void,
+  ): void {
     queueMicrotask(() =>
       queueMicrotask(() => {
         let target = this.#findNamed(attribute, name, origin);
@@ -736,7 +806,8 @@ export class Runtime implements Host {
   /** The elements the runtime drew after `template`, which a patch that keeps `template` leaves in place. */
   #drawn(template: HTMLTemplateElement): ReadonlySet<Element> | undefined {
     const items = this.#lists.get(template);
-    if (items !== undefined) return new Set([...items.values()].map((instance) => instance.element));
+    if (items !== undefined)
+      return new Set([...items.values()].map((instance) => instance.element));
     const mounted = this.#mounted.get(template);
     return mounted === undefined ? undefined : new Set([mounted]);
   }
@@ -756,7 +827,14 @@ export class Runtime implements Host {
     };
     const effects: Effect[] = [];
     const add = (run: () => void): Effect => {
-      const effect: Effect = { id: this.#nextId++, element, run, deps: null, nodes: new Map(), selector: null };
+      const effect: Effect = {
+        id: this.#nextId++,
+        element,
+        run,
+        deps: null,
+        nodes: new Map(),
+        selector: null,
+      };
       effects.push(effect);
       return effect;
     };
@@ -781,14 +859,24 @@ export class Runtime implements Host {
     if (element instanceof HTMLTemplateElement) {
       const { proto, each, cond } = spec;
       if (each !== undefined) {
-        const list: Effect = add(() => this.#renderList(element, proto, each[0], each[1], scope, list));
+        const list: Effect = add(() =>
+          this.#renderList(element, proto, each[0], each[1], scope, list),
+        );
       }
-      if (cond !== undefined) add(() => this.#renderIf(element, proto, Boolean(value(cond)), scope));
+      if (cond !== undefined)
+        add(() => this.#renderIf(element, proto, Boolean(value(cond)), scope));
     }
     return effects;
   }
 
-  #renderList(template: HTMLTemplateElement, proto: Element | null, place: unknown, depth: number, scope: readonly Slot[], list: Effect): void {
+  #renderList(
+    template: HTMLTemplateElement,
+    proto: Element | null,
+    place: unknown,
+    depth: number,
+    scope: readonly Slot[],
+    list: Effect,
+  ): void {
     const parent = template.parentNode;
     if (proto === null || parent === null) return;
     const listCtx: Context = { store: this.store, scope };
@@ -804,14 +892,18 @@ export class Runtime implements Host {
     /** The previous items by position and, built on first use, by value, to find one whose key holds for a value. */
     let placed: Instance[] | null = null;
     let byValue: Map<unknown, Instance> | null = null;
-    const sameValue = (previous: ReadonlyMap<string, Instance>, index: number): Instance | undefined => {
+    const sameValue = (
+      previous: ReadonlyMap<string, Instance>,
+      index: number,
+    ): Instance | undefined => {
       placed ??= [...previous.values()];
       const item = items[index];
       const at = placed[index];
       if (at !== undefined && at.local && Object.is(at.value, item)) return at;
       if (byValue === null) {
         byValue = new Map();
-        for (const instance of placed) if (instance.local && !byValue.has(instance.value)) byValue.set(instance.value, instance);
+        for (const instance of placed)
+          if (instance.local && !byValue.has(instance.value)) byValue.set(instance.value, instance);
       }
       // `match` gives an instance its new value as it goes, so the one found may no longer hold `item`.
       const found = byValue.get(item);
@@ -824,7 +916,12 @@ export class Runtime implements Host {
     let keyCtx: Context | null = null;
     const key = keyAst === undefined ? null : compile(keyAst);
     const evaluateKey = (): unknown => key!(keyCtx!);
-    const match = (index: number, previous: ReadonlyMap<string, Instance>, next: Map<string, Instance>, appending = false): Instance => {
+    const match = (
+      index: number,
+      previous: ReadonlyMap<string, Instance>,
+      next: Map<string, Instance>,
+      appending = false,
+    ): Instance => {
       const itemPath = join(path, String(index));
       const itemAt = read === path ? itemPath : join(read, String(index));
       let key = "";
@@ -849,11 +946,16 @@ export class Runtime implements Host {
           named = itemAt;
         } else {
           // The key reads the item by its path, or by a name below the enclosing item's, so the list reruns when they change.
-          const keySlot: Slot = itemAt === itemPath ? { path: itemPath } : { path: itemPath, read: itemAt };
+          const keySlot: Slot =
+            itemAt === itemPath ? { path: itemPath } : { path: itemPath, read: itemAt };
           keyReads = this.store.track(() => {
-            key = JSON.stringify(evaluate(keyAst, { store: this.store, scope: [...scope.slice(0, depth), keySlot] }));
+            key = JSON.stringify(
+              evaluate(keyAst, { store: this.store, scope: [...scope.slice(0, depth), keySlot] }),
+            );
           });
-          const local = [...keyReads.keys()].every((at) => at !== positionOf(itemAt) && (at === itemAt || at.startsWith(`${itemAt}.`)));
+          const local = [...keyReads.keys()].every(
+            (at) => at !== positionOf(itemAt) && (at === itemAt || at.startsWith(`${itemAt}.`)),
+          );
           if (local) named = itemAt;
         }
       }
@@ -870,13 +972,24 @@ export class Runtime implements Host {
         // A key that read only the item reads it under the item's name, so the item can move without registering it again.
         if (named !== null) keyReads = rebased(keyReads, named, slot.read!);
         const element = proto.cloneNode(true) as Element;
-        instance = { element, slot, scanned: true, key: raw, keyReads, watch: null, local, value: items[index], row: this.#row(element, slot, shape, template) };
+        instance = {
+          element,
+          slot,
+          scanned: true,
+          key: raw,
+          keyReads,
+          watch: null,
+          local,
+          value: items[index],
+          row: this.#row(element, slot, shape, template),
+        };
         state(instance.element).root = true;
         created.add(instance);
         this.#watchKey(instance, list);
       } else {
         instance.key = raw;
-        if (named !== null && named !== instance.slot.read) keyReads = rebased(keyReads, named, instance.slot.read!);
+        if (named !== null && named !== instance.slot.read)
+          keyReads = rebased(keyReads, named, instance.slot.read!);
         if (instance.keyReads !== keyReads || instance.watch === null) {
           instance.keyReads = keyReads;
           this.#watchKey(instance, list);
@@ -908,9 +1021,16 @@ export class Runtime implements Host {
       const rows: Row[] = [];
       for (const instance of order) {
         if (created.has(instance)) {
-          this.#mount(instance.element, proto, [...scope.slice(0, depth), instance.slot], false, instance.row);
+          this.#mount(
+            instance.element,
+            proto,
+            [...scope.slice(0, depth), instance.slot],
+            false,
+            instance.row,
+          );
           rows.push(instance.row);
-        } else if (!instance.scanned && !this.#waiting.has(instance.element)) this.#wait(instance, proto, [...scope.slice(0, depth), instance.slot]);
+        } else if (!instance.scanned && !this.#waiting.has(instance.element))
+          this.#wait(instance, proto, [...scope.slice(0, depth), instance.slot]);
       }
       this.#fill(rows);
     };
@@ -920,7 +1040,8 @@ export class Runtime implements Host {
       for (const instance of known.values()) anchor = instance.element;
       const next = known;
       const added: Instance[] = [];
-      for (let index = known.size; index < items.length; index++) added.push(match(index, known, next, true));
+      for (let index = known.size; index < items.length; index++)
+        added.push(match(index, known, next, true));
       register(added);
       const fragment = document.createDocumentFragment();
       for (const instance of added) fragment.append(instance.element);
@@ -937,7 +1058,8 @@ export class Runtime implements Host {
       const order = [...was];
       const end = was.at(-1)?.element.nextSibling ?? null;
       const filed = new Map<string, Instance>();
-      for (let index = 0; index < was.length; index++) if (!touched.has(index)) filed.set(keys[index]!, was[index]!);
+      for (let index = 0; index < was.length; index++)
+        if (!touched.has(index)) filed.set(keys[index]!, was[index]!);
       const at = [...touched].sort((a, b) => a - b);
       for (const index of at) {
         order[index] = match(index, known, filed);
@@ -945,13 +1067,15 @@ export class Runtime implements Host {
       }
       const next = new Map<string, Instance>();
       order.forEach((instance, index) => next.set(keys[index]!, instance));
-      for (const index of at) if (next.get(wasKeys[index]!) !== was[index]) this.#unmountItem(was[index]!);
+      for (const index of at)
+        if (next.get(wasKeys[index]!) !== was[index]) this.#unmountItem(was[index]!);
       register(at.map((index) => order[index]!));
       for (let i = at.length - 1; i >= 0; i--) {
         const index = at[i]!;
         const element = order[index]!.element;
         const before = index + 1 < order.length ? order[index + 1]!.element : end;
-        if (element.parentNode !== parent || element.nextSibling !== before) parent.insertBefore(element, before);
+        if (element.parentNode !== parent || element.nextSibling !== before)
+          parent.insertBefore(element, before);
       }
       this.#lists.set(template, next);
       return;
@@ -961,8 +1085,11 @@ export class Runtime implements Host {
     const next = new Map<string, Instance>();
     const order = items.map((_, index) => match(index, previous, next));
     const restore = known === undefined ? null : prepended(known, order, created);
-    const gone = [...previous].filter(([key, instance]) => next.get(key) !== instance).map(([, instance]) => instance);
-    if (gone.length === previous.size && gone.length > 1 && filling(parent, template, gone)) this.#unmountAll(parent, template, gone);
+    const gone = [...previous]
+      .filter(([key, instance]) => next.get(key) !== instance)
+      .map(([, instance]) => instance);
+    if (gone.length === previous.size && gone.length > 1 && filling(parent, template, gone))
+      this.#unmountAll(parent, template, gone);
     else for (const instance of gone) this.#unmountItem(instance);
     register(order);
     arrange(parent, template, previous, order);
@@ -1015,12 +1142,14 @@ export class Runtime implements Host {
       if (outermost === undefined) return;
       this.#waiting.get(outermost)!();
       for (const member of own(outermost)?.members ?? []) {
-        if (member instanceof HTMLTemplateElement) for (const effect of own(member)?.effects ?? []) this.#runEffect(effect);
+        if (member instanceof HTMLTemplateElement)
+          for (const effect of own(member)?.effects ?? []) this.#runEffect(effect);
       }
       const row = own(outermost)?.row;
       row?.nodes?.forEach((node, index) => {
         const { kind } = row.shape.parts[index]!;
-        if ((kind === "if" || kind === "each") && node !== undefined) this.store.untracked(() => this.#runPart(row, index));
+        if ((kind === "if" || kind === "each") && node !== undefined)
+          this.store.untracked(() => this.#runPart(row, index));
       });
     }
   }
@@ -1028,20 +1157,43 @@ export class Runtime implements Host {
   /** Takes over the items the server rendered right after `template`, keyed as it keyed them. */
   #adoptItems(template: HTMLTemplateElement, shape: Shape): Map<string, Instance> {
     const adopted = new Map<string, Instance>();
-    for (let at = template.nextElementSibling; at !== null && at.hasAttribute("data-hs-ssr"); at = at.nextElementSibling) {
+    for (
+      let at = template.nextElementSibling;
+      at !== null && at.hasAttribute("data-hs-ssr");
+      at = at.nextElementSibling
+    ) {
       if (own(at)?.root === true) break;
       state(at).root = true;
       const key = at.getAttribute("data-hs-ssr")!;
       const slot: Slot = { path: "", read: `@${this.#nextSlot++}` };
-      adopted.set(key, { element: at, slot, scanned: false, key, keyReads: new Map(), watch: null, local: false, value: undefined, row: this.#row(at, slot, shape, template) });
+      adopted.set(key, {
+        element: at,
+        slot,
+        scanned: false,
+        key,
+        keyReads: new Map(),
+        watch: null,
+        local: false,
+        value: undefined,
+        row: this.#row(at, slot, shape, template),
+      });
     }
     return adopted;
   }
 
-  #renderIf(template: HTMLTemplateElement, proto: Element | null, visible: boolean, scope: readonly Slot[]): void {
+  #renderIf(
+    template: HTMLTemplateElement,
+    proto: Element | null,
+    visible: boolean,
+    scope: readonly Slot[],
+  ): void {
     let current = this.#mounted.get(template);
     const rendered = template.nextElementSibling;
-    if (current === undefined && rendered?.getAttribute("data-hs-ssr") === "" && own(rendered)?.root !== true) {
+    if (
+      current === undefined &&
+      rendered?.getAttribute("data-hs-ssr") === "" &&
+      own(rendered)?.root !== true
+    ) {
       state(rendered).root = true;
       if (visible && proto !== null) {
         this.#mounted.set(template, rendered);
@@ -1066,10 +1218,18 @@ export class Runtime implements Host {
 
   #writeControl(element: Element, [place, kind, choice]: Bind, ctx: Context): void {
     const current = this.store.getAs(resolve(place, ctx), resolveRead(place, ctx));
-    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement)) return;
+    if (
+      !(
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement ||
+        element instanceof HTMLSelectElement
+      )
+    )
+      return;
     switch (kind) {
       case "bool":
-        if (element instanceof HTMLInputElement && element.checked !== current) element.checked = Boolean(current);
+        if (element instanceof HTMLInputElement && element.checked !== current)
+          element.checked = Boolean(current);
         return;
       case "radio":
         if (element instanceof HTMLInputElement) element.checked = equal(current, choice);
@@ -1078,7 +1238,8 @@ export class Runtime implements Host {
       case "float":
       case "opt_int":
       case "opt_float":
-        if (Number(element.value) !== current || element.value === "") element.value = String(current ?? "");
+        if (Number(element.value) !== current || element.value === "")
+          element.value = String(current ?? "");
         return;
       case "json": {
         const next = JSON.stringify(current);
@@ -1095,16 +1256,25 @@ export class Runtime implements Host {
   #readControl(element: Element, type: string): void {
     const bind = parse(this.#attr(element, "data-hs-bind")) as Bind | undefined;
     if (bind === undefined) return;
-    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement)) return;
+    if (
+      !(
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement ||
+        element instanceof HTMLSelectElement
+      )
+    )
+      return;
     const [place, kind, choice] = bind;
     const path = resolve(place, this.#context(element, this.#scopeOf(element)));
     const raw = element.value;
     switch (kind) {
       case "bool":
-        if (type === "change" && element instanceof HTMLInputElement) this.store.set(path, element.checked);
+        if (type === "change" && element instanceof HTMLInputElement)
+          this.store.set(path, element.checked);
         return;
       case "radio":
-        if (type === "change" && element instanceof HTMLInputElement && element.checked) this.store.set(path, choice);
+        if (type === "change" && element instanceof HTMLInputElement && element.checked)
+          this.store.set(path, choice);
         return;
       case "int":
       case "float":
@@ -1121,7 +1291,8 @@ export class Runtime implements Host {
         return;
       }
       case "opt_text":
-        if (type === "input" || element instanceof HTMLSelectElement) this.store.set(path, raw === "" ? null : raw);
+        if (type === "input" || element instanceof HTMLSelectElement)
+          this.store.set(path, raw === "" ? null : raw);
         return;
       case "json":
         if (type === "change") this.store.set(path, JSON.parse(raw));
@@ -1194,8 +1365,13 @@ export class Runtime implements Host {
       value = evaluate(other, ctx);
     });
     this.store.replay(reads);
-    const scalar = value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean";
-    if (!scalar || [...reads.keys()].some((read) => overlaps(read, path))) return equal(this.store.get(path), value);
+    const scalar =
+      value === null ||
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean";
+    if (!scalar || [...reads.keys()].some((read) => overlaps(read, path)))
+      return equal(this.store.get(path), value);
     const current = this.store.untracked(() => this.store.get(path));
     this.#selector = { path, key: keyOf(value), current: keyOf(current) };
     return equal(current, value);
@@ -1230,7 +1406,18 @@ export class Runtime implements Host {
 
   /** Makes the row of a list item whose root is `element`, filed under its slot's name. */
   #row(element: Element, slot: Slot, shape: Shape, template: HTMLTemplateElement): Row {
-    const row: Row = { element, slot, shape, template, nodes: null, ctx: null, dirty: 0, queued: false, keys: null, lists: null };
+    const row: Row = {
+      element,
+      slot,
+      shape,
+      template,
+      nodes: null,
+      ctx: null,
+      dirty: 0,
+      queued: false,
+      keys: null,
+      lists: null,
+    };
     this.#rows.set(slot.read!, row);
     state(element).row = row;
     return row;
@@ -1240,7 +1427,12 @@ export class Runtime implements Host {
    * The bindings of the list at `template` for the reads its items' parts make
    * outside the items, made again when the list's own binding is.
    */
-  #partsOf(template: HTMLTemplateElement, shape: Shape, outer: readonly Slot[], list: Effect): ListParts {
+  #partsOf(
+    template: HTMLTemplateElement,
+    shape: Shape,
+    outer: readonly Slot[],
+    list: Effect,
+  ): ListParts {
     const existing = this.#listParts.get(template);
     if (existing !== undefined && existing.list === list) return existing;
     this.#dropParts(template);
@@ -1271,12 +1463,17 @@ export class Runtime implements Host {
     for (const [read, mask] of shape.external) {
       const name = readName(read, outer);
       watch(new Map([[name, true]]), () => {
-        for (const instance of this.#lists.get(template)?.values() ?? []) this.#mark(instance.row, mask);
+        for (const instance of this.#lists.get(template)?.values() ?? [])
+          this.#mark(instance.row, mask);
       });
     }
     shape.parts.forEach((part, index) => {
       if (part.selector === null) return;
-      const selection: Selection = { path: part.selector.path, current: undefined, byKey: new Map() };
+      const selection: Selection = {
+        path: part.selector.path,
+        current: undefined,
+        byKey: new Map(),
+      };
       selections[index] = selection;
       const now = (): string => keyOf(this.store.untracked(() => this.store.get(selection.path)));
       selection.current = now();
@@ -1285,7 +1482,8 @@ export class Runtime implements Host {
         const key = now();
         selection.current = key;
         const reach = (filed: Row | Row[] | undefined): void => {
-          for (const row of filed === undefined ? [] : Array.isArray(filed) ? filed : [filed]) this.#mark(row, 1 << index);
+          for (const row of filed === undefined ? [] : Array.isArray(filed) ? filed : [filed])
+            this.#mark(row, 1 << index);
         };
         reach(selection.byKey.get(ANY));
         if (key === was) return;
@@ -1337,7 +1535,12 @@ export class Runtime implements Host {
       const rest = dot === -1 ? "" : path.slice(dot + 1);
       const { shape } = row;
       const list = this.#listParts.get(row.template)?.list;
-      if (list !== undefined && shape.keyFields !== null && shape.keyFields.some((field) => reaches(field, rest, inside))) this.#again(list);
+      if (
+        list !== undefined &&
+        shape.keyFields !== null &&
+        shape.keyFields.some((field) => reaches(field, rest, inside))
+      )
+        this.#again(list);
       this.#mark(row, maskFor(shape, rest, inside));
     }
   }
@@ -1388,7 +1591,13 @@ export class Runtime implements Host {
     if (element === undefined) return;
     const part = row.shape.parts[index]!;
     if (part.kind === "bind") this.#writeControl(element, part.ast as Bind, row.ctx!);
-    else if (part.kind === "if") this.#renderIf(element as HTMLTemplateElement, part.proto, this.#holds(row, index), row.ctx!.scope);
+    else if (part.kind === "if")
+      this.#renderIf(
+        element as HTMLTemplateElement,
+        part.proto,
+        this.#holds(row, index),
+        row.ctx!.scope,
+      );
     else if (part.kind === "each") {
       const [place, depth] = part.ast as [unknown, number];
       const lists = (row.lists ??= []);
@@ -1400,9 +1609,21 @@ export class Runtime implements Host {
         nodes: new Map(),
         selector: null,
       });
-      this.#renderList(element as HTMLTemplateElement, part.proto, place, depth, row.ctx!.scope, list);
-    }
-    else write(element, part.kind, part.name, CONDITIONS.has(part.kind) ? this.#holds(row, index) : part.value!(row.ctx!));
+      this.#renderList(
+        element as HTMLTemplateElement,
+        part.proto,
+        place,
+        depth,
+        row.ctx!.scope,
+        list,
+      );
+    } else
+      write(
+        element,
+        part.kind,
+        part.name,
+        CONDITIONS.has(part.kind) ? this.#holds(row, index) : part.value!(row.ctx!),
+      );
   }
 
   /** Whether the condition of a show, class, or toggle part holds, filing a selector part's row under the value it compared. */
@@ -1411,14 +1632,21 @@ export class Runtime implements Host {
     const ctx = row.ctx!;
     if (part.selector === null) return Boolean(part.value!(ctx));
     const other = part.selector.other(ctx);
-    const scalar = other === null || typeof other === "string" || typeof other === "number" || typeof other === "boolean";
+    const scalar =
+      other === null ||
+      typeof other === "string" ||
+      typeof other === "number" ||
+      typeof other === "boolean";
     const key = scalar ? keyOf(other) : ANY;
     const keys = (row.keys ??= []);
     const selection = this.#listParts.get(row.template)?.selections[index];
     if (selection !== undefined && keys[index] !== key) {
       if (keys[index] !== undefined) unfileRow(selection, keys[index], row);
       const filed = selection.byKey.get(key);
-      selection.byKey.set(key, filed === undefined ? row : Array.isArray(filed) ? [...filed, row] : [filed, row]);
+      selection.byKey.set(
+        key,
+        filed === undefined ? row : Array.isArray(filed) ? [...filed, row] : [filed, row],
+      );
       keys[index] = key;
     }
     return equal(this.store.get(part.selector.path), other);
@@ -1587,7 +1815,8 @@ export class Runtime implements Host {
     for (const element of own(root)?.members ?? []) {
       visit(element);
       if (!(element instanceof HTMLTemplateElement)) continue;
-      for (const instance of this.#lists.get(element)?.values() ?? []) this.#visit(instance.element, visit);
+      for (const instance of this.#lists.get(element)?.values() ?? [])
+        this.#visit(instance.element, visit);
       const mounted = this.#mounted.get(element);
       if (mounted !== undefined) this.#visit(mounted, visit);
     }
@@ -1606,7 +1835,12 @@ export class Runtime implements Host {
     const found = this.#closest(target, `data-hs-on-${type}`);
     if (found === null) return;
     // Focus moving between two elements inside the handler's element neither enters nor leaves it.
-    if ((type === "focusin" || type === "focusout") && event instanceof FocusEvent && within(found[0], event.relatedTarget)) return;
+    if (
+      (type === "focusin" || type === "focusout") &&
+      event instanceof FocusEvent &&
+      within(found[0], event.relatedTarget)
+    )
+      return;
     if (type === "submit") event.preventDefault();
     this.#runAttribute(found[1], found[0]);
   }
@@ -1637,13 +1871,21 @@ export class Runtime implements Host {
     if (found === null) return;
     const [group, orientation] = found;
     const items = [...group.querySelectorAll<HTMLElement>("[tabindex]")].filter(
-      (item) => item.closest("[data-hs-roving]") === group && !item.matches(":disabled") && item.getAttribute("aria-disabled") !== "true",
+      (item) =>
+        item.closest("[data-hs-roving]") === group &&
+        !item.matches(":disabled") &&
+        item.getAttribute("aria-disabled") !== "true",
     );
     const at = items.findIndex((item) => item.contains(target));
     if (at < 0) return;
     // Left and right trade places in a right-to-left layout, as they do for the reader.
     const rtl = orientation === "horizontal" && getComputedStyle(group).direction === "rtl";
-    const [next, previous] = orientation === "vertical" ? ["ArrowDown", "ArrowUp"] : rtl ? ["ArrowLeft", "ArrowRight"] : ["ArrowRight", "ArrowLeft"];
+    const [next, previous] =
+      orientation === "vertical"
+        ? ["ArrowDown", "ArrowUp"]
+        : rtl
+          ? ["ArrowLeft", "ArrowRight"]
+          : ["ArrowRight", "ArrowLeft"];
     let to: number;
     if (event.key === next) to = (at + 1) % items.length;
     else if (event.key === previous) to = (at - 1 + items.length) % items.length;
@@ -1666,7 +1908,10 @@ export class Runtime implements Host {
     const listbox = this.#findRef(name, target);
     if (listbox === null) return;
     const options = [...listbox.querySelectorAll<HTMLElement>('[role="option"]')].filter(
-      (option) => option.id !== "" && option.getAttribute("aria-disabled") !== "true" && !hiddenWithin(option, listbox),
+      (option) =>
+        option.id !== "" &&
+        option.getAttribute("aria-disabled") !== "true" &&
+        !hiddenWithin(option, listbox),
     );
     const path = resolve(place, this.#context(target, this.#scopeOf(target)));
     const at = options.findIndex((option) => option.id === this.store.get(path));
@@ -1678,7 +1923,8 @@ export class Runtime implements Host {
     }
     let to: number;
     if (event.key === "ArrowDown") to = at < 0 ? 0 : (at + 1) % options.length;
-    else if (event.key === "ArrowUp") to = at < 0 ? options.length - 1 : (at - 1 + options.length) % options.length;
+    else if (event.key === "ArrowUp")
+      to = at < 0 ? options.length - 1 : (at - 1 + options.length) % options.length;
     else return;
     if (options.length === 0) return;
     event.preventDefault();
@@ -1727,7 +1973,9 @@ export class Runtime implements Host {
   #warnDuplicates(element: Element): void {
     for (const el of [element, ...element.querySelectorAll("*")]) {
       if (el.id !== "" && document.querySelectorAll(`[id="${CSS.escape(el.id)}"]`).length > 1) {
-        console.warn(`hypersig: the patch for #${element.id} adds a second element with the id "${el.id}"`);
+        console.warn(
+          `hypersig: the patch for #${element.id} adds a second element with the id "${el.id}"`,
+        );
       }
       for (const attribute of NAMES) {
         const name = el.getAttribute(attribute);
@@ -1737,7 +1985,9 @@ export class Runtime implements Host {
         // A lookup from inside a list item meets the page's elements too, so
         // one page element is too many there, and two are too many outside.
         if (this.#findNamed(attribute, name, el) !== el || onPage.length > (inCopy(el) ? 0 : 1)) {
-          console.warn(`hypersig: the patch for #${element.id} adds a second element with ${attribute}="${name}"`);
+          console.warn(
+            `hypersig: the patch for #${element.id} adds a second element with ${attribute}="${name}"`,
+          );
         }
       }
     }
@@ -1765,7 +2015,10 @@ export class Runtime implements Host {
     if (error !== null) this.store.set(error, message);
     this.#root.dispatchEvent(new CustomEvent("hs-error", { detail: { status, message } }));
     // A message made from an empty body already starts with the status.
-    const answer = status === 0 || message.startsWith(`${status} `) || message === `${status}` ? message : `${status}: ${message}`;
+    const answer =
+      status === 0 || message.startsWith(`${status} `) || message === `${status}`
+        ? message
+        : `${status}: ${message}`;
     console.error(`hypersig: ${method} ${path} failed with ${answer}`);
   }
 
@@ -1799,7 +2052,8 @@ const parsed = new Map<string, unknown>();
 type Shortcut = [key: string, stmt: unknown, modifiers?: string[]];
 
 /** Whether the primary modifier is Meta, as on Apple platforms, rather than Ctrl. */
-const PRIMARY_IS_META = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+const PRIMARY_IS_META =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
 /** Whether `event` is `key` with exactly the `modifiers`, where Shift is compared for a character only when they name it. */
 function pressed(event: KeyboardEvent, key: string, modifiers: readonly string[]): boolean {
@@ -1809,7 +2063,10 @@ function pressed(event: KeyboardEvent, key: string, modifiers: readonly string[]
   if (event.altKey !== modifiers.includes("alt")) return false;
   const shift = modifiers.includes("shift");
   // A character already shows Shift, as `K` and `?` do, and Shift held for one turns `k` into `K`.
-  if (isCharacter(key)) return shift ? event.shiftKey && event.key.toLowerCase() === key.toLowerCase() : event.key === key;
+  if (isCharacter(key))
+    return shift
+      ? event.shiftKey && event.key.toLowerCase() === key.toLowerCase()
+      : event.key === key;
   return event.key === key && event.shiftKey === shift;
 }
 
@@ -1819,7 +2076,18 @@ function isCharacter(key: string): boolean {
 }
 
 /** The `type`s of an `<input>` that holds no text a key edits. */
-const NOT_TEXT = new Set(["button", "checkbox", "color", "file", "hidden", "image", "radio", "range", "reset", "submit"]);
+const NOT_TEXT = new Set([
+  "button",
+  "checkbox",
+  "color",
+  "file",
+  "hidden",
+  "image",
+  "radio",
+  "range",
+  "reset",
+  "submit",
+]);
 /** Keys a text field edits or moves the caret with. */
 const TEXT_KEYS = new Set([" ", "Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End"]);
 /** Keys a field of several lines also uses. */
@@ -1828,7 +2096,9 @@ const LINE_KEYS = new Set(["Enter", "ArrowUp", "ArrowDown"]);
 /** Whether `field` is a text field that acts on `key` by itself, which a shortcut with Ctrl, Alt, Meta, or the primary modifier never is. */
 function editsText(field: Element, key: string, modifiers: readonly string[]): boolean {
   if (modifiers.some((modifier) => modifier !== "shift")) return false;
-  const lines = field instanceof HTMLTextAreaElement || (field instanceof HTMLElement && field.isContentEditable);
+  const lines =
+    field instanceof HTMLTextAreaElement ||
+    (field instanceof HTMLElement && field.isContentEditable);
   if (!lines && !(field instanceof HTMLInputElement && !NOT_TEXT.has(field.type))) return false;
   return isCharacter(key) || TEXT_KEYS.has(key) || (lines && LINE_KEYS.has(key));
 }
@@ -1852,7 +2122,8 @@ function parse(source: string | null): unknown {
 /** The key `DepIndex.select` files a value under. */
 function keyOf(value: unknown): string {
   // `String` writes a finite number or a boolean as `JSON.stringify` does, without its checks for other types.
-  if ((typeof value === "number" && Number.isFinite(value)) || typeof value === "boolean") return String(value);
+  if ((typeof value === "number" && Number.isFinite(value)) || typeof value === "boolean")
+    return String(value);
   return JSON.stringify(value) ?? "undefined";
 }
 
@@ -1955,7 +2226,9 @@ function build(element: Element): Plan | null {
   });
   const reactive = element.matches(REACTIVE);
   const carries = reactive || NAMES.some((attribute) => element.hasAttribute(attribute));
-  return carries || children.length > 0 ? { tag: element.tagName, source: carries ? element : null, reactive, children } : null;
+  return carries || children.length > 0
+    ? { tag: element.tagName, source: carries ? element : null, reactive, children }
+    : null;
 }
 
 /**
@@ -1966,7 +2239,12 @@ function build(element: Element): Plan | null {
  * counting positions, and a child whose tag differs is left out. A clone of
  * the template, not yet rendered into, has the template's children only.
  */
-function locate(plan: Plan, copy: Element, rendered: boolean, found: (element: Element, source: Element, reactive: boolean) => void): void {
+function locate(
+  plan: Plan,
+  copy: Element,
+  rendered: boolean,
+  found: (element: Element, source: Element, reactive: boolean) => void,
+): void {
   if (plan.source !== null) found(copy, plan.source, plan.reactive);
   if (plan.children.length === 0) return;
   // Walks the siblings, because reading `children` makes the element keep an HTMLCollection.
@@ -2003,7 +2281,8 @@ function writes(spec: Spec): [kind: Write, name: string, ast: unknown][] {
 
 /** Whether a binding of `kind` can write to `element`: `show` and `style` need an inline style, `checked` an input. */
 function writable(element: Element, kind: Write): boolean {
-  if (kind === "show" || kind === "style") return element instanceof HTMLElement || element instanceof SVGElement;
+  if (kind === "show" || kind === "style")
+    return element instanceof HTMLElement || element instanceof SVGElement;
   return kind !== "checked" || element instanceof HTMLInputElement;
 }
 
@@ -2019,7 +2298,9 @@ function writable(element: Element, kind: Write): boolean {
  */
 function upgradeTemplates(root: ParentNode): void {
   // The selector's type says HTML, but it also matches the SVG elements this function exists for.
-  const found = [...root.querySelectorAll<Element>("template")].filter((element) => !(element instanceof HTMLTemplateElement));
+  const found = [...root.querySelectorAll<Element>("template")].filter(
+    (element) => !(element instanceof HTMLTemplateElement),
+  );
   for (const svg of found.reverse()) {
     const template = document.createElement("template");
     for (const { name, value } of [...svg.attributes]) template.setAttribute(name, value);
@@ -2037,7 +2318,8 @@ function write(element: Element, kind: Write, name: string, value: unknown): voi
       // an inline style, and from here on `style.display` decides.
       element.removeAttribute("data-hs-hide");
       const next = value ? "" : "none";
-      if ((element as HTMLElement).style.display !== next) (element as HTMLElement).style.display = next;
+      if ((element as HTMLElement).style.display !== next)
+        (element as HTMLElement).style.display = next;
       return;
     }
     case "text": {
@@ -2049,7 +2331,8 @@ function write(element: Element, kind: Write, name: string, value: unknown): voi
       (element as HTMLInputElement).checked = Boolean(value);
       return;
     case "class":
-      if (element.classList.contains(name) !== value) element.classList.toggle(name, Boolean(value));
+      if (element.classList.contains(name) !== value)
+        element.classList.toggle(name, Boolean(value));
       return;
     case "attr": {
       const next = String(value);
@@ -2096,7 +2379,12 @@ function shapeOf(proto: Element, depth: number): Shape {
         if (read.kind === "item" && read.depth === depth) own.push(read.field);
         else if (read.kind === "index" && read.depth === depth) moved |= 1 << index;
         else {
-          const id = read.kind === "sig" ? `s ${read.path}` : read.kind === "item" ? `i ${read.depth} ${read.field}` : `x ${read.depth}`;
+          const id =
+            read.kind === "sig"
+              ? `s ${read.path}`
+              : read.kind === "item"
+                ? `i ${read.depth} ${read.field}`
+                : `x ${read.depth}`;
           const entry = external.get(id);
           if (entry === undefined) external.set(id, [read, 1 << index]);
           else entry[1] |= 1 << index;
@@ -2126,7 +2414,10 @@ function shapeOf(proto: Element, depth: number): Shape {
     whole:
       partsOf.size === reactive &&
       (keyAst === undefined || keyFields !== null) &&
-      !parts.some((part) => part.kind === "each" || (part.kind === "if" && part.proto !== null && bound(part.proto))),
+      !parts.some(
+        (part) =>
+          part.kind === "each" || (part.kind === "if" && part.proto !== null && bound(part.proto)),
+      ),
     masks: new Map(),
   };
   shapes.set(proto, shape);
@@ -2155,33 +2446,61 @@ function sources(plan: Plan, visit: (source: Element) => void): void {
 function partsFor(source: Element, depth: number): [Part, StaticRead[]][] | null {
   const spec = specOf(source);
   if (spec.effects.length > 0 || spec.watches.length > 0) return null;
-  const started = ["data-hs-on-load", "data-hs-on-interval", "data-hs-on-timeout", "data-hs-on-visible"];
+  const started = [
+    "data-hs-on-load",
+    "data-hs-on-interval",
+    "data-hs-on-timeout",
+    "data-hs-on-visible",
+  ];
   if (started.some((name) => source.hasAttribute(name))) return null;
   const found: [Part, StaticRead[]][] = [];
   if (spec.each !== undefined) {
     // A nested list over a field of this item runs as a part. A rerun its items' keys ask for marks the part through `Row.lists`.
     const read = placeRead(spec.each[0]);
-    if (read?.kind !== "item" || read.depth !== depth || spec.proto === null || !(source instanceof HTMLTemplateElement)) return null;
-    found.push([{ kind: "each", name: "", ast: spec.each, value: null, selector: null, proto: spec.proto }, [read]]);
+    if (
+      read?.kind !== "item" ||
+      read.depth !== depth ||
+      spec.proto === null ||
+      !(source instanceof HTMLTemplateElement)
+    )
+      return null;
+    found.push([
+      { kind: "each", name: "", ast: spec.each, value: null, selector: null, proto: spec.proto },
+      [read],
+    ]);
   }
   const conditions: [Part["kind"], string, unknown][] = writes(spec);
-  if (spec.cond !== undefined && source instanceof HTMLTemplateElement) conditions.push(["if", "", spec.cond]);
+  if (spec.cond !== undefined && source instanceof HTMLTemplateElement)
+    conditions.push(["if", "", spec.cond]);
   for (const [kind, name, ast] of conditions) {
     const reads = staticReads(ast);
-    if (reads === null || reads.some((read) => read.kind !== "sig" && read.depth > depth)) return null;
+    if (reads === null || reads.some((read) => read.kind !== "sig" && read.depth > depth))
+      return null;
     const compared = CONDITIONS.has(kind) ? comparison(ast) : null;
     const otherReads = compared === null ? null : staticReads(compared[1]);
-    if (otherReads !== null && otherReads.every((read) => read.kind === "item" && read.depth === depth)) {
+    if (
+      otherReads !== null &&
+      otherReads.every((read) => read.kind === "item" && read.depth === depth)
+    ) {
       const selector = { path: compared![0], other: compile(compared![1]) };
-      found.push([{ kind, name, ast, value: compile(ast), selector, proto: spec.proto }, otherReads]);
+      found.push([
+        { kind, name, ast, value: compile(ast), selector, proto: spec.proto },
+        otherReads,
+      ]);
     } else {
-      found.push([{ kind, name, ast, value: compile(ast), selector: null, proto: spec.proto }, reads]);
+      found.push([
+        { kind, name, ast, value: compile(ast), selector: null, proto: spec.proto },
+        reads,
+      ]);
     }
   }
   if (spec.bind !== undefined) {
     const read = placeRead(spec.bind[0]);
     if (read === null || (read.kind === "item" && read.depth > depth)) return null;
-    found.push([{ kind: "bind", name: "", ast: spec.bind, value: null, selector: null, proto: null }, [read]]);
+    found.push([
+      { kind: "bind", name: "", ast: spec.bind, value: null, selector: null, proto: null },
+      [read],
+    ]);
   }
   return found;
 }
@@ -2239,9 +2558,15 @@ function unfileRow(selection: Selection, key: string, row: Row): void {
  * place where their old positions increase along `order`, the longest such
  * run, and the rest are inserted around them.
  */
-function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, Instance>, order: readonly Instance[]): void {
+function arrange(
+  parent: Node,
+  template: Element,
+  previous: ReadonlyMap<string, Instance>,
+  order: readonly Instance[],
+): void {
   const placed: Instance[] = [];
-  for (const instance of previous.values()) if (instance.element.parentNode === parent) placed.push(instance);
+  for (const instance of previous.values())
+    if (instance.element.parentNode === parent) placed.push(instance);
   if (placed.length === 0) {
     // Nothing stays, so the items go in together, as one insertion into the document.
     const fragment = document.createDocumentFragment();
@@ -2253,12 +2578,24 @@ function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, 
   let start = 0;
   while (start < order.length && start < placed.length && order[start] === placed[start]) start++;
   let end = 0;
-  while (end < order.length - start && end < placed.length - start && order[order.length - 1 - end] === placed[placed.length - 1 - end]) end++;
+  while (
+    end < order.length - start &&
+    end < placed.length - start &&
+    order[order.length - 1 - end] === placed[placed.length - 1 - end]
+  )
+    end++;
   const positions = new Map<Instance, number>();
   for (let at = start; at < placed.length - end; at++) positions.set(placed[at]!, at);
-  const stay = increasing(order.slice(start, order.length - end).map((instance) => positions.get(instance) ?? -1));
+  const stay = increasing(
+    order.slice(start, order.length - end).map((instance) => positions.get(instance) ?? -1),
+  );
   const last = placed.at(-1)?.element;
-  let before: Node | null = end > 0 ? order[order.length - end]!.element : last === undefined ? template.nextSibling : last.nextSibling;
+  let before: Node | null =
+    end > 0
+      ? order[order.length - end]!.element
+      : last === undefined
+        ? template.nextSibling
+        : last.nextSibling;
   for (let index = order.length - 1 - end; index >= start; index--) {
     const element = order[index]!.element;
     if (!stay.has(index - start)) parent.insertBefore(element, before);
@@ -2268,7 +2605,8 @@ function arrange(parent: Node, template: Element, previous: ReadonlyMap<string, 
 
 /** Whether `parent` holds `template` followed by the items' elements in order, and nothing else. */
 function filling(parent: Node, template: Element, instances: readonly Instance[]): boolean {
-  if (parent.firstChild !== template || parent.lastChild !== instances.at(-1)!.element) return false;
+  if (parent.firstChild !== template || parent.lastChild !== instances.at(-1)!.element)
+    return false;
   let at: Node | null = template;
   for (const instance of instances) {
     at = at.nextSibling;
@@ -2303,7 +2641,8 @@ function increasing(values: readonly number[]): Set<number> {
     tails[low] = index;
   });
   const run = new Set<number>();
-  for (let at = tails.length === 0 ? -1 : tails[tails.length - 1]!; at !== -1; at = previous[at]!) run.add(at);
+  for (let at = tails.length === 0 ? -1 : tails[tails.length - 1]!; at !== -1; at = previous[at]!)
+    run.add(at);
   return run;
 }
 
@@ -2312,7 +2651,11 @@ function increasing(values: readonly number[]): Set<number> {
  * their order after them, the function that scrolls them back to where they
  * were on screen once the new items are in the document. Null otherwise.
  */
-function prepended(known: ReadonlyMap<string, Instance>, order: readonly Instance[], created: ReadonlySet<Instance>): (() => void) | null {
+function prepended(
+  known: ReadonlyMap<string, Instance>,
+  order: readonly Instance[],
+  created: ReadonlySet<Instance>,
+): (() => void) | null {
   const first = known.values().next().value;
   if (first === undefined || !first.element.isConnected) return null;
   const at = order.indexOf(first);
@@ -2328,7 +2671,12 @@ function prepended(known: ReadonlyMap<string, Instance>, order: readonly Instanc
  * rendered at its previous length, so the items it holds are unchanged and
  * still sit at the same paths.
  */
-function appended(changes: Changes, path: string, known: ReadonlyMap<string, Instance>, length: number): boolean {
+function appended(
+  changes: Changes,
+  path: string,
+  known: ReadonlyMap<string, Instance>,
+  length: number,
+): boolean {
   if (changes.get(path) !== false || length < known.size) return false;
   const prefix = `${path}.`;
   for (const changed of changes.keys()) {
@@ -2345,7 +2693,12 @@ function appended(changes: Changes, path: string, known: ReadonlyMap<string, Ins
  * the list. The items at the other positions are unchanged and still sit at
  * the same paths. Null where the changes did more, or reached most items.
  */
-function replaced(changes: Changes, path: string, known: ReadonlyMap<string, Instance>, length: number): Set<number> | null {
+function replaced(
+  changes: Changes,
+  path: string,
+  known: ReadonlyMap<string, Instance>,
+  length: number,
+): Set<number> | null {
   if (changes.get(path) !== false || length !== known.size) return null;
   const prefix = `${path}.`;
   const touched = new Set<number>();
@@ -2377,7 +2730,11 @@ function inPlace(path: string, known: ReadonlyMap<string, Instance>): boolean {
 /** Whether `element`, or an element between it and `root`, is hidden by `data-hs-show` or the `hidden` attribute. */
 function hiddenWithin(element: HTMLElement, root: Element): boolean {
   for (let at: Element | null = element; at !== null && at !== root; at = at.parentElement) {
-    if (at instanceof HTMLElement && (at.hidden || at.style.display === "none" || at.hasAttribute("data-hs-hide"))) return true;
+    if (
+      at instanceof HTMLElement &&
+      (at.hidden || at.style.display === "none" || at.hasAttribute("data-hs-hide"))
+    )
+      return true;
   }
   return false;
 }

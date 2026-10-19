@@ -97,8 +97,14 @@ function queryString(value: unknown): string {
     .sort()
     .flatMap((name) => {
       const field = fields[name];
-      const values = Array.isArray(field) ? field : field === null || field === undefined ? [] : [field];
-      return values.map((item) => `${encodeURIComponent(name)}=${encodeURIComponent(String(item))}`);
+      const values = Array.isArray(field)
+        ? field
+        : field === null || field === undefined
+          ? []
+          : [field];
+      return values.map(
+        (item) => `${encodeURIComponent(name)}=${encodeURIComponent(String(item))}`,
+      );
     });
   return pairs.length === 0 ? "" : `?${pairs.join("&")}`;
 }
@@ -107,7 +113,14 @@ function queryString(value: unknown): string {
  * A number written as `format_number` in `crates/hypersig/src/ssr.rs` writes it: rounded by `toFixed`,
  * its whole part grouped by threes, a minus sign only where a digit is not zero, then the affixes.
  */
-function formatNumber(value: number, digits: number, group: string, point: string, prefix: string, suffix: string): string {
+function formatNumber(
+  value: number,
+  digits: number,
+  group: string,
+  point: string,
+  prefix: string,
+  suffix: string,
+): string {
   if (!Number.isFinite(value)) return `${prefix}${String(value)}${suffix}`;
   const fixed = Math.abs(value).toFixed(digits);
   const sign = value < 0 && /[1-9]/.test(fixed) ? "-" : "";
@@ -197,7 +210,8 @@ function slot(ctx: Context, depth: unknown): Slot {
 /** The store path a place names: `"a.b"` for a page signal, `["item",depth,"a"]` for an item field. */
 export function resolve(place: unknown, ctx: Context): string {
   if (typeof place === "string") return place;
-  if (isAst(place) && place[0] === "item") return join(slot(ctx, place[1]).path, place[2] as string);
+  if (isAst(place) && place[0] === "item")
+    return join(slot(ctx, place[1]).path, place[2] as string);
   throw new AstError(place);
 }
 
@@ -230,7 +244,12 @@ function walker(path: string, read: string): [slot: Slot, at: (index: number) =>
 }
 
 /** Whether `test` holds for each item of the list at `path`, with one context reused for every item. */
-function testItems(ctx: Context, depth: number, [path, items, read]: [string, readonly unknown[], string], test: Compiled): boolean[] {
+function testItems(
+  ctx: Context,
+  depth: number,
+  [path, items, read]: [string, readonly unknown[], string],
+  test: Compiled,
+): boolean[] {
   const [slot, at] = walker(path, read);
   const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
   return items.map((_, index) => {
@@ -240,12 +259,24 @@ function testItems(ctx: Context, depth: number, [path, items, read]: [string, re
 }
 
 /** The key of each item of the list at `path`, as `JSON.stringify` writes it, the way a keyed list compares keys. */
-function itemKeys(ctx: Context, depth: number, found: [string, readonly unknown[], string], key: Compiled): string[] {
-  return ctx.store.untracked(() => mapItems(ctx, depth, found, key).map((value) => JSON.stringify(value)));
+function itemKeys(
+  ctx: Context,
+  depth: number,
+  found: [string, readonly unknown[], string],
+  key: Compiled,
+): string[] {
+  return ctx.store.untracked(() =>
+    mapItems(ctx, depth, found, key).map((value) => JSON.stringify(value)),
+  );
 }
 
 /** The value of `each` for each item of the list at `path`, with one context reused for every item. */
-function mapItems(ctx: Context, depth: number, [path, items, read]: [string, readonly unknown[], string], each: Compiled): unknown[] {
+function mapItems(
+  ctx: Context,
+  depth: number,
+  [path, items, read]: [string, readonly unknown[], string],
+  each: Compiled,
+): unknown[] {
   const [slot, at] = walker(path, read);
   const itemCtx: Context = { ...ctx, scope: [...ctx.scope.slice(0, depth), slot] };
   return items.map((_, index) => {
@@ -257,8 +288,10 @@ function mapItems(ctx: Context, depth: number, [path, items, read]: [string, rea
 /** How `sum_of`, `max_of`, and `min_of` fold the values of a list, as `fold` in `ssr.rs` does. */
 const folds: Record<string, (values: number[]) => number | null> = {
   sum_of: (values) => values.reduce((sum, value) => sum + value, 0),
-  max_of: (values) => (values.length === 0 ? null : values.reduce((max, value) => Math.max(max, value))),
-  min_of: (values) => (values.length === 0 ? null : values.reduce((min, value) => Math.min(min, value))),
+  max_of: (values) =>
+    values.length === 0 ? null : values.reduce((max, value) => Math.max(max, value)),
+  min_of: (values) =>
+    values.length === 0 ? null : values.reduce((min, value) => Math.min(min, value)),
 };
 
 export type Compiled = (ctx: Context) => unknown;
@@ -350,12 +383,23 @@ function build(ast: Ast): Compiled {
     }
     case "format": {
       const value = compile(rest[0]);
-      const [digits, group, point, prefix, suffix] = rest.slice(1) as [number, string, string, string, string];
+      const [digits, group, point, prefix, suffix] = rest.slice(1) as [
+        number,
+        string,
+        string,
+        string,
+        string,
+      ];
       return (ctx) => formatNumber(value(ctx) as number, digits, group, point, prefix, suffix);
     }
     case "date": {
       const value = compile(rest[0]);
-      const [locale, dateStyle, timeStyle, offset] = rest.slice(1) as [string, DateStyle | null, DateStyle | null, number | null];
+      const [locale, dateStyle, timeStyle, offset] = rest.slice(1) as [
+        string,
+        DateStyle | null,
+        DateStyle | null,
+        number | null,
+      ];
       const options: Intl.DateTimeFormatOptions = {};
       if (dateStyle !== null) options.dateStyle = dateStyle;
       if (timeStyle !== null) options.timeStyle = timeStyle;
@@ -366,15 +410,25 @@ function build(ast: Ast): Compiled {
       return (ctx) => format.format((value(ctx) as number) + shift);
     }
     case "reltime": {
-      const [value, now, format] = [compile(rest[0]), compile(rest[1]), new Intl.RelativeTimeFormat(rest[2] as string)];
+      const [value, now, format] = [
+        compile(rest[0]),
+        compile(rest[1]),
+        new Intl.RelativeTimeFormat(rest[2] as string),
+      ];
       return (ctx) => {
         const millis = (value(ctx) as number) - (now(ctx) as number);
-        const [length, unit] = relativeUnits.find(([length]) => Math.abs(millis) >= length) ?? relativeUnits[relativeUnits.length - 1]!;
+        const [length, unit] =
+          relativeUnits.find(([length]) => Math.abs(millis) >= length) ??
+          relativeUnits[relativeUnits.length - 1]!;
         return format.format(Math.trunc(millis / length), unit);
       };
     }
     case "plural": {
-      const [value, rules, forms] = [compile(rest[0]), new Intl.PluralRules(rest[1] as string), (rest[2] as unknown[]).map(compile)];
+      const [value, rules, forms] = [
+        compile(rest[0]),
+        new Intl.PluralRules(rest[1] as string),
+        (rest[2] as unknown[]).map(compile),
+      ];
       return (ctx) => {
         const form = forms[pluralCategories.indexOf(rules.select(value(ctx) as number))];
         if (form === undefined) throw new AstError(ast);
@@ -401,7 +455,8 @@ function build(ast: Ast): Compiled {
       const [place, depth, test] = [rest[0], rest[1] as number, compile(rest[2])];
       return (ctx) => {
         const found = list(ctx, place);
-        return ctx.store.fold(found[2], () => testItems(ctx, depth, found, test)).filter(Boolean).length;
+        return ctx.store.fold(found[2], () => testItems(ctx, depth, found, test)).filter(Boolean)
+          .length;
       };
     }
     case "map": {
@@ -414,10 +469,17 @@ function build(ast: Ast): Compiled {
     case "sum_of":
     case "max_of":
     case "min_of": {
-      const [place, depth, each, combine] = [rest[0], rest[1] as number, compile(rest[2]), folds[op]!];
+      const [place, depth, each, combine] = [
+        rest[0],
+        rest[1] as number,
+        compile(rest[2]),
+        folds[op]!,
+      ];
       return (ctx) => {
         const found = list(ctx, place);
-        return combine(ctx.store.fold(found[2], () => mapItems(ctx, depth, found, each)) as number[]);
+        return combine(
+          ctx.store.fold(found[2], () => mapItems(ctx, depth, found, each)) as number[],
+        );
       };
     }
     default: {
@@ -441,7 +503,11 @@ function build(ast: Ast): Compiled {
  * items and `let` values, and the error statement reads the error text as
  * the `let` value at `depth`.
  */
-function outcomes(spec: unknown, ctx: Context, host: Host): Pick<CallOptions, "failed" | "succeeded" | "part"> {
+function outcomes(
+  spec: unknown,
+  ctx: Context,
+  host: Host,
+): Pick<CallOptions, "failed" | "succeeded" | "part"> {
   if (spec === null || typeof spec !== "object") return {};
   const { error, ok, part } = spec as { error?: [number, unknown]; ok?: unknown; part?: string };
   const report = (cause: unknown): void => console.error("hypersig:", cause);
@@ -493,13 +559,15 @@ export function run(ast: unknown, ctx: Context, host: Host): void {
     case "append": {
       const [path, items] = list(ctx, rest[0]);
       const added = evaluate(rest[1], ctx);
-      if (Array.isArray(added) && added.length > 0) store.set(path, [...items, ...(added as unknown[])]);
+      if (Array.isArray(added) && added.length > 0)
+        store.set(path, [...items, ...(added as unknown[])]);
       return;
     }
     case "prepend": {
       const [path, items] = list(ctx, rest[0]);
       const added = evaluate(rest[1], ctx);
-      if (Array.isArray(added) && added.length > 0) store.set(path, [...(added as unknown[]), ...items]);
+      if (Array.isArray(added) && added.length > 0)
+        store.set(path, [...(added as unknown[]), ...items]);
       return;
     }
     case "upsert": {
@@ -509,8 +577,19 @@ export function run(ast: unknown, ctx: Context, host: Host): void {
       if (!Array.isArray(added) || added.length === 0) return;
       // The key may read the item and the page's signals, so the added items are keyed in a copy of the store that holds them after the list's items.
       const all = [...items, ...(added as unknown[])];
-      const copy = new Store(setPath(store.untracked(() => store.get("")), path, all) as Values);
-      const keys = itemKeys({ ...ctx, store: copy }, rest[1] as number, [path, all, read], compile(rest[2]));
+      const copy = new Store(
+        setPath(
+          store.untracked(() => store.get("")),
+          path,
+          all,
+        ) as Values,
+      );
+      const keys = itemKeys(
+        { ...ctx, store: copy },
+        rest[1] as number,
+        [path, all, read],
+        compile(rest[2]),
+      );
       const next = [...items];
       const at = new Map<string, number>();
       items.forEach((_, index) => {
@@ -542,7 +621,11 @@ export function run(ast: unknown, ctx: Context, host: Host): void {
     case "remove": {
       const [path, items] = list(ctx, rest[0]);
       const index = evaluate(rest[1], ctx) as number;
-      if (index >= 0 && index < items.length) store.set(path, items.filter((_, i) => i !== index));
+      if (index >= 0 && index < items.length)
+        store.set(
+          path,
+          items.filter((_, i) => i !== index),
+        );
       return;
     }
     case "retain": {
@@ -606,8 +689,14 @@ export function run(ast: unknown, ctx: Context, host: Host): void {
         return key(itemCtx) as number | string;
       });
       const sign = rest[3] === true ? -1 : 1;
-      const order = items.map((_, index) => index).sort((a, b) => (keys[a]! < keys[b]! ? -sign : keys[a]! > keys[b]! ? sign : a - b));
-      if (order.some((at, index) => at !== index)) store.set(path, order.map((at) => items[at]));
+      const order = items
+        .map((_, index) => index)
+        .sort((a, b) => (keys[a]! < keys[b]! ? -sign : keys[a]! > keys[b]! ? sign : a - b));
+      if (order.some((at, index) => at !== index))
+        store.set(
+          path,
+          order.map((at) => items[at]),
+        );
       return;
     }
     case "set_all": {
@@ -630,7 +719,14 @@ export function run(ast: unknown, ctx: Context, host: Host): void {
         origin: ctx.origin,
         ...outcomes(rest[6], ctx, host),
       };
-      void host.call(rest[0] as string, rest[1] as string, args, rest[3] as string | null, rest[4] as string | null, options);
+      void host.call(
+        rest[0] as string,
+        rest[1] as string,
+        args,
+        rest[3] as string | null,
+        rest[4] as string | null,
+        options,
+      );
       return;
     }
     case "upload": {
@@ -645,7 +741,14 @@ export function run(ast: unknown, ctx: Context, host: Host): void {
         files: rest[4] as string,
         ...outcomes(rest[6], ctx, host),
       };
-      void host.call("POST", rest[0] as string, args, rest[2] as string | null, rest[3] as string | null, options);
+      void host.call(
+        "POST",
+        rest[0] as string,
+        args,
+        rest[2] as string | null,
+        rest[3] as string | null,
+        options,
+      );
       return;
     }
     case "let": {

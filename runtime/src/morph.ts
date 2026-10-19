@@ -15,10 +15,16 @@ export type Drawn = (template: HTMLTemplateElement) => ReadonlySet<Element> | un
  * `removed`. One of them can be back in the document by the time `morph`
  * returns, where a later child with the same id moved it there.
  */
-export function morph(from: Element, to: Element, removed: Element[] = [], drawn: Drawn = () => undefined): Element {
+export function morph(
+  from: Element,
+  to: Element,
+  removed: Element[] = [],
+  drawn: Drawn = () => undefined,
+): Element {
   if (
     from.tagName !== to.tagName ||
-    (from instanceof HTMLTemplateElement && from.innerHTML !== (to as HTMLTemplateElement).innerHTML)
+    (from instanceof HTMLTemplateElement &&
+      from.innerHTML !== (to as HTMLTemplateElement).innerHTML)
   ) {
     from.replaceWith(to);
     removed.push(from);
@@ -68,7 +74,8 @@ function morphChildren(from: Element, to: Element, removed: Element[], drawn: Dr
     }
     let after = kept.nextSibling;
     const own = kept === current && kept instanceof HTMLTemplateElement ? drawn(kept) : undefined;
-    if (own !== undefined) while (after instanceof Element && own.has(after)) after = after.nextSibling;
+    if (own !== undefined)
+      while (after instanceof Element && own.has(after)) after = after.nextSibling;
     current = after;
   }
   const rest: ChildNode[] = [];

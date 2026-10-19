@@ -59,7 +59,12 @@ it("records a push as the list replaced and the new item changed", () => {
   });
   store.set("todos", [...(store.get("todos") as unknown[]), { done: false }]);
   return Promise.resolve().then(() => {
-    expect(seen).toEqual(new Map([["todos", false], ["todos.2", true]]));
+    expect(seen).toEqual(
+      new Map([
+        ["todos", false],
+        ["todos.2", true],
+      ]),
+    );
   });
 });
 
@@ -114,17 +119,28 @@ describe("ChangeLookup", () => {
   it("answers as affects does for one read", () => {
     const paths = ["a", "b", "a.0", "a.1", "a.0.x", "a.0.y", "a.1.x", "b.c", "b.c.d"];
     const cases: [string, boolean][][] = [
-      [["a", false], ["a.0", true]],
+      [
+        ["a", false],
+        ["a.0", true],
+      ],
       [["a", true]],
       [["a.0.x", true]],
-      [["b.c", false], ["b.c.d", true], ["a.1", true]],
+      [
+        ["b.c", false],
+        ["b.c.d", true],
+        ["a.1", true],
+      ],
     ];
     for (const entries of cases) {
       const changes = new Map(entries);
       const lookup = new ChangeLookup(changes);
       for (const read of paths) {
         for (const deep of [true, false]) {
-          expect([read, deep, lookup.affects(read, deep)]).toEqual([read, deep, affects(new Map([[read, deep]]), changes)]);
+          expect([read, deep, lookup.affects(read, deep)]).toEqual([
+            read,
+            deep,
+            affects(new Map([[read, deep]]), changes),
+          ]);
         }
       }
     }

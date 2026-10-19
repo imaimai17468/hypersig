@@ -6,7 +6,10 @@ import { Runtime } from "../src/runtime.ts";
 /** Mounts a fixture written by `crates/hypersig/tests/fixtures.rs`. */
 function mount(name: string): Runtime {
   const path = resolve(__dirname, `fixtures/${name}.json`);
-  const { html, signals } = JSON.parse(readFileSync(path, "utf8")) as { html: string; signals: Record<string, unknown> };
+  const { html, signals } = JSON.parse(readFileSync(path, "utf8")) as {
+    html: string;
+    signals: Record<string, unknown>;
+  };
   const root = document.createElement("div");
   root.innerHTML = html;
   document.body.replaceChildren(root);
@@ -14,7 +17,8 @@ function mount(name: string): Runtime {
 }
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
-const $ = <E extends Element = HTMLElement>(selector: string) => document.querySelector<E>(selector)!;
+const $ = <E extends Element = HTMLElement>(selector: string) =>
+  document.querySelector<E>(selector)!;
 const $$ = (selector: string) => [...document.querySelectorAll<HTMLElement>(selector)];
 
 /** The store paths `runtime` reads from now on, whatever name it records each read under. */
@@ -45,7 +49,9 @@ function type(input: HTMLInputElement | HTMLSelectElement, value: string, event 
 }
 
 function key(target: Element, name: string): void {
-  target.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+  target.dispatchEvent(
+    new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }),
+  );
 }
 
 afterEach(() => {
@@ -246,7 +252,14 @@ describe("roving focus", () => {
     expect(runtime.store.get("taken")).toBe(1);
 
     $("#tab0").focus();
-    $("#tab0").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", altKey: true, bubbles: true, cancelable: true }));
+    $("#tab0").dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        altKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
     expect(document.activeElement?.id).toBe("tab0");
   });
 
@@ -315,7 +328,9 @@ describe("node refs", () => {
     menu.hidePopover = hide;
     let open = false;
     const matches = menu.matches.bind(menu);
-    vi.spyOn(menu, "matches").mockImplementation((selector: string) => (selector === ":popover-open" ? open : matches(selector)));
+    vi.spyOn(menu, "matches").mockImplementation((selector: string) =>
+      selector === ":popover-open" ? open : matches(selector),
+    );
     key($("#item0"), "Tab");
     await tick();
     expect(hide).not.toHaveBeenCalled();
@@ -323,7 +338,9 @@ describe("node refs", () => {
     key($("#item0"), "Tab");
     await tick();
     expect(hide).toHaveBeenCalledOnce();
-    $("#item0").dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true }));
+    $("#item0").dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true }),
+    );
     await tick();
     expect(hide).toHaveBeenCalledTimes(2);
   });
@@ -336,7 +353,9 @@ describe("node refs", () => {
     menu.showPopover = show;
     let open = true;
     const matches = menu.matches.bind(menu);
-    vi.spyOn(menu, "matches").mockImplementation((selector: string) => (selector === ":popover-open" ? open : matches(selector)));
+    vi.spyOn(menu, "matches").mockImplementation((selector: string) =>
+      selector === ":popover-open" ? open : matches(selector),
+    );
     key($("#item0"), "Enter");
     await tick();
     expect(show).not.toHaveBeenCalled();
@@ -386,7 +405,10 @@ describe("timers, effects, and calls", () => {
 
   it("sets the indicator during a call and the error after a failed one", async () => {
     let finish: (response: Response) => void = () => {};
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((resolve) => (finish = resolve))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((resolve) => (finish = resolve))),
+    );
     vi.spyOn(console, "error").mockImplementation(() => {});
     const runtime = mount("timers");
     $("#save").click();
@@ -395,7 +417,9 @@ describe("timers, effects, and calls", () => {
     finish(new Response("You can keep 3 notes.\n", { status: 409 }));
     await vi.waitFor(() => expect(runtime.store.get("saving")).toBe(false));
     expect(runtime.store.get("error")).toBe("You can keep 3 notes.");
-    expect(console.error).toHaveBeenCalledWith("hypersig: POST /search failed with 409: You can keep 3 notes.");
+    expect(console.error).toHaveBeenCalledWith(
+      "hypersig: POST /search failed with 409: You can keep 3 notes.",
+    );
   });
 
   it("writes the status and its reason to the error when the failed answer has no body", async () => {
@@ -407,7 +431,9 @@ describe("timers, effects, and calls", () => {
     const runtime = mount("timers");
     $("#save").click();
     await vi.waitFor(() => expect(runtime.store.get("error")).toBe("502 Bad Gateway"));
-    expect(console.error).toHaveBeenCalledWith("hypersig: POST /search failed with 502 Bad Gateway");
+    expect(console.error).toHaveBeenCalledWith(
+      "hypersig: POST /search failed with 502 Bad Gateway",
+    );
   });
 
   it("aborts the earlier latest call and applies only the newer answer", async () => {
@@ -415,7 +441,9 @@ describe("timers, effects, and calls", () => {
     const fetch = vi.fn(
       (_url: URL, init: RequestInit) =>
         new Promise<Response>((resolve, reject) => {
-          init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
           answers.push(resolve);
         }),
     );
@@ -438,7 +466,9 @@ describe("timers, effects, and calls", () => {
     const fetch = vi
       .fn()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
-      .mockResolvedValueOnce(new Response('event: hs-signals\ndata: {"found":"back"}\n\n', { status: 200 }));
+      .mockResolvedValueOnce(
+        new Response('event: hs-signals\ndata: {"found":"back"}\n\n', { status: 200 }),
+      );
     vi.stubGlobal("fetch", fetch);
     const runtime = mount("timers");
     $("#follow").click();
@@ -455,12 +485,14 @@ describe("call outcomes", () => {
   it("marks only the line whose call failed, with the values named when it was sent", async () => {
     const answers = new Map<string, (response: Response) => void>();
     const fetch = vi.fn(
-      (_url: URL, init: RequestInit) => new Promise<Response>((resolve) => answers.set(String(init.body), resolve)),
+      (_url: URL, init: RequestInit) =>
+        new Promise<Response>((resolve) => answers.set(String(init.body), resolve)),
     );
     vi.stubGlobal("fetch", fetch);
     vi.spyOn(console, "error").mockImplementation(() => {});
     const runtime = mount("outbox");
-    const states = () => (runtime.store.get("letters") as { state: string }[]).map((letter) => letter.state);
+    const states = () =>
+      (runtime.store.get("letters") as { state: string }[]).map((letter) => letter.state);
     type($<HTMLInputElement>("#draft"), "first");
     $("#send").click();
     await tick();
@@ -486,7 +518,9 @@ describe("parts", () => {
   it("reads and writes a part's signals under its field, and tells the server the field", async () => {
     const fetch = vi.fn(
       async (_url: URL, _init: RequestInit) =>
-        new Response('event: hs-signals\ndata: {"footer.status":"Subscribed"}\n\n', { status: 200 }),
+        new Response('event: hs-signals\ndata: {"footer.status":"Subscribed"}\n\n', {
+          status: 200,
+        }),
     );
     vi.stubGlobal("fetch", fetch);
     const runtime = mount("storefront");
@@ -538,9 +572,14 @@ describe("list statements and browser values", () => {
     await tick();
     const ten = $$("#lines li");
     const moves = vi.spyOn($("#lines"), "insertBefore");
-    runtime.store.set("lines", lines.map((line, index) => lines[index === 1 ? 8 : index === 8 ? 1 : index]!));
+    runtime.store.set(
+      "lines",
+      lines.map((line, index) => lines[index === 1 ? 8 : index === 8 ? 1 : index]!),
+    );
     await tick();
-    expect($$("#lines li")).toEqual(ten.map((_, index) => ten[index === 1 ? 8 : index === 8 ? 1 : index]));
+    expect($$("#lines li")).toEqual(
+      ten.map((_, index) => ten[index === 1 ? 8 : index === 8 ? 1 : index]),
+    );
     expect(moves).toHaveBeenCalledTimes(2);
 
     $("#stamp").click();
@@ -581,7 +620,9 @@ describe("list patches", () => {
     runtime.apply(remove!);
     await tick();
     expect(bodies()).toEqual(["zero", "one!", "four"]);
-    expect((runtime.store.get("notes") as { id: number }[]).map((note) => note.id)).toEqual([0, 1, 4]);
+    expect((runtime.store.get("notes") as { id: number }[]).map((note) => note.id)).toEqual([
+      0, 1, 4,
+    ]);
   });
 
   it("prepends items in the browser and scrolls the page back to the items that were in view", async () => {
@@ -686,7 +727,6 @@ describe("dependency tracking", () => {
     expect($$("#list li label").map((label) => label.textContent)).toEqual(["b"]);
   });
 
-
   it("does not rerun the bindings of the other items when an item is pushed", async () => {
     const runtime = mount("todos");
     runtime.store.set("todos", [
@@ -696,7 +736,10 @@ describe("dependency tracking", () => {
     await tick();
     const get = runtime.store.get.bind(runtime.store);
     const reads = spyReads(runtime);
-    runtime.store.set("todos", [...(get("todos") as unknown[]), { id: 3, title: "c", done: false }]);
+    runtime.store.set("todos", [
+      ...(get("todos") as unknown[]),
+      { id: 3, title: "c", done: false },
+    ]);
     await tick();
     expect($$("#list li label").map((label) => label.textContent)).toEqual(["a", "b", "c"]);
     expect(reads.filter((path) => /^todos\.[01]\.(id|title)$/.test(path))).toEqual([]);
@@ -721,7 +764,8 @@ describe("dependency tracking", () => {
     const observer = new MutationObserver((records) => {
       for (const record of records) written.add(record.target);
     });
-    for (const label of labels) observer.observe(label, { childList: true, characterData: true, subtree: true });
+    for (const label of labels)
+      observer.observe(label, { childList: true, characterData: true, subtree: true });
     runtime.store.set("draft", "typing");
     await tick();
     expect(written.size).toBe(0);
@@ -742,16 +786,22 @@ function serve(name: string): void {
   for (const old of document.head.querySelectorAll("style")) old.remove();
   document.head.append(...parsed.head.querySelectorAll("style"));
   for (const { name } of [...document.body.attributes]) document.body.removeAttribute(name);
-  for (const { name, value } of [...parsed.body.attributes]) document.body.setAttribute(name, value);
+  for (const { name, value } of [...parsed.body.attributes])
+    document.body.setAttribute(name, value);
   document.title = parsed.title;
 }
 
 function start(): Runtime {
-  return new Runtime(document.body, JSON.parse(document.body.getAttribute("data-hs-signals")!) as Record<string, unknown>);
+  return new Runtime(
+    document.body,
+    JSON.parse(document.body.getAttribute("data-hs-signals")!) as Record<string, unknown>,
+  );
 }
 
 describe("shortcuts", () => {
-  const primary = /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true };
+  const primary = /Mac|iPhone|iPad|iPod/.test(navigator.platform)
+    ? { metaKey: true }
+    : { ctrlKey: true };
 
   function press(target: Element, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
     const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...init });
@@ -916,11 +966,17 @@ describe("links", () => {
     runtime.store.set("filter.color", ["blue"]);
     await tick();
     expect($$("#members a")[0]!.getAttribute("href")).toBe("/teams/blue/members/1");
-    expect($$("#members a")[1]!.getAttribute("href")).toBe("/teams/blue?open=true&page=1&q=a%20b%26c%3Dd%23%C3%A9");
-    expect($("#search-bound").getAttribute("href")).toBe("/search?color=blue&open=true&page=3&q=a%20b%26c%3Dd%23%C3%A9");
+    expect($$("#members a")[1]!.getAttribute("href")).toBe(
+      "/teams/blue?open=true&page=1&q=a%20b%26c%3Dd%23%C3%A9",
+    );
+    expect($("#search-bound").getAttribute("href")).toBe(
+      "/search?color=blue&open=true&page=3&q=a%20b%26c%3Dd%23%C3%A9",
+    );
     runtime.store.set("filter.color", []);
     await tick();
-    expect($("#search-bound").getAttribute("href")).toBe("/search?open=true&page=3&q=a%20b%26c%3Dd%23%C3%A9");
+    expect($("#search-bound").getAttribute("href")).toBe(
+      "/search?open=true&page=3&q=a%20b%26c%3Dd%23%C3%A9",
+    );
     runtime.store.set("file", "x/y z/");
     await tick();
     expect($("#file-bound").getAttribute("href")).toBe("/files/x/y%20z/");
@@ -945,7 +1001,9 @@ describe("links", () => {
     expect(shown()).toBe($("#file-bound").getAttribute("href"));
     expect(history.length).toBe(length + 1);
 
-    const { stream } = JSON.parse(readFileSync(resolve(__dirname, "fixtures/history_patch.json"), "utf8")) as { stream: string };
+    const { stream } = JSON.parse(
+      readFileSync(resolve(__dirname, "fixtures/history_patch.json"), "utf8"),
+    ) as { stream: string };
     const events = stream
       .trim()
       .split("\n\n")
@@ -988,7 +1046,9 @@ describe("value operations", () => {
     const runtime = start();
     await tick();
     expect($("#date-local").textContent).toBe(
-      new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(1_767_625_445_000),
+      new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(
+        1_767_625_445_000,
+      ),
     );
     runtime.store.set("now", 1_767_625_445_000 + 2 * 86_400_000);
     await tick();
@@ -1019,11 +1079,20 @@ describe("value operations", () => {
   it("test the characters of a string by ASCII class", async () => {
     const runtime = mount("values");
     await tick();
-    expect(Object.fromEntries(texts())).toMatchObject({ "zip-digits": "yes", "code-digits": "no", "code-upper": "yes", "code-space": "yes" });
+    expect(Object.fromEntries(texts())).toMatchObject({
+      "zip-digits": "yes",
+      "code-digits": "no",
+      "code-upper": "yes",
+      "code-space": "yes",
+    });
     runtime.store.set("zip", "15ー0001");
     runtime.store.set("code", "１２");
     await tick();
-    expect(Object.fromEntries(texts())).toMatchObject({ "zip-digits": "no", "code-upper": "no", "code-space": "no" });
+    expect(Object.fromEntries(texts())).toMatchObject({
+      "zip-digits": "no",
+      "code-upper": "no",
+      "code-space": "no",
+    });
     runtime.store.set("zip", "");
     await tick();
     expect($("#zip-digits").textContent).toBe("yes");
@@ -1079,7 +1148,10 @@ describe("atomic css", () => {
     return { event: event!.slice("event: ".length), data: data!.slice("data: ".length) };
   }
 
-  const buckets = () => [...document.head.querySelectorAll<HTMLStyleElement>("style[data-hs-css]")].map((style) => style.dataset.hsCss);
+  const buckets = () =>
+    [...document.head.querySelectorAll<HTMLStyleElement>("style[data-hs-css]")].map(
+      (style) => style.dataset.hsCss,
+    );
 
   it("switches a toggled style's classes with its condition", async () => {
     serve("styled_page");
@@ -1100,8 +1172,17 @@ describe("atomic css", () => {
     expect(buckets()).toEqual(["0 k01-----00", "1 k-----00"]);
     runtime.apply(patch("styled_patch"));
     await tick();
-    expect(buckets()).toEqual(["0 k-----00", "0 k-----01", "0 k----4019-00", "0 k01-----00", "1 k-----00", "2 pulse"]);
-    expect($("#slot").className).toBe("width_100% padding_4px animation-name_pulse hover:color_blue");
+    expect(buckets()).toEqual([
+      "0 k-----00",
+      "0 k-----01",
+      "0 k----4019-00",
+      "0 k01-----00",
+      "1 k-----00",
+      "2 pulse",
+    ]);
+    expect($("#slot").className).toBe(
+      "width_100% padding_4px animation-name_pulse hover:color_blue",
+    );
     const base = document.head.querySelector<HTMLStyleElement>('style[data-hs-css="0 k-----00"]')!;
     const once = base.textContent;
     runtime.apply(patch("styled_patch"));
@@ -1117,11 +1198,14 @@ describe("lists and conditions inside svg", () => {
 
   async function exercise(runtime: Runtime): Promise<void> {
     expect(document.querySelectorAll("#plot template").length).toBeGreaterThan(0);
-    for (const template of document.querySelectorAll("#plot template")) expect(template).toBeInstanceOf(HTMLTemplateElement);
+    for (const template of document.querySelectorAll("#plot template"))
+      expect(template).toBeInstanceOf(HTMLTemplateElement);
     expect(heights()).toEqual(["10", "20"]);
     expect(marks()).toEqual([2, 0]);
     expect($("#extent").textContent).toBe("7 10 3 30");
-    expect($$("#plot g > rect").every((rect) => rect.namespaceURI === "http://www.w3.org/2000/svg")).toBe(true);
+    expect(
+      $$("#plot g > rect").every((rect) => rect.namespaceURI === "http://www.w3.org/2000/svg"),
+    ).toBe(true);
 
     runtime.store.set("bars", [
       { id: 2, height: 25, marks: [3] },
@@ -1169,8 +1253,10 @@ describe("forms", () => {
   // they would run this form's submit handler against their own stores.
   beforeEach(() => document.body.replaceWith(document.createElement("body")));
 
-  const blur = (target: Element) => target.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
-  const submit = () => $("#join").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  const blur = (target: Element) =>
+    target.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+  const submit = () =>
+    $("#join").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 
   it("shows a rule's message once the field is left, and tracks whether the values changed", async () => {
     mount("join");
@@ -1212,11 +1298,17 @@ describe("forms", () => {
     await tick();
     expect(fetch).toHaveBeenCalledTimes(1);
     const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toEqual({ email: "ada@example.com", password: "correct horse" });
+    expect(JSON.parse(init.body as string)).toEqual({
+      email: "ada@example.com",
+      password: "correct horse",
+    });
   });
 
   it("shows a message the server sent until the next submit, and reset puts the starting values back", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response("", { status: 200 }))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response("", { status: 200 }))),
+    );
     const runtime = mount("join");
     runtime.store.set("signup.errors", { email: "That address is taken." });
     await tick();
@@ -1281,21 +1373,29 @@ describe("uploads", () => {
   });
 
   it("looks up the file input apart from a node ref of the same name", async () => {
-    const fetch = vi.fn((_url: URL, _init: RequestInit) => Promise.resolve(new Response("", { status: 200 })));
+    const fetch = vi.fn((_url: URL, _init: RequestInit) =>
+      Promise.resolve(new Response("", { status: 200 })),
+    );
     vi.stubGlobal("fetch", fetch);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     mount("upload");
     pick([new File(["one"], "a.png", { type: "image/png" })]);
     $("#send").click();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    expect(((fetch.mock.calls[0]![1].body as FormData).getAll("files") as File[]).map((file) => file.name)).toEqual(["a.png"]);
+    expect(
+      ((fetch.mock.calls[0]![1].body as FormData).getAll("files") as File[]).map(
+        (file) => file.name,
+      ),
+    ).toEqual(["a.png"]);
     $("#focus").click();
     await vi.waitFor(() => expect(document.activeElement).toBe($("#note")));
     expect(warn).not.toHaveBeenCalled();
   });
 
   it("sends no file part when nothing is picked, and empties the input after sending", async () => {
-    const fetch = vi.fn((_url: URL, _init: RequestInit) => Promise.resolve(new Response("", { status: 200 })));
+    const fetch = vi.fn((_url: URL, _init: RequestInit) =>
+      Promise.resolve(new Response("", { status: 200 })),
+    );
     vi.stubGlobal("fetch", fetch);
     mount("upload");
     $<HTMLInputElement>("#pictures").value = "";
@@ -1307,11 +1407,18 @@ describe("uploads", () => {
   });
 
   it("writes a refused upload to the error signal", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response("the upload is longer than its limit", { status: 413 }))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(new Response("the upload is longer than its limit", { status: 413 })),
+      ),
+    );
     vi.spyOn(console, "error").mockImplementation(() => {});
     const runtime = mount("upload");
     $("#send").click();
-    await vi.waitFor(() => expect(runtime.store.get("error")).toBe("the upload is longer than its limit"));
+    await vi.waitFor(() =>
+      expect(runtime.store.get("error")).toBe("the upload is longer than its limit"),
+    );
     expect(runtime.store.get("uploading")).toBe(false);
   });
 });
