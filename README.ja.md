@@ -31,10 +31,10 @@ Rust のサーバーに画面を付けようとすると、今は 2 通りの選
 
 | | hypersig | Leptos | React | Next.js | TanStack Start | Nuxt | htmx |
 |---|---|---|---|---|---|---|---|
-| JS（gzip） | 17.9 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
-| First Contentful Paint | 185 ms | 200 ms | 187 ms | 198 ms | 186 ms | 178 ms | 235 ms |
-| Total Blocking Time | 0 ms | 29 ms | 8 ms | 9 ms | 0 ms | 32 ms | 266 ms |
-| Interaction to Next Paint | 24 ms | 24 ms | 16 ms | 24 ms | 24 ms | 24 ms | 16 ms |
+| JS（gzip） | 19.2 KB | 140.5 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 16.5 KB |
+| First Contentful Paint | 186 ms | 203 ms | 196 ms | 198 ms | 193 ms | 177 ms | 236 ms |
+| Total Blocking Time | 0 ms | 26 ms | 5 ms | 10 ms | 0 ms | 29 ms | 268 ms |
+| Interaction to Next Paint | 24 ms | 24 ms | 24 ms | 24 ms | 24 ms | 16 ms | 16 ms |
 
 測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。
 
