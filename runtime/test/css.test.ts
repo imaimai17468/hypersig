@@ -15,7 +15,7 @@ describe("addRules", () => {
     const own = document.createElement("style");
     document.head.append(own);
     addRules([["0 k--00", ".a{}"]]);
-    expect(document.head.firstElementChild?.getAttribute("data-hs-css")).toBe("0 k--00");
+    expect((document.head.firstElementChild as HTMLElement | null)?.dataset.hsCss).toBe("0 k--00");
   });
 
   it("keeps buckets in sort-key order and appends a partial overlap to its bucket", () => {

@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { DepIndex, type Effect } from "../src/deps.ts";
-import { affects, type Reads } from "../src/store.ts";
+import { affects, type Reads } from "../src/store/change.ts";
 
 const segments = ["a", "b", "0", "1", "c"];
 
@@ -41,7 +41,7 @@ it("finds exactly the bindings that `affects` says a change reaches", () => {
       [randomPath(next), next() < 0.5],
     ]);
     const expected = effects.filter((effect) => affects(effect.deps!, changes));
-    expect([...index.affected(changes)].sort((a, b) => a.id - b.id)).toEqual(expected);
+    expect([...index.affected(changes)].toSorted((a, b) => a.id - b.id)).toEqual(expected);
   }
 });
 
@@ -83,7 +83,7 @@ it("finds the bindings that read at a path, or at it and below", () => {
   make(3, [["@2.label", true]]);
   const within: Effect[] = [];
   index.within("@1", (effect) => within.push(effect));
-  expect(within.sort((a, b) => a.id - b.id)).toEqual([label, position, tags]);
+  expect(within.toSorted((a, b) => a.id - b.id)).toEqual([label, position, tags]);
   const at: Effect[] = [];
   index.at("@1.#", (effect) => at.push(effect));
   expect(at).toEqual([position]);

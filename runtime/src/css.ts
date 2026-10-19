@@ -28,7 +28,7 @@ export function addRules(
     style.textContent = css;
     const after = styles.find((existing) => (existing.dataset.hsCss ?? "") > key);
     if (after !== undefined) after.before(style);
-    else if (styles.length > 0) styles[styles.length - 1]!.after(style);
+    else if (styles.length > 0) styles.at(-1)!.after(style);
     else head.prepend(style);
   }
 }

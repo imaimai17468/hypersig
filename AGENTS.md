@@ -35,7 +35,7 @@ No hook runs these. Run them yourself before reporting a change complete:
 - `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`, which fails on a broken intra-doc link
 - `cargo run -p site -- --out target/site --rustdoc target/doc` after that, which fails when a page of the documentation site links to an item the rustdoc output no longer has. The site's reference and component pages copy the first sentence of each doc comment, some of them shortened, so a change to one updates `site/src/reference.rs` or `site/src/components.rs` too
 - `cargo bench -p hypersig --bench render` before and after the change, where it touches `html.rs`, `page.rs`, `ssr.rs`, or `expr.rs`. The commit body carries both medians.
-- In `runtime/`: `pnpm check` and `pnpm test`, where the change touches `runtime/` or the wire format
+- In `runtime/`: `pnpm check` (the type check, `oxfmt --check`, and `oxlint` with the categories `.oxlintrc.json` enables) and `pnpm test`, where the change touches `runtime/` or the wire format. A lint finding is fixed in the code, never silenced with a disable comment or by turning the rule off
 - In `runtime/`: `pnpm build`, then `git diff --exit-code crates/hypersig/assets`, so the committed bundle matches the source
 - In `e2e/`: `pnpm check` and `pnpm test`, where the change touches the runtime, the HTML builder, or an example. Locally it drives the installed Chrome; CI installs Playwright's Chromium.
 

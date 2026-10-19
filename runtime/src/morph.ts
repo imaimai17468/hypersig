@@ -15,12 +15,7 @@ export type Drawn = (template: HTMLTemplateElement) => ReadonlySet<Element> | un
  * `removed`. One of them can be back in the document by the time `morph`
  * returns, where a later child with the same id moved it there.
  */
-export function morph(
-  from: Element,
-  to: Element,
-  removed: Element[] = [],
-  drawn: Drawn = () => undefined,
-): Element {
+export function morph(from: Element, to: Element, removed: Element[] = [], drawn?: Drawn): Element {
   if (
     from.tagName !== to.tagName ||
     (from instanceof HTMLTemplateElement &&
@@ -37,20 +32,27 @@ export function morph(
 }
 
 function syncAttributes(from: Element, to: Element): void {
-  for (const { name } of [...from.attributes]) {
+  // A copy, because removing an attribute changes `from.attributes` while it is walked.
+  for (const { name } of Array.from(from.attributes)) {
     if (!to.hasAttribute(name)) from.removeAttribute(name);
   }
-  for (const { name, value } of [...to.attributes]) {
+  for (const { name, value } of to.attributes) {
     if (from.getAttribute(name) !== value) from.setAttribute(name, value);
   }
 }
 
-function morphChildren(from: Element, to: Element, removed: Element[], drawn: Drawn): void {
+function morphChildren(
+  from: Element,
+  to: Element,
+  removed: Element[],
+  drawn: Drawn | undefined,
+): void {
   const byId = new Map<string, Element>();
   for (const child of from.children) if (child.id !== "") byId.set(child.id, child);
 
   let current: ChildNode | null = from.firstChild;
-  for (const next of [...to.childNodes]) {
+  // A copy, because each child moved into `from` leaves `to.childNodes`.
+  for (const next of Array.from(to.childNodes)) {
     if (next instanceof Element && next.id !== "") {
       const match = byId.get(next.id);
       if (match !== undefined && match !== current) {
@@ -60,7 +62,7 @@ function morphChildren(from: Element, to: Element, removed: Element[], drawn: Dr
     }
     let kept: ChildNode;
     if (current === null) {
-      from.appendChild(next);
+      from.append(next);
       kept = next;
     } else if (current instanceof Element && next instanceof Element && current.id === next.id) {
       kept = morph(current, next, removed, drawn);
@@ -73,14 +75,14 @@ function morphChildren(from: Element, to: Element, removed: Element[], drawn: Dr
       kept = next;
     }
     let after = kept.nextSibling;
-    const own = kept === current && kept instanceof HTMLTemplateElement ? drawn(kept) : undefined;
+    const own = kept === current && kept instanceof HTMLTemplateElement ? drawn?.(kept) : undefined;
     if (own !== undefined)
       while (after instanceof Element && own.has(after)) after = after.nextSibling;
     current = after;
   }
   const rest: ChildNode[] = [];
   for (; current !== null; current = current.nextSibling) rest.push(current);
-  for (const last of rest.reverse()) {
+  for (const last of rest.toReversed()) {
     last.remove();
     if (last instanceof Element) removed.push(last);
   }

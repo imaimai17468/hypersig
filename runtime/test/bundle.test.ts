@@ -9,9 +9,9 @@ it("the built bundle evaluates no strings as code", () => {
     "utf8",
   );
   expect(bundle.length).toBeGreaterThan(1000);
-  expect(bundle).not.toMatch(/\beval\s*\(/);
-  expect(bundle).not.toMatch(/new\s+Function\b/);
-  expect(bundle).not.toMatch(/\bFunction\s*\(/);
+  expect(bundle).not.toMatch(/\beval\s*\(/u);
+  expect(bundle).not.toMatch(/new\s+Function\b/u);
+  expect(bundle).not.toMatch(/\bFunction\s*\(/u);
 });
 
 it("the committed Brotli copy decompresses to the built bundle", () => {

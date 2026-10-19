@@ -1,9 +1,9 @@
 import { Runtime } from "./runtime.ts";
-import type { Values } from "./store.ts";
+import type { Values } from "./store/value.ts";
 
 function start(): void {
   const body = document.body;
-  const initial = JSON.parse(body.getAttribute("data-hs-signals") ?? "{}") as Values;
+  const initial = JSON.parse(body.dataset.hsSignals ?? "{}") as Values;
   const runtime = new Runtime(body, initial);
   window.addEventListener("popstate", () => runtime.popped());
 }

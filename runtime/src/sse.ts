@@ -20,16 +20,13 @@ export async function readEventStream(
     data = [];
   };
 
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split(/\r\n|\r|\n/);
+  const take = (chunk: Uint8Array): void => {
+    buffer += decoder.decode(chunk, { stream: true });
+    const lines = buffer.split(/\r\n|\r|\n/u);
     buffer = lines.pop() ?? "";
     for (const line of lines) {
       if (line === "") dispatch();
-      else if (line.startsWith(":")) continue;
-      else {
+      else if (!line.startsWith(":")) {
         const colon = line.indexOf(":");
         const field = colon === -1 ? line : line.slice(0, colon);
         const raw = colon === -1 ? "" : line.slice(colon + 1);
@@ -38,6 +35,12 @@ export async function readEventStream(
         else if (field === "data") data.push(content);
       }
     }
-  }
+  };
+
+  // `reader.read()` answers in the shape of an iterator's `next`, so the chunks can be walked with `for await`.
+  const chunks: AsyncIterable<Uint8Array> = {
+    [Symbol.asyncIterator]: () => ({ next: () => reader.read() }),
+  };
+  for await (const chunk of chunks) take(chunk);
   dispatch();
 }

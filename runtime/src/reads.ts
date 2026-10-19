@@ -1,4 +1,4 @@
-import { isOperator } from "./eval.ts";
+import { isOperator } from "./eval/expr/operator.ts";
 
 /** A read that an expression can make, found from its AST without running it. */
 export type StaticRead =
