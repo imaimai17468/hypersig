@@ -61,7 +61,12 @@ The same 2000-item page, styled six ways and rendered by hypersig with the same 
 | Style and layout on load | 76 ms | 74 ms | 73 ms | 81 ms | 67 ms | 68 ms |
 | Marking 2000 items done | 27 ms | 37 ms | 26 ms | 27 ms | 24 ms | 24 ms |
 
-hypersig's class names are long because each one is made from its declaration alone: the conditions, the property's full name, and the value, as in `font-size_24px`. A value with any character other than letters, digits, `.`, `#`, `%`, and `-`, such as a space, becomes a 64-bit hash written in 16 hex digits. The name has to come from the declaration alone because a server patch renders new elements without knowing the classes the page already has, and the browser adds the rules the patch brings to the page's own, so one declaration has to get the same name every time it is rendered. `Page::render` writes these names into every item, so the server render grows with them: across the six pages it grows in the same order as the HTML before gzip, which is 1.21 MB for hypersig and 0.88 MB for Panda CSS. The pages and the harness are in [`bench/style`](bench/style).
+| Where hypersig falls behind | Why |
+|---|---|
+| HTML size | Each class name is made from its declaration alone: the conditions, the property's full name, and the value, as in `font-size_24px`. A value with a space or another character outside letters, digits, `.`, `#`, `%`, and `-` becomes a 16-digit hash. A server patch renders new elements without knowing the page's classes, so one declaration has to get the same name every time it is rendered |
+| Server render | `Page::render` writes those names into every item. The HTML before gzip is 1.21 MB for hypersig and 0.88 MB for Panda CSS, and the render times grow in the same order |
+
+The pages and the harness are in [`bench/style`](bench/style).
 
 ## Quick start
 

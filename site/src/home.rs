@@ -579,11 +579,40 @@ fn benchmarks(site: Site) -> Part {
                     ],
                 ]),
             ),
+            table_of(
+                site,
+                L {
+                    en: &["Where hypersig falls behind", "Why"],
+                    ja: &["hypersig が不利な点", "理由"],
+                },
+                L {
+                    en: &[
+                        &[
+                            "HTML size",
+                            "Each class name is made from its declaration alone: the conditions, the property's full name, and the value, as in `font-size_24px`. A value with a space or another character outside letters, digits, `.`, `#`, `%`, and `-` becomes a 16-digit hash. A server patch renders new elements without knowing the page's classes, so one declaration has to get the same name every time it is rendered",
+                        ],
+                        &[
+                            "Server render",
+                            "`Page::render` writes those names into every item. The HTML before gzip is 1.21 MB for hypersig and 0.88 MB for Panda CSS, and the render times grow in the same order",
+                        ],
+                    ],
+                    ja: &[
+                        &[
+                            "HTML の大きさ",
+                            "クラス名を宣言だけから作るので長くなります。名前は条件、プロパティの正式な名前、値をつないだ `font-size_24px` のような形で、空白など英数字と `.`、`#`、`%`、`-` 以外の文字を含む値は 16 桁のハッシュになります。サーバーのパッチはページにあるクラスを知らずに要素を描くので、同じ宣言はいつ描いても同じ名前になる必要があります",
+                        ],
+                        &[
+                            "サーバーで描く時間",
+                            "`Page::render` がその長い名前を項目ごとに書き出します。gzip 前の HTML は hypersig が 1.21 MB、Panda CSS が 0.88 MB で、描く時間も同じ順に長くなります",
+                        ],
+                    ],
+                },
+            ),
             para(
                 site,
                 L {
-                    en: "hypersig's class names are long because each one is made from its declaration alone: the conditions, the property's full name, and the value, as in `font-size_24px`. A value with any character other than letters, digits, `.`, `#`, `%`, and `-`, such as a space, becomes a 64-bit hash written in 16 hex digits. The name has to come from the declaration alone because a server patch renders new elements without knowing the classes the page already has, and the browser adds the rules the patch brings to the page's own, so one declaration has to get the same name every time it is rendered. `Page::render` writes these names into every item, so the server render grows with them: across the six pages it grows in the same order as the HTML before gzip, which is 1.21 MB for hypersig and 0.88 MB for Panda CSS. The pages and the harness are in [`bench/style`](https://github.com/imaimai17468/hypersig/tree/main/bench/style).",
-                    ja: "hypersig のクラス名が長いのは、宣言だけから名前を作っているからです。名前は条件、プロパティの正式な名前、値をつないだもので、`font-size_24px` のようになります。値に英数字と `.`、`#`、`%`、`-` 以外の文字（空白など）があると、値は 64 ビットのハッシュになり、16 桁の 16 進数で書かれます。宣言だけから作るのは、サーバーのパッチがページにすでにあるクラスを知らずに新しい要素を描き、ブラウザがパッチの持ってきたルールをページのルールに足すからです。そのため同じ宣言は、いつ描いても同じ名前になる必要があります。`Page::render` はこの名前を項目ごとに書き出すので、サーバーで描く時間も名前の分だけ延びます。6 つのページでは、gzip 前の HTML が大きい順に描く時間も長くなっています（hypersig は 1.21 MB、Panda CSS は 0.88 MB）。ページと計測の仕組みは [`bench/style`](https://github.com/imaimai17468/hypersig/tree/main/bench/style) にあります。",
+                    en: "The pages and the harness are in [`bench/style`](https://github.com/imaimai17468/hypersig/tree/main/bench/style).",
+                    ja: "ページと計測の仕組みは [`bench/style`](https://github.com/imaimai17468/hypersig/tree/main/bench/style) にあります。",
                 },
             ),
         ],
