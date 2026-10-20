@@ -7,7 +7,7 @@ use crate::demo::{self, Demo};
 use crate::doc::{Doc, Library};
 use crate::landing::{self, features, hero, library_cards, titled};
 use crate::lang::{L, Text};
-use crate::prose::{Part, para, table_of};
+use crate::prose::{Part, para, subheading, table_of};
 
 pub fn render(site: Site) -> String {
     landing::page(
@@ -364,7 +364,7 @@ fn comparison(site: Site) -> Part {
     )
 }
 
-/// The README's benchmark, with its numbers unchanged.
+/// The README's benchmarks, with their numbers unchanged.
 fn benchmarks(site: Site) -> Part {
     let header = &[
         "",
@@ -443,6 +443,148 @@ fn benchmarks(site: Site) -> Part {
                         "16 ms",
                     ],
                 ]),
+            ),
+            subheading(
+                site,
+                L {
+                    en: "Styling",
+                    ja: "スタイル",
+                },
+            ),
+            para(
+                site,
+                L {
+                    en: "The same 2000-item page, styled six ways and rendered by hypersig with the same markup, so only the class names and the CSS differ. Measured in Chrome 155 on an Apple M4 Max with the CPU slowed 4x. Browser values are medians of 5 runs, and the server render is the median of 50.",
+                    ja: "同じ 2000 件のページを 6 通りのやり方でスタイルし、同じマークアップで hypersig に描かせたものです。違うのはクラス名と CSS だけです。Apple M4 Max の Chrome 155 で、CPU を 4 倍に減速して測りました。ブラウザの値は 5 回、サーバーで描く時間は 50 回の中央値です。",
+                },
+            ),
+            table_of(
+                site,
+                L {
+                    en: &[
+                        "",
+                        "hypersig",
+                        "Tailwind CSS",
+                        "Panda CSS",
+                        "StyleX",
+                        "vanilla-extract",
+                        "Hand-written CSS",
+                    ],
+                    ja: &[
+                        "",
+                        "hypersig",
+                        "Tailwind CSS",
+                        "Panda CSS",
+                        "StyleX",
+                        "vanilla-extract",
+                        "手書きの CSS",
+                    ],
+                },
+                Text::Chosen::<[&[&str; 7]]>(&[
+                    &[
+                        site.t(L {
+                            en: "CSS (gzip)",
+                            ja: "CSS（gzip）",
+                        }),
+                        "1.0 KB",
+                        "1.6 KB",
+                        "1.0 KB",
+                        "1.0 KB",
+                        "0.6 KB",
+                        "0.8 KB",
+                    ],
+                    &[
+                        site.t(L {
+                            en: "HTML without CSS (gzip)",
+                            ja: "CSS を除いた HTML（gzip）",
+                        }),
+                        "30.2 KB",
+                        "29.1 KB",
+                        "26.9 KB",
+                        "26.8 KB",
+                        "27.6 KB",
+                        "27.3 KB",
+                    ],
+                    &[
+                        site.t(L {
+                            en: "Sent in all (gzip)",
+                            ja: "送る合計（gzip）",
+                        }),
+                        "31.5 KB",
+                        "30.7 KB",
+                        "27.8 KB",
+                        "27.8 KB",
+                        "28.2 KB",
+                        "28.1 KB",
+                    ],
+                    &[
+                        site.t(L {
+                            en: "Build of the CSS",
+                            ja: "CSS のビルド",
+                        }),
+                        site.t(L {
+                            en: "None",
+                            ja: "なし",
+                        }),
+                        "268 ms",
+                        "574 ms",
+                        "182 ms",
+                        "74 ms",
+                        "3.1 ms",
+                    ],
+                    &[
+                        site.t(L {
+                            en: "Server render",
+                            ja: "サーバーで描く時間",
+                        }),
+                        "1.7 ms",
+                        "1.5 ms",
+                        "1.4 ms",
+                        "1.4 ms",
+                        "0.8 ms",
+                        "0.8 ms",
+                    ],
+                    &[
+                        "First Contentful Paint",
+                        "136 ms",
+                        "140 ms",
+                        "136 ms",
+                        "144 ms",
+                        "140 ms",
+                        "140 ms",
+                    ],
+                    &[
+                        site.t(L {
+                            en: "Style and layout on load",
+                            ja: "読み込み時のスタイル計算とレイアウト",
+                        }),
+                        "76 ms",
+                        "74 ms",
+                        "73 ms",
+                        "81 ms",
+                        "67 ms",
+                        "68 ms",
+                    ],
+                    &[
+                        site.t(L {
+                            en: "Marking 2000 items done",
+                            ja: "2000 件を完了にする時間",
+                        }),
+                        "27 ms",
+                        "37 ms",
+                        "26 ms",
+                        "27 ms",
+                        "24 ms",
+                        "24 ms",
+                    ],
+                ]),
+            ),
+            para(
+                site,
+                L {
+                    en: "hypersig sends the most HTML. Its class names spell out the property, as in `font-size_24px`, and a value with a space or a quote becomes a 16-digit hash, as in `border-bottom_hb11d9f1ba261151f`. Over 2000 items that comes to about 3 KB more after gzip than with Panda CSS or StyleX, and the server render takes 0.3 ms longer than theirs. In the browser the six pages differ by a few milliseconds, about as much as one run differs from the next. The pages and the harness are in [`bench/style`](https://github.com/imaimai17468/hypersig/tree/main/bench/style).",
+                    ja: "hypersig は送る HTML がいちばん大きくなります。クラス名は `font-size_24px` のようにプロパティ名を略さずに書き、空白や引用符を含む値は `border-bottom_hb11d9f1ba261151f` のように 16 桁のハッシュになります。これが 2000 件の要素に付くので、gzip 後で Panda CSS や StyleX より約 3 KB 増えます。サーバーで描く時間も、この 2 つより 0.3 ms 長くかかります。ブラウザでは 6 つのページの差は数 ms で、計測ごとのばらつきと同じくらいです。ページと計測の仕組みは [`bench/style`](https://github.com/imaimai17468/hypersig/tree/main/bench/style) にあります。",
+                },
             ),
         ],
     )
