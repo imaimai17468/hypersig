@@ -7,8 +7,10 @@ export const url = (example: keyof typeof examples): string => `http://127.0.0.1
 
 export default defineConfig({
   testDir: "tests",
+  // Each spec file drives its own example, so files run side by side, and the
+  // tests of one file run in order because they share that server's state.
   fullyParallel: false,
-  workers: 1,
+  workers: 4,
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI ? "github" : "list",
   use: {
