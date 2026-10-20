@@ -1,0 +1,12 @@
+[package]
+name = "bench-style"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+hypersig = { path = "../../crates/hypersig", default-features = false }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+
+[workspace]

@@ -1,0 +1,17 @@
+{
+  "app": "relative mx-auto mt-32.5 mb-10 max-w-[550px] bg-white shadow-[0_2px_4px_rgba(0,0,0,.2),0_25px_50px_rgba(0,0,0,.1)]",
+  "heading": "absolute -top-27.5 m-0 w-full text-center text-[80px] font-extralight text-[#b83f45]",
+  "newTodo": "shadow-[inset_0_-2px_1px_rgba(0,0,0,.03)]",
+  "main": "relative border-t border-[#e6e6e6]",
+  "list": "m-0 list-none p-0",
+  "item": "group relative flex items-center border-b border-[#ededed] text-[24px]",
+  "itemDone": "",
+  "toggle": "mx-2.5 my-0 h-10 w-10",
+  "title": "flex-1 p-3.75 break-all transition-colors duration-200",
+  "titleDone": "text-[#949494] line-through",
+  "destroy": "mr-2.5 hidden cursor-pointer border-none bg-transparent text-[30px] text-[#949494] group-hover:block after:content-['×']",
+  "footer": "flex items-center justify-between border-t border-[#e6e6e6] px-3.75 py-2.5 text-[#111]",
+  "filters": "m-0 flex list-none gap-1 p-0",
+  "filterLink": "rounded-[3px] border border-transparent px-1.75 py-0.75 text-inherit no-underline",
+  "selected": "border-[#ce4646]"
+}

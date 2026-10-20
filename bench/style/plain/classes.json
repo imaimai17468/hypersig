@@ -1,0 +1,17 @@
+{
+  "app": "todoapp",
+  "heading": "",
+  "newTodo": "new-todo",
+  "main": "main",
+  "list": "todo-list",
+  "item": "",
+  "itemDone": "completed",
+  "toggle": "toggle",
+  "title": "",
+  "titleDone": "",
+  "destroy": "destroy",
+  "footer": "footer",
+  "filters": "filters",
+  "filterLink": "",
+  "selected": "selected"
+}

@@ -1,0 +1,9 @@
+@layer theme, base, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "./classes.json";
+
+@layer base {
+  * { box-sizing: border-box; }
+  body { font: 14px 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f5f5f5; color: #111; margin: 0; }
+}

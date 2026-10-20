@@ -10,3 +10,6 @@ node_modules/
 /bench/compare/tanstack-start/dist
 /bench/compare/tanstack-start/.tanstack
 /bench/js-framework-benchmark/*/target
+/bench/style/target
+/bench/style/out
+/bench/style/panda/styled-system

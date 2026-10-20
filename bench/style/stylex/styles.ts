@@ -1,0 +1,93 @@
+import * as stylex from "@stylexjs/stylex";
+
+const gray = "#949494";
+
+const s = stylex.create({
+  app: {
+    backgroundColor: "#fff",
+    maxWidth: 550,
+    marginTop: 130,
+    marginInline: "auto",
+    marginBottom: 40,
+    position: "relative",
+    boxShadow: "0 2px 4px rgba(0,0,0,.2), 0 25px 50px rgba(0,0,0,.1)",
+  },
+  heading: {
+    position: "absolute",
+    top: -110,
+    width: "100%",
+    fontSize: 80,
+    fontWeight: 200,
+    textAlign: "center",
+    color: "#b83f45",
+    margin: 0,
+  },
+  newTodo: { boxShadow: "inset 0 -2px 1px rgba(0,0,0,.03)" },
+  main: { position: "relative", borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "#e6e6e6" },
+  list: { margin: 0, padding: 0, listStyle: "none" },
+  item: {
+    position: "relative",
+    fontSize: 24,
+    borderBottomWidth: 1,
+    borderBottomStyle: "solid",
+    borderBottomColor: "#ededed",
+    display: "flex",
+    alignItems: "center",
+  },
+  toggle: { width: 40, height: 40, marginBlock: 0, marginInline: 10 },
+  title: { flex: 1, padding: 15, wordBreak: "break-all", transition: "color .2s" },
+  titleDone: { color: gray, textDecoration: "line-through" },
+  destroy: {
+    display: { default: "none", [stylex.when.ancestor(":hover")]: "block" },
+    borderStyle: "none",
+    backgroundColor: "transparent",
+    fontSize: 30,
+    color: gray,
+    marginRight: 10,
+    cursor: "pointer",
+    "::after": { content: '"×"' },
+  },
+  footer: {
+    paddingBlock: 10,
+    paddingInline: 15,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopStyle: "solid",
+    borderTopColor: "#e6e6e6",
+    color: "#111",
+  },
+  filters: { margin: 0, padding: 0, listStyle: "none", display: "flex", gap: 4 },
+  filterLink: {
+    color: "inherit",
+    textDecoration: "none",
+    paddingBlock: 3,
+    paddingInline: 7,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "transparent",
+    borderRadius: 3,
+  },
+  selected: { borderColor: "#ce4646" },
+});
+
+const names = (...styles: Parameters<typeof stylex.props>) => stylex.props(...styles).className ?? "";
+
+export const classes = {
+  app: names(s.app),
+  heading: names(s.heading),
+  newTodo: names(s.newTodo),
+  main: names(s.main),
+  list: names(s.list),
+  item: `${names(s.item)} ${names(stylex.defaultMarker())}`,
+  itemDone: "",
+  toggle: names(s.toggle),
+  title: names(s.title),
+  titleDone: names(s.titleDone),
+  destroy: names(s.destroy),
+  footer: names(s.footer),
+  filters: names(s.filters),
+  filterLink: names(s.filterLink),
+  selected: names(s.selected),
+};
