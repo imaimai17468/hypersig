@@ -3,7 +3,7 @@
 use crate::Site;
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, StylePage};
-use crate::lang::L;
+use crate::lang::{L, Text};
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
@@ -519,4 +519,175 @@ fn unchecked(site: Site, head: Part) -> Part {
             ],
         ),
     ])
+}
+
+/// The styling benchmark of `bench/style`, with the numbers of its
+/// `results/latest.md`, for the landing page of the Style docs.
+pub fn benchmarks(site: Site) -> [Part; 4] {
+    [
+        para(
+            site,
+            L {
+                en: "The 2000-item TodoMVC page of [hypersig's framework benchmark](https://github.com/imaimai17468/hypersig/tree/main/bench/compare), styled six ways and rendered by hypersig with the same markup, so only the class names and the CSS differ. Measured in Chrome 155 on an Apple M4 Max with the CPU slowed 4x. Browser values are medians of 5 runs, and the server render is the median of 50.",
+                ja: "[hypersig のフレームワークのベンチマーク](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にある 2000 件の TodoMVC のページを、6 通りのやり方でスタイルし、同じマークアップで hypersig に描かせたものです。違うのはクラス名と CSS だけです。Apple M4 Max の Chrome 155 で、CPU を 4 倍に減速して測りました。ブラウザの値は 5 回、サーバーで描く時間は 50 回の中央値です。",
+            },
+        ),
+        table_of(
+            site,
+            L {
+                en: &[
+                    "",
+                    "hypersig",
+                    "Tailwind CSS",
+                    "Panda CSS",
+                    "StyleX",
+                    "vanilla-extract",
+                    "Hand-written CSS",
+                ],
+                ja: &[
+                    "",
+                    "hypersig",
+                    "Tailwind CSS",
+                    "Panda CSS",
+                    "StyleX",
+                    "vanilla-extract",
+                    "手書きの CSS",
+                ],
+            },
+            Text::Chosen::<[&[&str; 7]]>(&[
+                &[
+                    site.t(L {
+                        en: "CSS (gzip)",
+                        ja: "CSS（gzip）",
+                    }),
+                    "1.0 KB",
+                    "1.6 KB",
+                    "1.0 KB",
+                    "1.0 KB",
+                    "0.6 KB",
+                    "0.8 KB",
+                ],
+                &[
+                    site.t(L {
+                        en: "HTML without CSS (gzip)",
+                        ja: "CSS を除いた HTML（gzip）",
+                    }),
+                    "30.2 KB",
+                    "29.1 KB",
+                    "26.9 KB",
+                    "26.8 KB",
+                    "27.6 KB",
+                    "27.3 KB",
+                ],
+                &[
+                    site.t(L {
+                        en: "Sent in all (gzip)",
+                        ja: "送る合計（gzip）",
+                    }),
+                    "31.5 KB",
+                    "30.7 KB",
+                    "27.8 KB",
+                    "27.8 KB",
+                    "28.2 KB",
+                    "28.1 KB",
+                ],
+                &[
+                    site.t(L {
+                        en: "Build of the CSS",
+                        ja: "CSS のビルド",
+                    }),
+                    site.t(L {
+                        en: "None",
+                        ja: "なし",
+                    }),
+                    "268 ms",
+                    "574 ms",
+                    "182 ms",
+                    "74 ms",
+                    "3.1 ms",
+                ],
+                &[
+                    site.t(L {
+                        en: "Server render",
+                        ja: "サーバーで描く時間",
+                    }),
+                    "1.7 ms",
+                    "1.5 ms",
+                    "1.4 ms",
+                    "1.4 ms",
+                    "0.8 ms",
+                    "0.8 ms",
+                ],
+                &[
+                    "First Contentful Paint",
+                    "136 ms",
+                    "140 ms",
+                    "136 ms",
+                    "144 ms",
+                    "140 ms",
+                    "140 ms",
+                ],
+                &[
+                    site.t(L {
+                        en: "Style and layout on load",
+                        ja: "読み込み時のスタイル計算とレイアウト",
+                    }),
+                    "76 ms",
+                    "74 ms",
+                    "73 ms",
+                    "81 ms",
+                    "67 ms",
+                    "68 ms",
+                ],
+                &[
+                    site.t(L {
+                        en: "Marking 2000 items done",
+                        ja: "2000 件を完了にする時間",
+                    }),
+                    "27 ms",
+                    "37 ms",
+                    "26 ms",
+                    "27 ms",
+                    "24 ms",
+                    "24 ms",
+                ],
+            ]),
+        ),
+        table_of(
+            site,
+            L {
+                en: &["Where hypersig falls behind", "Why"],
+                ja: &["hypersig が不利な点", "理由"],
+            },
+            L {
+                en: &[
+                    &[
+                        "HTML size",
+                        "Each class name is made from its declaration alone: the conditions, the property's full name, and the value, as in `font-size_24px`. A value with a space or another character outside letters, digits, `.`, `#`, `%`, and `-` becomes a 16-digit hash. A server patch renders new elements without knowing the page's classes, so one declaration has to get the same name every time it is rendered",
+                    ],
+                    &[
+                        "Server render",
+                        "`Page::render` writes those names into every item. The HTML before gzip is 1.21 MB for hypersig and 0.88 MB for Panda CSS, and the render times grow in the same order",
+                    ],
+                ],
+                ja: &[
+                    &[
+                        "HTML の大きさ",
+                        "クラス名を宣言だけから作るので長くなります。名前は条件、プロパティの正式な名前、値をつないだ `font-size_24px` のような形で、空白など英数字と `.`、`#`、`%`、`-` 以外の文字を含む値は 16 桁のハッシュになります。サーバーのパッチはページにあるクラスを知らずに要素を描くので、同じ宣言はいつ描いても同じ名前になる必要があります",
+                    ],
+                    &[
+                        "サーバーで描く時間",
+                        "`Page::render` がその長い名前を項目ごとに書き出します。gzip 前の HTML は hypersig が 1.21 MB、Panda CSS が 0.88 MB で、描く時間も同じ順に長くなります",
+                    ],
+                ],
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The pages and the harness are in [`bench/style`](https://github.com/imaimai17468/hypersig/tree/main/bench/style).",
+                ja: "ページと計測の仕組みは [`bench/style`](https://github.com/imaimai17468/hypersig/tree/main/bench/style) にあります。",
+            },
+        ),
+    ]
 }

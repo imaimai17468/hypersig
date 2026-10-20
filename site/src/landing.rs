@@ -233,6 +233,7 @@ pub fn style(site: Site) -> String {
                     demo::show(site, Demo::Accent),
                 ],
             ),
+            titled(site, L { en: "Benchmarks", ja: "ベンチマーク" }, crate::style::benchmarks(site)),
             titled(
                 site,
                 L { en: "Part of hypersig", ja: "hypersig の一部" },
