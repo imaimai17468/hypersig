@@ -6,7 +6,7 @@ COPY . .
 RUN cargo build --release
 
 FROM debian:trixie-slim
-COPY --from=build /app/target/release/my-app /usr/local/bin/my-app
+COPY --from=build /app/target/release/{{project-name}} /usr/local/bin/{{project-name}}
 ENV PORT=3000
 EXPOSE 3000
-CMD ["my-app"]
+CMD ["{{project-name}}"]

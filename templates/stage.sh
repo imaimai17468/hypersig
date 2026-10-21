@@ -13,6 +13,8 @@ mkdir -p "$dest"
 find "$dest" -mindepth 1 -maxdepth 1 ! -name target ! -name build ! -name node_modules -exec rm -rf {} +
 tar -C "$root/templates/$name" --exclude ./target --exclude ./build --exclude ./node_modules \
   --exclude ./.wrangler --exclude ./Cargo.lock -cf - . | tar -C "$dest" -xf -
+# cargo generate fills the placeholder with the name it is given.
+grep -rlF '{{project-name}}' "$dest" --exclude-dir target | xargs -r sed -i "s/{{project-name}}/my-$name/g"
 mkdir -p "$dest/.cargo"
 cat > "$dest/.cargo/config.toml" <<CONFIG
 [patch.crates-io]

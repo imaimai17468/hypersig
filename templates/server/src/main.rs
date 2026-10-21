@@ -1,8 +1,8 @@
 //! A counter whose increments happen in the browser and whose reset goes to the server.
 //!
 //! Run it with `cargo run` and open <http://localhost:3000>, or build the
-//! container image with `docker build -t my-app .` and run it with
-//! `docker run --rm -p 3000:3000 my-app`.
+//! container image with `docker build -t {{project-name}} .` and run it with
+//! `docker run --rm -p 3000:3000 {{project-name}}`.
 
 use axum::Router;
 use hypersig::html::{button, div, span};
