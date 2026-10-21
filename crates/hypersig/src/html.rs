@@ -1246,6 +1246,14 @@ impl<S> El<S> {
     }
 
     fn check_attr_name(name: &str) {
+        // A space, a quote, `=`, or `>` would end the name and start another
+        // attribute that no check below sees.
+        assert!(
+            !name.is_empty()
+                && name.bytes().all(|byte| byte.is_ascii_alphanumeric()
+                    || matches!(byte, b'-' | b'_' | b'.' | b':')),
+            "`{name}` is not an attribute name: use letters, digits, `-`, `_`, `.`, and `:`"
+        );
         // The browser matches attribute names without regard to case.
         let lower = name.to_ascii_lowercase();
         assert!(
@@ -1264,7 +1272,7 @@ impl<S> El<S> {
             !lower.starts_with("on")
                 && !matches!(
                     lower.as_str(),
-                    "srcdoc" | "action" | "formaction" | "xlink:href"
+                    "srcdoc" | "action" | "formaction" | "xlink:href" | "data"
                 ),
             "`{name}` can run a script, so `attr` does not write it; attach a handler with \
              the `on_*` methods"
@@ -1280,7 +1288,8 @@ impl<S> El<S> {
     /// may write. Panics as well for an attribute whose value can run a script:
     /// `href` and `src`, which [`El::href`] and [`El::src`] set from a value
     /// that cannot, an event handler `on*`, `srcdoc`, `action`, `formaction`,
-    /// and `xlink:href`.
+    /// `xlink:href`, and `data`, which `<object>` loads. A name holds only
+    /// letters, digits, `-`, `_`, `.`, and `:`.
     #[must_use]
     pub fn attr(mut self, name: &'static str, value: impl Into<String>) -> Self {
         Self::check_attr_name(name);
@@ -2522,6 +2531,12 @@ mod tests {
     #[should_panic(expected = "written by hypersig's typed methods")]
     fn attr_refuses_a_runtime_attribute_in_any_case() {
         let _ = div::<Page>().attr("DATA-HS-ON-CLICK", "[]");
+    }
+
+    #[test]
+    #[should_panic(expected = "is not an attribute name")]
+    fn attr_refuses_a_name_that_would_start_another_attribute() {
+        let _ = img::<Page>().attr("x onerror", "alert(1)");
     }
 
     #[test]
