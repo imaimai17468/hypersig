@@ -1,0 +1,22 @@
+error[E0080]: evaluation panicked: its scheme is not `http`, `https`, or `mailto`
+ --> tests/ui/fail/safe_url_with_script_scheme.rs:3:23
+  |
+3 | const LINK: SafeUrl = SafeUrl::new("javascript:alert(1)");
+  |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `LINK` failed inside this call
+  |
+note: inside `SafeUrl::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_display(&$arg);
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/href.rs
+  |
+  |             panic!("{}", reason);
+  |             -------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/safe_url_with_script_scheme.rs:6:13
+  |
+6 |     let _ = LINK;
+  |             ^^^^

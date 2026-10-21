@@ -55,7 +55,7 @@ use serde_json::{Value, json};
 
 use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
-use crate::route::Link;
+use crate::href::IntoHref;
 use crate::signal::{Item, Part, Sig, in_item_scope, in_part};
 use crate::ssr::{self, Ctx, Val};
 use crate::style::{Property, Sheet, Style, Token, TokenValue};
@@ -1333,15 +1333,27 @@ impl<S> El<S> {
         self
     }
 
-    /// Makes the element's `href` a link to a page the router serves.
+    /// Sets the element's `href`: a link to a page the router serves, or a
+    /// [`SafeUrl`](crate::SafeUrl) for an address it does not.
     ///
-    /// A link whose parameters are all literals is written as a plain
-    /// attribute. One that reads signals is kept up to date as they change.
+    /// A fixed URL is written as a plain attribute. One that reads signals is
+    /// kept up to date as they change.
     #[must_use]
-    pub fn href(mut self, link: Link<S>) -> Self {
-        match link.into_parts() {
-            Ok(url) => self.attrs.push(("href", url)),
-            Err(expr) => self.attr_bind.push(("href", expr)),
+    pub fn href(self, url: impl IntoHref<S>) -> Self {
+        self.url_attr("href", url)
+    }
+
+    /// Sets the element's `src`, the address of the image, frame, or script
+    /// it loads, as [`El::href`] sets `href`.
+    #[must_use]
+    pub fn src(self, url: impl IntoHref<S>) -> Self {
+        self.url_attr("src", url)
+    }
+
+    fn url_attr(mut self, name: &'static str, url: impl IntoHref<S>) -> Self {
+        match url.into_parts() {
+            Ok(url) => self.attrs.push((name, url)),
+            Err(expr) => self.attr_bind.push((name, expr)),
         }
         self
     }

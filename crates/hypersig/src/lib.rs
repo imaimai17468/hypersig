@@ -53,6 +53,7 @@ mod date;
 mod expr;
 mod form;
 mod head;
+mod href;
 pub mod html;
 mod intl;
 mod label;
@@ -85,6 +86,7 @@ pub use expr::{
 };
 pub use form::{FieldErrors, Form, Rules, Validate};
 pub use head::{OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError};
+pub use href::{IntoHref, SafeUrl, UnsafeUrl};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use intl::{IntlLocale, PluralCategory};
 pub use page::Page;

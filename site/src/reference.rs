@@ -462,8 +462,16 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "href",
                             "html/struct.El.html#method.href",
                             L {
-                                en: "Makes the element's `href` a link to a page the router serves.",
-                                ja: "要素の `href` を、ルーターが配信するページへのリンクにします。",
+                                en: "Sets the element's `href`: a link to a page the router serves, or a `SafeUrl` for an address it does not.",
+                                ja: "要素の `href` を設定します。ルーターが配信するページへのリンクか、配信しないアドレスの `SafeUrl` を渡します。",
+                            },
+                        ),
+                        (
+                            "src",
+                            "html/struct.El.html#method.src",
+                            L {
+                                en: "Sets the element's `src`, the address of the image, frame, or script it loads, as `El::href` sets `href`.",
+                                ja: "要素が読み込む画像、フレーム、スクリプトのアドレスである `src` を、`El::href` と同じように設定します。",
                             },
                         ),
                         (
@@ -2749,6 +2757,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The URL of a page, written on the server by `Route::url`.",
                                 ja: "サーバーで `Route::url` が書き出す、ページの URL です。",
+                            },
+                        ),
+                        (
+                            "SafeUrl",
+                            "struct.SafeUrl.html",
+                            L {
+                                en: "A URL whose scheme cannot run a script: `http:`, `https:`, `mailto:`, or none at all, as in `/logo.png`, `#top`, `?page=2`, or `//cdn.example/a.js`.",
+                                ja: "スクリプトを動かせないスキームの URL です。`http:`、`https:`、`mailto:` か、`/logo.png`、`#top`、`?page=2`、`//cdn.example/a.js` のようにスキームのないものです。",
+                            },
+                        ),
+                        (
+                            "SafeUrl::parse",
+                            "struct.SafeUrl.html#method.parse",
+                            L {
+                                en: "Reads a URL from outside the program, such as one a visitor typed.",
+                                ja: "訪問者が入力した URL のような、プログラムの外から来た URL を読みます。",
+                            },
+                        ),
+                        (
+                            "UnsafeUrl",
+                            "struct.UnsafeUrl.html",
+                            L {
+                                en: "Text that `SafeUrl::parse` refused, with the rule it broke.",
+                                ja: "`SafeUrl::parse` が受け付けなかった文字列と、破っていた規則です。",
                             },
                         ),
                     ],

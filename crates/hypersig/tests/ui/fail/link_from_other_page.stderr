@@ -1,15 +1,21 @@
-error[E0308]: mismatched types
+error[E0277]: `hypersig::Link<Other>` is not a URL an `href` or a `src` takes on the page whose signals are `Team`
   --> tests/ui/fail/link_from_other_page.rs:26:30
    |
 26 |     let _ = a::<Team>().href(MEMBER.link_with(Other::id()));
-   |                         ---- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Link<Team>`, found `Link<Other>`
+   |                         ---- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `IntoHref<Team>` is not implemented for `hypersig::Link<Other>`
    |                         |
-   |                         arguments to this method are incorrect
+   |                         required by a bound introduced by this call
    |
-   = note: expected struct `Link<Team>`
-              found struct `Link<Other>`
-note: method defined here
+   = note: give a `Link` or a `Url` from a route, a `SafeUrl`, or a signal or expression of `SafeUrl`; a `String` becomes one through `SafeUrl::parse`
+help: the trait `IntoHref<Team>` is not implemented for `hypersig::Link<Other>`
+      but trait `IntoHref<Other>` is implemented for it
+  --> src/href.rs
+   |
+   | impl<S> IntoHref<S> for Link<S> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `Other`, found `Team`
+note: required by a bound in `El::<S>::href`
   --> src/html.rs
    |
-   |     pub fn href(mut self, link: Link<S>) -> Self {
-   |            ^^^^
+   |     pub fn href(self, url: impl IntoHref<S>) -> Self {
+   |                                 ^^^^^^^^^^^ required by this bound in `El::<S>::href`
