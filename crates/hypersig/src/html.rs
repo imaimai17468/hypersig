@@ -150,8 +150,8 @@ impl<S> Node<S> {
 }
 
 /// Panics if two elements in `nodes` carry one node ref name, one file
-/// input name, or one id, where the runtime could find either, or if an
-/// element inside a list template carries a fixed id.
+/// input name, or one `&'static str` id, where the runtime could find
+/// either, or if an element inside a list template carries a fixed id.
 ///
 /// The runtime looks a name up in the list items and conditional copies
 /// around the statement first, innermost first, and then in the whole page
@@ -171,10 +171,11 @@ pub(crate) fn check_names<S>(nodes: &[Node<S>]) {
 }
 
 /// The names that elements carry, each with the templates it sits in,
-/// outermost first, numbered in the order the walk enters them.
+/// outermost first, numbered in the order the walk enters them, and whether
+/// the program wrote it as a fixed string.
 #[derive(Default)]
 struct Names<'a> {
-    found: Vec<(&'static str, &'a str, Vec<u32>)>,
+    found: Vec<(&'static str, &'a str, Vec<u32>, bool)>,
     templates: u32,
 }
 
@@ -203,11 +204,12 @@ impl Scope<'_> {
 impl<'a> Names<'a> {
     fn el<S>(&mut self, el: &'a El<S>, scope: Option<&Scope<'_>>) {
         if let Some(name) = el.node_ref {
-            self.found.push(("node ref name", name, Scope::path(scope)));
+            self.found
+                .push(("node ref name", name, Scope::path(scope), true));
         }
         if let Some(name) = el.file_input {
             self.found
-                .push(("file input name", name, Scope::path(scope)));
+                .push(("file input name", name, Scope::path(scope), true));
         }
         if let Some(id) = &el.id {
             let mut at = scope;
@@ -220,7 +222,8 @@ impl<'a> Names<'a> {
                 );
                 at = scope.outer;
             }
-            self.found.push(("id", id, Scope::path(scope)));
+            let fixed = matches!(id, Cow::Borrowed(_));
+            self.found.push(("id", id, Scope::path(scope), fixed));
         }
         for child in &el.children {
             self.node(child, scope);
@@ -247,8 +250,13 @@ impl<'a> Names<'a> {
         self.found
             .sort_unstable_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
         for group in self.found.chunk_by(|a, b| (a.0, a.1) == (b.0, b.1)) {
-            for (i, (kind, name, a)) in group.iter().enumerate() {
-                let meets = |(_, _, b): &(_, _, Vec<u32>)| a.starts_with(b) || b.starts_with(a);
+            // An id built at runtime may come from data a visitor stored, and
+            // a panic would stop the page for every visitor until the data
+            // changes, so only two fixed ids alike panic.
+            for (i, (kind, name, a, fixed)) in group.iter().enumerate() {
+                let meets = |(_, _, b, other): &(_, _, Vec<u32>, bool)| {
+                    *fixed && *other && (a.starts_with(b) || b.starts_with(a))
+                };
                 assert!(
                     !group[i + 1..].iter().any(meets),
                     "two elements carry the {kind} `{name}` where the runtime can \
@@ -492,7 +500,7 @@ where
 pub struct El<S> {
     tag: &'static str,
     void: bool,
-    id: Option<String>,
+    id: Option<Cow<'static, str>>,
     attrs: Vec<(&'static str, String)>,
     classes: Vec<&'static str>,
     show: Option<Expr<S, bool>>,
@@ -1419,11 +1427,17 @@ impl<S> El<S> {
     /// Sets the element's `id`.
     ///
     /// An element rendered through a [`Fragment`](crate::Fragment) gets the
-    /// fragment's id instead. Rendering panics if another element the runtime
-    /// can reach carries the same id, or if the element sits inside a list
-    /// template, whose every item would repeat it.
+    /// fragment's id instead. Rendering panics if the element sits inside a
+    /// list template, whose every item would repeat it, and if another
+    /// element the runtime can reach carries the same `&'static str` id.
+    ///
+    /// Two ids alike where either is a `String` render, because a `String`
+    /// may come from data visitors stored. An anchor, a label's `for`, an
+    /// `aria-*` reference, or a fragment's patch to that id then reaches the
+    /// first of them, so an id built from stored data is made unique by the
+    /// program, such as with the record's key.
     #[must_use]
-    pub fn id(mut self, id: impl Into<String>) -> Self {
+    pub fn id(mut self, id: impl Into<Cow<'static, str>>) -> Self {
         self.id = Some(id.into());
         self
     }
@@ -2033,8 +2047,8 @@ impl<S> El<S> {
         self
     }
 
-    pub(crate) fn with_id(mut self, id: &str) -> Self {
-        self.id = Some(id.to_owned());
+    pub(crate) fn with_id(mut self, id: &'static str) -> Self {
+        self.id = Some(Cow::Borrowed(id));
         self
     }
 
@@ -2046,9 +2060,9 @@ impl<S> El<S> {
     /// # Panics
     ///
     /// Panics if two elements carry one [`NodeRef`] name, one
-    /// [`FileInput`](crate::FileInput) name, or one id, where the runtime can
-    /// reach both, or if an element inside a list template has an id set with
-    /// [`El::id`]. Each item of a list may carry the same name.
+    /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
+    /// the runtime can reach both, or if an element inside a list template has
+    /// an id set with [`El::id`]. Each item of a list may carry the same name.
     #[must_use]
     pub fn render(&self) -> String {
         let mut names = Names::default();
@@ -2770,6 +2784,18 @@ mod tests {
             let _ = ul::<Page>()
                 .child(each(rows(), |_| li().id("row")))
                 .render();
+        }
+
+        #[test]
+        fn ids_built_at_runtime_may_repeat() {
+            let tag = |name: &str| li::<Page>().id(format!("tag-{name}"));
+            let html = div::<Page>()
+                .child(tag("a"))
+                .child(tag("a"))
+                .child(div().id(String::from("total")))
+                .child(div().id("total"))
+                .render();
+            assert_eq!(html.matches(r#"id="tag-a""#).count(), 2, "{html}");
         }
 
         #[test]

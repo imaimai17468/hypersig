@@ -244,8 +244,8 @@ fn application(site: Site) -> Part {
                     ja: "URL のホスト。`SafeUrl` はどのホストでも持てるので、訪問者が入力した URL は訪問者がたどるリンクに使い、スクリプトの `src` や `<base>` の `href` には使わないでください。",
                 },
                 L {
-                    en: "Ids built from stored data. Rendering panics when two elements the runtime can reach carry one id, so an id made from a value visitors stored, such as a tag name, is made unique first, or the page stops rendering for everyone once two visitors store the same value.",
-                    ja: "保存したデータから作る id。ランタイムが届く 2 つの要素が同じ id を持つと描画がパニックするので、タグ名のように訪問者が保存した値から作る id は、先に一意にしてください。そうしないと、2 人が同じ値を保存した時点で、そのページは誰にも描画されなくなります。",
+                    en: "Ids built from stored data. Rendering panics for two fixed ids alike, but two `String` ids alike render, and a link or a patch to that id reaches the first of them. Build an id from a value visitors stored, such as a tag name, together with the record's key, so that it stays unique.",
+                    ja: "保存したデータから作る id。固定の id が 2 つ同じなら描画はパニックしますが、`String` の id が 2 つ同じでもそのまま描画され、その id へのリンクや差分は最初の要素に届きます。タグ名のように訪問者が保存した値から id を作るときは、レコードのキーと組み合わせて一意にしてください。",
                 },
                 L {
                     en: "Its own queries and files, such as SQL built from arguments, and a file name from an upload, which `UploadedFile::file_name` returns as the browser sent it.",
