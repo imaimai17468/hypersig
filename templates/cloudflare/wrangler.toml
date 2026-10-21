@@ -1,4 +1,4 @@
-name = "my-worker"
+name = "{{project-name}}"
 main = "build/worker/shim.mjs"
 compatibility_date = "2026-10-01"
 

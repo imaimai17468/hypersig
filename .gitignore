@@ -17,4 +17,3 @@ node_modules/
 /templates/*/Cargo.lock
 /templates/cloudflare/build
 /templates/cloudflare/.wrangler
-/templates/cloudflare/node_modules

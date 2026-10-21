@@ -3,10 +3,10 @@
 //! The page, its action, and its stream are the same hypersig code an axum
 //! server runs. The worker hands each request to the axum `Router`.
 //!
-//! Run `npm run dev` and open <http://localhost:8787>, and publish it with
-//! `npm run deploy`. Each request may run in a different isolate, so a value
-//! kept in memory does not reach the next request. Keep shared state in KV,
-//! D1, or a Durable Object.
+//! Run `npx wrangler dev` and open <http://localhost:8787>, and publish it
+//! with `npx wrangler deploy`. Each request may run in a different isolate,
+//! so a value kept in memory does not reach the next request. Keep shared
+//! state in KV, D1, or a Durable Object.
 
 use std::time::Duration;
 
