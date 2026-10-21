@@ -7,7 +7,7 @@ members = ["crates/*", "examples/*", "site"]
 exclude = ["templates", "target/templates"]
 
 [workspace.package]
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.99"
 license = "MIT"
@@ -19,12 +19,12 @@ categories = ["web-programming"]
 readme = "README.md"
 
 [workspace.dependencies]
-hypersig = { path = "crates/hypersig", version = "=0.1.2" }
-hypersig_proc = { path = "crates/hypersig_proc", version = "=0.1.2" }
-hypersig_proc_impl = { path = "crates/hypersig_proc_impl", version = "=0.1.2" }
-hypersig_i18n = { path = "crates/hypersig_i18n", version = "=0.1.2" }
-hypersig_style = { path = "crates/hypersig_style", version = "=0.1.2" }
-hypersig_ui = { path = "crates/hypersig_ui", version = "=0.1.2" }
+hypersig = { path = "crates/hypersig", version = "=0.2.0" }
+hypersig_proc = { path = "crates/hypersig_proc", version = "=0.2.0" }
+hypersig_proc_impl = { path = "crates/hypersig_proc_impl", version = "=0.2.0" }
+hypersig_i18n = { path = "crates/hypersig_i18n", version = "=0.2.0" }
+hypersig_style = { path = "crates/hypersig_style", version = "=0.2.0" }
+hypersig_ui = { path = "crates/hypersig_ui", version = "=0.2.0" }
 
 axum = "0.8.9"
 divan = "0.1.21"

@@ -122,8 +122,8 @@ fn installation(site: Site) -> Part {
             Lang::Toml,
             Some("Cargo.toml"),
             r#"[dependencies]
-hypersig = "0.1"
-hypersig_ui = "0.1""#,
+hypersig = "0.2"
+hypersig_ui = "0.2""#,
         ),
         heading(
             site,
