@@ -45,9 +45,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.99
         with:
           components: rustfmt, clippy, rust-src
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
+      # The crates a Cloudflare Worker links, built for the target it runs on.
+      - run: cargo clippy -p hypersig -p hypersig_i18n -p hypersig_ui -p example-cloudflare --target wasm32-unknown-unknown -- -D warnings
       - run: cargo check -p hypersig --no-default-features
       - run: cargo doc --workspace --no-deps
         env:
@@ -101,7 +104,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.99
+        with:
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: worker-build@0.8.7
       - uses: pnpm/action-setup@v6
         with:
           package_json_file: e2e/package.json

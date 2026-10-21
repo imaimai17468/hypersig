@@ -106,6 +106,10 @@ async fn main() -> std::io::Result<()> {
 
 Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. Misspelling `count`, or adding a string to it, stops `cargo build`. The [documentation](https://imaimai17468.github.io/hypersig/learn/) continues from here.
 
+## Cloudflare Workers
+
+The same pages, actions, and streams run on Cloudflare Workers, where the worker hands each request to the axum `Router`. [`examples/cloudflare`](examples/cloudflare) builds with `worker-build` and runs with `wrangler dev`. Each request may run in a different isolate, so state the requests share goes in KV, D1, or a Durable Object rather than in memory, and a stream sends no keep-alive comments there, because axum times them with tokio.
+
 ## What it does not suit
 
 The browser does on its own only the operations and statements hypersig provides, and the scripts a page loads. A JavaScript library such as a map or a rich text editor can run inside a custom element, which the page passes values to through attributes and takes typed events from ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)). Anything else goes through the server, so it does not suit these applications:

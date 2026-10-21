@@ -106,6 +106,10 @@ async fn main() -> std::io::Result<()> {
 
 `cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
 
+## Cloudflare Workers
+
+ページ、アクション、ストリームは Cloudflare Workers でもそのまま動きます。Worker は受けたリクエストを axum の `Router` に渡します。[`examples/cloudflare`](examples/cloudflare) は `worker-build` でビルドし、`wrangler dev` で起動します。リクエストごとに別の isolate で動くことがあるので、リクエストをまたいで共有する状態はメモリに置かず、KV、D1、Durable Object に置いてください。axum は SSE の keep-alive のコメントを tokio のタイマーで送るため、Workers のストリームはこのコメントを送りません。
+
 ## 向かないアプリ
 
 ブラウザだけで完結するのは、hypersig が用意した演算と命令と、ページが読み込んだスクリプトだけです。地図やリッチテキストエディタのような JavaScript のライブラリはカスタム要素の中で動かせます。ページは属性で値を渡し、型付きのイベントを受け取ります（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。それ以外の処理はサーバーを通すので、次のようなアプリには向きません。

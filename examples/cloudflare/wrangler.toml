@@ -1,0 +1,6 @@
+name = "hypersig-example"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-10-01"
+
+[build]
+command = "worker-build --release"

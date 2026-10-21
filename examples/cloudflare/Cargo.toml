@@ -1,0 +1,22 @@
+[package]
+name = "example-cloudflare"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+# The worker builds only for wasm32-unknown-unknown, so on any other target the
+# crate is empty and depends on nothing.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+axum = { version = "0.8.9", default-features = false }
+futures.workspace = true
+hypersig.workspace = true
+serde.workspace = true
+tower-service = "0.3.3"
+worker = { version = "0.8.7", features = ["http", "axum"] }
+
+[lints]
+workspace = true
