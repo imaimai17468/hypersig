@@ -304,16 +304,43 @@ impl fmt::Display for Raw {
 ///
 /// # Panics
 ///
-/// Panics if `css` contains `;`, `{`, `}`, or `<`. The first three would end
-/// the declaration or the rule, and `<` could close the `<style>` element.
+/// Panics if `css` could end more than its own declaration: where it contains
+/// `;`, `{`, `}`, `<`, a backslash, `/*`, or a control character, or leaves a
+/// quote or a parenthesis open. The first three would end the declaration or
+/// the rule, `<` could close the `<style>` element, and an escape, a comment,
+/// or an open quote or parenthesis would carry the value on into the rules
+/// after it.
 #[must_use]
 pub fn raw(css: impl Into<String>) -> Raw {
     let css = css.into();
     assert!(
-        !css.contains([';', '{', '}', '<']),
-        "a raw CSS value holds no `;`, `{{`, `}}`, or `<`"
+        stays_in_declaration(&css),
+        "a raw CSS value holds no `;`, `{{`, `}}`, `<`, backslash, `/*`, or control \
+         character, and closes every quote and parenthesis it opens",
     );
     Raw(css)
+}
+
+/// Whether `css` ends where it ends, so the declaration after it is read as
+/// its own.
+fn stays_in_declaration(css: &str) -> bool {
+    let mut depth = 0_usize;
+    let mut quote = None;
+    for c in css.chars() {
+        match (quote, c) {
+            (_, ';' | '{' | '}' | '<' | '\\') => return false,
+            (_, c) if c.is_control() => return false,
+            (Some(open), c) if c == open => quote = None,
+            (None, '"' | '\'') => quote = Some(c),
+            (None, '(') => depth += 1,
+            (None, ')') => match depth.checked_sub(1) {
+                Some(less) => depth = less,
+                None => return false,
+            },
+            _ => {}
+        }
+    }
+    quote.is_none() && depth == 0 && !css.contains("/*")
 }
 
 /// A keyword every property accepts, which CSS calls a CSS-wide keyword.
@@ -345,7 +372,7 @@ impl fmt::Display for CssWideKeyword {
 
 #[cfg(test)]
 mod tests {
-    use super::{quoted, url};
+    use super::{quoted, raw, stays_in_declaration, url};
 
     #[test]
     fn a_string_escapes_every_character_that_would_end_it() {
@@ -356,5 +383,18 @@ mod tests {
             url("x\r);}a{b:c}\x0c\n").to_string(),
             r#"url("x\d );}a{b:c}\c \a ")"#,
         );
+    }
+
+    #[test]
+    fn a_raw_value_keeps_quotes_and_parentheses_it_closes() {
+        assert_eq!(
+            raw("'Helvetica Neue', calc(100% - (2rem))").to_string(),
+            "'Helvetica Neue', calc(100% - (2rem))",
+        );
+        for open in [
+            "'Inter", "url(x", "a)", "a /* b", "\\66 oo", "a\nb", "'a;b'",
+        ] {
+            assert!(!stays_in_declaration(open), "{open:?}");
+        }
     }
 }
