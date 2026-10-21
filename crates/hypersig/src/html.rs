@@ -2107,8 +2107,9 @@ impl<S> El<S> {
         for (property, value) in &self.style {
             match eval_text(value.as_json(), ctx) {
                 // A value that could end the declaration, the rule, or the
-                // `<style>` element is left for the runtime to set, which
-                // refuses it as well.
+                // `<style>` element is left for the runtime to set, and the
+                // browser's `setProperty` drops one it cannot read as the
+                // property's value.
                 Some(value) if !plain_css(&value) => {}
                 Some(value) if rules.is_none() => style.push(format!("{property}: {value}")),
                 Some(value) => {
