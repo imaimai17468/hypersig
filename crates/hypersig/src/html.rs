@@ -557,10 +557,37 @@ impl<S> fmt::Debug for El<S> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Stylesheet(&'static str);
 
+/// Whether `css` holds `</style` in any case, which ends a `<style>` element.
+const fn closes_style(css: &[u8]) -> bool {
+    const END: &[u8] = b"</style";
+    let mut start = 0;
+    while start + END.len() <= css.len() {
+        let mut i = 0;
+        while i < END.len() && css[start + i].to_ascii_lowercase() == END[i] {
+            i += 1;
+        }
+        if i == END.len() {
+            return true;
+        }
+        start += 1;
+    }
+    false
+}
+
 impl Stylesheet {
     /// Wraps the CSS text `css`, usually from `include_str!`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `css` holds `</style`, in any case, which would close the
+    /// `<style>` element the page writes it into. In a `const` the panic is a
+    /// compile error.
     #[must_use]
     pub const fn new(css: &'static str) -> Self {
+        assert!(
+            !closes_style(css.as_bytes()),
+            "a stylesheet holds no `</style`, which would end the `<style>` element"
+        );
         Self(css)
     }
 
@@ -2477,6 +2504,12 @@ mod tests {
             html,
             r#"<picture><source srcset="/a.avif"><meta itemprop="name"><img src="/a.png"></picture>"#
         );
+    }
+
+    #[test]
+    fn a_stylesheet_cannot_close_its_style_element() {
+        assert!(super::closes_style(b"a{}</STYLE><script>"));
+        assert!(!super::closes_style(b"a{content:\"</styl\"}"));
     }
 
     #[test]
