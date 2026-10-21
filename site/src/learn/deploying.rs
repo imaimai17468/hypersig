@@ -7,6 +7,8 @@ use crate::doc::{Doc, Learn};
 use crate::lang::L;
 use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, table_of, title};
 
+use super::snippet::{Snippet, show};
+
 /// The worker of `templates/cloudflare`, which CI builds for
 /// wasm32-unknown-unknown and the end-to-end tests run under `wrangler dev`.
 const WORKER: &str = include_str!("../../../templates/cloudflare/src/lib.rs");
@@ -16,7 +18,10 @@ pub fn deploying(site: Site) -> Part {
         title(Doc::Learn(Learn::Deploying).title(site)),
         lead(site, Doc::Learn(Learn::Deploying).leads()),
         container(site),
+        container_existing(site),
+        host(site),
         workers(site),
+        workers_existing(site),
         on_workers(site),
     ])
 }
@@ -55,6 +60,54 @@ docker run --rm -p 3000:3000 my-app",
                 ja: "`http://localhost:3000` を開いてください。プロジェクトの中身は [クイックスタート](learn/) のカウンターで、すべてのインターフェースの `PORT` のポートで待ち受けます。`Dockerfile` は 1 つ目のステージでバイナリをビルドし、2 つ目のステージで小さなイメージにコピーします。ブラウザのランタイムはバイナリに埋め込まれているので、イメージに入るのはバイナリだけです。Fly.io、Cloud Run、Render のように Dockerfile からビルドするホストにはこのままのプロジェクトを渡し、イメージを動かすホストにはここでビルドしたイメージをそのホストのレジストリに push して渡します。",
             },
         ),
+    ])
+}
+
+/// The two changes that let a project the reader already has build with the
+/// template's `Dockerfile`.
+fn container_existing(site: Site) -> Part {
+    parts([
+        subheading(
+            site,
+            L {
+                en: "Add the Dockerfile to a project you have",
+                ja: "すでにあるプロジェクトに Dockerfile を足す",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The template's `Dockerfile` names no package, so it builds any project whose package has one binary. Download it to the directory that holds `Cargo.toml`, with a `.dockerignore` that keeps `target` out of the build.",
+                ja: "テンプレートの `Dockerfile` はパッケージの名前を書いていないので、バイナリが 1 つのパッケージならどのプロジェクトでもそのままビルドできます。`Cargo.toml` のあるディレクトリに取ってきて、`target` をビルドに渡さないための `.dockerignore` も置いてください。",
+            },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/server/Dockerfile
+echo target >> .dockerignore",
+        ),
+        para(
+            site,
+            L {
+                en: "A `main` that binds `127.0.0.1`, as the examples in this repository do, cannot be reached from outside the container. Listen on every interface at the port in `PORT` instead.",
+                ja: "このリポジトリの例のように `127.0.0.1` で待ち受ける `main` には、コンテナの外からつなげません。すべてのインターフェースの `PORT` のポートで待ち受けるように変えてください。",
+            },
+        ),
+        show(Snippet::Listen),
+        para(
+            site,
+            L {
+                en: "The `Dockerfile` builds with `cargo install --path .`, which fails at the root of a workspace, because the root holds no package. There, change `.` to the package's directory. The image's Rust is 1.99, so raise the `FROM` line where the project's `rust-version` is newer.",
+                ja: "`Dockerfile` は `cargo install --path .` でビルドします。ワークスペースのルートにはパッケージがないので、そこでは失敗します。その場合は `.` をパッケージのディレクトリに変えてください。イメージの Rust は 1.99 なので、プロジェクトの `rust-version` がそれより新しいときは `FROM` の行も上げてください。",
+            },
+        ),
+    ])
+}
+
+/// What a container host has to allow for streams and shared state.
+fn host(site: Site) -> Part {
+    parts([
         subheading(
             site,
             L {
@@ -166,6 +219,71 @@ npx wrangler deploy",
             },
         ),
         code::block(Lang::Rust, Some("src/lib.rs"), code::without_header(WORKER)),
+    ])
+}
+
+/// The changes that turn a server project the reader already has into a
+/// worker.
+fn workers_existing(site: Site) -> Part {
+    parts([
+        subheading(
+            site,
+            L {
+                en: "Turn a server project into a worker",
+                ja: "サーバーのプロジェクトを Worker にする",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A server project becomes a worker when its package turns from a binary into a library that `worker-build` compiles, and its `main` into the `fetch` function above. The pages, actions, and streams stay as they are.",
+                ja: "サーバーのプロジェクトを Worker にするには、パッケージをバイナリから `worker-build` がコンパイルするライブラリに変え、`main` を上の `fetch` 関数に置き換えます。ページ、アクション、ストリームはそのままです。",
+            },
+        ),
+        table_of(
+            site,
+            L {
+                en: &["File", "What changes"],
+                ja: &["ファイル", "変えること"],
+            },
+            L {
+                en: &[
+                    &[
+                        "`Cargo.toml`",
+                        "Add `[lib]` with `crate-type = [\"cdylib\"]`. Give axum `default-features = false`, add `worker` with the features `http` and `axum` and `tower-service`, and remove tokio.",
+                    ],
+                    &[
+                        "`src/main.rs`",
+                        "Rename it to `src/lib.rs`, and replace `#[tokio::main] async fn main` with a `fetch` function like the template's, which builds the same `Router` and hands it the request.",
+                    ],
+                    &[
+                        "`wrangler.toml`, `rust-toolchain.toml`",
+                        "Copy them from `templates/cloudflare`, and set `name` in `wrangler.toml` to the worker's name.",
+                    ],
+                ],
+                ja: &[
+                    &[
+                        "`Cargo.toml`",
+                        "`[lib]` に `crate-type = [\"cdylib\"]` を足します。axum は `default-features = false` にし、`http` と `axum` の機能を付けた `worker` と `tower-service` を足して、tokio を外します。",
+                    ],
+                    &[
+                        "`src/main.rs`",
+                        "`src/lib.rs` に名前を変え、`#[tokio::main] async fn main` をテンプレートと同じ形の `fetch` 関数に置き換えます。`fetch` は同じ `Router` を組み立て、リクエストを渡します。",
+                    ],
+                    &[
+                        "`wrangler.toml`、`rust-toolchain.toml`",
+                        "`templates/cloudflare` からコピーし、`wrangler.toml` の `name` を Worker の名前にします。",
+                    ],
+                ],
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Code that uses tokio changes too. A stream that waits with `tokio::time::sleep` waits with `worker::Delay`, as the clock above does, and state in the router's state does not outlast the isolate, as the next section says. Then `npx wrangler dev` runs the project.",
+                ja: "tokio を使うコードも変えます。`tokio::time::sleep` で待つストリームは、上の時計と同じように `worker::Delay` で待ちます。ルーターの状態に置いた値は、次の節のとおり isolate より長くは残りません。そのあとプロジェクトで `npx wrangler dev` を実行してください。",
+            },
+        ),
     ])
 }
 
