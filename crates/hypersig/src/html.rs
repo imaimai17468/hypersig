@@ -1246,16 +1246,16 @@ impl<S> El<S> {
     }
 
     fn check_attr_name(name: &str) {
+        // The browser matches attribute names without regard to case.
+        let lower = name.to_ascii_lowercase();
         assert!(
-            !name.starts_with(RESERVED_PREFIX),
+            !lower.starts_with(RESERVED_PREFIX),
             "`{name}` is written by hypersig's typed methods, not by `attr`"
         );
         assert!(
-            name != "id" && name != "class",
+            lower != "id" && lower != "class",
             "use `El::id` or `El::class` to set `{name}`"
         );
-        // The browser matches attribute names without regard to case.
-        let lower = name.to_ascii_lowercase();
         assert!(
             lower != "href" && lower != "src",
             "use `El::href` or `El::src`, which take a `Link` or a `SafeUrl`, to set `{name}`"
@@ -1275,9 +1275,9 @@ impl<S> El<S> {
     ///
     /// # Panics
     ///
-    /// Panics if `name` is `id` or `class`, which have their own methods, or
-    /// starts with `data-hs-`, which only the typed methods may write. Panics
-    /// as well, ignoring case, for an attribute whose value can run a script:
+    /// Panics, ignoring case, if `name` is `id` or `class`, which have their
+    /// own methods, or starts with `data-hs-`, which only the typed methods
+    /// may write. Panics as well for an attribute whose value can run a script:
     /// `href` and `src`, which [`El::href`] and [`El::src`] set from a value
     /// that cannot, an event handler `on*`, `srcdoc`, `action`, `formaction`,
     /// and `xlink:href`.
@@ -2516,6 +2516,12 @@ mod tests {
     #[should_panic(expected = "use `El::href` or `El::src`")]
     fn attr_refuses_href() {
         let _ = a::<Page>().attr("href", "javascript:alert(1)");
+    }
+
+    #[test]
+    #[should_panic(expected = "written by hypersig's typed methods")]
+    fn attr_refuses_a_runtime_attribute_in_any_case() {
+        let _ = div::<Page>().attr("DATA-HS-ON-CLICK", "[]");
     }
 
     #[test]
