@@ -20,6 +20,11 @@ use crate::signal::Sig;
 /// the same rule, so a link to a URL a visitor typed cannot be a
 /// `javascript:` link.
 ///
+/// The host is not checked: `https://evil.example/a.js` and
+/// `//evil.example` are `SafeUrl`s. A visitor's URL suits a link the visitor
+/// follows, and not the `src` of a `<script>` or the `href` of a `<base>`,
+/// which would load or resolve against whatever host it names.
+///
 /// ```
 /// use hypersig::SafeUrl;
 ///

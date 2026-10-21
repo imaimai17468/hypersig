@@ -1400,6 +1400,9 @@ impl<S> El<S> {
 
     /// Sets the element's `src`, the address of the image, frame, or script
     /// it loads, as [`El::href`] sets `href`.
+    ///
+    /// A [`SafeUrl`](crate::SafeUrl) may name any host, so a script's `src`
+    /// comes from the program, never from a visitor.
     #[must_use]
     pub fn src(self, url: impl IntoHref<S>) -> Self {
         self.url_attr("src", url)
