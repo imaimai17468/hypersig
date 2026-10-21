@@ -23,7 +23,7 @@ use serde::de::DeserializeOwned;
 
 use crate::action::{Action, Method, StreamAction};
 use crate::page::Page;
-use crate::patch::{ListPatch, PatchEvent, Patches, SignalPatch};
+use crate::patch::{ListPatch, PartMismatch, PatchEvent, Patches, SignalPatch};
 use crate::route::{Base, Params, Route, Search, Url};
 use crate::signal::{Signals, current_part, in_part};
 use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
@@ -334,12 +334,14 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 };
                 // The stream is read after this future returns, so it
                 // builds and writes its patches under the part on its own.
+                // An event it cannot write ends the response with an error,
+                // which closes the stream.
                 let events = InPart {
                     part: current_part(),
                     inner: Box::pin(
                         patches
                             .flat_map(|patches| stream::iter(patches.into_events()))
-                            .map(|event| Ok::<_, Infallible>(to_sse(&event))),
+                            .map(|event| to_sse(&event)),
                     ),
                 };
                 Ok::<_, RequestError>(keep_alive(Sse::new(events)).into_response())
@@ -1018,19 +1020,23 @@ impl<S> fmt::Debug for ActionResponse<S> {
 }
 
 impl<S: Signals> From<Patches<S>> for ActionResponse<S> {
-    /// # Panics
-    ///
-    /// Panics as [`Patches::element`] describes, for a fragment of a part
-    /// rendered outside the handler answering that part.
+    /// The response is `500 Internal Server Error` for a fragment of a part
+    /// rendered outside the handler answering that part, as
+    /// [`Patches::element`] describes.
     fn from(patches: Patches<S>) -> Self {
         // The events are written now, while the handler's part is current,
         // rather than when the body is read.
-        let events: Vec<_> = patches
+        let events: Result<Vec<_>, _> = patches
             .into_events()
             .iter()
-            .map(|event| Ok::<_, Infallible>(to_sse(event)))
+            .map(|event| to_sse(event).map(Ok::<_, Infallible>))
             .collect();
-        Self::new(Sse::new(stream::iter(events)).into_response())
+        Self::new(match events {
+            Ok(events) => Sse::new(stream::iter(events)).into_response(),
+            Err(mismatch) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, mismatch.to_string()).into_response()
+            }
+        })
     }
 }
 
@@ -1302,8 +1308,10 @@ fn keep_alive<S>(sse: Sse<S>) -> Sse<S> {
     sse
 }
 
-fn to_sse(event: &PatchEvent) -> SseEvent {
-    SseEvent::default().event(event.name()).data(event.data())
+fn to_sse(event: &PatchEvent) -> Result<SseEvent, PartMismatch> {
+    Ok(SseEvent::default()
+        .event(event.name())
+        .data(event.try_data()?))
 }
 
 /// A request to an action or an upload that was refused, before its handler

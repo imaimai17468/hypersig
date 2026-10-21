@@ -320,11 +320,22 @@ impl PatchEvent {
     ///
     /// # Panics
     ///
-    /// Panics if the event is a fragment rendered under another part than
-    /// the current one, such as one rendered in a task the call's handler
-    /// did not run, because its paths would land on the wrong signals.
+    /// Panics where [`PatchEvent::try_data`] returns an error.
     pub(crate) fn data(&self) -> String {
-        match self {
+        self.try_data()
+            .unwrap_or_else(|mismatch| panic!("{mismatch}"))
+    }
+
+    /// The event's payload, written for the part the current call came from.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PartMismatch`] if the event is a fragment rendered under
+    /// another part than the current one, such as one rendered in a task the
+    /// call's handler did not run, because its paths would land on the wrong
+    /// signals.
+    pub(crate) fn try_data(&self) -> Result<String, PartMismatch> {
+        Ok(match self {
             Self::Signals(values) => match current_part() {
                 None => Value::Object(values.clone()).to_string(),
                 Some(part) => Value::Object(
@@ -350,12 +361,13 @@ impl PatchEvent {
             Self::Element {
                 html, css, part, ..
             } => {
-                assert!(
-                    *part == current_part(),
-                    "a fragment rendered under the part at {part:?} answers a call from the part \
-                     at {:?}; render a part's fragment while its handler or stream runs",
-                    current_part(),
-                );
+                let answering = current_part();
+                if *part != answering {
+                    return Err(PartMismatch {
+                        rendered: part.clone(),
+                        answering,
+                    });
+                }
                 if css.is_empty() {
                     json!({ "html": html }).to_string()
                 } else {
@@ -366,9 +378,32 @@ impl PatchEvent {
             Self::History { url, replace } => {
                 json!({ "url": url.as_str(), "replace": replace }).to_string()
             }
-        }
+        })
     }
 }
+
+/// A fragment rendered under one part that answers a call from another.
+///
+/// The call's part comes from the `hypersig-part` header the visitor's
+/// browser sends, so a request can name a part its handler does not answer.
+#[derive(Debug)]
+pub(crate) struct PartMismatch {
+    rendered: Option<Arc<str>>,
+    answering: Option<Arc<str>>,
+}
+
+impl fmt::Display for PartMismatch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "a fragment rendered under the part at {:?} answers a call from the part at {:?}; \
+             render a part's fragment while its handler or stream runs",
+            self.rendered, self.answering,
+        )
+    }
+}
+
+impl std::error::Error for PartMismatch {}
 
 /// A batch of patches for a page whose signals are `S`, applied in order.
 pub struct Patches<S> {
@@ -446,12 +481,14 @@ impl<S: Signals> Patches<S> {
     /// applied, writing a warning to the console for each one another element
     /// already carries.
     ///
-    /// # Panics
-    ///
     /// For a [`Part`](crate::Part), the fragment is rendered with its paths
-    /// under the field of the part being answered, so the batch panics when
-    /// it is sent if it was built outside the handler or stream answering
-    /// that part, such as in a task that broadcasts one batch to every page.
+    /// under the field of the part being answered. A batch built outside the
+    /// handler or stream answering that part, such as in a task that
+    /// broadcasts one batch to every page, cannot be sent to it: an action
+    /// answers `500 Internal Server Error` with the reason, and a stream ends.
+    /// The part comes from a header the browser sends, so a request whose
+    /// header names a part fails the same way. [`Patches::to_event_stream`]
+    /// panics in that case.
     #[must_use]
     pub fn element<F: Fragment<Signals = S>>(mut self, fragment: &F) -> Self {
         let el = self::fragment(fragment);
@@ -610,6 +647,11 @@ impl<S: Signals> Patches<S> {
     }
 
     /// The batch as a Server-Sent Events body, for use without the axum feature.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the batch holds a fragment rendered under another part than
+    /// the current one, as [`Patches::element`] describes.
     #[must_use]
     pub fn to_event_stream(&self) -> String {
         let mut out = String::new();
