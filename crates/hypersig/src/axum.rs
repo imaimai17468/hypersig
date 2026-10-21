@@ -1101,8 +1101,9 @@ fn read_args<A: DeserializeOwned>(
             serde_json::from_slice(if body.is_empty() { b"null" } else { body })
         }
         // An `<img>`, a link, or a form sends a GET with another `Accept`, so
-        // a page on another site cannot make a browser without
-        // `Sec-Fetch-Site` call the action.
+        // they cannot call the action from a browser without
+        // `Sec-Fetch-Site`. An `EventSource` on another site still sends this
+        // one, which is why a GET action changes nothing.
         Method::Get if !from_runtime(headers) => {
             return Err(RequestError::new(Refusal::NotFromRuntime));
         }
