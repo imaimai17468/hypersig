@@ -106,9 +106,9 @@ async fn main() -> std::io::Result<()> {
 
 Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. Misspelling `count`, or adding a string to it, stops `cargo build`. The [documentation](https://imaimai17468.github.io/hypersig/learn/) continues from here.
 
-## Cloudflare Workers
+## Deploying
 
-The same pages, actions, and streams run on Cloudflare Workers, where the worker hands each request to the axum `Router`. `npm create cloudflare@latest -- my-worker --template=imaimai17468/hypersig/templates/cloudflare` creates a project from [`templates/cloudflare`](templates/cloudflare), which `npm run dev` runs locally and `npm run deploy` publishes. [Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) covers it and a container template for other hosts. Each request may run in a different isolate, so state the requests share goes in KV, D1, or a Durable Object rather than in memory, and a stream sends no keep-alive comments there, because axum times them with tokio.
+[Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) creates a project from a template in [`templates/`](templates) and takes it to a running application in a few commands. `templates/server` builds a container image with Docker for a host such as Fly.io, Cloud Run, or Render. `templates/cloudflare` runs the same pages, actions, and streams on Cloudflare Workers, where the worker hands each request to the axum `Router`. Both are created with `cargo generate`, and the Workers one also needs Node.js, because Cloudflare publishes its command-line tool `wrangler` only on npm.
 
 ## What it does not suit
 

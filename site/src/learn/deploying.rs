@@ -92,24 +92,25 @@ fn workers(site: Site) -> Part {
         para(
             site,
             L {
-                en: "These commands need a Cloudflare account, Rust 1.99 or later, and Node.js 22 or later. `npm create cloudflare` is Cloudflare's project generator. It copies the Workers template into `my-worker`, installs `wrangler`, Cloudflare's command-line tool, and sets the worker's `name` to the directory's. Answer no when it asks whether to deploy, and deploy with the last line once the worker runs locally.",
-                ja: "このコマンドには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が要ります。`npm create cloudflare` は Cloudflare のプロジェクト生成ツールです。Workers のテンプレートを `my-worker` にコピーし、Cloudflare のコマンドラインツール `wrangler` を入れ、Worker の `name` をディレクトリの名前にします。途中でデプロイするかを聞かれたら「いいえ」と答え、手元で動くのを確かめてから最後の行でデプロイしてください。",
+                en: "These commands need a Cloudflare account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `wrangler`, Cloudflare's command-line tool, which is published only on npm, and `npx` fetches it on first use, so the project has no `package.json`. `cargo generate` copies the Workers template into `my-worker` and names the package and the worker after it, as it does for the container.",
+                ja: "このコマンドには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が要ります。Node.js は Cloudflare のコマンドラインツール `wrangler` を動かすためだけに使います。`wrangler` は npm でしか配られていません。`npx` が最初の実行で取ってくるので、プロジェクトに `package.json` はありません。`cargo generate` はコンテナのときと同じように Workers のテンプレートを `my-worker` にコピーし、パッケージと Worker にその名前を付けます。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "npm create cloudflare@latest -- my-worker --template=imaimai17468/hypersig/templates/cloudflare
+            "cargo install cargo-generate
+cargo generate --git https://github.com/imaimai17468/hypersig templates/cloudflare --name my-worker
 cd my-worker
-npm run dev
+npx wrangler dev
 npx wrangler login
-npm run deploy",
+npx wrangler deploy",
         ),
         para(
             site,
             L {
-                en: "`npm run dev` builds the worker and runs it at `http://localhost:8787` in workerd, the runtime Workers use. The first build installs `worker-build`, the tool that compiles the crate to wasm, and the wasm target, so it takes a few minutes. `wrangler login` opens the browser to sign in to Cloudflare. `npm run deploy` uploads the worker and prints its address, `https://my-worker.<your subdomain>.workers.dev`, and on an account without a `workers.dev` subdomain it asks to register one first.",
-                ja: "`npm run dev` は Worker をビルドし、Workers と同じ実行環境 workerd で `http://localhost:8787` に配信します。最初のビルドでは、クレートを wasm にコンパイルするツール `worker-build` と wasm の target を入れるので、数分かかります。`wrangler login` はブラウザを開いて Cloudflare にログインします。`npm run deploy` は Worker をアップロードして `https://my-worker.<サブドメイン>.workers.dev` のアドレスを表示します。`workers.dev` のサブドメインをまだ持たないアカウントでは、先にサブドメインの登録を求められます。",
+                en: "`wrangler dev` builds the worker and runs it at `http://localhost:8787` in workerd, the runtime Workers use. The first build installs `worker-build`, the tool that compiles the crate to wasm, and the wasm target, so it takes a few minutes. `wrangler login` opens the browser to sign in to Cloudflare. `wrangler deploy` uploads the worker and prints its address, `https://my-worker.<your subdomain>.workers.dev`, and on an account without a `workers.dev` subdomain it asks to register one first.",
+                ja: "`wrangler dev` は Worker をビルドし、Workers と同じ実行環境 workerd で `http://localhost:8787` に配信します。最初のビルドでは、クレートを wasm にコンパイルするツール `worker-build` と wasm の target を入れるので、数分かかります。`wrangler login` はブラウザを開いて Cloudflare にログインします。`wrangler deploy` は Worker をアップロードして `https://my-worker.<サブドメイン>.workers.dev` のアドレスを表示します。`workers.dev` のサブドメインをまだ持たないアカウントでは、先にサブドメインの登録を求められます。",
             },
         ),
         subheading(
@@ -143,10 +144,6 @@ npm run deploy",
                         "`rust-toolchain.toml`",
                         "Names the wasm target, which rustup adds to the default toolchain on the first build.",
                     ],
-                    &[
-                        "`package.json`",
-                        "`npm run dev` and `npm run deploy`, which run `wrangler dev` and `wrangler deploy`.",
-                    ],
                 ],
                 ja: &[
                     &[
@@ -165,18 +162,10 @@ npm run deploy",
                         "`rust-toolchain.toml`",
                         "wasm の target を書いておくと、rustup が最初のビルドで既定のツールチェーンに足します。",
                     ],
-                    &[
-                        "`package.json`",
-                        "`npm run dev` と `npm run deploy` で `wrangler dev` と `wrangler deploy` を実行します。",
-                    ],
                 ],
             },
         ),
-        code::block(
-            Lang::Rust,
-            Some("src/lib.rs"),
-            code::without_header(WORKER),
-        ),
+        code::block(Lang::Rust, Some("src/lib.rs"), code::without_header(WORKER)),
     ])
 }
 

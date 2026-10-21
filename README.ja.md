@@ -106,9 +106,9 @@ async fn main() -> std::io::Result<()> {
 
 `cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
 
-## Cloudflare Workers
+## デプロイ
 
-ページ、アクション、ストリームは Cloudflare Workers でもそのまま動きます。Worker は受けたリクエストを axum の `Router` に渡します。`npm create cloudflare@latest -- my-worker --template=imaimai17468/hypersig/templates/cloudflare` で [`templates/cloudflare`](templates/cloudflare) からプロジェクトを作ると、`npm run dev` で手元で動かし、`npm run deploy` で公開できます。ほかのホスト向けのコンテナのテンプレートも含めて、[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) で説明しています。リクエストごとに別の isolate で動くことがあるので、リクエストをまたいで共有する状態はメモリに置かず、KV、D1、Durable Object に置いてください。axum は SSE の keep-alive のコメントを tokio のタイマーで送るため、Workers のストリームはこのコメントを送りません。
+[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページで、[`templates/`](templates) のテンプレートからプロジェクトを作り、数行のコマンドで動くところまで進められます。`templates/server` は Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`templates/cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。どちらも `cargo generate` で作ります。Workers のほうは Node.js も要ります。Cloudflare のコマンドラインツール `wrangler` が npm でしか配られていないためです。
 
 ## 向かないアプリ
 
