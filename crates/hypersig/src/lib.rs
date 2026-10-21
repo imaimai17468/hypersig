@@ -119,7 +119,10 @@ pub const RUNTIME_PATH: &str = match std::str::from_utf8(&RUNTIME_PATH_BYTES) {
 pub const RUNTIME_JS: &str = include_str!("../assets/hypersig.js");
 
 /// [`RUNTIME_JS`] compressed with Brotli by the same `pnpm build`, for a browser that accepts it.
-#[cfg(feature = "axum")]
+#[cfg(all(
+    feature = "axum",
+    not(all(target_arch = "wasm32", target_os = "unknown"))
+))]
 const RUNTIME_BR: &[u8] = include_bytes!("../assets/hypersig.js.br");
 
 /// [`RUNTIME_PATH`] as bytes, with the FNV-1a hash of [`RUNTIME_JS`] in hex.

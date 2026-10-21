@@ -16,7 +16,9 @@ default = ["axum"]
 axum = ["dep:axum", "dep:futures", "dep:multer"]
 
 [dependencies]
-axum = { workspace = true, optional = true }
+# Without axum's default features, so that the `axum` feature builds for
+# wasm32-unknown-unknown, where Cloudflare Workers run it.
+axum = { version = "0.8.9", optional = true, default-features = false, features = ["matched-path", "query"] }
 futures = { workspace = true, optional = true }
 # Uploads read their parts with multer directly, because axum's `Field`
 # borrows the `Multipart` it came from and so cannot be skipped in a loop that
@@ -27,7 +29,19 @@ hypersig_style.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
+# A stream's keep-alive comments are timed with tokio, which has no timer on
+# wasm32-unknown-unknown.
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
+axum = { version = "0.8.9", optional = true, default-features = false, features = ["tokio"] }
+
+# `Timestamp::now` reads the clock through JavaScript on wasm32-unknown-unknown,
+# where `SystemTime::now` panics.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+js-sys.workspace = true
+
 [dev-dependencies]
+# The README's quick start, which runs as a doctest, serves with `axum::serve`.
+axum.workspace = true
 divan.workspace = true
 futures.workspace = true
 http-body-util.workspace = true

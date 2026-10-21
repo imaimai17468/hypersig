@@ -43,8 +43,22 @@ impl Timestamp {
 
     /// The server's current time.
     #[must_use]
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     pub fn now() -> Self {
         Self::from(SystemTime::now())
+    }
+
+    /// The server's current time.
+    #[must_use]
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    pub fn now() -> Self {
+        // `SystemTime::now` panics on this target, and `Date.now()` returns
+        // whole milliseconds as a float.
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "Date.now() is a whole number of milliseconds within i64"
+        )]
+        Self(js_sys::Date::now() as i64)
     }
 }
 

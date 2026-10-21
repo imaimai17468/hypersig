@@ -15,7 +15,7 @@ use axum::body::{Body, Bytes};
 use axum::extract::{FromRequestParts, MatchedPath, Query, RawPathParams, Request, State};
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, StatusCode, header};
-use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
+use axum::response::sse::{Event as SseEvent, Sse};
 use axum::response::{Html, IntoResponse, IntoResponseParts, Redirect, Response};
 use axum::routing::{MethodRouter, get, post};
 use futures::{Stream, StreamExt as _, stream};
@@ -41,6 +41,9 @@ pub trait RouterExt<St>: Sized {
     /// asking again, which holds because the path changes with the file. A
     /// request whose `Accept-Encoding` names `br` receives the file
     /// compressed with Brotli at build time, so the server compresses nothing.
+    /// On wasm32-unknown-unknown the file goes out uncompressed, because the
+    /// Cloudflare Workers runtime compresses a body that names a
+    /// `Content-Encoding` again.
     #[must_use]
     fn hypersig_runtime(self) -> Self;
 
@@ -133,7 +136,37 @@ pub trait RouterExt<St>: Sized {
         P: Into<ActionResponse<S>>;
 }
 
+/// The runtime's file, compressed with Brotli where `headers` accept it.
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+fn runtime_file(headers: &HeaderMap) -> Response {
+    let head = [
+        (header::CONTENT_TYPE, "text/javascript; charset=utf-8"),
+        // The path names a hash of the file, so a changed runtime is served
+        // at another path.
+        (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+        (header::VARY, "accept-encoding"),
+    ];
+    if accepts_brotli(headers) {
+        (head, [(header::CONTENT_ENCODING, "br")], crate::RUNTIME_BR).into_response()
+    } else {
+        (head, crate::RUNTIME_JS).into_response()
+    }
+}
+
+/// The runtime's file, uncompressed.
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+fn runtime_file(_headers: &HeaderMap) -> Response {
+    let head = [
+        (header::CONTENT_TYPE, "text/javascript; charset=utf-8"),
+        // The path names a hash of the file, so a changed runtime is served
+        // at another path.
+        (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+    ];
+    (head, crate::RUNTIME_JS).into_response()
+}
+
 /// Whether `Accept-Encoding` names `br` with a weight above zero.
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 fn accepts_brotli(headers: &HeaderMap) -> bool {
     headers
         .get_all(header::ACCEPT_ENCODING)
@@ -156,20 +189,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
     fn hypersig_runtime(self) -> Self {
         self.route(
             crate::RUNTIME_PATH,
-            get(|headers: HeaderMap| async move {
-                let head = [
-                    (header::CONTENT_TYPE, "text/javascript; charset=utf-8"),
-                    // The path names a hash of the file, so a changed
-                    // runtime is served at another path.
-                    (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
-                    (header::VARY, "accept-encoding"),
-                ];
-                if accepts_brotli(&headers) {
-                    (head, [(header::CONTENT_ENCODING, "br")], crate::RUNTIME_BR).into_response()
-                } else {
-                    (head, crate::RUNTIME_JS).into_response()
-                }
-            }),
+            get(|headers: HeaderMap| async move { runtime_file(&headers) }),
         )
     }
 
@@ -316,11 +336,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                             .map(|event| Ok::<_, Infallible>(to_sse(&event))),
                     ),
                 };
-                Ok::<_, RequestError>(
-                    Sse::new(events)
-                        .keep_alive(KeepAlive::default())
-                        .into_response(),
-                )
+                Ok::<_, RequestError>(keep_alive(Sse::new(events)).into_response())
             })
         };
         self.route(stream.path(), method_router(method, route))
@@ -1255,6 +1271,19 @@ fn refuse_foreign_upload(headers: &HeaderMap, limit: usize) -> Result<(), Reques
         return Err(RequestError::new(Refusal::TooLarge));
     }
     Ok(())
+}
+
+/// Sends a comment on a quiet stream, so that a proxy does not close it.
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+fn keep_alive<S>(sse: Sse<S>) -> Sse<axum::response::sse::KeepAliveStream<S>> {
+    sse.keep_alive(axum::response::sse::KeepAlive::default())
+}
+
+/// Leaves the stream as it is, because axum times keep-alive comments with
+/// tokio, which has no timer on wasm32-unknown-unknown.
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+fn keep_alive<S>(sse: Sse<S>) -> Sse<S> {
+    sse
 }
 
 fn to_sse(event: &PatchEvent) -> SseEvent {
