@@ -233,16 +233,19 @@ impl fmt::Display for Color {
 
 /// Writes `text` as a double-quoted CSS string.
 ///
-/// `<` becomes the escape `\3c `, so the text cannot close the `<style>`
-/// element the stylesheet is written into.
+/// A control character becomes a hex escape such as `\a `, because CSS reads
+/// a carriage return or a form feed as a newline, and a newline ends the
+/// string so that the text after it is parsed as rules. `<` becomes `\3c `,
+/// so the text cannot close the `<style>` element the stylesheet is written
+/// into.
 fn quote(text: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.write_str("\"")?;
     for c in text.chars() {
         match c {
             '"' => f.write_str("\\\"")?,
             '\\' => f.write_str("\\\\")?,
-            '\n' => f.write_str("\\a ")?,
             '<' => f.write_str("\\3c ")?,
+            c if c.is_control() => write!(f, "\\{:x} ", u32::from(c))?,
             c => write!(f, "{c}")?,
         }
     }
@@ -337,5 +340,21 @@ impl fmt::Display for CssWideKeyword {
             Self::Revert => "revert",
             Self::RevertLayer => "revert-layer",
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{quoted, url};
+
+    #[test]
+    fn a_string_escapes_every_character_that_would_end_it() {
+        assert_eq!(quoted("a\"b\\c<d").to_string(), r#""a\"b\\c\3c d""#);
+        // CSS reads `\r`, `\x0c`, and `\r\n` as a newline, which ends the
+        // string and lets the rest be read as rules.
+        assert_eq!(
+            url("x\r);}a{b:c}\x0c\n").to_string(),
+            r#"url("x\d );}a{b:c}\c \a ")"#,
+        );
     }
 }
