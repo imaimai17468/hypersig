@@ -479,7 +479,10 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Val<'a>> {
         ),
         "nth" => {
             let index = usize::try_from(Ref::from(&eval(2)?).as_i64()?).ok();
-            let item = index.and_then(|index| match eval(1)? {
+            // A list the server cannot evaluate leaves the item to the
+            // browser. Only an index past the end reads as no item.
+            let list = eval(1)?;
+            let item = index.and_then(|index| match list {
                 Val::Ref(list) => Some(Val::Ref(list.items()?.nth(index)?)),
                 Val::Owned(list) => Some(Val::Owned(list.as_array()?.get(index)?.clone())),
             });
@@ -790,7 +793,7 @@ mod tests {
 
     #[test]
     fn leaves_a_result_that_is_not_finite_to_the_browser() {
-        let root = json!({});
+        let root = json!({ "rows": [{ "v": 1e308 }] });
         let ctx = Ctx {
             root: (&root).into(),
             scope: Vec::new(),
@@ -802,6 +805,15 @@ mod tests {
             json!(["div", ["lit", 1], ["lit", 0]]),
             json!(["mul", ["lit", 1e308], ["lit", 100]]),
             json!(["or_else", ["div", ["lit", 0], ["lit", 0]], ["lit", 0]]),
+            json!([
+                "or_else",
+                [
+                    "nth",
+                    ["map", "rows", 0, ["mul", ["item", 0, "v"], ["lit", 100]]],
+                    ["lit", 0]
+                ],
+                ["lit", 0]
+            ]),
         ] {
             assert!(evaluate(&ast, &ctx).is_none(), "{ast}");
         }
