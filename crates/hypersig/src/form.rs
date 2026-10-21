@@ -680,6 +680,27 @@ mod tests {
     }
 
     #[derive(Serialize, Deserialize, Clone)]
+    struct Fallback {
+        price: f64,
+    }
+
+    impl Signals for Fallback {}
+
+    impl Validate for Fallback {
+        fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+            let price: Sig<Fallback, f64> = sig("price");
+            // An infinity is no missing value, so the fallback does not hide it.
+            let total = (form.at(price) * 100.0).some().unwrap_or(0.0);
+            rules.check(price, total.le(100_000.0), "Too expensive.");
+        }
+    }
+
+    #[test]
+    fn a_fallback_does_not_turn_an_overflow_into_a_pass() {
+        assert!(Form::validate(&Fallback { price: 1e308 }).is_err());
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
     struct Stamp {
         at: f64,
     }
