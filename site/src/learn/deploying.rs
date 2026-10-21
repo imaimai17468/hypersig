@@ -1,12 +1,11 @@
-//! The page on deploying an application, in a container and on Cloudflare
-//! Workers.
+//! The page on deploying an application from a template, in a container and
+//! on Cloudflare Workers.
 
-use super::snippet::{Snippet, show};
 use crate::Site;
 use crate::code::{self, Lang};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
-use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, title};
+use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, table_of, title};
 
 /// The worker of `templates/cloudflare`, which CI builds for
 /// wasm32-unknown-unknown and the end-to-end tests run under `wrangler dev`.
@@ -18,11 +17,12 @@ pub fn deploying(site: Site) -> Part {
         lead(site, Doc::Learn(Learn::Deploying).leads()),
         container(site),
         workers(site),
-        publish(site),
+        on_workers(site),
     ])
 }
 
-/// The steps that build a container image.
+/// The commands that create a project from the server template and run its
+/// container image.
 fn container(site: Site) -> Part {
     parts([
         heading(
@@ -35,72 +35,24 @@ fn container(site: Site) -> Part {
         para(
             site,
             L {
-                en: "These steps put the [quick start](learn/) application, named `my-app` by `cargo new`, into a container image that a container host such as Fly.io, Cloud Run, or Render runs. The browser runtime is compiled into the binary, so the image holds the binary alone.",
-                ja: "この手順では、`cargo new` で `my-app` という名前で作った [クイックスタート](learn/) のアプリケーションを、コンテナのイメージにします。このイメージは Fly.io、Cloud Run、Render のようなコンテナのホストで動きます。ブラウザのランタイムはバイナリに埋め込まれているので、イメージに入れるのはバイナリだけです。",
-            },
-        ),
-        subheading(
-            site,
-            L {
-                en: "1. Listen on the port the host names",
-                ja: "1. ホストが指定するポートで待ち受ける",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "The quick start listens on `127.0.0.1:3000`, which nothing outside the container reaches. Replace the two lines in `main` that bind and serve with these, which read the port from `PORT` and listen on every interface:",
-                ja: "クイックスタートは `127.0.0.1:3000` で待ち受けるので、コンテナの外からは届きません。`main` の中で待ち受けて配信する 2 行を次のように書き換え、`PORT` からポートを読んで、すべてのインターフェースで待ち受けるようにします。",
-            },
-        ),
-        show(Snippet::ServePort),
-        subheading(
-            site,
-            L {
-                en: "2. Write the Dockerfile",
-                ja: "2. Dockerfile を書く",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "Put these two files at the root of the project. The first stage builds the binary and the second copies it into a small image. Replace `my-app` with the `name` in `Cargo.toml`. `.dockerignore` keeps the local `target` directory out of the build.",
-                ja: "プロジェクトのルートに次の 2 つのファイルを置きます。1 つ目のステージでバイナリをビルドし、2 つ目のステージで小さなイメージにコピーします。`my-app` は `Cargo.toml` の `name` に置き換えてください。`.dockerignore` は手元の `target` ディレクトリをビルドに含めないためのものです。",
-            },
-        ),
-        code::block(
-            Lang::Shell,
-            Some("Dockerfile"),
-            r#"FROM rust:1.99-slim-trixie AS build
-WORKDIR /app
-COPY . .
-RUN cargo build --release
-
-FROM debian:trixie-slim
-COPY --from=build /app/target/release/my-app /usr/local/bin/my-app
-ENV PORT=3000
-EXPOSE 3000
-CMD ["my-app"]"#,
-        ),
-        code::block(Lang::Shell, Some(".dockerignore"), "target"),
-        subheading(
-            site,
-            L {
-                en: "3. Build and run the image",
-                ja: "3. イメージをビルドして動かす",
+                en: "These commands need Rust 1.99 or later and Docker. `cargo generate` copies the server template into `my-app` and names the package after it, and the last two lines build the image and run it.",
+                ja: "このコマンドには Rust 1.99 以降と Docker が要ります。`cargo generate` はサーバーのテンプレートを `my-app` にコピーし、パッケージにその名前を付けます。最後の 2 行はイメージをビルドして動かします。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "docker build -t my-app .
+            "cargo install cargo-generate
+cargo generate --git https://github.com/imaimai17468/hypersig templates/server --name my-app
+cd my-app
+docker build -t my-app .
 docker run --rm -p 3000:3000 my-app",
         ),
         para(
             site,
             L {
-                en: "Open `http://localhost:3000`. A host that builds from a Dockerfile takes the project as it is now, and a host that runs an image takes the one built here, pushed to its registry.",
-                ja: "`http://localhost:3000` を開いてください。Dockerfile からビルドするホストにはこのままのプロジェクトを渡し、イメージを動かすホストにはここでビルドしたイメージをそのホストのレジストリに push して渡します。",
+                en: "Open `http://localhost:3000`. The project is the [quick start](learn/) counter, listening on every interface at the port in `PORT`, with a `Dockerfile` that builds the binary in one stage and copies it into a small image in the next. The browser runtime is compiled into the binary, so the image holds the binary alone. A host that builds from a Dockerfile, such as Fly.io, Cloud Run, or Render, takes the project as it is, and a host that runs an image takes the one built here, pushed to its registry.",
+                ja: "`http://localhost:3000` を開いてください。プロジェクトの中身は [クイックスタート](learn/) のカウンターで、すべてのインターフェースの `PORT` のポートで待ち受けます。`Dockerfile` は 1 つ目のステージでバイナリをビルドし、2 つ目のステージで小さなイメージにコピーします。ブラウザのランタイムはバイナリに埋め込まれているので、イメージに入るのはバイナリだけです。Fly.io、Cloud Run、Render のように Dockerfile からビルドするホストにはこのままのプロジェクトを渡し、イメージを動かすホストにはここでビルドしたイメージをそのホストのレジストリに push して渡します。",
             },
         ),
         subheading(
@@ -126,7 +78,8 @@ docker run --rm -p 3000:3000 my-app",
     ])
 }
 
-/// The steps that publish a worker on Cloudflare Workers.
+/// The commands that create a project from the Workers template, run it, and
+/// publish it.
 fn workers(site: Site) -> Part {
     parts([
         heading(
@@ -139,143 +92,97 @@ fn workers(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Workers run Rust compiled to `wasm32-unknown-unknown`. The `worker` crate's `axum` feature hands each request to the axum `Router`, so pages, actions, and streams are written as for a server. These steps need a Cloudflare account, Rust 1.99 or later, and Node.js 22 or later, which `wrangler`, Cloudflare's command-line tool, runs on.",
-                ja: "Workers は `wasm32-unknown-unknown` 向けにコンパイルした Rust を動かします。`worker` クレートの `axum` 機能が受けたリクエストを axum の `Router` に渡すので、ページ、アクション、ストリームはサーバーと同じように書けます。この手順には、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が要ります。Node.js は Cloudflare のコマンドラインツール `wrangler` が使います。",
-            },
-        ),
-        subheading(
-            site,
-            L {
-                en: "1. Install the target and worker-build",
-                ja: "1. target と worker-build を入れる",
+                en: "These commands need a Cloudflare account, Rust 1.99 or later, and Node.js 22 or later. `npm create cloudflare` is Cloudflare's project generator. It copies the Workers template into `my-worker`, installs `wrangler`, Cloudflare's command-line tool, and sets the worker's `name` to the directory's. Answer no when it asks whether to deploy, and deploy with the last line once the worker runs locally.",
+                ja: "このコマンドには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が要ります。`npm create cloudflare` は Cloudflare のプロジェクト生成ツールです。Workers のテンプレートを `my-worker` にコピーし、Cloudflare のコマンドラインツール `wrangler` を入れ、Worker の `name` をディレクトリの名前にします。途中でデプロイするかを聞かれたら「いいえ」と答え、手元で動くのを確かめてから最後の行でデプロイしてください。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "rustup target add wasm32-unknown-unknown
-cargo install --locked worker-build@0.8.7",
-        ),
-        subheading(
-            site,
-            L {
-                en: "2. Create the project",
-                ja: "2. プロジェクトを作る",
-            },
-        ),
-        code::block(
-            Lang::Shell,
-            None,
-            "cargo new --lib my-worker
-cd my-worker",
+            "npm create cloudflare@latest -- my-worker --template=imaimai17468/hypersig/templates/cloudflare
+cd my-worker
+npm run dev
+npx wrangler login
+npm run deploy",
         ),
         para(
             site,
             L {
-                en: "Replace `Cargo.toml` with the file below. A worker is a library that `worker-build` compiles to wasm, and axum goes without its default features, which need tokio's networking.",
-                ja: "`Cargo.toml` を下のファイルに置き換えます。Worker は `worker-build` が wasm にコンパイルするライブラリで、axum は tokio のネットワーク機能を使う既定の機能を外して使います。",
+                en: "`npm run dev` builds the worker and runs it at `http://localhost:8787` in workerd, the runtime Workers use. The first build installs `worker-build`, the tool that compiles the crate to wasm, and the wasm target, so it takes a few minutes. `wrangler login` opens the browser to sign in to Cloudflare. `npm run deploy` uploads the worker and prints its address, `https://my-worker.<your subdomain>.workers.dev`, and on an account without a `workers.dev` subdomain it asks to register one first.",
+                ja: "`npm run dev` は Worker をビルドし、Workers と同じ実行環境 workerd で `http://localhost:8787` に配信します。最初のビルドでは、クレートを wasm にコンパイルするツール `worker-build` と wasm の target を入れるので、数分かかります。`wrangler login` はブラウザを開いて Cloudflare にログインします。`npm run deploy` は Worker をアップロードして `https://my-worker.<サブドメイン>.workers.dev` のアドレスを表示します。`workers.dev` のサブドメインをまだ持たないアカウントでは、先にサブドメインの登録を求められます。",
             },
-        ),
-        code::block(
-            Lang::Toml,
-            Some("Cargo.toml"),
-            r#"[package]
-name = "my-worker"
-version = "0.1.0"
-edition = "2024"
-
-[lib]
-crate-type = ["cdylib"]
-
-[dependencies]
-axum = { version = "0.8", default-features = false }
-futures = "0.3"
-hypersig = "0.1.2"
-serde = { version = "1", features = ["derive"] }
-tower-service = "0.3"
-worker = { version = "0.8", features = ["http", "axum"] }"#,
         ),
         subheading(
             site,
             L {
-                en: "3. Write the worker",
-                ja: "3. Worker を書く",
+                en: "What the template holds",
+                ja: "テンプレートの中身",
             },
         ),
-        para(
+        table_of(
             site,
             L {
-                en: "Replace `src/lib.rs` with the worker below, the [`cloudflare`](https://github.com/imaimai17468/hypersig/tree/main/templates/cloudflare) template in the repository. The `+1` button counts in the browser, the second button doubles the count on the worker, and a stream sends the worker's time every second.",
-                ja: "`src/lib.rs` を下の Worker に置き換えます。これはリポジトリにあるテンプレート [`cloudflare`](https://github.com/imaimai17468/hypersig/tree/main/templates/cloudflare) です。`+1` のボタンはブラウザで数を増やし、もう 1 つのボタンは Worker で数を 2 倍にし、ストリームは Worker の時刻を 1 秒ごとに送ります。",
+                en: &["File", "What it does"],
+                ja: &["ファイル", "役割"],
             },
-        ),
-        code::block(Lang::Rust, Some("src/lib.rs"), code::without_header(WORKER)),
-        subheading(
-            site,
             L {
-                en: "4. Configure wrangler",
-                ja: "4. wrangler を設定する",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "Put `wrangler.toml` at the root of the project. `name` becomes the worker's name in your account and the first part of its address, and `wrangler` runs the `build` command before it serves or publishes.",
-                ja: "プロジェクトのルートに `wrangler.toml` を置きます。`name` はアカウントの中での Worker の名前になり、アドレスの先頭にも使われます。`wrangler` は配信や公開の前に `build` のコマンドを実行します。",
+                en: &[
+                    &[
+                        "`src/lib.rs`",
+                        "The worker below. The `+1` button counts in the browser, the second button doubles the count on the worker, and a stream sends the worker's time every second.",
+                    ],
+                    &[
+                        "`Cargo.toml`",
+                        "A library that `worker-build` compiles, with axum without its default features, which need tokio's networking.",
+                    ],
+                    &[
+                        "`wrangler.toml`",
+                        "The worker's name, and the build command, which installs `worker-build` when it is missing and runs it.",
+                    ],
+                    &[
+                        "`rust-toolchain.toml`",
+                        "Names the wasm target, which rustup adds to the default toolchain on the first build.",
+                    ],
+                    &[
+                        "`package.json`",
+                        "`npm run dev` and `npm run deploy`, which run `wrangler dev` and `wrangler deploy`.",
+                    ],
+                ],
+                ja: &[
+                    &[
+                        "`src/lib.rs`",
+                        "下の Worker です。`+1` のボタンはブラウザで数を増やし、もう 1 つのボタンは Worker で数を 2 倍にし、ストリームは Worker の時刻を 1 秒ごとに送ります。",
+                    ],
+                    &[
+                        "`Cargo.toml`",
+                        "`worker-build` がコンパイルするライブラリです。axum は tokio のネットワーク機能を使う既定の機能を外して使います。",
+                    ],
+                    &[
+                        "`wrangler.toml`",
+                        "Worker の名前と、ビルドのコマンドです。コマンドは `worker-build` がなければ入れてから実行します。",
+                    ],
+                    &[
+                        "`rust-toolchain.toml`",
+                        "wasm の target を書いておくと、rustup が最初のビルドで既定のツールチェーンに足します。",
+                    ],
+                    &[
+                        "`package.json`",
+                        "`npm run dev` と `npm run deploy` で `wrangler dev` と `wrangler deploy` を実行します。",
+                    ],
+                ],
             },
         ),
         code::block(
-            Lang::Toml,
-            Some("wrangler.toml"),
-            r#"name = "my-worker"
-main = "build/worker/shim.mjs"
-compatibility_date = "2026-10-01"
-
-[build]
-command = "worker-build --release""#,
+            Lang::Rust,
+            Some("src/lib.rs"),
+            code::without_header(WORKER),
         ),
     ])
 }
 
-/// The steps that run the worker locally and publish it, and what changes
-/// on Workers.
-fn publish(site: Site) -> Part {
+/// What runs differently on Workers than on a server.
+fn on_workers(site: Site) -> Part {
     parts([
-        subheading(
-            site,
-            L {
-                en: "5. Run it locally",
-                ja: "5. 手元で動かす",
-            },
-        ),
-        code::block(Lang::Shell, None, "npx wrangler dev"),
-        para(
-            site,
-            L {
-                en: "`wrangler dev` builds the worker and runs it in workerd, the runtime Workers use, at `http://localhost:8787`. The first build takes about a minute.",
-                ja: "`wrangler dev` は Worker をビルドし、Workers と同じ実行環境 workerd で `http://localhost:8787` に配信します。最初のビルドには 1 分ほどかかります。",
-            },
-        ),
-        subheading(
-            site,
-            L {
-                en: "6. Publish it",
-                ja: "6. 公開する",
-            },
-        ),
-        code::block(
-            Lang::Shell,
-            None,
-            "npx wrangler login
-npx wrangler deploy",
-        ),
-        para(
-            site,
-            L {
-                en: "`wrangler login` opens the browser to sign in to Cloudflare. `wrangler deploy` builds the worker, uploads it, and prints its address, `https://my-worker.<your subdomain>.workers.dev`. On an account without a `workers.dev` subdomain, it asks to register one first.",
-                ja: "`wrangler login` はブラウザを開いて Cloudflare にログインします。`wrangler deploy` は Worker をビルドしてアップロードし、`https://my-worker.<サブドメイン>.workers.dev` のアドレスを表示します。`workers.dev` のサブドメインをまだ持たないアカウントでは、先にサブドメインの登録を求められます。",
-            },
-        ),
         subheading(
             site,
             L {

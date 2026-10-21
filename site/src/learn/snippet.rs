@@ -65,7 +65,6 @@ snippets! {
     Styles => "styles.rs";
     Effects => "effects.rs";
     StaticPage => "static_page.rs";
-    ServePort => "serve_port.rs", "no_run";
     UiSetup => "ui_setup.rs";
     UiTheme => "ui_theme.rs";
     StyleBasics => "style_basics.rs";
