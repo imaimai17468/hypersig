@@ -13,10 +13,10 @@ use hypersig::style::value::{BorderBottomStyle, BorderStyle, FontWeight, px, rem
 use hypersig::style::{Element, Global, Style};
 use hypersig_ui::token;
 
-use crate::Site;
 use crate::code::{self, Lang};
 use crate::lang::L;
 use crate::prose::{Part, parts};
+use crate::{Site, own};
 
 /// Declares each demo: its variant, its module and file, and the height of
 /// its frame, enough for the demo without a scrollbar.
@@ -196,7 +196,7 @@ pub fn show(site: Site, demo: Demo) -> Part {
             )
             .child(
                 el("iframe")
-                    .attr("src", site.page_url(&demo.path()))
+                    .src(own(site.page_url(&demo.path())))
                     .attr(
                         "title",
                         site.t(L {

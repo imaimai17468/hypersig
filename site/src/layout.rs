@@ -8,17 +8,17 @@ use hypersig::style::value::{
     JustifyContent, LineHeight, OverflowY, Position, TextDecorationLine, ZIndex, px, raw, rem,
 };
 use hypersig::style::{Element, Global, Media, PseudoClass, Style};
-use hypersig::{OpenGraph, OpenGraphType, Page, if_else};
+use hypersig::{OpenGraph, OpenGraphType, Page, SafeUrl, if_else};
 use hypersig_ui::{ButtonVariant, icon_button, token};
 
 use crate::doc::{Doc, Library};
 use crate::lang::{L, Lang};
 use crate::prose::{self, Docs, Part, href};
-use crate::{Site, code};
+use crate::{Site, code, own};
 use hypersig_i18n::Locale as _;
 
 /// The repository the header links to.
-pub const REPOSITORY: &str = "https://github.com/imaimai17468/hypersig";
+pub const REPOSITORY: SafeUrl = SafeUrl::new("https://github.com/imaimai17468/hypersig");
 
 /// The id of the sidebar, which the menu button controls.
 const SIDEBAR: &str = "sidebar";
@@ -178,12 +178,12 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                         )
                         .children(library.sections().iter().map(|&(label, target)| {
                             let current = in_section(doc, target);
-                            mark_section(a().attr("href", target.url(site)), current)
+                            mark_section(a().href(own(target.url(site))), current)
                                 .css(nav_link_style(current))
                                 .text(site.t(label))
                         }))
                         .child(
-                            a().attr("href", href(site, library.api()))
+                            a().href(href(site, library.api()))
                                 .css(nav_link_style(false).merge(wide_only()))
                                 .text("API"),
                         ),
@@ -198,7 +198,7 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                         .child(switcher(site, library))
                         .child(languages(site, doc))
                         .child(
-                            a().attr("href", REPOSITORY)
+                            a().href(REPOSITORY)
                                 .css(nav_link_style(false).font_size(rem(0.875)))
                                 .text("GitHub"),
                         ),
@@ -215,7 +215,7 @@ fn other_language(site: Site, doc: Doc) -> Part {
     } else {
         Lang::En
     };
-    a().attr("href", doc.url(site.with_lang(other)))
+    a().href(own(doc.url(site.with_lang(other))))
         .attr("hreflang", other.tag())
         .attr("lang", other.tag())
         .css(
@@ -239,11 +239,11 @@ fn brand(site: Site, library: Library) -> Part {
     div()
         .css(hstack(rem(0.5)))
         .child(
-            a().attr("href", Doc::Home.url(site))
+            a().href(own(Doc::Home.url(site)))
                 .css(name.clone().merge(hstack(rem(0.5))))
                 .child(
                     img()
-                        .attr("src", site.icon())
+                        .src(own(site.icon()))
                         .attr("alt", "")
                         .attr("width", "24")
                         .attr("height", "24"),
@@ -257,7 +257,7 @@ fn brand(site: Site, library: Library) -> Part {
                 .text("/")
         }))
         .children((library != Library::Framework).then(|| {
-            a().attr("href", library.home().url(site))
+            a().href(own(library.home().url(site)))
                 .css(name.font_weight(FontWeight::Number(500.0)))
                 .text(library.name(site))
         }))
@@ -284,7 +284,7 @@ fn switcher(site: Site, current: Library) -> Part {
         )
         .children(Library::ALL.into_iter().map(|library| {
             let here = library == current;
-            let link = a().attr("href", library.home().url(site)).css(
+            let link = a().href(own(library.home().url(site))).css(
                 Style::new()
                     .padding_block(rem(0.25))
                     .padding_inline(rem(0.625))
@@ -315,7 +315,7 @@ fn languages(site: Site, doc: Doc) -> Part {
         .children(Lang::ALL.iter().map(|&lang| {
             let here = lang == site.lang();
             let link = a()
-                .attr("href", doc.url(site.with_lang(lang)))
+                .href(own(doc.url(site.with_lang(lang))))
                 .attr("hreflang", lang.tag())
                 .attr("lang", lang.tag())
                 .css(nav_link_style(here));
@@ -461,7 +461,7 @@ fn sidebar(site: Site, doc: Doc) -> Part {
                                 .css(stack(px(2)))
                                 .children(group.docs.iter().map(|&target| {
                                     let current = target == doc;
-                                    mark_current(a().attr("href", target.url(site)), current)
+                                    mark_current(a().href(own(target.url(site))), current)
                                         .css(sidebar_link_style(current))
                                         .text(target.title(site))
                                 })),
@@ -485,12 +485,12 @@ fn phone_sections(site: Site, doc: Doc) -> Part {
         )
         .children(library.sections().iter().map(|&(label, target)| {
             let current = in_section(doc, target);
-            mark_section(a().attr("href", target.url(site)), current)
+            mark_section(a().href(own(target.url(site))), current)
                 .css(sidebar_link_style(current))
                 .text(site.t(label))
         }))
         .child(
-            a().attr("href", href(site, library.api()))
+            a().href(href(site, library.api()))
                 .css(sidebar_link_style(false))
                 .text("API"),
         )
@@ -499,7 +499,7 @@ fn phone_sections(site: Site, doc: Doc) -> Part {
                 .into_iter()
                 .filter(|&other| other != library)
                 .map(|other| {
-                    a().attr("href", other.home().url(site))
+                    a().href(own(other.home().url(site)))
                         .css(sidebar_link_style(false))
                         .text(site.t(L {
                             en: format!("{} docs", other.name(site)),
@@ -508,7 +508,7 @@ fn phone_sections(site: Site, doc: Doc) -> Part {
                 }),
         )
         .child(
-            a().attr("href", REPOSITORY)
+            a().href(REPOSITORY)
                 .css(sidebar_link_style(false))
                 .text("GitHub"),
         )
@@ -541,7 +541,7 @@ fn sidebar_link_style(current: bool) -> Style {
 /// The links to the pages before and after the current one.
 fn pager(site: Site, before: Option<Doc>, after: Option<Doc>) -> Part {
     let card = |doc: Doc, label: &str, end: bool| {
-        a().attr("href", doc.url(site))
+        a().href(own(doc.url(site)))
             .css(
                 stack(rem(0.25))
                     .padding(rem(1))

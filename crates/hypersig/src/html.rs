@@ -2452,7 +2452,7 @@ mod tests {
         let html = picture::<Page>()
             .child(source().attr("srcset", "/a.avif"))
             .child(el("meta").attr("itemprop", "name"))
-            .child(img().attr("src", "/a.png"))
+            .child(img().src(crate::SafeUrl::new("/a.png")))
             .render();
         assert_eq!(
             html,

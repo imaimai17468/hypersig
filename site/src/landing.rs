@@ -14,7 +14,7 @@ use crate::doc::{COMPONENTS, Doc, Library};
 use crate::lang::{L, Text};
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, href, inline, para};
-use crate::{Site, layout, prose};
+use crate::{Site, layout, own, prose};
 
 /// A landing page of `doc` holding `sections`, with the page footer.
 pub fn page(site: Site, doc: Doc, sections: impl IntoIterator<Item = Part>) -> String {
@@ -80,7 +80,7 @@ pub fn hero(site: Site, eyebrow: &str, heading: &str, text: &str, actions: &[Act
             div()
                 .css(wrap(rem(0.75)).justify_content(JustifyContent::Center))
                 .children(actions.iter().map(|&(label, target, variant)| {
-                    a().attr("href", href(site, target))
+                    a().href(href(site, target))
                         .css(button_style(variant, ButtonSize::Lg))
                         .text(label)
                 })),
@@ -135,7 +135,7 @@ pub fn titled<'a>(
 /// A card that links to the landing page of `library`, for the landing
 /// page of another one.
 pub fn library_card(site: Site, library: Library, krate: &str, text: &str) -> Part {
-    a().attr("href", library.home().url(site))
+    a().href(own(library.home().url(site)))
         .css(card_style().on(
             PseudoClass::Hover,
             Style::new().background_color(token::accent().var()),
@@ -483,7 +483,7 @@ fn catalog(site: Site) -> Part {
                                 .text(site.t(group.title)),
                         )
                         .children(group.docs.iter().map(|&doc| {
-                            a().attr("href", doc.url(site))
+                            a().href(own(doc.url(site)))
                                 .css(Style::new().color(token::muted_foreground().var()).on(
                                     PseudoClass::Hover,
                                     Style::new().color(token::foreground().var()),

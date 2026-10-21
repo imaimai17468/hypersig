@@ -7,7 +7,7 @@ use hypersig::style::value::{
     BorderStyle, Color, FontWeight, Opacity, TextDecorationLine, px, rem,
 };
 use hypersig::style::{Condition, PseudoClass, Style};
-use hypersig::{Page, Signals};
+use hypersig::{Page, SafeUrl, Signals};
 use hypersig_ui::token;
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +21,7 @@ pub struct Settings {
 
 pub fn page(site: Site) -> Page<Settings> {
     let card = a()
-        .attr("href", "#")
+        .href(SafeUrl::new("#"))
         .css(
             stack(rem(0.25))
                 .group()

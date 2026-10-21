@@ -1,7 +1,7 @@
 use hypersig::html::{a, div, input, label, span};
 use hypersig::style::value::{Color, Opacity};
 use hypersig::style::{Condition, PseudoClass, Style};
-use hypersig::Signals;
+use hypersig::{SafeUrl, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -11,7 +11,7 @@ struct Settings {
 
 // The arrow shows while the pointer is anywhere on the card.
 let card = a::<Settings>()
-    .attr("href", "/docs")
+    .href(SafeUrl::new("/docs"))
     .css(Style::new().group())
     .text("Read the docs")
     .child(
