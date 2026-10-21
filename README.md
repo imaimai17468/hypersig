@@ -110,6 +110,10 @@ Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the 
 
 [Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) creates a project from a template in [`templates/`](templates) and takes it to a running application in a few commands. `templates/server` builds a container image with Docker for a host such as Fly.io, Cloud Run, or Render. `templates/cloudflare` runs the same pages, actions, and streams on Cloudflare Workers, where the worker hands each request to the axum `Router`. Both are created with `cargo generate`, and the Workers one also needs Node.js, because Cloudflare publishes its command-line tool `wrangler` only on npm. The page also covers a project you already have: adding the template's `Dockerfile` to it, or turning it into a worker.
 
+## Security
+
+[Security](https://imaimai17468.github.io/hypersig/learn/security/) lists what hypersig checks: escaping, the attributes and URLs a page may write, the requests an action refuses, and why a request cannot name code to run on the server. It also lists what each application checks itself, starting with who may call each action.
+
 ## What it does not suit
 
 The browser does on its own only the operations and statements hypersig provides, and the scripts a page loads. A JavaScript library such as a map or a rich text editor can run inside a custom element, which the page passes values to through attributes and takes typed events from ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)). Anything else goes through the server, so it does not suit these applications:

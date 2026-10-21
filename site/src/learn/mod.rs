@@ -5,6 +5,7 @@ mod deploying;
 mod forms;
 mod javascript;
 mod requests;
+mod security;
 mod server;
 pub mod snippet;
 mod state;
@@ -32,6 +33,7 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::EscapeHatches => server::escape_hatches(site),
         Learn::JavaScript => javascript::javascript(site),
         Learn::Deploying => deploying::deploying(site),
+        Learn::Security => security::security(site),
     }
 }
 

@@ -110,6 +110,10 @@ async fn main() -> std::io::Result<()> {
 
 [デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページで、[`templates/`](templates) のテンプレートからプロジェクトを作り、数行のコマンドで動くところまで進められます。`templates/server` は Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`templates/cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。どちらのテンプレートも `cargo generate` で作成します。Workers では Node.js も必要です。Cloudflare のコマンドラインツール `wrangler` が npm でしか配布されていないためです。既存のプロジェクトにテンプレートの `Dockerfile` を追加する方法と、Worker に移行する方法も同じページで説明しています。
 
+## セキュリティ
+
+[セキュリティ](https://imaimai17468.github.io/hypersig/ja/learn/security/) のページに、hypersig が確かめることをまとめています。エスケープ、ページに書ける属性と URL、アクションが断るリクエスト、リクエストがサーバーで動かすコードを名指しできない理由です。アクションを誰が呼んでよいかをはじめ、アプリが自分で確かめることも載せています。
+
 ## 向かないアプリ
 
 ブラウザだけで完結するのは、hypersig が用意した演算と命令と、ページが読み込んだスクリプトだけです。地図やリッチテキストエディタのような JavaScript のライブラリはカスタム要素の中で動かせます。ページは属性で値を渡し、型付きのイベントを受け取ります（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。それ以外の処理はサーバーを通すので、次のようなアプリには向きません。
