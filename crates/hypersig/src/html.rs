@@ -1227,6 +1227,21 @@ impl<S> El<S> {
             name != "id" && name != "class",
             "use `El::id` or `El::class` to set `{name}`"
         );
+        // The browser matches attribute names without regard to case.
+        let lower = name.to_ascii_lowercase();
+        assert!(
+            lower != "href" && lower != "src",
+            "use `El::href` or `El::src`, which take a `Link` or a `SafeUrl`, to set `{name}`"
+        );
+        assert!(
+            !lower.starts_with("on")
+                && !matches!(
+                    lower.as_str(),
+                    "srcdoc" | "action" | "formaction" | "xlink:href"
+                ),
+            "`{name}` can run a script, so `attr` does not write it; attach a handler with \
+             the `on_*` methods"
+        );
     }
 
     /// Sets a plain attribute.
@@ -1234,7 +1249,11 @@ impl<S> El<S> {
     /// # Panics
     ///
     /// Panics if `name` is `id` or `class`, which have their own methods, or
-    /// starts with `data-hs-`, which only the typed methods may write.
+    /// starts with `data-hs-`, which only the typed methods may write. Panics
+    /// as well, ignoring case, for an attribute whose value can run a script:
+    /// `href` and `src`, which [`El::href`] and [`El::src`] set from a value
+    /// that cannot, an event handler `on*`, `srcdoc`, `action`, `formaction`,
+    /// and `xlink:href`.
     #[must_use]
     pub fn attr(mut self, name: &'static str, value: impl Into<String>) -> Self {
         Self::check_attr_name(name);
@@ -2420,7 +2439,7 @@ pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
 
 #[cfg(test)]
 mod tests {
-    use super::{Class, button, div, el, img, input, picture, source, span};
+    use super::{Class, a, button, div, el, img, input, picture, source, span};
     use crate::_private::sig;
     use crate::style::Token;
     use crate::{Sig, Stmt};
@@ -2458,6 +2477,24 @@ mod tests {
             html,
             r#"<picture><source srcset="/a.avif"><meta itemprop="name"><img src="/a.png"></picture>"#
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "use `El::href` or `El::src`")]
+    fn attr_refuses_href() {
+        let _ = a::<Page>().attr("href", "javascript:alert(1)");
+    }
+
+    #[test]
+    #[should_panic(expected = "can run a script")]
+    fn attr_refuses_an_event_handler_in_any_case() {
+        let _ = img::<Page>().attr("onError", "alert(1)");
+    }
+
+    #[test]
+    #[should_panic(expected = "use `El::href` or `El::src`")]
+    fn bind_attr_refuses_src() {
+        let _ = img::<Page>().bind_attr("SRC", name());
     }
 
     #[test]
