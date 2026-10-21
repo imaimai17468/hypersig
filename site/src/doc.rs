@@ -687,8 +687,8 @@ impl Doc {
                     ja: "地図、グラフ、リッチテキストエディタは、ブラウザで JavaScript のライブラリとして動きます。カスタム要素で包むと、ページのシグナルから値を受け取り、イベントを型付きの値としてページに返せます。",
                 },
                 Learn::Deploying => L {
-                    en: "An application is an axum server. It runs as one binary on a host that keeps a request open as long as a stream needs, and on Cloudflare Workers as WebAssembly.",
-                    ja: "アプリケーションは axum のサーバーです。ストリームが必要なだけリクエストを開いておけるホストでは 1 つのバイナリとして動き、Cloudflare Workers では WebAssembly として動きます。",
+                    en: "An application is an axum server. These steps put it into a container image for a container host, or build it to WebAssembly and publish it on Cloudflare Workers.",
+                    ja: "アプリケーションは axum のサーバーです。ここでは、コンテナのイメージにしてコンテナのホストで動かす手順と、WebAssembly にビルドして Cloudflare Workers に公開する手順を説明します。",
                 },
                 Learn::Signals => L {
                     en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
