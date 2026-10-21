@@ -108,7 +108,7 @@ async fn main() -> std::io::Result<()> {
 
 ## Cloudflare Workers
 
-ページ、アクション、ストリームは Cloudflare Workers でもそのまま動きます。Worker は受けたリクエストを axum の `Router` に渡します。[`examples/cloudflare`](examples/cloudflare) は `worker-build` でビルドし、`wrangler dev` で起動します。空のプロジェクトから Worker を公開するまでの手順は [デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) にあります。リクエストごとに別の isolate で動くことがあるので、リクエストをまたいで共有する状態はメモリに置かず、KV、D1、Durable Object に置いてください。axum は SSE の keep-alive のコメントを tokio のタイマーで送るため、Workers のストリームはこのコメントを送りません。
+ページ、アクション、ストリームは Cloudflare Workers でもそのまま動きます。Worker は受けたリクエストを axum の `Router` に渡します。[`templates/cloudflare`](templates/cloudflare) は `worker-build` でビルドし、`wrangler dev` で起動します。空のプロジェクトから Worker を公開するまでの手順は [デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) にあります。リクエストごとに別の isolate で動くことがあるので、リクエストをまたいで共有する状態はメモリに置かず、KV、D1、Durable Object に置いてください。axum は SSE の keep-alive のコメントを tokio のタイマーで送るため、Workers のストリームはこのコメントを送りません。
 
 ## 向かないアプリ
 

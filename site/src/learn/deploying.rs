@@ -8,24 +8,9 @@ use crate::doc::{Doc, Learn};
 use crate::lang::L;
 use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, title};
 
-/// The worker of `examples/cloudflare`, which CI builds for
+/// The worker of `templates/cloudflare`, which CI builds for
 /// wasm32-unknown-unknown and the end-to-end tests run under `wrangler dev`.
-const WORKER: &str = include_str!("../../../examples/cloudflare/src/lib.rs");
-
-/// The worker's source after its module header and the `#![cfg]` line that
-/// leaves the example empty on other targets, which a worker crate of its own
-/// does not need.
-fn worker_source() -> &'static str {
-    let source = code::without_header(WORKER);
-    let (attribute, rest) = source
-        .split_once("\n\n")
-        .expect("the worker's first item follows a blank line");
-    assert!(
-        attribute.starts_with("#![cfg("),
-        "the worker opens with its `#![cfg]` line"
-    );
-    rest
-}
+const WORKER: &str = include_str!("../../../templates/cloudflare/src/lib.rs");
 
 pub fn deploying(site: Site) -> Part {
     parts([
@@ -220,11 +205,11 @@ worker = { version = "0.8", features = ["http", "axum"] }"#,
         para(
             site,
             L {
-                en: "Replace `src/lib.rs` with the worker below, the [`cloudflare`](https://github.com/imaimai17468/hypersig/tree/main/examples/cloudflare) example in the repository. The `+1` button counts in the browser, the second button doubles the count on the worker, and a stream sends the worker's time every second.",
-                ja: "`src/lib.rs` を下の Worker に置き換えます。これはリポジトリにある例 [`cloudflare`](https://github.com/imaimai17468/hypersig/tree/main/examples/cloudflare) です。`+1` のボタンはブラウザで数を増やし、もう 1 つのボタンは Worker で数を 2 倍にし、ストリームは Worker の時刻を 1 秒ごとに送ります。",
+                en: "Replace `src/lib.rs` with the worker below, the [`cloudflare`](https://github.com/imaimai17468/hypersig/tree/main/templates/cloudflare) template in the repository. The `+1` button counts in the browser, the second button doubles the count on the worker, and a stream sends the worker's time every second.",
+                ja: "`src/lib.rs` を下の Worker に置き換えます。これはリポジトリにあるテンプレート [`cloudflare`](https://github.com/imaimai17468/hypersig/tree/main/templates/cloudflare) です。`+1` のボタンはブラウザで数を増やし、もう 1 つのボタンは Worker で数を 2 倍にし、ストリームは Worker の時刻を 1 秒ごとに送ります。",
             },
         ),
-        code::block(Lang::Rust, Some("src/lib.rs"), worker_source()),
+        code::block(Lang::Rust, Some("src/lib.rs"), code::without_header(WORKER)),
         subheading(
             site,
             L {

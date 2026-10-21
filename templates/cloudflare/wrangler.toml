@@ -1,0 +1,8 @@
+name = "my-worker"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-10-01"
+
+# worker-build compiles the crate to wasm and writes the JavaScript shim that
+# `main` names. `cargo install` does nothing once it is installed.
+[build]
+command = "cargo install --quiet --locked worker-build@0.8.7 && worker-build --release"

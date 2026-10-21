@@ -1,6 +1,10 @@
 [workspace]
 resolver = "3"
 members = ["crates/*", "examples/*", "site"]
+# Each template is a project of its own, which a reader copies out of the
+# repository, so it depends on hypersig from crates.io. templates/stage.sh
+# copies one under target/templates to build it against this repository.
+exclude = ["templates", "target/templates"]
 
 [workspace.package]
 version = "0.1.2"

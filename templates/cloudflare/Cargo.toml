@@ -1,0 +1,18 @@
+[package]
+name = "my-worker"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Without its default features, which need tokio's networking, so that axum
+# builds for wasm32-unknown-unknown.
+axum = { version = "0.8", default-features = false }
+futures = "0.3"
+hypersig = "0.1.2"
+serde = { version = "1", features = ["derive"] }
+tower-service = "0.3"
+worker = { version = "0.8", features = ["http", "axum"] }

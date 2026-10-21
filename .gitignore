@@ -13,5 +13,8 @@ node_modules/
 /bench/style/target
 /bench/style/out
 /bench/style/panda/styled-system
-/examples/cloudflare/build
-/examples/cloudflare/.wrangler
+/templates/*/target
+/templates/*/Cargo.lock
+/templates/cloudflare/build
+/templates/cloudflare/.wrangler
+/templates/cloudflare/node_modules

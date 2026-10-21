@@ -1,15 +1,12 @@
-//! A counter that runs on Cloudflare Workers, with a clock the server streams.
+//! A counter that runs on Cloudflare Workers, with a clock the worker streams.
 //!
 //! The page, its action, and its stream are the same hypersig code an axum
 //! server runs. The worker hands each request to the axum `Router`.
 //!
-//! Install the build tool with `cargo install --locked worker-build@0.8.7`,
-//! then run `npx wrangler dev` in this directory and open
-//! <http://localhost:8787>. `npx wrangler deploy` publishes it.
-//! Each request may run in a different isolate, so a value kept in memory does
-//! not reach the next request. Keep shared state in KV, D1, or a Durable Object.
-
-#![cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+//! Run `npm run dev` and open <http://localhost:8787>, and publish it with
+//! `npm run deploy`. Each request may run in a different isolate, so a value
+//! kept in memory does not reach the next request. Keep shared state in KV,
+//! D1, or a Durable Object.
 
 use std::time::Duration;
 

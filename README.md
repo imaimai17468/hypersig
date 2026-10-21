@@ -108,7 +108,7 @@ Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the 
 
 ## Cloudflare Workers
 
-The same pages, actions, and streams run on Cloudflare Workers, where the worker hands each request to the axum `Router`. [`examples/cloudflare`](examples/cloudflare) builds with `worker-build` and runs with `wrangler dev`, and [Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) walks through publishing a worker from an empty project. Each request may run in a different isolate, so state the requests share goes in KV, D1, or a Durable Object rather than in memory, and a stream sends no keep-alive comments there, because axum times them with tokio.
+The same pages, actions, and streams run on Cloudflare Workers, where the worker hands each request to the axum `Router`. [`templates/cloudflare`](templates/cloudflare) builds with `worker-build` and runs with `wrangler dev`, and [Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) walks through publishing a worker from an empty project. Each request may run in a different isolate, so state the requests share goes in KV, D1, or a Durable Object rather than in memory, and a stream sends no keep-alive comments there, because axum times them with tokio.
 
 ## What it does not suit
 

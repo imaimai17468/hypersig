@@ -50,7 +50,13 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       # The crates a Cloudflare Worker links, built for the target it runs on.
-      - run: cargo clippy -p hypersig -p hypersig_i18n -p hypersig_ui -p example-cloudflare --target wasm32-unknown-unknown -- -D warnings
+      - run: cargo clippy -p hypersig -p hypersig_i18n -p hypersig_ui --target wasm32-unknown-unknown -- -D warnings
+      # The templates sit outside the workspace, so each is checked in a copy
+      # whose hypersig is this repository's.
+      - name: The Cloudflare template
+        run: cd "$(templates/stage.sh cloudflare)" && cargo fmt --check && cargo clippy --target wasm32-unknown-unknown -- -D warnings
+      - name: The server template
+        run: cd "$(templates/stage.sh server)" && cargo fmt --check && cargo clippy -- -D warnings
       - run: cargo check -p hypersig --no-default-features
       - run: cargo doc --workspace --no-deps
         env:
