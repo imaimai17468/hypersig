@@ -571,7 +571,7 @@ dependencies = [
 
 [[package]]
 name = "hypersig"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "axum",
  "divan",
@@ -590,7 +590,7 @@ dependencies = [
 
 [[package]]
 name = "hypersig_i18n"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "axum",
  "http-body-util",
@@ -603,14 +603,14 @@ dependencies = [
 
 [[package]]
 name = "hypersig_proc"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "hypersig_proc_impl",
 ]
 
 [[package]]
 name = "hypersig_proc_impl"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "insta",
  "prettyplease",
@@ -621,14 +621,14 @@ dependencies = [
 
 [[package]]
 name = "hypersig_style"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "hypersig_ui"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "hypersig",
  "serde",
