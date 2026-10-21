@@ -108,7 +108,7 @@ async fn main() -> std::io::Result<()> {
 
 ## デプロイ
 
-[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページで、[`templates/`](templates) のテンプレートからプロジェクトを作り、数行のコマンドで動くところまで進められます。`templates/server` は Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`templates/cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。どちらも `cargo generate` で作ります。Workers のほうは Node.js も要ります。Cloudflare のコマンドラインツール `wrangler` が npm でしか配られていないためです。すでにあるプロジェクトにテンプレートの `Dockerfile` を足す方法と、Worker に変える方法も同じページにあります。
+[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページで、[`templates/`](templates) のテンプレートからプロジェクトを作り、数行のコマンドで動くところまで進められます。`templates/server` は Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`templates/cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。どちらのテンプレートも `cargo generate` で作成します。Workers では Node.js も必要です。Cloudflare のコマンドラインツール `wrangler` が npm でしか配布されていないためです。既存のプロジェクトにテンプレートの `Dockerfile` を追加する方法と、Worker に移行する方法も同じページで説明しています。
 
 ## 向かないアプリ
 

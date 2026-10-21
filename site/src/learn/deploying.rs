@@ -41,7 +41,7 @@ fn container(site: Site) -> Part {
             site,
             L {
                 en: "These commands need Rust 1.99 or later and Docker. `cargo generate` copies the server template into `my-app` and names the package after it, and the last two lines build the image and run it.",
-                ja: "このコマンドには Rust 1.99 以降と Docker が要ります。`cargo generate` はサーバーのテンプレートを `my-app` にコピーし、パッケージにその名前を付けます。最後の 2 行はイメージをビルドして動かします。",
+                ja: "このコマンドを実行するには、Rust 1.99 以降と Docker が必要です。`cargo generate` はサーバーのテンプレートを `my-app` にコピーし、パッケージにその名前を付けます。最後の 2 行でイメージをビルドし、起動します。",
             },
         ),
         code::block(
@@ -71,14 +71,14 @@ fn container_existing(site: Site) -> Part {
             site,
             L {
                 en: "Add the Dockerfile to a project you have",
-                ja: "すでにあるプロジェクトに Dockerfile を足す",
+                ja: "既存のプロジェクトに Dockerfile を追加する",
             },
         ),
         para(
             site,
             L {
                 en: "The template's `Dockerfile` names no package, so it builds any project whose package has one binary. Download it to the directory that holds `Cargo.toml`, with a `.dockerignore` that keeps `target` out of the build.",
-                ja: "テンプレートの `Dockerfile` はパッケージの名前を書いていないので、バイナリが 1 つのパッケージならどのプロジェクトでもそのままビルドできます。`Cargo.toml` のあるディレクトリに取ってきて、`target` をビルドに渡さないための `.dockerignore` も置いてください。",
+                ja: "テンプレートの `Dockerfile` はパッケージの名前を書いていないので、バイナリが 1 つのパッケージならどのプロジェクトでもそのままビルドできます。`Cargo.toml` のあるディレクトリにダウンロードし、`target` をビルドの対象から外す `.dockerignore` も置いてください。",
             },
         ),
         code::block(
@@ -91,7 +91,7 @@ echo target >> .dockerignore",
             site,
             L {
                 en: "A `main` that binds `127.0.0.1`, as the examples in this repository do, cannot be reached from outside the container. Listen on every interface at the port in `PORT` instead.",
-                ja: "このリポジトリの例のように `127.0.0.1` で待ち受ける `main` には、コンテナの外からつなげません。すべてのインターフェースの `PORT` のポートで待ち受けるように変えてください。",
+                ja: "このリポジトリの例のように `127.0.0.1` で待ち受ける `main` には、コンテナの外から接続できません。すべてのインターフェースの `PORT` のポートで待ち受けるように変えてください。",
             },
         ),
         show(Snippet::Listen),
@@ -99,7 +99,7 @@ echo target >> .dockerignore",
             site,
             L {
                 en: "The `Dockerfile` builds with `cargo install --path .`, which fails at the root of a workspace, because the root holds no package. There, change `.` to the package's directory. The image's Rust is 1.99, so raise the `FROM` line where the project's `rust-version` is newer.",
-                ja: "`Dockerfile` は `cargo install --path .` でビルドします。ワークスペースのルートにはパッケージがないので、そこでは失敗します。その場合は `.` をパッケージのディレクトリに変えてください。イメージの Rust は 1.99 なので、プロジェクトの `rust-version` がそれより新しいときは `FROM` の行も上げてください。",
+                ja: "`Dockerfile` は `cargo install --path .` でビルドします。ワークスペースのルートにはパッケージがないので、そこでは失敗します。その場合は `.` をパッケージのディレクトリに変えてください。イメージの Rust は 1.99 なので、プロジェクトの `rust-version` がそれより新しいときは `FROM` の行のバージョンも上げてください。",
             },
         ),
     ])
@@ -146,7 +146,7 @@ fn workers(site: Site) -> Part {
             site,
             L {
                 en: "These commands need a Cloudflare account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `wrangler`, Cloudflare's command-line tool, which is published only on npm, and `npx` fetches it on first use, so the project has no `package.json`. `cargo generate` copies the Workers template into `my-worker` and names the package and the worker after it, as it does for the container.",
-                ja: "このコマンドには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が要ります。Node.js は Cloudflare のコマンドラインツール `wrangler` を動かすためだけに使います。`wrangler` は npm でしか配られていません。`npx` が最初の実行で取ってくるので、プロジェクトに `package.json` はありません。`cargo generate` はコンテナのときと同じように Workers のテンプレートを `my-worker` にコピーし、パッケージと Worker にその名前を付けます。",
+                ja: "このコマンドを実行するには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Cloudflare のコマンドラインツール `wrangler` を動かすためだけに使います。`wrangler` は npm でしか配布されていません。`npx` が最初の実行時にダウンロードするので、プロジェクトに `package.json` はありません。`cargo generate` はコンテナのときと同じように Workers のテンプレートを `my-worker` にコピーし、パッケージと Worker にその名前を付けます。",
             },
         ),
         code::block(
@@ -163,7 +163,7 @@ npx wrangler deploy",
             site,
             L {
                 en: "`wrangler dev` builds the worker and runs it at `http://localhost:8787` in workerd, the runtime Workers use. The first build installs `worker-build`, the tool that compiles the crate to wasm, and the wasm target, so it takes a few minutes. `wrangler login` opens the browser to sign in to Cloudflare. `wrangler deploy` uploads the worker and prints its address, `https://my-worker.<your subdomain>.workers.dev`, and on an account without a `workers.dev` subdomain it asks to register one first.",
-                ja: "`wrangler dev` は Worker をビルドし、Workers と同じ実行環境 workerd で `http://localhost:8787` に配信します。最初のビルドでは、クレートを wasm にコンパイルするツール `worker-build` と wasm の target を入れるので、数分かかります。`wrangler login` はブラウザを開いて Cloudflare にログインします。`wrangler deploy` は Worker をアップロードして `https://my-worker.<サブドメイン>.workers.dev` のアドレスを表示します。`workers.dev` のサブドメインをまだ持たないアカウントでは、先にサブドメインの登録を求められます。",
+                ja: "`wrangler dev` は Worker をビルドし、Workers と同じ実行環境 workerd で `http://localhost:8787` に配信します。最初のビルドでは、クレートを wasm にコンパイルするツール `worker-build` と wasm の target をインストールするので、数分かかります。`wrangler login` はブラウザを開いて Cloudflare にログインします。`wrangler deploy` は Worker をアップロードして `https://my-worker.<サブドメイン>.workers.dev` のアドレスを表示します。`workers.dev` のサブドメインをまだ持たないアカウントでは、先にサブドメインの登録を求められます。",
             },
         ),
         subheading(
@@ -209,11 +209,11 @@ npx wrangler deploy",
                     ],
                     &[
                         "`wrangler.toml`",
-                        "Worker の名前と、ビルドのコマンドです。コマンドは `worker-build` がなければ入れてから実行します。",
+                        "Worker の名前と、ビルドのコマンドです。コマンドは `worker-build` がなければインストールしてから実行します。",
                     ],
                     &[
                         "`rust-toolchain.toml`",
-                        "wasm の target を書いておくと、rustup が最初のビルドで既定のツールチェーンに足します。",
+                        "wasm の target を書いておくと、rustup が最初のビルドで既定のツールチェーンに追加します。",
                     ],
                 ],
             },
@@ -230,14 +230,14 @@ fn workers_existing(site: Site) -> Part {
             site,
             L {
                 en: "Turn a server project into a worker",
-                ja: "サーバーのプロジェクトを Worker にする",
+                ja: "サーバーのプロジェクトを Worker に移行する",
             },
         ),
         para(
             site,
             L {
                 en: "A server project becomes a worker when its package turns from a binary into a library that `worker-build` compiles, and its `main` into the `fetch` function above. The pages, actions, and streams stay as they are.",
-                ja: "サーバーのプロジェクトを Worker にするには、パッケージをバイナリから `worker-build` がコンパイルするライブラリに変え、`main` を上の `fetch` 関数に置き換えます。ページ、アクション、ストリームはそのままです。",
+                ja: "サーバーのプロジェクトを Worker に移行するには、パッケージをバイナリから `worker-build` がコンパイルするライブラリに変え、`main` を上の `fetch` 関数に置き換えます。ページ、アクション、ストリームのコードはそのまま使えます。",
             },
         ),
         table_of(
@@ -264,11 +264,11 @@ fn workers_existing(site: Site) -> Part {
                 ja: &[
                     &[
                         "`Cargo.toml`",
-                        "`[lib]` に `crate-type = [\"cdylib\"]` を足します。axum は `default-features = false` にし、`http` と `axum` の機能を付けた `worker` と `tower-service` を足して、tokio を外します。",
+                        "`[lib]` に `crate-type = [\"cdylib\"]` を追加します。axum は `default-features = false` にし、`http` と `axum` の機能を付けた `worker` と `tower-service` を追加し、tokio を依存から外します。",
                     ],
                     &[
                         "`src/main.rs`",
-                        "`src/lib.rs` に名前を変え、`#[tokio::main] async fn main` をテンプレートと同じ形の `fetch` 関数に置き換えます。`fetch` は同じ `Router` を組み立て、リクエストを渡します。",
+                        "ファイル名を `src/lib.rs` に変え、`#[tokio::main] async fn main` をテンプレートと同じ形の `fetch` 関数に置き換えます。`fetch` は同じ `Router` を組み立て、リクエストを渡します。",
                     ],
                     &[
                         "`wrangler.toml`、`rust-toolchain.toml`",
@@ -281,7 +281,7 @@ fn workers_existing(site: Site) -> Part {
             site,
             L {
                 en: "Code that uses tokio changes too. A stream that waits with `tokio::time::sleep` waits with `worker::Delay`, as the clock above does, and state in the router's state does not outlast the isolate, as the next section says. Then `npx wrangler dev` runs the project.",
-                ja: "tokio を使うコードも変えます。`tokio::time::sleep` で待つストリームは、上の時計と同じように `worker::Delay` で待ちます。ルーターの状態に置いた値は、次の節のとおり isolate より長くは残りません。そのあとプロジェクトで `npx wrangler dev` を実行してください。",
+                ja: "tokio を使うコードも書き換えが必要です。`tokio::time::sleep` で待つストリームは、上の時計と同じように `worker::Delay` で待ちます。ルーターの状態に置いた値は、次の節のとおり isolate より長くは残りません。そのあとプロジェクトで `npx wrangler dev` を実行してください。",
             },
         ),
     ])
