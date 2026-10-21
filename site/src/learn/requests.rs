@@ -66,8 +66,8 @@ pub fn requests(site: Site) -> Part {
         note(
             site,
             L {
-                en: "A browser that sends no `Sec-Fetch-Site` still reaches a GET action from a link on another site, so a GET action should change nothing. The `auth` example in the repository signs in with a cookie session end to end.",
-                ja: "`Sec-Fetch-Site` を送らないブラウザからは、別のサイトのリンクで GET のアクションに届くので、GET のアクションでは何も変更しないでください。リポジトリの `auth` の例は、Cookie のセッションでのサインインを最初から最後まで示します。",
+                en: "A GET action also answers a request without the `Accept: text/event-stream` the runtime sends with a 403, which a link or an image on another site cannot send. A script on another site can send that header without a preflight, so from a browser that sends no `Sec-Fetch-Site` it still reaches a GET action, and a GET action should change nothing. The `auth` example in the repository signs in with a cookie session end to end.",
+                ja: "GET のアクションは、ランタイムが送る `Accept: text/event-stream` のないリクエストにも 403 を返すので、別のサイトのリンクや画像からは呼び出せません。ただし、別のサイトのスクリプトはこのヘッダーをプリフライトなしで送れます。`Sec-Fetch-Site` を送らないブラウザからは GET のアクションに届くので、GET のアクションでは何も変更しないでください。リポジトリの `auth` の例は、Cookie のセッションでのサインインを最初から最後まで示します。",
             },
         ),
         uploads(site),

@@ -187,6 +187,7 @@ async fn a_part_header_that_is_not_a_field_path_gets_400() {
 async fn a_stream_builds_its_fragments_under_the_part() {
     let (status, body) = send(
         Request::get("/readers")
+            .header("accept", "text/event-stream")
             .header("hypersig-part", "footer")
             .body(Body::empty())
             .expect("request"),

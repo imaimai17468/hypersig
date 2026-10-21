@@ -71,7 +71,8 @@ pub trait RouterExt<St>: Sized {
     /// passed, already deserialized, and returns anything that converts into
     /// an [`ActionResponse`]. A [`RequestError`] refuses the request before
     /// the handler runs: a request from another site, a POST whose body is not
-    /// JSON, or arguments that do not deserialize.
+    /// JSON, a GET without the `Accept: text/event-stream` the runtime sends,
+    /// or arguments that do not deserialize.
     #[must_use]
     fn action<S, A, H, M, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
     where
@@ -930,18 +931,21 @@ impl RequestKind {
     /// The kind of the request whose head is `request`.
     #[must_use]
     pub fn of(request: &Parts) -> Self {
-        // The runtime and `EventSource` send this header value and no other.
-        let event_stream = request
-            .headers
-            .get_all(header::ACCEPT)
-            .iter()
-            .any(|accept| accept.as_bytes() == b"text/event-stream");
-        if event_stream {
+        if from_runtime(&request.headers) {
             Self::Runtime
         } else {
             Self::Navigation
         }
     }
+}
+
+/// Whether `headers` are those of a request the runtime or `EventSource`
+/// sent, which accept `text/event-stream` and nothing else.
+fn from_runtime(headers: &HeaderMap) -> bool {
+    headers
+        .get_all(header::ACCEPT)
+        .iter()
+        .any(|accept| accept.as_bytes() == b"text/event-stream")
 }
 
 impl<St: Sync> FromRequestParts<St> for RequestKind {
@@ -1067,8 +1071,8 @@ where
     }
 }
 
-/// Refuses a request from another site and a POST whose body is not JSON,
-/// then reads the arguments from the body of a POST and from the `args`
+/// Refuses a request from another site, a POST whose body is not JSON, and a
+/// GET the runtime did not send, then reads the arguments from the body of a POST and from the `args`
 /// query parameter of a GET.
 fn read_args<A: DeserializeOwned>(
     method: Method,
@@ -1090,6 +1094,12 @@ fn read_args<A: DeserializeOwned>(
                 return Err(RequestError::new(Refusal::NotJson));
             }
             serde_json::from_slice(if body.is_empty() { b"null" } else { body })
+        }
+        // An `<img>`, a link, or a form sends a GET with another `Accept`, so
+        // a page on another site cannot make a browser without
+        // `Sec-Fetch-Site` call the action.
+        Method::Get if !from_runtime(headers) => {
+            return Err(RequestError::new(Refusal::NotFromRuntime));
         }
         Method::Get => serde_json::from_str(query.get("args").map_or("null", String::as_str)),
     }
@@ -1293,8 +1303,8 @@ fn to_sse(event: &PatchEvent) -> SseEvent {
 /// A request to an action or an upload that was refused, before its handler
 /// ran or while a streaming upload's handler read the files.
 ///
-/// Its response is `403 Forbidden` for a request from another site or an
-/// upload without the header the runtime adds, `415 Unsupported Media Type`
+/// Its response is `403 Forbidden` for a request from another site, a GET
+/// action call or an upload without the header the runtime adds, `415 Unsupported Media Type`
 /// for a POST whose body is not JSON or an upload whose body is not
 /// `multipart/form-data`, `413 Payload Too Large` for an upload longer than
 /// [`Upload::limit`], and `400 Bad Request` for a malformed multipart body,
@@ -1311,6 +1321,7 @@ pub struct RequestError {
 enum Refusal {
     CrossSite,
     NotJson,
+    NotFromRuntime,
     NotFromPage,
     NotMultipart(Box<dyn StdError + Send + Sync>),
     TooLarge,
@@ -1353,7 +1364,9 @@ impl RequestError {
     #[must_use]
     pub fn status(&self) -> StatusCode {
         match self.refusal {
-            Refusal::CrossSite | Refusal::NotFromPage => StatusCode::FORBIDDEN,
+            Refusal::CrossSite | Refusal::NotFromRuntime | Refusal::NotFromPage => {
+                StatusCode::FORBIDDEN
+            }
             Refusal::NotJson | Refusal::NotMultipart(_) => StatusCode::UNSUPPORTED_MEDIA_TYPE,
             Refusal::TooLarge => StatusCode::PAYLOAD_TOO_LARGE,
             Refusal::Multipart(_) | Refusal::PartOrder | Refusal::Arguments(_) | Refusal::Part => {
@@ -1368,6 +1381,9 @@ impl fmt::Display for RequestError {
         match &self.refusal {
             Refusal::CrossSite => f.write_str("the action was called from another site"),
             Refusal::NotJson => f.write_str("the action's body is not `application/json`"),
+            Refusal::NotFromRuntime => {
+                f.write_str("the call lacks the `Accept` header the hypersig runtime sends")
+            }
             Refusal::NotFromPage => {
                 f.write_str("the upload lacks the header the hypersig runtime adds")
             }
@@ -1392,6 +1408,7 @@ impl StdError for RequestError {
             Refusal::Multipart(source) | Refusal::NotMultipart(source) => Some(source.as_ref()),
             Refusal::CrossSite
             | Refusal::NotJson
+            | Refusal::NotFromRuntime
             | Refusal::NotFromPage
             | Refusal::TooLarge
             | Refusal::PartOrder

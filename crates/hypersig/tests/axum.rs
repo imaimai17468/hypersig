@@ -136,6 +136,7 @@ async fn post_reads_the_arguments_from_the_body() {
 async fn get_reads_the_arguments_from_the_query() {
     let (status, body) = send(
         Request::get("/peek?args=5")
+            .header("accept", "text/event-stream")
             .body(Body::empty())
             .expect("request"),
     )
@@ -623,6 +624,24 @@ async fn a_call_from_another_site_gets_403() {
     )
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN, "{body}");
+}
+
+#[tokio::test]
+async fn a_get_the_runtime_did_not_send_gets_403() {
+    // What an `<img>` on another site sends from a browser without
+    // `Sec-Fetch-Site`.
+    let (status, body) = send(
+        Request::get("/peek?args=5")
+            .header("accept", "image/avif,image/webp,*/*")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(
+        body,
+        "the call lacks the `Accept` header the hypersig runtime sends"
+    );
 }
 
 #[tokio::test]
