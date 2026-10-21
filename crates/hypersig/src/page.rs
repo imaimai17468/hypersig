@@ -884,6 +884,7 @@ mod tests {
         assert!(html.contains(r#"style="width: 50%""#));
         assert!(html.contains(r#"style="color: red; height: 50%; --ink: blue""#));
         assert!(!html.contains("data-hs-inline"));
+        assert!(!html.contains(r#"style="width: 1px"#), "{html}");
     }
 
     #[test]
