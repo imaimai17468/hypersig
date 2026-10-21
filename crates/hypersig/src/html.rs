@@ -1280,7 +1280,7 @@ impl<S> El<S> {
             !lower.starts_with("on")
                 && !matches!(
                     lower.as_str(),
-                    "srcdoc" | "action" | "formaction" | "xlink:href" | "data"
+                    "srcdoc" | "action" | "formaction" | "xlink:href" | "data" | "http-equiv"
                 ),
             "`{name}` can run a script, so `attr` does not write it; attach a handler with \
              the `on_*` methods"
@@ -1296,12 +1296,25 @@ impl<S> El<S> {
     /// may write. Panics as well for an attribute whose value can run a script:
     /// `href` and `src`, which [`El::href`] and [`El::src`] set from a value
     /// that cannot, an event handler `on*`, `srcdoc`, `action`, `formaction`,
-    /// `xlink:href`, and `data`, which `<object>` loads. A name holds only
-    /// letters, digits, `-`, `_`, `.`, and `:`.
+    /// `xlink:href`, `data`, which `<object>` loads, and `http-equiv`, whose
+    /// `refresh` loads the URL in `content`. `attributeName` panics when its
+    /// value is `href` or `xlink:href`, because SVG's `<animate>` and `<set>`
+    /// would then write their `to` or `values` into the link. A name holds
+    /// only letters, digits, `-`, `_`, `.`, and `:`.
     #[must_use]
     pub fn attr(mut self, name: &'static str, value: impl Into<String>) -> Self {
         Self::check_attr_name(name);
-        self.attrs.push((name, value.into()));
+        let value = value.into();
+        assert!(
+            !name.eq_ignore_ascii_case("attributename")
+                || !matches!(
+                    value.trim().to_ascii_lowercase().as_str(),
+                    "href" | "xlink:href"
+                ),
+            "an animation of `{value}` writes its `to` or `values` into a link, which can run \
+             a script, so `attr` does not write it"
+        );
+        self.attrs.push((name, value));
         self
     }
 
@@ -1309,10 +1322,15 @@ impl<S> El<S> {
     ///
     /// # Panics
     ///
-    /// Panics for the same names as [`El::attr`].
+    /// Panics for the same names as [`El::attr`], and for `attributeName`,
+    /// whose value the signals could turn into `href`.
     #[must_use]
     pub fn bind_attr(mut self, name: &'static str, value: impl IntoExpr<S, String>) -> Self {
         Self::check_attr_name(name);
+        assert!(
+            !name.eq_ignore_ascii_case("attributename"),
+            "a bound `{name}` could name `href`, so `bind_attr` does not write it; set it with `attr`"
+        );
         self.attr_bind.push((name, value.into_expr()));
         self
     }
@@ -2805,6 +2823,33 @@ mod tests {
                 .child(when(count().le(0), div().id("total")))
                 .render();
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "writes its `to` or `values` into a link")]
+    fn an_animation_of_a_link_panics() {
+        let _ = el::<Page>("animate").attr("attributeName", " XLINK:href");
+    }
+
+    #[test]
+    #[should_panic(expected = "does not write it; set it with `attr`")]
+    fn a_bound_animation_target_panics() {
+        let _ = el::<Page>("set").bind_attr("attributeName", "x");
+    }
+
+    #[test]
+    #[should_panic(expected = "`HTTP-EQUIV` can run a script")]
+    fn http_equiv_panics() {
+        let _ = el::<Page>("meta").attr("HTTP-EQUIV", "refresh");
+    }
+
+    #[test]
+    fn animations_of_other_attributes_render() {
+        let html = el::<Page>("animate")
+            .attr("attributeName", "opacity")
+            .attr("to", "0")
+            .render();
+        assert!(html.contains(r#"attributeName="opacity""#), "{html}");
     }
 
     #[test]

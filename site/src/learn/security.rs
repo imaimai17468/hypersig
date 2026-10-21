@@ -42,7 +42,7 @@ fn output(site: Site) -> Part {
                     ],
                     &[
                         "A link runs a script, such as `javascript:`",
-                        "`El::href` and `El::src` take a `Link` to a route or a `SafeUrl`, which holds only `http:`, `https:`, `mailto:`, or a relative URL. `SafeUrl::parse` checks a URL a visitor typed, and a `SafeUrl` field of the signals checks it again when it deserializes. `attr` and `bind_attr` panic for `href`, `src`, an `on*` handler, `srcdoc`, `action`, `formaction`, `xlink:href`, and `data`, in any case, and for a name holding anything but letters, digits, `-`, `_`, `.`, and `:`.",
+                        "`El::href` and `El::src` take a `Link` to a route or a `SafeUrl`, which holds only `http:`, `https:`, `mailto:`, or a relative URL. `SafeUrl::parse` checks a URL a visitor typed, and a `SafeUrl` field of the signals checks it again when it deserializes. `attr` and `bind_attr` panic for `href`, `src`, an `on*` handler, `srcdoc`, `action`, `formaction`, `xlink:href`, `data`, and `http-equiv`, in any case, and for a name holding anything but letters, digits, `-`, `_`, `.`, and `:`. An SVG animation whose `attributeName` is `href` panics too, and `bind_attr` does not write `attributeName`.",
                     ],
                     &[
                         "A URL sends the browser to another host",
@@ -64,7 +64,7 @@ fn output(site: Site) -> Part {
                     ],
                     &[
                         "`javascript:` のようなリンクがスクリプトを動かす",
-                        "`El::href` と `El::src` はルートへの `Link` か `SafeUrl` を受け取ります。`SafeUrl` が持てるのは `http:`、`https:`、`mailto:` か相対 URL だけです。訪問者が入力した URL は `SafeUrl::parse` で確かめ、シグナルの `SafeUrl` のフィールドはデシリアライズのときにもう一度確かめます。`attr` と `bind_attr` は `href`、`src`、`on*` のハンドラ、`srcdoc`、`action`、`formaction`、`xlink:href`、`data` を大文字と小文字を区別せずに断り、英数字、`-`、`_`、`.`、`:` 以外を含む名前も断って、パニックします。",
+                        "`El::href` と `El::src` はルートへの `Link` か `SafeUrl` を受け取ります。`SafeUrl` が持てるのは `http:`、`https:`、`mailto:` か相対 URL だけです。訪問者が入力した URL は `SafeUrl::parse` で確かめ、シグナルの `SafeUrl` のフィールドはデシリアライズのときにもう一度確かめます。`attr` と `bind_attr` は `href`、`src`、`on*` のハンドラ、`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv` を大文字と小文字を区別せずに断り、英数字、`-`、`_`、`.`、`:` 以外を含む名前も断って、パニックします。`attributeName` が `href` の SVG のアニメーションもパニックし、`bind_attr` は `attributeName` を書きません。",
                     ],
                     &[
                         "URL がブラウザを別のホストへ送る",
