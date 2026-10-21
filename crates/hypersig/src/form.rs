@@ -98,6 +98,12 @@ impl<T: Validate> Form<T> {
     /// passes here too. Call it in the action handler, because a request
     /// can come from something other than the page.
     ///
+    /// The exception is a rule the server cannot evaluate for the value it
+    /// received: arithmetic whose result is not finite, such as a division by
+    /// zero, or a date outside the years 1000 to 9999. That rule fails here,
+    /// with an empty message where its message cannot be evaluated either,
+    /// though the browser may have accepted the value.
+    ///
     /// # Errors
     ///
     /// Returns the message of the first failing rule of each field.
@@ -140,19 +146,23 @@ impl<T: Validate> Form<T> {
         };
         let mut errors = FieldErrors::new();
         for check in &rules.checks {
+            assert!(
+                !reads_browser_only(check.ok.as_json())
+                    && !reads_browser_only(check.message.as_json()),
+                "a rule for `{}` reads a value only the browser has",
+                check.key
+            );
             if errors.messages.contains_key(&check.key) {
                 continue;
             }
-            let evaluate = |ast| {
-                ssr::evaluate(ast, &ctx).unwrap_or_else(|| {
-                    panic!(
-                        "a rule for `{}` reads a value only the browser has",
-                        check.key
-                    )
-                })
-            };
-            if !ssr::truthy(&evaluate(check.ok.as_json())) {
-                let message = ssr::js_string(&evaluate(check.message.as_json()));
+            // The server cannot evaluate arithmetic that leaves the finite
+            // range, or a date outside the years 1000 to 9999, which the
+            // visitor can send. Such a rule fails, so the value is refused.
+            let ok = ssr::evaluate(check.ok.as_json(), &ctx).is_some_and(|ok| ssr::truthy(&ok));
+            if !ok {
+                let message = ssr::evaluate(check.message.as_json(), &ctx)
+                    .map(|message| ssr::js_string(&message))
+                    .unwrap_or_default();
                 errors.messages.insert(check.key.clone(), message);
             }
         }
@@ -161,6 +171,17 @@ impl<T: Validate> Form<T> {
         } else {
             Err(errors)
         }
+    }
+}
+
+/// Whether `ast` reads [`Expr::now`] or [`Expr::random_below`], which only
+/// the browser can evaluate. A literal's value is data, so it is not searched.
+fn reads_browser_only(ast: &Value) -> bool {
+    match ast.as_array().map(Vec::as_slice) {
+        Some([op, ..]) if op == "lit" => false,
+        Some([op, ..]) if op == "now" || op == "random" => true,
+        Some(parts) => parts.iter().any(reads_browser_only),
+        None => false,
     }
 }
 
@@ -627,5 +648,54 @@ mod tests {
             r#"["or_else",["get",["sig","note.errors"],"text"],["lit",""]]"#
         );
         assert_eq!(note().is_valid().to_json(), r#"["lit",true]"#);
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    struct Order {
+        price: f64,
+    }
+
+    impl Signals for Order {}
+
+    fn price() -> Sig<Order, f64> {
+        sig("price")
+    }
+
+    impl Validate for Order {
+        fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+            rules.check(
+                price(),
+                (form.at(price()) * 100.0).le(100_000.0),
+                "Too expensive.",
+            );
+        }
+    }
+
+    #[test]
+    fn a_rule_whose_arithmetic_overflows_fails_rather_than_panics() {
+        Form::validate(&Order { price: 3.5 }).expect("a price within the limit");
+        // 1e308 * 100 is infinite, which the server cannot compare.
+        let errors = Form::validate(&Order { price: 1e308 }).unwrap_err();
+        assert_eq!(errors.message(price()), Some("Too expensive."));
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    struct Stamp {
+        at: f64,
+    }
+
+    impl Signals for Stamp {}
+
+    impl Validate for Stamp {
+        fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+            let at: Sig<Stamp, f64> = sig("at");
+            rules.check(at, form.at(at).lt(crate::Expr::now()), "In the past.");
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "reads a value only the browser has")]
+    fn a_rule_that_reads_the_browsers_clock_still_panics() {
+        let _ = Form::validate(&Stamp { at: 0.0 });
     }
 }
