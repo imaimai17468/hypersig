@@ -40,3 +40,8 @@ it("compares records structurally", () => {
 it("encodes each part of a rest of a path and keeps its slashes", () => {
   expect(evaluate(["uri_path", ["lit", "a b/c?/d"]], context({}))).toBe("a%20b/c%3F/d");
 });
+
+it("encodes a slash that would start an empty part of a path", () => {
+  expect(evaluate(["uri_path", ["lit", "/evil.example"]], context({}))).toBe("%2Fevil.example");
+  expect(evaluate(["uri_path", ["lit", "a//b/"]], context({}))).toBe("a/%2Fb/");
+});

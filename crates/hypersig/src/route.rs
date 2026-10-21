@@ -883,11 +883,24 @@ fn encode_segment(text: &str, rest: bool) -> String {
 }
 
 /// Percent-encodes each `/`-separated part of `text` as `encodeURIComponent` does, keeping the `/`s.
+///
+/// A `/` at the start of `text` or right after another one is written
+/// `%2F`, because `//` at the start of a URL names another host, so a value
+/// such as `/evil.example` under the route `/{*path}` would otherwise send the
+/// browser to `//evil.example`.
 pub(crate) fn encode_uri_path(text: &str) -> String {
-    text.split('/')
-        .map(encode_uri_component)
-        .collect::<Vec<_>>()
-        .join("/")
+    let mut out = String::with_capacity(text.len());
+    let mut previous: Option<&str> = None;
+    for segment in text.split('/') {
+        match previous {
+            Some("") => out.push_str("%2F"),
+            Some(_) => out.push('/'),
+            None => {}
+        }
+        out.push_str(&encode_uri_component(segment));
+        previous = Some(segment);
+    }
+    out
 }
 
 /// Percent-encodes `text` as JavaScript's `encodeURIComponent` does.
@@ -1439,6 +1452,14 @@ mod tests {
     #[test]
     fn keeps_the_slashes_of_a_rest() {
         assert_eq!(encode_uri_path("a b/c?/d"), "a%20b/c%3F/d");
+    }
+
+    #[test]
+    fn encodes_a_slash_that_would_start_an_empty_segment() {
+        // Under the route `/{*path}`, a leading `/` would make the URL
+        // `//evil.example`, which names another host.
+        assert_eq!(encode_uri_path("/evil.example"), "%2Fevil.example");
+        assert_eq!(encode_uri_path("a//b/"), "a/%2Fb/");
     }
 
     #[test]
