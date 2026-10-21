@@ -1,6 +1,7 @@
 //! The Learn section, a guide read from top to bottom.
 
 mod basics;
+mod deploying;
 mod forms;
 mod javascript;
 mod requests;
@@ -30,6 +31,7 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::Styling => server::styling(site),
         Learn::EscapeHatches => server::escape_hatches(site),
         Learn::JavaScript => javascript::javascript(site),
+        Learn::Deploying => deploying::deploying(site),
     }
 }
 
