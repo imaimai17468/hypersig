@@ -54,9 +54,9 @@ jobs:
       # The templates sit outside the workspace, so each is checked in a copy
       # whose hypersig is this repository's.
       - name: The Cloudflare template
-        run: cd "$(templates/stage.sh cloudflare)" && cargo fmt --check && cargo clippy --target wasm32-unknown-unknown -- -D warnings
+        run: dir=$(templates/stage.sh cloudflare) && cd "$dir" && cargo fmt --check && cargo clippy --target wasm32-unknown-unknown -- -D warnings
       - name: The server template
-        run: cd "$(templates/stage.sh server)" && cargo fmt --check && cargo clippy -- -D warnings
+        run: dir=$(templates/stage.sh server) && cd "$dir" && cargo fmt --check && cargo clippy -- -D warnings
       - run: cargo check -p hypersig --no-default-features
       - run: cargo doc --workspace --no-deps
         env:

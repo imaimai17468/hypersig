@@ -37,7 +37,7 @@ export default defineConfig({
     // template is copied out first, with its hypersig pointed at this
     // repository.
     {
-      command: `cd "$(templates/stage.sh cloudflare)" && "$OLDPWD/e2e/node_modules/.bin/wrangler" dev --ip 127.0.0.1 --port ${workers.cloudflare}`,
+      command: `dir=$(templates/stage.sh cloudflare) && cd "$dir" && "$OLDPWD/e2e/node_modules/.bin/wrangler" dev --ip 127.0.0.1 --port ${workers.cloudflare}`,
       cwd: "..",
       env: { WRANGLER_SEND_METRICS: "false" },
       url: `http://127.0.0.1:${workers.cloudflare}/`,
