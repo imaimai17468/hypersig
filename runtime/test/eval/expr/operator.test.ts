@@ -45,3 +45,21 @@ it("encodes a slash that would start an empty part of a path", () => {
   expect(evaluate(["uri_path", ["lit", "/evil.example"]], context({}))).toBe("%2Fevil.example");
   expect(evaluate(["uri_path", ["lit", "a//b/"]], context({}))).toBe("a/%2Fb/");
 });
+
+// The expression `Link::new` writes for `/{org}/{repo}` with `org` read from a signal.
+const path = (org: string) => [
+  "concat",
+  ["concat", ["concat", ["lit", "/"], ["uri", ["lit", org]]], ["lit", "/"]],
+  ["uri", ["lit", "evil.example"]],
+];
+
+const link = (org: string) =>
+  evaluate(
+    ["if", ["starts", path(org), ["lit", "//"]], ["concat", ["lit", "/."], path(org)], path(org)],
+    context({}),
+  );
+
+it("keeps a link whose first segment is empty on this host, as `Link::new` writes it", () => {
+  expect(link("")).toBe("/.//evil.example");
+  expect(link("acme")).toBe("/acme/evil.example");
+});

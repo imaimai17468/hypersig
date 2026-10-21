@@ -329,7 +329,7 @@ impl<P: Params, Q: Search> Route<P, Q> {
             url.push_str(part);
         }
         url.push_str(&search.query());
-        Url(url)
+        Url(on_this_host(url))
     }
 
     /// The parameters this route's path takes from the start of `path`, percent-decoded.
@@ -747,7 +747,7 @@ impl<S> Link<S> {
             if let Some(Some(search)) = &search_literal {
                 url.push_str(&query_string(search));
             }
-            return Self(LinkKind::Fixed(url));
+            return Self(LinkKind::Fixed(on_this_host(url)));
         }
         let mut ast = json!(["lit", parts[0]]);
         for (index, (value, part)) in values.into_iter().zip(&parts[1..]).enumerate() {
@@ -759,6 +759,17 @@ impl<S> Link<S> {
         }
         if let Some(search) = search {
             ast = json!(["concat", ast, ["query", search]]);
+        }
+        // Only a path that starts with a parameter can start with `//`, when
+        // that parameter is empty, and the browser checks it as `on_this_host`
+        // does.
+        if parts[0] == "/" {
+            ast = json!([
+                "if",
+                ["starts", ast, ["lit", "//"]],
+                ["concat", ["lit", "/."], ast],
+                ast
+            ]);
         }
         Self(LinkKind::Bound(Expr::from_json(ast)))
     }
@@ -870,6 +881,19 @@ impl<S> fmt::Debug for Link<S> {
             LinkKind::Fixed(url) => f.debug_tuple("Link").field(url).finish(),
             LinkKind::Bound(expr) => f.debug_tuple("Link").field(expr).finish(),
         }
+    }
+}
+
+/// `url`, kept on the site's own host.
+///
+/// An empty first segment makes a URL such as `//evil.example`, which names
+/// another host, so `/.` goes in front of it. The browser drops the `.`
+/// segment and stays on the page's host.
+fn on_this_host(url: String) -> String {
+    if url.starts_with("//") {
+        format!("/.{url}")
+    } else {
+        url
     }
 }
 
@@ -1455,6 +1479,15 @@ mod tests {
     }
 
     #[test]
+    fn keeps_a_url_with_an_empty_first_segment_on_this_host() {
+        assert_eq!(
+            on_this_host("//evil.example/x".to_owned()),
+            "/.//evil.example/x"
+        );
+        assert_eq!(on_this_host("/a//b".to_owned()), "/a//b");
+    }
+
+    #[test]
     fn encodes_a_slash_that_would_start_an_empty_segment() {
         // Under the route `/{*path}`, a leading `/` would make the URL
         // `//evil.example`, which names another host.
@@ -1504,6 +1537,37 @@ mod tests {
             link.into_parts().ok(),
             Some(POST.url(("a/b é".to_owned(), -4)).to_string())
         );
+    }
+
+    #[test]
+    fn an_empty_first_segment_stays_on_this_host() {
+        const REPO: Route<(String, String)> = Route::new("/{org}/{repo}");
+        let url = REPO.url((String::new(), "evil.example".to_owned()));
+        assert_eq!(url.as_str(), "/.//evil.example");
+        let link: Link<()> = REPO.link_with(("", "evil.example"));
+        assert_eq!(link.into_parts().ok().as_deref(), Some("/.//evil.example"));
+    }
+
+    #[test]
+    fn a_bound_link_with_an_empty_first_segment_stays_on_this_host() {
+        use crate::ssr::{Ctx, evaluate, js_string};
+        const REPO: Route<(String, String)> = Route::new("/{org}/{repo}");
+        let org: crate::Sig<(), String> = crate::_private::sig("org");
+        let link: Link<()> = REPO.link_with((org, "evil.example"));
+        let ast = link
+            .into_parts()
+            .expect_err("a link that reads a signal")
+            .into_json();
+        let root = json!({ "org": "" });
+        let ctx = Ctx {
+            root: (&root).into(),
+            scope: Vec::new(),
+            copy: false,
+            vars: Vec::new(),
+            rules: None,
+        };
+        let url = evaluate(&ast, &ctx).expect("the server evaluates a link");
+        assert_eq!(js_string(&url), "/.//evil.example");
     }
 
     #[test]
