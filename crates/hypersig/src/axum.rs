@@ -73,6 +73,11 @@ pub trait RouterExt<St>: Sized {
     /// the handler runs: a request from another site, a POST whose body is not
     /// JSON, a GET without the `Accept: text/event-stream` the runtime sends,
     /// or arguments that do not deserialize.
+    ///
+    /// The arguments come from the visitor's browser, which can send any value
+    /// of `A`, so the handler checks that the visitor may act on them. Read
+    /// the visitor from the request with an extractor, as the `auth` example
+    /// does.
     #[must_use]
     fn action<S, A, H, M, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
     where

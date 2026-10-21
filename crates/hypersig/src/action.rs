@@ -42,6 +42,13 @@ impl Method {
 /// The request carries the arguments and nothing else. A handler that needs
 /// several values takes a tuple, which the page passes as a tuple of expressions.
 ///
+/// The type of `A` holds, and its values do not: the visitor's browser can
+/// send any value of `A`, whatever the page's expressions would compute, and
+/// anyone can call the action's URL without loading the page. A handler that
+/// guards the page does not guard its actions, so each handler checks that
+/// the visitor may act on the arguments it receives, such as the owner of an
+/// order whose id it takes.
+///
 /// ```
 /// use hypersig::{Action, Signals};
 /// use serde::{Deserialize, Serialize};
