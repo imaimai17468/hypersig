@@ -26,7 +26,7 @@ pub fn render(site: Site) -> String {
                 }),
                 site.t(L {
                     en: "`cargo build` builds it, with no Node and no wasm, and a mismatch between the page and the server is a compile error.",
-                    ja: "`cargo build` だけでビルドでき、Node も wasm も要りません。画面とサーバーの食い違いはコンパイルエラーになります。",
+                    ja: "`cargo build` だけでビルドでき、Node も wasm も不要です。画面とサーバーの食い違いはコンパイルエラーになります。",
                 }),
                 &[
                     (
@@ -65,7 +65,7 @@ pub fn render(site: Site) -> String {
                         }),
                         site.t(L {
                             en: "`cargo build` builds it, with no Node and no wasm. The crate embeds a prebuilt runtime of about 14 KB gzipped.",
-                            ja: "`cargo build` だけでビルドでき、Node も wasm も要りません。gzip で約 14 KB のランタイムをビルド済みの状態でクレートに埋め込んでいます。",
+                            ja: "`cargo build` だけでビルドでき、Node も wasm も不要です。gzip で約 14 KB のランタイムをビルド済みの状態でクレートに埋め込んでいます。",
                         }),
                     ),
                     (
@@ -81,7 +81,7 @@ pub fn render(site: Site) -> String {
                     (
                         site.t(L {
                             en: "Optimistic updates with no extra code",
-                            ja: "楽観的更新に追加のコードが要らない",
+                            ja: "楽観的更新に追加のコードは不要",
                         }),
                         site.t(L {
                             en: "A statement changes the page in the browser, and an action call sent with it reaches the server after. Changing the page before the server answers takes no extra code.",
@@ -101,7 +101,7 @@ pub fn render(site: Site) -> String {
                         site,
                         L {
                             en: "hypersig is the framework. Three crates in the same repository add typed styles, a set of accessible components, and typed translations, each with docs of its own.",
-                            ja: "hypersig はフレームワーク本体です。同じリポジトリにある 3 つのクレートが、型付きのスタイル、アクセシブルなコンポーネント、型で検査する翻訳を足します。それぞれにドキュメントがあります。",
+                            ja: "hypersig はフレームワーク本体です。同じリポジトリにある 3 つのクレートが、型付きのスタイル、アクセシブルなコンポーネント、型で検査する翻訳を追加します。それぞれにドキュメントがあります。",
                         },
                     ),
                     library_cards(
@@ -221,8 +221,8 @@ fn comparison(site: Site) -> Part {
                         ],
                         &[
                             "一覧への追加（Topcoat）",
-                            "式から項目を足せないので、サーバーが答えて描き直したときに一覧が変わります",
-                            "一覧をシグナルに持つので、サーバーが答える前にブラウザが変更を表示します",
+                            "式から項目を追加できないので、サーバーが応答して描き直したときに一覧が変わります",
+                            "一覧をシグナルに持つので、サーバーが応答する前にブラウザが変更を表示します",
                         ],
                     ],
                 },
@@ -387,7 +387,7 @@ fn benchmarks(site: Site) -> Part {
                 site,
                 L {
                     en: "A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request. The apps and the harness are in [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare).",
-                    ja: "追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。測ったアプリと計測の仕組みは [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にあります。",
+                    ja: "追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を加えています。測ったアプリと計測の仕組みは [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にあります。",
                 },
             ),
             table_of(

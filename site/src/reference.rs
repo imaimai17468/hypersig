@@ -234,7 +234,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Page.html#method.csp_nonce",
                             L {
                                 en: "Puts `nonce` on the page's `<style>` and `<script>` elements, for a Content-Security-Policy that allows styles by nonce.",
-                                ja: "スタイルを nonce で許す Content-Security-Policy に向けて、ページの `<style>` と `<script>` に `nonce` を付けます。",
+                                ja: "スタイルを nonce で許可する Content-Security-Policy に合わせて、ページの `<style>` と `<script>` に `nonce` を付けます。",
                             },
                         ),
                         (
@@ -294,7 +294,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Page.html#method.canonical",
                             L {
                                 en: "Names `url` on `origin` as the page's one address.",
-                                ja: "`origin` 上の `url` を、ページのただ 1 つのアドレスとして示します。",
+                                ja: "`origin` 上の `url` をページのただ 1 つのアドレスとして示します。",
                             },
                         ),
                         (
@@ -302,7 +302,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Page.html#method.alternate",
                             L {
                                 en: "Names `url` on `origin` as the same page in the language `hreflang`.",
-                                ja: "`origin` 上の `url` を、`hreflang` の言語で書いた同じページとして示します。",
+                                ja: "`origin` 上の `url` を`hreflang` の言語で書いた同じページとして示します。",
                             },
                         ),
                         (
@@ -310,7 +310,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Page.html#method.alternate_default",
                             L {
                                 en: "Names `url` on `origin` as the version for a visitor whose language no alternate matches.",
-                                ja: "`origin` 上の `url` を、どの alternate にも言語が合わない訪問者向けのページとして示します。",
+                                ja: "`origin` 上の `url` をどの alternate にも言語が合わない訪問者向けのページとして示します。",
                             },
                         ),
                         (
@@ -350,7 +350,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Page.html#method.json_ld",
                             L {
                                 en: "Adds `data` to `<head>` as JSON-LD, the structured data search engines read.",
-                                ja: "`data` を、検索エンジンが読む構造化データの JSON-LD として `<head>` に足します。",
+                                ja: "`data` を検索エンジンが読む構造化データの JSON-LD として `<head>` に追加します。",
                             },
                         ),
                         (
@@ -358,7 +358,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Page.html#method.icon",
                             L {
                                 en: "Uses the file at `href` as the page's icon in tabs and bookmarks.",
-                                ja: "`href` のファイルを、タブやブックマークに出すページのアイコンにします。",
+                                ja: "`href` のファイルをタブやブックマークに出すページのアイコンにします。",
                             },
                         ),
                         (
@@ -398,7 +398,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.OriginError.html",
                             L {
                                 en: "Text that `Origin::parse` refused, with the rule it broke.",
-                                ja: "`Origin::parse` が受け付けなかった文字列と、破っていた規則です。",
+                                ja: "`Origin::parse` が受け付けなかった文字列と、違反していた規則です。",
                             },
                         ),
                         (
@@ -406,7 +406,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.OpenGraph.html",
                             L {
                                 en: "The card a chat app or a social site shows for a link to the page.",
-                                ja: "チャットアプリや SNS が、ページへのリンクに出すカードです。",
+                                ja: "チャットアプリや SNS がページへのリンクに出すカードです。",
                             },
                         ),
                         (
@@ -519,7 +519,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.El.html#method.node_ref",
                             L {
                                 en: "Attaches `node_ref`, so its statements act on this element.",
-                                ja: "`node_ref` を付け、その文がこの要素を操作するようにします。",
+                                ja: "`node_ref` を付け、`node_ref` の文がこの要素を操作するようにします。",
                             },
                         ),
                         (
@@ -643,7 +643,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.El.html#method.bind_checked",
                             L {
                                 en: "Keeps a checkbox's `checked` state equal to `when`, in one direction.",
-                                ja: "チェックボックスの `checked` の状態を、一方向で `when` と等しく保ちます。",
+                                ja: "チェックボックスの `checked` の状態を一方向で `when` と等しく保ちます。",
                             },
                         ),
                         (
@@ -922,7 +922,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "html/struct.CustomEvent.html",
                             L {
                                 en: "An event that a script, such as a custom element, dispatches on an element.",
-                                ja: "カスタム要素などのスクリプトが要素に対して投げるイベント",
+                                ja: "カスタム要素などのスクリプトが要素に送出するイベント",
                             },
                         ),
                         (
@@ -1522,7 +1522,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.to_fixed",
                             L {
                                 en: "This number as text with `digits` digits after the point.",
-                                ja: "この数を、小数点以下 `digits` 桁のテキストにしたもの",
+                                ja: "この数を小数点以下 `digits` 桁のテキストにしたもの",
                             },
                         ),
                         (
@@ -1618,7 +1618,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.format_date",
                             L {
                                 en: "This time written in `format` with the browser's `Intl.DateTimeFormat`.",
-                                ja: "この時刻を、ブラウザの `Intl.DateTimeFormat` で `format` に従って書いたテキスト",
+                                ja: "この時刻をブラウザの `Intl.DateTimeFormat` で `format` に従って書いたテキスト",
                             },
                         ),
                         (
@@ -1642,7 +1642,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.to_text",
                             L {
                                 en: "This value as display text, as JavaScript's `String` writes it.",
-                                ja: "この値を、JavaScript の `String` と同じ書き方で表示用のテキストにしたもの",
+                                ja: "この値を JavaScript の `String` と同じ書き方で表示用のテキストにしたもの",
                             },
                         ),
                         (
@@ -1650,7 +1650,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Expr.html#method.label",
                             L {
                                 en: "The text `label` gives for this value's variant, with every variant covered.",
-                                ja: "この値のバリアントに対して `label` が返すテキスト。どのバリアントにもテキストが要ります。",
+                                ja: "この値のバリアントに対して `label` が返すテキスト。どのバリアントにもテキストが必要です。",
                             },
                         ),
                         (
@@ -1941,7 +1941,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                     },
                     text: L {
                         en: "`DialogRef::dialog` builds the `<dialog>` it names, so its statements always act on a dialog.",
-                        ja: "`DialogRef::dialog` が名前を付けた `<dialog>` を作るので、その文はいつもダイアログに働きます。",
+                        ja: "`DialogRef::dialog` が名前を付けた `<dialog>` を作るので、`DialogRef` の文は常にダイアログを操作します。",
                     },
                     rows: &[
                         (
@@ -2041,7 +2041,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Action.html#method.under",
                             L {
                                 en: "The same action under `base`, which the page's calls put before the path.",
-                                ja: "ページからの呼び出しがパスの前に `base` を付ける、`base` の下の同じアクション",
+                                ja: "`base` の下に置いた同じアクション。ページからの呼び出しはパスの前に `base` を付けます。",
                             },
                         ),
                         (
@@ -2093,7 +2093,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Call.html#method.latest",
                             L {
                                 en: "Aborts the unfinished earlier `latest` call to the same action.",
-                                ja: "同じアクションへの `latest` の呼び出しで、まだ終わっていない前のものを取り消します。",
+                                ja: "同じアクションへの `latest` の呼び出しのうち、まだ終わっていない前の呼び出しを取り消します。",
                             },
                         ),
                         (
@@ -2145,7 +2145,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.StreamAction.html#method.under",
                             L {
                                 en: "The same stream under `base`, which the page's calls put before the path.",
-                                ja: "ページからの呼び出しがパスの前に `base` を付ける、`base` の下の同じストリーム",
+                                ja: "`base` の下に置いた同じストリーム。ページからの呼び出しはパスの前に `base` を付けます。",
                             },
                         ),
                         (
@@ -2187,7 +2187,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         Reference::Form => (
             L {
                 en: "`Form<T>` holds a form's values, the values it started from, and what the visitor has done to it. `Validate` gives the rules that the browser and the server both evaluate.",
-                ja: "`Form<T>` は、フォームの値、開始時の値、訪問者がフォームにしたことを持ちます。`Validate` は、ブラウザとサーバーの両方が評価するルールを与えます。",
+                ja: "`Form<T>` はフォームの値、開始時の値、訪問者がフォームでした操作を持ちます。`Validate` はブラウザとサーバーの両方が評価するルールを与えます。",
             },
             &[
                 Section {
@@ -2225,7 +2225,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                     },
                     text: L {
                         en: "The methods on the form's signal read and change it on the page.",
-                        ja: "フォームのシグナルのメソッドが、ページでフォームを読み書きします。",
+                        ja: "フォームのシグナルのメソッドがページでフォームを読み書きします。",
                     },
                     rows: &[
                         (
@@ -2333,7 +2333,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                     },
                     text: L {
                         en: "`rules` is generic over the page, so the same expressions are built for the browser and for `Form::validate`.",
-                        ja: "`rules` はページについて総称的なので、ブラウザ用と `Form::validate` 用に同じ式を作ります。",
+                        ja: "`rules` はページについてジェネリックなので、ブラウザ用と `Form::validate` 用に同じ式を作ります。",
                     },
                     rows: &[
                         (
@@ -2341,7 +2341,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "trait.Validate.html#method.rules",
                             L {
                                 en: "Adds a check to `rules` for each field of `form` that can be wrong.",
-                                ja: "`form` のうち誤りうるフィールドごとに、`rules` へ検査を足します。",
+                                ja: "`form` のうち誤りうるフィールドごとに、`rules` に検査を追加します。",
                             },
                         ),
                         (
@@ -2796,7 +2796,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.UnsafeUrl.html",
                             L {
                                 en: "Text that `SafeUrl::parse` refused, with the rule it broke.",
-                                ja: "`SafeUrl::parse` が受け付けなかった文字列と、破っていた規則です。",
+                                ja: "`SafeUrl::parse` が受け付けなかった文字列と、違反していた規則です。",
                             },
                         ),
                     ],
@@ -2845,7 +2845,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.PageResponse.html",
                             L {
                                 en: "What a page handler returns: a page, a page with a status, a redirect, or a 404.",
-                                ja: "ページのハンドラが返す値です。ページ、状態を付けたページ、リダイレクト、404 のいずれかです。",
+                                ja: "ページのハンドラが返す値です。ページ、ステータスを付けたページ、リダイレクト、404 のいずれかです。",
                             },
                         ),
                         (
@@ -2853,7 +2853,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.PageResponse.html#method.with_status",
                             L {
                                 en: "Answers with `page` and the status `status`, such as a styled `404 Not Found`.",
-                                ja: "`page` を状態 `status` で返します。見た目を整えた `404 Not Found` などに使います。",
+                                ja: "`page` をステータス `status` で返します。見た目を整えた `404 Not Found` などに使います。",
                             },
                         ),
                         (
@@ -2861,7 +2861,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Unserved.html",
                             L {
                                 en: "A page request that reached no page, handed to the `else` handler of `routes!`.",
-                                ja: "どのページにも届かなかったページのリクエストです。`routes!` の `else` に書いたハンドラが受け取ります。",
+                                ja: "どのページにも一致しなかったページのリクエストです。`routes!` の `else` に書いたハンドラが受け取ります。",
                             },
                         ),
                         (
@@ -2869,7 +2869,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Unserved.html#method.status",
                             L {
                                 en: "The status the page for this request is sent with: 404 or 400.",
-                                ja: "このリクエストに返すページの状態です。404 か 400 になります。",
+                                ja: "このリクエストに返すページのステータスです。404 か 400 になります。",
                             },
                         ),
                         (
@@ -2917,7 +2917,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.RequestError.html",
                             L {
                                 en: "A request to an action or an upload that was refused before its handler ran.",
-                                ja: "ハンドラが動く前に断られた、アクションかアップロードへのリクエストです。",
+                                ja: "ハンドラが動く前に拒否された、アクションかアップロードへのリクエストです。",
                             },
                         ),
                         (
@@ -2925,7 +2925,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.RequestError.html#method.status",
                             L {
                                 en: "The status of the response the error answers with.",
-                                ja: "このエラーが返す応答の状態です。",
+                                ja: "このエラーが返す応答のステータスです。",
                             },
                         ),
                     ],
@@ -2937,7 +2937,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                     },
                     text: L {
                         en: "An upload is an action that also receives the files picked in a file input. Both carry the page's type.",
-                        ja: "アップロードは、ファイル入力で選んだファイルも受け取るアクションです。どちらもページの型を持ちます。",
+                        ja: "アップロードはファイル入力で選んだファイルも受け取るアクションです。どちらもページの型を持ちます。",
                     },
                     rows: &[
                         (
@@ -2969,7 +2969,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Upload.html#method.under",
                             L {
                                 en: "The same upload under `base`, which the page's calls put before the path.",
-                                ja: "`base` の下に置いた同じアップロードです。ページからの呼び出しは、パスの前に `base` を付けます。",
+                                ja: "`base` の下に置いた同じアップロードです。ページからの呼び出しはパスの前に `base` を付けます。",
                             },
                         ),
                         (

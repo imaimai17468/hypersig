@@ -156,7 +156,7 @@ pub fn page(site: Site) -> Page<Traffic> {
                         .on_click(grow)
                         .text(site.t(L {
                             en: "Add 400 desktop visitors in April",
-                            ja: "4 月のデスクトップに 400 人足す",
+                            ja: "4 月のデスクトップの訪問者を 400 人増やす",
                         })),
                 ),
             )

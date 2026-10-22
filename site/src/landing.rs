@@ -218,7 +218,7 @@ pub fn style(site: Site) -> String {
                     ),
                     (
                         site.t(L { en: "Changes with the signals", ja: "シグナルに合わせて変わる" }),
-                        site.t(L { en: "`css_when` and `css_match` switch styles with the page's signals, and a patch includes the rules of the elements it adds.", ja: "`css_when` と `css_match` はページのシグナルに合わせてスタイルを切り替えます。差分には足す要素のルールも含まれます。" }),
+                        site.t(L { en: "`css_when` and `css_match` switch styles with the page's signals, and a patch includes the rules of the elements it adds.", ja: "`css_when` と `css_match` はページのシグナルに合わせてスタイルを切り替えます。差分には、追加する要素のルールも含まれます。" }),
                     ),
                 ],
             ),
@@ -305,7 +305,7 @@ pub fn i18n(site: Site) -> String {
                         }),
                         site.t(L {
                             en: "A text is a struct with one field per language, so a text without its Japanese, or a language added without its texts, is a compile error.",
-                            ja: "文は言語ごとに 1 つのフィールドを持つ構造体なので、日本語の訳がない文や、文を書かずに足した言語はコンパイルエラーになります。",
+                            ja: "文は言語ごとに 1 つのフィールドを持つ構造体なので、日本語の訳がない文や、文を書かずに追加した言語はコンパイルエラーになります。",
                         }),
                     ),
                     (
@@ -398,7 +398,7 @@ pub fn components(site: Site) -> String {
                 site,
                 site.t(L { en: "The `hypersig_ui` crate", ja: "`hypersig_ui` クレート" }),
                 site.t(L { en: "Accessible components, styled after shadcn/ui", ja: "shadcn/ui の見た目を持つ、アクセシブルなコンポーネント" }),
-                site.t(L { en: "Buttons, fields, pickers, tabs, dialogs, menus, tooltips, and toasts, built on the browser's native elements and following the WAI-ARIA Authoring Practices. Each returns an `El`, so it takes handlers and children like any other element.", ja: "ボタン、入力欄、選択、タブ、ダイアログ、メニュー、ツールチップ、トーストを、ブラウザのネイティブ要素を使い、WAI-ARIA Authoring Practices に沿って作っています。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を足せます。" }),
+                site.t(L { en: "Buttons, fields, pickers, tabs, dialogs, menus, tooltips, and toasts, built on the browser's native elements and following the WAI-ARIA Authoring Practices. Each returns an `El`, so it takes handlers and children like any other element.", ja: "ボタン、入力欄、選択、タブ、ダイアログ、メニュー、ツールチップ、トーストを、ブラウザのネイティブ要素を使い、WAI-ARIA Authoring Practices に沿って作っています。どれも `El` を返すので、ほかの要素と同じようにハンドラや子要素を追加できます。" }),
                 &[
                     (
                         site.t(L { en: "Get started", ja: "はじめる" }),

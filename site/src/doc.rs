@@ -171,7 +171,7 @@ impl Library {
             },
             Self::Components => L {
                 en: "Components for hypersig styled after shadcn/ui, built on native elements and the WAI-ARIA patterns.",
-                ja: "shadcn/ui の見た目に倣った hypersig のコンポーネントです。ネイティブの要素と WAI-ARIA のパターンの上に作っています。",
+                ja: "shadcn/ui の見た目に倣った hypersig のコンポーネントです。ネイティブの要素と WAI-ARIA のパターンをもとに作っています。",
             },
             Self::I18n => L {
                 en: "Typed translations for hypersig, with the language picked from Accept-Language.",
@@ -688,15 +688,15 @@ impl Doc {
                 },
                 Learn::Requests => L {
                     en: "A handler reads the request through an axum extractor, sets cookies by returning headers beside its answer, and fails with `?`.",
-                    ja: "ハンドラは axum の extractor でリクエストを読み、答えと組にしたヘッダーで Cookie を設定し、`?` で失敗を返します。",
+                    ja: "ハンドラは axum の extractor でリクエストを読み、応答と一緒にヘッダーを返して Cookie を設定し、`?` で失敗を返します。",
                 },
                 Learn::Server => L {
                     en: "The browser calls an action, and the server answers with patches: new values for signals, or new HTML for a part of the page.",
-                    ja: "ブラウザがアクションを呼び出すと、サーバーは差分で答えます。差分はシグナルの新しい値か、ページの一部の新しい HTML です。",
+                    ja: "ブラウザがアクションを呼び出すと、サーバーは差分を返します。差分はシグナルの新しい値か、ページの一部の新しい HTML です。",
                 },
                 Learn::Pages => L {
                     en: "A route is a page the server renders at a path. The router serves it and the links on other pages point to it from the same value, so a parameter of the wrong type or in the wrong number is a compile error.",
-                    ja: "ルートは、サーバーがあるパスで描画するページです。ルーターの配信もほかのページからのリンクも同じ値から作るので、パラメータの型や数の誤りはコンパイルエラーになります。",
+                    ja: "ルートは、あるパスでサーバーが描画するページです。ルーターの配信もほかのページからのリンクも同じ値から作るので、パラメータの型や数の誤りはコンパイルエラーになります。",
                 },
                 Learn::Styling => L {
                     en: "Styles are Rust values too. A misspelled property or keyword, or a value of the wrong type, is a compile error.",
@@ -720,15 +720,15 @@ impl Doc {
                 },
                 Learn::DeployCloudflare => L {
                     en: "The Workers template compiles the same pages, actions, and streams to wasm, and the worker hands each request to the axum `Router`.",
-                    ja: "Workers のテンプレートは同じページ、アクション、ストリームを wasm にコンパイルし、Worker は受けたリクエストを axum の `Router` に渡します。",
+                    ja: "Workers のテンプレートは同じページ、アクション、ストリームを wasm にコンパイルし、Worker は受け取ったリクエストを axum の `Router` に渡します。",
                 },
                 Learn::DeployVercel => L {
                     en: "The Vercel template runs the same pages, actions, and streams as a Vercel Function, where `VercelLayer` hands each request to the axum `Router`.",
-                    ja: "Vercel のテンプレートは同じページ、アクション、ストリームを Vercel の関数として動かし、`VercelLayer` が受けたリクエストを axum の `Router` に渡します。",
+                    ja: "Vercel のテンプレートは同じページ、アクション、ストリームを Vercel の関数として動かし、`VercelLayer` が受け取ったリクエストを axum の `Router` に渡します。",
                 },
                 Learn::Security => L {
                     en: "What hypersig checks so that a page and its actions resist what a visitor can send, why data from the browser cannot run code on the server, and what is left to the application.",
-                    ja: "ページとアクションが訪問者の送るものに耐えるように hypersig が確かめること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
+                    ja: "訪問者が送るものからページとアクションを守るために hypersig が検査すること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
                 },
                 Learn::Signals => L {
                     en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
@@ -744,7 +744,7 @@ impl Doc {
                 },
                 Learn::Why => L {
                     en: "hypersig renders the page on the server and writes its behavior into the HTML. Every string the browser acts on comes from a Rust type, so the page needs no browser build, no hydration, and no string typed by hand.",
-                    ja: "hypersig はページをサーバーで描画し、その動きを HTML に書き込みます。ブラウザが扱う文字列はすべて Rust の型から作られるので、ブラウザ向けのビルドもハイドレーションも要らず、手で書く文字列もありません。",
+                    ja: "hypersig はページをサーバーで描画し、その動きを HTML に書き込みます。ブラウザが扱う文字列はすべて Rust の型から作られるので、ブラウザ向けのビルドもハイドレーションも不要で、手で書く文字列もありません。",
                 },
             },
             Self::Style(page) => match page {
@@ -798,7 +798,7 @@ impl Doc {
             Self::Components(page) => match page {
                 Component::Installation => L {
                     en: "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
-                    ja: "`hypersig_ui` は、shadcn/ui に似た見た目を持ち、振る舞いはブラウザのネイティブ要素と WAI-ARIA Authoring Practices に従うコンポーネント集です。",
+                    ja: "`hypersig_ui` は、見た目が shadcn/ui に似ていて、振る舞いはブラウザのネイティブ要素と WAI-ARIA Authoring Practices に従うコンポーネント集です。",
                 },
                 Component::Theming => L {
                     en: "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
