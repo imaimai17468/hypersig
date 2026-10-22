@@ -1,5 +1,7 @@
 //! Serving actions and the runtime from an axum [`Router`].
 
+mod dev;
+
 use std::backtrace::Backtrace;
 use std::collections::HashMap;
 use std::convert::Infallible;
@@ -44,6 +46,14 @@ pub trait RouterExt<St>: Sized {
     /// On wasm32-unknown-unknown the file goes out uncompressed, because the
     /// Cloudflare Workers runtime compresses a body that names a
     /// `Content-Encoding` again.
+    ///
+    /// A debug build also serves a stream at `/_hypersig/dev` that each page
+    /// it serves keeps open. When the server stops and another starts in
+    /// its place, as `cargo hypersig dev` restarts it after a change, the
+    /// page reloads from the new one. The page closes each request to the
+    /// stream after two seconds and opens another, so a server that shuts
+    /// down gracefully waits for it no longer than that. A release build
+    /// serves no stream, and its pages open none.
     #[must_use]
     fn hypersig_runtime(self) -> Self;
 
@@ -193,10 +203,10 @@ fn accepts_brotli(headers: &HeaderMap) -> bool {
 
 impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
     fn hypersig_runtime(self) -> Self {
-        self.route(
+        dev::route(self.route(
             crate::RUNTIME_PATH,
             get(|headers: HeaderMap| async move { runtime_file(&headers) }),
-        )
+        ))
     }
 
     fn page<P, Q, H, M, Fut, R>(
@@ -573,10 +583,13 @@ pub struct PageResponse {
 /// Adds the header parts of a pair to the response the reply becomes.
 type AddParts = Box<dyn FnOnce(Response) -> Response + Send>;
 
+/// Renders a page under a base, with the URL of the stream that reloads it, if any.
+type Render = Box<dyn FnOnce(Base, Option<&str>) -> String + Send>;
+
 enum Reply {
     /// A page, rendered once the router knows where it is served.
     Page {
-        render: Box<dyn FnOnce(Base) -> String + Send>,
+        render: Render,
         status: Option<StatusCode>,
         framing: Framing,
     },
@@ -639,7 +652,7 @@ impl PageResponse {
     pub fn with_status<S: Signals + Send + 'static>(status: StatusCode, page: Page<S>) -> Self {
         Self::new(Reply::Page {
             framing: page.framing().clone(),
-            render: Box::new(move |base| page.render_under(base)),
+            render: Box::new(move |base, dev| page.render_under(base, dev)),
             status: Some(status),
         })
     }
@@ -696,8 +709,8 @@ impl Reply {
                 status,
                 framing,
             } => {
-                let mut response =
-                    (status.unwrap_or(StatusCode::OK), Html(render(base))).into_response();
+                let html = render(base, dev::url(base).as_deref());
+                let mut response = (status.unwrap_or(StatusCode::OK), Html(html)).into_response();
                 let headers = response.headers_mut();
                 if let Some(value) = framing.x_frame_options() {
                     headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static(value));
@@ -719,7 +732,7 @@ impl<S: Signals + Send + 'static> From<Page<S>> for PageResponse {
     fn from(page: Page<S>) -> Self {
         Self::new(Reply::Page {
             framing: page.framing().clone(),
-            render: Box::new(move |base| page.render_under(base)),
+            render: Box::new(move |base, dev| page.render_under(base, dev)),
             status: None,
         })
     }

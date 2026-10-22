@@ -277,6 +277,48 @@ async fn serves_the_runtime_at_a_path_named_after_its_hash_for_a_year() {
     )));
 }
 
+/// The URL of the stream a page served by a debug build reloads from.
+#[cfg(debug_assertions)]
+fn dev_url(page: &str) -> &str {
+    let start = page
+        .find(r#" data-hs-dev=""#)
+        .expect("a page names the stream")
+        + 14;
+    let len = page[start..].find('"').expect("the attribute ends");
+    &page[start..start + len]
+}
+
+#[cfg(debug_assertions)]
+#[tokio::test]
+async fn a_page_reloads_from_a_server_started_after_the_one_that_rendered_it() {
+    let (_, page) = send(Request::get("/").body(Body::empty()).expect("request")).await;
+    let url = dev_url(&page);
+    assert!(url.starts_with("/_hypersig/dev?since="), "{url}");
+
+    let (status, body) = send(
+        Request::get("/_hypersig/dev?since=0")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, "event: hs-reload\ndata: {}\n\n");
+
+    // The server that rendered the page holds the stream open, so its body
+    // does not end.
+    let response = app()
+        .oneshot(Request::get(url).body(Body::empty()).expect("request"))
+        .await
+        .expect("the router is infallible");
+    assert_eq!(response.status(), StatusCode::OK);
+    let read = tokio::time::timeout(
+        std::time::Duration::from_millis(100),
+        response.into_body().collect(),
+    )
+    .await;
+    assert!(read.is_err(), "the stream ended");
+}
+
 #[tokio::test]
 async fn serves_a_page_without_parameters() {
     let (status, body) = send(Request::get("/").body(Body::empty()).expect("request")).await;

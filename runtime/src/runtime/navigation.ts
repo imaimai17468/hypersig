@@ -31,6 +31,11 @@ export class Navigation {
    */
   popped(): void {
     if (this.leaving || location.pathname + location.search === this.#shown) return;
+    this.reload();
+  }
+
+  /** Loads the page at the URL it shows again. */
+  reload(): void {
     this.leaving = true;
     location.reload();
   }

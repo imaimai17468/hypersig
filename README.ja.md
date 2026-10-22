@@ -106,7 +106,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
+`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。`cargo install --locked hypersig_cli` でインストールする `cargo hypersig dev` を使うと、変更のたびにサーバーがビルドされて起動し直し、開いているタブは新しいサーバーから読み込み直されます。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
 
 ## デプロイ
 

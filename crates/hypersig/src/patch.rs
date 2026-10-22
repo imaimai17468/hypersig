@@ -16,6 +16,10 @@
 //! nothing. The runtime, in `runtime/src/runtime/action/call.ts`, opens a
 //! stream called with `reconnect` again when the response closes before it.
 //!
+//! The stream a debug build serves for reloading the page, which
+//! `src/axum/dev.rs` writes and `runtime/src/dev.ts` reads, carries one
+//! event of its own: `hs-reload` with the data `{}`.
+//!
 //! A patch answering a call made inside a [`Part`](crate::Part) is written
 //! under the page field the part sits at: each key of `hs-signals` starts
 //! with that field, and the fragment of `hs-element` was rendered with its

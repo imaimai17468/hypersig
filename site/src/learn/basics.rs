@@ -10,7 +10,7 @@ use crate::lang::L;
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, title};
 
 pub fn quick_start(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Learn(Learn::QuickStart).title(site)),
         lead(site, Doc::Learn(Learn::QuickStart).leads()),
         heading(
@@ -72,6 +72,14 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
             L {
                 en: "Open `http://127.0.0.1:3000`. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. The runtime is the small JavaScript file that runs the page's statements and bindings in the browser. `hypersig_runtime()` serves it from the crate, so no Node or JavaScript build is involved.",
                 ja: "`http://127.0.0.1:3000` を開いてください。`+1` ボタンはリクエストを送らずにブラウザで数を増やします。リセットボタンは `/reset` を呼び出し、ハンドラが返す差分が `count` を 0 に戻します。ランタイムはページの文と束縛をブラウザで実行する小さな JavaScript のファイルです。`hypersig_runtime()` がこのファイルをクレートから配信するので、Node も JavaScript のビルドも使いません。",
+            },
+        ),
+        code::block(Lang::Shell, None, "cargo hypersig dev"),
+        para(
+            site,
+            L {
+                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. A build that fails leaves the last server running. The state the server holds in memory starts over at each restart. `cargo install --locked hypersig_cli` installs the command.",
+                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。ビルドが失敗したときは前のサーバーが動き続けます。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。コマンドは `cargo install --locked hypersig_cli` でインストールできます。",
             },
         ),
         heading(

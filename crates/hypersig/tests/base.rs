@@ -108,6 +108,13 @@ async fn check_home(app: Router, home: &str) {
     let (status, body, _) = get(app, home).await;
     assert_eq!(status, StatusCode::OK, "{body}");
     assert!(body.contains(r#"href="/app/items/3""#), "{body}");
+    // A debug build's page reads the stream that reloads it under the base,
+    // as it reads the runtime.
+    #[cfg(debug_assertions)]
+    assert!(
+        body.contains(r#" data-hs-dev="/app/_hypersig/dev?since="#),
+        "{body}"
+    );
     assert!(body.contains("&quot;/app/items/&quot;"), "{body}");
     assert!(
         body.contains("&quot;POST&quot;,&quot;/app/add&quot;"),
