@@ -749,11 +749,13 @@ impl<S: Signals> Page<S> {
     /// name.
     #[must_use]
     pub fn render(&self) -> String {
-        self.render_under(Base::ROOT)
+        self.render_under(Base::ROOT, None)
     }
 
-    /// Renders the document for a route under `base`, which the runtime's path starts with.
-    pub(crate) fn render_under(&self, base: Base) -> String {
+    /// Renders the document for a route under `base`, which the runtime's
+    /// path starts with, and gives `<body>` the URL of the stream that tells
+    /// the page to reload, where `dev` holds one.
+    pub(crate) fn render_under(&self, base: Base, dev: Option<&str>) -> String {
         check_names(&self.body);
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
@@ -802,7 +804,7 @@ impl<S: Signals> Page<S> {
             out.push_str("></script>");
         }
         out.push_str("</head><body");
-        self.write_body_attrs(&mut out, &root);
+        self.write_body_attrs(&mut out, &root, dev);
         out.push('>');
         let body_at = out.len();
         for child in &self.body {
@@ -846,7 +848,7 @@ impl<S: Signals> Page<S> {
     }
 
     /// Writes the attributes of `<body>`, which the runtime reads when it starts.
-    fn write_body_attrs(&self, out: &mut String, root: &Tape) {
+    fn write_body_attrs(&self, out: &mut String, root: &Tape, dev: Option<&str>) {
         // `write_json_attr` reads all of `out` once, which here holds only
         // the head, because the body attributes come before the body.
         write_json_attr(out, "data-hs-signals", &root.root());
@@ -863,6 +865,9 @@ impl<S: Signals> Page<S> {
         }
         if !self.keys.is_empty() {
             write_attr(out, "data-hs-on-key", &keys_json(&self.keys));
+        }
+        if let Some(url) = dev {
+            write_attr(out, "data-hs-dev", url);
         }
     }
 
