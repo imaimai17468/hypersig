@@ -12,7 +12,9 @@ use hypersig::html::{
     El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
     ul, when,
 };
-use hypersig::{Action, Expr, NodeRef, Page, Patches, Route, RouterExt, Signals, Stmt, if_else};
+use hypersig::{
+    Action, Expr, NodeRef, Page, Patches, Route, RouterExt, SafeUrl, Signals, Stmt, if_else,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
@@ -155,7 +157,7 @@ fn todo_list() -> El<TodoMvc> {
 
 fn filter_link(filter: Filter, text: &str) -> El<TodoMvc> {
     li().child(
-        a().attr("href", "#")
+        a().href(SafeUrl::new("#"))
             .css(styles::filter_link())
             .css_when(styles::selected(), TodoMvc::filter().equals(&filter))
             .on_click(TodoMvc::filter().set(&filter))

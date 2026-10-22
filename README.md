@@ -54,7 +54,7 @@ Add the dependencies to `Cargo.toml`:
 
 ```toml
 [dependencies]
-hypersig = "0.1"
+hypersig = "0.2"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
@@ -105,6 +105,14 @@ async fn main() -> std::io::Result<()> {
 ```
 
 Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. Misspelling `count`, or adding a string to it, stops `cargo build`. The [documentation](https://imaimai17468.github.io/hypersig/learn/) continues from here.
+
+## Deploying
+
+[Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) creates a project from a template in [`templates/`](templates) and takes it to a running application in a few commands. `templates/server` builds a container image with Docker for a host such as Fly.io, Cloud Run, or Render. `templates/cloudflare` runs the same pages, actions, and streams on Cloudflare Workers, where the worker hands each request to the axum `Router`. Both are created with `cargo generate`, and the Workers one also needs Node.js, because Cloudflare publishes its command-line tool `wrangler` only on npm. The page also covers a project you already have: adding the template's `Dockerfile` to it, or turning it into a worker.
+
+## Security
+
+[Security](https://imaimai17468.github.io/hypersig/learn/security/) lists what hypersig checks: escaping, the attributes and URLs a page may write, the requests an action refuses, and why a request cannot name code to run on the server. It also lists what each application checks itself, starting with who may call each action.
 
 ## What it does not suit
 

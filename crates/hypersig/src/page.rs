@@ -645,8 +645,8 @@ impl<S: Signals> Page<S> {
     /// Panics if the signal struct fails to serialize to JSON, which only
     /// happens for a `Serialize` impl that returns an error, or if two
     /// elements carry one [`NodeRef`](crate::NodeRef) name, one
-    /// [`FileInput`](crate::FileInput) name, or one id, where the runtime can
-    /// reach both, or if an element inside a list template has an id set with
+    /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
+    /// the runtime can reach both, or if an element inside a list template has an id set with
     /// [`El::id`](crate::html::El::id). Each item of a list may carry the same
     /// name.
     #[must_use]
@@ -884,6 +884,7 @@ mod tests {
         assert!(html.contains(r#"style="width: 50%""#));
         assert!(html.contains(r#"style="color: red; height: 50%; --ink: blue""#));
         assert!(!html.contains("data-hs-inline"));
+        assert!(!html.contains(r#"style="width: 1px"#), "{html}");
     }
 
     #[test]

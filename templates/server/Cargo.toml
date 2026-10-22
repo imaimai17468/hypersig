@@ -1,0 +1,11 @@
+[package]
+name = "{{project-name}}"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+axum = "0.8"
+hypersig = "0.2.0"
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }

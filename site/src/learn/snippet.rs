@@ -81,6 +81,7 @@ snippets! {
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";
     I18nPages => "i18n_pages.rs";
     I18nNegotiate => "i18n_negotiate.rs";
+    Listen => "listen.rs";
 }
 
 /// `snippet` as a code block, without its hidden lines.

@@ -28,7 +28,7 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::path::Path;
 
-use hypersig::{Origin, PageResponse, Rest, Route, Url};
+use hypersig::{Origin, PageResponse, Rest, Route, SafeUrl, Url};
 use hypersig_i18n::Locale as _;
 
 pub use doc::Doc;
@@ -57,6 +57,15 @@ hypersig::routes! {
 #[expect(dead_code, reason = "the site is written as files, not served")]
 async fn unserved((): (), _path: Rest) -> PageResponse {
     PageResponse::not_found()
+}
+
+/// `url`, which the site wrote for one of its own files or pages, as the
+/// `href` or `src` it becomes.
+///
+/// The site writes these URLs from its base path and its page paths, so a
+/// URL that is not a `SafeUrl` is a bug in how the site builds them.
+fn own(url: impl Into<String>) -> SafeUrl {
+    SafeUrl::parse(url).expect("the site's own URLs have no scheme")
 }
 
 impl Site {

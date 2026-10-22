@@ -14,12 +14,12 @@ use hypersig::style::value::{
     TextDecorationLine, pct, px, rem,
 };
 use hypersig::style::{PseudoClass, Style};
-use hypersig::{Signals, html};
+use hypersig::{SafeUrl, Signals, html};
 use hypersig_ui::token;
 use serde::{Deserialize, Serialize};
 
-use crate::Site;
 use crate::lang::Text;
+use crate::{Site, own};
 
 /// The signals of a documentation page.
 #[derive(Signals, Serialize, Deserialize, Default)]
@@ -303,7 +303,7 @@ pub fn inline_code(text: &str) -> Part {
 
 /// A link to `target`, in the form the module header describes.
 pub fn link(site: Site, target: &str) -> Part {
-    a().attr("href", href(site, target)).css(
+    a().href(href(site, target)).css(
         Style::new()
             .font_weight(FontWeight::Number(500.0))
             .text_decoration_line(TextDecorationLine::Underline)
@@ -316,14 +316,14 @@ pub fn link(site: Site, target: &str) -> Part {
 }
 
 /// The URL of `target`, in the form the module header describes.
-pub fn href(site: Site, target: &str) -> String {
-    if target.starts_with("https://") {
+pub fn href(site: Site, target: &str) -> SafeUrl {
+    own(if target.starts_with("https://") {
         target.to_owned()
     } else if let Some(item) = target.strip_prefix("api:") {
         site.url(&format!("{}/{item}", crate::API_DIR))
     } else {
         site.page_url(target)
-    }
+    })
 }
 
 /// Several parts as one, for a function that returns the body of a page.

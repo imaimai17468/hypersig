@@ -17,7 +17,7 @@ use hypersig::html::{
     Class, El, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
     ul,
 };
-use hypersig::{Page, Signals, if_else};
+use hypersig::{Page, SafeUrl, Signals, if_else};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
@@ -182,7 +182,7 @@ fn todo_list(look: &Look) -> El<TodoMvc> {
 }
 
 fn filter_link(look: &Look, filter: Filter, text: &str) -> El<TodoMvc> {
-    let link = look.dress(a().attr("href", "#"), Part::FilterLink);
+    let link = look.dress(a().href(SafeUrl::new("#")), Part::FilterLink);
     li().child(
         look.dress_when(link, Part::Selected, TodoMvc::filter().equals(&filter))
             .on_click(TodoMvc::filter().set(&filter))

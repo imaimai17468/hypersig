@@ -54,7 +54,7 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 
 ```toml
 [dependencies]
-hypersig = "0.1"
+hypersig = "0.2"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
@@ -105,6 +105,14 @@ async fn main() -> std::io::Result<()> {
 ```
 
 `cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
+
+## デプロイ
+
+[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページで、[`templates/`](templates) のテンプレートからプロジェクトを作り、数行のコマンドで動くところまで進められます。`templates/server` は Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`templates/cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。どちらのテンプレートも `cargo generate` で作成します。Workers では Node.js も必要です。Cloudflare のコマンドラインツール `wrangler` が npm でしか配布されていないためです。既存のプロジェクトにテンプレートの `Dockerfile` を追加する方法と、Worker に移行する方法も同じページで説明しています。
+
+## セキュリティ
+
+[セキュリティ](https://imaimai17468.github.io/hypersig/ja/learn/security/) のページに、hypersig が確かめることをまとめています。エスケープ、ページに書ける属性と URL、アクションが断るリクエスト、リクエストがサーバーで動かすコードを名指しできない理由です。アクションを誰が呼んでよいかをはじめ、アプリが自分で確かめることも載せています。
 
 ## 向かないアプリ
 

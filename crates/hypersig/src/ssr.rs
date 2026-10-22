@@ -183,15 +183,19 @@ pub(crate) fn truthy<'b>(value: impl Into<Ref<'b>>) -> bool {
     }
 }
 
-fn number(value: f64) -> Value {
+/// `value` as JSON, or `None` for an infinity or NaN, which JSON cannot hold.
+///
+/// The browser keeps such a value as a number, so a binding that computes one
+/// is left for the runtime, and a form rule that does fails on the server.
+fn number(value: f64) -> Option<Value> {
     #[expect(
         clippy::cast_possible_truncation,
         reason = "only integral values inside i64's range reach the cast"
     )]
     if value.fract() == 0.0 && value.abs() < 9e15 {
-        Value::from(value as i64)
+        Some(Value::from(value as i64))
     } else {
-        Number::from_f64(value).map_or(Value::Null, Value::Number)
+        Number::from_f64(value).map(Value::Number)
     }
 }
 
@@ -475,7 +479,10 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Val<'a>> {
         ),
         "nth" => {
             let index = usize::try_from(Ref::from(&eval(2)?).as_i64()?).ok();
-            let item = index.and_then(|index| match eval(1)? {
+            // A list the server cannot evaluate leaves the item to the
+            // browser. Only an index past the end reads as no item.
+            let list = eval(1)?;
+            let item = index.and_then(|index| match list {
                 Val::Ref(list) => Some(Val::Ref(list.items()?.nth(index)?)),
                 Val::Owned(list) => Some(Val::Owned(list.as_array()?.get(index)?.clone())),
             });
@@ -509,10 +516,10 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Val<'a>> {
             eval(3)?.into_value(),
         ),
         "count" | "sum_of" | "max_of" | "min_of" | "map" => fold(op, parts, ctx)?,
-        "floor" => number(f(&eval(1)?)?.floor()),
-        "ceil" => number(f(&eval(1)?)?.ceil()),
-        "round" => number(js_round(f(&eval(1)?)?)),
-        "log10" => number(f(&eval(1)?)?.log10()),
+        "floor" => number(f(&eval(1)?)?.floor())?,
+        "ceil" => number(f(&eval(1)?)?.ceil())?,
+        "round" => number(js_round(f(&eval(1)?)?))?,
+        "log10" => number(f(&eval(1)?)?.log10())?,
         "trim" => Value::from(s(&eval(1)?)?.trim()),
         "lower" => Value::from(s(&eval(1)?)?.to_lowercase()),
         "upper" => Value::from(s(&eval(1)?)?.to_uppercase()),
@@ -527,7 +534,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Val<'a>> {
         "starts" => Value::Bool(s(&eval(1)?)?.starts_with(s(&eval(2)?)?)),
         "gt" | "ge" | "lt" | "le" => compare(op, &eval(1)?, &eval(2)?)?,
         "add" | "sub" | "mul" | "div" | "rem" | "min" | "max" | "pow" => {
-            arithmetic(op, f(&eval(1)?)?, f(&eval(2)?)?)
+            arithmetic(op, f(&eval(1)?)?, f(&eval(2)?)?)?
         }
         _ => return None,
     };
@@ -631,7 +638,8 @@ fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
         ("map", _) => Value::Array(mapped),
         ("count", _) => Value::from(count),
         ("sum_of", None) => Value::from(0),
-        (_, folded) => folded.map_or(Value::Null, number),
+        (_, Some(folded)) => number(folded)?,
+        (_, None) => Value::Null,
     })
 }
 
@@ -650,7 +658,7 @@ fn compare<'b, 'c>(op: &str, a: impl Into<Ref<'b>>, b: impl Into<Ref<'c>>) -> Op
     }))
 }
 
-fn arithmetic(op: &str, a: f64, b: f64) -> Value {
+fn arithmetic(op: &str, a: f64, b: f64) -> Option<Value> {
     number(match op {
         "add" => a + b,
         "sub" => a - b,
@@ -781,6 +789,34 @@ mod tests {
         assert_eq!(js_round(-2.5), -2.0);
         assert_eq!(js_round(-2.6), -3.0);
         assert_eq!(js_round(0.499_999_999_999_999_94), 0.0);
+    }
+
+    #[test]
+    fn leaves_a_result_that_is_not_finite_to_the_browser() {
+        let root = json!({ "rows": [{ "v": 1e308 }] });
+        let ctx = Ctx {
+            root: (&root).into(),
+            scope: Vec::new(),
+            copy: false,
+            vars: Vec::new(),
+            rules: None,
+        };
+        for ast in [
+            json!(["div", ["lit", 1], ["lit", 0]]),
+            json!(["mul", ["lit", 1e308], ["lit", 100]]),
+            json!(["or_else", ["div", ["lit", 0], ["lit", 0]], ["lit", 0]]),
+            json!([
+                "or_else",
+                [
+                    "nth",
+                    ["map", "rows", 0, ["mul", ["item", 0, "v"], ["lit", 100]]],
+                    ["lit", 0]
+                ],
+                ["lit", 0]
+            ]),
+        ] {
+            assert!(evaluate(&ast, &ctx).is_none(), "{ast}");
+        }
     }
 
     #[test]

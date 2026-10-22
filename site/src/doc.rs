@@ -42,6 +42,8 @@ pub enum Learn {
     Styling,
     EscapeHatches,
     JavaScript,
+    Deploying,
+    Security,
 }
 
 /// The pages of the Reference section, one per group of items.
@@ -254,6 +256,8 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::Styling),
             Doc::Learn(Learn::EscapeHatches),
             Doc::Learn(Learn::JavaScript),
+            Doc::Learn(Learn::Deploying),
+            Doc::Learn(Learn::Security),
         ],
     },
 ];
@@ -472,6 +476,8 @@ impl Doc {
         Self::Learn(Learn::Styling),
         Self::Learn(Learn::EscapeHatches),
         Self::Learn(Learn::JavaScript),
+        Self::Learn(Learn::Deploying),
+        Self::Learn(Learn::Security),
         Self::Reference(Reference::Overview),
         Self::Reference(Reference::Page),
         Self::Reference(Reference::El),
@@ -580,6 +586,8 @@ impl Doc {
                     "束縛と文で足りないとき",
                 ),
                 Learn::JavaScript => ("JavaScript libraries", "JavaScript のライブラリ"),
+                Learn::Deploying => ("Deploying", "デプロイ"),
+                Learn::Security => ("Security", "セキュリティ"),
             },
             Self::Reference(page) => match page {
                 Reference::Overview => ("API reference", "API リファレンス"),
@@ -681,6 +689,14 @@ impl Doc {
                 Learn::JavaScript => L {
                     en: "A map, a chart, or a rich text editor runs in the browser as a JavaScript library. Wrapped in a custom element, it takes values from the page's signals and hands its events back as typed values.",
                     ja: "地図、グラフ、リッチテキストエディタは、ブラウザで JavaScript のライブラリとして動きます。カスタム要素で包むと、ページのシグナルから値を受け取り、イベントを型付きの値としてページに返せます。",
+                },
+                Learn::Deploying => L {
+                    en: "A template gives a project that deploys as it is: a container image for a container host, or a worker for Cloudflare Workers. Each takes a few commands from an empty directory to a running application.",
+                    ja: "テンプレートから、そのままデプロイできるプロジェクトを作れます。コンテナのホスト向けのイメージと、Cloudflare Workers 向けの Worker の 2 つがあり、どちらも空のディレクトリから数行のコマンドで動くところまで進みます。",
+                },
+                Learn::Security => L {
+                    en: "What hypersig checks so that a page and its actions resist what a visitor can send, why data from the browser cannot run code on the server, and what is left to the application.",
+                    ja: "ページとアクションが訪問者の送るものに耐えるように hypersig が確かめること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
                 },
                 Learn::Signals => L {
                     en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
@@ -855,6 +871,8 @@ impl Learn {
             Self::Styling => "styling",
             Self::EscapeHatches => "escape-hatches",
             Self::JavaScript => "javascript",
+            Self::Deploying => "deploying",
+            Self::Security => "security",
         }
     }
 }

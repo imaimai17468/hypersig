@@ -25,15 +25,27 @@ function queryString(value: unknown): string {
   return pairs.length === 0 ? "" : `?${pairs.join("&")}`;
 }
 
+/**
+ * Each `/`-separated part of `text` percent-encoded, as `encode_uri_path` in
+ * `crates/hypersig/src/route.rs` writes it: a `/` at the start or right after
+ * another one becomes `%2F`, because a URL starting with `//` names another host.
+ */
+function uriPath(text: string): string {
+  return text
+    .split("/")
+    .map((segment, index, segments) =>
+      index === 0
+        ? encodeURIComponent(segment)
+        : `${segments[index - 1] === "" ? "%2F" : "/"}${encodeURIComponent(segment)}`,
+    )
+    .join("");
+}
+
 const unary: Record<string, (a: never) => unknown> = {
   not: (a: unknown) => !a,
   str: String,
   uri: (a: unknown) => encodeURIComponent(String(a)),
-  uri_path: (a: unknown) =>
-    String(a)
-      .split("/")
-      .map((segment) => encodeURIComponent(segment))
-      .join("/"),
+  uri_path: (a: unknown) => uriPath(String(a)),
   query: queryString,
   trim: (a: string) => a.trim(),
   lower: (a: string) => a.toLowerCase(),

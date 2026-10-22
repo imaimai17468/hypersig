@@ -55,7 +55,7 @@ use serde_json::{Value, json};
 
 use crate::action::NodeRef;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
-use crate::route::Link;
+use crate::href::IntoHref;
 use crate::signal::{Item, Part, Sig, in_item_scope, in_part};
 use crate::ssr::{self, Ctx, Val};
 use crate::style::{Property, Sheet, Style, Token, TokenValue};
@@ -150,8 +150,8 @@ impl<S> Node<S> {
 }
 
 /// Panics if two elements in `nodes` carry one node ref name, one file
-/// input name, or one id, where the runtime could find either, or if an
-/// element inside a list template carries a fixed id.
+/// input name, or one `&'static str` id, where the runtime could find
+/// either, or if an element inside a list template carries a fixed id.
 ///
 /// The runtime looks a name up in the list items and conditional copies
 /// around the statement first, innermost first, and then in the whole page
@@ -171,10 +171,11 @@ pub(crate) fn check_names<S>(nodes: &[Node<S>]) {
 }
 
 /// The names that elements carry, each with the templates it sits in,
-/// outermost first, numbered in the order the walk enters them.
+/// outermost first, numbered in the order the walk enters them, and whether
+/// the program wrote it as a fixed string.
 #[derive(Default)]
 struct Names<'a> {
-    found: Vec<(&'static str, &'a str, Vec<u32>)>,
+    found: Vec<(&'static str, &'a str, Vec<u32>, bool)>,
     templates: u32,
 }
 
@@ -203,11 +204,12 @@ impl Scope<'_> {
 impl<'a> Names<'a> {
     fn el<S>(&mut self, el: &'a El<S>, scope: Option<&Scope<'_>>) {
         if let Some(name) = el.node_ref {
-            self.found.push(("node ref name", name, Scope::path(scope)));
+            self.found
+                .push(("node ref name", name, Scope::path(scope), true));
         }
         if let Some(name) = el.file_input {
             self.found
-                .push(("file input name", name, Scope::path(scope)));
+                .push(("file input name", name, Scope::path(scope), true));
         }
         if let Some(id) = &el.id {
             let mut at = scope;
@@ -220,7 +222,8 @@ impl<'a> Names<'a> {
                 );
                 at = scope.outer;
             }
-            self.found.push(("id", id, Scope::path(scope)));
+            let fixed = matches!(id, Cow::Borrowed(_));
+            self.found.push(("id", id, Scope::path(scope), fixed));
         }
         for child in &el.children {
             self.node(child, scope);
@@ -247,8 +250,13 @@ impl<'a> Names<'a> {
         self.found
             .sort_unstable_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
         for group in self.found.chunk_by(|a, b| (a.0, a.1) == (b.0, b.1)) {
-            for (i, (kind, name, a)) in group.iter().enumerate() {
-                let meets = |(_, _, b): &(_, _, Vec<u32>)| a.starts_with(b) || b.starts_with(a);
+            // An id built at runtime may come from data a visitor stored, and
+            // a panic would stop the page for every visitor until the data
+            // changes, so only two fixed ids alike panic.
+            for (i, (kind, name, a, fixed)) in group.iter().enumerate() {
+                let meets = |(_, _, b, other): &(_, _, Vec<u32>, bool)| {
+                    *fixed && *other && (a.starts_with(b) || b.starts_with(a))
+                };
                 assert!(
                     !group[i + 1..].iter().any(meets),
                     "two elements carry the {kind} `{name}` where the runtime can \
@@ -492,7 +500,7 @@ where
 pub struct El<S> {
     tag: &'static str,
     void: bool,
-    id: Option<String>,
+    id: Option<Cow<'static, str>>,
     attrs: Vec<(&'static str, String)>,
     classes: Vec<&'static str>,
     show: Option<Expr<S, bool>>,
@@ -557,10 +565,37 @@ impl<S> fmt::Debug for El<S> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Stylesheet(&'static str);
 
+/// Whether `css` holds `</style` in any case, which ends a `<style>` element.
+const fn closes_style(css: &[u8]) -> bool {
+    const END: &[u8] = b"</style";
+    let mut start = 0;
+    while start + END.len() <= css.len() {
+        let mut i = 0;
+        while i < END.len() && css[start + i].to_ascii_lowercase() == END[i] {
+            i += 1;
+        }
+        if i == END.len() {
+            return true;
+        }
+        start += 1;
+    }
+    false
+}
+
 impl Stylesheet {
     /// Wraps the CSS text `css`, usually from `include_str!`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `css` holds `</style`, in any case, which would close the
+    /// `<style>` element the page writes it into. In a `const` the panic is a
+    /// compile error.
     #[must_use]
     pub const fn new(css: &'static str) -> Self {
+        assert!(
+            !closes_style(css.as_bytes()),
+            "a stylesheet holds no `</style`, which would end the `<style>` element"
+        );
         Self(css)
     }
 
@@ -1219,13 +1254,36 @@ impl<S> El<S> {
     }
 
     fn check_attr_name(name: &str) {
+        // A space, a quote, `=`, or `>` would end the name and start another
+        // attribute that no check below sees.
         assert!(
-            !name.starts_with(RESERVED_PREFIX),
+            !name.is_empty()
+                && name.bytes().all(|byte| byte.is_ascii_alphanumeric()
+                    || matches!(byte, b'-' | b'_' | b'.' | b':')),
+            "`{name}` is not an attribute name: use letters, digits, `-`, `_`, `.`, and `:`"
+        );
+        // The browser matches attribute names without regard to case.
+        let lower = name.to_ascii_lowercase();
+        assert!(
+            !lower.starts_with(RESERVED_PREFIX),
             "`{name}` is written by hypersig's typed methods, not by `attr`"
         );
         assert!(
-            name != "id" && name != "class",
+            lower != "id" && lower != "class",
             "use `El::id` or `El::class` to set `{name}`"
+        );
+        assert!(
+            lower != "href" && lower != "src",
+            "use `El::href` or `El::src`, which take a `Link` or a `SafeUrl`, to set `{name}`"
+        );
+        assert!(
+            !lower.starts_with("on")
+                && !matches!(
+                    lower.as_str(),
+                    "srcdoc" | "action" | "formaction" | "xlink:href" | "data" | "http-equiv"
+                ),
+            "`{name}` can run a script, so `attr` does not write it; attach a handler with \
+             the `on_*` methods"
         );
     }
 
@@ -1233,12 +1291,30 @@ impl<S> El<S> {
     ///
     /// # Panics
     ///
-    /// Panics if `name` is `id` or `class`, which have their own methods, or
-    /// starts with `data-hs-`, which only the typed methods may write.
+    /// Panics, ignoring case, if `name` is `id` or `class`, which have their
+    /// own methods, or starts with `data-hs-`, which only the typed methods
+    /// may write. Panics as well for an attribute whose value can run a script:
+    /// `href` and `src`, which [`El::href`] and [`El::src`] set from a value
+    /// that cannot, an event handler `on*`, `srcdoc`, `action`, `formaction`,
+    /// `xlink:href`, `data`, which `<object>` loads, and `http-equiv`, whose
+    /// `refresh` loads the URL in `content`. `attributeName` panics when its
+    /// value is `href` or `xlink:href`, because SVG's `<animate>` and `<set>`
+    /// would then write their `to` or `values` into the link. A name holds
+    /// only letters, digits, `-`, `_`, `.`, and `:`.
     #[must_use]
     pub fn attr(mut self, name: &'static str, value: impl Into<String>) -> Self {
         Self::check_attr_name(name);
-        self.attrs.push((name, value.into()));
+        let value = value.into();
+        assert!(
+            !name.eq_ignore_ascii_case("attributename")
+                || !matches!(
+                    value.trim().to_ascii_lowercase().as_str(),
+                    "href" | "xlink:href"
+                ),
+            "an animation of `{value}` writes its `to` or `values` into a link, which can run \
+             a script, so `attr` does not write it"
+        );
+        self.attrs.push((name, value));
         self
     }
 
@@ -1246,10 +1322,15 @@ impl<S> El<S> {
     ///
     /// # Panics
     ///
-    /// Panics for the same names as [`El::attr`].
+    /// Panics for the same names as [`El::attr`], and for `attributeName`,
+    /// whose value the signals could turn into `href`.
     #[must_use]
     pub fn bind_attr(mut self, name: &'static str, value: impl IntoExpr<S, String>) -> Self {
         Self::check_attr_name(name);
+        assert!(
+            !name.eq_ignore_ascii_case("attributename"),
+            "a bound `{name}` could name `href`, so `bind_attr` does not write it; set it with `attr`"
+        );
         self.attr_bind.push((name, value.into_expr()));
         self
     }
@@ -1333,15 +1414,30 @@ impl<S> El<S> {
         self
     }
 
-    /// Makes the element's `href` a link to a page the router serves.
+    /// Sets the element's `href`: a link to a page the router serves, or a
+    /// [`SafeUrl`](crate::SafeUrl) for an address it does not.
     ///
-    /// A link whose parameters are all literals is written as a plain
-    /// attribute. One that reads signals is kept up to date as they change.
+    /// A fixed URL is written as a plain attribute. One that reads signals is
+    /// kept up to date as they change.
     #[must_use]
-    pub fn href(mut self, link: Link<S>) -> Self {
-        match link.into_parts() {
-            Ok(url) => self.attrs.push(("href", url)),
-            Err(expr) => self.attr_bind.push(("href", expr)),
+    pub fn href(self, url: impl IntoHref<S>) -> Self {
+        self.url_attr("href", url)
+    }
+
+    /// Sets the element's `src`, the address of the image, frame, or script
+    /// it loads, as [`El::href`] sets `href`.
+    ///
+    /// A [`SafeUrl`](crate::SafeUrl) may name any host, so a script's `src`
+    /// comes from the program, never from a visitor.
+    #[must_use]
+    pub fn src(self, url: impl IntoHref<S>) -> Self {
+        self.url_attr("src", url)
+    }
+
+    fn url_attr(mut self, name: &'static str, url: impl IntoHref<S>) -> Self {
+        match url.into_parts() {
+            Ok(url) => self.attrs.push((name, url)),
+            Err(expr) => self.attr_bind.push((name, expr)),
         }
         self
     }
@@ -1349,11 +1445,17 @@ impl<S> El<S> {
     /// Sets the element's `id`.
     ///
     /// An element rendered through a [`Fragment`](crate::Fragment) gets the
-    /// fragment's id instead. Rendering panics if another element the runtime
-    /// can reach carries the same id, or if the element sits inside a list
-    /// template, whose every item would repeat it.
+    /// fragment's id instead. Rendering panics if the element sits inside a
+    /// list template, whose every item would repeat it, and if another
+    /// element the runtime can reach carries the same `&'static str` id.
+    ///
+    /// Two ids alike where either is a `String` render, because a `String`
+    /// may come from data visitors stored. An anchor, a label's `for`, an
+    /// `aria-*` reference, or a fragment's patch to that id then reaches the
+    /// first of them, so an id built from stored data is made unique by the
+    /// program, such as with the record's key.
     #[must_use]
-    pub fn id(mut self, id: impl Into<String>) -> Self {
+    pub fn id(mut self, id: impl Into<Cow<'static, str>>) -> Self {
         self.id = Some(id.into());
         self
     }
@@ -1963,8 +2065,8 @@ impl<S> El<S> {
         self
     }
 
-    pub(crate) fn with_id(mut self, id: &str) -> Self {
-        self.id = Some(id.to_owned());
+    pub(crate) fn with_id(mut self, id: &'static str) -> Self {
+        self.id = Some(Cow::Borrowed(id));
         self
     }
 
@@ -1976,9 +2078,9 @@ impl<S> El<S> {
     /// # Panics
     ///
     /// Panics if two elements carry one [`NodeRef`] name, one
-    /// [`FileInput`](crate::FileInput) name, or one id, where the runtime can
-    /// reach both, or if an element inside a list template has an id set with
-    /// [`El::id`]. Each item of a list may carry the same name.
+    /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
+    /// the runtime can reach both, or if an element inside a list template has
+    /// an id set with [`El::id`]. Each item of a list may carry the same name.
     #[must_use]
     pub fn render(&self) -> String {
         let mut names = Names::default();
@@ -2036,10 +2138,13 @@ impl<S> El<S> {
         let rules = ctx.and_then(|ctx| ctx.rules);
         for (property, value) in &self.style {
             match eval_text(value.as_json(), ctx) {
+                // A value that could end the declaration, the rule, or the
+                // `<style>` element is left for the runtime to set, and the
+                // browser's `setProperty` drops one it cannot read as the
+                // property's value.
+                Some(value) if !plain_css(&value) => {}
                 Some(value) if rules.is_none() => style.push(format!("{property}: {value}")),
-                // A value that could end the rule or the `<style>` element is
-                // left for the runtime to set.
-                Some(value) if plain_css(&value) => {
+                Some(value) => {
                     rule.push_str(property);
                     rule.push(':');
                     rule.push_str(&value);
@@ -2406,7 +2511,7 @@ pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
 
 #[cfg(test)]
 mod tests {
-    use super::{Class, button, div, el, img, input, picture, source, span};
+    use super::{Class, a, button, div, el, img, input, picture, source, span};
     use crate::_private::sig;
     use crate::style::Token;
     use crate::{Sig, Stmt};
@@ -2438,12 +2543,48 @@ mod tests {
         let html = picture::<Page>()
             .child(source().attr("srcset", "/a.avif"))
             .child(el("meta").attr("itemprop", "name"))
-            .child(img().attr("src", "/a.png"))
+            .child(img().src(crate::SafeUrl::new("/a.png")))
             .render();
         assert_eq!(
             html,
             r#"<picture><source srcset="/a.avif"><meta itemprop="name"><img src="/a.png"></picture>"#
         );
+    }
+
+    #[test]
+    fn a_stylesheet_cannot_close_its_style_element() {
+        assert!(super::closes_style(b"a{}</STYLE><script>"));
+        assert!(!super::closes_style(b"a{content:\"</styl\"}"));
+    }
+
+    #[test]
+    #[should_panic(expected = "use `El::href` or `El::src`")]
+    fn attr_refuses_href() {
+        let _ = a::<Page>().attr("href", "javascript:alert(1)");
+    }
+
+    #[test]
+    #[should_panic(expected = "written by hypersig's typed methods")]
+    fn attr_refuses_a_runtime_attribute_in_any_case() {
+        let _ = div::<Page>().attr("DATA-HS-ON-CLICK", "[]");
+    }
+
+    #[test]
+    #[should_panic(expected = "is not an attribute name")]
+    fn attr_refuses_a_name_that_would_start_another_attribute() {
+        let _ = img::<Page>().attr("x onerror", "alert(1)");
+    }
+
+    #[test]
+    #[should_panic(expected = "can run a script")]
+    fn attr_refuses_an_event_handler_in_any_case() {
+        let _ = img::<Page>().attr("onError", "alert(1)");
+    }
+
+    #[test]
+    #[should_panic(expected = "use `El::href` or `El::src`")]
+    fn bind_attr_refuses_src() {
+        let _ = img::<Page>().bind_attr("SRC", name());
     }
 
     #[test]
@@ -2664,12 +2805,51 @@ mod tests {
         }
 
         #[test]
+        fn ids_built_at_runtime_may_repeat() {
+            let tag = |name: &str| li::<Page>().id(format!("tag-{name}"));
+            let html = div::<Page>()
+                .child(tag("a"))
+                .child(tag("a"))
+                .child(div().id(String::from("total")))
+                .child(div().id("total"))
+                .render();
+            assert_eq!(html.matches(r#"id="tag-a""#).count(), 2, "{html}");
+        }
+
+        #[test]
         fn sibling_conditional_copies_may_carry_one_id() {
             let _ = div::<Page>()
                 .child(when(count().gt(0), div().id("total")))
                 .child(when(count().le(0), div().id("total")))
                 .render();
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "writes its `to` or `values` into a link")]
+    fn an_animation_of_a_link_panics() {
+        let _ = el::<Page>("animate").attr("attributeName", " XLINK:href");
+    }
+
+    #[test]
+    #[should_panic(expected = "does not write it; set it with `attr`")]
+    fn a_bound_animation_target_panics() {
+        let _ = el::<Page>("set").bind_attr("attributeName", "x");
+    }
+
+    #[test]
+    #[should_panic(expected = "`HTTP-EQUIV` can run a script")]
+    fn http_equiv_panics() {
+        let _ = el::<Page>("meta").attr("HTTP-EQUIV", "refresh");
+    }
+
+    #[test]
+    fn animations_of_other_attributes_render() {
+        let html = el::<Page>("animate")
+            .attr("attributeName", "opacity")
+            .attr("to", "0")
+            .render();
+        assert!(html.contains(r#"attributeName="opacity""#), "{html}");
     }
 
     #[test]

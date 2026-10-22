@@ -19,6 +19,16 @@ struct Newsletter {
 
 const JOIN: Action<Newsletter, String> = Action::post("/join");
 const READERS: StreamAction<Newsletter> = StreamAction::new("/readers");
+const BROADCAST: Action<Newsletter> = Action::post("/broadcast");
+const BROADCASTS: StreamAction<Newsletter> = StreamAction::new("/broadcasts");
+
+/// A batch built on another thread, as a task that broadcasts one batch to
+/// every page builds it, outside any part.
+fn broadcast() -> Patches<Newsletter> {
+    std::thread::spawn(|| Patches::new().element(&Joined { readers: 3 }))
+        .join()
+        .expect("the thread renders")
+}
 
 /// The line under the form, which shows the status signal.
 struct Joined {
@@ -80,6 +90,8 @@ fn app() -> Router {
             // The stream builds each batch as it is read, after the handler returned.
             stream::iter([2]).map(|readers| Patches::new().element(&Joined { readers }))
         })
+        .action(BROADCAST, |(), (): ()| async { broadcast() })
+        .stream(BROADCASTS, |(), (): ()| stream::once(async { broadcast() }))
 }
 
 async fn send(request: Request<Body>) -> (StatusCode, String) {
@@ -187,6 +199,7 @@ async fn a_part_header_that_is_not_a_field_path_gets_400() {
 async fn a_stream_builds_its_fragments_under_the_part() {
     let (status, body) = send(
         Request::get("/readers")
+            .header("accept", "text/event-stream")
             .header("hypersig-part", "footer")
             .body(Body::empty())
             .expect("request"),
@@ -198,4 +211,56 @@ async fn a_stream_builds_its_fragments_under_the_part() {
         body.contains("[&quot;sig&quot;,&quot;footer.status&quot;]"),
         "{body}"
     );
+}
+
+fn broadcast_from(path: &str, part: Option<&str>) -> Request<Body> {
+    let request = if path == "/broadcast" {
+        Request::post(path).header("content-type", "application/json")
+    } else {
+        Request::get(path).header("accept", "text/event-stream")
+    };
+    let request = match part {
+        Some(part) => request.header("hypersig-part", part),
+        None => request,
+    };
+    let body = if path == "/broadcast" { "null" } else { "" };
+    request.body(Body::from(body)).expect("request")
+}
+
+#[tokio::test]
+async fn a_batch_built_outside_the_called_part_gets_500() {
+    let (status, body) = send(broadcast_from("/broadcast", Some("footer"))).await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+    assert!(
+        body.contains("render a part's fragment while its handler or stream runs"),
+        "{body}"
+    );
+
+    let (status, body) = send(broadcast_from("/broadcast", None)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("3 readers."), "{body}");
+}
+
+#[tokio::test]
+async fn a_stream_ends_at_a_batch_built_outside_the_called_part() {
+    let response = app()
+        .oneshot(broadcast_from("/broadcasts", Some("footer")))
+        .await
+        .expect("the router is infallible");
+    assert_eq!(response.status(), StatusCode::OK);
+    let error = response
+        .into_body()
+        .collect()
+        .await
+        .expect_err("the stream ends with an error");
+    assert!(
+        error
+            .to_string()
+            .contains("render a part's fragment while its handler or stream runs"),
+        "{error}"
+    );
+
+    let (status, body) = send(broadcast_from("/broadcasts", None)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("3 readers."), "{body}");
 }

@@ -242,7 +242,8 @@ impl Autocomplete {
 /// reader reads a new message when it appears.
 ///
 /// Two fields bound to the same signal on one page get the same ids, and
-/// rendering the page panics.
+/// the second field's label and messages then point at the first field, so
+/// bind each field to its own signal.
 ///
 /// ```
 /// use hypersig::{Signals, if_else};

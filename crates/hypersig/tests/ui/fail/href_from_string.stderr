@@ -1,0 +1,21 @@
+error[E0277]: `Sig<Profile, String>` is not a URL an `href` or a `src` takes on the page whose signals are `Profile`
+  --> tests/ui/fail/href_from_string.rs:15:33
+   |
+15 |     let _ = a::<Profile>().href(Profile::website());
+   |                            ---- ^^^^^^^^^^^^^^^^^^ the trait `IntoHref<Profile>` is not implemented for `Sig<Profile, String>`
+   |                            |
+   |                            required by a bound introduced by this call
+   |
+   = note: give a `Link` or a `Url` from a route, a `SafeUrl`, or a signal or expression of `SafeUrl`; a `String` becomes one through `SafeUrl::parse`
+help: the trait `IntoHref<Profile>` is not implemented for `Sig<Profile, String, hypersig::Root>`
+      but it is implemented for `Sig<Profile, SafeUrl, _>`
+  --> src/href.rs
+   |
+   | impl<S, R> IntoHref<S> for Sig<S, SafeUrl, R> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `SafeUrl`, found `String`
+note: required by a bound in `El::<S>::href`
+  --> src/html.rs
+   |
+   |     pub fn href(self, url: impl IntoHref<S>) -> Self {
+   |                                 ^^^^^^^^^^^ required by this bound in `El::<S>::href`
