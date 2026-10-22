@@ -108,7 +108,7 @@ async fn main() -> std::io::Result<()> {
 
 ## デプロイ
 
-[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページで、[`templates/`](templates) のテンプレートからプロジェクトを作り、数行のコマンドで動くところまで進められます。`templates/server` は Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`templates/cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。どちらのテンプレートも `cargo generate` で作成します。Workers では Node.js も必要です。Cloudflare のコマンドラインツール `wrangler` が npm でしか配布されていないためです。既存のプロジェクトにテンプレートの `Dockerfile` を追加する方法と、Worker に移行する方法も同じページで説明しています。
+[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページで、[`templates/`](templates) のテンプレートからプロジェクトを作り、数行のコマンドで動くところまで進められます。`templates/server` は Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`templates/cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。`templates/vercel` はそれらを Vercel の関数として動かし、`vercel_runtime` の `VercelLayer` が同じようにリクエストを `Router` に渡します。どのテンプレートも `cargo generate` で作成します。Workers と Vercel では Node.js も必要です。Cloudflare のコマンドラインツール `wrangler` と Vercel のツール `vercel` が npm で配布されているためです。既存のプロジェクトにテンプレートの `Dockerfile` を追加する方法と、Worker や Vercel の関数に移行する方法も同じページで説明しています。
 
 ## セキュリティ
 

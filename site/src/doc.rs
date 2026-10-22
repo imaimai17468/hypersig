@@ -691,8 +691,8 @@ impl Doc {
                     ja: "地図、グラフ、リッチテキストエディタは、ブラウザで JavaScript のライブラリとして動きます。カスタム要素で包むと、ページのシグナルから値を受け取り、イベントを型付きの値としてページに返せます。",
                 },
                 Learn::Deploying => L {
-                    en: "A template gives a project that deploys as it is: a container image for a container host, or a worker for Cloudflare Workers. Each takes a few commands from an empty directory to a running application.",
-                    ja: "テンプレートから、そのままデプロイできるプロジェクトを作れます。コンテナのホスト向けのイメージと、Cloudflare Workers 向けの Worker の 2 つがあり、どちらも空のディレクトリから数行のコマンドで動くところまで進みます。",
+                    en: "A template gives a project that deploys as it is: a container image for a container host, a worker for Cloudflare Workers, or a function for Vercel. Each takes a few commands from an empty directory to a running application.",
+                    ja: "テンプレートから、そのままデプロイできるプロジェクトを作れます。コンテナのホスト向けのイメージ、Cloudflare Workers 向けの Worker、Vercel 向けの関数の 3 つがあり、どれも空のディレクトリから数行のコマンドで動くところまで進みます。",
                 },
                 Learn::Security => L {
                     en: "What hypersig checks so that a page and its actions resist what a visitor can send, why data from the browser cannot run code on the server, and what is left to the application.",

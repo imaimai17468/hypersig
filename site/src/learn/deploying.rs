@@ -1,5 +1,5 @@
-//! The page on deploying an application from a template, in a container and
-//! on Cloudflare Workers.
+//! The page on deploying an application from a template, in a container, on
+//! Cloudflare Workers, and on Vercel.
 
 use crate::Site;
 use crate::code::{self, Lang};
@@ -13,6 +13,10 @@ use super::snippet::{Snippet, show};
 /// wasm32-unknown-unknown and the end-to-end tests run under `wrangler dev`.
 const WORKER: &str = include_str!("../../../templates/cloudflare/src/lib.rs");
 
+/// The function of `templates/vercel`, which CI lints and the end-to-end tests
+/// run through `VercelLayer` outside Vercel.
+const FUNCTION: &str = include_str!("../../../templates/vercel/api/app.rs");
+
 pub fn deploying(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Deploying).title(site)),
@@ -23,6 +27,9 @@ pub fn deploying(site: Site) -> Part {
         workers(site),
         workers_existing(site),
         on_workers(site),
+        vercel(site),
+        vercel_existing(site),
+        on_vercel(site),
     ])
 }
 
@@ -315,6 +322,189 @@ fn on_workers(site: Site) -> Part {
                 L {
                     en: "`Timestamp::now` reads the clock with JavaScript's `Date.now()`, because `SystemTime::now` panics on this target.",
                     ja: "`Timestamp::now` は JavaScript の `Date.now()` で時刻を読みます。この target では `SystemTime::now` がパニックするためです。",
+                },
+            ],
+        ),
+    ])
+}
+
+/// The commands that create a project from the Vercel template, run it, and
+/// publish it.
+fn vercel(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Deploy on Vercel",
+                ja: "Vercel にデプロイする",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "These commands need a Vercel account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `vercel`, Vercel's command-line tool, which `npx` fetches on first use. `cargo generate` copies the Vercel template into `my-app` and names the package after it.",
+                ja: "このコマンドを実行するには、Vercel のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Vercel のコマンドラインツール `vercel` を動かすために使い、`npx` が最初の実行時にダウンロードします。`cargo generate` は Vercel のテンプレートを `my-app` にコピーし、パッケージにその名前を付けます。",
+            },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "cargo install cargo-generate
+cargo generate --git https://github.com/imaimai17468/hypersig templates/vercel --name my-app
+cd my-app
+cargo run
+npx vercel deploy",
+        ),
+        para(
+            site,
+            L {
+                en: "`cargo run` starts the function at `http://localhost:3000`. Outside Vercel, `vercel_runtime::run` listens on `127.0.0.1` at the port in `VERCEL_DEV_PORT`, or 3000, and hands each request to the same `VercelLayer` a deployment uses. `vercel deploy` asks you to sign in and to link the directory to a Vercel project the first time, uploads the source, and prints the deployment's address once Vercel has built it. Vercel builds with Rust from rustup on its own servers, so no binary is uploaded. A Git repository connected to the project deploys the same way on each push.",
+                ja: "`cargo run` は関数を `http://localhost:3000` で起動します。Vercel の外では、`vercel_runtime::run` は `127.0.0.1` の `VERCEL_DEV_PORT` のポート（なければ 3000）で待ち受け、受けたリクエストをデプロイ先と同じ `VercelLayer` に渡します。`vercel deploy` は最初の実行でログインと、ディレクトリを Vercel のプロジェクトに結び付けることを求めます。そのあとソースをアップロードし、Vercel がビルドを終えるとデプロイ先のアドレスを表示します。ビルドは Vercel のサーバーで rustup の Rust を使って実行するので、バイナリはアップロードしません。プロジェクトに Git のリポジトリをつなぐと、push のたびに同じようにデプロイされます。",
+            },
+        ),
+        subheading(
+            site,
+            L {
+                en: "What the template holds",
+                ja: "テンプレートの中身",
+            },
+        ),
+        table_of(
+            site,
+            L {
+                en: &["File", "What it does"],
+                ja: &["ファイル", "役割"],
+            },
+            L {
+                en: &[
+                    &[
+                        "`api/app.rs`",
+                        "The function below. The `+1` button counts in the browser, the second button doubles the count in the function, and a stream sends the function's time every second.",
+                    ],
+                    &[
+                        "`Cargo.toml`",
+                        "The binary `app`, built from `api/app.rs`, which Vercel turns into the function at `/api/app`, with `vercel_runtime` and its `axum` feature.",
+                    ],
+                    &[
+                        "`vercel.json`",
+                        "Sends every path to `/api/app`, so the axum `Router` sees each request with its own path.",
+                    ],
+                    &["`.vercelignore`", "Keeps `target` out of the upload."],
+                ],
+                ja: &[
+                    &[
+                        "`api/app.rs`",
+                        "下の関数です。`+1` のボタンはブラウザで数を増やし、もう 1 つのボタンは関数で数を 2 倍にし、ストリームは関数の時刻を 1 秒ごとに送ります。",
+                    ],
+                    &[
+                        "`Cargo.toml`",
+                        "`api/app.rs` からビルドするバイナリ `app` を宣言します。Vercel はこれを `/api/app` の関数にします。依存には `axum` の機能を付けた `vercel_runtime` があります。",
+                    ],
+                    &[
+                        "`vercel.json`",
+                        "すべてのパスを `/api/app` に送ります。axum の `Router` は各リクエストを元のパスのまま受け取ります。",
+                    ],
+                    &[
+                        "`.vercelignore`",
+                        "`target` をアップロードの対象から外します。",
+                    ],
+                ],
+            },
+        ),
+        code::block(
+            Lang::Rust,
+            Some("api/app.rs"),
+            code::without_header(FUNCTION),
+        ),
+    ])
+}
+
+/// The changes that turn a server project the reader already has into a
+/// Vercel Function.
+fn vercel_existing(site: Site) -> Part {
+    parts([
+        subheading(
+            site,
+            L {
+                en: "Turn a server project into a Vercel Function",
+                ja: "サーバーのプロジェクトを Vercel の関数に移行する",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A server project becomes a Vercel Function when its `main` hands the `Router` to `vercel_runtime::run` in place of `axum::serve`. The function runs on tokio as the server did, so the pages, actions, and streams stay as they are, `tokio::time::sleep` included.",
+                ja: "サーバーのプロジェクトを Vercel の関数に移行するには、`main` で `Router` を `axum::serve` ではなく `vercel_runtime::run` に渡します。関数はサーバーと同じく tokio の上で動くので、ページ、アクション、ストリームのコードは `tokio::time::sleep` も含めてそのまま使えます。",
+            },
+        ),
+        table_of(
+            site,
+            L {
+                en: &["File", "What changes"],
+                ja: &["ファイル", "変えること"],
+            },
+            L {
+                en: &[
+                    &[
+                        "`Cargo.toml`",
+                        "Add `vercel_runtime` with the feature `axum`, and `tower`. Add a `[[bin]]` named `app` whose `path` is `api/app.rs`.",
+                    ],
+                    &[
+                        "`src/main.rs`",
+                        "Move it to `api/app.rs`, and replace the listener and `axum::serve` with the template's last line, which wraps the `Router` in `VercelLayer` and runs it.",
+                    ],
+                    &[
+                        "`vercel.json`, `.vercelignore`",
+                        "Copy them from `templates/vercel`.",
+                    ],
+                ],
+                ja: &[
+                    &[
+                        "`Cargo.toml`",
+                        "`axum` の機能を付けた `vercel_runtime` と `tower` を追加します。`path` が `api/app.rs` で名前が `app` の `[[bin]]` も追加します。",
+                    ],
+                    &[
+                        "`src/main.rs`",
+                        "`api/app.rs` に移し、リスナーと `axum::serve` をテンプレートの最後の行に置き換えます。この行は `Router` を `VercelLayer` で包んで実行します。",
+                    ],
+                    &[
+                        "`vercel.json`、`.vercelignore`",
+                        "`templates/vercel` からコピーします。",
+                    ],
+                ],
+            },
+        ),
+    ])
+}
+
+/// What runs differently on Vercel than on a server.
+fn on_vercel(site: Site) -> Part {
+    parts([
+        subheading(
+            site,
+            L {
+                en: "What changes on Vercel",
+                ja: "Vercel で変わること",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "Vercel ends a request at the function's maximum duration, which counts the time a stream stays open. The limit is 300 seconds by default and on the Hobby plan, and the Pro plan raises it to 800 seconds with `maxDuration`. A call with `reconnect()` opens the stream again after the limit closes it.",
+                    ja: "Vercel は関数の最大実行時間でリクエストを終えます。この時間にはストリームを開いている時間も含まれます。上限は既定で 300 秒で、Hobby プランでは 300 秒より延ばせません。Pro プランでは `maxDuration` で 800 秒まで延ばせます。`reconnect()` を付けた呼び出しは、上限で切れたストリームをつなぎ直します。",
+                },
+                L {
+                    en: "Vercel may run more than one instance of the function and stops an idle one, so a value kept in memory may be gone at the next request. Keep the state requests share in a database.",
+                    ja: "Vercel は関数のインスタンスを複数動かすことがあり、使われていないインスタンスは止めます。メモリに置いた値は次のリクエストで消えていることがあるので、リクエストをまたいで共有する状態はデータベースに置いてください。",
+                },
+                L {
+                    en: "`VercelLayer` reads the whole request body before the `Router` sees it, so a file upload read in chunks arrives in memory at once. Vercel refuses a request body over 4.5 MB.",
+                    ja: "`VercelLayer` はリクエストの本文をすべて読んでから `Router` に渡します。ファイルのアップロードを少しずつ読むコードでも、本文は一度にメモリに載ります。Vercel は 4.5 MB を超える本文を受け付けません。",
+                },
+                L {
+                    en: "`hypersig_runtime()` sends the runtime compressed with Brotli, with `Content-Encoding: br`. The end-to-end tests run the function only outside Vercel, so whether Vercel passes that file to the browser unchanged has not been checked here.",
+                    ja: "`hypersig_runtime()` はランタイムを Brotli で圧縮し、`Content-Encoding: br` を付けて送ります。E2E テストは関数を Vercel の外でしか動かしていないので、Vercel がこのファイルをそのままブラウザに渡すかどうかはまだ確かめていません。",
                 },
             ],
         ),
