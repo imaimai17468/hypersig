@@ -11,6 +11,10 @@ use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, table_
 const WORKER: &str =
     include_str!("../../../../crates/hypersig_cli/templates/cloudflare/src/lib.rs");
 
+/// The `fetch` that `cargo hypersig add cloudflare` prints, which the tests of
+/// `hypersig_cli` build into the quick start counter.
+const FETCH: &str = include_str!("../../../../crates/hypersig_cli/steps/cloudflare.rs");
+
 pub fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::DeployCloudflare).title(site)),
@@ -35,15 +39,15 @@ fn workers(site: Site) -> Part {
         para(
             site,
             L {
-                en: "These commands need a Cloudflare account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `wrangler`, Cloudflare's command-line tool, which is published only on npm, and `npx` fetches it on first use, so the project has no `package.json`. `cargo generate` copies the Workers template into `my-worker` and names the package and the worker after it, as it does for the [container](learn/deploying/container/).",
-                ja: "このコマンドを実行するには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Cloudflare のコマンドラインツール `wrangler` を動かすためだけに使います。`wrangler` は npm でしか配布されていません。`npx` が最初の実行時にダウンロードするので、プロジェクトに `package.json` はありません。`cargo generate` は [コンテナ](learn/deploying/container/) のときと同じように Workers のテンプレートを `my-worker` にコピーし、パッケージと Worker にその名前を付けます。",
+                en: "These commands need a Cloudflare account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `wrangler`, Cloudflare's command-line tool, which is published only on npm, and `npx` fetches it on first use, so the project has no `package.json`. `cargo install` installs `cargo hypersig` from crates.io, and `cargo hypersig new` writes the Workers template into `my-worker` and names the package and the worker after it. The templates are compiled into `cargo hypersig`, and a version published on crates.io cannot change, so the build command in `wrangler.toml` is the same in every project one version makes.",
+                ja: "このコマンドを実行するには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Cloudflare のコマンドラインツール `wrangler` を動かすためだけに使います。`wrangler` は npm でしか配布されていません。`npx` が最初の実行時にダウンロードするので、プロジェクトに `package.json` はありません。`cargo install` は crates.io から `cargo hypersig` をインストールし、`cargo hypersig new` は Workers のテンプレートを `my-worker` に書き出して、パッケージと Worker にその名前を付けます。テンプレートは `cargo hypersig` に埋め込まれていて、crates.io に公開した版は書き換えられません。そのため、`wrangler.toml` のビルドのコマンドは、同じ版で作ったどのプロジェクトでも同じです。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "cargo install cargo-generate
-cargo generate --git https://github.com/imaimai17468/hypersig templates/cloudflare --name my-worker
+            "cargo install --locked hypersig_cli
+cargo hypersig new my-worker --host cloudflare
 cd my-worker
 npx wrangler dev
 npx wrangler login
@@ -133,9 +137,32 @@ fn workers_existing(site: Site) -> Part {
         para(
             site,
             L {
-                en: "In `Cargo.toml`, add a `[lib]` section that makes the package the library `worker-build` compiles, give axum `default-features = false`, add `tower-service` and `worker`, and remove tokio. hypersig, serde, and the other dependencies stay as they are:",
-                ja: "`Cargo.toml` には、パッケージを `worker-build` がコンパイルするライブラリにする `[lib]` の節を追加します。axum は `default-features = false` にし、`tower-service` と `worker` を追加し、tokio を外してください。hypersig、serde、ほかの依存はそのままです。",
+                en: "Run `cargo hypersig add cloudflare` in the directory that holds `Cargo.toml`. It prints the change to `Cargo.toml` before writing it, writes no file that is already there unless it is given `--force`, and ends with a list of what it changed and what is left to change by hand. It makes these changes:",
+                ja: "`Cargo.toml` のあるディレクトリで `cargo hypersig add cloudflare` を実行します。このコマンドは `Cargo.toml` の変更を書き込む前に表示し、すでにあるファイルは `--force` を付けない限り上書きしません。最後に、変更したものと手で直すものの一覧を表示します。変更するのは次のものです。",
             },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "cargo install --locked hypersig_cli
+cargo hypersig add cloudflare",
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "In `Cargo.toml`, it adds a `[lib]` section that makes the package the library `worker-build` compiles, gives axum `default-features = false`, adds `tower-service` and `worker`, and removes tokio. hypersig, serde, and the other dependencies stay as they are.",
+                    ja: "`Cargo.toml` には、パッケージを `worker-build` がコンパイルするライブラリにする `[lib]` の節を追加します。axum は `default-features = false` にし、`tower-service` と `worker` を追加し、tokio を外します。hypersig、serde、ほかの依存はそのままです。",
+                },
+                L {
+                    en: "It writes the template's `wrangler.toml`, with the package's name as the worker's, and `rust-toolchain.toml`, and adds `/build` and `/.wrangler`, which the build writes, to `.gitignore`.",
+                    ja: "テンプレートの `wrangler.toml` と `rust-toolchain.toml` を書き出します。`wrangler.toml` の Worker の名前はパッケージの名前です。ビルドが書き出す `/build` と `/.wrangler` は `.gitignore` に追加します。",
+                },
+                L {
+                    en: "It renames `src/main.rs` to `src/lib.rs`.",
+                    ja: "`src/main.rs` のファイル名を `src/lib.rs` に変えます。",
+                },
+            ],
         ),
         code::block(
             Lang::Toml,
@@ -151,40 +178,11 @@ worker = { version = "0.8", features = ["http", "axum"] }"#,
         para(
             site,
             L {
-                en: "Rename `src/main.rs` to `src/lib.rs`. Replace `#[tokio::main] async fn main` with a `fetch` function that builds the same `Router` as `main` did and hands it the request, and add the two `use` lines it needs. For the [quick start](learn/) counter, it is:",
-                ja: "`src/main.rs` のファイル名を `src/lib.rs` に変えます。`#[tokio::main] async fn main` を、`main` と同じ `Router` を組み立ててリクエストを渡す `fetch` 関数に置き換え、必要な 2 行の `use` を追加します。[クイックスタート](learn/) のカウンターなら次のとおりです。",
+                en: "The Rust code is left to you, and the command prints the change. Replace `#[tokio::main] async fn main` in `src/lib.rs` with a `fetch` function that builds the same `Router` as `main` did and hands it the request, and add the two `use` lines it needs. For the [quick start](learn/) counter, it is:",
+                ja: "Rust のコードは書き換えず、変更する内容を表示します。`src/lib.rs` の `#[tokio::main] async fn main` を、`main` と同じ `Router` を組み立ててリクエストを渡す `fetch` 関数に置き換え、必要な 2 行の `use` を追加してください。[クイックスタート](learn/) のカウンターなら次のとおりです。",
             },
         ),
-        code::block(
-            Lang::Rust,
-            Some("src/lib.rs"),
-            "use tower_service::Service as _;
-use worker::{Context, Env, HttpRequest, event};
-
-#[event(fetch)]
-async fn fetch(
-    request: HttpRequest,
-    _env: Env,
-    _context: Context,
-) -> worker::Result<axum::http::Response<axum::body::Body>> {
-    let mut app = pages(Router::new()).hypersig_runtime().action(RESET, reset);
-    Ok(app.call(request).await?)
-}",
-        ),
-        para(
-            site,
-            L {
-                en: "Download the template's `wrangler.toml` and `rust-toolchain.toml` next to `Cargo.toml`, and replace `{{project-name}}` in the `name` line of `wrangler.toml` with the worker's name. The build writes `build` and `.wrangler`, which stay out of Git:",
-                ja: "テンプレートの `wrangler.toml` と `rust-toolchain.toml` を `Cargo.toml` の隣にダウンロードし、`wrangler.toml` の `name` の行にある `{{project-name}}` を Worker の名前に置き換えます。ビルドが書き出す `build` と `.wrangler` は Git の対象から外してください。",
-            },
-        ),
-        code::block(
-            Lang::Shell,
-            None,
-            "curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/cloudflare/wrangler.toml
-curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/cloudflare/rust-toolchain.toml
-printf '/build\\n/.wrangler\\n' >> .gitignore",
-        ),
+        code::block(Lang::Rust, Some("src/lib.rs"), FETCH),
         para(
             site,
             L {

@@ -10,6 +10,10 @@ use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, table_
 /// run through `VercelLayer` outside Vercel.
 const FUNCTION: &str = include_str!("../../../../crates/hypersig_cli/templates/vercel/api/app.rs");
 
+/// The `main` that `cargo hypersig add vercel` prints, which the tests of
+/// `hypersig_cli` build into the quick start counter.
+const MAIN: &str = include_str!("../../../../crates/hypersig_cli/steps/vercel.rs");
+
 pub fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::DeployVercel).title(site)),
@@ -34,15 +38,15 @@ fn vercel(site: Site) -> Part {
         para(
             site,
             L {
-                en: "These commands need a Vercel account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `vercel`, Vercel's command-line tool, which `npx` fetches on first use. `cargo generate` copies the Vercel template into `my-app` and names the package after it.",
-                ja: "このコマンドを実行するには、Vercel のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Vercel のコマンドラインツール `vercel` を動かすために使い、`npx` が最初の実行時にダウンロードします。`cargo generate` は Vercel のテンプレートを `my-app` にコピーし、パッケージにその名前を付けます。",
+                en: "These commands need a Vercel account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `vercel`, Vercel's command-line tool, which `npx` fetches on first use. `cargo install` installs `cargo hypersig` from crates.io, and `cargo hypersig new` writes the Vercel template into `my-app` and names the package after it. The templates are compiled into `cargo hypersig`, and a version published on crates.io cannot change, so the `buildCommand` in `vercel.json` is the same in every project one version makes.",
+                ja: "このコマンドを実行するには、Vercel のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Vercel のコマンドラインツール `vercel` を動かすために使い、`npx` が最初の実行時にダウンロードします。`cargo install` は crates.io から `cargo hypersig` をインストールし、`cargo hypersig new` は Vercel のテンプレートを `my-app` に書き出して、パッケージにその名前を付けます。テンプレートは `cargo hypersig` に埋め込まれていて、crates.io に公開した版は書き換えられません。そのため、`vercel.json` の `buildCommand` は、同じ版で作ったどのプロジェクトでも同じです。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "cargo install cargo-generate
-cargo generate --git https://github.com/imaimai17468/hypersig templates/vercel --name my-app
+            "cargo install --locked hypersig_cli
+cargo hypersig new my-app --host vercel
 cd my-app
 cargo run
 npx vercel login
@@ -155,9 +159,32 @@ fn vercel_existing(site: Site) -> Part {
         para(
             site,
             L {
-                en: "In `Cargo.toml`, add `tower` and `vercel_runtime`, and a `[[bin]]` named `app` built from `api/app.rs`, which Vercel turns into the function at `/api/app`. The other dependencies stay as they are:",
-                ja: "`Cargo.toml` には `tower` と `vercel_runtime` を追加し、`api/app.rs` からビルドする `app` という名前の `[[bin]]` も追加します。Vercel はこれを `/api/app` の関数にします。ほかの依存はそのままです。",
+                en: "Run `cargo hypersig add vercel` in the directory that holds `Cargo.toml`. It prints the change to `Cargo.toml` before writing it, writes no file that is already there unless it is given `--force`, and ends with a list of what it changed and what is left to change by hand. It makes these changes:",
+                ja: "`Cargo.toml` のあるディレクトリで `cargo hypersig add vercel` を実行します。このコマンドは `Cargo.toml` の変更を書き込む前に表示し、すでにあるファイルは `--force` を付けない限り上書きしません。最後に、変更したものと手で直すものの一覧を表示します。変更するのは次のものです。",
             },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "cargo install --locked hypersig_cli
+cargo hypersig add vercel",
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "In `Cargo.toml`, it adds `tower` and `vercel_runtime`, and a `[[bin]]` named `app` built from `api/app.rs`, which Vercel turns into the function at `/api/app`. The other dependencies stay as they are.",
+                    ja: "`Cargo.toml` には `tower` と `vercel_runtime` を追加し、`api/app.rs` からビルドする `app` という名前の `[[bin]]` も追加します。Vercel はこれを `/api/app` の関数にします。ほかの依存はそのままです。",
+                },
+                L {
+                    en: "It writes the template's `vercel.json` and `rust-toolchain.toml`, adds `/target` to `.vercelignore` so the upload leaves it out, and adds `/.vercel`, where `vercel deploy` links the directory to its project, to `.gitignore`.",
+                    ja: "テンプレートの `vercel.json` と `rust-toolchain.toml` を書き出します。アップロードの対象から外すために `.vercelignore` に `/target` を追加し、`vercel deploy` がディレクトリとプロジェクトを結び付ける `/.vercel` を `.gitignore` に追加します。",
+                },
+                L {
+                    en: "It moves `src/main.rs` to `api/app.rs`. A `mod` in `api/app.rs` reads its file from `api/`, so where `src/` holds other files, the list at the end says to move them too.",
+                    ja: "`src/main.rs` を `api/app.rs` に移します。`api/app.rs` の `mod` は `api/` からファイルを読むので、`src/` にほかのファイルがあれば、最後の一覧にそれも移すように表示します。",
+                },
+            ],
         ),
         code::block(
             Lang::Toml,
@@ -173,35 +200,17 @@ path = "api/app.rs""#,
         para(
             site,
             L {
-                en: "Move `src/main.rs` to `api/app.rs`. In it, add the two `use` lines below, change the return type of `main` to `vercel_runtime::Error`'s, and replace the listener and the `axum::serve` line with the call to `vercel_runtime::run`. For the [quick start](learn/) counter, `main` becomes:",
-                ja: "`src/main.rs` を `api/app.rs` に移します。そのファイルに次の 2 行の `use` を追加し、`main` の戻り値の型を `vercel_runtime::Error` のものに変え、リスナーと `axum::serve` の行を `vercel_runtime::run` の呼び出しに置き換えます。[クイックスタート](learn/) のカウンターなら、`main` は次のようになります。",
+                en: "The Rust code is left to you, and the command prints the change. In `api/app.rs`, add the two `use` lines below, change the return type of `main` to `vercel_runtime::Error`'s, and replace the listener and the `axum::serve` line with the call to `vercel_runtime::run`. For the [quick start](learn/) counter, `main` becomes:",
+                ja: "Rust のコードは書き換えず、変更する内容を表示します。`api/app.rs` に次の 2 行の `use` を追加し、`main` の戻り値の型を `vercel_runtime::Error` のものに変え、リスナーと `axum::serve` の行を `vercel_runtime::run` の呼び出しに置き換えてください。[クイックスタート](learn/) のカウンターなら、`main` は次のようになります。",
             },
         ),
-        code::block(
-            Lang::Rust,
-            Some("api/app.rs"),
-            "use tower::ServiceBuilder;
-use vercel_runtime::axum::VercelLayer;
-
-#[tokio::main]
-async fn main() -> Result<(), vercel_runtime::Error> {
-    let app = pages(Router::new()).hypersig_runtime().action(RESET, reset);
-    vercel_runtime::run(ServiceBuilder::new().layer(VercelLayer::new()).service(app)).await
-}",
-        ),
+        code::block(Lang::Rust, Some("api/app.rs"), MAIN),
         para(
             site,
             L {
-                en: "Download the template's `vercel.json`, `.vercelignore`, and `rust-toolchain.toml` next to `Cargo.toml`. Then `cargo run` serves the function at `http://localhost:3000`, and `npx vercel deploy --prod` publishes it as above.",
-                ja: "テンプレートの `vercel.json`、`.vercelignore`、`rust-toolchain.toml` を `Cargo.toml` の隣にダウンロードします。そのあとは `cargo run` で関数が `http://localhost:3000` に配信され、上と同じく `npx vercel deploy --prod` で公開できます。",
+                en: "Then `cargo run` serves the function at `http://localhost:3000`, and `npx vercel deploy --prod` publishes it as above.",
+                ja: "そのあとは `cargo run` で関数が `http://localhost:3000` に配信され、上と同じく `npx vercel deploy --prod` で公開できます。",
             },
-        ),
-        code::block(
-            Lang::Shell,
-            None,
-            "curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/vercel/vercel.json
-curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/vercel/.vercelignore
-curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/vercel/rust-toolchain.toml",
         ),
     ])
 }

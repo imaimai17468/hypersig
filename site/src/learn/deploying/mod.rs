@@ -17,10 +17,10 @@ pub fn deploying(site: Site) -> Part {
         table_of(
             site,
             L {
-                en: &["Page", "Template", "Runs as", "Needs besides Rust 1.99"],
+                en: &["Page", "Created with", "Runs as", "Needs besides Rust 1.99"],
                 ja: &[
                     "ページ",
-                    "テンプレート",
+                    "作成のコマンド",
                     "動かし方",
                     "Rust 1.99 のほかに必要なもの",
                 ],
@@ -29,19 +29,19 @@ pub fn deploying(site: Site) -> Part {
                 en: &[
                     &[
                         "[In a container](learn/deploying/container/)",
-                        "`templates/server`",
+                        "`cargo hypersig new --host server`",
                         "A binary in a container image, on a host such as Fly.io, Cloud Run, or Render",
                         "Docker",
                     ],
                     &[
                         "[Cloudflare Workers](learn/deploying/cloudflare/)",
-                        "`templates/cloudflare`",
+                        "`cargo hypersig new --host cloudflare`",
                         "A worker compiled to wasm, run by workerd",
                         "A Cloudflare account, and Node.js 22 for `wrangler`",
                     ],
                     &[
                         "[Vercel](learn/deploying/vercel/)",
-                        "`templates/vercel`",
+                        "`cargo hypersig new --host vercel`",
                         "A binary that Vercel builds and runs as a Vercel Function",
                         "A Vercel account, and Node.js 22 for `vercel`",
                     ],
@@ -49,19 +49,19 @@ pub fn deploying(site: Site) -> Part {
                 ja: &[
                     &[
                         "[コンテナ](learn/deploying/container/)",
-                        "`templates/server`",
+                        "`cargo hypersig new --host server`",
                         "コンテナのイメージに入れたバイナリを、Fly.io、Cloud Run、Render のようなホストで動かします",
                         "Docker",
                     ],
                     &[
                         "[Cloudflare Workers](learn/deploying/cloudflare/)",
-                        "`templates/cloudflare`",
+                        "`cargo hypersig new --host cloudflare`",
                         "wasm にコンパイルした Worker を workerd で動かします",
                         "Cloudflare のアカウントと、`wrangler` を動かす Node.js 22",
                     ],
                     &[
                         "[Vercel](learn/deploying/vercel/)",
-                        "`templates/vercel`",
+                        "`cargo hypersig new --host vercel`",
                         "Vercel がバイナリをビルドし、Vercel の関数として動かします",
                         "Vercel のアカウントと、`vercel` を動かす Node.js 22",
                     ],
@@ -71,8 +71,8 @@ pub fn deploying(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The three templates hold the same pages, actions, and streams. What differs is the code that hands a request to the axum `Router`, the files around it, and what the host keeps between requests, so each page also covers turning a server project you already have into that template's shape.",
-                ja: "3 つのテンプレートのページ、アクション、ストリームのコードは同じです。違うのは、リクエストを axum の `Router` に渡すコードと、その周りのファイルと、ホストがリクエストのあいだに何を残すかです。そのため、どのページにも既存のサーバーのプロジェクトをそのテンプレートの形に移す方法を載せています。",
+                en: "`cargo install --locked hypersig_cli` installs `cargo hypersig`, which holds the three templates. They hold the same pages, actions, and streams. What differs is the code that hands a request to the axum `Router`, the files around it, and what the host keeps between requests, so each page also covers turning a server project you already have into that template's shape with `cargo hypersig add`.",
+                ja: "`cargo install --locked hypersig_cli` で、3 つのテンプレートを持つ `cargo hypersig` をインストールできます。3 つのテンプレートのページ、アクション、ストリームのコードは同じです。違うのは、リクエストを axum の `Router` に渡すコードと、その周りのファイルと、ホストがリクエストのあいだに何を残すかです。そのため、どのページにも既存のサーバーのプロジェクトを `cargo hypersig add` でそのテンプレートの形に移す方法を載せています。",
             },
         ),
     ])
