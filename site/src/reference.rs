@@ -330,6 +330,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "framed_by",
+                            "struct.Page.html#method.framed_by",
+                            L {
+                                en: "Lets pages served from `origin` show this page in a frame.",
+                                ja: "`origin` から配信したページがこのページを枠に表示できるようにします。",
+                            },
+                        ),
+                        (
+                            "framed_anywhere",
+                            "struct.Page.html#method.framed_anywhere",
+                            L {
+                                en: "Lets a page of any site show this page in a frame.",
+                                ja: "どのサイトのページもこのページを枠に表示できるようにします。",
+                            },
+                        ),
+                        (
                             "json_ld",
                             "struct.Page.html#method.json_ld",
                             L {

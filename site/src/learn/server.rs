@@ -583,8 +583,8 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A page that calls no action needs no server. `Page::runtime_src` loads the runtime from another URL, and `RUNTIME_JS` holds its source to write next to the page. This site is built that way: a Rust program renders each page with hypersig and writes the files that GitHub Pages serves.",
-                ja: "アクションを呼び出さないページにはサーバーが要りません。`Page::runtime_src` は別の URL からランタイムを読み込み、`RUNTIME_JS` はページの隣に書き出すランタイムのソースを持ちます。このサイトもその方法で作っています。Rust のプログラムが hypersig で各ページを描画し、GitHub Pages が配信するファイルを書き出します。",
+                en: "A page that calls no action needs no server. `Page::runtime_src` loads the runtime from another URL, and `RUNTIME_JS` holds its source to write next to the page. This site is built that way: a Rust program renders each page with hypersig and writes the files that GitHub Pages serves. A static file carries none of the headers a served page has, `X-Frame-Options` and `frame-ancestors` among them, and a `<meta>` cannot carry `frame-ancestors`, so set them in the host's configuration where the host allows it.",
+                ja: "アクションを呼び出さないページにはサーバーは不要です。`Page::runtime_src` は別の URL からランタイムを読み込み、`RUNTIME_JS` はページの隣に書き出すランタイムのソースを持ちます。このサイトもその方法で作っています。Rust のプログラムが hypersig で各ページを描画し、GitHub Pages が配信するファイルを書き出します。静的なファイルには、配信するページに付く `X-Frame-Options` や `frame-ancestors` のヘッダーが付きません。`<meta>` では `frame-ancestors` を指定できないので、ヘッダーを設定できるホストではホストの設定で送ってください。",
             },
         ),
         show(Snippet::StaticPage),

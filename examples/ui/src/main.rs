@@ -1104,7 +1104,7 @@ async fn content_security_policy(mut request: Request, next: Next) -> Response {
     request.extensions_mut().insert(Nonce(nonce.clone()));
     let mut response = next.run(request).await;
     let policy = format!(
-        "default-src 'self'; script-src 'self'; style-src 'nonce-{nonce}'; img-src 'self' data:"
+        "default-src 'self'; script-src 'self'; style-src 'nonce-{nonce}'; img-src 'self' data:; frame-ancestors 'self'"
     );
     response.headers_mut().insert(
         header::CONTENT_SECURITY_POLICY,
