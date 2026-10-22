@@ -277,7 +277,7 @@ fn tested(site: Site) -> Part {
             site,
             L {
                 en: "Each refusal above has a test in the repository: the escaping and the attribute checks in the tests of the HTML builder and of the style values, the requests in `crates/hypersig/tests/axum.rs` and `upload.rs`, the frame headers in `framing.rs`, and the compile errors in the trybuild cases under `crates/hypersig/tests/ui/fail`. The crates have been reviewed with Trail of Bits' sharp-edges, insecure-defaults, rust-review, and differential-review skills, and each finding they confirmed was fixed, is listed above as the application's to check, or fails only the request that caused it. No outside security audit has been done.",
-                ja: "上の断り方には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するものです。外部のセキュリティ監査は受けていません。",
+                ja: "上で挙げた検査には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するものです。外部のセキュリティ監査は受けていません。",
             },
         ),
     ])
