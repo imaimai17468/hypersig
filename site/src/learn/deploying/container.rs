@@ -33,15 +33,15 @@ fn container(site: Site) -> Part {
         para(
             site,
             L {
-                en: "These commands need Rust 1.99 or later and Docker. `cargo generate` copies the server template into `my-app` and names the package after it, and the last two lines build the image and run it.",
-                ja: "このコマンドを実行するには、Rust 1.99 以降と Docker が必要です。`cargo generate` はサーバーのテンプレートを `my-app` にコピーし、パッケージにその名前を付けます。最後の 2 行でイメージをビルドし、起動します。",
+                en: "These commands need Rust 1.99 or later and Docker. `cargo install` installs `cargo hypersig` from crates.io, and `cargo hypersig new` writes the server template into `my-app` and names the package after it. The last two lines build the image and run it.",
+                ja: "このコマンドを実行するには、Rust 1.99 以降と Docker が必要です。`cargo install` は crates.io から `cargo hypersig` をインストールし、`cargo hypersig new` はサーバーのテンプレートを `my-app` に書き出して、パッケージにその名前を付けます。最後の 2 行でイメージをビルドし、起動します。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "cargo install cargo-generate
-cargo generate --git https://github.com/imaimai17468/hypersig templates/server --name my-app
+            "cargo install --locked hypersig_cli
+cargo hypersig new my-app --host server
 cd my-app
 docker build -t my-app .
 docker run --rm -p 3000:3000 my-app",
@@ -51,6 +51,13 @@ docker run --rm -p 3000:3000 my-app",
             L {
                 en: "Open `http://localhost:3000`. The project is the [quick start](learn/) counter, listening on every interface at the port in `PORT`, with a `Dockerfile` that builds the binary in one stage and copies it into a small image in the next. The browser runtime is compiled into the binary, so the image holds the binary alone. Stop it with Ctrl+C.",
                 ja: "`http://localhost:3000` を開いてください。プロジェクトの中身は [クイックスタート](learn/) のカウンターで、すべてのインターフェースの `PORT` のポートで待ち受けます。`Dockerfile` は 1 つ目のステージでバイナリをビルドし、2 つ目のステージで小さなイメージにコピーします。ブラウザのランタイムはバイナリに埋め込まれているので、イメージに入るのはバイナリだけです。止めるときは Ctrl+C を押してください。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The templates are compiled into `cargo hypersig`, and a version published on crates.io cannot change, so a project made with one version holds the same files every time, the `RUN` line of the `Dockerfile` included. `cargo install` checks the download against the checksum crates.io recorded.",
+                ja: "テンプレートは `cargo hypersig` に埋め込まれていて、crates.io に公開した版は書き換えられません。そのため、同じ版で作ったプロジェクトは、`Dockerfile` の `RUN` の行も含めて毎回同じファイルになります。`cargo install` は、ダウンロードしたものを crates.io が記録したチェックサムと照らし合わせます。",
             },
         ),
         para(
@@ -105,8 +112,8 @@ gcloud run deploy my-app --source . --region asia-northeast1 --allow-unauthentic
     ])
 }
 
-/// The two changes that let a project the reader already has build with the
-/// template's `Dockerfile`.
+/// What `cargo hypersig add server` changes in a project the reader already
+/// has, and the change to `main` it leaves to the reader.
 fn container_existing(site: Site) -> Part {
     parts([
         heading(
@@ -119,42 +126,42 @@ fn container_existing(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The template's `Dockerfile` names no package, so it builds any project whose package has one binary. Download it to the directory that holds `Cargo.toml`, with a `.dockerignore` that keeps `target` out of the build.",
-                ja: "テンプレートの `Dockerfile` はパッケージの名前を書いていないので、バイナリが 1 つのパッケージならどのプロジェクトでもそのままビルドできます。`Cargo.toml` のあるディレクトリにダウンロードし、`target` をビルドの対象から外す `.dockerignore` も置いてください。",
+                en: "Run `cargo hypersig add server` in the directory that holds `Cargo.toml`. It writes the template's `Dockerfile`, adds `target` to `.dockerignore` so the build leaves it out, and adds `\"signal\"` to tokio's features in `Cargo.toml`, which the `shutdown` function below needs. It prints the change to `Cargo.toml` before writing it, and writes no file that is already there unless it is given `--force`. The `Dockerfile` names no package, so it builds any project whose package has one binary.",
+                ja: "`Cargo.toml` のあるディレクトリで `cargo hypersig add server` を実行します。このコマンドはテンプレートの `Dockerfile` を書き出し、ビルドの対象から `target` を外すために `.dockerignore` に `target` を追加し、下の `shutdown` 関数が使う `\"signal\"` を `Cargo.toml` の tokio の features に追加します。`Cargo.toml` の変更は書き込む前に表示します。すでにあるファイルは、`--force` を付けない限り上書きしません。`Dockerfile` はパッケージの名前を書いていないので、バイナリが 1 つのパッケージならどのプロジェクトでもそのままビルドできます。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/server/Dockerfile
-echo target >> .dockerignore",
+            "cargo install --locked hypersig_cli
+cargo hypersig add server",
         ),
         para(
             site,
             L {
-                en: "A `main` that binds `127.0.0.1`, as the [quick start](learn/) does, cannot be reached from outside the container. Replace its `TcpListener::bind(\"127.0.0.1:3000\")` line and the `axum::serve` line below it with the lines below, which listen on every interface at the port in `PORT`, and add the `shutdown` function after `main`. The server runs as the container's first process, which does not stop on Ctrl+C or on the SIGTERM a host sends unless it handles them, so without `shutdown`, `docker stop` waits 10 seconds and then kills it. Add `\"signal\"` to tokio's features in `Cargo.toml` for it.",
-                ja: "[クイックスタート](learn/) のように `127.0.0.1` で待ち受ける `main` には、コンテナの外から接続できません。`TcpListener::bind(\"127.0.0.1:3000\")` の行と、その下の `axum::serve` の行を次の行に置き換え、すべてのインターフェースの `PORT` のポートで待ち受けるようにします。`main` のあとには `shutdown` 関数を追加してください。サーバーはコンテナの最初のプロセスとして動き、自分で扱わない限り Ctrl+C やホストが送る SIGTERM では止まりません。そのため `shutdown` がないと、`docker stop` は 10 秒待ってから強制終了します。`Cargo.toml` の tokio の features には `\"signal\"` を追加してください。",
+                en: "The command leaves `main` to you and prints the change to make, which is the code below. A `main` that binds `127.0.0.1`, as the [quick start](learn/) does, cannot be reached from outside the container. Replace its `TcpListener::bind(\"127.0.0.1:3000\")` line and the `axum::serve` line below it with the lines below, which listen on every interface at the port in `PORT`, and add the `shutdown` function after `main`. The server runs as the container's first process, which does not stop on Ctrl+C or on the SIGTERM a host sends unless it handles them, so without `shutdown`, `docker stop` waits 10 seconds and then kills it.",
+                ja: "`main` はこのコマンドでは書き換えず、変更する内容を表示します。表示するのは下のコードです。[クイックスタート](learn/) のように `127.0.0.1` で待ち受ける `main` には、コンテナの外から接続できません。`TcpListener::bind(\"127.0.0.1:3000\")` の行と、その下の `axum::serve` の行を次の行に置き換え、すべてのインターフェースの `PORT` のポートで待ち受けるようにします。`main` のあとには `shutdown` 関数を追加してください。サーバーはコンテナの最初のプロセスとして動き、自分で扱わない限り Ctrl+C やホストが送る SIGTERM では止まりません。そのため `shutdown` がないと、`docker stop` は 10 秒待ってから強制終了します。",
             },
         ),
         show(Snippet::Listen),
         para(
             site,
             L {
-                en: "Then build and run the image as with the template, naming it after the project:",
-                ja: "そのあと、テンプレートのときと同じようにイメージをビルドして起動します。イメージにはプロジェクトの名前を付けてください。",
+                en: "Then build and run the image as with the template, naming it after the project, which is `counter` for the quick start:",
+                ja: "そのあと、テンプレートのときと同じようにイメージをビルドして起動します。イメージにはプロジェクトの名前を付けてください。クイックスタートなら `counter` です。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "docker build -t my-app .
-docker run --rm -p 3000:3000 my-app",
+            "docker build -t counter .
+docker run --rm -p 3000:3000 counter",
         ),
         para(
             site,
             L {
-                en: "The `Dockerfile` builds with `cargo install --path .`, which fails at the root of a workspace, because the root holds no package. There, change `.` to the package's directory. The image's Rust is 1.99, so raise the `FROM` line where the project's `rust-version` is newer.",
-                ja: "`Dockerfile` は `cargo install --path .` でビルドします。ワークスペースのルートにはパッケージがないので、そこでは失敗します。その場合は `.` をパッケージのディレクトリに変えてください。イメージの Rust は 1.99 なので、プロジェクトの `rust-version` がそれより新しいときは `FROM` の行のバージョンも上げてください。",
+                en: "`cargo hypersig add` stops at the root of a workspace, which holds no package, so run it in the package's directory. The `Dockerfile` copies the directory it sits in and builds it with `cargo install --path .`, and a package in a workspace builds only with the workspace around it. There, move the `Dockerfile` to the workspace's root and change `.` to the package's directory. The image's Rust is 1.99, so raise the `FROM` line where the project's `rust-version` is newer.",
+                ja: "`cargo hypersig add` はパッケージのないワークスペースのルートでは止まるので、パッケージのディレクトリで実行してください。`Dockerfile` は自分のあるディレクトリをコピーして `cargo install --path .` でビルドしますが、ワークスペースの中のパッケージはワークスペースごとでないとビルドできません。その場合は `Dockerfile` をワークスペースのルートに移し、`.` をパッケージのディレクトリに変えてください。イメージの Rust は 1.99 なので、プロジェクトの `rust-version` がそれより新しいときは `FROM` の行のバージョンも上げてください。",
             },
         ),
     ])

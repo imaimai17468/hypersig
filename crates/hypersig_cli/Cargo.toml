@@ -1,0 +1,25 @@
+[package]
+name = "hypersig_cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "cargo hypersig: create a hypersig project for a host, or move a project you have to one"
+keywords = ["hypersig", "cargo-subcommand", "template", "cloudflare", "vercel"]
+categories = ["command-line-utilities", "development-tools::cargo-plugins", "web-programming"]
+readme = "../../README.md"
+# The templates are part of the binary, so the package holds them, and the
+# tests, which read the quick start from site/, stay in the repository.
+include = ["src/**/*.rs", "steps/*.rs", "templates/**"]
+
+[[bin]]
+name = "cargo-hypersig"
+path = "src/main.rs"
+
+[dependencies]
+toml_edit = "0.25.17"
+
+[lints]
+workspace = true

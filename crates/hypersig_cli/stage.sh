@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Creates the project of the host named by $1 at target/templates/$1 with
+# `cargo hypersig new`, as a reader would get it, and points its hypersig at
+# this repository's crate, so the tests build a template against the code
+# they test rather than crates.io.
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+name=$1
+dest="$root/target/templates/$name"
+
+# `new` writes only a directory that does not exist, so it writes a fresh one
+# beside the copy, whose target and build stay, so that a second run is quick.
+fresh="$root/target/templates/.new/my-$name"
+rm -rf "$fresh"
+cargo run --quiet --manifest-path "$root/Cargo.toml" -p hypersig_cli -- \
+  new "$fresh" --host "$name" > /dev/null
+mkdir -p "$dest"
+find "$dest" -mindepth 1 -maxdepth 1 ! -name target ! -name build -exec rm -rf {} +
+tar -C "$fresh" -cf - . | tar -C "$dest" -xf -
+rm -rf "$fresh"
+mkdir -p "$dest/.cargo"
+cat > "$dest/.cargo/config.toml" <<CONFIG
+[patch.crates-io]
+hypersig = { path = "$root/crates/hypersig" }
+CONFIG
+echo "$dest"

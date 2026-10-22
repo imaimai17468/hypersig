@@ -1,10 +1,9 @@
 [workspace]
 resolver = "3"
 members = ["crates/*", "examples/*", "site"]
-# Each template is a project of its own, which a reader copies out of the
-# repository, so it depends on hypersig from crates.io. templates/stage.sh
-# copies one under target/templates to build it against this repository.
-exclude = ["templates", "target/templates"]
+# The projects that crates/hypersig_cli/stage.sh and the tests of hypersig_cli
+# create under target are packages of their own, as a reader's would be.
+exclude = ["target/templates", "target/tmp"]
 
 [workspace.package]
 version = "0.3.0"

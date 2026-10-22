@@ -14,6 +14,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `crates/hypersig_style` | Typed atomic CSS: `Style`, `Sheet`, the value types, and the code `tests/generate.rs` writes from the MDN data in `data/`. Regenerate it with `HYPERSIG_GENERATE=overwrite cargo test -p hypersig_style --test generate` |
 | `crates/hypersig_i18n` | Typed translations: the `Locale` trait, `negotiate` over `Accept-Language`, and the redirect from `/` to a locale's page |
 | `crates/hypersig_ui` | Components styled after shadcn/ui on native elements and the WAI-ARIA patterns, with trybuild cases under `tests/ui/fail` |
+| `crates/hypersig_cli` | `cargo hypersig new` and `cargo hypersig add`, with the deploy templates under `templates/` compiled into the binary. Each template's manifest is `Cargo.toml.template`, because `cargo package` leaves out a directory that holds a `Cargo.toml`. `stage.sh` writes a template's project under `target/templates` with its hypersig pointed at this repository, for CI's lint and the e2e tests. `steps/` holds the code `add` prints, which the deploy pages show |
 | `crates/hypersig/benches/render.rs` | divan benchmarks of `Page::render` over list pages, with allocation counts |
 | `crates/hypersig/tests/ui` | trybuild cases. Each `fail/*.rs` is a mistake that must not compile |
 | `crates/hypersig/tests/fixtures.rs` | Builds pages with the Rust builder and writes them to `runtime/test/fixtures/`, which the runtime tests load |
