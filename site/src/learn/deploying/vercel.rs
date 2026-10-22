@@ -87,7 +87,7 @@ npx vercel deploy --prod",
                     ],
                     &[
                         "`vercel.json`",
-                        "Sends every path to `/api/app`, so the axum `Router` sees each request with its own path.",
+                        "Sends every path to `/api/app`, so the axum `Router` sees each request with its own path, and gives Vercel an empty `public` directory to serve as static files, which the last section explains.",
                     ],
                     &["`.vercelignore`", "Keeps `target` out of the upload."],
                     &[
@@ -106,7 +106,7 @@ npx vercel deploy --prod",
                     ],
                     &[
                         "`vercel.json`",
-                        "すべてのパスを `/api/app` に送ります。axum の `Router` は各リクエストを元のパスのまま受け取ります。",
+                        "すべてのパスを `/api/app` に送ります。axum の `Router` は各リクエストを元のパスのまま受け取ります。また、Vercel が静的ファイルとして配信するディレクトリを空の `public` にします。理由は最後の節で説明します。",
                     ],
                     &[
                         "`.vercelignore`",
@@ -198,6 +198,10 @@ fn on_vercel(site: Site) -> Part {
         bullets(
             site,
             &[
+                L {
+                    en: "Vercel serves the files of its output directory before a rewrite applies, and a project that names none has the project's root as that directory. There, `Cargo.toml`, `Cargo.lock`, and every file outside `api/`, the Rust source under `src/` included, are public at their paths, and `.env` was the one file tried that was not. The template's `vercel.json` names `public` as the output directory, which the build command creates holding only an empty `.keep`, so every other path reaches the function. Keep those two fields in a `vercel.json` of your own.",
+                    ja: "Vercel は rewrite より先に出力ディレクトリのファイルを配信し、出力ディレクトリを指定しないプロジェクトではプロジェクトのルートがそのディレクトリになります。その場合、`Cargo.toml`、`Cargo.lock`、`src/` の Rust のソースを含めて `api/` の外のファイルはすべて、そのパスで公開されます。試したファイルのうち公開されなかったのは `.env` だけでした。テンプレートの `vercel.json` は出力ディレクトリを `public` にし、ビルドのコマンドが空の `.keep` だけを入れてこのディレクトリを作るので、それ以外のパスはすべて関数に届きます。自分で `vercel.json` を書くときも、この 2 つのフィールドを残してください。",
+                },
                 L {
                     en: "Vercel ends a request at the function's maximum duration, which counts the time a stream stays open. The limit is 300 seconds by default and on the Hobby plan, and the Pro plan raises it to 800 seconds with `maxDuration`. A call with `reconnect()` opens the stream again after the limit closes it.",
                     ja: "Vercel は関数の最大実行時間でリクエストを終えます。この時間にはストリームを開いている時間も含まれます。上限は既定で 300 秒で、Hobby プランでは 300 秒より延ばせません。Pro プランでは `maxDuration` で 800 秒まで延ばせます。`reconnect()` を付けた呼び出しは、上限で切れたストリームをつなぎ直します。",
