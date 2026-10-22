@@ -6,6 +6,6 @@ publish = false
 
 [dependencies]
 axum = "0.8"
-hypersig = "0.2.1"
+hypersig = "0.3.0"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
