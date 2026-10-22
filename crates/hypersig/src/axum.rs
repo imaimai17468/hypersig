@@ -1309,9 +1309,9 @@ fn keep_alive<S>(sse: Sse<S>) -> Sse<S> {
     sse
 }
 
-/// The last event of a stream whose handler's stream finished. The runtime
-/// reopens a stream with `reconnect` that ends without it, which is how a
-/// host that closes a response at a time limit ends it.
+/// The last event of a stream whose handler's stream finished, as the wire
+/// format in `patch.rs` describes. Data is `{}` because axum writes no `data`
+/// field for an empty string, and an event without one is not dispatched.
 fn end_of_stream() -> SseEvent {
     SseEvent::default().event("hs-end").data("{}")
 }
