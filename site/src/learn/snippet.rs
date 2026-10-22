@@ -52,6 +52,7 @@ snippets! {
     ListPatches => "list_patches.rs";
     Forms => "forms.rs";
     Latest => "latest.rs";
+    Parts => "parts.rs";
     Extractors => "extractors.rs";
     HandlerErrors => "handler_errors.rs";
     Uploads => "uploads.rs";

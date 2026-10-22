@@ -10,6 +10,7 @@
 #     type Text<T> = ByLang<T>;
 #     fn pick<T>(self, text: ByLang<T>) -> T { match self { Self::En => text.en, Self::Ja => text.ja } }
 # }
+// `Lang` and `ByLang` are the ones the Overview declares.
 # use hypersig::{Page, Route, Signals};
 # #[derive(Signals, Serialize, Deserialize)]
 # struct Home { visits: i32 }

@@ -4,6 +4,7 @@
 use super::snippet::{Snippet, show};
 use super::{Program, program};
 use crate::Site;
+use crate::code::{self, Lang};
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
@@ -73,8 +74,8 @@ pub fn server(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`Patches<S>`](api:hypersig/struct.Patches.html) is a batch the runtime applies in order. `sig.patch(value)` sets one signal, `and` adds more to the same event, and `Patches::new().all_signals(&state)` replaces all of them. Only a page-rooted signal has `patch`, so the server addresses fields by name and never by a list position.",
-                ja: "[`Patches<S>`](api:hypersig/struct.Patches.html) は、ランタイムが順に適用する差分のまとまりです。`sig.patch(value)` はシグナルを 1 つ設定し、`and` は同じイベントに差分を追加し、`Patches::new().all_signals(&state)` はすべてのシグナルを置き換えます。`patch` を持つのはページを起点とするシグナルだけなので、サーバーはフィールドを名前で指し、リストの位置では指しません。",
+                en: "[`Patches<S>`](api:hypersig/struct.Patches.html) is a batch the runtime applies in order. `sig.patch(value)` sets one signal, `and` adds more to the same event, and `Patches::new().all_signals(&state)` replaces all of them. `patch` exists only on a `Sig<S, T>`, whose path starts at the page's struct, and not on the `Sig<S, T, Local>` of a list item, so the server addresses fields by name and never by a list position.",
+                ja: "[`Patches<S>`](api:hypersig/struct.Patches.html) は、ランタイムが順に適用する差分のまとまりです。`sig.patch(value)` はシグナルを 1 つ設定し、`and` は同じイベントに差分を追加し、`Patches::new().all_signals(&state)` はすべてのシグナルを置き換えます。`patch` があるのはパスがページの構造体から始まる `Sig<S, T>` だけで、リストの項目の `Sig<S, T, Local>` にはありません。そのため、サーバーはフィールドを名前で指し、リストの位置では指しません。",
             },
         ),
         show(Snippet::Patches),
@@ -85,7 +86,22 @@ pub fn server(site: Site) -> Part {
                 ja: "各差分は 1 つの Server-Sent Event として送られます。axum を使わないサーバー向けには、`to_event_stream` がレスポンスの本文を返します。",
             },
         ),
-        subheading(
+        fragments(site),
+        para(
+            site,
+            L {
+                en: "[Calls in depth](learn/calls/) covers patches that send only the items of a list that change, calls that overlap, streams that reconnect, and parts that several pages share.",
+                ja: "リストの変わった項目だけを送る差分、重なった呼び出し、つなぎ直すストリーム、複数のページで使う部品は [呼び出しの詳細](learn/calls/) で説明します。",
+            },
+        ),
+    ])
+}
+
+pub fn calls_in_depth(site: Site) -> Part {
+    parts(vec![
+        title(Doc::Learn(Learn::CallsInDepth).title(site)),
+        lead(site, Doc::Learn(Learn::CallsInDepth).leads()),
+        heading(
             site,
             L {
                 en: "List patches",
@@ -95,8 +111,8 @@ pub fn server(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`patch` sends a list whole, so a chat that sends each message with `patch` sends every earlier one again. [`ListPatch`](api:hypersig/struct.ListPatch.html) sends only the items that change: `patch_append` and `patch_prepend` add items at either end of the list the browser holds, `patch_upsert` replaces the item with the same key or appends it, and `patch_remove` removes the items with the given keys. The key is an expression of the item, as in `each_keyed`, and the browser computes it for each item. As with `patch`, only a page-rooted `Vec` signal has these methods.",
-                ja: "`patch` はリストを丸ごと送るので、チャットのメッセージを 1 件ずつ `patch` で送ると、それまでのメッセージも毎回送り直すことになります。[`ListPatch`](api:hypersig/struct.ListPatch.html) は変わる項目だけを送ります。`patch_append` と `patch_prepend` はブラウザが持つリストの末尾と先頭に項目を加え、`patch_upsert` は同じキーの項目を置き換えるか末尾に加え、`patch_remove` は指定したキーの項目を取り除きます。キーは `each_keyed` と同じく項目の式で、ブラウザが項目ごとに計算します。`patch` と同じく、これらのメソッドはページを起点とする `Vec` のシグナルにだけあります。",
+                en: "`patch` sends a list whole, so a chat that sends each message with `patch` sends every earlier one again. [`ListPatch`](api:hypersig/struct.ListPatch.html) sends only the items that change: `patch_append` and `patch_prepend` add items at either end of the list the browser holds, `patch_upsert` replaces the item with the same key or appends it, and `patch_remove` removes the items with the given keys. The key is an expression of the item, as in `each_keyed`, and the browser computes it for each item. As with `patch`, only a `Vec` signal reached from the page's struct has these methods.",
+                ja: "`patch` はリストを丸ごと送るので、チャットのメッセージを 1 件ずつ `patch` で送ると、それまでのメッセージも毎回送り直すことになります。[`ListPatch`](api:hypersig/struct.ListPatch.html) は変わる項目だけを送ります。`patch_append` と `patch_prepend` はブラウザが持つリストの末尾と先頭に項目を加え、`patch_upsert` は同じキーの項目を置き換えるか末尾に加え、`patch_remove` は指定したキーの項目を取り除きます。キーは `each_keyed` と同じく項目の式で、ブラウザが項目ごとに計算します。`patch` と同じく、これらのメソッドはページの構造体から辿った `Vec` のシグナルにだけあります。",
             },
         ),
         show(Snippet::ListPatches),
@@ -107,9 +123,81 @@ pub fn server(site: Site) -> Part {
                 ja: "`each_keyed` のリストの先頭に項目を加えると、画面に出ていた項目はその位置に残ります。ランタイムがいちばん近いスクロールできる祖先要素を、新しい項目の高さの分だけスクロールします。Chrome のスクロールアンカリングもリストをスクロールした後なら同じことをしますが、いちばん上では働きません。古い項目を読み込むリストは、読み込むときにちょうどいちばん上にあります。ブラウザの中では `Sig::prepend` が同じように動きます。`each` で描いたリストは要素を位置で対応させるので、先頭の要素に新しい最初の項目が表示され、スクロールはしません。",
             },
         ),
-        fragments(site),
         calls(site),
         shared_parts(site),
+    ])
+}
+
+pub fn routes_in_depth(site: Site) -> Part {
+    parts(vec![
+        title(Doc::Learn(Learn::RoutesInDepth).title(site)),
+        lead(site, Doc::Learn(Learn::RoutesInDepth).leads()),
+        heading(
+            site,
+            L {
+                en: "Search parameters",
+                ja: "クエリパラメータ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A route's second type, `Route<P, Q>`, types its query string. `Q` is a struct with `#[derive(Signals, Search)]`, and a link and the handler then take `(P, Q)`, or `Q` alone for a path without parameters. `#[derive(Search)]` requires each field to be a [`SearchValue`](api:hypersig/trait.SearchValue.html): a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` or a `Vec` of one, so a struct or a list of lists in a field is a compile error. A `Vec` field writes its name once per item, as `?color=red&color=blue`, and the server reads the repeated key back into the list. A field whose type checks its value in `Deserialize`, such as a newtype with `#[serde(try_from = \"i32\")]`, validates the query string, and an `Option` field with `unwrap_or` in the handler gives a default. The query string lists the fields in the order of their names and leaves out a field that is `None`, on the server and in the browser alike. A query string that does not deserialize into `Q` gets a 400.",
+                ja: "ルートの 2 つ目の型 `Route<P, Q>` は、クエリ文字列の型です。`Q` は `#[derive(Signals, Search)]` を付けた構造体で、リンクとハンドラは `(P, Q)` を受け取ります。パラメータのないパスでは `Q` だけを受け取ります。`#[derive(Search)]` は、各フィールドが [`SearchValue`](api:hypersig/trait.SearchValue.html) であることを求めます。`SearchValue` は文字列、数値、`bool`、`#[derive(Segment)]` を付けた列挙型、またはそれらの `Option` か `Vec` なので、フィールドに構造体やリストのリストを置くとコンパイルエラーになります。`Vec` のフィールドは `?color=red&color=blue` のように要素ごとに名前を書き、サーバーは繰り返されたキーをリストに読み戻します。`#[serde(try_from = \"i32\")]` を付けた newtype のように `Deserialize` で値を検査する型のフィールドは、クエリ文字列を検証します。`Option` のフィールドにハンドラで `unwrap_or` を使えば、既定値を決められます。クエリ文字列はフィールドを名前の順に並べ、`None` のフィールドは書きません。これはサーバーでもブラウザでも同じです。`Q` にデシリアライズできないクエリ文字列には 400 を返します。",
+            },
+        ),
+        show(Snippet::SearchParams),
+        heading(
+            site,
+            L {
+                en: "Changing the URL without loading a page",
+                ja: "ページを読み込まずに URL を変える",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A list whose filter, sort, and page live in the query string can keep the page loaded while they change. `link.push_url()` is a statement that shows the link's URL in the address bar as a new history entry, and `link.replace_url()` shows it in place of the current one, for a change the Back button should skip, such as each letter typed into a search field. The page keeps its signals and its focus, so the statement runs beside the call that loads the rows. An action does the same with `Patches::push_url(url)` and `Patches::replace_url(url)`, and the patches after them are applied. When the visitor presses Back or Forward, the browser loads the page at that entry's URL from the server, which renders it from the query string.",
+                ja: "フィルター、並び順、ページ番号をクエリ文字列に持つリストは、それらが変わってもページを読み込み直さずに済みます。`link.push_url()` はリンクの URL を新しい履歴の項目としてアドレスバーに出す文です。`link.replace_url()` は今の URL と置き換えるので、検索欄に打つ 1 文字ごとのように、戻るボタンで飛ばしたい変更に使います。ページのシグナルとフォーカスはそのまま残るので、この文は行を読み込む呼び出しと並べて書きます。アクションでは `Patches::push_url(url)` と `Patches::replace_url(url)` で同じことをし、その後の差分も適用されます。訪問者が戻るボタンや進むボタンを押すと、ブラウザはその項目の URL のページをサーバーから読み込み、サーバーはクエリ文字列からページを描きます。",
+            },
+        ),
+        show(Snippet::History),
+        heading(
+            site,
+            L {
+                en: "Pages for missing paths",
+                ja: "見つからないパスのページ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`fn pages(Router<State>) else missing;` on the first line of `routes!` names a handler for each page request that reaches no page: a path no route matches, a segment that does not parse, a handler that answers `None`, and a query string that does not deserialize. The handler receives an [`Unserved`](api:hypersig/struct.Unserved.html) and may take an extractor, and its page is sent with the 404 or 400 that `Unserved::status` names. `Unserved::within(HOME)` reads the parameters of `HOME` from the start of the path, so a site under `/{lang}` shows the page in the language of the path. A page with another status is `PageResponse::with_status(status, page)`.",
+                ja: "`routes!` の 1 行目に `fn pages(Router<State>) else missing;` と書くと、どのページにも届かなかったページのリクエストを受け取るハンドラを指定できます。対象は、どのルートにも合わないパス、パースできないセグメント、`None` を返したハンドラ、デシリアライズできないクエリ文字列です。ハンドラは [`Unserved`](api:hypersig/struct.Unserved.html) を受け取り、extractor も受け取れます。返したページは `Unserved::status` が示す 404 か 400 で送られます。`Unserved::within(HOME)` はパスの先頭から `HOME` のパラメータを読むので、`/{lang}` の下にあるサイトはパスの言語でページを出せます。ほかのステータスで返すページは `PageResponse::with_status(status, page)` で返します。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Nothing checks that the URL `push_url` or `replace_url` shows belongs to the page on screen. The URL of another page shows over this page's content, and reloading it loads the other page.",
+                ja: "`push_url` や `replace_url` が出す URL が、画面のページのものかどうかは検査されません。別のページの URL を出すと、このページの内容のままその URL が表示され、再読み込みすると別のページが読み込まれます。",
+            },
+        ),
+        head(site),
+        heading(
+            site,
+            L {
+                en: "Serving under a path prefix",
+                ja: "パスの接頭辞の下で配信する",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "An application served under a path prefix, such as `/app` behind a proxy, names it once as a [`Base`](api:hypersig/struct.Base.html) constant: `fn pages(Router<State>) under APP;` on the first line of `routes!`, and `Action::post(\"/save\").under(APP)` on each action, stream, and upload. Links, URLs, redirects, action calls, and the path a page loads the runtime from then start with `/app`, and the router still registers each path without it. The same router then runs inside `Router::nest(APP.as_str(), ...)` or behind a proxy that strips `/app`. The prefix is a constant because the routes and actions it prefixes are, so it is chosen when the program is built. A page served by a router nested under any other path answers every request with a 500 that names both paths, and the compiler does not check that an action a page calls was declared under the same base.",
+                ja: "プロキシの裏の `/app` のようにパスの接頭辞の下で配信するアプリケーションは、接頭辞を [`Base`](api:hypersig/struct.Base.html) の定数として 1 か所で宣言します。`routes!` の 1 行目に `fn pages(Router<State>) under APP;` と書き、アクション、ストリーム、アップロードにはそれぞれ `Action::post(\"/save\").under(APP)` のように付けます。するとリンク、URL、リダイレクト、アクションの呼び出し、ページがランタイムを読み込むパスが `/app` で始まり、ルーターは各パスを接頭辞なしのまま登録します。同じルーターを `Router::nest(APP.as_str(), ...)` の中でも、`/app` を取り除くプロキシの裏でも動かせます。接頭辞を付けるルートとアクションが定数なので、接頭辞も定数で、プログラムをビルドするときに決まります。ほかのパスに `nest` したルーターのページは、すべてのリクエストに両方のパスを示す 500 を返します。ページが呼ぶアクションが同じ接頭辞で宣言されているかどうかを、コンパイラは検査しません。",
+            },
+        ),
     ])
 }
 
@@ -141,8 +229,8 @@ fn calls(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) opens a stream again when its connection fails, it breaks off, or the server answers with a 5xx status, as the clock above does. It waits 1 second, then twice as long each time up to 30 seconds. The server sends the event `hs-end` last once the handler's stream finishes, so a response a host closes at its time limit, which ends before `hs-end`, counts as broken off. A stream that ended with `hs-end`, a 4xx answer, and an element that has left the page stop it. Each attempt evaluates the arguments again, so a stream that takes a signal its patches keep current, such as the id of the last message, can send only what came after it. A stream whose arguments stay the same should start with the current values, and the page catches up with what it missed. Only a call to a `StreamAction`, which is always served on `GET`, has `reconnect`, because sending a `POST` again could repeat a change.",
-                ja: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) は、接続が失敗したとき、ストリームが途中で切れたとき、サーバーが 5xx を返したときに、ストリームを開き直します。上の時計がこの例です。最初は 1 秒待ち、そのあとは待ち時間を倍にしながら最大 30 秒まで延ばします。サーバーはハンドラのストリームが終わると最後に `hs-end` のイベントを送ります。ホストが時間の上限で閉じたレスポンスは `hs-end` の前で終わるので、途中で切れたものとして扱います。`hs-end` で終わったとき、4xx の応答を受けたとき、要素がページから外れたときは、開き直しません。開き直すたびに引数を評価し直します。最後に受け取ったメッセージの id のように、ストリームの差分が更新し続けるシグナルを引数に渡せば、ハンドラはそれより後の分だけを送れます。引数が変わらないストリームでは、初めに現在の値を送ってください。そうすればページは見逃した変更に追いつきます。`POST` を送り直すと変更が繰り返されることがあるので、`reconnect` があるのは、常に `GET` で配信する `StreamAction` の呼び出しだけです。",
+                en: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) opens a stream again when its connection fails, it breaks off, or the server answers with a 5xx status, as the clock on [Talking to the server](learn/server/) does. It waits 1 second, then twice as long each time up to 30 seconds. The server sends the event `hs-end` last once the handler's stream finishes, so a response a host closes at its time limit, which ends before `hs-end`, counts as broken off. A stream that ended with `hs-end`, a 4xx answer, and an element that has left the page stop it. Each attempt evaluates the arguments again, so a stream that takes a signal its patches keep current, such as the id of the last message, can send only what came after it. A stream whose arguments stay the same should start with the current values, and the page catches up with what it missed. Only a call to a `StreamAction`, which is always served on `GET`, has `reconnect`, because sending a `POST` again could repeat a change.",
+                ja: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) は、接続が失敗したとき、ストリームが途中で切れたとき、サーバーが 5xx を返したときに、ストリームを開き直します。[サーバーとのやり取り](learn/server/) の時計がこの例です。最初は 1 秒待ち、そのあとは待ち時間を倍にしながら最大 30 秒まで延ばします。サーバーはハンドラのストリームが終わると最後に `hs-end` のイベントを送ります。ホストが時間の上限で閉じたレスポンスは `hs-end` の前で終わるので、途中で切れたものとして扱います。`hs-end` で終わったとき、4xx の応答を受けたとき、要素がページから外れたときは、開き直しません。開き直すたびに引数を評価し直します。最後に受け取ったメッセージの id のように、ストリームの差分が更新し続けるシグナルを引数に渡せば、ハンドラはそれより後の分だけを送れます。引数が変わらないストリームでは、初めに現在の値を送ってください。そうすればページは見逃した変更に追いつきます。`POST` を送り直すと変更が繰り返されることがあるので、`reconnect` があるのは、常に `GET` で配信する `StreamAction` の呼び出しだけです。",
             },
         ),
     ])
@@ -162,10 +250,11 @@ fn shared_parts(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A piece that sits on several pages, such as a sign-out button in an app's shell or a newsletter form in a footer, is a [`Part`](api:hypersig/trait.Part.html): its own signal struct, an element built by `Part::render`, and actions over that struct. A page whose struct has a field of the part's type embeds it with `html::part(Shop::footer())`, and the part writes its paths under that field. Each call the part makes names the field in a header, so the one handler registered for the part's action serves every page that embeds it, and the signals it patches and the fragments it renders again land under the field the call came from. Calling the part's action outside the part, or embedding the part at a field of a list item, is a compile error.",
-                ja: "アプリの枠にあるサインアウトのボタンや、フッターのニュースレターのフォームのように複数のページに置くものは、[`Part`](api:hypersig/trait.Part.html) として書きます。部品は自分のシグナル構造体と、`Part::render` で組み立てる要素と、その構造体に対するアクションを持ちます。部品の型のフィールドを持つページは `html::part(Shop::footer())` で部品を埋め込み、部品はそのフィールドの下にパスを書きます。部品の中の呼び出しはヘッダーでフィールドを伝えるので、部品のアクションに登録したハンドラ 1 つが、部品を埋め込んだどのページにも応答します。ハンドラが書き換えるシグナルと描き直すフラグメントは、呼び出し元のフィールドの下に入ります。部品のアクションを部品の外から呼ぶことと、リストの項目のフィールドに部品を埋め込むことは、コンパイルエラーになります。",
+                en: "A piece that sits on several pages, such as a sign-out button in an app's shell or a newsletter form in a footer, is a [`Part`](api:hypersig/trait.Part.html): its own signal struct, an element built by `Part::render`, and actions over that struct. A page whose struct has a field of the part's type embeds it with `html::part(Home::footer())`, and the part writes its paths under that field. Each call the part makes names the field in a header, so the one handler registered for the part's action serves every page that embeds it, and the signals it patches and the fragments it renders again land under the field the call came from. Calling the part's action outside the part, or embedding the part at a field of a list item, is a compile error.",
+                ja: "アプリの枠にあるサインアウトのボタンや、フッターのニュースレターのフォームのように複数のページに置くものは、[`Part`](api:hypersig/trait.Part.html) として書きます。部品は自分のシグナル構造体と、`Part::render` で組み立てる要素と、その構造体に対するアクションを持ちます。部品の型のフィールドを持つページは `html::part(Home::footer())` で部品を埋め込み、部品はそのフィールドの下にパスを書きます。部品の中の呼び出しはヘッダーでフィールドを伝えるので、部品のアクションに登録したハンドラ 1 つが、部品を埋め込んだどのページにも応答します。ハンドラが書き換えるシグナルと描き直すフラグメントは、呼び出し元のフィールドの下に入ります。部品のアクションを部品の外から呼ぶことと、リストの項目のフィールドに部品を埋め込むことは、コンパイルエラーになります。",
             },
         ),
+        show(Snippet::Parts),
         para(
             site,
             L {
@@ -190,8 +279,8 @@ fn fragments(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A [`Fragment`](api:hypersig/trait.Fragment.html) is a part of the page the server can render again on its own. It owns its element id, so the id in the first page and the id in a later patch cannot differ. `fragment(&value)` renders it in the page, and `Patches::new().element(&value)` sends it again. The runtime compares the HTML it receives with the element that has that id and rewrites only the parts that differ. A patch includes the CSS rules its elements use. The server renders a fragment sent again on its own, so it cannot compare it with the rest of the page. The browser does once the patch is applied, and writes a warning to the console when the patch adds an id or a node ref name that another element already carries.",
-                ja: "[`Fragment`](api:hypersig/trait.Fragment.html) は、サーバーが単独で描画し直せるページの一部です。フラグメントが要素の id を持つので、最初のページの id とあとの差分の id が食い違うことはありません。`fragment(&value)` はページの中にフラグメントを描画し、`Patches::new().element(&value)` はそれをもう一度送ります。ランタイムは送られた HTML とその id の要素を突き合わせ、違う部分だけを書き換えます。差分にはその要素が使う CSS のルールも含まれます。サーバーは送り直すフラグメントを単独で描画するので、ページの残りの部分とは比べられません。そこでブラウザが差分を適用したあとに比べ、ほかの要素がすでに持つ id や node ref の名前を差分が追加したときは、コンソールに警告を書きます。",
+                en: "A [`Fragment`](api:hypersig/trait.Fragment.html) is a part of the page the server can render again on its own. It owns its element id, so the id in the first page and the id in a later patch cannot differ. `fragment(&value)` renders it in the page, and `Patches::new().element(&value)` sends it again. The runtime compares the HTML it receives with the element that has that id and rewrites only the parts that differ. A patch includes the CSS rules its elements use. The server renders a fragment sent again on its own, so it cannot compare it with the rest of the page. The browser does once the patch is applied, and writes a warning to the console when the patch adds an id that another element already carries. The same holds for the name of a `NodeRef`, which [When bindings and statements are not enough](learn/escape-hatches/) covers.",
+                ja: "[`Fragment`](api:hypersig/trait.Fragment.html) は、サーバーが単独で描画し直せるページの一部です。フラグメントが要素の id を持つので、最初のページの id とあとの差分の id が食い違うことはありません。`fragment(&value)` はページの中にフラグメントを描画し、`Patches::new().element(&value)` はそれをもう一度送ります。ランタイムは送られた HTML とその id の要素を突き合わせ、違う部分だけを書き換えます。差分にはその要素が使う CSS のルールも含まれます。サーバーは送り直すフラグメントを単独で描画するので、ページの残りの部分とは比べられません。そこでブラウザが差分を適用したあとに比べ、ほかの要素がすでに持つ id を差分が追加したときは、コンソールに警告を書きます。[束縛と文で足りないとき](learn/escape-hatches/) で説明する `NodeRef` の名前も同じです。",
             },
         ),
         program(Program::Fragments),
@@ -208,6 +297,19 @@ fn fragments(site: Site) -> Part {
                 en: "A [`StreamAction`](api:hypersig/struct.StreamAction.html) served with `RouterExt::stream` runs a handler that returns a stream of patches, on `GET`. The response stays open until the stream ends or the browser leaves the page. Call it from `on_load` to send changes made elsewhere, such as by other users.",
                 ja: "[`StreamAction`](api:hypersig/struct.StreamAction.html) を `RouterExt::stream` で配信すると、差分のストリームを返すハンドラが `GET` で動きます。レスポンスは、ストリームが終わるかブラウザがページを離れるまで開いたままです。ほかのユーザーなど別の場所で起きた変更を送るには、`on_load` から呼び出してください。",
             },
+        ),
+        para(
+            site,
+            L {
+                en: "The stream below uses the `futures` crate and tokio's timer, so add `futures` to the Quick start's `[dependencies]` and turn on tokio's `time` feature:",
+                ja: "下のストリームは `futures` クレートと tokio のタイマーを使うので、クイックスタートの `[dependencies]` に `futures` を加え、tokio の `time` フィーチャーを有効にしてください。",
+            },
+        ),
+        code::block(
+            Lang::Toml,
+            Some("Cargo.toml"),
+            r#"futures = "0.3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time"] }"#,
         ),
         program(Program::Streams),
         note(
@@ -278,31 +380,9 @@ pub fn pages(site: Site) -> Part {
                 },
             ),
             show(Snippet::ChildRoutes),
-            para(
-                site,
-                L {
-                    en: "An application served under a path prefix, such as `/app` behind a proxy, names it once as a [`Base`](api:hypersig/struct.Base.html) constant: `fn pages(Router<State>) under APP;` on the first line of `routes!`, and `Action::post(\"/save\").under(APP)` on each action, stream, and upload. Links, URLs, redirects, action calls, and the path a page loads the runtime from then start with `/app`, and the router still registers each path without it. The same router then runs inside `Router::nest(APP.as_str(), ...)` or behind a proxy that strips `/app`. The prefix is a constant because the routes and actions it prefixes are, so it is chosen when the program is built. A page served by a router nested under any other path answers every request with a 500 that names both paths, and the compiler does not check that an action a page calls was declared under the same base.",
-                    ja: "プロキシの裏の `/app` のようにパスの接頭辞の下で配信するアプリケーションは、接頭辞を [`Base`](api:hypersig/struct.Base.html) の定数として 1 か所で宣言します。`routes!` の 1 行目に `fn pages(Router<State>) under APP;` と書き、アクション、ストリーム、アップロードにはそれぞれ `Action::post(\"/save\").under(APP)` のように付けます。するとリンク、URL、リダイレクト、アクションの呼び出し、ページがランタイムを読み込むパスが `/app` で始まり、ルーターは各パスを接頭辞なしのまま登録します。同じルーターを `Router::nest(APP.as_str(), ...)` の中でも、`/app` を取り除くプロキシの裏でも動かせます。接頭辞を付けるルートとアクションが定数なので、接頭辞も定数で、プログラムをビルドするときに決まります。ほかのパスに `nest` したルーターのページは、すべてのリクエストに両方のパスを示す 500 を返します。ページが呼ぶアクションが同じ接頭辞で宣言されているかどうかを、コンパイラは検査しません。",
-                },
-            ),
         ]
         .into_iter()
         .chain([
-            heading(
-                site,
-                L {
-                    en: "Search parameters",
-                    ja: "クエリパラメータ",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "A route's second type, `Route<P, Q>`, types its query string. `Q` is a struct with `#[derive(Signals, Search)]`, and a link and the handler then take `(P, Q)`, or `Q` alone for a path without parameters. `#[derive(Search)]` requires each field to be a [`SearchValue`](api:hypersig/trait.SearchValue.html): a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` or a `Vec` of one, so a struct or a list of lists in a field is a compile error. A `Vec` field writes its name once per item, as `?color=red&color=blue`, and the server reads the repeated key back into the list. A field whose type checks its value in `Deserialize`, such as a newtype with `#[serde(try_from = \"i32\")]`, validates the query string, and an `Option` field with `unwrap_or` in the handler gives a default. The query string lists the fields in the order of their names and leaves out a field that is `None`, on the server and in the browser alike. A query string that does not deserialize into `Q` gets a 400.",
-                    ja: "ルートの 2 つ目の型 `Route<P, Q>` は、クエリ文字列の型です。`Q` は `#[derive(Signals, Search)]` を付けた構造体で、リンクとハンドラは `(P, Q)` を受け取ります。パラメータのないパスでは `Q` だけを受け取ります。`#[derive(Search)]` は、各フィールドが [`SearchValue`](api:hypersig/trait.SearchValue.html) であることを求めます。`SearchValue` は文字列、数値、`bool`、`#[derive(Segment)]` を付けた列挙型、またはそれらの `Option` か `Vec` なので、フィールドに構造体やリストのリストを置くとコンパイルエラーになります。`Vec` のフィールドは `?color=red&color=blue` のように要素ごとに名前を書き、サーバーは繰り返されたキーをリストに読み戻します。`#[serde(try_from = \"i32\")]` を付けた newtype のように `Deserialize` で値を検査する型のフィールドは、クエリ文字列を検証します。`Option` のフィールドにハンドラで `unwrap_or` を使えば、既定値を決められます。クエリ文字列はフィールドを名前の順に並べ、`None` のフィールドは書きません。これはサーバーでもブラウザでも同じです。`Q` にデシリアライズできないクエリ文字列には 400 を返します。",
-                },
-            ),
-            show(Snippet::SearchParams),
             heading(
                 site,
                 L {
@@ -328,36 +408,6 @@ pub fn pages(site: Site) -> Part {
             heading(
                 site,
                 L {
-                    en: "Changing the URL without loading a page",
-                    ja: "ページを読み込まずに URL を変える",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "A list whose filter, sort, and page live in the query string can keep the page loaded while they change. `link.push_url()` is a statement that shows the link's URL in the address bar as a new history entry, and `link.replace_url()` shows it in place of the current one, for a change the Back button should skip, such as each letter typed into a search field. The page keeps its signals and its focus, so the statement runs beside the call that loads the rows. An action does the same with `Patches::push_url(url)` and `Patches::replace_url(url)`, and the patches after them are applied. When the visitor presses Back or Forward, the browser loads the page at that entry's URL from the server, which renders it from the query string.",
-                    ja: "フィルター、並び順、ページ番号をクエリ文字列に持つリストは、それらが変わってもページを読み込み直さずに済みます。`link.push_url()` はリンクの URL を新しい履歴の項目としてアドレスバーに出す文です。`link.replace_url()` は今の URL と置き換えるので、検索欄に打つ 1 文字ごとのように、戻るボタンで飛ばしたい変更に使います。ページのシグナルとフォーカスはそのまま残るので、この文は行を読み込む呼び出しと並べて書きます。アクションでは `Patches::push_url(url)` と `Patches::replace_url(url)` で同じことをし、その後の差分も適用されます。訪問者が戻るボタンや進むボタンを押すと、ブラウザはその項目の URL のページをサーバーから読み込み、サーバーはクエリ文字列からページを描きます。",
-                },
-            ),
-            show(Snippet::History),
-            heading(
-                site,
-                L {
-                    en: "Pages for missing paths",
-                    ja: "見つからないパスのページ",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "`fn pages(Router<State>) else missing;` on the first line of `routes!` names a handler for each page request that reaches no page: a path no route matches, a segment that does not parse, a handler that answers `None`, and a query string that does not deserialize. The handler receives an [`Unserved`](api:hypersig/struct.Unserved.html) and may take an extractor, and its page is sent with the 404 or 400 that `Unserved::status` names. `Unserved::within(HOME)` reads the parameters of `HOME` from the start of the path, so a site under `/{lang}` shows the page in the language of the path. A page with another status is `PageResponse::with_status(status, page)`.",
-                    ja: "`routes!` の 1 行目に `fn pages(Router<State>) else missing;` と書くと、どのページにも届かなかったページのリクエストを受け取るハンドラを指定できます。対象は、どのルートにも合わないパス、パースできないセグメント、`None` を返したハンドラ、デシリアライズできないクエリ文字列です。ハンドラは [`Unserved`](api:hypersig/struct.Unserved.html) を受け取り、extractor も受け取れます。返したページは `Unserved::status` が示す 404 か 400 で送られます。`Unserved::within(HOME)` はパスの先頭から `HOME` のパラメータを読むので、`/{lang}` の下にあるサイトはパスの言語でページを出せます。ほかのステータスで返すページは `PageResponse::with_status(status, page)` で返します。",
-                },
-            ),
-            head(site),
-            heading(
-                site,
-                L {
                     en: "What routes leave unchecked",
                     ja: "ルートが検査しないこと",
                 },
@@ -378,14 +428,17 @@ pub fn pages(site: Site) -> Part {
                         ja: "リンクは普通の `<a href>` なので、たどると次のページをサーバーから読み込み、離れたページのシグナルは失われます。",
                     },
                     L {
-                        en: "Nothing checks that the URL `push_url` or `replace_url` shows belongs to the page on screen. The URL of another page shows over this page's content, and reloading it loads the other page.",
-                        ja: "`push_url` や `replace_url` が出す URL が、画面のページのものかどうかは検査されません。別のページの URL を出すと、このページの内容のままその URL が表示され、再読み込みすると別のページが読み込まれます。",
-                    },
-                    L {
                         en: "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
                         ja: "ほかのサイトや `#fragment` へのリンクのために、`attr(\"href\", ...)` で任意の URL を書くこともできます。",
                     },
                 ],
+            ),
+            para(
+                site,
+                L {
+                    en: "[Routes in depth](learn/routes/) covers typed query strings, URLs that change without loading a page, pages for missing paths, what search results and link previews show, and an application served under a path prefix.",
+                    ja: "型の付いたクエリ文字列、ページを読み込まずに変える URL、存在しないパスのページ、検索結果とリンクのプレビューに出る内容、パスの接頭辞の下で配信するアプリは [ルートの詳細](learn/routes/) で説明します。",
+                },
             ),
         ]),
     )
@@ -507,8 +560,8 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A [`NodeRef`](api:hypersig/struct.NodeRef.html) names one element for a DOM call that no binding covers. Declare it as a `const`, attach it with `El::node_ref`, and use its statements: `focus`, `blur`, `select`, `scroll_into_view`, `show_popover`, and `hide_popover`. Each item of a list may carry the same name, and any other two elements with one name make `Page::render` panic, so a test that renders the page finds the second. Ids set with `El::id` from a `&'static str` are checked by the same rule, and a fixed id inside a list template panics on its own, because every item repeats it. An id built as a `String` may come from stored data, so two of them alike render. The reset button below stops the stopwatch and moves focus to the start button.",
-                ja: "[`NodeRef`](api:hypersig/struct.NodeRef.html) は、束縛では扱えない DOM の呼び出しのために要素を 1 つ指す名前です。`const` として宣言し、`El::node_ref` で要素に付け、`focus`、`blur`、`select`、`scroll_into_view`、`show_popover`、`hide_popover` の文を使います。リストの項目ごとに同じ名前を付けるのはかまいませんが、それ以外で 2 つの要素に同じ名前を付けると `Page::render` が panic するので、ページを描画するテストで見つかります。`El::id` に `&'static str` で付けた id も同じ規則で検査し、リストのテンプレートの中の固定の id は、項目ごとに同じ id が並ぶので、それだけで panic します。`String` で組み立てた id は保存したデータに由来することがあるので、2 つ同じでもそのまま描画します。下のリセットボタンはストップウォッチを止め、フォーカスをスタートボタンに移します。",
+                en: "A [`NodeRef`](api:hypersig/struct.NodeRef.html) names one element for a DOM call that no binding covers. Declare it as a `const`, attach it with `El::node_ref`, and use its statements: `focus`, `blur`, `select`, `scroll_into_view`, `show_popover`, and `hide_popover`. Each item of a list may carry the same name. Any other two elements with one name, or with one fixed id from `El::id`, make `Page::render` panic, so a test that renders the page finds the second. The reset button below stops the stopwatch and moves focus to the start button.",
+                ja: "[`NodeRef`](api:hypersig/struct.NodeRef.html) は、束縛では扱えない DOM の呼び出しのために要素を 1 つ指す名前です。`const` として宣言し、`El::node_ref` で要素に付け、`focus`、`blur`、`select`、`scroll_into_view`、`show_popover`、`hide_popover` の文を使います。リストの項目ごとに同じ名前を付けるのはかまいません。それ以外で 2 つの要素に同じ名前や、`El::id` で同じ固定の id を付けると `Page::render` が panic するので、ページを描画するテストで見つかります。下のリセットボタンはストップウォッチを止め、フォーカスをスタートボタンに移します。",
             },
         ),
         demo::show(site, Demo::Stopwatch),

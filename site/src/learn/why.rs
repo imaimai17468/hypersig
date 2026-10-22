@@ -343,8 +343,8 @@ fn costs(site: Site) -> [Part; 3] {
         para(
             site,
             L {
-                en: "Next, the [Quick start](learn/) builds the counter and runs it.",
-                ja: "次は [クイックスタート](learn/) で、このカウンターを作って動かします。",
+                en: "Next, [Building the page](learn/describing-the-page/) shows how the HTML is built.",
+                ja: "HTML の組み立て方は次の [ページを組み立てる](learn/describing-the-page/) で説明します。",
             },
         ),
     ]

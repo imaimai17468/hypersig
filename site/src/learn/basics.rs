@@ -70,8 +70,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "Open `http://127.0.0.1:3000`. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. `hypersig_runtime()` serves the browser runtime from the crate, so no Node or JavaScript build is involved.",
-                ja: "`http://127.0.0.1:3000` を開いてください。`+1` ボタンはリクエストを送らずにブラウザで数を増やします。リセットボタンは `/reset` を呼び出し、ハンドラが返す差分が `count` を 0 に戻します。ブラウザのランタイムは `hypersig_runtime()` がクレートから配信するので、Node も JavaScript のビルドも使いません。",
+                en: "Open `http://127.0.0.1:3000`. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. The runtime is the small JavaScript file that runs the page's statements and bindings in the browser. `hypersig_runtime()` serves it from the crate, so no Node or JavaScript build is involved.",
+                ja: "`http://127.0.0.1:3000` を開いてください。`+1` ボタンはリクエストを送らずにブラウザで数を増やします。リセットボタンは `/reset` を呼び出し、ハンドラが返す差分が `count` を 0 に戻します。ランタイムはページの文と束縛をブラウザで実行する小さな JavaScript のファイルです。`hypersig_runtime()` がこのファイルをクレートから配信するので、Node も JavaScript のビルドも使いません。",
             },
         ),
         heading(
@@ -89,24 +89,28 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                     ja: "`Counter` に付けた `#[derive(Signals)]` は、フィールドを指す `Sig<Counter, i32>` を返す `Counter::count()` を追加します。フィールド名を打ち間違えるとコンパイルエラーになります。",
                 },
                 L {
-                    en: "`count.set(count + 1)` is a statement. `on_click` writes it into a `data-hs-on-click` attribute as JSON, and the runtime runs it on each click.",
-                    ja: "`count.set(count + 1)` は文です。`on_click` はこれを JSON にして `data-hs-on-click` 属性に書き込み、ランタイムはクリックのたびにこの文を実行します。",
+                    en: "`count.set(count + 1)` is a statement, a change to the signals that runs in the browser. `on_click` puts it into the page, and the runtime runs it on each click without a request. [Expressions and statements](learn/expressions/) covers what a statement can do.",
+                    ja: "`count.set(count + 1)` は文（ブラウザで実行する、シグナルへの変更）です。`on_click` がこの文をページに書き込み、ランタイムはクリックのたびにリクエストを送らずに実行します。文で書けることは [式と文](learn/expressions/) で説明します。",
                 },
                 L {
                     en: "`span().bind_text(count.to_text())` keeps the text equal to the count. `Page::render` evaluates it with the initial values, so the HTML already shows `0`.",
                     ja: "`span().bind_text(count.to_text())` はテキストをカウントの値に合わせ続けます。`Page::render` が初期値でこの式を評価するので、HTML の時点で `0` が表示されています。",
                 },
                 L {
-                    en: "`INDEX` is a `Route`, the page at `/`. `routes!` declares it together with its handler `index`, the function `pages` it writes serves it, and a link to it is `INDEX.link()`. [Pages and links](learn/pages/) covers routes with parameters.",
-                    ja: "`INDEX` は `/` のページを表す `Route` です。`routes!` がハンドラ `index` と一緒にこのルートを宣言し、マクロが生成する関数 `pages` がこのページを配信します。このページへのリンクは `INDEX.link()` です。パラメータを持つルートは [ページとリンク](learn/pages/) で説明します。",
+                    en: "`INDEX` is a `Route`, the page at `/`. `routes!` declares it on one line with its handler `index`. The first line, `fn pages(Router<()>);`, names the function the macro writes, which registers every route of the block on a router, and `Router<()>` is a router without state. `main` calls `pages(Router::new())`, and a link to the page is `INDEX.link()`. [Pages and links](learn/pages/) covers routes with parameters.",
+                    ja: "`INDEX` は `/` のページを表す `Route` です。`routes!` は、このルートをハンドラ `index` と同じ行で宣言します。1 行目の `fn pages(Router<()>);` はマクロが生成する関数の名前で、この関数がブロック内のルートをすべてルーターに登録します。`Router<()>` は状態を持たないルーターです。`main` は `pages(Router::new())` を呼び出し、このページへのリンクは `INDEX.link()` で作ります。パラメータを持つルートは [ページとリンク](learn/pages/) で説明します。",
                 },
                 L {
                     en: "`RESET` is an `Action<Counter>`. The page calls it with `RESET.call()` and the router serves it with `.action(RESET, reset)`, so both sides share its path, its method, its argument type, and the page it belongs to.",
                     ja: "`RESET` は `Action<Counter>` です。ページは `RESET.call()` で呼び出し、ルーターは `.action(RESET, reset)` で配信するので、パス、メソッド、引数の型、属するページを両側で共有します。",
                 },
                 L {
-                    en: "The handler returns `Counter::count().patch(0)`. The server sends it as a Server-Sent Event, and the runtime writes the value into the signal, which rewrites the text.",
-                    ja: "ハンドラは `Counter::count().patch(0)` を返します。サーバーはこれを Server-Sent Event として送り、ランタイムが値をシグナルに書き込むと、テキストが書き換わります。",
+                    en: "A page handler and an action handler both take two arguments: the router's state, then what the request carries, which is the route's parameters for a page and the call's arguments for an action. This program has no state, the route `/` has no parameters, and `RESET.call()` sends no arguments, so each of them is `()`, and `(): ()` is an argument that receives `()`. [Talking to the server](learn/server/) adds state and arguments.",
+                    ja: "ページのハンドラもアクションのハンドラも、引数を 2 つ取ります。1 つ目はルーターの状態、2 つ目はリクエストが運ぶ値で、ページならルートのパラメータ、アクションなら呼び出しの引数が 2 つ目に入ります。このプログラムには状態がなく、ルート `/` にはパラメータがなく、`RESET.call()` は引数を送らないので、どれも `()` です。`(): ()` は `()` を受け取る引数の書き方です。状態と引数を使う例は [サーバーとのやり取り](learn/server/) にあります。",
+                },
+                L {
+                    en: "The handler returns `Counter::count().patch(0)`, a patch: a new value for one signal. The server sends it in the response, and the runtime writes the value into the signal, which rewrites the text.",
+                    ja: "ハンドラは差分 `Counter::count().patch(0)`（シグナル 1 つの新しい値）を返します。サーバーはこれを応答で送り、ランタイムが値をシグナルに書き込むと、テキストが書き換わります。",
                 },
             ],
         ),
@@ -120,8 +124,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "The counter below runs the browser side of the program on this page. It uses buttons from `hypersig_ui`, the component crate in the same repository.",
-                ja: "下のカウンターはこのプログラムのブラウザ側をこのページで動かしています。ボタンには同じリポジトリにあるコンポーネントのクレート `hypersig_ui` のものを使っています。",
+                en: "The counter below runs the browser side of the program on this page. Its code uses two crates the program above does not: the buttons come from `hypersig_ui`, the component crate in the same repository, and the layout from `hypersig::style`, which comes with hypersig. To run the code of a demo on this site in your own project, add `hypersig_ui = \"0.3\"` under `[dependencies]`, as [Installation](components/installation/) shows. [Styling](learn/styling/) covers `hypersig::style`.",
+                ja: "下のカウンターはこのプログラムのブラウザ側をこのページで動かしています。このコードは上のプログラムにないものを 2 つ使っています。ボタンは同じリポジトリにあるコンポーネントのクレート `hypersig_ui` のもので、レイアウトは hypersig に含まれる `hypersig::style` で書いています。このサイトのデモのコードを自分のプロジェクトで動かすときは、[インストール](components/installation/) のとおり `[dependencies]` に `hypersig_ui = \"0.3\"` を加えてください。`hypersig::style` は [スタイル](learn/styling/) で説明します。",
             },
         ),
         demo::show(site, Demo::Counter),
@@ -135,8 +139,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "Next, [Building the page](learn/describing-the-page/) shows how the HTML is built.",
-                ja: "HTML の組み立て方は次の [ページを組み立てる](learn/describing-the-page/) で説明します。",
+                en: "Next, [Why hypersig](learn/why/) shows the HTML this program writes and compares hypersig with other frameworks. The guide itself starts at [Building the page](learn/describing-the-page/), which shows how the HTML is built.",
+                ja: "次の [hypersig を選ぶ理由](learn/why/) では、このプログラムが書き出す HTML を示し、ほかのフレームワークと比べます。ガイドの本編は HTML の組み立て方を説明する [ページを組み立てる](learn/describing-the-page/) から始まります。",
             },
         ),
     ])
@@ -161,6 +165,13 @@ pub fn describing_the_page(site: Site) -> Part {
             },
         ),
         show(Snippet::Elements),
+        para(
+            site,
+            L {
+                en: "`div::<Profile>()` names the page's signal struct because nothing else in this code tells the compiler which page the element belongs to. An element passed to `Page::new(...).child(...)`, or to a function that takes an `El<Profile>`, gets its `S` from there, which is why the Quick start writes `div()`. The children of an element take its `S` the same way, so only the outermost element of a tree written on its own needs the `::<Profile>`.",
+                ja: "`div::<Profile>()` とページのシグナル構造体を書いているのは、このコードにはこの要素がどのページのものかをコンパイラに伝えるものがほかにないからです。`Page::new(...).child(...)` や `El<Profile>` を受け取る関数に渡す要素は、渡し先から `S` が推論されます。クイックスタートが `div()` と書けるのはそのためです。子要素も親から同じように `S` を受け取るので、単独で書いた木でも `::<Profile>` が要るのはいちばん外側の要素だけです。",
+            },
+        ),
         para(
             site,
             L {

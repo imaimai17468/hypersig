@@ -10,6 +10,7 @@
 #     type Text<T> = ByLang<T>;
 #     fn pick<T>(self, text: ByLang<T>) -> T { match self { Self::En => text.en, Self::Ja => text.ja } }
 # }
+// `Lang` and `ByLang` are the ones the Overview declares.
 // error[E0063]: missing field `ja` in initializer of `ByLang<_>`
 let title = ByLang { en: "Settings" };
 # let _ = Lang::En.pick(title);
