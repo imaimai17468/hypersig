@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, if_else};
+use crate::finite;
 use crate::html::{self, El};
 use crate::patch::SignalPatch;
 use crate::signal::{Path, Sig, Signals};
@@ -102,7 +103,9 @@ impl<T: Validate> Form<T> {
     /// received: arithmetic whose result is not finite, such as a division by
     /// zero, or a date outside the years 1000 to 9999. That rule fails here,
     /// with an empty message where its message cannot be evaluated either,
-    /// though the browser may have accepted the value.
+    /// though the browser may have accepted the value. A value holding an
+    /// infinite or NaN number, which an HTML form's `inf` or `NaN` parses to,
+    /// fails every rule.
     ///
     /// # Errors
     ///
@@ -136,6 +139,9 @@ impl<T: Validate> Form<T> {
     pub fn validate(value: &T) -> Result<(), FieldErrors<T>> {
         let mut rules = Rules::<Submission, T>::new();
         T::rules(Sig::from_path(Path::field("value")), &mut rules);
+        // JSON writes a number that is not finite as `null`, which a rule
+        // with a fallback would read as a missing value and pass.
+        let finite = finite::all_finite(value);
         let root = json!({ "value": value });
         let ctx = Ctx {
             root: (&root).into(),
@@ -158,7 +164,8 @@ impl<T: Validate> Form<T> {
             // The server cannot evaluate arithmetic that leaves the finite
             // range, or a date outside the years 1000 to 9999, which the
             // visitor can send. Such a rule fails, so the value is refused.
-            let ok = ssr::evaluate(check.ok.as_json(), &ctx).is_some_and(|ok| ssr::truthy(&ok));
+            let ok = finite
+                && ssr::evaluate(check.ok.as_json(), &ctx).is_some_and(|ok| ssr::truthy(&ok));
             if !ok {
                 let message = ssr::evaluate(check.message.as_json(), &ctx)
                     .map(|message| ssr::js_string(&message))
@@ -698,6 +705,48 @@ mod tests {
     #[test]
     fn a_fallback_does_not_turn_an_overflow_into_a_pass() {
         assert!(Form::validate(&Fallback { price: 1e308 }).is_err());
+    }
+
+    #[derive(Serialize, Deserialize, Clone)]
+    struct Limit {
+        price: f64,
+        discount: Option<f64>,
+    }
+
+    impl Signals for Limit {}
+
+    impl Validate for Limit {
+        fn rules<S>(form: Sig<S, Self>, rules: &mut Rules<S, Self>) {
+            let price: Sig<Limit, f64> = sig("price");
+            let discount: Sig<Limit, Option<f64>> = sig("discount");
+            rules.check(
+                price,
+                form.at(price).some().unwrap_or(0.0).le(1000.0),
+                "Too expensive.",
+            );
+            rules.check(
+                discount,
+                form.at(discount).unwrap_or(0.0).le(50.0),
+                "Too much off.",
+            );
+        }
+    }
+
+    #[test]
+    fn a_number_that_is_not_finite_fails_a_rule_with_a_fallback() {
+        let limit = |price, discount| Limit { price, discount };
+        // An HTML form's `inf` and `NaN` parse to these, and JSON would write
+        // them as the `null` the fallback replaces.
+        for price in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
+            let errors = Form::validate(&limit(price, None)).unwrap_err();
+            assert_eq!(
+                errors.message(sig::<Limit, f64>("price")),
+                Some("Too expensive.")
+            );
+        }
+        assert!(Form::validate(&limit(10.0, Some(f64::NAN))).is_err());
+        Form::validate(&limit(10.0, None)).expect("a missing discount is no discount");
+        Form::validate(&limit(10.0, Some(5.0))).expect("finite values within the limits");
     }
 
     #[derive(Serialize, Deserialize, Clone)]
