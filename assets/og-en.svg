@@ -7,7 +7,7 @@
     <path d="M21 32h4l4-10 6 20 4-10h4" fill="none" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <text x="240" y="178" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="80" font-weight="700" letter-spacing="-2" fill="#fafafa">hypersig</text>
-  <text x="96" y="330" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="40" font-weight="600" fill="#fafafa">A web framework on axum, written all in Rust</text>
-  <text y="400" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="32" fill="#a1a1aa"><tspan x="96" dy="0">Every string the browser acts on is produced from a Rust type,</tspan><tspan x="96" dy="58">so a mistake in one is a compile error.</tspan></text>
+  <text x="96" y="330" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="40" font-weight="600" fill="#fafafa">A web framework written all in Rust</text>
+  <text y="400" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="32" fill="#a1a1aa"><tspan x="96" dy="0">Server-owned state, type-checked strings.</tspan></text>
   <text x="96" y="560" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" fill="#71717a">imaimai17468.github.io/hypersig</text>
 </svg>
