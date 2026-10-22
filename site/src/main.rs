@@ -4,7 +4,8 @@
 //! cargo run -p site -- --out target/site --base /hypersig --rustdoc target/doc
 //! ```
 //!
-//! `--rustdoc` copies the output of `cargo doc` into `api/` and checks each
+//! `--rustdoc` hard-links the output of `cargo doc` into `api/`, copying a
+//! file where the link fails, and checks each
 //! link into it. Without it, those links are left unchecked.
 //!
 //! `--origin https://imaimai17468.github.io` gives each page a canonical URL
@@ -115,7 +116,12 @@ fn copy_dir(from: &Path, to: &Path) -> io::Result<()> {
         let target = to.join(entry.file_name());
         if entry.file_type()?.is_dir() {
             copy_dir(&entry.path(), &target)?;
-        } else {
+        } else if fs::hard_link(entry.path(), &target).is_err() {
+            // A link reads none of the file, where a copy reads all of it, and
+            // on a Mac whose virus scanner checks each file `cargo doc` just
+            // wrote, copying the rustdoc output took 127 s and linking it 2 s.
+            // The site writes nothing under `api/`, so the link leaves the
+            // rustdoc output as it is. A link fails across file systems.
             fs::copy(entry.path(), target)?;
         }
     }
