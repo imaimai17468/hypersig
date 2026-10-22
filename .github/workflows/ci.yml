@@ -156,10 +156,6 @@ jobs:
           path: target/templates/vercel/target
           key: vercel-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'crates/hypersig_cli/templates/vercel/**') }}
           restore-keys: vercel-${{ runner.os }}-
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/pnpm-lock.yaml') }}
       - uses: pnpm/action-setup@v6
         with:
           package_json_file: e2e/package.json
@@ -171,10 +167,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: cargo build --release -p example-counter -p example-todo -p example-todomvc -p example-showcase -p example-style -p example-ui -p example-signup -p example-auth -p example-storefront -p example-prefix
-      # Installing Chromium and the system packages it needs takes 10 to 20
-      # seconds, so a run past the limit is a hang, which a rerun gets past.
-      - run: pnpm exec playwright install --with-deps chromium
-        timeout-minutes: 5
       - run: pnpm test
       - uses: actions/upload-artifact@v7
         if: failure()
