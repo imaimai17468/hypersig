@@ -17,12 +17,12 @@ pub fn render(site: Site) -> String {
             hero(
                 site,
                 site.t(L {
-                    en: "A web framework on axum",
-                    ja: "axum の上で動く Web フレームワーク",
+                    en: "A web framework written all in Rust",
+                    ja: "Rust だけで書く Web フレームワーク",
                 }),
                 site.t(L {
-                    en: "The page, its behavior, and the server, all in Rust",
-                    ja: "画面もその動きもサーバーも、すべて Rust で",
+                    en: "Server-owned state, type-checked strings.",
+                    ja: "サーバーが状態を、型が正しさを。",
                 }),
                 site.t(L {
                     en: "`cargo build` builds it, with no Node and no wasm, and a mismatch between the page and the server is a compile error.",
@@ -80,12 +80,12 @@ pub fn render(site: Site) -> String {
                     ),
                     (
                         site.t(L {
-                            en: "Optimistic updates with no extra code",
-                            ja: "楽観的更新に追加のコードは不要",
+                            en: "The server holds the state, with no hydration",
+                            ja: "状態はサーバーが持ち、ハイドレーションはなし",
                         }),
                         site.t(L {
-                            en: "A statement changes the page in the browser, and an action call sent with it reaches the server after. Changing the page before the server answers takes no extra code.",
-                            ja: "文はブラウザの中で画面を変え、一緒に送ったアクションの呼び出しはそのあとでサーバーに届きます。サーバーの応答を待たずに画面を変える処理を、追加のコードなしで書けます。",
+                            en: "The server renders the page with its state and its behavior written into the HTML. On load, the runtime reads the state from `data-hs-signals` and runs no component again, and what the server changes later reaches the browser as patches over server-sent events.",
+                            ja: "サーバーは状態と動きを HTML に書き込んでページを描画します。読み込み時、ランタイムは `data-hs-signals` から状態を読むだけで、コンポーネントを実行し直しません。そのあとサーバーで変えた状態は、Server-Sent Events のパッチでブラウザに届きます。",
                         }),
                     ),
                 ],

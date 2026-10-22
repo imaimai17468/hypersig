@@ -4,7 +4,8 @@
 use hypersig::html::{a, div, h1, h2, h3, p, section, span};
 use hypersig::style::pattern::{container, stack, wrap};
 use hypersig::style::value::{
-    AlignItems, BorderStyle, FontWeight, JustifyContent, LineHeight, TextAlign, px, raw, rem,
+    AlignItems, BorderStyle, FontWeight, JustifyContent, LineHeight, TextAlign, TextWrap,
+    WordBreak, px, raw, rem,
 };
 use hypersig::style::{Media, PseudoClass, Style};
 use hypersig_ui::{ButtonSize, ButtonVariant, button_style, token};
@@ -62,6 +63,11 @@ pub fn hero(site: Site, eyebrow: &str, heading: &str, text: &str, actions: &[Act
                     .line_height(LineHeight::Number(1.1))
                     .font_weight(FontWeight::Number(700.0))
                     .letter_spacing(rem(-0.05))
+                    // Breaks a Japanese heading between phrases rather than
+                    // inside a word, and evens out the lines. A browser
+                    // without `auto-phrase` breaks it as usual.
+                    .word_break(WordBreak::AutoPhrase)
+                    .text_wrap(TextWrap::Balance)
                     .on(Media::Md, Style::new().font_size(rem(3.75))),
             )
             .text(heading),
