@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 # builds for wasm32-unknown-unknown.
 axum = { version = "0.8", default-features = false }
 futures = "0.3"
-hypersig = "0.3.0"
+hypersig = "{{hypersig-version}}"
 serde = { version = "1", features = ["derive"] }
 tower-service = "0.3"
 worker = { version = "0.8", features = ["http", "axum"] }

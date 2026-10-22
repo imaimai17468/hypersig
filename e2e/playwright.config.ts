@@ -37,10 +37,10 @@ export default defineConfig({
     })),
     // The Cloudflare template runs in workerd, the Workers runtime, which
     // wrangler starts after building the worker with `worker-build`. The
-    // template is copied out first, with its hypersig pointed at this
-    // repository.
+    // project is created first with `cargo hypersig new`, with its hypersig
+    // pointed at this repository.
     {
-      command: `dir=$(templates/stage.sh cloudflare) && cd "$dir" && "$OLDPWD/e2e/node_modules/.bin/wrangler" dev --ip 127.0.0.1 --port ${workers.cloudflare}`,
+      command: `dir=$(crates/hypersig_cli/stage.sh cloudflare) && cd "$dir" && "$OLDPWD/e2e/node_modules/.bin/wrangler" dev --ip 127.0.0.1 --port ${workers.cloudflare}`,
       cwd: "..",
       env: { WRANGLER_SEND_METRICS: "false" },
       url: `http://127.0.0.1:${workers.cloudflare}/`,
@@ -51,7 +51,7 @@ export default defineConfig({
     // `VercelLayer` the deployed function uses, so the template runs without
     // the Vercel CLI or an account.
     {
-      command: `dir=$(templates/stage.sh vercel) && cd "$dir" && cargo run --release --quiet`,
+      command: `dir=$(crates/hypersig_cli/stage.sh vercel) && cd "$dir" && cargo run --release --quiet`,
       cwd: "..",
       env: { VERCEL_DEV_PORT: String(functions.vercel) },
       url: `http://127.0.0.1:${functions.vercel}/`,

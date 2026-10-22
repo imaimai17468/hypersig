@@ -51,14 +51,14 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       # The crates a Cloudflare Worker links, built for the target it runs on.
       - run: cargo clippy -p hypersig -p hypersig_i18n -p hypersig_ui --target wasm32-unknown-unknown -- -D warnings
-      # The templates sit outside the workspace, so each is checked in a copy
-      # whose hypersig is this repository's.
+      # Each template is checked in the project `cargo hypersig new` writes
+      # from it, with its hypersig pointed at this repository's.
       - name: The Cloudflare template
-        run: dir=$(templates/stage.sh cloudflare) && cd "$dir" && cargo fmt --check && cargo clippy --target wasm32-unknown-unknown -- -D warnings
+        run: dir=$(crates/hypersig_cli/stage.sh cloudflare) && cd "$dir" && cargo fmt --check && cargo clippy --target wasm32-unknown-unknown -- -D warnings
       - name: The server template
-        run: dir=$(templates/stage.sh server) && cd "$dir" && cargo fmt --check && cargo clippy -- -D warnings
+        run: dir=$(crates/hypersig_cli/stage.sh server) && cd "$dir" && cargo fmt --check && cargo clippy -- -D warnings
       - name: The Vercel template
-        run: dir=$(templates/stage.sh vercel) && cd "$dir" && cargo fmt --check && cargo clippy -- -D warnings
+        run: dir=$(crates/hypersig_cli/stage.sh vercel) && cd "$dir" && cargo fmt --check && cargo clippy -- -D warnings
       - run: cargo check -p hypersig --no-default-features
       - run: cargo doc --workspace --no-deps
         env:
@@ -75,6 +75,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.99
         with:
           components: rust-src
+          # The tests of hypersig_cli check the Cloudflare projects it writes
+          # for the target a worker runs on.
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace
 
@@ -141,14 +144,14 @@ jobs:
           path: |
             target/templates/cloudflare/target
             ~/.cache/worker-build
-          key: cloudflare-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'templates/cloudflare/**') }}
+          key: cloudflare-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'crates/hypersig_cli/templates/cloudflare/**') }}
           restore-keys: cloudflare-${{ runner.os }}-
       # The Vercel template builds in target/templates/vercel/target, which
       # rust-cache drops for the same reason.
       - uses: actions/cache@v6
         with:
           path: target/templates/vercel/target
-          key: vercel-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'templates/vercel/**') }}
+          key: vercel-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'crates/hypersig_cli/templates/vercel/**') }}
           restore-keys: vercel-${{ runner.os }}-
       - uses: actions/cache@v6
         with:

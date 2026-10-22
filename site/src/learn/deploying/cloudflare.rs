@@ -6,9 +6,10 @@ use crate::doc::{Doc, Learn};
 use crate::lang::L;
 use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, table_of, title};
 
-/// The worker of `templates/cloudflare`, which CI builds for
+/// The worker of the Cloudflare template, which CI builds for
 /// wasm32-unknown-unknown and the end-to-end tests run under `wrangler dev`.
-const WORKER: &str = include_str!("../../../../templates/cloudflare/src/lib.rs");
+const WORKER: &str =
+    include_str!("../../../../crates/hypersig_cli/templates/cloudflare/src/lib.rs");
 
 pub fn page(site: Site) -> Part {
     parts([

@@ -81,7 +81,9 @@ snippets! {
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";
     I18nPages => "i18n_pages.rs";
     I18nNegotiate => "i18n_negotiate.rs";
-    Listen => "listen.rs";
+    // The code `cargo hypersig add server` prints, so the page and the CLI
+    // show one text.
+    Listen => "../../crates/hypersig_cli/steps/server.rs";
 }
 
 /// `snippet` as a code block, without its hidden lines.

@@ -6,9 +6,9 @@ use crate::doc::{Doc, Learn};
 use crate::lang::L;
 use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, table_of, title};
 
-/// The function of `templates/vercel`, which CI lints and the end-to-end tests
+/// The function of the Vercel template, which CI lints and the end-to-end tests
 /// run through `VercelLayer` outside Vercel.
-const FUNCTION: &str = include_str!("../../../../templates/vercel/api/app.rs");
+const FUNCTION: &str = include_str!("../../../../crates/hypersig_cli/templates/vercel/api/app.rs");
 
 pub fn page(site: Site) -> Part {
     parts([
