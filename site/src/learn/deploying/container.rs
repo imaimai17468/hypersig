@@ -147,15 +147,15 @@ cargo hypersig add server",
         para(
             site,
             L {
-                en: "Then build and run the image as with the template, naming it after the project:",
-                ja: "そのあと、テンプレートのときと同じようにイメージをビルドして起動します。イメージにはプロジェクトの名前を付けてください。",
+                en: "Then build and run the image as with the template, naming it after the project, which is `counter` for the quick start:",
+                ja: "そのあと、テンプレートのときと同じようにイメージをビルドして起動します。イメージにはプロジェクトの名前を付けてください。クイックスタートなら `counter` です。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "docker build -t my-app .
-docker run --rm -p 3000:3000 my-app",
+            "docker build -t counter .
+docker run --rm -p 3000:3000 counter",
         ),
         para(
             site,

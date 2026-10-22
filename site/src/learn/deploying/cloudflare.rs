@@ -178,8 +178,8 @@ worker = { version = "0.8", features = ["http", "axum"] }"#,
         para(
             site,
             L {
-                en: "The Rust code is left to you, and the command prints the change. Replace `#[tokio::main] async fn main` in `src/lib.rs` with a `fetch` function that builds the same `Router` as `main` did and hands it the request, and add the two `use` lines it needs. For the [quick start](learn/) counter, it is:",
-                ja: "Rust のコードは書き換えず、変更する内容を表示します。`src/lib.rs` の `#[tokio::main] async fn main` を、`main` と同じ `Router` を組み立ててリクエストを渡す `fetch` 関数に置き換え、必要な 2 行の `use` を追加してください。[クイックスタート](learn/) のカウンターなら次のとおりです。",
+                en: "The Rust code is left to you, and the command prints the change. In `src/lib.rs`, replace `main`, from `#[tokio::main]` to its closing brace, with a `fetch` function that builds the same `Router` as `main` did and hands it the request, and add the two `use` lines it needs next to the other `use` lines. For the [quick start](learn/) counter, it is:",
+                ja: "Rust のコードは書き換えず、変更する内容を表示します。`src/lib.rs` の `main` を、`#[tokio::main]` から閉じ括弧まで、`main` と同じ `Router` を組み立ててリクエストを渡す `fetch` 関数に置き換えてください。必要な 2 行の `use` は、ほかの `use` の隣に追加します。[クイックスタート](learn/) のカウンターなら次のとおりです。",
             },
         ),
         code::block(Lang::Rust, Some("src/lib.rs"), FETCH),

@@ -33,7 +33,7 @@ const SERVER_STEPS: &[Step] = &[Step {
 
 const CLOUDFLARE_STEPS: &[Step] = &[
     Step {
-        text: "In `src/lib.rs`, replace `#[tokio::main] async fn main` with a `fetch` function that builds the same `Router` as `main` did and hands it the request, and add the two `use` lines it needs. For the quick start counter, it is:",
+        text: "In `src/lib.rs`, replace `main`, from `#[tokio::main]` to its closing brace, with a `fetch` function that builds the same `Router` as `main` did and hands it the request, and add the two `use` lines it needs next to the other `use` lines. For the quick start counter, it is:",
         code: include_str!("../steps/cloudflare.rs"),
     },
     Step {
