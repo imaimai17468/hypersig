@@ -22,8 +22,9 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI ? "github" : "list",
   use: {
-    // Locally, drive the installed Chrome. CI installs Playwright's Chromium.
-    ...(process.env.CI ? {} : { channel: "chrome" }),
+    // Drives the Google Chrome already installed, here and on GitHub's
+    // runner image, so neither installs a browser.
+    channel: "chrome",
     headless: true,
   },
   webServer: [
