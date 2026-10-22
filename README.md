@@ -4,7 +4,9 @@
 
 [日本語](README.ja.md) | [Documentation](https://imaimai17468.github.io/hypersig/)
 
-A web framework on axum where the page, its behavior in the browser, and the server handlers are all written in Rust. Every string the browser acts on (signal names, expressions, action URLs, links) is produced from a Rust type, so a mistake in one is a compile error.
+**Server-owned state, type-checked strings.**
+
+A web framework written all in Rust: the page, its behavior in the browser, and the server handlers, running on axum. The server holds the state and sends the browser patches, and every string the browser acts on (signal names, expressions, action URLs, links) is produced from a Rust type, so a mistake in one is a compile error.
 
 - `cargo build` builds it, with no Node and no wasm.
 - A mismatch between the page and the server is a compile error, and so is a link that does not fit a route ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
