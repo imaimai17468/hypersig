@@ -203,8 +203,8 @@ fn on_vercel(site: Site) -> Part {
                     ja: "Vercel は rewrite より先に出力ディレクトリのファイルを配信し、出力ディレクトリを指定しないプロジェクトではプロジェクトのルートがそのディレクトリになります。その場合、`Cargo.toml`、`Cargo.lock`、`src/` の Rust のソースを含めて `api/` の外のファイルはすべて、そのパスで公開されます。試したファイルのうち公開されなかったのは `.env` だけでした。テンプレートの `vercel.json` は出力ディレクトリを `public` にし、ビルドのコマンドが空の `.keep` だけを入れてこのディレクトリを作るので、それ以外のパスはすべて関数に届きます。自分で `vercel.json` を書くときも、この 2 つのフィールドを残してください。",
                 },
                 L {
-                    en: "Vercel ends a request at the function's maximum duration, which counts the time a stream stays open. The limit is 300 seconds by default and on the Hobby plan, and the Pro plan raises it to 800 seconds with `maxDuration`. A call with `reconnect()` opens the stream again after the limit closes it.",
-                    ja: "Vercel は関数の最大実行時間でリクエストを終えます。この時間にはストリームを開いている時間も含まれます。上限は既定で 300 秒で、Hobby プランでは 300 秒より延ばせません。Pro プランでは `maxDuration` で 800 秒まで延ばせます。`reconnect()` を付けた呼び出しは、上限で切れたストリームをつなぎ直します。",
+                    en: "Vercel ends a request at the function's maximum duration, which counts the time a stream stays open. The limit is 300 seconds by default and on the Hobby plan, and the Pro plan raises it to 800 seconds with `maxDuration`. At the limit Vercel ends the response the way a server ends a finished stream, so a call with `reconnect()`, which opens a stream again only after a failure, leaves it closed, and the page receives no more patches. On a deployment of this template, the clock stopped 300 seconds after the page loaded.",
+                    ja: "Vercel は関数の最大実行時間でリクエストを終えます。この時間にはストリームを開いている時間も含まれます。上限は既定で 300 秒で、Hobby プランでは 300 秒より延ばせません。Pro プランでは `maxDuration` で 800 秒まで延ばせます。上限に達すると、Vercel はサーバーが終わったストリームを閉じるときと同じ形でレスポンスを終えます。`reconnect()` を付けた呼び出しがつなぎ直すのは失敗したストリームだけなので、このストリームは閉じたままになり、ページにはそれ以上パッチが届きません。このテンプレートをデプロイして確かめると、時計はページを開いてから 300 秒で止まりました。",
                 },
                 L {
                     en: "Vercel may run more than one instance of the function and stops an idle one, so a value kept in memory may be gone at the next request. Keep the state requests share in a database.",
