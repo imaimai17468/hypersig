@@ -5,6 +5,13 @@ edition.workspace = true
 rust-version.workspace = true
 publish = false
 
+# The binary has no tests, and `cargo test` would still build and run an
+# empty test harness for it.
+[[bin]]
+name = "example-style"
+path = "src/main.rs"
+test = false
+
 [dependencies]
 axum.workspace = true
 getrandom.workspace = true
