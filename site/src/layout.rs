@@ -58,8 +58,8 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
             origin,
             format!("/{}", crate::og_image(site.lang()).0),
             site.t(L {
-                en: "hypersig, a web framework on axum written all in Rust",
-                ja: "hypersig、Rust だけで書く axum の上の Web フレームワーク",
+                en: "hypersig, a web framework written all in Rust: server-owned state, type-checked strings",
+                ja: "hypersig、Rust だけで書く Web フレームワーク。サーバーが状態を、型が正しさを。",
             }),
         );
         for &lang in Lang::ALL {
