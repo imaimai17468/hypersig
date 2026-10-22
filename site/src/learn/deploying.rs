@@ -353,13 +353,21 @@ fn vercel(site: Site) -> Part {
 cargo generate --git https://github.com/imaimai17468/hypersig templates/vercel --name my-app
 cd my-app
 cargo run
-npx vercel deploy",
+npx vercel login
+npx vercel deploy --prod",
         ),
         para(
             site,
             L {
-                en: "`cargo run` starts the function at `http://localhost:3000`. Outside Vercel, `vercel_runtime::run` listens on `127.0.0.1` at the port in `VERCEL_DEV_PORT`, or 3000, and hands each request to the same `VercelLayer` a deployment uses. `vercel deploy` asks you to sign in and to link the directory to a Vercel project the first time, uploads the source, and prints the deployment's address once Vercel has built it. Vercel builds with Rust from rustup on its own servers, so no binary is uploaded. A Git repository connected to the project deploys the same way on each push.",
-                ja: "`cargo run` は関数を `http://localhost:3000` で起動します。Vercel の外では、`vercel_runtime::run` は `127.0.0.1` の `VERCEL_DEV_PORT` のポート（なければ 3000）で待ち受け、受けたリクエストをデプロイ先と同じ `VercelLayer` に渡します。`vercel deploy` は最初の実行でログインと、ディレクトリを Vercel のプロジェクトに結び付けることを求めます。そのあとソースをアップロードし、Vercel がビルドを終えるとデプロイ先のアドレスを表示します。ビルドは Vercel のサーバーで rustup の Rust を使って実行するので、バイナリはアップロードしません。プロジェクトに Git のリポジトリをつなぐと、push のたびに同じようにデプロイされます。",
+                en: "`cargo run` starts the function at `http://localhost:3000`. Outside Vercel, `vercel_runtime::run` listens on `127.0.0.1` at the port in `VERCEL_DEV_PORT`, or 3000, and hands each request to the same `VercelLayer` a deployment uses. `vercel login` signs the command-line tool in to Vercel, which keeps its own login apart from the browser's, and `vercel deploy` stops with `No existing credentials found` until it has run.",
+                ja: "`cargo run` は関数を `http://localhost:3000` で起動します。Vercel の外では、`vercel_runtime::run` は `127.0.0.1` の `VERCEL_DEV_PORT` のポート（なければ 3000）で待ち受け、受けたリクエストをデプロイ先と同じ `VercelLayer` に渡します。`vercel login` はコマンドラインツールを Vercel にログインさせます。ツールのログインはブラウザのログインとは別なので、これを実行するまで `vercel deploy` は `No existing credentials found` で止まります。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The first `vercel deploy` asks which account and project the directory belongs to, creates the project, and links the directory to it in `.vercel`, which the template's `.gitignore` leaves out. It then uploads the source, and Vercel builds it on its own servers with Rust from rustup, so no binary is uploaded. `--prod` publishes to the project's production address, `https://my-app.vercel.app` where the name is free, and prints it. Without `--prod` the deployment is a preview at an address of its own, which a project with Deployment Protection shows only to members signed in to Vercel. A Git repository connected to the project deploys a preview on each push to a branch, and production on each push to the main branch.",
+                ja: "最初の `vercel deploy` は、ディレクトリをどのアカウントのどのプロジェクトにするかを尋ね、プロジェクトを作って `.vercel` でディレクトリと結び付けます。`.vercel` はテンプレートの `.gitignore` で除外してあります。そのあとソースをアップロードし、Vercel が自分のサーバーで rustup の Rust を使ってビルドするので、バイナリはアップロードしません。`--prod` を付けるとプロジェクトの本番のアドレスに公開し、そのアドレスを表示します。名前が空いていれば `https://my-app.vercel.app` です。`--prod` がないとプレビューのデプロイになり、専用のアドレスに置かれます。Deployment Protection を有効にしたプロジェクトでは、プレビューは Vercel にログインしたメンバーにしか表示されません。プロジェクトに Git のリポジトリをつなぐと、ブランチへの push でプレビューが、main ブランチへの push で本番がデプロイされます。",
             },
         ),
         subheading(

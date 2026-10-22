@@ -5,9 +5,9 @@
 //! `Router`.
 //!
 //! Run `cargo run` and open <http://localhost:3000>, and publish it with
-//! `npx vercel deploy`. Vercel may run more than one instance of the function,
-//! so a value kept in memory may not reach the next request. Keep shared state
-//! in a database.
+//! `npx vercel login` and `npx vercel deploy --prod`. Vercel may run more than
+//! one instance of the function, so a value kept in memory may not reach the
+//! next request. Keep shared state in a database.
 
 use std::time::Duration;
 
