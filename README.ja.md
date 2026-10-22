@@ -11,7 +11,7 @@ Rust だけで書く Web フレームワークです。画面もブラウザで�
 - `cargo build` だけでビルドでき、Node も wasm も要りません。
 - 画面とサーバーの食い違いと、ルートに合わないリンクはコンパイルエラーになります（[hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/)）。
 - 最初の HTML にページの状態が入っています。アクションは変わった値だけを返し、ブラウザはその値を表示している箇所だけを書き換えます（[サーバーとのやり取り](https://imaimai17468.github.io/hypersig/ja/learn/server/)）。
-- サーバーの応答を待たずに画面を変える処理（楽観的更新）を、追加のコードなしで書けます。
+- ハイドレーションはありません。読み込み時、ランタイムはサーバーが HTML に書き込んだ状態を読むだけで、コンポーネントを実行し直しません（[hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/)）。
 - フォームの検証規則は一度書けば、ブラウザとサーバーの両方が同じ規則で検証します（[フォーム](https://imaimai17468.github.io/hypersig/ja/learn/forms/)）。
 - CSS のプロパティと値も型で検査します（[スタイル](https://imaimai17468.github.io/hypersig/ja/style/)）。
 - shadcn/ui の見た目のコンポーネント集と、訳の漏れをコンパイルエラーにする多言語化のクレートがあります（[コンポーネント](https://imaimai17468.github.io/hypersig/ja/components/)、[多言語化](https://imaimai17468.github.io/hypersig/ja/i18n/)）。
