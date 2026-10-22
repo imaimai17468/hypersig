@@ -78,7 +78,9 @@ it("sends a reconnect call again after the connection fails", async () => {
     .fn<Fetch>()
     .mockRejectedValueOnce(new TypeError("Failed to fetch"))
     .mockResolvedValueOnce(
-      new Response('event: hs-signals\ndata: {"found":"back"}\n\n', { status: 200 }),
+      new Response('event: hs-signals\ndata: {"found":"back"}\n\nevent: hs-end\ndata: {}\n\n', {
+        status: 200,
+      }),
     );
   vi.stubGlobal("fetch", fetch);
   const runtime = mount("timers");

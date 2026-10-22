@@ -335,13 +335,14 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 // The stream is read after this future returns, so it
                 // builds and writes its patches under the part on its own.
                 // An event it cannot write ends the response with an error,
-                // which closes the stream.
+                // which closes the stream before `hs-end`.
                 let events = InPart {
                     part: current_part(),
                     inner: Box::pin(
                         patches
                             .flat_map(|patches| stream::iter(patches.into_events()))
-                            .map(|event| to_sse(&event)),
+                            .map(|event| to_sse(&event))
+                            .chain(stream::iter([Ok(end_of_stream())])),
                     ),
                 };
                 Ok::<_, RequestError>(keep_alive(Sse::new(events)).into_response())
@@ -1306,6 +1307,13 @@ fn keep_alive<S>(sse: Sse<S>) -> Sse<axum::response::sse::KeepAliveStream<S>> {
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 fn keep_alive<S>(sse: Sse<S>) -> Sse<S> {
     sse
+}
+
+/// The last event of a stream whose handler's stream finished. The runtime
+/// reopens a stream with `reconnect` that ends without it, which is how a
+/// host that closes a response at a time limit ends it.
+fn end_of_stream() -> SseEvent {
+    SseEvent::default().event("hs-end").data("{}")
 }
 
 fn to_sse(event: &PatchEvent) -> Result<SseEvent, PartMismatch> {

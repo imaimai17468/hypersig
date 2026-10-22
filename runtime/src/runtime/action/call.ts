@@ -11,6 +11,8 @@ const LAST_RETRY_MS = 30_000;
 const UPLOAD_HEADER = "hypersig-upload";
 /** The header that tells the server which page field the part that made a call sits at. */
 const PART_HEADER = "hypersig-part";
+/** The event `crates/hypersig/src/axum.rs` sends last on a stream whose handler finished. */
+const END_EVENT = "hs-end";
 
 /** A call in progress: what it sends, and what it reports to while it waits. */
 interface Pending {
@@ -136,7 +138,7 @@ export class Calls {
   async #attempt(call: Pending, url: URL, delay: number): Promise<void> {
     let opened = false;
     let wait = delay;
-    const failure = await this.#send(url, call.init, call.error, () => {
+    const failure = await this.#send(url, call.init, call.error, call.options.reconnect, () => {
       wait = FIRST_RETRY_MS;
       if (call.open === null) return;
       opened = true;
@@ -162,13 +164,16 @@ export class Calls {
 
   /**
    * Sends one request and applies the events of its answer. Returns `null`
-   * once the server ends the stream, or the failure. `connected` runs when
-   * the server answers with a 2xx status.
+   * once the server ends the stream, or the failure. With `ends`, an answer
+   * that closes before `hs-end` is a failure, which is how a host that cuts
+   * a response at a time limit ends it. `connected` runs when the server
+   * answers with a 2xx status.
    */
   async #send(
     url: URL,
     init: RequestInit,
     error: string | null,
+    ends: boolean,
     connected: () => void,
   ): Promise<Failure | null> {
     try {
@@ -181,7 +186,13 @@ export class Calls {
       }
       connected();
       if (error !== null) this.#rt.store.set(error, "");
-      await readEventStream(response.body, (event) => this.#rt.actions.patches.apply(event));
+      let ended = false;
+      await readEventStream(response.body, (event) => {
+        if (event.event === END_EVENT) ended = true;
+        else this.#rt.actions.patches.apply(event);
+      });
+      if (ends && !ended)
+        return { message: "the stream closed before the server ended it", status: 0 };
       return null;
     } catch (cause) {
       return { message: String(cause), status: 0 };

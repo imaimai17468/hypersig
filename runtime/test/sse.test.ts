@@ -25,3 +25,12 @@ it("reassembles events split across chunks", async () => {
     { event: "hs-element", data: '{"html":"<p id=x></p>"}' },
   ]);
 });
+
+it("drops an event the body ends inside, before its blank line", async () => {
+  const events: ServerEvent[] = [];
+  await readEventStream(
+    streamOf('event: hs-signals\ndata: {"a":1}\n\nevent: hs-signals\ndata: {"a":'),
+    (event) => events.push(event),
+  );
+  expect(events).toEqual([{ event: "hs-signals", data: '{"a":1}' }]);
+});

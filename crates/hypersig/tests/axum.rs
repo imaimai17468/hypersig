@@ -5,10 +5,12 @@ use axum::body::Body;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, HeaderName, Request, StatusCode, header};
+use futures::{StreamExt as _, stream};
 use http_body_util::BodyExt as _;
 use hypersig::html::{a, p};
 use hypersig::{
     Action, Page, PageResponse, Patches, Rest, Route, RouterExt, Search, Segment, Signals,
+    StreamAction,
 };
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
@@ -21,6 +23,7 @@ struct Counter {
 const ADD: Action<Counter, (i32, i32)> = Action::post("/add");
 const PEEK: Action<Counter, i32> = Action::get("/peek");
 const MOVE: Action<Counter, i32> = Action::post("/move");
+const TICKS: StreamAction<Counter, i32> = StreamAction::new("/ticks");
 
 hypersig::routes! {
     fn pages(Router<()>);
@@ -98,6 +101,9 @@ fn app() -> Router {
             Patches::from(Counter::count().patch(id))
                 .navigate(ORG_MEMBER.url(("acme".to_owned(), id)))
         })
+        .stream(TICKS, |(), from: i32| {
+            stream::iter([from, from + 1]).map(|count| Counter::count().patch(count).into())
+        })
         .nest("/legacy", legacy_pages(Router::new()))
 }
 
@@ -117,6 +123,24 @@ async fn send(request: Request<Body>) -> (StatusCode, String) {
         status,
         String::from_utf8(body.to_vec()).expect("utf-8 body"),
     )
+}
+
+#[tokio::test]
+async fn a_stream_ends_with_hs_end_once_its_handler_finishes() {
+    let (status, body) = send(
+        Request::get("/ticks?args=4")
+            .header("accept", "text/event-stream")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":4}\n\n\
+         event: hs-signals\ndata: {\"count\":5}\n\n\
+         event: hs-end\ndata: {}\n\n"
+    );
 }
 
 #[tokio::test]

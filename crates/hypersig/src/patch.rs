@@ -11,6 +11,11 @@
 //! | `hs-navigate` | `{"url": "..."}`, the page the browser loads next |
 //! | `hs-history` | `{"url": "...", "replace": bool}`, the URL the address bar shows, without loading it |
 //!
+//! A stream served with `RouterExt::stream` sends one more event last, once
+//! its handler's stream finishes: `hs-end` with the data `{}`. It patches
+//! nothing. The runtime opens a stream called with `reconnect` again when the
+//! response closes before it.
+//!
 //! A patch answering a call made inside a [`Part`](crate::Part) is written
 //! under the page field the part sits at: each key of `hs-signals` starts
 //! with that field, and the fragment of `hs-element` was rendered with its

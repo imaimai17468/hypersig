@@ -3,7 +3,12 @@ export interface ServerEvent {
   readonly data: string;
 }
 
-/** Reads a `text/event-stream` body and calls `onEvent` for each complete event. */
+/**
+ * Reads a `text/event-stream` body and calls `onEvent` for each complete
+ * event. An event the body ends inside, before its blank line, is dropped,
+ * as the EventSource specification drops it, because a connection cut in the
+ * middle of an event leaves only part of its data.
+ */
 export async function readEventStream(
   body: ReadableStream<Uint8Array>,
   onEvent: (event: ServerEvent) => void,
@@ -42,5 +47,4 @@ export async function readEventStream(
     [Symbol.asyncIterator]: () => ({ next: () => reader.read() }),
   };
   for await (const chunk of chunks) take(chunk);
-  dispatch();
 }

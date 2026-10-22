@@ -2160,8 +2160,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "reconnect",
                             "struct.StreamCall.html#method.reconnect",
                             L {
-                                en: "Opens the stream again when its connection fails or the server answers 5xx.",
-                                ja: "接続が失敗したときやサーバーが 5xx を返したときに、ストリームを開き直します。",
+                                en: "Opens the stream again when its connection fails, breaks off, or answers 5xx.",
+                                ja: "接続が失敗したとき、途中で切れたとき、5xx が返ったときに、ストリームを開き直します。",
                             },
                         ),
                     ],
