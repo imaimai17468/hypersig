@@ -11,7 +11,7 @@ A web framework written all in Rust: the page, its behavior in the browser, and 
 - `cargo build` builds it, with no Node and no wasm.
 - A mismatch between the page and the server is a compile error, and so is a link that does not fit a route ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
 - The first HTML already holds the page's state. An action answers with only the values that changed, and the browser rewrites only what shows them ([Talking to the server](https://imaimai17468.github.io/hypersig/learn/server/)).
-- Changing the page before the server answers (an optimistic update) takes no extra code.
+- The page needs no hydration. On load, the runtime reads the state the server wrote into the HTML and runs no component again ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
 - Form rules are written once, and the browser and the server check them with the same rules ([Forms](https://imaimai17468.github.io/hypersig/learn/forms/)).
 - CSS properties and values are type-checked too ([Styling](https://imaimai17468.github.io/hypersig/style/)).
 - A component set that looks like shadcn/ui, and a translation crate that makes a missing translation a compile error ([Components](https://imaimai17468.github.io/hypersig/components/), [Translations](https://imaimai17468.github.io/hypersig/i18n/)).
