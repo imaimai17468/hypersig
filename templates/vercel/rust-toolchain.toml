@@ -1,0 +1,6 @@
+# Vercel's build image comes with an older Rust than hypersig needs, and
+# rustup installs this one on the first `cargo build` there.
+[toolchain]
+channel = "1.99"
+profile = "minimal"
+components = ["rustfmt", "clippy"]

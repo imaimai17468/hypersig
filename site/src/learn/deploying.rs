@@ -398,6 +398,10 @@ npx vercel deploy --prod",
                         "Sends every path to `/api/app`, so the axum `Router` sees each request with its own path.",
                     ],
                     &["`.vercelignore`", "Keeps `target` out of the upload."],
+                    &[
+                        "`rust-toolchain.toml`",
+                        "Names Rust 1.99, which rustup installs on Vercel's build image, whose own Rust is older than hypersig needs.",
+                    ],
                 ],
                 ja: &[
                     &[
@@ -415,6 +419,10 @@ npx vercel deploy --prod",
                     &[
                         "`.vercelignore`",
                         "`target` をアップロードの対象から外します。",
+                    ],
+                    &[
+                        "`rust-toolchain.toml`",
+                        "Rust 1.99 を指定します。Vercel のビルド環境にある Rust は hypersig が必要とするものより古いので、rustup がこのバージョンをインストールします。",
                     ],
                 ],
             },
@@ -462,7 +470,7 @@ fn vercel_existing(site: Site) -> Part {
                         "Move it to `api/app.rs`, and replace the listener and `axum::serve` with the template's last line, which wraps the `Router` in `VercelLayer` and runs it.",
                     ],
                     &[
-                        "`vercel.json`, `.vercelignore`",
+                        "`vercel.json`, `.vercelignore`, `rust-toolchain.toml`",
                         "Copy them from `templates/vercel`.",
                     ],
                 ],
@@ -476,7 +484,7 @@ fn vercel_existing(site: Site) -> Part {
                         "`api/app.rs` に移し、リスナーと `axum::serve` をテンプレートの最後の行に置き換えます。この行は `Router` を `VercelLayer` で包んで実行します。",
                     ],
                     &[
-                        "`vercel.json`、`.vercelignore`",
+                        "`vercel.json`、`.vercelignore`、`rust-toolchain.toml`",
                         "`templates/vercel` からコピーします。",
                     ],
                 ],
@@ -511,8 +519,8 @@ fn on_vercel(site: Site) -> Part {
                     ja: "`VercelLayer` はリクエストの本文をすべて読んでから `Router` に渡します。ファイルのアップロードを少しずつ読むコードでも、本文は一度にメモリに載ります。Vercel は 4.5 MB を超える本文を受け付けません。",
                 },
                 L {
-                    en: "`hypersig_runtime()` sends the runtime compressed with Brotli, with `Content-Encoding: br`. The end-to-end tests run the function only outside Vercel, so whether Vercel passes that file to the browser unchanged has not been checked here.",
-                    ja: "`hypersig_runtime()` はランタイムを Brotli で圧縮し、`Content-Encoding: br` を付けて送ります。E2E テストは関数を Vercel の外でしか動かしていないので、Vercel がこのファイルをそのままブラウザに渡すかどうかはまだ確かめていません。",
+                    en: "`hypersig_runtime()` sends the runtime compressed with Brotli, with `Content-Encoding: br`. Vercel compresses it again on the way, so the bytes the browser receives differ from the ones the function sent, but they are compressed once and decode to the same runtime.",
+                    ja: "`hypersig_runtime()` はランタイムを Brotli で圧縮し、`Content-Encoding: br` を付けて送ります。Vercel は途中でこれを圧縮し直すので、ブラウザが受け取るバイト列は関数が送ったものと変わります。ただし圧縮は 1 回だけで、展開すると同じランタイムになります。",
                 },
             ],
         ),
