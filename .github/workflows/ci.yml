@@ -113,9 +113,38 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@v2
         with:
-          tool: worker-build@0.8.7
+          # The worker-build cache below holds ~/.cargo/bin/worker-build and
+          # the two files where cargo records what it installed.
+          cache-bin: false
+      # worker-build has no prebuilt binary, so cargo compiles it, which takes
+      # about two minutes. The template's wrangler.toml runs the same `cargo
+      # install` again, and cargo skips it only when .crates.toml lists the
+      # version, so the cache holds that file next to the binary.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/bin/worker-build
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+          key: worker-build-0.8.7-${{ runner.os }}
+      - run: cargo install --locked worker-build@0.8.7
+      # The Cloudflare template builds in its own target directory under
+      # target/templates, which rust-cache drops when it cleans target. This
+      # step comes after rust-cache so that its save, which runs in reverse
+      # order, happens before that cleaning. ~/.cache/worker-build holds the
+      # wasm-bindgen, wasm-opt, and esbuild that worker-build downloads.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            target/templates/cloudflare/target
+            ~/.cache/worker-build
+          key: cloudflare-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'templates/cloudflare/**') }}
+          restore-keys: cloudflare-${{ runner.os }}-
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/pnpm-lock.yaml') }}
       - uses: pnpm/action-setup@v6
         with:
           package_json_file: e2e/package.json
