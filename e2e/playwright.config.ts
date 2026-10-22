@@ -6,7 +6,10 @@ const examples = { counter: 3100, todo: 3101, todomvc: 3102, showcase: 3103, sty
 /** Each worker runs under `wrangler dev` on its own port. */
 const workers = { cloudflare: 3110 } as const;
 
-const ports = { ...examples, ...workers };
+/** Each Vercel Function runs as its own binary, which listens where `VERCEL_DEV_PORT` says. */
+const functions = { vercel: 3111 } as const;
+
+const ports = { ...examples, ...workers, ...functions };
 
 export const url = (example: keyof typeof ports): string => `http://127.0.0.1:${ports[example]}/`;
 
@@ -41,6 +44,17 @@ export default defineConfig({
       cwd: "..",
       env: { WRANGLER_SEND_METRICS: "false" },
       url: `http://127.0.0.1:${workers.cloudflare}/`,
+      timeout: 600_000,
+      reuseExistingServer: false,
+    },
+    // Outside Vercel, `vercel_runtime::run` serves plain HTTP through the same
+    // `VercelLayer` the deployed function uses, so the template runs without
+    // the Vercel CLI or an account.
+    {
+      command: `dir=$(templates/stage.sh vercel) && cd "$dir" && cargo run --release --quiet`,
+      cwd: "..",
+      env: { VERCEL_DEV_PORT: String(functions.vercel) },
+      url: `http://127.0.0.1:${functions.vercel}/`,
       timeout: 600_000,
       reuseExistingServer: false,
     },

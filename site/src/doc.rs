@@ -42,8 +42,11 @@ pub enum Learn {
     Styling,
     EscapeHatches,
     JavaScript,
-    Deploying,
     Security,
+    Deploying,
+    DeployContainer,
+    DeployCloudflare,
+    DeployVercel,
 }
 
 /// The pages of the Reference section, one per group of items.
@@ -256,8 +259,19 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::Styling),
             Doc::Learn(Learn::EscapeHatches),
             Doc::Learn(Learn::JavaScript),
-            Doc::Learn(Learn::Deploying),
             Doc::Learn(Learn::Security),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Deploy",
+            ja: "デプロイ",
+        },
+        docs: &[
+            Doc::Learn(Learn::Deploying),
+            Doc::Learn(Learn::DeployContainer),
+            Doc::Learn(Learn::DeployCloudflare),
+            Doc::Learn(Learn::DeployVercel),
         ],
     },
 ];
@@ -476,8 +490,11 @@ impl Doc {
         Self::Learn(Learn::Styling),
         Self::Learn(Learn::EscapeHatches),
         Self::Learn(Learn::JavaScript),
-        Self::Learn(Learn::Deploying),
         Self::Learn(Learn::Security),
+        Self::Learn(Learn::Deploying),
+        Self::Learn(Learn::DeployContainer),
+        Self::Learn(Learn::DeployCloudflare),
+        Self::Learn(Learn::DeployVercel),
         Self::Reference(Reference::Overview),
         Self::Reference(Reference::Page),
         Self::Reference(Reference::El),
@@ -586,7 +603,10 @@ impl Doc {
                     "束縛と文で足りないとき",
                 ),
                 Learn::JavaScript => ("JavaScript libraries", "JavaScript のライブラリ"),
-                Learn::Deploying => ("Deploying", "デプロイ"),
+                Learn::Deploying => ("Choosing a host", "デプロイ先の選び方"),
+                Learn::DeployContainer => ("In a container", "コンテナ"),
+                Learn::DeployCloudflare => ("Cloudflare Workers", "Cloudflare Workers"),
+                Learn::DeployVercel => ("Vercel", "Vercel"),
                 Learn::Security => ("Security", "セキュリティ"),
             },
             Self::Reference(page) => match page {
@@ -691,8 +711,20 @@ impl Doc {
                     ja: "地図、グラフ、リッチテキストエディタは、ブラウザで JavaScript のライブラリとして動きます。カスタム要素で包むと、ページのシグナルから値を受け取り、イベントを型付きの値としてページに返せます。",
                 },
                 Learn::Deploying => L {
-                    en: "A template gives a project that deploys as it is: a container image for a container host, or a worker for Cloudflare Workers. Each takes a few commands from an empty directory to a running application.",
-                    ja: "テンプレートから、そのままデプロイできるプロジェクトを作れます。コンテナのホスト向けのイメージと、Cloudflare Workers 向けの Worker の 2 つがあり、どちらも空のディレクトリから数行のコマンドで動くところまで進みます。",
+                    en: "A template gives a project that deploys as it is: a container image for a container host, a worker for Cloudflare Workers, or a function for Vercel. Each takes a few commands from an empty directory to a running application.",
+                    ja: "テンプレートから、そのままデプロイできるプロジェクトを作れます。コンテナのホスト向けのイメージ、Cloudflare Workers 向けの Worker、Vercel 向けの関数の 3 つがあり、どれも空のディレクトリから数行のコマンドで動くところまで進みます。",
+                },
+                Learn::DeployContainer => L {
+                    en: "The server template builds a container image with Docker, which a host such as Fly.io, Cloud Run, or Render runs.",
+                    ja: "サーバーのテンプレートは Docker でコンテナのイメージを作ります。このイメージは Fly.io、Cloud Run、Render のようなホストで動きます。",
+                },
+                Learn::DeployCloudflare => L {
+                    en: "The Workers template compiles the same pages, actions, and streams to wasm, and the worker hands each request to the axum `Router`.",
+                    ja: "Workers のテンプレートは同じページ、アクション、ストリームを wasm にコンパイルし、Worker は受けたリクエストを axum の `Router` に渡します。",
+                },
+                Learn::DeployVercel => L {
+                    en: "The Vercel template runs the same pages, actions, and streams as a Vercel Function, where `VercelLayer` hands each request to the axum `Router`.",
+                    ja: "Vercel のテンプレートは同じページ、アクション、ストリームを Vercel の関数として動かし、`VercelLayer` が受けたリクエストを axum の `Router` に渡します。",
                 },
                 Learn::Security => L {
                     en: "What hypersig checks so that a page and its actions resist what a visitor can send, why data from the browser cannot run code on the server, and what is left to the application.",
@@ -872,6 +904,9 @@ impl Learn {
             Self::EscapeHatches => "escape-hatches",
             Self::JavaScript => "javascript",
             Self::Deploying => "deploying",
+            Self::DeployContainer => "deploying/container",
+            Self::DeployCloudflare => "deploying/cloudflare",
+            Self::DeployVercel => "deploying/vercel",
             Self::Security => "security",
         }
     }

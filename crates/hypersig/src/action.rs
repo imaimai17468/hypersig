@@ -542,15 +542,18 @@ impl<S> StreamCall<S> {
         Self(self.0.error(message))
     }
 
-    /// Opens the stream again when its connection fails or the server answers 5xx.
+    /// Opens the stream again when its connection fails, breaks off, or answers 5xx.
     ///
     /// The first attempt waits 1 second, and each later one twice as long,
     /// up to 30 seconds. A connection that the server answered with a 2xx
     /// status starts the wait over. While the stream is failing, the
     /// [`error`](StreamCall::error) signal holds the last failure.
     ///
-    /// A stream the server ends is not opened again, and neither is one whose
-    /// element has left the page. Each attempt evaluates the arguments again
+    /// The server sends the event `hs-end` last once the handler's stream
+    /// finishes, and a stream that ended with it is not opened again. A
+    /// response that closes before it, as a host closes one at its time
+    /// limit, counts as broken off. A stream whose element has left the page
+    /// is not opened again either. Each attempt evaluates the arguments again
     /// and runs the handler with them. Pass a signal the stream's patches
     /// keep up to date, such as the id of the last message received, and the
     /// handler can send only what came after it. A stream whose arguments

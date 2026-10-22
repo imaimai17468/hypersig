@@ -1,7 +1,7 @@
 //! Patches the server sends back to the page, and the fragments they replace.
 //!
 //! On the wire each patch is one Server-Sent Event with a single-line JSON
-//! payload. The runtime in `runtime/src/runtime.ts` reads five event names:
+//! payload. The runtime in `runtime/src/runtime.ts` reads five patch events:
 //!
 //! | Event | Data |
 //! |---|---|
@@ -10,6 +10,11 @@
 //! | `hs-element` | `{"html": "...", "css": [[sort key, css], ...]}`, morphed into the element with the root's `id` |
 //! | `hs-navigate` | `{"url": "..."}`, the page the browser loads next |
 //! | `hs-history` | `{"url": "...", "replace": bool}`, the URL the address bar shows, without loading it |
+//!
+//! A stream served with `RouterExt::stream` sends one more event last, once
+//! its handler's stream finishes: `hs-end` with the data `{}`. It patches
+//! nothing. The runtime, in `runtime/src/runtime/action/call.ts`, opens a
+//! stream called with `reconnect` again when the response closes before it.
 //!
 //! A patch answering a call made inside a [`Part`](crate::Part) is written
 //! under the page field the part sits at: each key of `hs-signals` starts

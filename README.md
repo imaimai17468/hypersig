@@ -108,7 +108,7 @@ Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the 
 
 ## Deploying
 
-[Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) creates a project from a template in [`templates/`](templates) and takes it to a running application in a few commands. `templates/server` builds a container image with Docker for a host such as Fly.io, Cloud Run, or Render. `templates/cloudflare` runs the same pages, actions, and streams on Cloudflare Workers, where the worker hands each request to the axum `Router`. Both are created with `cargo generate`, and the Workers one also needs Node.js, because Cloudflare publishes its command-line tool `wrangler` only on npm. The page also covers a project you already have: adding the template's `Dockerfile` to it, or turning it into a worker.
+[Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) creates a project from a template in [`templates/`](templates) and takes it to a running application in a few commands. `templates/server` builds a container image with Docker for a host such as Fly.io, Cloud Run, or Render. `templates/cloudflare` runs the same pages, actions, and streams on Cloudflare Workers, where the worker hands each request to the axum `Router`. `templates/vercel` runs them as a Vercel Function, where `vercel_runtime`'s `VercelLayer` does the same. Each is created with `cargo generate`. The Workers and Vercel ones also need Node.js, because Cloudflare publishes its command-line tool `wrangler` and Vercel its tool `vercel` on npm. The page for each host also covers a project you already have: adding the template's `Dockerfile` to it, or turning it into a worker or a Vercel Function.
 
 ## Security
 

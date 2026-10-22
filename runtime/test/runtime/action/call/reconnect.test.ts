@@ -15,6 +15,9 @@ afterEach(() => {
 
 const signals = (results: string) => `event: hs-signals\ndata: {"results":"${results}"}\n\n`;
 
+/** The event the server sends last on a stream whose handler finished. */
+const end = "event: hs-end\ndata: {}\n\n";
+
 const feed = `<p data-hs-on-load='["call","GET","/feed",null,null,"problem",["reconnect"]]'></p>`;
 
 /** A stream that sends `body` and then fails, as a connection the server drops does. */
@@ -36,7 +39,7 @@ it("sends the request again after a dropped stream and a refused connection, wai
     .fn<Fetch>()
     .mockResolvedValueOnce(droppedResponse(signals("one")))
     .mockRejectedValueOnce(new TypeError("Failed to fetch"))
-    .mockResolvedValueOnce(sseResponse(signals("three")));
+    .mockResolvedValueOnce(sseResponse(signals("three") + end));
   vi.stubGlobal("fetch", fetch);
   const runtime = mount(feed, { results: "", problem: "" });
   await vi.advanceTimersByTimeAsync(0);
@@ -53,6 +56,40 @@ it("sends the request again after a dropped stream and a refused connection, wai
   expect(runtime.store.get("problem")).toBe("");
   await vi.advanceTimersByTimeAsync(60_000);
   expect(fetch).toHaveBeenCalledTimes(3);
+});
+
+it("opens a stream again once 1 second after the host closes it before the server ended it", async () => {
+  const fetch = vi
+    .fn<Fetch>()
+    .mockResolvedValueOnce(sseResponse(signals("one")))
+    .mockResolvedValueOnce(sseResponse(signals("two") + end));
+  vi.stubGlobal("fetch", fetch);
+  const runtime = mount(feed, { results: "", problem: "" });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(runtime.store.get("results")).toBe("one");
+  expect(runtime.store.get("problem")).toBe("the stream closed before the server ended it");
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(runtime.store.get("results")).toBe("two");
+  expect(runtime.store.get("problem")).toBe("");
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it("applies no part of an event the host cut off in the middle", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn<Fetch>()
+      .mockResolvedValueOnce(
+        sseResponse(signals("one") + 'event: hs-signals\ndata: {"results":"tw'),
+      )
+      .mockReturnValueOnce(new Promise<Response>(() => {})),
+  );
+  const runtime = mount(feed, { results: "", problem: "" });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(runtime.store.get("results")).toBe("one");
+  expect(runtime.store.get("problem")).toBe("the stream closed before the server ended it");
 });
 
 it("evaluates the arguments again for each attempt, so the stream can start after what the page holds", async () => {

@@ -12,7 +12,7 @@ mkdir -p "$dest"
 # Keeps the copy's target and build, so a second run is quick.
 find "$dest" -mindepth 1 -maxdepth 1 ! -name target ! -name build -exec rm -rf {} +
 tar -C "$root/templates/$name" --exclude ./target --exclude ./build \
-  --exclude ./.wrangler --exclude ./Cargo.lock -cf - . | tar -C "$dest" -xf -
+  --exclude ./.wrangler --exclude ./.vercel --exclude ./Cargo.lock -cf - . | tar -C "$dest" -xf -
 # cargo generate fills the placeholder with the name it is given.
 # grep exits with 1 when no file holds it.
 files=$(grep -rlF '{{project-name}}' "$dest" --exclude-dir target || true)

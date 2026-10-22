@@ -33,6 +33,9 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::EscapeHatches => server::escape_hatches(site),
         Learn::JavaScript => javascript::javascript(site),
         Learn::Deploying => deploying::deploying(site),
+        Learn::DeployContainer => deploying::container::page(site),
+        Learn::DeployCloudflare => deploying::cloudflare::page(site),
+        Learn::DeployVercel => deploying::vercel::page(site),
         Learn::Security => security::security(site),
     }
 }
