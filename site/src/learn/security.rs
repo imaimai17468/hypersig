@@ -64,15 +64,15 @@ fn output(site: Site) -> Part {
                     ],
                     &[
                         "`javascript:` のようなリンクがスクリプトを動かす",
-                        "`El::href` と `El::src` はルートへの `Link` か `SafeUrl` を受け取ります。`SafeUrl` が持てるのは `http:`、`https:`、`mailto:` か相対 URL だけです。訪問者が入力した URL は `SafeUrl::parse` で確かめ、シグナルの `SafeUrl` のフィールドはデシリアライズのときにもう一度確かめます。`attr` と `bind_attr` は `href`、`src`、`on*` のハンドラ、`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv` を大文字と小文字を区別せずに断り、英数字、`-`、`_`、`.`、`:` 以外を含む名前も断って、パニックします。`attributeName` が `href` の SVG のアニメーションもパニックし、`bind_attr` は `attributeName` を書きません。",
+                        "`El::href` と `El::src` はルートへの `Link` か `SafeUrl` を受け取ります。`SafeUrl` が持てるのは `http:`、`https:`、`mailto:` か相対 URL だけです。訪問者が入力した URL は `SafeUrl::parse` で確かめ、シグナルの `SafeUrl` のフィールドはデシリアライズのときにもう一度確かめます。`attr` と `bind_attr` は `href`、`src`、`on*` のハンドラ、`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv` を大文字と小文字を区別せずに拒否し、英数字、`-`、`_`、`.`、`:` 以外を含む名前も拒否して、パニックします。`attributeName` が `href` の SVG のアニメーションもパニックし、`bind_attr` は `attributeName` を書きません。",
                     ],
                     &[
                         "URL がブラウザを別のホストへ送る",
                         "`Url` は `Route::url` からしか作れません。`Rest` の値の先頭の `/` と続いた `/` は `%2F` と書きます。最初のセグメントが空でパスが `//` で始まるときは前に `/.` を付けるので、ルートが書く URL とリンクが別のホストを指すことはありません。",
                     ],
                     &[
-                        "スタイルの値が宣言や規則を足す",
-                        "CSS の文字列は制御文字、`\"`、`\\`、`<` をすべてエスケープします。束縛したスタイルの値のうち宣言を終わらせうるものはランタイムに任せ、ランタイムの `setProperty` がそれを断ります。`raw` はエスケープ、コメント、`;`、`{`、`}`、`<` と、閉じていない引用符や括弧を断ります。`Stylesheet::new` は `</style` をコンパイル時に断ります。",
+                        "スタイルの値が宣言や規則を追加する",
+                        "CSS の文字列は制御文字、`\"`、`\\`、`<` をすべてエスケープします。束縛したスタイルの値のうち宣言を終わらせうるものはランタイムに任せ、ランタイムの `setProperty` がそれを拒否します。`raw` はエスケープ、コメント、`;`、`{`、`}`、`<` と、閉じていない引用符や括弧を拒否します。`Stylesheet::new` は `</style` をコンパイル時に拒否します。",
                     ],
                     &[
                         "ランタイムがページにあるコードを動かす",
@@ -140,7 +140,7 @@ fn requests(site: Site) -> Part {
                         "403",
                     ],
                     &[
-                        "本文が `application/json` でない POST。フォームはこの形式を送れず、別のサイトのスクリプトはプリフライトのあとでしか送れず、このサーバーはプリフライトに答えません",
+                        "本文が `application/json` でない POST。フォームはこの形式を送れず、別のサイトのスクリプトはプリフライトのあとでしか送れず、このサーバーはプリフライトに応答しません",
                         "415",
                     ],
                     &[
@@ -148,7 +148,7 @@ fn requests(site: Site) -> Part {
                         "403",
                     ],
                     &[
-                        "プリフライトが要る `hypersig-upload` のヘッダーのないアップロード",
+                        "プリフライトが必要な `hypersig-upload` のヘッダーのないアップロード",
                         "403",
                     ],
                     &[
@@ -198,7 +198,7 @@ fn server_code(site: Site) -> Part {
             &[
                 L {
                     en: "The router decides which handler runs from the request's path and method, and the routes are fixed when the program starts. A request cannot add a route or pick a handler by name.",
-                    ja: "どのハンドラが動くかは、ルーターがリクエストのパスとメソッドから決め、ルートはプログラムの起動時に決まっています。リクエストがルートを足したり、名前でハンドラを選んだりすることはできません。",
+                    ja: "どのハンドラが動くかは、ルーターがリクエストのパスとメソッドから決め、ルートはプログラムの起動時に決まっています。リクエストがルートを追加したり、名前でハンドラを選んだりすることはできません。",
                 },
                 L {
                     en: "The request carries only the arguments, as JSON. `serde_json` reads them into the argument type the action declared at compile time, and anything that does not fit gets a 400. The JSON has no form for a function, a reference to a server object, or a class to construct, so reading it builds data and calls nothing.",
@@ -206,7 +206,7 @@ fn server_code(site: Site) -> Part {
                 },
                 L {
                     en: "`serde_json` stops at 128 levels of nesting, so a deeply nested body is refused rather than exhausting the stack.",
-                    ja: "`serde_json` は入れ子が 128 段を超えると読むのをやめるので、深く入れ子にした本文はスタックを使い切る前に断られます。",
+                    ja: "`serde_json` は入れ子が 128 段を超えると読むのをやめるので、深く入れ子にした本文はスタックを使い切る前に拒否されます。",
                 },
                 L {
                     en: "The server evaluates only the expressions the application's Rust code built, to write the first HTML. It never evaluates an expression or a template that arrived in a request, and it reads no file named by one.",
@@ -214,7 +214,7 @@ fn server_code(site: Site) -> Part {
                 },
                 L {
                     en: "The crates forbid `unsafe`, so a malformed request cannot corrupt memory in them.",
-                    ja: "クレートは `unsafe` を禁じているので、不正なリクエストでクレートのメモリを壊すことはできません。",
+                    ja: "クレートは `unsafe` を禁じているので、不正なリクエストでクレートのメモリを破壊することはできません。",
                 },
             ],
         ),
@@ -277,7 +277,7 @@ fn tested(site: Site) -> Part {
             site,
             L {
                 en: "Each refusal above has a test in the repository: the escaping and the attribute checks in the tests of the HTML builder and of the style values, the requests in `crates/hypersig/tests/axum.rs` and `upload.rs`, the frame headers in `framing.rs`, and the compile errors in the trybuild cases under `crates/hypersig/tests/ui/fail`. The crates have been reviewed with Trail of Bits' sharp-edges, insecure-defaults, rust-review, and differential-review skills, and each finding they confirmed was fixed, is listed above as the application's to check, or fails only the request that caused it. No outside security audit has been done.",
-                ja: "上で挙げた検査には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するものです。外部のセキュリティ監査は受けていません。",
+                ja: "上で挙げた検査には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は、直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するかのいずれかです。外部のセキュリティ監査は受けていません。",
             },
         ),
     ])

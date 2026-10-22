@@ -156,7 +156,7 @@ hypersig_ui = "0.2""#,
                 },
                 L {
                     en: "The behavior a screen reader and a keyboard depend on comes from the browser where the browser has it: a native `<button>`, `<input>`, `<select>`, `<details>`, `<dialog>`, or `popover`. Where it does not, the component follows the WAI-ARIA Authoring Practices, with keyboard handling from `El::roving_focus` and `El::active_descendant`.",
-                    ja: "スクリーンリーダーやキーボードでの操作に要る振る舞いは、ブラウザに備わっていればブラウザのものを使います。ネイティブの `<button>`、`<input>`、`<select>`、`<details>`、`<dialog>`、`popover` です。ブラウザに備わっていない振る舞いは、コンポーネントが WAI-ARIA Authoring Practices に従って作り、キーボード操作は `El::roving_focus` と `El::active_descendant` で扱います。",
+                    ja: "スクリーンリーダーやキーボードでの操作に必要な振る舞いは、ブラウザに備わっていればブラウザのものを使います。ネイティブの `<button>`、`<input>`、`<select>`、`<details>`、`<dialog>`、`popover` です。ブラウザに備わっていない振る舞いは、コンポーネントが WAI-ARIA Authoring Practices に従って作り、キーボード操作は `El::roving_focus` と `El::active_descendant` で扱います。",
                 },
                 L {
                     en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox keep their names in a `const` handle that their parts share. A name that cannot be used in an id is a compile error.",
@@ -246,7 +246,7 @@ fn component_page(page: Component) -> Page {
                 },
                 L {
                     en: "An icon button has no text, so `icon_button` takes the label that names it as an argument. `button_style` gives the same look to an element that is not a button, such as a link.",
-                    ja: "アイコンボタンにはテキストがないので、`icon_button` はボタンの名前になるラベルを引数に取ります。`button_style` は、リンクのようなボタン以外の要素に同じ見た目を与えます。",
+                    ja: "アイコンボタンにはテキストがないので、`icon_button` はボタンの名前になるラベルを引数に取ります。`button_style` はリンクのようなボタン以外の要素に同じ見た目を与えます。",
                 },
             ],
             keys: &[(
@@ -393,7 +393,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.TextField.html#method.min_length",
                     L {
                         en: "Makes the browser refuse to submit fewer than `count` characters, as `minlength` does.",
-                        ja: "`minlength` と同じく、`count` 文字に満たない値をブラウザが送信させないようにします。",
+                        ja: "`minlength` と同じく、`count` 文字に満たない値をブラウザが送信しないようにします。",
                     },
                 ),
                 (
@@ -409,7 +409,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.TextField.html#method.description",
                     L {
                         en: "Adds a line under the field that `aria-describedby` points at.",
-                        ja: "フィールドの下に、`aria-describedby` が指す 1 行を足します。",
+                        ja: "フィールドの下に、`aria-describedby` が指す 1 行を追加します。",
                     },
                 ),
                 (
@@ -519,7 +519,7 @@ fn component_page(page: Component) -> Page {
             built_on: &[
                 L {
                     en: "Both are a native `<input type=\"checkbox\">` inside the `<label>` that holds the text, so a click on the text toggles them and they need no id. Because they need no id, they can also be bound to a field of a list item.",
-                    ja: "どちらもテキストを含む `<label>` の中に置いたネイティブの `<input type=\"checkbox\">` です。そのためテキストをクリックしても切り替わり、id も要りません。id が要らないので、リストの各項目のフィールドにも束縛できます。",
+                    ja: "どちらもテキストを含む `<label>` の中に置いたネイティブの `<input type=\"checkbox\">` です。そのためテキストをクリックしても切り替わり、id も不要です。id が不要なので、リストの各項目のフィールドにも束縛できます。",
                 },
                 L {
                     en: "The switch has `role=\"switch\"`, so a screen reader says \"switch, on\" rather than \"checkbox, checked\".",
@@ -631,7 +631,7 @@ fn component_page(page: Component) -> Page {
             built_on: &[
                 L {
                     en: "It is a native `<select>`, which a screen reader, a keyboard, and a phone's picker wheel already handle. The closed control is drawn like a text field with a chevron.",
-                    ja: "セレクトはネイティブの `<select>` なので、スクリーンリーダー、キーボード、スマートフォンのピッカーホイールがもともと扱えます。閉じた状態のコントロールは、山形の矢印が付いたテキストフィールドのように描かれます。",
+                    ja: "セレクトはネイティブの `<select>` なので、スクリーンリーダー、キーボード、スマートフォンのピッカーホイールがもともと対応しています。閉じた状態のコントロールは、山形の矢印が付いたテキストフィールドのように描かれます。",
                 },
                 L {
                     en: "Where the browser supports `appearance: base-select` and `::picker(select)`, which browser-compat-data 8.1.6 lists for Chrome 135 and Safari 27, the open list is drawn as a popover card too. Elsewhere it is the browser's own picker.",
@@ -814,7 +814,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.Listbox.html#method.option",
                     L {
                         en: "Adds an option labeled `title` that selects `value`.",
-                        ja: "`title` をラベルに持ち、`value` を選ぶ選択肢を足します。",
+                        ja: "`title` をラベルに持ち、`value` を選ぶ選択肢を追加します。",
                     },
                 ),
             ],
@@ -978,7 +978,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.Tabs.html#method.tab",
                     L {
                         en: "Adds a tab titled `title` that selects `value` and shows `panel`.",
-                        ja: "`title` をタイトルに持ち、`value` を選んで `panel` を表示するタブを足します。",
+                        ja: "`title` をタイトルに持ち、`value` を選んで `panel` を表示するタブを追加します。",
                     },
                 ),
             ],
@@ -1031,7 +1031,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.Accordion.html#method.item",
                     L {
                         en: "Adds a section titled `title` whose content is `content`.",
-                        ja: "`title` をタイトルに持ち、中身が `content` のセクションを足します。",
+                        ja: "`title` をタイトルに持ち、中身が `content` のセクションを追加します。",
                     },
                 ),
             ],
@@ -1135,11 +1135,11 @@ fn component_page(page: Component) -> Page {
             built_on: &[
                 L {
                     en: "Each is a `<nav>` named by the label it takes, holding a list of links, so a screen reader lists it among the page's landmarks. The links are typed `Link` values from routes, and the one to the page the visitor is on has `aria-current=\"page\"`.",
-                    ja: "どれも、受け取ったラベルを名前に持つ `<nav>` で、中にリンクの一覧を持ちます。そのため、スクリーンリーダーはページのランドマークの 1 つとして一覧に出します。リンクはルートから作った型付きの `Link` で、訪問者がいるページへのリンクは `aria-current=\"page\"` を持ちます。",
+                    ja: "どれも受け取ったラベルを名前に持つ `<nav>` で、中にリンクの一覧を持ちます。そのため、スクリーンリーダーはページのランドマークの 1 つとして一覧に出します。リンクはルートから作った型付きの `Link` で、訪問者がいるページへのリンクは `aria-current=\"page\"` を持ちます。",
                 },
                 L {
                     en: "`NavList` decides the mark on the server, from the page's own `Url` that `Route::url` writes. A link to the same path has `aria-current=\"page\"`, and a link to a path that the page's path continues has `aria-current=\"true\"`. `Breadcrumb::current` ends the trail with the current page as text and returns the element, so no link can follow it. `pagination` shows the first and the last page and the pages next to the current one, and marks the link to the page before or after `aria-disabled` where there is none. The links in the demo lead to pages of this site.",
-                    ja: "`NavList` は、`Route::url` で書いたページ自身の `Url` をもとに、サーバーで印を決めます。同じパスへのリンクは `aria-current=\"page\"` を持ち、ページのパスが続きとなるパスへのリンクは `aria-current=\"true\"` を持ちます。`Breadcrumb::current` は今のページをテキストとして最後に置き、要素を返すので、そのあとにリンクは続けられません。`pagination` は最初と最後のページ、今のページの前後のページを表示し、前や次のページがないときはそのリンクを `aria-disabled` にします。デモのリンクは、このサイトのページにつながります。",
+                    ja: "`NavList` は `Route::url` で書いたページ自身の `Url` をもとに、どのリンクに印を付けるかをサーバーで決めます。同じパスへのリンクは `aria-current=\"page\"` を持ち、ページのパスがリンク先のパスの続きになっているリンクは `aria-current=\"true\"` を持ちます。`Breadcrumb::current` は今のページをテキストとして最後に置き、要素を返すので、そのあとにリンクは続けられません。`pagination` は最初と最後のページ、今のページの前後のページを表示し、前や次のページがないときはそのリンクを `aria-disabled` にします。デモのリンクは、このサイトのページにつながります。",
                 },
             ],
             keys: &[],
@@ -1157,7 +1157,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.NavList.html#method.item",
                     L {
                         en: "Adds a link to `route` with the arguments `args`, as `Route::url` takes them.",
-                        ja: "`Route::url` と同じ形の引数 `args` を付けた、`route` へのリンクを足します。",
+                        ja: "`Route::url` と同じ形の引数 `args` を付けた、`route` へのリンクを追加します。",
                     },
                 ),
                 (
@@ -1173,7 +1173,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.Breadcrumb.html#method.link",
                     L {
                         en: "Adds a link to a page above the current one, after the links before it.",
-                        ja: "今のページより上のページへのリンクを、それまでのリンクのあとに足します。",
+                        ja: "今のページより上のページへのリンクを、それまでのリンクのあとに追加します。",
                     },
                 ),
                 (
@@ -1215,7 +1215,7 @@ fn component_page(page: Component) -> Page {
                 },
                 L {
                     en: "A column is built from a field of the row type, so a field of another struct does not compile, and the key that `sortable_column` sorts by must be a number or a string. The table keeps its filter text, page, and sort column in a `TableState` field of the page's signals, and sorting reorders the list signal itself. The selection is a list of the selected rows' keys in another signal of the page, so the row type holds no field for it and a `ServerTable` keeps it across pages.",
-                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。`sortable_column` で並べ替えるキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。選択は、選んだ行のキーのリストとしてページの別のシグナルに持つので、行の型に選択用のフィールドは要りません。`ServerTable` ではページを移っても選択が残ります。",
+                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。`sortable_column` で並べ替えるキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。選択は、選んだ行のキーのリストとしてページの別のシグナルに持つので、行の型に選択用のフィールドは不要です。`ServerTable` ではページを移っても選択が残ります。",
                 },
                 L {
                     en: "The browser counts the rows on each change, and with a filter and pagination both on, the work grows with the square of the number of rows. A list of thousands of rows belongs in a `ServerTable`. Its filter field, sortable headers, and page buttons write the `TableState` and then call an action with it, and the action answers with a patch of the page's rows and the total. A sortable column takes an enum with `#[derive(Segment)]` as its key, and the server reads it back from the state with `TableState::sorting`. The demo below runs in the browser alone, since this site has no server, and `examples/ui` has a `ServerTable` beside its `DataTable`.",
@@ -1223,7 +1223,7 @@ fn component_page(page: Component) -> Page {
                 },
                 L {
                     en: "To keep a `ServerTable`'s state in the URL, give the page a route whose search parameters are the application's own struct with `#[derive(Search)]` and `Option` fields, so the address without a query string still loads. The page handler builds the `TableState` from it with `TableState::with_sorting`, and the action answers with `Patches::replace_url` of the URL its state names, so a reload or a shared link shows the same page of rows. `TableState` itself is not a search struct, because a URL without one of its fields would get a 400.",
-                    ja: "`ServerTable` の状態を URL に残すには、`Option` のフィールドを持ち `#[derive(Search)]` を付けたアプリケーション自身の構造体を、ページのルートのクエリパラメータにします。こうするとクエリ文字列のないアドレスも読み込めます。ページのハンドラはそこから `TableState::with_sorting` で `TableState` を作り、アクションは状態が指す URL を `Patches::replace_url` で答えに付けます。再読み込みしても、共有したリンクを開いても、同じページの行が出ます。`TableState` そのものをクエリパラメータにしないのは、フィールドが 1 つでも欠けた URL に 400 が返るためです。",
+                    ja: "`ServerTable` の状態を URL に残すには、`Option` のフィールドを持ち `#[derive(Search)]` を付けたアプリケーション自身の構造体を、ページのルートのクエリパラメータにします。こうするとクエリ文字列のないアドレスも読み込めます。ページのハンドラはそこから `TableState::with_sorting` で `TableState` を作り、アクションは状態が指す URL を `Patches::replace_url` で応答に含めます。再読み込みしても、共有したリンクを開いても、同じページの行が出ます。`TableState` そのものをクエリパラメータにしないのは、フィールドが 1 つでも欠けた URL に 400 が返るためです。",
                 },
             ],
             keys: &[
@@ -1262,7 +1262,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.DataTable.html#method.column",
                     L {
                         en: "Adds `column` after the columns added so far.",
-                        ja: "それまでに足した列の後ろに `column` を足します。",
+                        ja: "それまでに追加した列の後ろに `column` を追加します。",
                     },
                 ),
                 (
@@ -1270,7 +1270,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.DataTable.html#method.sortable_column",
                     L {
                         en: "Adds `column`, whose header sorts the rows by `key`, after the columns added so far.",
-                        ja: "見出しで行を `key` の順に並べ替える列 `column` を、それまでに足した列の後ろに足します。",
+                        ja: "見出しで行を `key` の順に並べ替える列 `column` を、それまでに追加した列の後ろに追加します。",
                     },
                 ),
                 (
@@ -1278,7 +1278,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.DataTable.html#method.selectable",
                     L {
                         en: "Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.",
-                        ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に足します。",
+                        ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に追加します。",
                     },
                 ),
                 (
@@ -1286,7 +1286,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.DataTable.html#method.expandable",
                     L {
                         en: "Adds a first column of buttons that show `details` of a row under it, keeping the `key` of each open row in `expanded`.",
-                        ja: "行の下に `details` を開閉するボタンの列を先頭に足し、開いている行の `key` を `expanded` に持ちます。",
+                        ja: "行の下に `details` を開閉するボタンの列を先頭に追加し、開いている行の `key` を `expanded` に持ちます。",
                     },
                 ),
                 (
@@ -1294,7 +1294,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.DataTable.html#method.filter",
                     L {
                         en: "Adds a field named `label` that shows the rows whose `text` contains its text.",
-                        ja: "`label` を名前に持つ欄を足し、`text` がその欄の文字列を含む行だけを表示します。",
+                        ja: "`label` を名前に持つ欄を追加し、`text` がその欄の文字列を含む行だけを表示します。",
                     },
                 ),
                 (
@@ -1310,7 +1310,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.DataTable.html#method.max_height",
                     L {
                         en: "Keeps the table at most `height` high, scrolling its rows under a header that stays in place.",
-                        ja: "表の高さを `height` までに抑え、見出しを止めたまま行をスクロールさせます。",
+                        ja: "表の高さを `height` までに抑え、見出しを固定したまま行をスクロールさせます。",
                     },
                 ),
                 (
@@ -1382,7 +1382,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.ServerTable.html#method.sortable_column",
                     L {
                         en: "Adds `column`, whose header asks the server to sort by `key`, after the columns added so far.",
-                        ja: "見出しでサーバーに `key` での並べ替えを求める列 `column` を、それまでに足した列の後ろに足します。",
+                        ja: "見出しでサーバーに `key` での並べ替えを求める列 `column` を、それまでに追加した列の後ろに追加します。",
                     },
                 ),
                 (
@@ -1390,7 +1390,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.ServerTable.html#method.selectable",
                     L {
                         en: "Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.",
-                        ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に足します。",
+                        ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に追加します。",
                     },
                 ),
                 (
@@ -1398,7 +1398,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.ServerTable.html#method.filter",
                     L {
                         en: "Adds a field named `label` whose text the server filters the rows by.",
-                        ja: "`label` を名前に持つ欄を足し、サーバーがその文字列で行を絞り込みます。",
+                        ja: "`label` を名前に持つ欄を追加し、サーバーがその文字列で行を絞り込みます。",
                     },
                 ),
                 (
@@ -1486,7 +1486,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.Chart.html#method.series",
                     L {
                         en: "Adds a series named `name` that draws the number field `field` in `color`.",
-                        ja: "数値のフィールド `field` を `color` で描く、`name` という名前の系列を足します。",
+                        ja: "数値のフィールド `field` を `color` で描く、`name` という名前の系列を追加します。",
                     },
                 ),
                 (
@@ -1494,7 +1494,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.Chart.html#method.max_labels",
                     L {
                         en: "Labels at most `count` rows along the axis of the categories, 12 until set.",
-                        ja: "カテゴリの軸にラベルを付ける行を最大 `count` 個にします。設定するまでは 12 個です。",
+                        ja: "カテゴリの軸にラベルを付ける行を最大 `count` 個にします。設定しなければ 12 個です。",
                     },
                 ),
                 (
@@ -1904,7 +1904,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.Toast.html#method.description",
                     L {
                         en: "Adds a line of text under the title.",
-                        ja: "タイトルの下に 1 行のテキストを足します。",
+                        ja: "タイトルの下に 1 行のテキストを追加します。",
                     },
                 ),
                 (

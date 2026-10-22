@@ -65,7 +65,7 @@ pub fn javascript(site: Site) -> Part {
             site,
             L {
                 en: "A library that is not a custom element, such as Leaflet, draws into the element it is given and adds children, classes, and inline styles to it. A server patch that reaches the element would set it back to what the server rendered. Mark the element with `El::foreign`, and a patch keeps it as it is while its bindings keep running. Among its siblings a patch finds it by its node ref's name, so an element added before it does not make the map start over.",
-                ja: "Leaflet のようにカスタム要素ではないライブラリは、渡された要素の中に描き、子要素やクラス、インラインスタイルを足します。サーバーのパッチがその要素に届くと、サーバーが描いた形に戻してしまいます。`El::foreign` を付けると、パッチはその要素をそのまま残し、要素の束縛は動き続けます。兄弟要素の中では node ref の名前でその要素を見つけるので、前に要素が増えても地図は作り直されません。",
+                ja: "Leaflet のようにカスタム要素ではないライブラリは、渡された要素の中に描き、子要素やクラス、インラインスタイルを追加します。サーバーのパッチがその要素に届くと、サーバーが描いた形に戻してしまいます。`El::foreign` を付けると、パッチはその要素をそのまま残し、要素の束縛は動き続けます。兄弟要素の中では node ref の名前でその要素を見つけるので、前に要素が増えても地図は作り直されません。",
             },
         ),
         show(Snippet::Foreign),

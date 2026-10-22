@@ -45,7 +45,7 @@ fn overview(site: Site, head: Part) -> Part {
             site,
             L {
                 en: "A second call to the same property's method under the same conditions replaces the earlier value, as a later declaration does in a CSS rule. `merge` adds the declarations of another style, and the added declarations override the original ones.",
-                ja: "同じ条件の下で同じプロパティのメソッドをもう一度呼ぶと、CSS のルールで後に書いた宣言と同じく、後の値が前の値を置き換えます。`merge` は別のスタイルの宣言を足し、足した側の宣言が元の宣言を上書きします。",
+                ja: "同じ条件の下で同じプロパティのメソッドをもう一度呼ぶと、CSS のルールで後に書いた宣言と同じく、後の値が前の値を置き換えます。`merge` は別のスタイルの宣言を追加し、追加した側の宣言が元の宣言を上書きします。",
             },
         ),
         heading(
@@ -80,7 +80,7 @@ fn overview(site: Site, head: Part) -> Part {
             site,
             L {
                 en: "`css_when(style, cond)` adds a style while a signal condition holds, and `css_match(value, cases)` picks one style per value of a signal, like the variants of a Panda CSS recipe. Their rules are in a later cascade layer than those of `css`, so while switched on they override the element's own declarations for the same property.",
-                ja: "`css_when(style, cond)` はシグナルの条件が成り立つ間だけスタイルを足し、`css_match(value, cases)` はシグナルの値ごとにスタイルを 1 つ選びます（Panda CSS の recipe の variants に当たります）。これらのルールは `css` のルールより後ろのカスケードレイヤーに入るので、有効な間は同じプロパティについて要素自身の宣言を上書きします。",
+                ja: "`css_when(style, cond)` はシグナルの条件が成り立つ間だけスタイルを追加し、`css_match(value, cases)` はシグナルの値ごとにスタイルを 1 つ選びます（Panda CSS の recipe の variants に当たります）。これらのルールは `css` のルールより後ろのカスケードレイヤーに入るので、有効な間は同じプロパティについて要素自身の宣言を上書きします。",
             },
         ),
         table_of(
@@ -117,7 +117,7 @@ fn overview(site: Site, head: Part) -> Part {
             site,
             L {
                 en: "The layers come in that order, so an element's classes override the global rules, and a switched-on style overrides both. A stylesheet added with `Page::style` is in no layer and overrides all four layers.",
-                ja: "レイヤーはこの順に並ぶので、要素のクラスはグローバルなルールを上書きし、有効になったスタイルはその両方を上書きします。`Page::style` で足したスタイルシートはどのレイヤーにも入らず、4 つのレイヤーすべてを上書きします。",
+                ja: "レイヤーはこの順に並ぶので、要素のクラスはグローバルなルールを上書きし、有効になったスタイルはその両方を上書きします。`Page::style` で追加したスタイルシートはどのレイヤーにも入らず、4 つのレイヤーすべてを上書きします。",
             },
         ),
     ])
@@ -182,7 +182,7 @@ fn values(site: Site, head: Part) -> Part {
                         "`quoted(\"→\")` はテキストをエスケープし、`url(\"/a.png\")` は `url(\"...\")` を書きます",
                     ],
                     &[
-                        "どのプロパティにも",
+                        "どのプロパティでも",
                         "`inherit`、`initial`、`unset`、`revert`、`revert-layer` には `keyword(Property::Color, CssWideKeyword::Inherit)`",
                     ],
                 ],
@@ -293,7 +293,7 @@ fn tokens(site: Site, head: Part) -> Part {
             &[
                 L {
                     en: "`Page::theme` takes a [`Theme`](api:hypersig_style/struct.Theme.html), whose values are written on `:root`. `Theme::on(Media::Dark, ..)` sets values under a media condition, and a later `theme` call adds to the earlier one.",
-                    ja: "`Page::theme` は [`Theme`](api:hypersig_style/struct.Theme.html) を受け取り、その値を `:root` に書きます。`Theme::on(Media::Dark, ..)` はメディアの条件の下で値を設定します。`theme` を後からもう一度呼ぶと、前の呼び出しの値に足されます。",
+                    ja: "`Page::theme` は [`Theme`](api:hypersig_style/struct.Theme.html) を受け取り、その値を `:root` に書きます。`Theme::on(Media::Dark, ..)` はメディアの条件の下で値を設定します。`theme` を後からもう一度呼ぶと、前の呼び出しの値に追加されます。",
                 },
                 L {
                     en: "`Style::token` sets a token on one element and those inside it, in place of the default and the page's theme.",
@@ -338,7 +338,7 @@ fn global(site: Site, head: Part) -> Part {
             site,
             L {
                 en: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) adds a style to every element a selector matches. The selector can be an `Element`, which selects by tag, `Selector::Root`, or `Selector::Everything`. The rules are in the base cascade layer, before the classes of `El::css`, so an element's own style overrides them. Conditions in a rule's style apply to the selector as they do to a class.",
-                ja: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) はセレクタに当てはまるすべての要素にスタイルを足します。セレクタにはタグで選ぶ `Element`、`Selector::Root`、`Selector::Everything` を使えます。これらのルールは `El::css` のクラスより前の base のカスケードレイヤーに入るので、要素自身のスタイルがこれらのルールを上書きします。ルールのスタイルにある条件は、クラスの場合と同じようにセレクタに対して適用されます。",
+                ja: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) はセレクタに当てはまるすべての要素にスタイルを追加します。セレクタにはタグで選ぶ `Element`、`Selector::Root`、`Selector::Everything` を使えます。これらのルールは `El::css` のクラスより前の base のカスケードレイヤーに入るので、要素自身のスタイルがこれらのルールを上書きします。ルールのスタイルにある条件は、クラスの場合と同じようにセレクタに対して適用されます。",
             },
         ),
         show(Snippet::GlobalRules),
@@ -355,7 +355,7 @@ fn global(site: Site, head: Part) -> Part {
                 },
                 L {
                     en: "`Page::global` adds the rules to the page. A later call adds to the earlier rules. `hypersig_ui::global()` is a `Global` built this way.",
-                    ja: "`Page::global` はルールをページに足します。後からもう一度呼ぶと、前のルールに追加されます。`hypersig_ui::global()` は、このようにして組み立てた `Global` です。",
+                    ja: "`Page::global` はルールをページに追加します。後からもう一度呼ぶと、前のルールに追加されます。`hypersig_ui::global()` は、このようにして組み立てた `Global` です。",
                 },
             ],
         ),
@@ -467,7 +467,7 @@ fn animation(site: Site, head: Part) -> Part {
             site,
             L {
                 en: "[`Keyframes::new(name)`](api:hypersig_style/struct.Keyframes.html) creates an animation, and `at(percent, style)` adds a step. `Style::keyframes` sets an element's `animation-name` and includes the `@keyframes` rule in the style, so the page or patch that contains the element also contains the rule. A keyframe writes only the unconditioned declarations of its style, because a keyframe takes no selector or media query.",
-                ja: "[`Keyframes::new(name)`](api:hypersig_style/struct.Keyframes.html) でアニメーションを作り、`at(percent, style)` で段階を 1 つ足します。`Style::keyframes` は要素の `animation-name` を設定し、`@keyframes` のルールもスタイルに含めます。そのため、要素を含むページやパッチには、そのルールも含まれます。キーフレームにはセレクタもメディアクエリも書けないので、キーフレームに書かれるのはスタイルのうち条件の付かない宣言だけです。",
+                ja: "[`Keyframes::new(name)`](api:hypersig_style/struct.Keyframes.html) でアニメーションを作り、`at(percent, style)` で段階を 1 つ追加します。`Style::keyframes` は要素の `animation-name` を設定し、`@keyframes` のルールもスタイルに含めます。そのため、要素を含むページやパッチには、そのルールも含まれます。キーフレームにはセレクタもメディアクエリも書けないので、キーフレームに書かれるのはスタイルのうち条件の付かない宣言だけです。",
             },
         ),
         show(Snippet::Animation),
@@ -510,7 +510,7 @@ fn unchecked(site: Site, head: Part) -> Part {
                 },
                 L {
                     en: "`Stylesheet::new(css)` makes a `Stylesheet` from CSS you already have, and `Page::style` adds it to the page. `Stylesheet::class(\"name\")` checks at compile time that the CSS has a selector for the class, and `Class::new` refers to a class by name without that check.",
-                    ja: "`Stylesheet::new(css)` は手元にある CSS から `Stylesheet` を作り、`Page::style` でそれをページに足します。`Stylesheet::class(\"name\")` は、その CSS にクラスのセレクタがあるかをコンパイル時に確かめます。`Class::new` はその確認をせずにクラス名を指定します。",
+                    ja: "`Stylesheet::new(css)` は手元にある CSS から `Stylesheet` を作り、`Page::style` でそれをページに追加します。`Stylesheet::class(\"name\")` は、その CSS にクラスのセレクタがあるかをコンパイル時に確かめます。`Class::new` はその確認をせずにクラス名を指定します。",
                 },
                 L {
                     en: "`El::bind_style` and `El::bind_token` set a property from a string expression over the signals. The expression is not checked.",
@@ -529,7 +529,7 @@ pub fn benchmarks(site: Site) -> [Part; 4] {
             site,
             L {
                 en: "The 2000-item TodoMVC page of [hypersig's framework benchmark](https://github.com/imaimai17468/hypersig/tree/main/bench/compare), styled six ways and rendered by hypersig with the same markup, so only the class names and the CSS differ. Measured in Chrome 155 on an Apple M4 Max with the CPU slowed 4x. Browser values are medians of 5 runs, and the server render is the median of 50.",
-                ja: "[hypersig のフレームワークのベンチマーク](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にある 2000 件の TodoMVC のページを、6 通りのやり方でスタイルし、同じマークアップで hypersig に描かせたものです。違うのはクラス名と CSS だけです。Apple M4 Max の Chrome 155 で、CPU を 4 倍に減速して測りました。ブラウザの値は 5 回、サーバーで描く時間は 50 回の中央値です。",
+                ja: "[hypersig のフレームワークのベンチマーク](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にある 2000 件の TodoMVC のページを、6 通りの方法でスタイルを付け、同じマークアップのまま hypersig で描画したものです。違うのはクラス名と CSS だけです。Apple M4 Max の Chrome 155 で、CPU を 4 倍に減速して測りました。ブラウザの値は 5 回、サーバーでの描画時間は 50 回の中央値です。",
             },
         ),
         table_of(
@@ -609,7 +609,7 @@ pub fn benchmarks(site: Site) -> [Part; 4] {
                 &[
                     site.t(L {
                         en: "Server render",
-                        ja: "サーバーで描く時間",
+                        ja: "サーバーでの描画時間",
                     }),
                     "1.7 ms",
                     "1.5 ms",
@@ -673,11 +673,11 @@ pub fn benchmarks(site: Site) -> [Part; 4] {
                 ja: &[
                     &[
                         "HTML の大きさ",
-                        "クラス名を宣言だけから作るので長くなります。名前は条件、プロパティの正式な名前、値をつないだ `font-size_24px` のような形で、空白など英数字と `.`、`#`、`%`、`-` 以外の文字を含む値は 16 桁のハッシュになります。サーバーのパッチはページにあるクラスを知らずに要素を描くので、同じ宣言はいつ描いても同じ名前になる必要があります",
+                        "クラス名を宣言だけから作るので長くなります。名前は条件、プロパティの正式な名前、値をつないだ `font-size_24px` のような形で、空白など英数字と `.`、`#`、`%`、`-` 以外の文字を含む値は 16 桁のハッシュになります。サーバーのパッチはページにあるクラスを知らずに要素を描画するので、同じ宣言はいつ描画しても同じ名前になる必要があります",
                     ],
                     &[
-                        "サーバーで描く時間",
-                        "`Page::render` がその長い名前を項目ごとに書き出します。gzip 前の HTML は hypersig が 1.21 MB、Panda CSS が 0.88 MB で、描く時間も同じ順に長くなります",
+                        "サーバーでの描画時間",
+                        "`Page::render` がその長い名前を項目ごとに書き出します。gzip 前の HTML は hypersig が 1.21 MB、Panda CSS が 0.88 MB で、描画時間も同じ順に長くなります",
                     ],
                 ],
             },

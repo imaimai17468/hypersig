@@ -96,7 +96,7 @@ pub fn signals(site: Site) -> Part {
             site,
             L {
                 en: "Nothing stops a statement or the server from setting a computed field. The value it sets lasts until a field the expression reads changes.",
-                ja: "文やサーバーが計算されるフィールドに値を設定することは止められません。設定した値は、式が読むフィールドが変わるまで残ります。",
+                ja: "文やサーバーが計算されるフィールドに値を設定しても、それを止めるものはありません。設定した値は、式が読むフィールドが変わるまで残ります。",
             },
         ),
     ])
@@ -154,7 +154,7 @@ pub fn expressions(site: Site) -> Part {
                 ja: &[
                     &[
                         "`i32` と `f64`",
-                        "`+`、`-`、`*`、`%`、`min`、`max`、`to_fixed`。`f64` では `/`、`floor`、`ceil`、`round`、`log10`、`pow` も使えます。`to_f64` は `i32` を `f64` に変えます。`format` は数を `NumberFormat` に従い、桁を区切って前後に文字を付けたテキストにします。",
+                        "`+`、`-`、`*`、`%`、`min`、`max`、`to_fixed`。`f64` では `/`、`floor`、`ceil`、`round`、`log10`、`pow` も使えます。`to_f64` は `i32` を `f64` に変えます。`format` は `NumberFormat` に従って数をテキストにし、桁を区切って前後に文字を付けます。",
                     ],
                     &[
                         "`String`",
@@ -210,14 +210,14 @@ pub fn expressions(site: Site) -> Part {
             site,
             L {
                 en: "`on_click`, `on_input`, `on_submit`, `on_change`, and `on_blur` run a statement on their event, and `on(Event::Focus, ...)` covers the rest of [`Event`](api:hypersig/html/enum.Event.html). `on_key` filters `keydown` by a [`Key`](api:hypersig/html/enum.Key.html) or a [`Shortcut`](api:hypersig/html/struct.Shortcut.html) such as `Key::Char('k').primary()`, and leaves the characters a text field inside the element types to the field. [`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) does the same for the whole page, even while nothing has focus. `on_visible` runs each time the element scrolls into view, which loads the next page of a list. `on_debounced` waits until the event has stopped firing for a given time.",
-                ja: "`on_click`、`on_input`、`on_submit`、`on_change`、`on_blur` は、それぞれのイベントで文を実行します。[`Event`](api:hypersig/html/enum.Event.html) のほかのイベントには `on(Event::Focus, ...)` を使います。`on_key` は `keydown` を [`Key`](api:hypersig/html/enum.Key.html) か、`Key::Char('k').primary()` のような [`Shortcut`](api:hypersig/html/struct.Shortcut.html) で絞り込みます。要素の中のテキスト欄で打つ文字は、その欄に任せます。[`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) は同じことをページ全体で行い、どこにもフォーカスがないときにも動きます。`on_visible` は要素がスクロールして見えるたびに実行し、リストの続きを読み込むのに使えます。`on_debounced` はイベントが指定した時間続けて起きなくなるまで待ちます。",
+                ja: "`on_click`、`on_input`、`on_submit`、`on_change`、`on_blur` は、それぞれのイベントで文を実行します。[`Event`](api:hypersig/html/enum.Event.html) のほかのイベントには `on(Event::Focus, ...)` を使います。`on_key` は `keydown` を [`Key`](api:hypersig/html/enum.Key.html) か、`Key::Char('k').primary()` のような [`Shortcut`](api:hypersig/html/struct.Shortcut.html) で絞り込みます。要素の中のテキスト欄に入力する文字は、その欄に任せます。[`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) は同じことをページ全体で行い、どこにもフォーカスがないときにも動きます。`on_visible` は要素がスクロールして見えるたびに実行し、リストの続きを読み込むのに使えます。`on_debounced` は、イベントが起きない状態が指定した時間続くまで待ちます。",
             },
         ),
         para(
             site,
             L {
                 en: "`bind` ties a text field, a checkbox, or a number field to a signal in both directions. `bind_radio` and `bind_select` do the same for radio buttons and a `<select>`.",
-                ja: "`bind` は、テキスト欄、チェックボックス、数値の欄をシグナルと双方向に結び付けます。ラジオボタンと `<select>` には `bind_radio` と `bind_select` で同じことをします。",
+                ja: "`bind` はテキスト欄、チェックボックス、数値の欄をシグナルと双方向に結び付けます。ラジオボタンと `<select>` には `bind_radio` と `bind_select` で同じことをします。",
             },
         ),
         show(Snippet::Events),
@@ -303,7 +303,7 @@ pub fn lists(site: Site) -> Part {
                         "式",
                         "`len`、`is_empty`、`nth`、`map`、`count`、`sum_of`、`max_of`、`min_of`",
                     ],
-                    &["1 つの項目に", "`item.remove()`、`item.at(field)` の `set`"],
+                    &["1 つの項目", "`item.remove()`、`item.at(field)` の `set`"],
                 ],
             },
         ),

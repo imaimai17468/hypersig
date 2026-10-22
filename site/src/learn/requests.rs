@@ -23,7 +23,7 @@ pub fn requests(site: Site) -> Part {
             site,
             L {
                 en: "A page or action handler takes the state and its arguments, and may take one [`FromRequestParts`](https://docs.rs/axum/0.8/axum/extract/trait.FromRequestParts.html) extractor between them: `HeaderMap`, a tuple of extractors, or the application's own type, such as the signed-in member read from a session cookie. When the extractor fails, its rejection is the response and the handler does not run. A pair of headers and a page or patches, such as `([(SET_COOKIE, value)], patches)`, sends the headers with the answer.",
-                ja: "ページとアクションのハンドラは状態と引数を受け取り、そのあいだに [`FromRequestParts`](https://docs.rs/axum/0.8/axum/extract/trait.FromRequestParts.html) の extractor を 1 つ受け取れます。`HeaderMap`、extractor のタプル、セッションの Cookie から読んだサインイン中のメンバーのようなアプリケーションの型が使えます。extractor が失敗すると、その rejection が応答になり、ハンドラは動きません。`([(SET_COOKIE, value)], patches)` のようにヘッダーとページや差分を組にすると、ヘッダーが答えと一緒に送られます。",
+                ja: "ページとアクションのハンドラは状態と引数を受け取り、そのあいだに [`FromRequestParts`](https://docs.rs/axum/0.8/axum/extract/trait.FromRequestParts.html) の extractor を 1 つ受け取れます。`HeaderMap`、extractor のタプル、セッションの Cookie から読んだサインイン中のメンバーのようなアプリケーションの型が使えます。extractor が失敗すると、その rejection が応答になり、ハンドラは動きません。`([(SET_COOKIE, value)], patches)` のようにヘッダーとページや差分を組にすると、ヘッダーが応答と一緒に送られます。",
             },
         ),
         show(Snippet::Extractors),
@@ -31,7 +31,7 @@ pub fn requests(site: Site) -> Part {
             site,
             L {
                 en: "An extractor that guards actions answers a signed-out request with a status such as 401. The browser's `fetch` follows a redirect, so an action answered with one receives the sign-in page's HTML and the page shows nothing. The `Accept` header tells the two apart: the runtime asks for `text/event-stream`.",
-                ja: "アクションを守る extractor は、サインインしていないリクエストに 401 などの状態で答えます。ブラウザの `fetch` はリダイレクトをたどるので、リダイレクトで答えたアクションはサインインのページの HTML を受け取り、ページには何も表示されません。2 つは `Accept` ヘッダーで見分けられます。ランタイムは `text/event-stream` を求めます。",
+                ja: "アクションを守る extractor は、サインインしていないリクエストに 401 などのステータスで応答します。ブラウザの `fetch` はリダイレクトをたどるので、リダイレクトで応答したアクションはサインインのページの HTML を受け取り、ページには何も表示されません。2 つは `Accept` ヘッダーで見分けられます。ランタイムは `text/event-stream` を求めます。",
             },
         ),
         heading(
@@ -45,7 +45,7 @@ pub fn requests(site: Site) -> Part {
             site,
             L {
                 en: "A handler may return `Result<_, E>` where `E` implements `IntoResponse`, so `?` works. An action whose response has a status outside 2xx fails on the page: the runtime writes the body to the signal given to `Call::error`, so the error's response text is what the visitor reads. An empty body writes the status and its reason, such as `502 Bad Gateway`.",
-                ja: "ハンドラは、`E` が `IntoResponse` を実装する `Result<_, E>` を返せるので、`?` が使えます。応答の状態が 2xx 以外のアクションは、ページでは失敗になります。ランタイムは、`Call::error` に渡したシグナルに応答の本文を書くので、エラーの応答の文言がそのまま訪問者に見えます。本文が空のときは、`502 Bad Gateway` のように状態とその理由を書きます。",
+                ja: "ハンドラは、`E` が `IntoResponse` を実装する `Result<_, E>` を返せるので、`?` が使えます。応答のステータスが 2xx 以外のアクションは、ページでは失敗になります。ランタイムは、`Call::error` に渡したシグナルに応答の本文を書くので、エラーの応答の文言がそのまま訪問者に見えます。本文が空のときは、`502 Bad Gateway` のようにステータスとその理由を書きます。",
             },
         ),
         show(Snippet::HandlerErrors),
@@ -53,14 +53,14 @@ pub fn requests(site: Site) -> Part {
             site,
             L {
                 en: "Requests an action refuses",
-                ja: "アクションが断るリクエスト",
+                ja: "アクションが拒否するリクエスト",
             },
         ),
         para(
             site,
             L {
                 en: "Before its handler runs, an action answers a request whose `Sec-Fetch-Site` is not `same-origin` with a 403, and a POST whose body is not `application/json` with a 415. A form on another site cannot send JSON, and a script there that tries needs a preflight request this server does not answer, so neither can call an action with the visitor's cookie.",
-                ja: "アクションは、ハンドラが動く前に、`Sec-Fetch-Site` が `same-origin` でないリクエストに 403 を、本文が `application/json` でない POST に 415 を返します。別のサイトのフォームは JSON を送れず、そこでスクリプトが送ろうとするとプリフライトのリクエストが要り、このサーバーはそれに答えません。どちらも訪問者の Cookie を付けてアクションを呼び出せません。",
+                ja: "アクションは、ハンドラが動く前に、`Sec-Fetch-Site` が `same-origin` でないリクエストに 403 を、本文が `application/json` でない POST に 415 を返します。別のサイトのフォームは JSON を送れず、そこでスクリプトが送ろうとするとプリフライトのリクエストが必要になり、このサーバーはそれに応答しません。どちらも訪問者の Cookie を付けてアクションを呼び出せません。",
             },
         ),
         note(
@@ -97,7 +97,7 @@ fn uploads(site: Site) -> Part {
             site,
             L {
                 en: "A form on another site can send a `multipart/form-data` body without a preflight, so the runtime adds the `hypersig-upload` header, which no form can set, and the router refuses an upload without it with a 403. An ordinary action still refuses a multipart body with a 415. A body longer than `Upload::DEFAULT_MAX_BYTES` (8 MiB), or the limit `max_bytes` sets, gets a 413, before it is read when its `Content-Length` says so.",
-                ja: "`multipart/form-data` の本文は、別のサイトのフォームからプリフライトなしで送れます。そこでランタイムはフォームでは付けられない `hypersig-upload` ヘッダーを付け、ルーターはそれがないアップロードを 403 で断ります。普通のアクションは、これまでどおりマルチパートの本文を 415 で断ります。`Upload::DEFAULT_MAX_BYTES`（8 MiB）か、`max_bytes` で決めた上限を超える本文には 413 を返します。`Content-Length` が上限を超えていれば、本文を読む前に返します。",
+                ja: "`multipart/form-data` の本文は、別のサイトのフォームからプリフライトなしで送れます。そこでランタイムはフォームでは付けられない `hypersig-upload` ヘッダーを付け、ルーターはそれがないアップロードを 403 で拒否します。普通のアクションは、これまでどおりマルチパートの本文を 415 で拒否します。`Upload::DEFAULT_MAX_BYTES`（8 MiB）か、`max_bytes` で決めた上限を超える本文には 413 を返します。`Content-Length` が上限を超えていれば、本文を読む前に返します。",
             },
         ),
         note(
@@ -118,7 +118,7 @@ fn uploads(site: Site) -> Part {
             site,
             L {
                 en: "`RouterExt::upload` reads every file into memory before its handler runs, so keep its limit near the largest file you accept. For larger files, serve the same `Upload` with `RouterExt::upload_stream`. Its handler receives an [`UploadStream<A>`](api:hypersig/struct.UploadStream.html): the arguments, already read because the runtime sends them first, and `next_file`, which yields each file for the handler to read with `chunk` as its bytes arrive. Once the body passes the limit, `next_file` or `chunk` returns a `RequestError` with status 413, which the handler can return with `?`. Both routes refuse a body whose first part is not the arguments with a 400, and skip parts other than the arguments and the files. A handler's extractor runs before the body is read, so an upload from a visitor who is not signed in is refused before its files arrive.",
-                ja: "`RouterExt::upload` は、ハンドラが動く前にすべてのファイルをメモリに読み込みます。そのため、上限は受け付ける最大のファイルに近い値にしてください。それより大きなファイルには、同じ `Upload` を `RouterExt::upload_stream` で配信します。ハンドラは [`UploadStream<A>`](api:hypersig/struct.UploadStream.html) を受け取ります。引数はランタイムが先頭で送るので読み終えてあり、`next_file` がファイルを 1 つずつ返します。ハンドラはファイルの中身を、届いた分ずつ `chunk` で読みます。本文が上限を超えると、`next_file` か `chunk` が状態 413 の `RequestError` を返すので、ハンドラは `?` でそのまま返せます。どちらの配信も、先頭の部分が引数でない本文には 400 を返し、引数とファイル以外の部分は読み飛ばします。ハンドラの extractor は本文を読む前に動くので、ログインしていない訪問者のアップロードは、ファイルが届く前に断られます。",
+                ja: "`RouterExt::upload` は、ハンドラが動く前にすべてのファイルをメモリに読み込みます。そのため、上限は受け付ける最大のファイルに近い値にしてください。それより大きなファイルには、同じ `Upload` を `RouterExt::upload_stream` で配信します。ハンドラは [`UploadStream<A>`](api:hypersig/struct.UploadStream.html) を受け取ります。引数はランタイムが先頭で送るので読み終えてあり、`next_file` がファイルを 1 つずつ返します。ハンドラはファイルの中身を、届いた分ずつ `chunk` で読みます。本文が上限を超えると、`next_file` か `chunk` がステータス 413 の `RequestError` を返すので、ハンドラは `?` でそのまま返せます。どちらの配信も、先頭の部分が引数でない本文には 400 を返し、引数とファイル以外の部分は読み飛ばします。ハンドラの extractor は本文を読む前に動くので、ログインしていない訪問者のアップロードは、ファイルが届く前に拒否されます。",
             },
         ),
     ])

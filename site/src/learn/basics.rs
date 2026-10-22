@@ -47,7 +47,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
             site,
             L {
                 en: "Write `src/main.rs`. It holds the page, the handler that answers calls from the reset button, and the router that serves both.",
-                ja: "`src/main.rs` を書きます。このファイルにはページ、リセットボタンからの呼び出しに答えるハンドラ、その 2 つを配信するルーターが入ります。",
+                ja: "`src/main.rs` を書きます。このファイルにはページ、リセットボタンからの呼び出しに応答するハンドラ、その 2 つを配信するルーターが入ります。",
             },
         ),
         program(Program::QuickStart),
@@ -90,7 +90,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                 },
                 L {
                     en: "`INDEX` is a `Route`, the page at `/`. `routes!` declares it together with its handler `index`, the function `pages` it writes serves it, and a link to it is `INDEX.link()`. [Pages and links](learn/pages/) covers routes with parameters.",
-                    ja: "`INDEX` は `/` のページを表す `Route` です。`routes!` がハンドラ `index` と一緒にこのルートを宣言し、マクロが書く関数 `pages` がこのページを配信します。このページへのリンクは `INDEX.link()` です。パラメータを持つルートは [ページとリンク](learn/pages/) で説明します。",
+                    ja: "`INDEX` は `/` のページを表す `Route` です。`routes!` がハンドラ `index` と一緒にこのルートを宣言し、マクロが生成する関数 `pages` がこのページを配信します。このページへのリンクは `INDEX.link()` です。パラメータを持つルートは [ページとリンク](learn/pages/) で説明します。",
                 },
                 L {
                     en: "`RESET` is an `Action<Counter>`. The page calls it with `RESET.call()` and the router serves it with `.action(RESET, reset)`, so both sides share its path, its method, its argument type, and the page it belongs to.",
@@ -237,7 +237,7 @@ pub fn describing_the_page(site: Site) -> Part {
             site,
             L {
                 en: "`hypersig_ui` is a set of such functions styled after shadcn/ui. The demos on this site use its buttons and text fields.",
-                ja: "`hypersig_ui` は shadcn/ui に倣った見た目のこうした関数を集めたクレートです。このサイトのデモはそのボタンとテキスト欄を使っています。",
+                ja: "`hypersig_ui` はこうした関数を集めたクレートで、見た目は shadcn/ui に倣っています。このサイトのデモはそのボタンとテキスト欄を使っています。",
             },
         ),
     ])

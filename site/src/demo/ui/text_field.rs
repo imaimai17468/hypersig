@@ -86,7 +86,7 @@ pub fn page(site: Site) -> Page<Signup> {
                 .max(10)
                 .description(site.t(L {
                     en: "Up to 10 people.",
-                    ja: "10 人まで入れられます。",
+                    ja: "最大 10 人です。",
                 })),
             ),
 

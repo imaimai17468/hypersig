@@ -54,7 +54,7 @@ fn halves(site: Site) -> [Part; 4] {
             site,
             L {
                 en: "A page served by a Rust server splits into a server side and a browser side. The server side builds the HTML and answers requests. The browser side reacts to clicks and typing, and the browser runs only JavaScript or wasm. Two frameworks close to hypersig keep signals in the browser and build nothing for it, and each leaves something unchecked.",
-                ja: "Rust のサーバーが配信するページは、サーバー側とブラウザ側の 2 つに分かれます。サーバー側は HTML を組み立ててリクエストに答えます。ブラウザ側はクリックや入力に反応し、ブラウザが実行できるのは JavaScript か wasm だけです。hypersig に近いフレームワークが 2 つあり、どちらもブラウザの中にシグナルを持ち、ブラウザ向けには何もビルドしません。ただ、どちらにも検査されずに残るものがあります。",
+                ja: "Rust のサーバーが配信するページは、サーバー側とブラウザ側の 2 つに分かれます。サーバー側は HTML を組み立ててリクエストに応答します。ブラウザ側はクリックや入力に反応します。ブラウザが実行できるのは JavaScript か wasm だけです。hypersig に近いフレームワークが 2 つあり、どちらもブラウザの中にシグナルを持ち、ブラウザ向けには何もビルドしません。ただ、どちらにも検査されずに残るものがあります。",
             },
         ),
         bullets(
@@ -66,7 +66,7 @@ fn halves(site: Site) -> [Part; 4] {
                 },
                 L {
                     en: "Topcoat writes the browser's expressions in Rust and translates them to JavaScript, so they are type-checked. Its `href!` checks only the handler a link points to, and a missing or extra path parameter panics when the page renders. Its expressions cannot add an item to a list, so a list changes only when the server answers and renders it again.",
-                    ja: "Topcoat はブラウザで動く式を Rust で書き、JavaScript に変換するので、式の型は検査されます。ただ、`href!` が検査するのはリンク先のハンドラだけで、パスパラメータが足りないか多いと、ページを描くときにパニックします。また、式から一覧に項目を足せないので、一覧はサーバーが答えて描き直したときにしか変わりません。",
+                    ja: "Topcoat はブラウザで動く式を Rust で書き、JavaScript に変換するので、式の型は検査されます。ただ、`href!` が検査するのはリンク先のハンドラだけで、パスパラメータが足りないか多いと、ページを描画するときにパニックします。また、式では一覧に項目を追加できないので、一覧はサーバーが応答して描画し直したときにしか変わりません。",
                 },
             ],
         ),
@@ -74,7 +74,7 @@ fn halves(site: Site) -> [Part; 4] {
             site,
             L {
                 en: "hypersig builds the page as Datastar does, as HTML with attributes, and Rust writes every attribute from a typed value. A link takes its route's parameters as a typed value, and a list is a signal the browser can change before the server answers.",
-                ja: "hypersig は Datastar と同じく、ページを属性付きの HTML で組み立て、Rust がすべての属性を型の付いた値から書きます。リンクはルートのパラメータを型の付いた値で受け取り、一覧はサーバーが答える前にブラウザが変えられるシグナルです。",
+                ja: "hypersig は Datastar と同じく、ページを属性付きの HTML で組み立て、Rust がすべての属性を型の付いた値から書きます。リンクはルートのパラメータを型の付いた値で受け取り、一覧はサーバーが応答する前にブラウザが変えられるシグナルです。",
             },
         ),
     ]
@@ -93,7 +93,7 @@ fn html(site: Site) -> [Part; 6] {
             site,
             L {
                 en: "Here is the counter from the [Quick start](learn/), with a link added. `HISTORY` is a page whose path includes the count.",
-                ja: "[クイックスタート](learn/) のカウンターに、リンクを 1 つ足したものです。`HISTORY` は、カウントをパスに含むページです。",
+                ja: "[クイックスタート](learn/) のカウンターにリンクを 1 つ追加したものです。`HISTORY` はカウントをパスに含むページです。",
             },
         ),
         show(Snippet::WhyCounter),
@@ -162,7 +162,7 @@ fn typed(site: Site) -> [Part; 4] {
             &[
                 L {
                     en: "Signal names come from `#[derive(Signals)]`, which adds one typed accessor per field.",
-                    ja: "シグナルの名前は `#[derive(Signals)]` から作られます。この derive はフィールドごとに型付きのアクセサを 1 つ足します。",
+                    ja: "シグナルの名前は `#[derive(Signals)]` から作られます。この derive はフィールドごとに型付きのアクセサを 1 つ追加します。",
                 },
                 L {
                     en: "Expressions and statements are `Expr` and `Stmt` values, whose operators check the types of both sides.",
@@ -203,7 +203,7 @@ fn state(site: Site) -> [Part; 2] {
             site,
             L {
                 en: "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML that replaces an element of the page. A statement runs in the browser at once, and an action call sent with it reaches the server after, so the page changes before the server answers without extra code. [Talking to the server](learn/server/) covers actions, patches, and streams.",
-                ja: "ブラウザはページの上で変わるものをシグナルとして持ち、データはサーバーが持ちます。アクションは Server-Sent Events で差分を返します。差分はシグナルの新しい値か、ページの要素と差し替える HTML の断片です。文はブラウザでただちに実行され、一緒に送ったアクションの呼び出しはそのあとでサーバーに届くので、サーバーの応答を待たずに画面が変わります。そのための追加のコードは要りません。アクション、差分、ストリームは [サーバーとのやり取り](learn/server/) で説明します。",
+                ja: "ブラウザはページの上で変わるものをシグナルとして持ち、データはサーバーが持ちます。アクションは Server-Sent Events で差分を返します。差分はシグナルの新しい値か、ページの要素と差し替える HTML の断片です。文はブラウザでただちに実行され、一緒に送ったアクションの呼び出しはそのあとでサーバーに届くので、サーバーの応答を待たずに画面が変わります。そのための追加のコードは不要です。アクション、差分、ストリームは [サーバーとのやり取り](learn/server/) で説明します。",
             },
         ),
     ]
@@ -279,7 +279,7 @@ fn fetching(site: Site) -> [Part; 6] {
                         "コンポーネント全部",
                         "コンポーネント全部",
                         "コンポーネント全部",
-                        "操作されたハンドラの分だけ、操作したときに",
+                        "使われるハンドラだけを、使われたときに",
                     ],
                     &[
                         "読み込み時にブラウザが実行するもの",
