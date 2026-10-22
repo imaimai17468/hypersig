@@ -23,8 +23,16 @@ pub fn quick_start(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Add hypersig to `Cargo.toml` with axum, serde, and tokio:",
-                ja: "hypersig を axum、serde、tokio と一緒に `Cargo.toml` に追加してください。",
+                en: "Create a project with Rust 1.99 or later:",
+                ja: "Rust 1.99 以降でプロジェクトを作ります。",
+            },
+        ),
+        code::block(Lang::Shell, None, "cargo new counter\ncd counter"),
+        para(
+            site,
+            L {
+                en: "Replace the empty `[dependencies]` section that `cargo new` wrote in `Cargo.toml` with hypersig, axum, serde, and tokio:",
+                ja: "`cargo new` が `Cargo.toml` に書いた空の `[dependencies]` の節を、hypersig、axum、serde、tokio を並べた次の節に置き換えてください。",
             },
         ),
         code::block(

@@ -62,6 +62,13 @@ npx vercel deploy --prod",
                 ja: "最初の `vercel deploy` は、ディレクトリをどのアカウントのどのプロジェクトにするかを尋ね、プロジェクトを作って `.vercel` でディレクトリと結び付けます。`.vercel` はテンプレートの `.gitignore` で除外してあります。そのあとソースをアップロードし、Vercel が自分のサーバーで rustup の Rust を使ってビルドするので、バイナリはアップロードしません。`--prod` を付けるとプロジェクトの本番のアドレスに公開し、そのアドレスを表示します。名前が空いていれば `https://my-app.vercel.app` です。`--prod` がないとプレビューのデプロイになり、専用のアドレスに置かれます。Deployment Protection を有効にしたプロジェクトでは、プレビューは Vercel にログインしたメンバーにしか表示されません。プロジェクトに Git のリポジトリをつなぐと、ブランチへの push でプレビューが、main ブランチへの push で本番がデプロイされます。",
             },
         ),
+        para(
+            site,
+            L {
+                en: "The project takes the directory's name. Where the command cannot ask, as in CI or a script, `vercel deploy` creates the project without asking, and on an account with more than one scope, such as a personal one and a team, it stops and lists the scopes. Name the scope with `--scope <scope>` there.",
+                ja: "プロジェクトにはディレクトリの名前が付きます。CI やスクリプトのように質問に答えられない場所では、`vercel deploy` は尋ねずにプロジェクトを作ります。個人とチームのようにスコープが複数あるアカウントでは、スコープの一覧を表示して止まるので、`--scope <スコープ>` でスコープを指定してください。",
+            },
+        ),
         subheading(
             site,
             L {
@@ -145,42 +152,56 @@ fn vercel_existing(site: Site) -> Part {
                 ja: "サーバーのプロジェクトを Vercel の関数に移行するには、`main` で `Router` を `axum::serve` ではなく `vercel_runtime::run` に渡します。関数はサーバーと同じく tokio の上で動くので、ページ、アクション、ストリームのコードは `tokio::time::sleep` も含めてそのまま使えます。",
             },
         ),
-        table_of(
+        para(
             site,
             L {
-                en: &["File", "What changes"],
-                ja: &["ファイル", "変えること"],
+                en: "In `Cargo.toml`, add `tower` and `vercel_runtime`, and a `[[bin]]` named `app` built from `api/app.rs`, which Vercel turns into the function at `/api/app`. The other dependencies stay as they are:",
+                ja: "`Cargo.toml` には `tower` と `vercel_runtime` を追加し、`api/app.rs` からビルドする `app` という名前の `[[bin]]` も追加します。Vercel はこれを `/api/app` の関数にします。ほかの依存はそのままです。",
             },
+        ),
+        code::block(
+            Lang::Toml,
+            Some("Cargo.toml"),
+            r#"[dependencies]
+tower = "0.5"
+vercel_runtime = { version = "2.4", features = ["axum"] }
+
+[[bin]]
+name = "app"
+path = "api/app.rs""#,
+        ),
+        para(
+            site,
             L {
-                en: &[
-                    &[
-                        "`Cargo.toml`",
-                        "Add `vercel_runtime` with the feature `axum`, and `tower`. Add a `[[bin]]` named `app` whose `path` is `api/app.rs`.",
-                    ],
-                    &[
-                        "`src/main.rs`",
-                        "Move it to `api/app.rs`, and replace the listener and `axum::serve` with the template's last line, which wraps the `Router` in `VercelLayer` and runs it.",
-                    ],
-                    &[
-                        "`vercel.json`, `.vercelignore`, `rust-toolchain.toml`",
-                        "Copy them from `templates/vercel`.",
-                    ],
-                ],
-                ja: &[
-                    &[
-                        "`Cargo.toml`",
-                        "`axum` の機能を付けた `vercel_runtime` と `tower` を追加します。`path` が `api/app.rs` で名前が `app` の `[[bin]]` も追加します。",
-                    ],
-                    &[
-                        "`src/main.rs`",
-                        "`api/app.rs` に移し、リスナーと `axum::serve` をテンプレートの最後の行に置き換えます。この行は `Router` を `VercelLayer` で包んで実行します。",
-                    ],
-                    &[
-                        "`vercel.json`、`.vercelignore`、`rust-toolchain.toml`",
-                        "`templates/vercel` からコピーします。",
-                    ],
-                ],
+                en: "Move `src/main.rs` to `api/app.rs`. In it, add the two `use` lines below, change the return type of `main` to `vercel_runtime::Error`'s, and replace the listener and the `axum::serve` line with the call to `vercel_runtime::run`. For the [quick start](learn/) counter, `main` becomes:",
+                ja: "`src/main.rs` を `api/app.rs` に移します。そのファイルに次の 2 行の `use` を追加し、`main` の戻り値の型を `vercel_runtime::Error` のものに変え、リスナーと `axum::serve` の行を `vercel_runtime::run` の呼び出しに置き換えます。[クイックスタート](learn/) のカウンターなら、`main` は次のようになります。",
             },
+        ),
+        code::block(
+            Lang::Rust,
+            Some("api/app.rs"),
+            "use tower::ServiceBuilder;
+use vercel_runtime::axum::VercelLayer;
+
+#[tokio::main]
+async fn main() -> Result<(), vercel_runtime::Error> {
+    let app = pages(Router::new()).hypersig_runtime().action(RESET, reset);
+    vercel_runtime::run(ServiceBuilder::new().layer(VercelLayer::new()).service(app)).await
+}",
+        ),
+        para(
+            site,
+            L {
+                en: "Download the template's `vercel.json`, `.vercelignore`, and `rust-toolchain.toml` next to `Cargo.toml`. Then `cargo run` serves the function at `http://localhost:3000`, and `npx vercel deploy --prod` publishes it as above.",
+                ja: "テンプレートの `vercel.json`、`.vercelignore`、`rust-toolchain.toml` を `Cargo.toml` の隣にダウンロードします。そのあとは `cargo run` で関数が `http://localhost:3000` に配信され、上と同じく `npx vercel deploy --prod` で公開できます。",
+            },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/vercel/vercel.json
+curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/vercel/.vercelignore
+curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/vercel/rust-toolchain.toml",
         ),
     ])
 }

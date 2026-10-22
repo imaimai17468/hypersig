@@ -51,8 +51,8 @@ npx wrangler deploy",
         para(
             site,
             L {
-                en: "`wrangler dev` builds the worker and runs it at `http://localhost:8787` in workerd, the runtime Workers use. The first build installs `worker-build`, the tool that compiles the crate to wasm, and the wasm target, so it takes a few minutes. `wrangler login` opens the browser to sign in to Cloudflare. `wrangler deploy` uploads the worker and prints its address, `https://my-worker.<your subdomain>.workers.dev`, and on an account without a `workers.dev` subdomain it asks to register one first.",
-                ja: "`wrangler dev` は Worker をビルドし、Workers と同じ実行環境 workerd で `http://localhost:8787` に配信します。最初のビルドでは、クレートを wasm にコンパイルするツール `worker-build` と wasm の target をインストールするので、数分かかります。`wrangler login` はブラウザを開いて Cloudflare にログインします。`wrangler deploy` は Worker をアップロードして `https://my-worker.<サブドメイン>.workers.dev` のアドレスを表示します。`workers.dev` のサブドメインをまだ持たないアカウントでは、先にサブドメインの登録を求められます。",
+                en: "`wrangler dev` builds the worker and runs it at `http://localhost:8787` in workerd, the runtime Workers use. The first build installs `worker-build`, the tool that compiles the crate to wasm, and the wasm target, so it takes a few minutes. `wrangler dev` needs no Cloudflare login. `wrangler login` opens the browser to sign in to Cloudflare, which `wrangler deploy` needs. `wrangler deploy` uploads the worker and prints its address, `https://my-worker.<your subdomain>.workers.dev`, and on an account without a `workers.dev` subdomain it asks to register one first.",
+                ja: "`wrangler dev` は Worker をビルドし、Workers と同じ実行環境 workerd で `http://localhost:8787` に配信します。最初のビルドでは、クレートを wasm にコンパイルするツール `worker-build` と wasm の target をインストールするので、数分かかります。`wrangler dev` に Cloudflare へのログインは不要です。`wrangler login` はブラウザを開いて Cloudflare にログインします。`wrangler deploy` にはこのログインが必要です。`wrangler deploy` は Worker をアップロードして `https://my-worker.<サブドメイン>.workers.dev` のアドレスを表示します。`workers.dev` のサブドメインをまだ持たないアカウントでは、先にサブドメインの登録を求められます。",
             },
         ),
         subheading(
@@ -129,42 +129,60 @@ fn workers_existing(site: Site) -> Part {
                 ja: "サーバーのプロジェクトを Worker に移行するには、パッケージをバイナリから `worker-build` がコンパイルするライブラリに変え、`main` を上の `fetch` 関数に置き換えます。ページ、アクション、ストリームのコードはそのまま使えます。",
             },
         ),
-        table_of(
+        para(
             site,
             L {
-                en: &["File", "What changes"],
-                ja: &["ファイル", "変えること"],
+                en: "In `Cargo.toml`, add a `[lib]` section that makes the package the library `worker-build` compiles, give axum `default-features = false`, add `tower-service` and `worker`, and remove tokio. hypersig, serde, and the other dependencies stay as they are:",
+                ja: "`Cargo.toml` には、パッケージを `worker-build` がコンパイルするライブラリにする `[lib]` の節を追加します。axum は `default-features = false` にし、`tower-service` と `worker` を追加し、tokio を外してください。hypersig、serde、ほかの依存はそのままです。",
             },
+        ),
+        code::block(
+            Lang::Toml,
+            Some("Cargo.toml"),
+            r#"[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+axum = { version = "0.8", default-features = false }
+tower-service = "0.3"
+worker = { version = "0.8", features = ["http", "axum"] }"#,
+        ),
+        para(
+            site,
             L {
-                en: &[
-                    &[
-                        "`Cargo.toml`",
-                        "Add `[lib]` with `crate-type = [\"cdylib\"]`. Give axum `default-features = false`, add `worker` with the features `http` and `axum` and `tower-service`, and remove tokio.",
-                    ],
-                    &[
-                        "`src/main.rs`",
-                        "Rename it to `src/lib.rs`, and replace `#[tokio::main] async fn main` with a `fetch` function like the template's, which builds the same `Router` and hands it the request.",
-                    ],
-                    &[
-                        "`wrangler.toml`, `rust-toolchain.toml`",
-                        "Copy them from `templates/cloudflare`, and set `name` in `wrangler.toml` to the worker's name.",
-                    ],
-                ],
-                ja: &[
-                    &[
-                        "`Cargo.toml`",
-                        "`[lib]` に `crate-type = [\"cdylib\"]` を追加します。axum は `default-features = false` にし、`http` と `axum` の機能を付けた `worker` と `tower-service` を追加し、tokio を依存から外します。",
-                    ],
-                    &[
-                        "`src/main.rs`",
-                        "ファイル名を `src/lib.rs` に変え、`#[tokio::main] async fn main` をテンプレートと同じ形の `fetch` 関数に置き換えます。`fetch` は同じ `Router` を組み立て、リクエストを渡します。",
-                    ],
-                    &[
-                        "`wrangler.toml`、`rust-toolchain.toml`",
-                        "`templates/cloudflare` からコピーし、`wrangler.toml` の `name` を Worker の名前にします。",
-                    ],
-                ],
+                en: "Rename `src/main.rs` to `src/lib.rs`. Replace `#[tokio::main] async fn main` with a `fetch` function that builds the same `Router` as `main` did and hands it the request, and add the two `use` lines it needs. For the [quick start](learn/) counter, it is:",
+                ja: "`src/main.rs` のファイル名を `src/lib.rs` に変えます。`#[tokio::main] async fn main` を、`main` と同じ `Router` を組み立ててリクエストを渡す `fetch` 関数に置き換え、必要な 2 行の `use` を追加します。[クイックスタート](learn/) のカウンターなら次のとおりです。",
             },
+        ),
+        code::block(
+            Lang::Rust,
+            Some("src/lib.rs"),
+            "use tower_service::Service as _;
+use worker::{Context, Env, HttpRequest, event};
+
+#[event(fetch)]
+async fn fetch(
+    request: HttpRequest,
+    _env: Env,
+    _context: Context,
+) -> worker::Result<axum::http::Response<axum::body::Body>> {
+    let mut app = pages(Router::new()).hypersig_runtime().action(RESET, reset);
+    Ok(app.call(request).await?)
+}",
+        ),
+        para(
+            site,
+            L {
+                en: "Download the template's `wrangler.toml` and `rust-toolchain.toml` next to `Cargo.toml`, and replace `{{project-name}}` in the `name` line of `wrangler.toml` with the worker's name. The build writes `build` and `.wrangler`, which stay out of Git:",
+                ja: "テンプレートの `wrangler.toml` と `rust-toolchain.toml` を `Cargo.toml` の隣にダウンロードし、`wrangler.toml` の `name` の行にある `{{project-name}}` を Worker の名前に置き換えます。ビルドが書き出す `build` と `.wrangler` は Git の対象から外してください。",
+            },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/cloudflare/wrangler.toml
+curl -O https://raw.githubusercontent.com/imaimai17468/hypersig/main/templates/cloudflare/rust-toolchain.toml
+printf '/build\\n/.wrangler\\n' >> .gitignore",
         ),
         para(
             site,
