@@ -14,7 +14,7 @@ use axum::Router;
 use axum::body::{Body, Bytes};
 use axum::extract::{FromRequestParts, MatchedPath, Query, RawPathParams, Request, State};
 use axum::http::request::Parts;
-use axum::http::{HeaderMap, StatusCode, header};
+use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::sse::{Event as SseEvent, Sse};
 use axum::response::{Html, IntoResponse, IntoResponseParts, Redirect, Response};
 use axum::routing::{MethodRouter, get, post};
@@ -22,7 +22,7 @@ use futures::{Stream, StreamExt as _, stream};
 use serde::de::DeserializeOwned;
 
 use crate::action::{Action, Method, StreamAction};
-use crate::page::Page;
+use crate::page::{Framing, Page};
 use crate::patch::{ListPatch, PartMismatch, PatchEvent, Patches, SignalPatch};
 use crate::route::{Base, Params, Route, Search, Url};
 use crate::signal::{Signals, current_part, in_part};
@@ -578,6 +578,7 @@ enum Reply {
     Page {
         render: Box<dyn FnOnce(Base) -> String + Send>,
         status: Option<StatusCode>,
+        framing: Framing,
     },
     /// A 404 that shows the router's page for a request it serves no page for.
     NotFound,
@@ -637,6 +638,7 @@ impl PageResponse {
     #[must_use]
     pub fn with_status<S: Signals + Send + 'static>(status: StatusCode, page: Page<S>) -> Self {
         Self::new(Reply::Page {
+            framing: page.framing().clone(),
             render: Box::new(move |base| page.render_under(base)),
             status: Some(status),
         })
@@ -689,8 +691,23 @@ impl Reply {
     /// The response of a page under `base`, where a 404 has an empty body.
     fn into_response(self, base: Base) -> Response {
         match self {
-            Self::Page { render, status } => {
-                (status.unwrap_or(StatusCode::OK), Html(render(base))).into_response()
+            Self::Page {
+                render,
+                status,
+                framing,
+            } => {
+                let mut response =
+                    (status.unwrap_or(StatusCode::OK), Html(render(base))).into_response();
+                let headers = response.headers_mut();
+                if let Some(value) = framing.x_frame_options() {
+                    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static(value));
+                }
+                if let Some(policy) = framing.content_security_policy() {
+                    // `Origin` holds only the bytes of a host and a port, which a header can hold.
+                    let policy = HeaderValue::try_from(policy).expect("an origin is header text");
+                    headers.insert(header::CONTENT_SECURITY_POLICY, policy);
+                }
+                response
             }
             Self::NotFound => StatusCode::NOT_FOUND.into_response(),
             Self::Response(response) => response,
@@ -701,6 +718,7 @@ impl Reply {
 impl<S: Signals + Send + 'static> From<Page<S>> for PageResponse {
     fn from(page: Page<S>) -> Self {
         Self::new(Reply::Page {
+            framing: page.framing().clone(),
             render: Box::new(move |base| page.render_under(base)),
             status: None,
         })

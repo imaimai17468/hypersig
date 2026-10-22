@@ -166,6 +166,13 @@ fn requests(site: Site) -> Part {
                 ja: "別のサイトのスクリプトは GET にこの `Accept` を付けて送れます。`Sec-Fetch-Site` を送らないブラウザではそれが通るので、GET のアクションでは何も変更しないでください。",
             },
         ),
+        para(
+            site,
+            L {
+                en: "A page of another site that shows the page in a frame and leads the visitor to click a button gets past these checks, because the click sends its request from the page's own origin. A page is therefore served with `X-Frame-Options: SAMEORIGIN` and `Content-Security-Policy: frame-ancestors 'self'`, and the browser shows it in a frame only on its own origin. `Page::framed_by` adds an origin that may frame it, and `Page::framed_anywhere` lets any site, for a page that changes nothing for the visitor.",
+                ja: "別のサイトのページがこのページを枠に表示し、訪問者にボタンを押させると、上の検査は通ってしまいます。押したときのリクエストはこのページ自身のオリジンから出るためです。そのためページは `X-Frame-Options: SAMEORIGIN` と `Content-Security-Policy: frame-ancestors 'self'` を付けて配信され、ブラウザは同じオリジンの枠にしか表示しません。枠に表示してよいオリジンは `Page::framed_by` で追加できます。訪問者のために何も変えないページは、`Page::framed_anywhere` を付けると、どのサイトの枠にも表示できます。",
+            },
+        ),
     ])
 }
 
@@ -236,8 +243,8 @@ fn application(site: Site) -> Part {
                     ja: "シグナルの値。ブラウザが持っていて書き換えられるので、サーバーが頼る価格、役割、持ち主は、サーバーで読み直してください。",
                 },
                 L {
-                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response.",
-                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。",
+                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. A policy the application sends replaces the page's `frame-ancestors`, so include `frame-ancestors 'self'` in it, as the `ui` example does. Without it the page still has `X-Frame-Options: SAMEORIGIN`, but a page given `Page::framed_by` has neither.",
+                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。アプリが送るポリシーはページの `frame-ancestors` を置き換えるので、`ui` の例と同じように `frame-ancestors 'self'` を含めてください。含めなくても `X-Frame-Options: SAMEORIGIN` は残りますが、`Page::framed_by` を付けたページではどちらも残りません。",
                 },
                 L {
                     en: "The host of a URL. A `SafeUrl` may name any host, so a URL a visitor typed suits a link the visitor follows, and not the `src` of a script or the `href` of a `<base>`.",
@@ -269,8 +276,8 @@ fn tested(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Each refusal above has a test in the repository: the escaping and the attribute checks in the tests of the HTML builder and of the style values, the requests in `crates/hypersig/tests/axum.rs` and `upload.rs`, and the compile errors in the trybuild cases under `crates/hypersig/tests/ui/fail`. The crates have been reviewed with Trail of Bits' sharp-edges, insecure-defaults, rust-review, and differential-review skills, and each finding they confirmed was fixed, is listed above as the application's to check, or fails only the request that caused it. No outside security audit has been done.",
-                ja: "上の断り方には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するものです。外部のセキュリティ監査は受けていません。",
+                en: "Each refusal above has a test in the repository: the escaping and the attribute checks in the tests of the HTML builder and of the style values, the requests in `crates/hypersig/tests/axum.rs` and `upload.rs`, the frame headers in `framing.rs`, and the compile errors in the trybuild cases under `crates/hypersig/tests/ui/fail`. The crates have been reviewed with Trail of Bits' sharp-edges, insecure-defaults, rust-review, and differential-review skills, and each finding they confirmed was fixed, is listed above as the application's to check, or fails only the request that caused it. No outside security audit has been done.",
+                ja: "上の断り方には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するものです。外部のセキュリティ監査は受けていません。",
             },
         ),
     ])

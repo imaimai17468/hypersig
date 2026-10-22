@@ -54,6 +54,47 @@ pub struct Page<S> {
     /// Each JSON-LD block, serialized with `<` escaped.
     json_ld: Vec<String>,
     nonce: Option<String>,
+    framing: Framing,
+}
+
+/// Which pages may show a page in a frame, which a response says in
+/// `X-Frame-Options` and in a `Content-Security-Policy` of `frame-ancestors`.
+#[derive(Debug, Clone)]
+pub(crate) enum Framing {
+    /// Pages of the page's own origin, and of these origins.
+    Origins(Vec<Origin>),
+    /// Pages of any site.
+    Anywhere,
+}
+
+#[cfg_attr(
+    not(feature = "axum"),
+    expect(dead_code, reason = "only the axum integration writes the headers")
+)]
+impl Framing {
+    /// The `X-Frame-Options` value, which can name the page's own origin
+    /// and no other.
+    pub(crate) fn x_frame_options(&self) -> Option<&'static str> {
+        match self {
+            Self::Origins(origins) if origins.is_empty() => Some("SAMEORIGIN"),
+            Self::Origins(_) | Self::Anywhere => None,
+        }
+    }
+
+    /// The `Content-Security-Policy` value, a lone `frame-ancestors`.
+    pub(crate) fn content_security_policy(&self) -> Option<String> {
+        match self {
+            Self::Origins(origins) => Some(origins.iter().fold(
+                "frame-ancestors 'self'".to_owned(),
+                |mut policy, origin| {
+                    policy.push(' ');
+                    policy.push_str(origin.as_str());
+                    policy
+                },
+            )),
+            Self::Anywhere => None,
+        }
+    }
 }
 
 impl<S> fmt::Debug for Page<S> {
@@ -91,6 +132,7 @@ impl<S: Signals> Page<S> {
             alternates: Vec::new(),
             json_ld: Vec::new(),
             nonce: None,
+            framing: Framing::Origins(Vec::new()),
         }
     }
 
@@ -211,6 +253,62 @@ impl<S: Signals> Page<S> {
     pub fn nofollow(mut self) -> Self {
         self.nofollow = true;
         self
+    }
+
+    /// Lets pages served from `origin` show this page in a frame.
+    ///
+    /// A page is served with `X-Frame-Options: SAMEORIGIN` and
+    /// `Content-Security-Policy: frame-ancestors 'self'`, so a page of another
+    /// site cannot frame it and lead a visitor to click its buttons, which
+    /// send their requests from this page's own origin. Each call adds
+    /// `origin` to `frame-ancestors` and drops `X-Frame-Options`, which
+    /// cannot name another origin. The headers are written by the axum
+    /// integration, so [`Page::render`] for a static file carries none, and
+    /// a `<meta>` cannot carry `frame-ancestors`.
+    ///
+    /// ```
+    /// use hypersig::{Origin, Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Widget {}
+    ///
+    /// const PORTAL: Origin = Origin::new("https://portal.example");
+    /// let _page = Page::new("Widget", Widget {}).framed_by(PORTAL);
+    /// ```
+    #[must_use]
+    pub fn framed_by(mut self, origin: Origin) -> Self {
+        if let Framing::Origins(origins) = &mut self.framing {
+            origins.push(origin);
+        }
+        self
+    }
+
+    /// Lets a page of any site show this page in a frame.
+    ///
+    /// The page is served without the headers [`Page::framed_by`] describes.
+    /// Use it for a page that changes nothing for the visitor who sees it,
+    /// such as an embedded chart, because another site can frame it and
+    /// lead the visitor to click.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Chart {}
+    ///
+    /// let _page = Page::new("Chart", Chart {}).framed_anywhere();
+    /// ```
+    #[must_use]
+    pub fn framed_anywhere(mut self) -> Self {
+        self.framing = Framing::Anywhere;
+        self
+    }
+
+    #[cfg(feature = "axum")]
+    pub(crate) fn framing(&self) -> &Framing {
+        &self.framing
     }
 
     /// Adds `data` to `<head>` as JSON-LD, the structured data search engines read.

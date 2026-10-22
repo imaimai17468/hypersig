@@ -154,6 +154,15 @@ const fn check_origin(bytes: &[u8]) -> Result<(), &'static str> {
         if matches!(bytes[i], b'/' | b'?' | b'#' | b'"' | b' ') {
             return Err("an origin ends at the host and port");
         }
+        // `Page::framed_by` writes the origin into a header unescaped, where
+        // a `;` or a `,` would start another directive or policy.
+        if !(bytes[i].is_ascii_alphanumeric()
+            || matches!(bytes[i], b'.' | b'-' | b':' | b'[' | b']'))
+        {
+            return Err(
+                "an origin's host and port hold letters, digits, `.`, `-`, `:`, `[`, and `]`",
+            );
+        }
         i += 1;
     }
     Ok(())
@@ -514,6 +523,25 @@ mod tests {
     #[should_panic(expected = "starts with `http://` or `https://`")]
     fn an_origin_without_a_scheme_panics() {
         let _ = Origin::new("example.com");
+    }
+
+    #[test]
+    fn an_origin_holds_only_what_a_host_and_port_can() {
+        for text in [
+            "https://a.example;script-src",
+            "https://a.example,https://b.example",
+            "https://a.example'",
+            "https://a.example\n",
+        ] {
+            assert!(Origin::parse(text).is_err(), "{text}");
+        }
+        for text in [
+            "http://localhost:3000",
+            "https://[::1]:8080",
+            "https://a-b.example",
+        ] {
+            assert!(Origin::parse(text).is_ok(), "{text}");
+        }
     }
 
     #[test]
