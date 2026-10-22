@@ -8,4 +8,4 @@ publish = false
 axum = "0.8"
 hypersig = "0.2.1"
 serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
