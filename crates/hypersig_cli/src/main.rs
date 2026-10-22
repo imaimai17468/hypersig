@@ -7,6 +7,7 @@
 //! `buildCommand` of `vercel.json`) are the ones crates.io published.
 
 mod add;
+mod dev;
 mod diff;
 mod host;
 mod new;
@@ -21,13 +22,18 @@ const USAGE: &str = "\
 Usage:
   cargo hypersig new <path> --host <host>   Create a project from the host's template
   cargo hypersig add <host> [--force]       Move the project here to the host
+  cargo hypersig dev [<build options>] [-- <args>]
+                                            Build and run the server, and again after each
+                                            change; in a debug build, the open pages reload
+                                            from the new one
 
 Hosts:
   server       A container image, for a host such as Fly.io, Cloud Run, or Render
   cloudflare   Cloudflare Workers
   vercel       A Vercel Function
 
-`add` writes no file that is already there unless it is given --force.";
+`add` writes no file that is already there unless it is given --force.
+`dev` passes <build options>, such as -p or --bin, to `cargo build`, and <args> to the server.";
 
 /// A failure to report to the person running the command, as one message.
 #[derive(Debug)]
@@ -125,6 +131,27 @@ fn run() -> Result<(), Error> {
     // Cargo runs `cargo hypersig new ...` as `cargo-hypersig hypersig new ...`.
     if args.peek().map(String::as_str) == Some("hypersig") {
         args.next();
+    }
+    // The arguments of `dev` belong to `cargo build` and the server, so the
+    // options of `new` and `add` are not read from them.
+    if args.peek().map(String::as_str) == Some("dev") {
+        args.next();
+        let mut build: Vec<String> = Vec::new();
+        let mut program = Vec::new();
+        let mut after = false;
+        for arg in args {
+            if after {
+                program.push(arg);
+            } else if arg == "--" {
+                after = true;
+            } else if arg == "-h" || arg == "--help" {
+                println!("{USAGE}");
+                return Ok(());
+            } else {
+                build.push(arg);
+            }
+        }
+        return dev::run(&build, &program);
     }
     match parse(args)? {
         Command::New { path, host } => new::run(&path, host),

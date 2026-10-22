@@ -535,6 +535,7 @@ dependencies = [
 name = "hypersig_cli"
 version = "0.3.0"
 dependencies = [
+ "serde_json",
  "toml_edit",
 ]
 

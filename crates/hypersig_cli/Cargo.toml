@@ -19,6 +19,8 @@ name = "cargo-hypersig"
 path = "src/main.rs"
 
 [dependencies]
+# `dev` reads the binary a build wrote from Cargo's JSON messages.
+serde_json.workspace = true
 toml_edit = "0.25.17"
 
 [lints]
