@@ -43,6 +43,8 @@ pub enum Learn {
     EscapeHatches,
     JavaScript,
     Security,
+    CallsInDepth,
+    RoutesInDepth,
     Deploying,
     DeployContainer,
     DeployCloudflare,
@@ -240,7 +242,7 @@ pub const LEARN: &[Group] = &[
             en: "Get started",
             ja: "はじめに",
         },
-        docs: &[Doc::Learn(Learn::Why), Doc::Learn(Learn::QuickStart)],
+        docs: &[Doc::Learn(Learn::QuickStart), Doc::Learn(Learn::Why)],
     },
     Group {
         title: L {
@@ -260,6 +262,16 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::EscapeHatches),
             Doc::Learn(Learn::JavaScript),
             Doc::Learn(Learn::Security),
+        ],
+    },
+    Group {
+        title: L {
+            en: "In depth",
+            ja: "詳しく知る",
+        },
+        docs: &[
+            Doc::Learn(Learn::CallsInDepth),
+            Doc::Learn(Learn::RoutesInDepth),
         ],
     },
     Group {
@@ -477,8 +489,8 @@ impl Doc {
         Self::Home,
         Self::StyleHome,
         Self::ComponentsHome,
-        Self::Learn(Learn::Why),
         Self::Learn(Learn::QuickStart),
+        Self::Learn(Learn::Why),
         Self::Learn(Learn::DescribingThePage),
         Self::Learn(Learn::Signals),
         Self::Learn(Learn::Expressions),
@@ -491,6 +503,8 @@ impl Doc {
         Self::Learn(Learn::EscapeHatches),
         Self::Learn(Learn::JavaScript),
         Self::Learn(Learn::Security),
+        Self::Learn(Learn::CallsInDepth),
+        Self::Learn(Learn::RoutesInDepth),
         Self::Learn(Learn::Deploying),
         Self::Learn(Learn::DeployContainer),
         Self::Learn(Learn::DeployCloudflare),
@@ -608,6 +622,8 @@ impl Doc {
                 Learn::DeployCloudflare => ("Cloudflare Workers", "Cloudflare Workers"),
                 Learn::DeployVercel => ("Vercel", "Vercel"),
                 Learn::Security => ("Security", "セキュリティ"),
+                Learn::CallsInDepth => ("Calls in depth", "呼び出しの詳細"),
+                Learn::RoutesInDepth => ("Routes in depth", "ルートの詳細"),
             },
             Self::Reference(page) => match page {
                 Reference::Overview => ("API reference", "API リファレンス"),
@@ -729,6 +745,14 @@ impl Doc {
                 Learn::Security => L {
                     en: "What hypersig checks so that a page and its actions resist what a visitor can send, why data from the browser cannot run code on the server, and what is left to the application.",
                     ja: "訪問者が送るものからページとアクションを守るために hypersig が検査すること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
+                },
+                Learn::CallsInDepth => L {
+                    en: "Patches that send only the items of a list that change, calls that overlap, streams that reconnect, and parts that several pages share.",
+                    ja: "リストの変わった項目だけを送る差分、重なった呼び出し、つなぎ直すストリーム、複数のページで使う部品を扱います。",
+                },
+                Learn::RoutesInDepth => L {
+                    en: "Typed query strings, URLs that change without loading a page, pages for missing paths, what search results and link previews show, and an application served under a path prefix.",
+                    ja: "型の付いたクエリ文字列、ページを読み込まずに変える URL、存在しないパスのページ、検索結果とリンクのプレビューに出る内容、パスの接頭辞の下で配信するアプリを扱います。",
                 },
                 Learn::Signals => L {
                     en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
@@ -908,6 +932,8 @@ impl Learn {
             Self::DeployCloudflare => "deploying/cloudflare",
             Self::DeployVercel => "deploying/vercel",
             Self::Security => "security",
+            Self::CallsInDepth => "calls",
+            Self::RoutesInDepth => "routes",
         }
     }
 }

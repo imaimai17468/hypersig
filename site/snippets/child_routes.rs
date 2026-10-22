@@ -1,11 +1,12 @@
-# use hypersig::{Page, Signals};
-# use serde::{Deserialize, Serialize};
-# #[derive(Signals, Serialize, Deserialize)]
-# struct Org {}
+# use hypersig::Page;
 # async fn org((): (), _: String) -> Option<Page<Org>> { None }
 # async fn member((): (), _: (String, i32)) -> Option<Page<Org>> { None }
-use hypersig::Route;
 use hypersig::html::a;
+use hypersig::{Route, Signals};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Org {}
 
 hypersig::routes! {
     fn pages(Router<()>);

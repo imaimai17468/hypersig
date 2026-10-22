@@ -1,9 +1,10 @@
-# use hypersig::Signals;
-# use serde::{Deserialize, Serialize};
-# #[derive(Signals, Serialize, Deserialize)]
-# struct Profile {}
-use hypersig::Route;
 use hypersig::html::{a, div, h1, p};
+use hypersig::{Route, Signals};
+use serde::{Deserialize, Serialize};
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Profile {}
+
 
 # async fn ada((): (), (): ()) -> Option<hypersig::Page<Profile>> { None }
 hypersig::routes! {

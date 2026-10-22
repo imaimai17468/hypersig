@@ -22,8 +22,8 @@ pub fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A page or action handler takes the state and its arguments, and may take one [`FromRequestParts`](https://docs.rs/axum/0.8/axum/extract/trait.FromRequestParts.html) extractor between them: `HeaderMap`, a tuple of extractors, or the application's own type, such as the signed-in member read from a session cookie. When the extractor fails, its rejection is the response and the handler does not run. A pair of headers and a page or patches, such as `([(SET_COOKIE, value)], patches)`, sends the headers with the answer.",
-                ja: "ページとアクションのハンドラは状態と引数を受け取り、そのあいだに [`FromRequestParts`](https://docs.rs/axum/0.8/axum/extract/trait.FromRequestParts.html) の extractor を 1 つ受け取れます。`HeaderMap`、extractor のタプル、セッションの Cookie から読んだサインイン中のメンバーのようなアプリケーションの型が使えます。extractor が失敗すると、その rejection が応答になり、ハンドラは動きません。`([(SET_COOKIE, value)], patches)` のようにヘッダーとページや差分を組にすると、ヘッダーが応答と一緒に送られます。",
+                en: "An extractor is an axum type that reads a part of the request, such as its headers or a cookie. A page or action handler takes the state and its arguments, and may take one [`FromRequestParts`](https://docs.rs/axum/0.8/axum/extract/trait.FromRequestParts.html) extractor between them: `HeaderMap`, a tuple of extractors, or the application's own type, such as the signed-in member read from a session cookie. When the extractor fails, its rejection is the response and the handler does not run. A pair of headers and a page or patches, such as `([(SET_COOKIE, value)], patches)`, sends the headers with the answer.",
+                ja: "extractor はヘッダーや Cookie などリクエストの一部を読む axum の型です。ページとアクションのハンドラは状態と引数を受け取り、そのあいだに [`FromRequestParts`](https://docs.rs/axum/0.8/axum/extract/trait.FromRequestParts.html) の extractor を 1 つ受け取れます。`HeaderMap`、extractor のタプル、セッションの Cookie から読んだサインイン中のメンバーのようなアプリケーションの型が使えます。extractor が失敗すると、その rejection が応答になり、ハンドラは動きません。`([(SET_COOKIE, value)], patches)` のようにヘッダーとページや差分を組にすると、ヘッダーが応答と一緒に送られます。",
             },
         ),
         show(Snippet::Extractors),
@@ -59,15 +59,8 @@ pub fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Before its handler runs, an action answers a request whose `Sec-Fetch-Site` is not `same-origin` with a 403, and a POST whose body is not `application/json` with a 415. A form on another site cannot send JSON, and a script there that tries needs a preflight request this server does not answer, so neither can call an action with the visitor's cookie.",
-                ja: "アクションは、ハンドラが動く前に、`Sec-Fetch-Site` が `same-origin` でないリクエストに 403 を、本文が `application/json` でない POST に 415 を返します。別のサイトのフォームは JSON を送れず、そこでスクリプトが送ろうとするとプリフライトのリクエストが必要になり、このサーバーはそれに応答しません。どちらも訪問者の Cookie を付けてアクションを呼び出せません。",
-            },
-        ),
-        note(
-            site,
-            L {
-                en: "A GET action also answers a request without the `Accept: text/event-stream` the runtime sends with a 403, which a link or an image on another site cannot send. A script on another site can send that header without a preflight, so from a browser that sends no `Sec-Fetch-Site` it still reaches a GET action, and a GET action should change nothing. The `auth` example in the repository signs in with a cookie session end to end.",
-                ja: "GET のアクションは、ランタイムが送る `Accept: text/event-stream` のないリクエストにも 403 を返すので、別のサイトのリンクや画像からは呼び出せません。ただし、別のサイトのスクリプトはこのヘッダーをプリフライトなしで送れます。`Sec-Fetch-Site` を送らないブラウザからは GET のアクションに届くので、GET のアクションでは何も変更しないでください。リポジトリの `auth` の例は、Cookie のセッションでのサインインを最初から最後まで示します。",
+                en: "Before its handler runs, an action refuses the requests a page on another site could send with the visitor's cookie, and [Security](learn/security/) lists them. Some browsers still let such a request reach a GET action, so use POST for an action that changes something. The `auth` example in the repository signs in with a cookie session end to end.",
+                ja: "アクションは、別のサイトのページが訪問者の Cookie を付けて送れるリクエストを、ハンドラが動く前に拒否します。拒否するリクエストの一覧は [セキュリティ](learn/security/) にあります。ただし、ブラウザによってはそうしたリクエストが GET のアクションに届くので、何かを変更するアクションには POST を使ってください。リポジトリの `auth` の例は Cookie のセッションでのサインインを最初から最後まで示します。",
             },
         ),
         uploads(site),
@@ -96,8 +89,8 @@ fn uploads(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A form on another site can send a `multipart/form-data` body without a preflight, so the runtime adds the `hypersig-upload` header, which no form can set, and the router refuses an upload without it with a 403. An ordinary action still refuses a multipart body with a 415. A body longer than `Upload::DEFAULT_MAX_BYTES` (8 MiB), or the limit `max_bytes` sets, gets a 413, before it is read when its `Content-Length` says so.",
-                ja: "`multipart/form-data` の本文は、別のサイトのフォームからプリフライトなしで送れます。そこでランタイムはフォームでは付けられない `hypersig-upload` ヘッダーを付け、ルーターはそれがないアップロードを 403 で拒否します。普通のアクションは、これまでどおりマルチパートの本文を 415 で拒否します。`Upload::DEFAULT_MAX_BYTES`（8 MiB）か、`max_bytes` で決めた上限を超える本文には 413 を返します。`Content-Length` が上限を超えていれば、本文を読む前に返します。",
+                en: "A body longer than `Upload::DEFAULT_MAX_BYTES` (8 MiB), or the limit `max_bytes` sets, gets a 413, before it is read when its `Content-Length` says so.",
+                ja: "`Upload::DEFAULT_MAX_BYTES`（8 MiB）か、`max_bytes` で決めた上限を超える本文には 413 を返します。`Content-Length` が上限を超えていれば、本文を読む前に返します。",
             },
         ),
         note(
