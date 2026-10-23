@@ -45,6 +45,7 @@ pub enum Learn {
     EscapeHatches,
     JavaScript,
     Security,
+    Testing,
     CallsInDepth,
     RoutesInDepth,
     Deploying,
@@ -266,6 +267,7 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::EscapeHatches),
             Doc::Learn(Learn::JavaScript),
             Doc::Learn(Learn::Security),
+            Doc::Learn(Learn::Testing),
         ],
     },
     Group {
@@ -509,6 +511,7 @@ impl Doc {
         Self::Learn(Learn::EscapeHatches),
         Self::Learn(Learn::JavaScript),
         Self::Learn(Learn::Security),
+        Self::Learn(Learn::Testing),
         Self::Learn(Learn::CallsInDepth),
         Self::Learn(Learn::RoutesInDepth),
         Self::Learn(Learn::Deploying),
@@ -633,6 +636,7 @@ impl Doc {
                 Learn::DeployCloudflare => ("Cloudflare Workers", "Cloudflare Workers"),
                 Learn::DeployVercel => ("Vercel", "Vercel"),
                 Learn::Security => ("Security", "セキュリティ"),
+                Learn::Testing => ("Testing", "テストを書く"),
                 Learn::CallsInDepth => ("Calls in depth", "呼び出しの詳細"),
                 Learn::RoutesInDepth => ("Routes in depth", "ルートの詳細"),
             },
@@ -764,6 +768,10 @@ impl Doc {
                 Learn::Security => L {
                     en: "What hypersig checks so that a page and its actions resist what a visitor can send, why data from the browser cannot run code on the server, and what is left to the application.",
                     ja: "訪問者が送るものからページとアクションを守るために hypersig が検査すること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
+                },
+                Learn::Testing => L {
+                    en: "Tests that call a page's and an action's handler as functions and read the signals with their types, tests that send a request through the router, and what only a browser test reaches.",
+                    ja: "ページとアクションのハンドラを関数として呼び、シグナルの値を型で読むテスト、ルーターにリクエストを送るテスト、ブラウザのテストでしか確かめられないことを扱います。",
                 },
                 Learn::CallsInDepth => L {
                     en: "Patches that send only the items of a list that change, calls that overlap, streams that reconnect, and parts that several pages share.",
@@ -953,6 +961,7 @@ impl Learn {
             Self::DeployCloudflare => "deploying/cloudflare",
             Self::DeployVercel => "deploying/vercel",
             Self::Security => "security",
+            Self::Testing => "testing",
             Self::CallsInDepth => "calls",
             Self::RoutesInDepth => "routes",
         }
