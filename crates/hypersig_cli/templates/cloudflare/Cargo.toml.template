@@ -15,4 +15,7 @@ futures = "0.3"
 hypersig = "{{hypersig-version}}"
 serde = { version = "1", features = ["derive"] }
 tower-service = "0.3"
+# `#[durable_object]` expands to wasm-bindgen's macros, whose expansion names
+# the `wasm_bindgen` crate by that path.
+wasm-bindgen = "0.2"
 worker = { version = "0.8", features = ["http", "axum", "d1"] }
