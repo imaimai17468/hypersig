@@ -6,3 +6,11 @@ compatibility_date = "2026-10-01"
 # `main` names. `cargo install` does nothing once it is installed.
 [build]
 command = "cargo install --quiet --locked worker-build@0.8.7 && worker-build --release"
+
+# The database the counter is saved in, which the worker reads as `DB`.
+# `wrangler dev` keeps it in a local SQLite file under `.wrangler/`. The entry
+# names no `database_id`, so the first `wrangler deploy` creates the database
+# on the account and writes its id here.
+[[d1_databases]]
+binding = "DB"
+database_name = "{{project-name}}"

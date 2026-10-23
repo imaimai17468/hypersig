@@ -1,6 +1,8 @@
 //! The Learn section, a guide read from top to bottom.
 
+mod api;
 mod basics;
+mod database;
 mod deploying;
 mod forms;
 mod javascript;
@@ -29,6 +31,8 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::CallsInDepth => server::calls_in_depth(site),
         Learn::Forms => forms::forms(site),
         Learn::Requests => requests::requests(site),
+        Learn::Database => database::database(site),
+        Learn::Api => api::api(site),
         Learn::Pages => server::pages(site),
         Learn::RoutesInDepth => server::routes_in_depth(site),
         Learn::Styling => server::styling(site),

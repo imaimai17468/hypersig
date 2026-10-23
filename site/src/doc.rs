@@ -38,6 +38,8 @@ pub enum Learn {
     Server,
     Forms,
     Requests,
+    Database,
+    Api,
     Pages,
     Styling,
     EscapeHatches,
@@ -257,6 +259,8 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::Server),
             Doc::Learn(Learn::Forms),
             Doc::Learn(Learn::Requests),
+            Doc::Learn(Learn::Database),
+            Doc::Learn(Learn::Api),
             Doc::Learn(Learn::Pages),
             Doc::Learn(Learn::Styling),
             Doc::Learn(Learn::EscapeHatches),
@@ -498,6 +502,8 @@ impl Doc {
         Self::Learn(Learn::Server),
         Self::Learn(Learn::Forms),
         Self::Learn(Learn::Requests),
+        Self::Learn(Learn::Database),
+        Self::Learn(Learn::Api),
         Self::Learn(Learn::Pages),
         Self::Learn(Learn::Styling),
         Self::Learn(Learn::EscapeHatches),
@@ -610,6 +616,11 @@ impl Doc {
                     "Requests, cookies, and errors",
                     "リクエスト、Cookie、エラー",
                 ),
+                Learn::Database => ("Storing data", "データを保存する"),
+                Learn::Api => (
+                    "Calling another service's API",
+                    "ほかのサービスの API を呼ぶ",
+                ),
                 Learn::Pages => ("Pages and links", "ページとリンク"),
                 Learn::Styling => ("Styling", "スタイル"),
                 Learn::EscapeHatches => (
@@ -701,6 +712,14 @@ impl Doc {
                 Learn::Forms => L {
                     en: "A form's rules are written once in Rust. The browser checks them as the visitor types, and the handler checks the same rules before it trusts the values.",
                     ja: "フォームのルールは Rust で 1 回だけ書きます。ブラウザは入力に合わせてそのルールを検査し、ハンドラは値を使う前に同じルールで検査します。",
+                },
+                Learn::Database => L {
+                    en: "A handler keeps the data requests share in a database it reaches from its own Rust code, so the data outlives the process and every instance of the server reads the same values.",
+                    ja: "ハンドラはリクエストをまたいで使うデータを、自分の Rust のコードからつなぐデータベースに置きます。データはプロセスが終わっても残り、サーバーのどのインスタンスも同じ値を読みます。",
+                },
+                Learn::Api => L {
+                    en: "A handler can call another service's HTTP API and answer the browser with what it returned, so the service's address and token stay on the server.",
+                    ja: "ハンドラはほかのサービスの HTTP の API を呼び、その結果でブラウザに応答できます。サービスのアドレスとトークンはサーバーから出ません。",
                 },
                 Learn::Requests => L {
                     en: "A handler reads the request through an axum extractor, sets cookies by returning headers beside its answer, and fails with `?`.",
@@ -923,6 +942,8 @@ impl Learn {
             Self::Server => "server",
             Self::Forms => "forms",
             Self::Requests => "requests",
+            Self::Database => "database",
+            Self::Api => "api",
             Self::Pages => "pages",
             Self::Styling => "styling",
             Self::EscapeHatches => "escape-hatches",

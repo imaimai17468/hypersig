@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE todos SET done = NOT done WHERE id = $1\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "37551a62cb5360ebd86b65627a9a0dd6db7ee913183b79d5ccf89d9b2b6889c8"
+}

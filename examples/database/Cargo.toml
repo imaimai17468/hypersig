@@ -1,0 +1,27 @@
+[package]
+name = "example-database"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The binary has no tests, and `cargo test` would still build and run an
+# empty test harness for it.
+[[bin]]
+name = "example-database"
+path = "src/main.rs"
+test = false
+
+[dependencies]
+axum.workspace = true
+futures.workspace = true
+hypersig.workspace = true
+# `bundled` compiles SQLite from source, so the example needs no SQLite
+# installed on the machine.
+rusqlite = { workspace = true, features = ["bundled"] }
+serde.workspace = true
+tokio.workspace = true
+tokio-stream = { workspace = true, features = ["sync"] }
+
+[lints]
+workspace = true

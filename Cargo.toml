@@ -25,6 +25,8 @@ hypersig_i18n = { path = "crates/hypersig_i18n", version = "=0.3.0" }
 hypersig_style = { path = "crates/hypersig_style", version = "=0.3.0" }
 hypersig_ui = { path = "crates/hypersig_ui", version = "=0.3.0" }
 
+aws-config = "1.13.0"
+aws-sdk-dynamodb = "1.134.0"
 axum = "0.8.9"
 divan = "0.1.21"
 futures = "0.3.34"
@@ -35,6 +37,12 @@ multer = "3.1.0"
 prettyplease = "0.3.0"
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
+reqwest = { version = "0.13.5", default-features = false }
+# 0.40 links libsqlite3-sys 0.38, and sqlx 0.9's SQLite driver, optional
+# and unused here, still takes part in resolving `links = "sqlite3"` and
+# accepts only versions below 0.38.
+rusqlite = "0.39.0"
+sqlx = { version = "0.9.0", default-features = false }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 syn = { version = "3.0.9", features = ["full"] }

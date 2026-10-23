@@ -257,13 +257,18 @@ hypersig = "0.3"
 axum = { version = "0.8", default-features = false }
 serde = { version = "1", features = ["derive"] }
 tower-service = "0.3"
-worker = { version = "0.8", features = ["http", "axum"] }
+worker = { version = "0.8", features = ["http", "axum", "d1"] }
 "#
     );
     assert_eq!(
         read(dir.join("wrangler.toml")),
+        include_str!("../steps/wrangler.toml").replace("{{project-name}}", "counter")
+    );
+    // The template's `wrangler.toml` is the one `add` writes and the D1
+    // binding its worker saves the count in.
+    assert!(
         include_str!("../templates/cloudflare/wrangler.toml")
-            .replace("{{project-name}}", "counter")
+            .starts_with(include_str!("../steps/wrangler.toml"))
     );
     assert_eq!(
         read(dir.join("rust-toolchain.toml")),
