@@ -130,6 +130,45 @@ impl<S, A> Action<S, A> {
     }
 }
 
+#[cfg(feature = "axum")]
+impl<S, A: serde::Serialize> Action<S, A> {
+    /// The request the runtime sends to call this action with `args`.
+    ///
+    /// A test hands it to the router with `tower::ServiceExt::oneshot`. It
+    /// carries `Accept: text/event-stream`, which the runtime sends with
+    /// every call and [`RequestKind::of`](crate::RequestKind::of) reads. A
+    /// `POST` sends `args` as its JSON body with `Content-Type:
+    /// application/json`, and a `GET` sends them as JSON in the `args` query
+    /// parameter. The path is [`Action::path`], without the [`Base`], as the
+    /// router registers it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Votes {
+    ///     likes: i32,
+    /// }
+    ///
+    /// const LIKE: Action<Votes, i32> = Action::post("/like");
+    /// let request = LIKE.request(&3);
+    /// assert_eq!(request.uri(), "/like");
+    /// assert_eq!(request.headers()["content-type"], "application/json");
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `args` does not serialize to JSON, such as a map whose keys
+    /// are not strings.
+    #[must_use]
+    pub fn request(&self, args: &A) -> axum::http::Request<axum::body::Body> {
+        runtime_request(self.method, self.path, args)
+    }
+}
+
 impl<S> Action<S, ()> {
     /// A call to this action, which takes no arguments.
     #[must_use]
@@ -478,6 +517,23 @@ impl<S, A> StreamAction<S, A> {
         self.path
     }
 
+    /// The request the runtime sends to open this stream with `args`.
+    ///
+    /// It is the `GET` that [`Action::request`] builds: `Accept:
+    /// text/event-stream`, with `args` as JSON in the `args` query parameter.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `args` does not serialize to JSON.
+    #[cfg(feature = "axum")]
+    #[must_use]
+    pub fn request(&self, args: &A) -> axum::http::Request<axum::body::Body>
+    where
+        A: serde::Serialize,
+    {
+        runtime_request(Method::Get, self.path, args)
+    }
+
     /// A call to this stream with `args`, evaluated in the browser when the call runs.
     ///
     /// A call that [reconnects](StreamCall::reconnect) evaluates `args`
@@ -802,6 +858,39 @@ impl<S> fmt::Debug for DialogRef<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("DialogRef").field(&self.name).finish()
     }
+}
+
+/// The request the runtime's `call` sends to `path` with `args`, as
+/// `runtime/src/runtime/action/call.ts` builds it.
+#[cfg(feature = "axum")]
+fn runtime_request(
+    method: Method,
+    path: &str,
+    args: &impl serde::Serialize,
+) -> axum::http::Request<axum::body::Body> {
+    use axum::body::Body;
+    use axum::http::{Request, header};
+
+    let json = serde_json::to_string(args).expect("the arguments serialize to JSON");
+    let request = Request::builder()
+        .method(method.as_str())
+        .header(header::ACCEPT, "text/event-stream");
+    let request = match method {
+        // The runtime leaves the parameter out for arguments that are `null`,
+        // such as `()`.
+        Method::Get if json == "null" => request.uri(path).body(Body::empty()),
+        Method::Get => {
+            let query = crate::route::encode_uri_component(&json);
+            request
+                .uri(format!("{path}?args={query}"))
+                .body(Body::empty())
+        }
+        Method::Post => request
+            .uri(path)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(json)),
+    };
+    request.expect("a path that starts with `/` and these headers make a request")
 }
 
 #[cfg(test)]

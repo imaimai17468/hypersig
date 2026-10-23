@@ -29,7 +29,7 @@ This is a web application built with [hypersig](https://imaimai17468.github.io/h
 
 ## Tests
 
-Call a handler as a function and read what it returned: `Page::value_of(Sig)` for a signal's first value, `Patches::value_of(Sig)` for the value a batch sets, and `Patches::navigates_to()` for a navigation. One field of a form is read through the form's `Sig` with `.field(..)`, such as `Guestbook::entry().field(Entry::name())`. The function `#[derive(Signals)]` writes for a field has the field's visibility, so a test in another module needs the field to be `pub(crate)`. Send a request through the router with `tower::ServiceExt::oneshot` to test what the router adds, such as an extractor's refusal. A `POST` action needs `Content-Type: application/json`, and a `GET` action or a stream needs `Accept: text/event-stream`. The runtime sends `Accept: text/event-stream` with every call, and `RequestKind::of` reads it, so send it with a `POST` too where the extractor answers a call and a page load differently.
+Call a handler as a function and read what it returned: `Page::value_of(Sig)` for a signal's first value, `Patches::value_of(Sig)` for the value a batch sets, `Form::value()` for the values of a form it holds, and `Patches::navigates_to()` for a navigation. The function `#[derive(Signals)]` writes for a field has the field's visibility, so a test in another module needs the field to be `pub(crate)`. Send a request through the router with `tower::ServiceExt::oneshot` to test what the router adds, such as an extractor's refusal: `ACTION.request(&args)` and `STREAM.request(&args)` build the request the runtime sends, with its headers, so a test names the action, not its path.
 
 ## This project's host
 

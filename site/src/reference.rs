@@ -2053,6 +2053,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "request",
+                            "struct.Action.html#method.request",
+                            L {
+                                en: "The request the runtime sends to call this action with `args`.",
+                                ja: "ランタイムが `args` でこのアクションを呼ぶときに送るリクエスト",
+                            },
+                        ),
+                        (
                             "Method",
                             "enum.Method.html",
                             L {
@@ -2162,6 +2170,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A call to this stream with `args`, evaluated in the browser when the call runs.",
                                 ja: "呼び出すときにブラウザで評価する引数 `args` を渡す、このストリームの呼び出し",
+                            },
+                        ),
+                        (
+                            "request",
+                            "struct.StreamAction.html#method.request",
+                            L {
+                                en: "The request the runtime sends to open this stream with `args`.",
+                                ja: "ランタイムが `args` でこのストリームを開くときに送るリクエスト",
                             },
                         ),
                         (
