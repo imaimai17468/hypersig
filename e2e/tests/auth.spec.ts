@@ -76,6 +76,30 @@ test("signs out, which removes the cookie and the session", async ({ page, conte
   await expect(page).toHaveURL(`${url("auth")}login`);
 });
 
+test("gives the session a new id at sign-in, so an id planted in the browser is not signed in", async ({ page, context, browser }) => {
+  const signIn = async (name: string, password: string) => {
+    await page.goto(`${url("auth")}login`);
+    await page.getByRole("textbox", { name: "Name", exact: true }).fill(name);
+    await page.getByRole("textbox", { name: "Password", exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page.locator("#member")).toHaveText(`Signed in as ${name}`);
+  };
+  const session = async () => (await context.cookies()).find((cookie) => cookie.name === "session");
+
+  await signIn("grace", "hopper");
+  const planted = await session();
+  expect(planted).toMatchObject({ httpOnly: true, secure: true, sameSite: "Lax" });
+  const other = await browser.newContext();
+  await other.addCookies([planted!]);
+
+  await signIn("ada", "lovelace");
+  expect((await session())?.value).not.toBe(planted!.value);
+  const planter = await other.newPage();
+  await planter.goto(url("auth"));
+  await expect(planter).toHaveURL(`${url("auth")}login`);
+  await other.close();
+});
+
 test("refuses an action called from another site or with a body that is not JSON", async ({ request }) => {
   const signIn = `${url("auth")}sign-in`;
   const credentials = JSON.stringify({ name: "ada", password: "lovelace" });

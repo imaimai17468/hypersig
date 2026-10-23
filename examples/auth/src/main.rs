@@ -1,20 +1,19 @@
-//! Signing in with a cookie session. An extractor reads the cookie and finds
-//! the signed-in member, the sign-in action sets the cookie beside its
-//! patches, and an action whose handler fails answers with a status the page
-//! shows. A member uploads a picture through a file input, which an upload
+//! Signing in with a cookie session kept by `tower-sessions`. Its layer reads
+//! the cookie, loads the session, and sets the cookie after a handler changes
+//! the session. An extractor finds the signed-in member in the session, and an
+//! action whose handler fails answers with a status the page shows. A member uploads a picture through a file input, which an upload
 //! checks before it keeps it.
 //!
 //! Run with `cargo run -p example-auth`, open <http://localhost:3007>, and
 //! sign in as `ada` with the password `lovelace`.
 
 use std::collections::HashMap;
-use std::hash::{BuildHasher as _, Hasher as _, RandomState};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use axum::Router;
 use axum::extract::FromRequestParts;
+use axum::http::StatusCode;
 use axum::http::request::Parts;
-use axum::http::{HeaderName, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use hypersig::html::{El, a, div, each, form, h1, label, li, p, span, ul};
 use hypersig::style::Style;
@@ -29,6 +28,8 @@ use hypersig_ui::{
     card_content, card_header, card_title, submit_button, token,
 };
 use serde::{Deserialize, Serialize};
+use tower_sessions::cookie::SameSite;
+use tower_sessions::{MemoryStore, Session, SessionManagerLayer};
 
 /// How many notes a member keeps.
 const MAX_NOTES: usize = 3;
@@ -89,20 +90,12 @@ const UPLOAD_PICTURE: Upload<Home> = Upload::post("/picture").max_bytes(64 * 102
 #[derive(Clone)]
 struct AppState {
     passwords: Arc<HashMap<&'static str, &'static str>>,
-    /// The member each session token belongs to.
-    sessions: Arc<Mutex<HashMap<String, String>>>,
     notes: Arc<Mutex<HashMap<String, Vec<String>>>>,
     /// Each member's picture, described as the page shows it.
     pictures: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl AppState {
-    fn sessions(&self) -> MutexGuard<'_, HashMap<String, String>> {
-        self.sessions
-            .lock()
-            .expect("no handler panics while holding the lock")
-    }
-
     fn notes_of(&self, name: &str) -> Vec<String> {
         self.notes
             .lock()
@@ -159,46 +152,34 @@ impl IntoResponse for NotesFull {
     }
 }
 
+/// The key under which a session holds the signed-in member's name.
+const MEMBER: &str = "member";
+
 /// The member whose session cookie came with the request.
 struct Member {
     name: String,
-    token: String,
+    session: Session,
 }
 
 impl FromRequestParts<AppState> for Member {
-    type Rejection = SignedOut;
+    type Rejection = Response;
 
-    fn from_request_parts(
-        parts: &mut Parts,
-        state: &AppState,
-    ) -> impl Future<Output = Result<Self, SignedOut>> + Send {
-        std::future::ready(Self::read(parts, state))
-    }
-}
-
-impl Member {
-    fn read(parts: &Parts, state: &AppState) -> Result<Self, SignedOut> {
-        let token = parts
-            .headers
-            .get_all(header::COOKIE)
-            .iter()
-            .filter_map(|value| value.to_str().ok())
-            .flat_map(|cookies| cookies.split(';'))
-            .find_map(|cookie| cookie.trim().strip_prefix("session="))
-            .map(str::to_owned);
-        let name = token
-            .as_ref()
-            .and_then(|token| state.sessions().get(token).cloned());
-        match (token, name) {
-            (Some(token), Some(name)) => Ok(Self { name, token }),
-            _ => Err(SignedOut {
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Response> {
+        let session = Session::from_request_parts(parts, state)
+            .await
+            .map_err(IntoResponse::into_response)?;
+        match session.get::<String>(MEMBER).await {
+            Ok(Some(name)) => Ok(Self { name, session }),
+            Ok(None) => Err(SignedOut {
                 kind: RequestKind::of(parts),
-            }),
+            }
+            .into_response()),
+            Err(error) => Err(StoreFailed(error).into_response()),
         }
     }
 }
 
-/// A request without a live session.
+/// A request without a signed-in member.
 ///
 /// A page sends the browser to the sign-in page. An action answers with a
 /// 401 instead, because `fetch` would follow a redirect and hand the page
@@ -219,24 +200,16 @@ impl IntoResponse for SignedOut {
     }
 }
 
-/// A new session token.
-///
-/// `RandomState` is seeded from the operating system's random source, so
-/// two hashes of nothing give 128 unpredictable bits. An application would
-/// use a crate made for tokens.
-fn new_token() -> String {
-    let half = || RandomState::new().build_hasher().finish();
-    format!("{:016x}{:016x}", half(), half())
-}
+/// The session store failed to read or write a session. It answers with a
+/// 500, which an action's `Call::error` shows.
+struct StoreFailed(tower_sessions::session::Error);
 
-/// The `Set-Cookie` header that stores `token`, or removes the cookie when
-/// `token` is `None`.
-fn session_cookie(token: Option<&str>) -> [(HeaderName, String); 1] {
-    let value = match token {
-        Some(token) => format!("session={token}; HttpOnly; SameSite=Lax; Path=/"),
-        None => "session=; Max-Age=0; HttpOnly; SameSite=Lax; Path=/".to_owned(),
-    };
-    [(header::SET_COOKIE, value)]
+impl IntoResponse for StoreFailed {
+    fn into_response(self) -> Response {
+        eprintln!("session store: {}", self.0);
+        let message = "Your session could not be read. Try again.";
+        (StatusCode::INTERNAL_SERVER_ERROR, message).into_response()
+    }
 }
 
 async fn home(state: AppState, member: Member, (): ()) -> Page<Home> {
@@ -444,10 +417,14 @@ fn picture_form() -> El<Home> {
         )
 }
 
-async fn sign_in(state: AppState, credentials: Credentials) -> ActionResponse<Login> {
+async fn sign_in(
+    state: AppState,
+    session: Session,
+    credentials: Credentials,
+) -> Result<ActionResponse<Login>, StoreFailed> {
     let form = Login::credentials();
     if let Err(errors) = Form::validate(&credentials) {
-        return form.reject(&errors).into();
+        return Ok(form.reject(&errors).into());
     }
     let name = credentials.name.trim();
     if state.passwords.get(name) != Some(&credentials.password.as_str()) {
@@ -455,23 +432,22 @@ async fn sign_in(state: AppState, credentials: Credentials) -> ActionResponse<Lo
             Credentials::password(),
             "The name or the password is wrong.",
         );
-        return form.reject(&wrong).into();
+        return Ok(form.reject(&wrong).into());
     }
-    let token = new_token();
-    state.sessions().insert(token.clone(), name.to_owned());
-    // The cookie rides on the same response as the patch that sends the
-    // browser home, so the home page's request already carries it.
-    let reply = Patches::new().navigate(HOME.url(()));
-    (session_cookie(Some(&token)), reply).into()
+    // A new id for the session that now holds a member. Someone who placed
+    // the id of their own session in this browser before the sign-in still
+    // holds the old id, and the store no longer has it.
+    session.cycle_id().await.map_err(StoreFailed)?;
+    session.insert(MEMBER, name).await.map_err(StoreFailed)?;
+    // The layer sets the cookie on this response, the one whose patch sends
+    // the browser home, so the home page's request already carries it.
+    Ok(Patches::new().navigate(HOME.url(())).into())
 }
 
-async fn sign_out(
-    state: AppState,
-    member: Member,
-    (): (),
-) -> ([(HeaderName, String); 1], Patches<Home>) {
-    state.sessions().remove(&member.token);
-    (session_cookie(None), Patches::new().navigate(LOGIN.url(())))
+async fn sign_out(_state: AppState, member: Member, (): ()) -> Result<Patches<Home>, StoreFailed> {
+    // An empty session makes the layer remove the cookie.
+    member.session.flush().await.map_err(StoreFailed)?;
+    Ok(Patches::new().navigate(LOGIN.url(())))
 }
 
 async fn add_note(
@@ -510,11 +486,30 @@ async fn upload_picture(
     Ok(Home::picture().patch(described).into())
 }
 
+/// The layer that keeps sessions, in this process's memory.
+///
+/// `MemoryStore` is lost on a restart and is not shared with a second
+/// process, so a deployment with more than one instance passes a store
+/// that keeps sessions in a database instead.
+fn sessions() -> SessionManagerLayer<MemoryStore> {
+    SessionManagerLayer::new(MemoryStore::default())
+        .with_name("session")
+        // The default, `Strict`, leaves the cookie off a visit that follows a
+        // link from another site, which would land on the sign-in page. An
+        // action needs no `Strict`, because it refuses a request another
+        // site sends.
+        .with_same_site(SameSite::Lax)
+        // The default too. Chrome stores a `Secure` cookie from
+        // `http://localhost` and `http://127.0.0.1` as well as over HTTPS. A
+        // browser that does not drops it, and the sign-in then lands back on
+        // the sign-in page.
+        .with_secure(true)
+}
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let state = AppState {
         passwords: Arc::new(HashMap::from([("ada", "lovelace"), ("grace", "hopper")])),
-        sessions: Arc::default(),
         notes: Arc::default(),
         pictures: Arc::default(),
     };
@@ -524,7 +519,8 @@ async fn main() -> std::io::Result<()> {
         .action(SIGN_OUT, sign_out)
         .action(ADD_NOTE, add_note)
         .upload(UPLOAD_PICTURE, upload_picture)
-        .with_state(state);
+        .with_state(state)
+        .layer(sessions());
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3007".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

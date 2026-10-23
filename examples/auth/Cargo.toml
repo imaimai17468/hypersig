@@ -18,6 +18,7 @@ hypersig.workspace = true
 hypersig_ui.workspace = true
 serde.workspace = true
 tokio.workspace = true
+tower-sessions = { workspace = true, features = ["axum-core", "memory-store"] }
 
 [lints]
 workspace = true
