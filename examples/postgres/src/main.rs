@@ -3,9 +3,9 @@
 //! change made through one process reaches the open tabs of the others over
 //! PostgreSQL's `LISTEN` and `NOTIFY`.
 //!
-//! Each query is a `sqlx::query!` macro, which checks its SQL, its parameters,
-//! and its columns against the tables of `migrations/` when the example is
-//! built. The build reads that check's input from `.sqlx`, so it needs no
+//! Each query is a file under `queries/`, which a `sqlx::query_file!` macro
+//! reads and checks, with its parameters and its columns, against the tables
+//! of `migrations/` when the example is built. The build reads that check's input from `.sqlx`, so it needs no
 //! database. After changing a query or a migration, apply the migrations to a
 //! database and write `.sqlx` again:
 //!
@@ -46,8 +46,8 @@ struct TodoDetail {
     done: bool,
 }
 
-/// The `id` column of a todo, a `BIGINT`. A query names it as
-/// `id AS "id: TodoId"`, and the macro reads the column into this type.
+/// The `id` column of a todo, a `BIGINT`. A query under `queries/` names it
+/// as `id AS "id: TodoId"`, and the macro reads the column into this type.
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, sqlx::Type)]
 #[sqlx(transparent)]
 struct TodoId(i64);
@@ -102,42 +102,35 @@ struct Db(PgPool);
 
 impl Db {
     async fn list(&self) -> Result<Vec<Todo>, DbError> {
-        let todos = sqlx::query_as!(
-            Todo,
-            r#"SELECT id AS "id: TodoId", title, done FROM todos ORDER BY id"#
-        )
-        .fetch_all(&self.0)
-        .await?;
+        let todos = sqlx::query_file_as!(Todo, "queries/list_todos.sql")
+            .fetch_all(&self.0)
+            .await?;
         Ok(todos)
     }
 
     async fn find(&self, id: TodoId) -> Result<Option<Todo>, DbError> {
-        let todo = sqlx::query_as!(
-            Todo,
-            r#"SELECT id AS "id: TodoId", title, done FROM todos WHERE id = $1"#,
-            id.0
-        )
-        .fetch_optional(&self.0)
-        .await?;
+        let todo = sqlx::query_file_as!(Todo, "queries/find_todo.sql", id.0)
+            .fetch_optional(&self.0)
+            .await?;
         Ok(todo)
     }
 
     async fn add(&self, title: &str) -> Result<(), DbError> {
-        sqlx::query!("INSERT INTO todos (title) VALUES ($1)", title)
+        sqlx::query_file!("queries/add_todo.sql", title)
             .execute(&self.0)
             .await?;
         Ok(())
     }
 
     async fn toggle(&self, id: TodoId) -> Result<(), DbError> {
-        sqlx::query!("UPDATE todos SET done = NOT done WHERE id = $1", id.0)
+        sqlx::query_file!("queries/toggle_todo.sql", id.0)
             .execute(&self.0)
             .await?;
         Ok(())
     }
 
     async fn remove(&self, id: TodoId) -> Result<(), DbError> {
-        sqlx::query!("DELETE FROM todos WHERE id = $1", id.0)
+        sqlx::query_file!("queries/remove_todo.sql", id.0)
             .execute(&self.0)
             .await?;
         Ok(())

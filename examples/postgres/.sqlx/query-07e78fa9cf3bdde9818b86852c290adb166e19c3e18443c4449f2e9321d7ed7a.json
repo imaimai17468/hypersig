@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: TodoId\", title, done FROM todos ORDER BY id",
+  "query": "SELECT id AS \"id: TodoId\", title, done\nFROM todos\nWHERE id = $1\n",
   "describe": {
     "columns": [
       {
@@ -38,7 +38,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Int8"
+      ]
     },
     "nullable": [
       false,
@@ -46,5 +48,5 @@
       false
     ]
   },
-  "hash": "1d9c40b09bf18e4ecf2147e2602a9086edd29cf2857a5f749708042a44793bbd"
+  "hash": "07e78fa9cf3bdde9818b86852c290adb166e19c3e18443c4449f2e9321d7ed7a"
 }
