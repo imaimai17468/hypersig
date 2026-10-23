@@ -185,8 +185,8 @@ fn host(site: Site) -> Part {
                     ja: "ストリームはパッチを送るあいだリクエストを開いたままにします。リクエストを一定の時間で終えるホストでは、その時間でストリームが切れます。[`reconnect()`](learn/server/) を付けた呼び出しは、切れたストリームを 1 秒後に開き直します。既定のタイムアウトが 300 秒の Cloud Run で確かめると、1 秒ごとに時刻を送るストリームは 303 秒で切れ、開き直りました。ページがつなぎ直す回数を減らすには、`--timeout` で上限を延ばしてください。",
                 },
                 L {
-                    en: "State kept in memory, such as a counter in the router's state, belongs to one process. When the host runs more than one instance, keep that state in a database.",
-                    ja: "ルーターの状態に置いたカウンターのようにメモリに持つ状態は、1 つのプロセスのものです。ホストがインスタンスを複数動かすときは、その状態をデータベースに置いてください。",
+                    en: "State kept in memory, such as a counter in the router's state, belongs to one process. When the host runs more than one instance, keep that state in a database, as [Keeping state in a database](learn/database/) shows.",
+                    ja: "ルーターの状態に置いたカウンターのようにメモリに持つ状態は、1 つのプロセスのものです。ホストがインスタンスを複数動かすときは、その状態をデータベースに置いてください。置き方は [データベースに状態を置く](learn/database/) にあります。",
                 },
             ],
         ),

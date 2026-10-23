@@ -1006,6 +1006,7 @@ dependencies = [
  "hypersig",
  "hypersig_i18n",
  "hypersig_ui",
+ "rusqlite",
  "serde",
  "tokio",
 ]

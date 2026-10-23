@@ -21,7 +21,13 @@ serde.workspace = true
 [dev-dependencies]
 axum.workspace = true
 futures.workspace = true
+rusqlite = { workspace = true, features = ["bundled"] }
 tokio = { workspace = true, features = ["signal"] }
 
 [lints]
 workspace = true
+
+# The sample of `snippets/database.rs` is the one user of rusqlite, and
+# cargo-udeps does not see a crate that only doctests use.
+[package.metadata.cargo-udeps.ignore]
+development = ["rusqlite"]

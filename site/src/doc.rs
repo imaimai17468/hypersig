@@ -38,6 +38,7 @@ pub enum Learn {
     Server,
     Forms,
     Requests,
+    Database,
     Pages,
     Styling,
     EscapeHatches,
@@ -257,6 +258,7 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::Server),
             Doc::Learn(Learn::Forms),
             Doc::Learn(Learn::Requests),
+            Doc::Learn(Learn::Database),
             Doc::Learn(Learn::Pages),
             Doc::Learn(Learn::Styling),
             Doc::Learn(Learn::EscapeHatches),
@@ -498,6 +500,7 @@ impl Doc {
         Self::Learn(Learn::Server),
         Self::Learn(Learn::Forms),
         Self::Learn(Learn::Requests),
+        Self::Learn(Learn::Database),
         Self::Learn(Learn::Pages),
         Self::Learn(Learn::Styling),
         Self::Learn(Learn::EscapeHatches),
@@ -610,6 +613,7 @@ impl Doc {
                     "Requests, cookies, and errors",
                     "リクエスト、Cookie、エラー",
                 ),
+                Learn::Database => ("Keeping state in a database", "データベースに状態を置く"),
                 Learn::Pages => ("Pages and links", "ページとリンク"),
                 Learn::Styling => ("Styling", "スタイル"),
                 Learn::EscapeHatches => (
@@ -701,6 +705,10 @@ impl Doc {
                 Learn::Forms => L {
                     en: "A form's rules are written once in Rust. The browser checks them as the visitor types, and the handler checks the same rules before it trusts the values.",
                     ja: "フォームのルールは Rust で 1 回だけ書きます。ブラウザは入力に合わせてそのルールを検査し、ハンドラは値を使う前に同じルールで検査します。",
+                },
+                Learn::Database => L {
+                    en: "Keep the state that handlers share in a database, so it outlives the process and every instance of the server reads the same values.",
+                    ja: "ハンドラが共有する状態をデータベースに置くと、状態はプロセスが終わっても残り、サーバーのどのインスタンスも同じ値を読みます。",
                 },
                 Learn::Requests => L {
                     en: "A handler reads the request through an axum extractor, sets cookies by returning headers beside its answer, and fails with `?`.",
@@ -923,6 +931,7 @@ impl Learn {
             Self::Server => "server",
             Self::Forms => "forms",
             Self::Requests => "requests",
+            Self::Database => "database",
             Self::Pages => "pages",
             Self::Styling => "styling",
             Self::EscapeHatches => "escape-hatches",
