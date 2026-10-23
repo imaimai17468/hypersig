@@ -25,7 +25,7 @@ This is a web application built with [hypersig](https://imaimai17468.github.io/h
 - **A form** is a `Form<T>` field with `impl Validate for T`. The browser checks the rules as the visitor types, and the handler checks the same rules with `Form::validate` before it trusts the values.
 - **The components** of `hypersig_ui` (`TextField`, `submit_button`, `alert`, `card`), a separate crate released at the same version, carry their own attributes and ARIA roles, so prefer them to `.attr(..)` with a name written by hand.
 - **No JavaScript of your own and no `data-hs-*` attribute.** A statement such as `count.set(count + 1)` runs in the browser and is written in Rust. A JavaScript library goes in a custom element, as the guide's JavaScript page shows.
-- **Signed-in visitors:** keep the session with `tower-sessions` 0.14, whose session stores still depend on its 0.14 core, and read the member with your own extractor. A page answers a signed-out visitor with a redirect, and an action with a 401, because the runtime's `fetch` follows a redirect and cannot apply the HTML it gets. `RequestKind::of(parts)` tells the two apart.
+- **Signed-in visitors:** keep the session with `tower-sessions` 0.14, whose session stores still depend on its 0.14 core, and read the member with your own extractor. A page answers a signed-out visitor with a redirect, and an action with a 401, because the runtime's `fetch` follows a redirect and cannot apply the HTML it gets. `RequestKind::of(parts)` tells the two apart. The page tells the 401 from other failures with `.status(signal)` on the call, compared with `StatusCode::UNAUTHORIZED`, not by matching the error text.
 
 ## Tests
 

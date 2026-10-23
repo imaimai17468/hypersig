@@ -216,6 +216,7 @@ struct Timers {
     echo: String,
     saving: bool,
     error: String,
+    failure: i32,
     fired: i32,
     find: String,
     finding: bool,
@@ -253,7 +254,8 @@ fn timers() -> (El<Timers>, Timers) {
                 SEARCH
                     .call()
                     .indicator(Timers::saving())
-                    .error(Timers::error()),
+                    .error(Timers::error())
+                    .status(Timers::failure()),
             ),
         )
         .child(
@@ -265,9 +267,12 @@ fn timers() -> (El<Timers>, Timers) {
             ),
         )
         .child(
-            button()
-                .id("follow")
-                .on_click(FEED.call().error(Timers::error()).reconnect()),
+            button().id("follow").on_click(
+                FEED.call()
+                    .error(Timers::error())
+                    .status(Timers::failure())
+                    .reconnect(),
+            ),
         )
         .child(
             span()
@@ -287,6 +292,7 @@ fn timers() -> (El<Timers>, Timers) {
         echo: String::new(),
         saving: false,
         error: String::new(),
+        failure: 0,
         fired: 0,
         find: String::new(),
         finding: false,

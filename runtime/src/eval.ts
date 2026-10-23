@@ -52,6 +52,8 @@ export interface CallOptions {
   readonly failed?: (message: string) => void;
   /** Runs the call's own statement once the answer has been applied. */
   readonly succeeded?: () => void;
+  /** The signal set to the status of a failed answer, and to 0 when the call is sent or a stream connects. */
+  readonly status?: string;
   /** The dotted path of the page field the part that made the call sits at. */
   readonly part?: string;
 }

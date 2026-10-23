@@ -86,6 +86,7 @@ export class Calls {
       options.origin?.isConnected === false;
     // The store notifies only a change, so a failure that repeats the last message would go unnoticed if the signal kept it.
     if (error !== null) this.#rt.store.set(error, "");
+    if (options.status !== undefined) this.#rt.store.set(options.status, 0);
     // A stream's indicator says whether its answer is open, so it is false while the stream connects and while it waits to reconnect.
     const busy = options.connected ? null : indicator;
     const open = options.connected ? indicator : null;
@@ -140,6 +141,7 @@ export class Calls {
     let wait = delay;
     const failure = await this.#send(url, call.init, call.error, call.options.reconnect, () => {
       wait = FIRST_RETRY_MS;
+      if (call.options.status !== undefined) this.#rt.store.set(call.options.status, 0);
       if (call.open === null) return;
       opened = true;
       this.#busy(call.open, 1);
@@ -223,8 +225,9 @@ export class Calls {
     this.#rt.store.set(indicator, count > 0);
   }
 
-  #fail({ method, path, error }: Pending, { message, status }: Failure): void {
+  #fail({ method, path, error, options }: Pending, { message, status }: Failure): void {
     if (error !== null) this.#rt.store.set(error, message);
+    if (options.status !== undefined) this.#rt.store.set(options.status, status);
     this.#rt.root.dispatchEvent(new CustomEvent("hs-error", { detail: { status, message } }));
     // A message made from an empty body already starts with the status.
     const answer =

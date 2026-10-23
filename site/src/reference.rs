@@ -2097,6 +2097,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "status",
+                            "struct.Call.html#method.status",
+                            L {
+                                en: "Sets `status` to the HTTP status of a failed answer, and to `0` when the call is sent.",
+                                ja: "失敗した応答の HTTP ステータスを `status` に入れ、送るときに `0` にします。",
+                            },
+                        ),
+                        (
                             "latest",
                             "struct.Call.html#method.latest",
                             L {

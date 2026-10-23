@@ -33,6 +33,31 @@ it("sets the indicator during a call and the error after a failed one", async ()
   );
 });
 
+it("sets the status signal to the status of a failed answer and back to 0 when the call is sent again", async () => {
+  const answers: ((response: Response) => void)[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<Fetch>(
+      () =>
+        new Promise<Response>((resolve) => {
+          answers.push(resolve);
+        }),
+    ),
+  );
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const runtime = mount("timers");
+  $("#save").click();
+  await tick();
+  answers[0]!(new Response("Sign in again.", { status: 401 }));
+  await vi.waitFor(() => expect(runtime.store.get("failure")).toBe(401));
+  $("#save").click();
+  await tick();
+  expect(runtime.store.get("failure")).toBe(0);
+  answers[1]!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+  await vi.waitFor(() => expect(runtime.store.get("saving")).toBe(false));
+  expect(runtime.store.get("failure")).toBe(0);
+});
+
 it("writes the status and its reason to the error when the failed answer has no body", async () => {
   vi.stubGlobal(
     "fetch",
@@ -87,6 +112,7 @@ it("sends a reconnect call again after the connection fails", async () => {
   $("#follow").click();
   await vi.advanceTimersByTimeAsync(0);
   expect(runtime.store.get("error")).toContain("Failed to fetch");
+  expect(runtime.store.get("failure")).toBe(0);
   await vi.advanceTimersByTimeAsync(1000);
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(runtime.store.get("found")).toBe("back");

@@ -239,6 +239,8 @@ pub struct Call<S> {
     connected: bool,
     /// The name of the [`FileInput`](crate::FileInput) whose files an upload sends.
     files: Option<&'static str>,
+    /// The path of the signal that holds the status of a failed answer.
+    status: Option<Value>,
     /// The `let` depth the error text is named at, and the statement that reads it.
     on_error: Option<(u8, Value)>,
     on_success: Option<Value>,
@@ -260,6 +262,7 @@ impl<S> Call<S> {
             resends: false,
             connected: false,
             files: None,
+            status: None,
             on_error: None,
             on_success: None,
             part: current_part(),
@@ -298,6 +301,38 @@ impl<S> Call<S> {
     #[must_use]
     pub fn error(mut self, message: Sig<S, String>) -> Self {
         self.error = Value::from(message.path());
+        self
+    }
+
+    /// Sets `status` to the HTTP status of a failed answer, and to `0` when the call is sent.
+    ///
+    /// It stays `0` when no answer arrives, such as when the connection
+    /// fails. A page compares it with a status the server answers with,
+    /// written from `StatusCode` rather than as a number, to tell one
+    /// failure from another without reading the text [`Call::error`] holds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use axum::http::StatusCode;
+    /// use hypersig::html::{a, button, div};
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Notes {
+    ///     failure: i32,
+    /// }
+    ///
+    /// const SAVE: Action<Notes> = Action::post("/save");
+    /// let signed_out = Notes::failure().equals(i32::from(StatusCode::UNAUTHORIZED.as_u16()));
+    /// let _page = div()
+    ///     .child(button().on_click(SAVE.call().status(Notes::failure())).text("Save"))
+    ///     .child(a().show(signed_out).text("Sign in again"));
+    /// ```
+    #[must_use]
+    pub fn status(mut self, status: Sig<S, i32>) -> Self {
+        self.status = Some(Value::from(status.path()));
         self
     }
 
@@ -427,6 +462,9 @@ impl<S> IntoStmt<S> for Call<S> {
         let mut outcomes = Map::new();
         if let Some((depth, stmt)) = call.on_error {
             outcomes.insert("error".to_owned(), json!([depth, stmt]));
+        }
+        if let Some(status) = call.status {
+            outcomes.insert("status".to_owned(), status);
         }
         if let Some(stmt) = call.on_success {
             outcomes.insert("ok".to_owned(), stmt);
@@ -596,6 +634,12 @@ impl<S> StreamCall<S> {
     #[must_use]
     pub fn error(self, message: Sig<S, String>) -> Self {
         Self(self.0.error(message))
+    }
+
+    /// Sets `status` as [`Call::status`] does, and to `0` when the stream connects.
+    #[must_use]
+    pub fn status(self, status: Sig<S, i32>) -> Self {
+        Self(self.0.status(status))
     }
 
     /// Opens the stream again when its connection fails, breaks off, or answers 5xx.
