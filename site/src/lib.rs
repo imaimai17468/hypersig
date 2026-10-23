@@ -318,8 +318,9 @@ fn sitemap(site: Site) -> Option<String> {
 /// The URLs are absolute where the site knows its origin, since an agent
 /// fetches them from the file alone, and start at the site's base otherwise.
 ///
-/// The Learn section comes first. The reference, the components, the styles,
-/// and the i18n pages go under `Optional`, which an agent may skip.
+/// The Learn section comes first, then the use cases page, which has no
+/// sidebar. The reference, the components, the styles, and the i18n pages go
+/// under `Optional`, which an agent may skip.
 fn llms(site: Site) -> String {
     let mut text = format!(
         "# hypersig\n\n> {}\n\n{}\n",
@@ -343,6 +344,8 @@ fn llms(site: Site) -> String {
         let _ = write!(text, "\n## {}\n\n", site.t(group.title));
         list(&mut text, group.docs);
     }
+    let _ = write!(text, "\n## {}\n\n", Doc::UseCases.title(site));
+    list(&mut text, &[Doc::UseCases]);
     text.push_str("\n## Optional\n\n");
     for groups in [doc::REFERENCE, doc::COMPONENTS, doc::STYLE, doc::I18N] {
         for group in groups {
@@ -589,9 +592,10 @@ mod tests {
         let listed = text.lines().filter(|line| line.starts_with("- [")).count();
         let pages = Doc::ALL
             .iter()
-            .filter(|doc| !doc.groups().is_empty())
+            .filter(|doc| !doc.groups().is_empty() || **doc == Doc::UseCases)
             .count();
         assert_eq!(listed, pages);
+        assert!(text.contains("](https://example.com/hypersig/use-cases/): "));
         assert!(text.contains("](https://example.com/hypersig/learn/sessions/): "));
         let ja = llms(site.with_lang(Lang::Ja));
         assert!(ja.contains("](https://example.com/hypersig/ja/learn/sessions/): "));

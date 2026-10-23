@@ -47,6 +47,14 @@ pub fn render(site: Site) -> String {
                     ),
                     (
                         site.t(L {
+                            en: "Use cases",
+                            ja: "ユースケース",
+                        }),
+                        "use-cases/",
+                        ButtonVariant::Ghost,
+                    ),
+                    (
+                        site.t(L {
                             en: "Reference",
                             ja: "リファレンス",
                         }),
