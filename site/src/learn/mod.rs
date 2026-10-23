@@ -11,6 +11,7 @@ mod security;
 mod server;
 pub mod snippet;
 mod state;
+mod testing;
 mod why;
 
 use crate::Site;
@@ -43,6 +44,7 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::DeployCloudflare => deploying::cloudflare::page(site),
         Learn::DeployVercel => deploying::vercel::page(site),
         Learn::Security => security::security(site),
+        Learn::Testing => testing::testing(site),
     }
 }
 
@@ -54,6 +56,7 @@ enum Program {
     Fragments,
     Streams,
     Pages,
+    Testing,
 }
 
 /// `program` as a code block titled `src/main.rs`.
@@ -64,6 +67,7 @@ fn program(program: Program) -> Part {
         Program::Fragments => include_str!("../../examples/fragments.rs"),
         Program::Streams => include_str!("../../examples/streams.rs"),
         Program::Pages => include_str!("../../examples/pages.rs"),
+        Program::Testing => include_str!("../../examples/testing.rs"),
     };
     code::block(
         Lang::Rust,
