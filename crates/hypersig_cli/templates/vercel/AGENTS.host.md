@@ -1,0 +1,1 @@
+The binary under `api/` runs as a Vercel Function, and `cargo run` serves it at http://localhost:3000. Vercel may run more than one instance of the function and stops one that goes unused, so a value kept in memory may not reach the next request. Data that has to reach the next request goes in a database.

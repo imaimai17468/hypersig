@@ -1,0 +1,36 @@
+# Working on this project
+
+This is a web application built with [hypersig](https://imaimai17468.github.io/hypersig/) {{hypersig-version}}, a server-driven hypermedia library for Rust. The server owns the state, renders HTML, and sends patches over Server-Sent Events, and a small runtime in the browser applies them. Every string the browser acts on (signal names, action URLs, page links, patch targets) is produced from a Rust type, so a mistake in one is a compile error. Keep it that way: write the typed form, and let the compiler find the mistake.
+
+## Check each change
+
+- `cargo check` after each edit. A hypersig mistake is a compile error that names the type it expected, so read the whole message before changing anything.
+- `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `cargo test` before you report the work done.
+- `cargo hypersig dev` runs the server and restarts it after each change, and the open page reloads itself. A Rust test runs no JavaScript, so a binding or a statement that changes the page in the browser is checked only by opening the page.
+
+## Where to read
+
+- [llms.txt](https://imaimai17468.github.io/hypersig/llms.txt) lists every page of the guide with one line on what it covers. Fetch the page you need from there.
+- The guide follows the main branch of the repository, which can be ahead of the release this project uses. Before you use an API the guide names, confirm it in the source of the version in `Cargo.lock`, under `~/.cargo/registry/src/*/hypersig-<version>/`, or on `https://docs.rs/hypersig/<version>`.
+- [`examples/`](https://github.com/imaimai17468/hypersig/tree/main/examples) holds complete applications: `todo` (a list every tab sees, which a stream re-renders as a `Fragment` after each change on a `broadcast` channel), `database` (the same list kept in SQLite), `showcase` (list patches by key), `signup` (a form), `auth` (sign-in with `tower-sessions`), `postgres` and `redis` (more than one process), `ui` (the components).
+
+## How hypersig code is written
+
+- **A page's state is one struct** with `#[derive(Signals, Serialize, Deserialize)]`. The derive gives each field a function, such as `Counter::count()`, that returns a typed `Sig`. Refer to a signal only through that function.
+- **A page is a route** declared in `hypersig::routes!`, which pairs each `Route` constant with its handler. Link to a page with `ROUTE.link()`, `ROUTE.link_with(args)` for a route with parameters, or `ROUTE.url(args)` on the server, never with a path written by hand.
+- **An action is a constant**, `Action::post("/path")` or `Action::get("/path")`, and that constant is the only place its path is written. The page calls it with `ACTION.call()` or `ACTION.call_with(signal)`, and the router serves it with `.action(ACTION, handler)`. A stream is a `StreamAction`, served with `.stream(..)`, that the page opens with `on_load(STREAM.call().reconnect())`.
+- **A handler is `async fn(state, args)` or `async fn(state, extractor, args)`.** It takes one extractor at most, and a tuple of extractors where it needs more. It answers with `Patches` (`Counter::count().patch(value).into()`), and fails with `Result<_, E>` where `E: IntoResponse`. The page shows the failure's text in the signal `.error(signal)` names.
+- **A list** is `each_keyed`. A handler changes the items it names by key with `patch_append`, `patch_upsert`, or `patch_remove`, in place of sending the whole list again.
+- **A stream that sends a list and then each change** reads the list and subscribes to the changes under one lock, or answers a change with `patch_upsert`, so that a change made between the two is neither lost nor shown twice.
+- **A form** is a `Form<T>` field with `impl Validate for T`. The browser checks the rules as the visitor types, and the handler checks the same rules with `Form::validate` before it trusts the values.
+- **The components** of `hypersig_ui` (`TextField`, `submit_button`, `alert`, `card`), a separate crate released at the same version, carry their own attributes and ARIA roles, so prefer them to `.attr(..)` with a name written by hand.
+- **No JavaScript of your own and no `data-hs-*` attribute.** A statement such as `count.set(count + 1)` runs in the browser and is written in Rust. A JavaScript library goes in a custom element, as the guide's JavaScript page shows.
+- **Signed-in visitors:** keep the session with `tower-sessions` 0.14, whose session stores still depend on its 0.14 core, and read the member with your own extractor. A page answers a signed-out visitor with a redirect, and an action with a 401, because the runtime's `fetch` follows a redirect and cannot apply the HTML it gets. `RequestKind::of(parts)` tells the two apart.
+
+## Tests
+
+Call a handler as a function and read what it returned: `Page::value_of(Sig)` for a signal's first value, `Patches::value_of(Sig)` for the value a batch sets, and `Patches::navigates_to()` for a navigation. One field of a form is read through the form's `Sig` with `.field(..)`, such as `Guestbook::entry().field(Entry::name())`. The function `#[derive(Signals)]` writes for a field has the field's visibility, so a test in another module needs the field to be `pub(crate)`. Send a request through the router with `tower::ServiceExt::oneshot` to test what the router adds, such as an extractor's refusal. A `POST` action needs `Content-Type: application/json`, and a `GET` action or a stream needs `Accept: text/event-stream`. The runtime sends `Accept: text/event-stream` with every call, and `RequestKind::of` reads it, so send it with a `POST` too where the extractor answers a call and a page load differently.
+
+## This project's host
+
+{{host-notes}}

@@ -75,5 +75,12 @@ pub fn deploying(site: Site) -> Part {
                 ja: "`cargo install --locked hypersig_cli` で、3 つのテンプレートを持つ `cargo hypersig` をインストールできます。3 つのテンプレートのページ、アクション、ストリームのコードは同じです。違うのは、リクエストを axum の `Router` に渡すコードと、その周りのファイルと、ホストがリクエストのあいだに何を残すかです。そのため、どのページにも既存のサーバーのプロジェクトを `cargo hypersig add` でそのテンプレートの形に移す方法を載せています。",
             },
         ),
+        para(
+            site,
+            L {
+                en: "Every template also writes `AGENTS.md`, the instructions a coding agent such as Claude Code or Codex reads: the checks to run after a change, where the [`llms.txt`](llms.txt) index of this guide is, how hypersig code is written, and what the host keeps between requests. `CLAUDE.md` holds `@AGENTS.md`, which Claude Code reads as an import of that file. `cargo hypersig add` writes the two files only where the project has none, even with `--force`.",
+                ja: "どのテンプレートも `AGENTS.md` を書き出します。Claude Code や Codex のようなコーディングエージェントが読む指示で、変更のあとに実行するチェック、このガイドの索引 [`llms.txt`](llms.txt) の場所、hypersig のコードの書き方、ホストがリクエストのあいだに何を残すかを書いています。`CLAUDE.md` には `@AGENTS.md` の 1 行だけがあり、Claude Code はこれを `AGENTS.md` の取り込みとして読みます。`cargo hypersig add` は、この 2 つのファイルがプロジェクトにないときだけ書き出し、`--force` を付けても既存のものは書き換えません。",
+            },
+        ),
     ])
 }

@@ -124,7 +124,8 @@ fn check(dir: &Path, target: &Path, args: &[&str]) {
 }
 
 /// `new` writes each file of `templates/$host` with its placeholders filled,
-/// and nothing else, and the project checks.
+/// and the shared `AGENTS.md` and `CLAUDE.md`, and nothing else, and the
+/// project checks.
 fn new(host: &str, target: &Path, check_args: &[&str]) {
     let dir = scratch(&format!("new-{host}"));
     let package = format!("my-{host}");
@@ -134,22 +135,28 @@ fn new(host: &str, target: &Path, check_args: &[&str]) {
     let template = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("templates")
         .join(host);
-    let expected: Vec<String> = files(&template)
+    let notes = read(template.join("AGENTS.host.md"));
+    let mut expected: Vec<String> = files(&template)
         .into_iter()
+        .filter(|path| path != "AGENTS.host.md")
         .map(|path| path.trim_end_matches(".template").to_owned())
+        .chain(["AGENTS.md".to_owned(), "CLAUDE.md".to_owned()])
         .collect();
+    expected.sort();
     assert_eq!(files(&project), expected);
     for path in &expected {
-        let source = if path == "Cargo.toml" {
-            template.join("Cargo.toml.template")
-        } else {
-            template.join(path)
+        let source = match path.as_str() {
+            "Cargo.toml" => template.join("Cargo.toml.template"),
+            "AGENTS.md" | "CLAUDE.md" => template.parent().unwrap().join(path),
+            _ => template.join(path),
         };
         let want = read(source)
             .replace("{{project-name}}", &package)
-            .replace("{{hypersig-version}}", env!("CARGO_PKG_VERSION"));
+            .replace("{{hypersig-version}}", env!("CARGO_PKG_VERSION"))
+            .replace("{{host-notes}}", notes.trim_end());
         assert_eq!(read(project.join(path)), want, "{path}");
     }
+    assert!(!read(project.join("AGENTS.md")).contains("{{"));
     assert!(
         read(project.join("Cargo.toml"))
             .contains(&format!("hypersig = \"{}\"", env!("CARGO_PKG_VERSION")))
@@ -343,6 +350,21 @@ fn add_with_force_replaces_the_files() {
     );
     // The features already hold `signal`, so the second run leaves them.
     assert_eq!(read(dir.join("Cargo.toml")).matches("signal").count(), 1);
+}
+
+#[test]
+fn add_writes_agents_md_only_where_there_is_none() {
+    let dir = quick_start("add-guide");
+    let stdout = succeeds(&hypersig(&dir, &["add", "server"]));
+    assert!(stdout.contains("  wrote     AGENTS.md"), "{stdout}");
+    assert_eq!(read(dir.join("CLAUDE.md")), "@AGENTS.md\n");
+
+    let dir = quick_start("add-guide-kept");
+    std::fs::write(dir.join("AGENTS.md"), "Our own rules.\n").unwrap();
+    let stdout = succeeds(&hypersig(&dir, &["add", "server", "--force"]));
+    assert!(!stdout.contains("  wrote     AGENTS.md"), "{stdout}");
+    assert!(stdout.contains("`AGENTS.md` is already here"), "{stdout}");
+    assert_eq!(read(dir.join("AGENTS.md")), "Our own rules.\n");
 }
 
 #[test]
