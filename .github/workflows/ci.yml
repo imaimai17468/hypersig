@@ -166,7 +166,7 @@ jobs:
           cache-dependency-path: e2e/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: cargo build --release -p example-counter -p example-todo -p example-todomvc -p example-showcase -p example-style -p example-ui -p example-signup -p example-auth -p example-storefront -p example-prefix
+      - run: cargo build --release -p example-counter -p example-todo -p example-todomvc -p example-showcase -p example-style -p example-ui -p example-signup -p example-auth -p example-storefront -p example-prefix -p example-database
       - run: pnpm test
       - uses: actions/upload-artifact@v7
         if: failure()

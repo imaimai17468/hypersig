@@ -3,13 +3,22 @@ import { defineConfig } from "@playwright/test";
 /** Each example runs as its own server on its own port, built once in release mode. */
 const examples = { counter: 3100, todo: 3101, todomvc: 3102, showcase: 3103, style: 3104, ui: 3105, signup: 3106, auth: 3107, storefront: 3108, prefix: 3109 } as const;
 
+/** Each example here keeps its state in a database file, which its server starts without. */
+const databases = { database: 3112 } as const;
+
+/** The file the `database` example opens, relative to the repository's root. */
+export const databasePath = "target/e2e/database.db";
+
+/** The port of the second `database` server, which its spec starts on the same file. */
+export const secondDatabasePort = 3113;
+
 /** Each worker runs under `wrangler dev` on its own port. */
 const workers = { cloudflare: 3110 } as const;
 
 /** Each Vercel Function runs as its own binary, which listens where `VERCEL_DEV_PORT` says. */
 const functions = { vercel: 3111 } as const;
 
-const ports = { ...examples, ...workers, ...functions };
+const ports = { ...examples, ...databases, ...workers, ...functions };
 
 export const url = (example: keyof typeof ports): string => `http://127.0.0.1:${ports[example]}/`;
 
@@ -32,6 +41,16 @@ export default defineConfig({
       command: `cargo run --release --quiet -p example-${name}`,
       cwd: "..",
       env: { ADDR: `127.0.0.1:${port}` },
+      url: `http://127.0.0.1:${port}/`,
+      timeout: 600_000,
+      reuseExistingServer: false,
+    })),
+    // The tests of a file run in order on one server, so a run that started
+    // from the previous run's file would find its todos.
+    ...Object.entries(databases).map(([name, port]) => ({
+      command: `mkdir -p target/e2e && rm -f ${databasePath}* && cargo run --release --quiet -p example-${name}`,
+      cwd: "..",
+      env: { ADDR: `127.0.0.1:${port}`, DATABASE_PATH: databasePath },
       url: `http://127.0.0.1:${port}/`,
       timeout: 600_000,
       reuseExistingServer: false,

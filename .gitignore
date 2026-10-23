@@ -1,15 +1,23 @@
 /target
+# The file `cargo run -p example-database` opens by default.
+/todos.db*
 node_modules/
 /runtime/coverage
 .DS_Store
 /e2e/test-results
 /e2e/playwright-report
 /bench/compare/*/target
+# The file `cargo run -p example-database` opens by default.
+/todos.db*
 /bench/compare/next/.next
 /bench/compare/results/raw
 /bench/compare/tanstack-start/dist
 /bench/compare/tanstack-start/.tanstack
 /bench/js-framework-benchmark/*/target
+# The file `cargo run -p example-database` opens by default.
+/todos.db*
 /bench/style/target
+# The file `cargo run -p example-database` opens by default.
+/todos.db*
 /bench/style/out
 /bench/style/panda/styled-system
