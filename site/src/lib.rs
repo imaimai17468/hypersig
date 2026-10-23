@@ -23,6 +23,7 @@ mod learn;
 mod prose;
 mod reference;
 mod style;
+mod use_cases;
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;

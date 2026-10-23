@@ -1,7 +1,7 @@
 //! The pages of the site, their paths, and the order the sidebar lists them in.
 
 use crate::lang::L;
-use crate::{Site, components, home, i18n, landing, layout, learn, reference, style};
+use crate::{Site, components, home, i18n, landing, layout, learn, reference, style, use_cases};
 
 /// One page of the site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,6 +12,8 @@ pub enum Doc {
     StyleHome,
     /// The landing page of the Components docs.
     ComponentsHome,
+    /// The applications that hypersig suits, with the change each request makes.
+    UseCases,
     /// A page of the Learn section.
     Learn(Learn),
     /// A page of the Reference section.
@@ -202,6 +204,10 @@ impl Library {
             en: "Learn",
             ja: "学ぶ",
         };
+        const USE_CASES: L<&str> = L {
+            en: "Use cases",
+            ja: "ユースケース",
+        };
         const REFERENCE: L<&str> = L {
             en: "Reference",
             ja: "リファレンス",
@@ -213,6 +219,7 @@ impl Library {
         match self {
             Self::Framework => &[
                 (LEARN, Doc::Learn(Learn::QuickStart)),
+                (USE_CASES, Doc::UseCases),
                 (REFERENCE, Doc::Reference(Reference::Overview)),
             ],
             Self::Style => &[(DOCS, Doc::Style(StylePage::Overview))],
@@ -497,6 +504,7 @@ impl Doc {
         Self::Home,
         Self::StyleHome,
         Self::ComponentsHome,
+        Self::UseCases,
         Self::Learn(Learn::QuickStart),
         Self::Learn(Learn::Why),
         Self::Learn(Learn::DescribingThePage),
@@ -580,6 +588,7 @@ impl Doc {
             Self::Home => String::new(),
             Self::StyleHome => "style/".to_owned(),
             Self::ComponentsHome => "components/".to_owned(),
+            Self::UseCases => "use-cases/".to_owned(),
             Self::Learn(Learn::QuickStart) => "learn/".to_owned(),
             Self::Reference(Reference::Overview) => "reference/".to_owned(),
             Self::Learn(page) => format!("learn/{}/", page.slug()),
@@ -603,6 +612,7 @@ impl Doc {
             Self::Home => ("hypersig", "hypersig"),
             Self::StyleHome => ("hypersig style", "hypersig style"),
             Self::I18nHome => ("hypersig i18n", "hypersig i18n"),
+            Self::UseCases => ("Use cases", "ユースケース"),
             Self::I18n(page) => match page {
                 I18nPage::Overview => ("Overview", "概要"),
                 I18nPage::Pages => ("Pages in each language", "言語ごとのページ"),
@@ -708,6 +718,10 @@ impl Doc {
             Self::Home | Self::StyleHome | Self::ComponentsHome | Self::I18nHome => {
                 self.library().descriptions()
             }
+            Self::UseCases => L {
+                en: "Applications that hypersig suits, each with a request it gets and the change that request makes in hypersig and in Next.js.",
+                ja: "hypersig に向くアプリと、そこに来る依頼ごとに、hypersig と Next.js でコードがどう変わるかを並べます。",
+            },
             Self::Learn(page) => match page {
                 Learn::QuickStart => L {
                     en: "Build a counter that counts in the browser and resets on the server, in one Rust file.",
@@ -876,16 +890,21 @@ impl Doc {
     /// The library whose docs the page belongs to.
     pub(crate) fn library(self) -> Library {
         match self {
-            Self::Home | Self::Learn(_) | Self::Reference(_) => Library::Framework,
+            Self::Home | Self::UseCases | Self::Learn(_) | Self::Reference(_) => Library::Framework,
             Self::StyleHome | Self::Style(_) => Library::Style,
             Self::I18nHome | Self::I18n(_) => Library::I18n,
             Self::ComponentsHome | Self::Components(_) => Library::Components,
         }
     }
 
-    /// Whether the page is a library's landing page, which has no sidebar.
+    /// Whether the page is a library's landing page.
     pub(crate) fn is_landing(self) -> bool {
         self == self.library().home()
+    }
+
+    /// Whether the page is listed in a sidebar, which it then shows.
+    pub(crate) fn has_sidebar(self) -> bool {
+        !self.groups().is_empty()
     }
 
     /// The URL of the page.
@@ -896,7 +915,11 @@ impl Doc {
     /// The sidebar the page is listed in.
     pub(crate) fn groups(self) -> &'static [Group] {
         match self {
-            Self::Home | Self::StyleHome | Self::ComponentsHome | Self::I18nHome => &[],
+            Self::Home
+            | Self::StyleHome
+            | Self::ComponentsHome
+            | Self::I18nHome
+            | Self::UseCases => &[],
             Self::Learn(_) => LEARN,
             Self::Reference(_) => REFERENCE,
             Self::Components(_) => COMPONENTS,
@@ -927,6 +950,7 @@ impl Doc {
             Self::StyleHome => landing::style(site),
             Self::ComponentsHome => landing::components(site),
             Self::I18nHome => landing::i18n(site),
+            Self::UseCases => use_cases::render(site),
             Self::Learn(page) => layout::article(site, self, learn::content(site, page)),
             Self::Reference(page) => layout::article(site, self, reference::content(site, page)),
             Self::Components(page) => layout::article(site, self, components::content(site, page)),
@@ -1056,10 +1080,12 @@ mod tests {
     }
 
     #[test]
-    fn every_page_but_the_landing_pages_is_in_a_sidebar() {
+    fn every_page_but_the_landing_pages_and_the_use_cases_is_in_a_sidebar() {
         for &doc in Doc::ALL {
             let listed = doc.groups().iter().any(|group| group.docs.contains(&doc));
-            assert_eq!(listed, !doc.is_landing(), "{doc:?}");
+            let alone = doc.is_landing() || doc == Doc::UseCases;
+            assert_eq!(listed, !alone, "{doc:?}");
+            assert_eq!(doc.has_sidebar(), !alone, "{doc:?}");
         }
     }
 

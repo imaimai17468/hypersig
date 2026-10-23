@@ -2,9 +2,11 @@
 //! runs as a doctest, so a sample that stops compiling fails the tests.
 //!
 //! A line that starts with `# ` is compiled and left out of the page, as in
-//! rustdoc.
+//! rustdoc. A sample shown as a change is the code after it: a line that ends
+//! in `//+` was added, and a comment line that starts with `//-` holds a line
+//! the change removed, so the doctest compiles what the change leaves.
 
-use crate::code::{self, Lang};
+use crate::code::{self, Change, Lang};
 use crate::prose::Part;
 
 macro_rules! snippets {
@@ -86,18 +88,48 @@ snippets! {
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";
     I18nPages => "i18n_pages.rs";
     I18nNegotiate => "i18n_negotiate.rs";
+    // The changes the use cases page shows, each written as the code after
+    // the change, so the doctest compiles what the page adds.
+    UseOthersChanges => "use_cases/others_changes.rs";
+    UseServerError => "use_cases/server_error.rs";
+    UseLatest => "use_cases/latest.rs";
+    UseAuction => "use_cases/auction.rs";
+    UseDeployLog => "use_cases/deploy_log.rs";
+    UseKitchen => "use_cases/kitchen.rs";
+    UseSeats => "use_cases/seats.rs";
+    UseUrlFilter => "use_cases/url_filter.rs";
+    UseTranslations => "use_cases/translations.rs";
     // The code `cargo hypersig add server` prints, so the page and the CLI
     // show one text.
     Listen => "../../crates/hypersig_cli/steps/server.rs";
 }
 
-/// `snippet` as a code block, without its hidden lines.
-pub fn show(snippet: Snippet) -> Part {
-    let shown: String = snippet
+/// The lines of `snippet` that the page shows.
+fn shown(snippet: Snippet) -> impl Iterator<Item = &'static str> {
+    snippet
         .source()
         .lines()
         .filter(|line| !(line.starts_with("# ") || *line == "#"))
-        .flat_map(|line| [line, "\n"])
-        .collect();
+}
+
+/// `snippet` as a code block, without its hidden lines.
+pub fn show(snippet: Snippet) -> Part {
+    let shown: String = shown(snippet).flat_map(|line| [line, "\n"]).collect();
     code::block(Lang::Rust, None, &shown)
+}
+
+/// `snippet` as a change, with its added and removed lines marked.
+pub fn show_change(snippet: Snippet) -> Part {
+    code::diff(
+        Lang::Rust,
+        shown(snippet).map(|line| {
+            if let Some(removed) = line.strip_prefix("//-") {
+                (Change::Removed, removed)
+            } else if let Some(added) = line.strip_suffix("//+") {
+                (Change::Added, added.trim_end())
+            } else {
+                (Change::Kept, line)
+            }
+        }),
+    )
 }

@@ -4,7 +4,8 @@ use std::ops::Range;
 
 use hypersig::html::{Node, code, div, pre, span};
 use hypersig::style::value::{
-    BorderBottomStyle, BorderStyle, Color, FontWeight, LineHeight, OverflowX, px, rem,
+    BorderBottomStyle, BorderStyle, Color, Display, FontWeight, LineHeight, OverflowX, UserSelect,
+    pct, px, rem,
 };
 use hypersig::style::{Media, Style, Theme, Token};
 use hypersig_ui::token;
@@ -47,7 +48,10 @@ macro_rules! syntax {
 
         /// The dark values of the syntax colors, for the page theme.
         pub fn theme() -> Theme {
-            let dark = Theme::new()$(.set(&Token::new($name, Color::hex($light)), Color::hex($dark)))*;
+            let dark = Theme::new()
+                $(.set(&Token::new($name, Color::hex($light)), Color::hex($dark)))*
+                .set(&added(), Color::hex(0x0012_261e))
+                .set(&removed(), Color::hex(0x0025_171c));
             Theme::new().on(Media::Dark, dark)
         }
     };
@@ -68,14 +72,95 @@ syntax! {
 /// A code block holding `source`, under a bar naming `file` if it is given.
 pub fn block(lang: Lang, file: Option<&str>, source: &str) -> Part {
     let body = pre()
-        .css(
-            Style::new()
-                .padding(rem(1))
-                .overflow_x(OverflowX::Auto)
-                .font_size(rem(0.8125))
-                .line_height(LineHeight::Length(rem(1.375))),
-        )
+        .css(pre_style().padding(rem(1)))
         .child(code().children(highlight(lang, source.trim_end())));
+    frame(file, body)
+}
+
+/// What a change did to one line of a diff.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Change {
+    Kept,
+    Added,
+    Removed,
+}
+
+impl Change {
+    /// The sign in front of the line.
+    fn sign(self) -> &'static str {
+        match self {
+            Self::Kept => " ",
+            Self::Added => "+",
+            Self::Removed => "-",
+        }
+    }
+
+    fn background(self) -> Option<Token<Color>> {
+        match self {
+            Self::Kept => None,
+            Self::Added => Some(added()),
+            Self::Removed => Some(removed()),
+        }
+    }
+}
+
+/// The background of an added line, GitHub's in the light theme.
+fn added() -> Token<Color> {
+    Token::new("code-added", Color::hex(0x00da_fbe1))
+}
+
+/// The background of a removed line, GitHub's in the light theme.
+fn removed() -> Token<Color> {
+    Token::new("code-removed", Color::hex(0x00ff_ebe9))
+}
+
+/// A code block of `lines`, each marked with its sign and background.
+pub fn diff<'a>(lang: Lang, lines: impl IntoIterator<Item = (Change, &'a str)>) -> Part {
+    let rows = lines.into_iter().map(|(change, line)| {
+        let row = Style::new().display(Display::Block).padding_inline(rem(1));
+        let row = span().css(match change.background() {
+            Some(background) => row.background_color(background.var()),
+            None => row,
+        });
+        row.child(
+            span()
+                .attr("aria-hidden", "true")
+                .css(
+                    Style::new()
+                        .user_select(UserSelect::None)
+                        .color(token::muted_foreground().var()),
+                )
+                .text(format!("{} ", change.sign())),
+        )
+        // A row with no text would collapse to no height.
+        .children(if line.is_empty() {
+            vec![" ".into()]
+        } else {
+            highlight(lang, line)
+        })
+    });
+    let body = pre().css(pre_style().padding_block(rem(1))).child(
+        code()
+            .css(
+                Style::new()
+                    .display(Display::InlineBlock)
+                    .min_width(pct(100)),
+            )
+            .children(rows),
+    );
+    frame(None, body)
+}
+
+fn pre_style() -> Style {
+    Style::new()
+        .overflow_x(OverflowX::Auto)
+        .font_size(rem(0.8125))
+        .line_height(LineHeight::Length(rem(1.375)))
+}
+
+/// `body` in the bordered box of a code block, under a bar naming `file` if
+/// it is given.
+fn frame(file: Option<&str>, body: Part) -> Part {
     div()
         .css(
             Style::new()

@@ -128,7 +128,7 @@ pub fn article(site: Site, doc: Doc, content: Part) -> String {
 
 fn top_bar(site: Site, doc: Doc) -> Part {
     let library = doc.library();
-    let has_sidebar = !doc.is_landing();
+    let has_sidebar = doc.has_sidebar();
     header()
         .css(
             Style::new()
@@ -328,6 +328,7 @@ fn in_section(doc: Doc, first: Doc) -> bool {
     matches!(
         (doc, first),
         (Doc::Learn(_), Doc::Learn(_))
+            | (Doc::UseCases, Doc::UseCases)
             | (Doc::Reference(_), Doc::Reference(_))
             | (Doc::Style(_), Doc::Style(_))
             | (Doc::Components(_), Doc::Components(_))
