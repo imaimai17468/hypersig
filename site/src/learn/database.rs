@@ -4,6 +4,7 @@
 
 use super::snippet::{Snippet, show};
 use crate::Site;
+use crate::code::{self, Lang};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
 use crate::prose::{Part, heading, lead, note, para, parts, subheading, table_of, title};
@@ -123,8 +124,8 @@ fn drivers(site: Site) -> Part {
         para(
             site,
             L {
-                en: "This sample uses [rusqlite](https://docs.rs/rusqlite/0.40), whose calls block the thread until SQLite answers. A blocked thread is one of tokio's workers that serve every request, so each query runs in `tokio::task::spawn_blocking`, on threads kept for blocking work. sqlx, which [`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) uses, has `async` functions, so a handler awaits the query and needs no `spawn_blocking`. Its pool, `PgPool`, goes in the state as the SQLite connection does here. For MySQL, turn on sqlx's `mysql` feature in place of `postgres`, use a `MySqlPool` and a `mysql://` URL, and write `?` in place of `$1` in the queries.",
-                ja: "このサンプルは [rusqlite](https://docs.rs/rusqlite/0.40) を使います。rusqlite の呼び出しは、SQLite が答えるまでスレッドを止めます。止まるのはすべてのリクエストを処理する tokio のワーカーなので、クエリは `tokio::task::spawn_blocking` で、スレッドを止める処理のために用意された別のスレッドで動かします。[`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) が使う sqlx の関数は `async` なので、ハンドラはクエリを `.await` するだけで済み、`spawn_blocking` は要りません。sqlx のプール `PgPool` は、ここでの SQLite の接続と同じように状態に置きます。MySQL では、sqlx の feature を `postgres` の代わりに `mysql` にし、`MySqlPool` と `mysql://` の URL を使って、クエリの `$1` を `?` に書き換えます。",
+                en: "This sample uses [rusqlite](https://docs.rs/rusqlite/0.39), whose calls block the thread until SQLite answers. A blocked thread is one of tokio's workers that serve every request, so each query runs in `tokio::task::spawn_blocking`, on threads kept for blocking work. sqlx, which [`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) uses, has `async` functions, so a handler awaits the query and needs no `spawn_blocking`. Its pool, `PgPool`, goes in the state as the SQLite connection does here. For MySQL, turn on sqlx's `mysql` feature in place of `postgres`, use a `MySqlPool` and a `mysql://` URL, and write `?` in place of `$1` in the queries.",
+                ja: "このサンプルは [rusqlite](https://docs.rs/rusqlite/0.39) を使います。rusqlite の呼び出しは、SQLite が答えるまでスレッドを止めます。止まるのはすべてのリクエストを処理する tokio のワーカーなので、クエリは `tokio::task::spawn_blocking` で、スレッドを止める処理のために用意された別のスレッドで動かします。[`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) が使う sqlx の関数は `async` なので、ハンドラはクエリを `.await` するだけで済み、`spawn_blocking` は要りません。sqlx のプール `PgPool` は、ここでの SQLite の接続と同じように状態に置きます。MySQL では、sqlx の feature を `postgres` の代わりに `mysql` にし、`MySqlPool` と `mysql://` の URL を使って、クエリの `$1` を `?` に書き換えます。",
             },
         ),
         subheading(
@@ -258,8 +259,8 @@ fn processes(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A stream that sends the list after each change hears of the change through a `tokio::sync::broadcast` channel in the router's state, and that channel belongs to one process. In `examples/database`, a second process on the same SQLite file reads the same todos, but a write by one process sends nothing to the other process's streams, so a tab served by the other process shows the write when it loads the page again. `examples/postgres` sends the write and a `pg_notify` in one transaction, and each process listens on that channel with sqlx's `PgListener` and forwards what it hears to its own `broadcast`, so every open tab shows the write at once.",
-                ja: "変更のたびに一覧を送るストリームは、ルーターの状態にある `tokio::sync::broadcast` のチャネルで変更を知ります。このチャネルは 1 つのプロセスのものです。`examples/database` では、同じ SQLite のファイルを開いた 2 つ目のプロセスも同じ todo を読みますが、一方のプロセスの書き込みはもう一方のプロセスのストリームには届きません。もう一方のプロセスが配信したタブには、ページを読み込み直したときに書き込みが表示されます。`examples/postgres` は書き込みと `pg_notify` を 1 つのトランザクションで送り、各プロセスは sqlx の `PgListener` でそのチャネルを聞いて、受け取った知らせを自分の `broadcast` に流します。そのため、開いているすべてのタブに書き込みがすぐ表示されます。",
+                en: "A stream that sends the list after each change hears of the change through a `tokio::sync::broadcast` channel in the router's state, and that channel belongs to one process. In `examples/database`, a second process on the same SQLite file reads the same todos, but a write by one process sends nothing to the other process's streams, so a tab served by the other process shows the write when it loads the page again. The migration of `examples/postgres` creates a trigger that calls `pg_notify` after each statement that changes the table, and PostgreSQL delivers the notification when the transaction commits. Each process listens on that channel with sqlx's `PgListener` and forwards what it hears to its own `broadcast`, so every open tab shows the write at once.",
+                ja: "変更のたびに一覧を送るストリームは、ルーターの状態にある `tokio::sync::broadcast` のチャネルで変更を知ります。このチャネルは 1 つのプロセスのものです。`examples/database` では、同じ SQLite のファイルを開いた 2 つ目のプロセスも同じ todo を読みますが、一方のプロセスの書き込みはもう一方のプロセスのストリームには届きません。もう一方のプロセスが配信したタブには、ページを読み込み直したときに書き込みが表示されます。`examples/postgres` のマイグレーションは、テーブルを変更する文のたびに `pg_notify` を呼ぶトリガーを作ります。PostgreSQL はその知らせをトランザクションのコミット時に届けます。各プロセスは sqlx の `PgListener` でそのチャネルを聞き、受け取った知らせを自分の `broadcast` に流すので、開いているすべてのタブに書き込みがすぐ表示されます。",
             },
         ),
         note(
@@ -299,22 +300,37 @@ fn workers(site: Site) -> Part {
     ])
 }
 
-/// What the compiler checks once the data lives in a database.
+/// The SQL that sqlx's macros check when the program is built.
 fn checks(site: Site) -> Part {
     parts([
         heading(
             site,
             L {
-                en: "What the compiler checks",
-                ja: "コンパイラが検査するもの",
+                en: "SQL the compiler checks",
+                ja: "コンパイラが検査する SQL",
             },
         ),
         para(
             site,
             L {
-                en: "The routes, actions, and signals the page uses are still Rust types, so a mistake in them still fails to compile. The SQL is a string that hypersig does not read: a misspelled column fails when the query runs, and the handler returns that as its error. sqlx's `query!` macro checks a query against a database when the program is built, and needs that database in `DATABASE_URL`, or the `.sqlx` directory `cargo sqlx prepare` writes from it, at build time.",
-                ja: "ページが使うルート、アクション、シグナルは Rust の型のままなので、それらの書き間違いは引き続きコンパイルエラーになります。SQL は hypersig が読まない文字列です。列名の綴りを間違えるとクエリの実行時に失敗し、ハンドラはそれをエラーとして返します。sqlx の `query!` マクロはビルドのときにデータベースに問い合わせてクエリを検査します。そのためビルドには、`DATABASE_URL` のデータベースか、`cargo sqlx prepare` がそこから書き出す `.sqlx` のディレクトリが必要です。",
+                en: "The routes, actions, and signals the page uses are Rust types. SQL is a string that hypersig does not read, but sqlx's `query!` and `query_as!` macros check it when the program is built: each asks the database to prepare its query against the tables the migrations made, so a misspelled column, a parameter of the wrong type, or a struct field the result does not fill fails to compile. `examples/postgres` writes every query this way. The queries of `examples/database` and of the Cloudflare template are plain strings, and a mistake in them fails when the query runs.",
+                ja: "ページが使うルート、アクション、シグナルは Rust の型です。SQL は hypersig が読まない文字列ですが、sqlx の `query!` と `query_as!` のマクロはビルドのときに SQL を検査します。マクロはマイグレーションが作ったテーブルに対してクエリの prepare をデータベースに頼むので、列名の綴りの誤り、型の違う引数、結果で埋まらない構造体のフィールドはコンパイルエラーになります。`examples/postgres` はすべてのクエリをこの形で書いています。`examples/database` と Cloudflare のテンプレートのクエリはただの文字列なので、誤りはクエリを実行したときに失敗します。",
             },
+        ),
+        para(
+            site,
+            L {
+                en: "A build reads what the macros need from the crate's `.sqlx` directory, which `cargo sqlx prepare` writes from a database with the migrations applied, so the build itself needs no database. The repository's `.cargo/config.toml` sets `SQLX_OFFLINE=true`, so a `DATABASE_URL` set for the server does not send the build to a database. A query that `.sqlx` does not hold fails to compile with a message to run `cargo sqlx prepare`. After changing a query or a migration, write `.sqlx` again and commit it. CI runs `cargo sqlx prepare --check`, which fails when it was not written again.",
+                ja: "ビルドはマクロが使う情報をクレートの `.sqlx` ディレクトリから読みます。`.sqlx` は、マイグレーションを適用したデータベースから `cargo sqlx prepare` が書き出すので、ビルド自体にデータベースは要りません。リポジトリの `.cargo/config.toml` は `SQLX_OFFLINE=true` を設定しているので、サーバーのために設定した `DATABASE_URL` があっても、ビルドはデータベースに問い合わせません。`.sqlx` にないクエリは、`cargo sqlx prepare` を実行するよう促すメッセージとともにコンパイルエラーになります。クエリかマイグレーションを変えたら `.sqlx` を書き出し直してコミットしてください。CI は `cargo sqlx prepare --check` を実行し、書き出し直していなければ失敗します。",
+            },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "cargo install --locked sqlx-cli --no-default-features --features postgres,rustls
+export DATABASE_URL=postgres://postgres:password@localhost/postgres
+cargo sqlx migrate run --source examples/postgres/migrations
+cd examples/postgres && cargo sqlx prepare",
         ),
     ])
 }

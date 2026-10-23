@@ -100,8 +100,8 @@ fn elsewhere(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The service's paths and the shape of its JSON are outside what hypersig checks, as SQL is: a wrong path or field fails when the call runs. Where the service publishes an OpenAPI description, a client generated from it, such as one from the `progenitor` crate, turns them into Rust types.",
-                ja: "サービスのパスと JSON の形は、SQL と同じく hypersig が検査する範囲の外です。パスやフィールドを間違えると、呼び出しを実行したときに失敗します。サービスが OpenAPI の定義を公開していれば、そこから生成したクライアント（たとえば `progenitor` クレートで生成したもの）で、それらを Rust の型にできます。",
+                en: "The service's paths and the shape of its JSON are outside what hypersig checks, as a plain SQL string is: a wrong path or field fails when the call runs. Where the service publishes an OpenAPI description, a client generated from it, such as one from the `progenitor` crate, turns them into Rust types.",
+                ja: "サービスのパスと JSON の形は、ただの文字列で書いた SQL と同じく、hypersig が検査する範囲の外です。パスやフィールドを間違えると、呼び出しを実行したときに失敗します。サービスが OpenAPI の定義を公開していれば、そこから生成したクライアント（たとえば `progenitor` クレートで生成したもの）で、それらを Rust の型にできます。",
             },
         ),
         heading(
