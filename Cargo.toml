@@ -34,6 +34,7 @@ getrandom = "0.4.3"
 insta = "1.49.0"
 js-sys = "0.3.106"
 multer = "3.1.0"
+password-auth = "1.0.0"
 prettyplease = "0.3.0"
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
@@ -50,6 +51,10 @@ syn = { version = "3.0.9", features = ["full"] }
 tokio = { version = "1.53.3", features = ["macros", "rt-multi-thread", "net", "sync", "time"] }
 tokio-stream = "0.1.19"
 tower = { version = "0.5.3", features = ["util"] }
+# 0.15 is out, but tower-sessions-sqlx-store 0.15, tower-sessions-redis-store
+# 0.16, and axum-login 0.18 depend on tower-sessions-core 0.14, and a store
+# built on it does not implement the `SessionStore` of 0.15's layer.
+tower-sessions = { version = "0.14.0", default-features = false }
 http-body-util = "0.1.5"
 trybuild = "1.0.122"
 

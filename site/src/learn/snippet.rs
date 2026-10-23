@@ -56,6 +56,7 @@ snippets! {
     Extractors => "extractors.rs";
     HandlerErrors => "handler_errors.rs";
     Uploads => "uploads.rs";
+    Sessions => "sessions.rs";
     Database => "database.rs", "no_run";
     DynamoDb => "dynamodb.rs", "no_run";
     Api => "api.rs", "no_run";

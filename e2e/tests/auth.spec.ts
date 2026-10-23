@@ -14,8 +14,12 @@ base("signs in with a cookie, shows the handler's error, and asks to sign in aga
   await password.fill("babbage");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.locator("#ui-credentials-value-password-error")).toHaveText("The name or the password is wrong.");
-
+  await name.fill("nobody");
   await password.fill("lovelace");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator("#ui-credentials-value-password-error")).toHaveText("The name or the password is wrong.");
+
+  await name.fill("ada");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(url("auth"));
   await expect(page.locator("#member")).toHaveText("Signed in as ada");
@@ -74,6 +78,30 @@ test("signs out, which removes the cookie and the session", async ({ page, conte
   expect((await context.cookies()).some((cookie) => cookie.name === "session")).toBe(false);
   await page.goto(url("auth"));
   await expect(page).toHaveURL(`${url("auth")}login`);
+});
+
+test("gives the session a new id at sign-in, so an id planted in the browser is not signed in", async ({ page, context, browser }) => {
+  const signIn = async (name: string, password: string) => {
+    await page.goto(`${url("auth")}login`);
+    await page.getByRole("textbox", { name: "Name", exact: true }).fill(name);
+    await page.getByRole("textbox", { name: "Password", exact: true }).fill(password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page.locator("#member")).toHaveText(`Signed in as ${name}`);
+  };
+  const session = async () => (await context.cookies()).find((cookie) => cookie.name === "session");
+
+  await signIn("grace", "hopper");
+  const planted = await session();
+  expect(planted).toMatchObject({ httpOnly: true, secure: true, sameSite: "Lax" });
+  const other = await browser.newContext();
+  await other.addCookies([planted!]);
+
+  await signIn("ada", "lovelace");
+  expect((await session())?.value).not.toBe(planted!.value);
+  const planter = await other.newPage();
+  await planter.goto(url("auth"));
+  await expect(planter).toHaveURL(`${url("auth")}login`);
+  await other.close();
 });
 
 test("refuses an action called from another site or with a body that is not JSON", async ({ request }) => {
