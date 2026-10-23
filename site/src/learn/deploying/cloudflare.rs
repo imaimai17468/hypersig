@@ -77,15 +77,15 @@ npx wrangler deploy",
                 en: &[
                     &[
                         "`src/lib.rs`",
-                        "The worker below. The `+1` button counts in the browser, the second button doubles the count on the worker, the third saves it in D1, from which the page reads it on the next load, and a stream sends the worker's time every second.",
+                        "The worker below. The `+1` button counts in the browser, the second button doubles the count on the worker, the third saves it in D1, and a stream sends the worker's time every second. A second stream sends the saved count to every open tab after each save, through the `Hub` Durable Object, which relays the save to the streams of every isolate.",
                     ],
                     &[
                         "`Cargo.toml`",
-                        "A library that `worker-build` compiles, with axum without its default features, which need tokio's networking.",
+                        "A library that `worker-build` compiles, with axum without its default features, which need tokio's networking, and wasm-bindgen, whose macros `#[durable_object]` expands to.",
                     ],
                     &[
                         "`wrangler.toml`",
-                        "The worker's name, the build command, which installs `worker-build` when it is missing and runs it, and the D1 database bound as `DB`. The binding names no `database_id`, so the first `wrangler deploy` creates the database and writes its id into the file, and `wrangler dev` keeps a local one.",
+                        "The worker's name, the build command, which installs `worker-build` when it is missing and runs it, and the D1 database bound as `DB`. The binding names no `database_id`, so the first `wrangler deploy` creates the database and writes its id into the file, and `wrangler dev` keeps a local one. The file also binds the `Hub` Durable Object as `HUB` and declares its class with SQLite storage, which a Durable Object on the Free plan needs.",
                     ],
                     &[
                         "`rust-toolchain.toml`",
@@ -95,15 +95,15 @@ npx wrangler deploy",
                 ja: &[
                     &[
                         "`src/lib.rs`",
-                        "下の Worker です。`+1` のボタンはブラウザで数を増やし、2 つ目のボタンは Worker で数を 2 倍にし、3 つ目のボタンは数を D1 に保存します。ページは次に開いたときに保存した数を読みます。ストリームは Worker の時刻を 1 秒ごとに送ります。",
+                        "下の Worker です。`+1` のボタンはブラウザで数を増やし、2 つ目のボタンは Worker で数を 2 倍にし、3 つ目のボタンは数を D1 に保存します。ストリームは Worker の時刻を 1 秒ごとに送ります。もう 1 つのストリームは、保存のたびに保存した数を開いているすべてのタブに送ります。保存はどの isolate のストリームにも Durable Object の `Hub` が中継します。",
                     ],
                     &[
                         "`Cargo.toml`",
-                        "`worker-build` がコンパイルするライブラリです。axum は tokio のネットワーク機能を使う既定の機能を外して使います。",
+                        "`worker-build` がコンパイルするライブラリです。axum は tokio のネットワーク機能を使う既定の機能を外して使います。wasm-bindgen は、`#[durable_object]` が展開するマクロのために入れています。",
                     ],
                     &[
                         "`wrangler.toml`",
-                        "Worker の名前、ビルドのコマンド、`DB` という名前で使う D1 のデータベースです。コマンドは `worker-build` がなければインストールしてから実行します。D1 の設定には `database_id` がないので、最初の `wrangler deploy` がデータベースを作り、その id をこのファイルに書き込みます。`wrangler dev` は手元に別のデータベースを作ります。",
+                        "Worker の名前、ビルドのコマンド、`DB` という名前で使う D1 のデータベースです。コマンドは `worker-build` がなければインストールしてから実行します。D1 の設定には `database_id` がないので、最初の `wrangler deploy` がデータベースを作り、その id をこのファイルに書き込みます。`wrangler dev` は手元に別のデータベースを作ります。Durable Object の `Hub` も `HUB` という名前で使えるようにし、そのクラスを SQLite のストレージで宣言します。Free プランの Durable Object には SQLite のストレージが必要です。",
                     ],
                     &[
                         "`rust-toolchain.toml`",
@@ -209,6 +209,10 @@ fn on_workers(site: Site) -> Part {
                 L {
                     en: "Requests may run in different isolates, so a value kept in memory may be gone at the next request. Keep the state requests share in KV, D1, or a Durable Object. The handlers reach them through the `Env` that `fetch` receives, as the template's `AppState` holds the D1 database, and [Storing data](learn/database/) shows the other databases a worker can reach.",
                     ja: "リクエストごとに別の isolate で動くことがあるので、メモリに置いた値は次のリクエストで消えていることがあります。リクエストをまたいで共有する状態は KV、D1、Durable Object に置いてください。ハンドラは `fetch` が受け取る `Env` からそれらを使います。テンプレートでは `AppState` が D1 のデータベースを持っています。Worker からつなげるほかのデータベースは [データを保存する](learn/database/) にあります。",
+                },
+                L {
+                    en: "A `broadcast` channel in the router's state reaches only the streams of its own isolate, and sqlx's `PgListener`, which [Updates with more than one process](learn/database/#updates-with-more-than-one-process) uses to tell every server process of a change, does not run on this target. The template carries a save to the other isolates through a [Durable Object](https://developers.cloudflare.com/durable-objects/concepts/what-are-durable-objects/), which Cloudflare's documentation gives a globally unique name that requests address it by. Each `SAVES` stream subscribes to the one `Hub` named `saves`, whose response sends a line after each save, and the `SAVE` action tells the hub once D1 has the count. On each line the stream reads the count from D1 again. The hub keeps its subscribers in memory only, so when Cloudflare evicts it their responses end, and each stream subscribes again and reads the count, which covers a save made in between. `wrangler dev` runs the worker in one isolate, so the end-to-end test checks that a save in one tab reaches another tab through the hub, and no test here runs two isolates of a deployment.",
+                    ja: "ルーターの状態にある `broadcast` のチャネルは、自分の isolate のストリームにしか届きません。[プロセスが複数あるときの更新](learn/database/#updates-with-more-than-one-process) がすべてのサーバーのプロセスに変更を知らせるのに使う sqlx の `PgListener` も、この target では動きません。テンプレートは、[Durable Object](https://developers.cloudflare.com/durable-objects/concepts/what-are-durable-objects/) を通して保存をほかの isolate に届けます。Cloudflare のドキュメントによると、Durable Object はリクエストの宛先になる世界で一意の名前を持ちます。`SAVES` の各ストリームは `saves` という名前の 1 つの `Hub` を購読し、`Hub` は保存のたびにそのレスポンスに 1 行を送ります。`SAVE` のアクションは、D1 に数を保存したあとで `Hub` に知らせます。ストリームは 1 行を受け取るたびに D1 から数を読み直します。`Hub` は購読者をメモリにしか持たないので、Cloudflare が `Hub` を退避させると購読者のレスポンスは終わります。そのときストリームは購読し直して数を読むので、そのあいだの保存も表示されます。`wrangler dev` は Worker を 1 つの isolate で動かします。そのため E2E テストで確かめているのは、あるタブの保存が `Hub` を通して別のタブに届くことまでで、デプロイした Worker の 2 つの isolate をまたぐテストはありません。",
                 },
                 L {
                     en: "A stream sends no keep-alive comments, because axum times them with tokio, which has no timer on this target. A stream that waits between patches waits with `worker::Delay`, wrapped in `SendFuture` because a JavaScript timer is not `Send`.",

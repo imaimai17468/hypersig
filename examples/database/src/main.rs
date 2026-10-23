@@ -1,6 +1,8 @@
 //! The todo list of the `todo` example, kept in a SQLite file. The todos
 //! survive a restart, and two server processes opened on one file serve the
-//! same list.
+//! same list. The channel that tells the streams of a change belongs to one
+//! process, so a tab shows a write through the other process when it loads
+//! the page again. `examples/postgres` tells the streams of every process.
 //!
 //! Run with `cargo run -p example-database` and open <http://localhost:3010>.
 //! `DATABASE_PATH` names the file, `todos.db` in the working directory by

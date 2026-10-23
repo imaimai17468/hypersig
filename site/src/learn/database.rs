@@ -263,11 +263,25 @@ fn processes(site: Site) -> Part {
                 ja: "変更のたびに一覧を送るストリームは、ルーターの状態にある `tokio::sync::broadcast` のチャネルで変更を知ります。このチャネルは 1 つのプロセスのものです。`examples/database` では、同じ SQLite のファイルを開いた 2 つ目のプロセスも同じ todo を読みますが、一方のプロセスの書き込みはもう一方のプロセスのストリームには届きません。もう一方のプロセスが配信したタブには、ページを読み込み直したときに書き込みが表示されます。`examples/postgres` のマイグレーションは、テーブルを変更する文のたびに `pg_notify` を呼ぶトリガーを作ります。PostgreSQL はその知らせをトランザクションのコミット時に届けます。各プロセスは sqlx の `PgListener` でそのチャネルを聞き、受け取った知らせを自分の `broadcast` に流すので、開いているすべてのタブに書き込みがすぐ表示されます。",
             },
         ),
+        para(
+            site,
+            L {
+                en: "`PgListener` waits for notifications on the connection that sent `LISTEN`, so that connection has to stay the listener's on PostgreSQL's side too. A pooler in transaction mode hands its connection to PostgreSQL to another client after each transaction, and [PgBouncer's feature table](https://www.pgbouncer.org/features.html) lists `LISTEN` as never supported in that mode, so a listener opened through one hears nothing. Where the pool connects through such a pooler, as on Vercel, open the listener with `PgListener::connect` and a connection string that reaches the database directly or through the pooler's session mode.",
+                ja: "`PgListener` は `LISTEN` を送った接続で知らせを待つので、その接続は PostgreSQL の側でもリスナーのものであり続ける必要があります。トランザクションモードのプーラーは、トランザクションのたびに PostgreSQL への接続を別のクライアントに渡します。[PgBouncer の機能表](https://www.pgbouncer.org/features.html) も、このモードの `LISTEN` を「Never」としています。そのため、このプーラーを経由して開いたリスナーには知らせが届きません。Vercel のようにプールがこうしたプーラーを経由するときは、データベースに直接つなぐか、プーラーのセッションモードを通る接続文字列を `PgListener::connect` に渡してリスナーを開いてください。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Without PostgreSQL, a service that delivers each message to every subscriber can take its place. `examples/redis` keeps the todos in Redis, and each write is a Lua script that changes the keys and runs `PUBLISH` on one channel, which Redis runs with no other command in between, so no write reaches the keys without telling the other processes. In each process a task spawned in `main`, as `listen` is in `examples/postgres`, subscribes with `SUBSCRIBE` and sends on `changed` for each message. The streams are the same code in both examples. Redis keeps no message for a subscriber that is not connected, so after the subscription breaks, the task subscribes again and sends on `changed` once more, and the streams read the list again.",
+                ja: "PostgreSQL を使わないときは、購読しているすべての相手にメッセージを届けるサービスで代わりができます。`examples/redis` は todo を Redis に置き、書き込みはどれも、キーを変更して 1 つのチャネルに `PUBLISH` する Lua スクリプトです。Redis はスクリプトの途中にほかのコマンドを挟まずに実行するので、ほかのプロセスに知らせずにキーを変える書き込みはありません。各プロセスでは、`examples/postgres` の `listen` と同じように `main` で起動したタスクが `SUBSCRIBE` で購読し、メッセージを受け取るたびに `changed` に送ります。ストリームのコードは 2 つの例で同じです。Redis は接続していない購読者にメッセージを残さないので、購読が切れるとタスクは購読し直し、もう一度 `changed` に送ります。ストリームはそこで一覧を読み直します。",
+            },
+        ),
         note(
             site,
             L {
-                en: "The end-to-end tests of both examples start a second process on the same database. For `database` they check that each process serves what the other wrote, and for `postgres` that an open tab of one process shows a write through the other without a reload. The `postgres` test runs PostgreSQL in Docker.",
-                ja: "どちらの例の E2E テストも、同じデータベースを使う 2 つ目のプロセスを起動します。`database` では一方のプロセスが書いた todo をもう一方が表示することを、`postgres` では一方のプロセスで開いたタブに、もう一方を通した書き込みが読み込み直さずに表示されることを確かめます。`postgres` のテストは Docker で PostgreSQL を動かします。",
+                en: "The end-to-end tests of these examples start a second process on the same database. For `database` they check that each process serves what the other wrote, and for `postgres` and `redis` that an open tab of one process shows a write through the other without a reload. The `postgres` and `redis` tests run their database in Docker.",
+                ja: "これらの例の E2E テストは、同じデータベースを使う 2 つ目のプロセスを起動します。`database` では一方のプロセスが書いた todo をもう一方が表示することを、`postgres` と `redis` では一方のプロセスで開いたタブに、もう一方を通した書き込みが読み込み直さずに表示されることを確かめます。`postgres` と `redis` のテストは、データベースを Docker で動かします。",
             },
         ),
     ])

@@ -20,6 +20,14 @@ export const secondPostgresPort = 3122;
 export const postgresContainer = "hypersig-e2e-postgres";
 export const postgresUrl = "postgres://postgres:hypersig@127.0.0.1:3120/postgres";
 
+/** The `redis` example and the second server its spec starts on the same Redis. */
+const redis = { redis: 3126 } as const;
+export const secondRedisPort = 3127;
+
+/** Redis, which Docker runs for the `redis` example under this name and port. */
+export const redisContainer = "hypersig-e2e-redis";
+export const redisUrl = "redis://127.0.0.1:3125/";
+
 /** The `api` example, and the stand-in notes service it calls on `notesBackendPort`. */
 const apis = { api: 3124 } as const;
 const notesBackendPort = 3123;
@@ -30,7 +38,7 @@ const workers = { cloudflare: 3110 } as const;
 /** Each Vercel Function runs as its own binary, which listens where `VERCEL_DEV_PORT` says. */
 const functions = { vercel: 3111 } as const;
 
-const ports = { ...examples, ...databases, ...postgres, ...apis, ...workers, ...functions };
+const ports = { ...examples, ...databases, ...postgres, ...redis, ...apis, ...workers, ...functions };
 
 export const url = (example: keyof typeof ports): string => `http://127.0.0.1:${ports[example]}/`;
 
@@ -82,6 +90,20 @@ export default defineConfig({
       cwd: "..",
       env: { ADDR: `127.0.0.1:${postgres.postgres}`, DATABASE_URL: postgresUrl },
       url: `http://127.0.0.1:${postgres.postgres}/`,
+      timeout: 600_000,
+      reuseExistingServer: false,
+    },
+    // A fresh Redis in Docker, which `globalTeardown` removes too.
+    {
+      command: [
+        `docker rm -f ${redisContainer} >/dev/null 2>&1;`,
+        `docker run -d --rm --name ${redisContainer} -p 127.0.0.1:3125:6379 redis:8 >/dev/null &&`,
+        `until docker exec ${redisContainer} redis-cli ping >/dev/null 2>&1; do sleep 1; done &&`,
+        "cargo run --release --quiet -p example-redis",
+      ].join(" "),
+      cwd: "..",
+      env: { ADDR: `127.0.0.1:${redis.redis}`, REDIS_URL: redisUrl },
+      url: `http://127.0.0.1:${redis.redis}/`,
       timeout: 600_000,
       reuseExistingServer: false,
     },

@@ -14,3 +14,14 @@ command = "cargo install --quiet --locked worker-build@0.8.7 && worker-build --r
 [[d1_databases]]
 binding = "DB"
 database_name = "{{project-name}}"
+
+# The `Hub` Durable Object of `src/lib.rs`, which the worker reads as `HUB`.
+# A Durable Object on the Free plan has to keep its storage in SQLite, which
+# `storage` names, though the hub stores nothing.
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+[exports.Hub]
+type = "durable-object"
+storage = "sqlite"

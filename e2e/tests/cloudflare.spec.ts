@@ -30,3 +30,22 @@ test("saves the count in D1, and the page reads it back on the next load", async
   await page.reload();
   await expect(count).toHaveText("2");
 });
+
+// `wrangler dev` runs the worker in one isolate, so this drives the path
+// through the hub that a save takes to the other isolates of a deployment,
+// with both tabs served by the same isolate.
+test("a save in one tab shows in another tab without a reload", async ({ page, context }) => {
+  const other = await context.newPage();
+  await page.goto(url("cloudflare"));
+  await other.goto(url("cloudflare"));
+
+  // The stream of `other` reads the count only after it subscribes, so once
+  // the first save shows there the second can arrive only through the hub.
+  for (const clicks of [5, 3]) {
+    for (let i = 0; i < clicks; i++) await page.getByRole("button", { name: "+1" }).click();
+    const count = (await page.locator("span").textContent()) ?? "";
+    await page.getByRole("button", { name: "Save in D1" }).click();
+    await expect(page.locator("strong")).toHaveText(count);
+    await expect(other.locator("strong")).toHaveText(count);
+  }
+});

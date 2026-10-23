@@ -24,7 +24,7 @@ mod prose;
 mod reference;
 mod style;
 
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::Path;
 
@@ -303,7 +303,8 @@ fn sitemap(site: Site) -> Option<String> {
     Some(xml)
 }
 
-/// A link inside the site that names no file of the site.
+/// A link inside the site that names no file of the site, or no section of the
+/// page it names.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BrokenLink {
     /// The page the link is on.
@@ -313,7 +314,7 @@ pub struct BrokenLink {
 }
 
 /// The links in `files` that point inside `site` at a file `files` does not
-/// hold.
+/// hold, or at a fragment that the page they name has no `id` for.
 ///
 /// A link into [`API_DIR`] is checked by `api`, which receives the path after
 /// `api/` and the fragment after `#`, if any. Pass a function that returns
@@ -328,7 +329,10 @@ pub fn check_links(
     files: &[File],
     api: impl Fn(&str, Option<&str>) -> bool,
 ) -> Vec<BrokenLink> {
-    let known: BTreeSet<&str> = files.iter().map(|file| file.path.as_str()).collect();
+    let known: BTreeMap<&str, &[u8]> = files
+        .iter()
+        .map(|file| (file.path.as_str(), file.contents.as_slice()))
+        .collect();
     let api_prefix = format!("{API_DIR}/");
     let mut broken = Vec::new();
     for file in files.iter().filter(|file| {
@@ -350,10 +354,18 @@ pub fn check_links(
             };
             let found = if let Some(item) = path.strip_prefix(&api_prefix) {
                 api(item, fragment)
-            } else if path.is_empty() || path.ends_with('/') {
-                known.contains(format!("{path}index.html").as_str())
             } else {
-                known.contains(path)
+                let file = if path.is_empty() || path.ends_with('/') {
+                    known.get(format!("{path}index.html").as_str())
+                } else {
+                    known.get(path)
+                };
+                file.is_some_and(|contents| {
+                    fragment.is_none_or(|id| {
+                        str::from_utf8(contents)
+                            .is_ok_and(|html| html.contains(&format!("id=\"{id}\"")))
+                    })
+                })
             };
             if !found {
                 broken.push(BrokenLink {
@@ -414,6 +426,29 @@ mod tests {
             [BrokenLink {
                 page: "index.html".to_owned(),
                 target: "/hypersig/learn/".to_owned(),
+            }]
+        );
+    }
+
+    #[test]
+    fn a_link_to_a_missing_section_is_reported() {
+        let site = Site::new("/hypersig");
+        let files = vec![
+            File {
+                path: "index.html".to_owned(),
+                contents: r#"<a href="/hypersig/learn/#streams">here</a><a href="/hypersig/learn/#gone">gone</a>"#.as_bytes().to_vec(),
+            },
+            File {
+                path: "learn/index.html".to_owned(),
+                contents: r#"<h2 id="streams">Streams</h2>"#.as_bytes().to_vec(),
+            },
+        ];
+        let broken = check_links(site, &files, |_, _| true);
+        assert_eq!(
+            broken,
+            [BrokenLink {
+                page: "index.html".to_owned(),
+                target: "/hypersig/learn/#gone".to_owned(),
             }]
         );
     }

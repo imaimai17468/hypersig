@@ -1,0 +1,25 @@
+[package]
+name = "example-redis"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The binary has no tests, and `cargo test` would still build and run an
+# empty test harness for it.
+[[bin]]
+name = "example-redis"
+path = "src/main.rs"
+test = false
+
+[dependencies]
+axum.workspace = true
+futures.workspace = true
+hypersig.workspace = true
+redis = { workspace = true, features = ["connection-manager", "script", "tokio-comp"] }
+serde.workspace = true
+tokio.workspace = true
+tokio-stream = { workspace = true, features = ["sync"] }
+
+[lints]
+workspace = true

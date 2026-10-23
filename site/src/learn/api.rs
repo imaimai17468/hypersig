@@ -86,8 +86,8 @@ fn elsewhere(site: Site) -> Part {
         para(
             site,
             L {
-                en: "An open tab learns of a change only through a stream of this server. Where the service can call a webhook, serve one as an axum route that sends on a `broadcast` channel in the state, as `examples/todo` does after each action, and the streams send the new list. Where it cannot, a stream can ask the service again after each `tokio::time::sleep`.",
-                ja: "開いているタブが変更を知るのは、このサーバーのストリームを通したときだけです。サービスが webhook を呼べるなら、状態の `broadcast` のチャネルに送る axum のルートとして webhook を用意します。`examples/todo` がアクションのたびにするのと同じで、ストリームが新しい一覧を送ります。webhook がなければ、ストリームが `tokio::time::sleep` で待つたびにサービスに問い合わせ直します。",
+                en: "An open tab learns of a change only through a stream of this server. Where the service can call a webhook, serve one as an axum route that sends on a `broadcast` channel in the state, as `examples/todo` does after each action, and the streams send the new list. Where it cannot, a stream can ask the service again after each `tokio::time::sleep`. The channel reaches only the streams of the process the webhook reached, so with more than one process, carry the change to each of them as [Updates with more than one process](learn/database/#updates-with-more-than-one-process) does.",
+                ja: "開いているタブが変更を知るのは、このサーバーのストリームを通したときだけです。サービスが webhook を呼べるなら、状態の `broadcast` のチャネルに送る axum のルートとして webhook を用意します。`examples/todo` がアクションのたびにするのと同じで、ストリームが新しい一覧を送ります。webhook がなければ、ストリームが `tokio::time::sleep` で待つたびにサービスに問い合わせ直します。このチャネルが届くのは、webhook を受けたプロセスのストリームだけです。プロセスが複数あるときは、[プロセスが複数あるときの更新](learn/database/#updates-with-more-than-one-process) と同じように、変更をそれぞれのプロセスに届けてください。",
             },
         ),
         heading(

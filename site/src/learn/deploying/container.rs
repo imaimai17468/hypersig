@@ -188,6 +188,10 @@ fn host(site: Site) -> Part {
                     en: "State kept in memory, such as a counter in the router's state, belongs to one process. When the host runs more than one instance, keep that state in a database, as [Storing data](learn/database/) shows.",
                     ja: "ルーターの状態に置いたカウンターのようにメモリに持つ状態は、1 つのプロセスのものです。ホストがインスタンスを複数動かすときは、その状態をデータベースに置いてください。置き方は [データを保存する](learn/database/) にあります。",
                 },
+                L {
+                    en: "Each instance is one process, and a `broadcast` channel that tells the streams of a change, as in `examples/todo`, reaches only the streams of its own instance. A change made through one instance then shows in a tab served by another only when that tab loads the page again. [Updates with more than one process](learn/database/#updates-with-more-than-one-process) carries the change to every instance through PostgreSQL or Redis.",
+                    ja: "インスタンスはそれぞれ 1 つのプロセスです。`examples/todo` のようにストリームに変更を知らせる `broadcast` のチャネルは、自分のインスタンスのストリームにしか届きません。そのため、あるインスタンスを通した変更は、別のインスタンスが配信したタブでは、ページを読み込み直すまで表示されません。PostgreSQL か Redis を通してすべてのインスタンスに変更を届ける方法は [プロセスが複数あるときの更新](learn/database/#updates-with-more-than-one-process) にあります。",
+                },
             ],
         ),
     ])
