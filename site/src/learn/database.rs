@@ -273,15 +273,15 @@ fn processes(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Without PostgreSQL, a service that delivers each message to every subscriber can take its place, such as Redis with `PUBLISH` and `SUBSCRIBE`. The action publishes once its write succeeds, which the trigger does here, and in each process a task spawned in `main`, as `listen` is, subscribes and calls `changed.send(())` for each message. The streams stay as they are. A message published while the subscription reconnects is lost, as a notification is here, so the task sends on `changed` after reconnecting too. The repository has no example of this.",
-                ja: "PostgreSQL を使わないときは、購読しているすべての相手にメッセージを届けるサービスで代わりができます。Redis の `PUBLISH` と `SUBSCRIBE` がその例です。ここではトリガーが知らせを送りますが、その場合はアクションが書き込みに成功したあとに `PUBLISH` します。各プロセスでは、`listen` と同じように `main` で起動したタスクが購読し、メッセージを受け取るたびに `changed.send(())` を呼びます。ストリームのコードは変わりません。購読をつなぎ直しているあいだに送られたメッセージは、ここでの知らせと同じように失われるので、タスクはつなぎ直したあとにも `changed` に送ります。リポジトリにはこの方法の例はありません。",
+                en: "Without PostgreSQL, a service that delivers each message to every subscriber can take its place. `examples/redis` keeps the todos in Redis, and each write is a Lua script that changes the keys and runs `PUBLISH` on one channel, which Redis runs with no other command in between, so no write reaches the keys without telling the other processes. In each process a task spawned in `main`, as `listen` is in `examples/postgres`, subscribes with `SUBSCRIBE` and sends on `changed` for each message. The streams are the same code in both examples. Redis keeps no message for a subscriber that is not connected, so after the subscription breaks, the task subscribes again and sends on `changed` once more, and the streams read the list again.",
+                ja: "PostgreSQL を使わないときは、購読しているすべての相手にメッセージを届けるサービスで代わりができます。`examples/redis` は todo を Redis に置き、書き込みはどれも、キーを変更して 1 つのチャネルに `PUBLISH` する Lua スクリプトです。Redis はスクリプトの途中にほかのコマンドを挟まずに実行するので、ほかのプロセスに知らせずにキーを変える書き込みはありません。各プロセスでは、`examples/postgres` の `listen` と同じように `main` で起動したタスクが `SUBSCRIBE` で購読し、メッセージを受け取るたびに `changed` に送ります。ストリームのコードは 2 つの例で同じです。Redis は接続していない購読者にメッセージを残さないので、購読が切れるとタスクは購読し直し、もう一度 `changed` に送ります。ストリームはそこで一覧を読み直します。",
             },
         ),
         note(
             site,
             L {
-                en: "The end-to-end tests of both examples start a second process on the same database. For `database` they check that each process serves what the other wrote, and for `postgres` that an open tab of one process shows a write through the other without a reload. The `postgres` test runs PostgreSQL in Docker.",
-                ja: "どちらの例の E2E テストも、同じデータベースを使う 2 つ目のプロセスを起動します。`database` では一方のプロセスが書いた todo をもう一方が表示することを、`postgres` では一方のプロセスで開いたタブに、もう一方を通した書き込みが読み込み直さずに表示されることを確かめます。`postgres` のテストは Docker で PostgreSQL を動かします。",
+                en: "The end-to-end tests of these examples start a second process on the same database. For `database` they check that each process serves what the other wrote, and for `postgres` and `redis` that an open tab of one process shows a write through the other without a reload. The `postgres` and `redis` tests run their database in Docker.",
+                ja: "これらの例の E2E テストは、同じデータベースを使う 2 つ目のプロセスを起動します。`database` では一方のプロセスが書いた todo をもう一方が表示することを、`postgres` と `redis` では一方のプロセスで開いたタブに、もう一方を通した書き込みが読み込み直さずに表示されることを確かめます。`postgres` と `redis` のテストは、データベースを Docker で動かします。",
             },
         ),
     ])
