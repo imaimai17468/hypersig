@@ -324,8 +324,8 @@ pub fn lists(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Sig` has a third type parameter that says where its path starts. It defaults to `Root`, the page's signal struct, so `Sig<S, T>` is a field reached from the page. A field of an item is a `Sig<S, T, Local>`, whose path starts at the item and is resolved per item in the browser. It has no `patch` method, so the server cannot address one item's field by position. The server replaces the whole list with a patch of the list field, or re-renders a part of the page as a fragment, which [Talking to the server](learn/server/) covers.",
-                ja: "`Sig` には、パスの起点を表す 3 つ目の型パラメータがあります。省略すると `Root`（ページのシグナル構造体）になるので、`Sig<S, T>` はページから辿ったフィールドです。項目のフィールドは `Sig<S, T, Local>` で、パスは項目から始まり、ブラウザで項目ごとに解決されます。`patch` メソッドがないので、サーバーは位置を指定して 1 つの項目のフィールドを書き換えられません。サーバーはリストのフィールドの差分でリスト全体を置き換えるか、ページの一部をフラグメントとして描画し直します。これは [サーバーとのやり取り](learn/server/) で説明します。",
+                en: "`Sig` has a third type parameter that says where its path starts. It defaults to `Root`, the page's signal struct, so `Sig<S, T>` is a field reached from the page. A field of an item is a `Sig<S, T, Local>`, whose path starts at the item and is resolved per item in the browser. It has no `patch` method, so the server cannot address one item's field by position. The server replaces the whole list with a patch of the list field, changes the items it names by key with a list patch such as `patch_append` or `patch_remove`, which [Calls in depth](learn/calls/#list-patches) covers, or re-renders a part of the page as a fragment, which [Talking to the server](learn/server/) covers.",
+                ja: "`Sig` には、パスの起点を表す 3 つ目の型パラメータがあります。省略すると `Root`（ページのシグナル構造体）になるので、`Sig<S, T>` はページから辿ったフィールドです。項目のフィールドは `Sig<S, T, Local>` で、パスは項目から始まり、ブラウザで項目ごとに解決されます。`patch` メソッドがないので、サーバーは位置を指定して 1 つの項目のフィールドを書き換えられません。サーバーは、リストのフィールドの差分でリスト全体を置き換えるか、`patch_append` や `patch_remove` のようなリストの差分でキーを指定した項目だけを変えるか、ページの一部をフラグメントとして描画し直します。リストの差分は [呼び出しの詳細](learn/calls/#list-patches) で、フラグメントは [サーバーとのやり取り](learn/server/) で説明します。",
             },
         ),
         heading(
