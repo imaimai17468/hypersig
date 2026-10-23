@@ -20,13 +20,17 @@ export const secondPostgresPort = 3122;
 export const postgresContainer = "hypersig-e2e-postgres";
 export const postgresUrl = "postgres://postgres:hypersig@127.0.0.1:3120/postgres";
 
+/** The `api` example, and the stand-in notes service it calls on `notesBackendPort`. */
+const apis = { api: 3124 } as const;
+const notesBackendPort = 3123;
+
 /** Each worker runs under `wrangler dev` on its own port. */
 const workers = { cloudflare: 3110 } as const;
 
 /** Each Vercel Function runs as its own binary, which listens where `VERCEL_DEV_PORT` says. */
 const functions = { vercel: 3111 } as const;
 
-const ports = { ...examples, ...databases, ...postgres, ...workers, ...functions };
+const ports = { ...examples, ...databases, ...postgres, ...apis, ...workers, ...functions };
 
 export const url = (example: keyof typeof ports): string => `http://127.0.0.1:${ports[example]}/`;
 
@@ -78,6 +82,22 @@ export default defineConfig({
       cwd: "..",
       env: { ADDR: `127.0.0.1:${postgres.postgres}`, DATABASE_URL: postgresUrl },
       url: `http://127.0.0.1:${postgres.postgres}/`,
+      timeout: 600_000,
+      reuseExistingServer: false,
+    },
+    {
+      command: "cargo run --release --quiet -p example-api --bin notes-backend",
+      cwd: "..",
+      env: { ADDR: `127.0.0.1:${notesBackendPort}`, API_TOKEN: "e2e-token" },
+      port: notesBackendPort,
+      timeout: 600_000,
+      reuseExistingServer: false,
+    },
+    {
+      command: "cargo run --release --quiet -p example-api",
+      cwd: "..",
+      env: { ADDR: `127.0.0.1:${apis.api}`, API_URL: `http://127.0.0.1:${notesBackendPort}`, API_TOKEN: "e2e-token" },
+      url: `http://127.0.0.1:${apis.api}/`,
       timeout: 600_000,
       reuseExistingServer: false,
     },
