@@ -12,18 +12,27 @@ export const databasePath = "target/e2e/database.db";
 /** The port of the second `database` server, which its spec starts on the same file. */
 export const secondDatabasePort = 3113;
 
+/** The `postgres` example and the second server its spec starts on the same database. */
+const postgres = { postgres: 3121 } as const;
+export const secondPostgresPort = 3122;
+
+/** PostgreSQL, which Docker runs for the `postgres` example under this name and port. */
+export const postgresContainer = "hypersig-e2e-postgres";
+export const postgresUrl = "postgres://postgres:hypersig@127.0.0.1:3120/postgres";
+
 /** Each worker runs under `wrangler dev` on its own port. */
 const workers = { cloudflare: 3110 } as const;
 
 /** Each Vercel Function runs as its own binary, which listens where `VERCEL_DEV_PORT` says. */
 const functions = { vercel: 3111 } as const;
 
-const ports = { ...examples, ...databases, ...workers, ...functions };
+const ports = { ...examples, ...databases, ...postgres, ...workers, ...functions };
 
 export const url = (example: keyof typeof ports): string => `http://127.0.0.1:${ports[example]}/`;
 
 export default defineConfig({
   testDir: "tests",
+  globalTeardown: "./teardown.ts",
   // Each spec file drives its own example, so files run side by side, and the
   // tests of one file run in order because they share that server's state.
   fullyParallel: false,
@@ -55,6 +64,23 @@ export default defineConfig({
       timeout: 600_000,
       reuseExistingServer: false,
     })),
+    // A fresh PostgreSQL in Docker, which the example connects to once its
+    // server accepts TCP. The image's first start runs a server on the Unix
+    // socket alone while it sets up the database, so a check over TCP waits
+    // for the server that stays. `globalTeardown` removes the container.
+    {
+      command: [
+        `docker rm -f ${postgresContainer} >/dev/null 2>&1;`,
+        `docker run -d --rm --name ${postgresContainer} -e POSTGRES_PASSWORD=hypersig -p 127.0.0.1:3120:5432 postgres:18 >/dev/null &&`,
+        `until docker exec ${postgresContainer} pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1; do sleep 1; done &&`,
+        "cargo run --release --quiet -p example-postgres",
+      ].join(" "),
+      cwd: "..",
+      env: { ADDR: `127.0.0.1:${postgres.postgres}`, DATABASE_URL: postgresUrl },
+      url: `http://127.0.0.1:${postgres.postgres}/`,
+      timeout: 600_000,
+      reuseExistingServer: false,
+    },
     // The Cloudflare template runs in workerd, the Workers runtime, which
     // wrangler starts after building the worker with `worker-build`. The
     // project is created first with `cargo hypersig new`, with its hypersig
