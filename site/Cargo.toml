@@ -19,15 +19,19 @@ hypersig_ui.workspace = true
 serde.workspace = true
 
 [dev-dependencies]
+aws-config.workspace = true
+aws-sdk-dynamodb.workspace = true
 axum.workspace = true
 futures.workspace = true
+reqwest = { workspace = true, features = ["json", "rustls"] }
 rusqlite = { workspace = true, features = ["bundled"] }
 tokio = { workspace = true, features = ["signal"] }
 
 [lints]
 workspace = true
 
-# The sample of `snippets/database.rs` is the one user of rusqlite, and
-# cargo-udeps does not see a crate that only doctests use.
+# The samples of `snippets/database.rs`, `dynamodb.rs`, and `api.rs` are the
+# only users of these crates, and cargo-udeps does not see a crate that only
+# doctests use.
 [package.metadata.cargo-udeps.ignore]
-development = ["rusqlite"]
+development = ["aws-config", "aws-sdk-dynamodb", "reqwest", "rusqlite"]

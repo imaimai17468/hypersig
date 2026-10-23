@@ -57,6 +57,8 @@ snippets! {
     HandlerErrors => "handler_errors.rs";
     Uploads => "uploads.rs";
     Database => "database.rs", "no_run";
+    DynamoDb => "dynamodb.rs", "no_run";
+    Api => "api.rs", "no_run";
     Links => "links.rs";
     WrongRoute => "wrong_route.rs", "compile_fail,E0080";
     ChildRoutes => "child_routes.rs";

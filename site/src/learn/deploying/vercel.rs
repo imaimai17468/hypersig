@@ -237,8 +237,8 @@ fn on_vercel(site: Site) -> Part {
                     ja: "Vercel は関数の最大実行時間でリクエストを終えます。この時間にはストリームを開いている時間も含まれます。上限は既定で 300 秒で、Hobby プランでは 300 秒より延ばせません。Pro プランでは `maxDuration` で 800 秒まで延ばせます。サーバーはハンドラのストリームが終わると最後に `hs-end` のイベントを送ります。上限に達した Vercel はその前にレスポンスを閉じるので、`reconnect()` を付けた呼び出しはストリームが途中で切れたものとして扱い、1 秒後に開き直します。このテンプレートをデプロイして確かめると、時計のストリームはページを開いてから 301 秒で開き直り、時計は進み続けました。切れたことはほかの失敗と同じように扱われ、コンソールと `hs-error` のイベントに送られます。呼び出しの `error` のシグナルにも、ストリームが開き直るまで残ります。`hs-error` でメッセージを出すページでは、上限を迎えるたびにメッセージが出ます。",
                 },
                 L {
-                    en: "Vercel may run more than one instance of the function and stops an idle one, so a value kept in memory may be gone at the next request. Keep the state requests share in a database the function reaches over the network, as [Keeping state in a database](learn/database/) describes.",
-                    ja: "Vercel は関数のインスタンスを複数動かすことがあり、使われていないインスタンスは止めます。メモリに置いた値は次のリクエストで消えていることがあるので、リクエストをまたいで共有する状態は、関数がネットワーク越しにつなぐデータベースに置いてください。置き方は [データベースに状態を置く](learn/database/) にあります。",
+                    en: "Vercel may run more than one instance of the function and stops an idle one, so a value kept in memory may be gone at the next request. Keep the state requests share in a database the function reaches over the network, as [Storing data](learn/database/) describes.",
+                    ja: "Vercel は関数のインスタンスを複数動かすことがあり、使われていないインスタンスは止めます。メモリに置いた値は次のリクエストで消えていることがあるので、リクエストをまたいで共有する状態は、関数がネットワーク越しにつなぐデータベースに置いてください。置き方は [データを保存する](learn/database/) にあります。",
                 },
                 L {
                     en: "`VercelLayer` reads the whole request body before the `Router` sees it, so a file upload read in chunks arrives in memory at once. Vercel refuses a request body over 4.5 MB.",
