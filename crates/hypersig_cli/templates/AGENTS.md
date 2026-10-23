@@ -14,6 +14,13 @@ This is a web application built with [hypersig](https://imaimai17468.github.io/h
 - The guide follows the main branch of the repository, which can be ahead of the release this project uses. Before you use an API the guide names, confirm it in the source of the version in `Cargo.lock`, under `~/.cargo/registry/src/*/hypersig-<version>/`, or on `https://docs.rs/hypersig/<version>`.
 - [`examples/`](https://github.com/imaimai17468/hypersig/tree/main/examples) holds complete applications: `todo` (a list every tab sees, which a stream re-renders as a `Fragment` after each change on a `broadcast` channel), `database` (the same list kept in SQLite), `showcase` (list patches by key), `signup` (a form), `auth` (sign-in with `tower-sessions`), `postgres` and `redis` (more than one process), `ui` (the components).
 
+## Rust tools and guidelines
+
+- **rust-analyzer** gives you the compiler's errors, the types, and the definitions after each edit, without a `cargo check`. Claude Code reaches it through the `rust-analyzer-lsp` plugin, which needs the `rust-analyzer` binary on `PATH`. Where `which rust-analyzer` finds nothing, ask the developer to run `rustup component add rust-analyzer` and `/plugin install rust-analyzer-lsp@claude-plugins-official`, since installing tools on their machine is theirs to decide.
+- **Clippy's pedantic lints** are on in `Cargo.toml`. Fix what a warning points at. Where a lint does not fit one place, write `#[expect(clippy::name, reason = "...")]` there, which warns again once the code no longer needs it, and turn a lint off for the whole project in `[lints.clippy]` only with the developer's agreement.
+- **[Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/agents/all.txt)** is Microsoft's guide to idiomatic Rust, written as one file for agents (about 136 KB, so search it rather than reading it whole). Each guideline has a heading such as `## Use the proper type family (M-STRONG-TYPES)`. Most of them are for libraries. For an application, read M-APP-ERROR on errors, M-PANIC-ON-BUG and M-PANIC-IS-STOP on panics, and M-STRONG-TYPES on types.
+- **Crate documentation:** where a documentation server such as Context7 is connected, ask it for the version in `Cargo.lock`, rather than writing a crate's API from memory.
+
 ## How hypersig code is written
 
 - **A page's state is one struct** with `#[derive(Signals, Serialize, Deserialize)]`. The derive gives each field a function, such as `Counter::count()`, that returns a typed `Sig`. Refer to a signal only through that function.
@@ -29,7 +36,7 @@ This is a web application built with [hypersig](https://imaimai17468.github.io/h
 
 ## Tests
 
-Call a handler as a function and read what it returned: `Page::value_of(Sig)` for a signal's first value, `Patches::value_of(Sig)` for the value a batch sets, `Form::value()` for the values of a form it holds, and `Patches::navigates_to()` for a navigation. The function `#[derive(Signals)]` writes for a field has the field's visibility, so a test in another module needs the field to be `pub(crate)`. Send a request through the router with `tower::ServiceExt::oneshot` to test what the router adds, such as an extractor's refusal: `ACTION.request(&args)` and `STREAM.request(&args)` build the request the runtime sends, with its headers, so a test names the action, not its path.
+Call a handler as a function and read what it returned: `Page::value_of(Sig)` for a signal's first value, `Patches::value_of(Sig)` for the value a batch sets, `Form::value()` for the values of a form it holds, and `Patches::navigates_to()` for a navigation. The function `#[derive(Signals)]` writes for a field has the field's visibility. A `mod tests` inside the module that declares the struct reaches a private field's function, and a test anywhere else needs the field to be `pub(crate)`. Send a request through the router with `tower::ServiceExt::oneshot` to test what the router adds, such as an extractor's refusal: `ACTION.request(&args)` and `STREAM.request(&args)` build the request the runtime sends, with its headers, so a test names the action, not its path.
 
 ## This project's host
 

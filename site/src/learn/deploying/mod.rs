@@ -78,8 +78,8 @@ pub fn deploying(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Every template also writes `AGENTS.md`, the instructions a coding agent such as Claude Code or Codex reads: the checks to run after a change, where the [`llms.txt`](llms.txt) index of this guide is, how hypersig code is written, and what the host keeps between requests. `CLAUDE.md` holds `@AGENTS.md`, which Claude Code reads as an import of that file. `cargo hypersig add` writes the two files only where the project has none, even with `--force`.",
-                ja: "どのテンプレートも `AGENTS.md` を書き出します。Claude Code や Codex のようなコーディングエージェントが読む指示で、変更のあとに実行するチェック、このガイドの索引 [`llms.txt`](llms.txt) の場所、hypersig のコードの書き方、ホストがリクエストのあいだに何を残すかを書いています。`CLAUDE.md` には `@AGENTS.md` の 1 行だけがあり、Claude Code はこれを `AGENTS.md` の取り込みとして読みます。`cargo hypersig add` は、この 2 つのファイルがプロジェクトにないときだけ書き出し、`--force` を付けても既存のものは書き換えません。",
+                en: "Every template also writes `AGENTS.md`, the instructions a coding agent such as Claude Code or Codex reads: the checks to run after a change, where the [`llms.txt`](llms.txt) index of this guide is, the Rust tools and guidelines to use, how hypersig code is written, and what the host keeps between requests. Each template's `Cargo.toml` also turns on Clippy's pedantic lints, whose warnings point an agent, as they point a person, at code that compiles but hides a mistake. `CLAUDE.md` holds `@AGENTS.md`, which Claude Code reads as an import of that file. `cargo hypersig add` writes the two files only where the project has none, even with `--force`.",
+                ja: "どのテンプレートも `AGENTS.md` を書き出します。Claude Code や Codex のようなコーディングエージェントが読む指示で、変更のあとに実行するチェック、このガイドの索引 [`llms.txt`](llms.txt) の場所、使う Rust のツールと指針、hypersig のコードの書き方、ホストがリクエストのあいだに何を残すかを書いています。どのテンプレートの `Cargo.toml` も Clippy の pedantic の lint を有効にしていて、その警告は、人にもエージェントにも、コンパイルは通るが誤りを隠しているコードを指摘します。`CLAUDE.md` には `@AGENTS.md` の 1 行だけがあり、Claude Code はこれを `AGENTS.md` の取り込みとして読みます。`cargo hypersig add` は、この 2 つのファイルがプロジェクトにないときだけ書き出し、`--force` を付けても既存のものは書き換えません。",
             },
         ),
     ])

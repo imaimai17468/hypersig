@@ -18,3 +18,10 @@ vercel_runtime = { version = "2.4", features = ["axum"] }
 [[bin]]
 name = "app"
 path = "api/app.rs"
+
+# Clippy's pedantic group adds warnings for code that compiles but hides a
+# mistake or reads worse, such as a cast that can lose digits or an argument
+# taken by value that is only read. Turn one off by name, such as
+# `module_name_repetitions = "allow"`, where it does not fit this project.
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
