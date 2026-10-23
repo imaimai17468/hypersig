@@ -25,7 +25,7 @@ pub enum Kind {
     Source,
     /// An ignore file, which `add` appends its missing lines to.
     Ignore,
-    /// A file the host reads, which `add` writes as it is.
+    /// A file the host reads, which `add` writes as its `moved` text.
     Config,
 }
 
@@ -36,6 +36,9 @@ pub struct File {
     pub path: &'static str,
     /// The text, with `{{project-name}}` and `{{hypersig-version}}` in it.
     pub text: &'static str,
+    /// What `add` writes in place of `text`, which leaves out what only the
+    /// template's own code uses.
+    pub moved: &'static str,
     pub kind: Kind,
 }
 
@@ -49,6 +52,7 @@ macro_rules! file {
         File {
             path: "Cargo.toml",
             text: include_str!(concat!("../templates/", $host, "/Cargo.toml.template")),
+            moved: include_str!(concat!("../templates/", $host, "/Cargo.toml.template")),
             kind: Kind::Manifest,
         }
     };
@@ -56,6 +60,15 @@ macro_rules! file {
         File {
             path: $path,
             text: include_str!(concat!("../templates/", $host, "/", $path)),
+            moved: include_str!(concat!("../templates/", $host, "/", $path)),
+            kind: Kind::$kind,
+        }
+    };
+    ($host:literal, $path:literal, $kind:ident, moved = $moved:literal) => {
+        File {
+            path: $path,
+            text: include_str!(concat!("../templates/", $host, "/", $path)),
+            moved: include_str!(concat!("../steps/", $moved)),
             kind: Kind::$kind,
         }
     };
@@ -72,7 +85,14 @@ const SERVER: &[File] = &[
 const CLOUDFLARE: &[File] = &[
     file!("cloudflare", "Cargo.toml"),
     file!("cloudflare", "src/lib.rs", Source),
-    file!("cloudflare", "wrangler.toml", Config),
+    // The template's worker saves its count in D1, which a project that
+    // `add` moves has no use for.
+    file!(
+        "cloudflare",
+        "wrangler.toml",
+        Config,
+        moved = "wrangler.toml"
+    ),
     file!("cloudflare", "rust-toolchain.toml", Config),
     file!("cloudflare", ".gitignore", Ignore),
 ];

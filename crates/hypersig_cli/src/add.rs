@@ -144,7 +144,7 @@ fn plan(dir: &Path, host: Host, force: bool) -> Result<Plan, Error> {
                 if dest.exists() && !force {
                     taken.push(file.path);
                 }
-                writes.push((file.path, host::fill(file.text, &package)));
+                writes.push((file.path, host::fill(file.moved, &package)));
             }
             Kind::Ignore => {
                 let current = if dest.exists() {
@@ -152,7 +152,7 @@ fn plan(dir: &Path, host: Host, force: bool) -> Result<Plan, Error> {
                 } else {
                     String::new()
                 };
-                if let Some((text, missing)) = append(current, file.text) {
+                if let Some((text, missing)) = append(current, file.moved) {
                     appends.push((file.path, text, missing));
                 }
             }

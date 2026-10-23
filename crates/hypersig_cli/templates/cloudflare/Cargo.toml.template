@@ -15,4 +15,4 @@ futures = "0.3"
 hypersig = "{{hypersig-version}}"
 serde = { version = "1", features = ["derive"] }
 tower-service = "0.3"
-worker = { version = "0.8", features = ["http", "axum"] }
+worker = { version = "0.8", features = ["http", "axum", "d1"] }

@@ -77,7 +77,7 @@ npx wrangler deploy",
                 en: &[
                     &[
                         "`src/lib.rs`",
-                        "The worker below. The `+1` button counts in the browser, the second button doubles the count on the worker, and a stream sends the worker's time every second.",
+                        "The worker below. The `+1` button counts in the browser, the second button doubles the count on the worker, the third saves it in D1, from which the page reads it on the next load, and a stream sends the worker's time every second.",
                     ],
                     &[
                         "`Cargo.toml`",
@@ -85,7 +85,7 @@ npx wrangler deploy",
                     ],
                     &[
                         "`wrangler.toml`",
-                        "The worker's name, and the build command, which installs `worker-build` when it is missing and runs it.",
+                        "The worker's name, the build command, which installs `worker-build` when it is missing and runs it, and the D1 database bound as `DB`. The binding names no `database_id`, so the first `wrangler deploy` creates the database and writes its id into the file, and `wrangler dev` keeps a local one.",
                     ],
                     &[
                         "`rust-toolchain.toml`",
@@ -95,7 +95,7 @@ npx wrangler deploy",
                 ja: &[
                     &[
                         "`src/lib.rs`",
-                        "下の Worker です。`+1` のボタンはブラウザで数を増やし、もう 1 つのボタンは Worker で数を 2 倍にし、ストリームは Worker の時刻を 1 秒ごとに送ります。",
+                        "下の Worker です。`+1` のボタンはブラウザで数を増やし、2 つ目のボタンは Worker で数を 2 倍にし、3 つ目のボタンは数を D1 に保存します。ページは次に開いたときに保存した数を読みます。ストリームは Worker の時刻を 1 秒ごとに送ります。",
                     ],
                     &[
                         "`Cargo.toml`",
@@ -103,7 +103,7 @@ npx wrangler deploy",
                     ],
                     &[
                         "`wrangler.toml`",
-                        "Worker の名前と、ビルドのコマンドです。コマンドは `worker-build` がなければインストールしてから実行します。",
+                        "Worker の名前、ビルドのコマンド、`DB` という名前で使う D1 のデータベースです。コマンドは `worker-build` がなければインストールしてから実行します。D1 の設定には `database_id` がないので、最初の `wrangler deploy` がデータベースを作り、その id をこのファイルに書き込みます。`wrangler dev` は手元に別のデータベースを作ります。",
                     ],
                     &[
                         "`rust-toolchain.toml`",
@@ -155,8 +155,8 @@ cargo hypersig add cloudflare",
                     ja: "`Cargo.toml` には、パッケージを `worker-build` がコンパイルするライブラリにする `[lib]` の節を追加します。axum は `default-features = false` にし、`tower-service` と `worker` を追加し、tokio を外します。hypersig、serde、ほかの依存はそのままです。",
                 },
                 L {
-                    en: "It writes the template's `wrangler.toml`, with the package's name as the worker's, and `rust-toolchain.toml`, and adds `/build` and `/.wrangler`, which the build writes, to `.gitignore`.",
-                    ja: "テンプレートの `wrangler.toml` と `rust-toolchain.toml` を書き出します。`wrangler.toml` の Worker の名前はパッケージの名前です。ビルドが書き出す `/build` と `/.wrangler` は `.gitignore` に追加します。",
+                    en: "It writes the template's `wrangler.toml` without its D1 database, which only the template's worker uses, with the package's name as the worker's, and `rust-toolchain.toml`, and adds `/build` and `/.wrangler`, which the build writes, to `.gitignore`.",
+                    ja: "テンプレートの `wrangler.toml` と `rust-toolchain.toml` を書き出します。`wrangler.toml` の Worker の名前はパッケージの名前で、テンプレートの Worker だけが使う D1 のデータベースの設定は含めません。ビルドが書き出す `/build` と `/.wrangler` は `.gitignore` に追加します。",
                 },
                 L {
                     en: "It renames `src/main.rs` to `src/lib.rs`.",
@@ -173,7 +173,7 @@ crate-type = ["cdylib"]
 [dependencies]
 axum = { version = "0.8", default-features = false }
 tower-service = "0.3"
-worker = { version = "0.8", features = ["http", "axum"] }"#,
+worker = { version = "0.8", features = ["http", "axum", "d1"] }"#,
         ),
         para(
             site,
@@ -207,8 +207,8 @@ fn on_workers(site: Site) -> Part {
             site,
             &[
                 L {
-                    en: "Requests may run in different isolates, so a value kept in memory may be gone at the next request. Keep the state requests share in KV, D1, or a Durable Object.",
-                    ja: "リクエストごとに別の isolate で動くことがあるので、メモリに置いた値は次のリクエストで消えていることがあります。リクエストをまたいで共有する状態は KV、D1、Durable Object に置いてください。",
+                    en: "Requests may run in different isolates, so a value kept in memory may be gone at the next request. Keep the state requests share in KV, D1, or a Durable Object. The handlers reach them through the `Env` that `fetch` receives, as the template's `AppState` holds the D1 database, and [Storing data](learn/database/) shows the other databases a worker can reach.",
+                    ja: "リクエストごとに別の isolate で動くことがあるので、メモリに置いた値は次のリクエストで消えていることがあります。リクエストをまたいで共有する状態は KV、D1、Durable Object に置いてください。ハンドラは `fetch` が受け取る `Env` からそれらを使います。テンプレートでは `AppState` が D1 のデータベースを持っています。Worker からつなげるほかのデータベースは [データを保存する](learn/database/) にあります。",
                 },
                 L {
                     en: "A stream sends no keep-alive comments, because axum times them with tokio, which has no timer on this target. A stream that waits between patches waits with `worker::Delay`, wrapped in `SendFuture` because a JavaScript timer is not `Send`.",
