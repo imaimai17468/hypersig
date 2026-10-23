@@ -1,8 +1,10 @@
 //! Signing in with a cookie session kept by `tower-sessions`. Its layer reads
 //! the cookie, loads the session, and sets the cookie after a handler changes
 //! the session. An extractor finds the signed-in member in the session, and an
-//! action whose handler fails answers with a status the page shows. A member uploads a picture through a file input, which an upload
-//! checks before it keeps it.
+//! action whose handler fails answers with a status the page shows. Passwords
+//! are kept as Argon2 hashes, which `password-auth` writes and checks. A
+//! member uploads a picture through a file input, which an upload checks
+//! before it keeps it.
 //!
 //! Run with `cargo run -p example-auth`, open <http://localhost:3007>, and
 //! sign in as `ada` with the password `lovelace`.
@@ -27,6 +29,7 @@ use hypersig_ui::{
     Autocomplete, ButtonSize, ButtonVariant, InputKind, Level, TextField, button, card,
     card_content, card_header, card_title, submit_button, token,
 };
+use password_auth::verify_password;
 use serde::{Deserialize, Serialize};
 use tower_sessions::cookie::SameSite;
 use tower_sessions::{MemoryStore, Session, SessionManagerLayer};
@@ -89,7 +92,9 @@ const UPLOAD_PICTURE: Upload<Home> = Upload::post("/picture").max_bytes(64 * 102
 
 #[derive(Clone)]
 struct AppState {
-    passwords: Arc<HashMap<&'static str, &'static str>>,
+    /// Each member's password hash, as `password_auth::generate_hash` wrote
+    /// it. An application reads these from its database.
+    password_hashes: Arc<HashMap<&'static str, &'static str>>,
     notes: Arc<Mutex<HashMap<String, Vec<String>>>>,
     /// Each member's picture, described as the page shows it.
     pictures: Arc<Mutex<HashMap<String, String>>>,
@@ -151,6 +156,10 @@ impl IntoResponse for NotesFull {
         (StatusCode::CONFLICT, message).into_response()
     }
 }
+
+/// A hash of a password no member has, which a sign-in with an unknown name
+/// is checked against.
+const NO_MEMBER_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$DA82QPNeuglt9UgI4H53EQ$uBZf8usNhSnVATPWCcGBXpsznx7CjIxRbE0NGwp+kMQ";
 
 /// The key under which a session holds the signed-in member's name.
 const MEMBER: &str = "member";
@@ -426,8 +435,19 @@ async fn sign_in(
     if let Err(errors) = Form::validate(&credentials) {
         return Ok(form.reject(&errors).into());
     }
-    let name = credentials.name.trim();
-    if state.passwords.get(name) != Some(&credentials.password.as_str()) {
+    let name = credentials.name.trim().to_owned();
+    let member = state.password_hashes.get(name.as_str()).copied();
+    // A name no member has is checked against a hash as well, so the answer
+    // takes as long as a member's and does not tell which names exist.
+    let hash = member.unwrap_or(NO_MEMBER_HASH);
+    let password = credentials.password;
+    // Argon2 spends its time on the CPU on purpose, about 10 ms in a release
+    // build, so it runs on tokio's blocking threads, not the ones that serve
+    // the other requests.
+    let verified = tokio::task::spawn_blocking(move || verify_password(password, hash).is_ok())
+        .await
+        .expect("verifying a password does not panic");
+    if member.is_none() || !verified {
         let wrong = FieldErrors::new().add(
             Credentials::password(),
             "The name or the password is wrong.",
@@ -509,7 +529,17 @@ fn sessions() -> SessionManagerLayer<MemoryStore> {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let state = AppState {
-        passwords: Arc::new(HashMap::from([("ada", "lovelace"), ("grace", "hopper")])),
+        // The hashes of `lovelace` and `hopper`.
+        password_hashes: Arc::new(HashMap::from([
+            (
+                "ada",
+                "$argon2id$v=19$m=19456,t=2,p=1$Ezh4pqRXf0ii8dWn2w4iIw$Lm5DFxXxtEIh7WeT2RRVzLM20Fdb1azMfaHbwyabOI4",
+            ),
+            (
+                "grace",
+                "$argon2id$v=19$m=19456,t=2,p=1$/rzCQklh7Wj8paOo76GUNQ$mf4BTOP+5oG2wLmxJiLNAdTtPYpiWfnSktpmdEbHoWA",
+            ),
+        ])),
         notes: Arc::default(),
         pictures: Arc::default(),
     };

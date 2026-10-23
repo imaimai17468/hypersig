@@ -14,8 +14,12 @@ base("signs in with a cookie, shows the handler's error, and asks to sign in aga
   await password.fill("babbage");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.locator("#ui-credentials-value-password-error")).toHaveText("The name or the password is wrong.");
-
+  await name.fill("nobody");
   await password.fill("lovelace");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator("#ui-credentials-value-password-error")).toHaveText("The name or the password is wrong.");
+
+  await name.fill("ada");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(url("auth"));
   await expect(page.locator("#member")).toHaveText("Signed in as ada");
