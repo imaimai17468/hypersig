@@ -30,8 +30,8 @@ pub fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "An extractor that guards actions answers a signed-out request with a status such as 401. The browser's `fetch` follows a redirect, so an action answered with one receives the sign-in page's HTML and the page shows nothing. The `Accept` header tells the two apart: the runtime asks for `text/event-stream`.",
-                ja: "アクションを守る extractor は、サインインしていないリクエストに 401 などのステータスで応答します。ブラウザの `fetch` はリダイレクトをたどるので、リダイレクトで応答したアクションはサインインのページの HTML を受け取り、ページには何も表示されません。2 つは `Accept` ヘッダーで見分けられます。ランタイムは `text/event-stream` を求めます。",
+                en: "An extractor that guards actions answers a signed-out request with a status such as 401. The browser's `fetch` follows a redirect, so an action answered with one receives the sign-in page's HTML and the page shows nothing. The `Accept` header tells the two apart: the runtime asks for `text/event-stream`. The cookie in this sample is read by hand to show the extractor, and [Signing in](learn/sessions/) keeps the session with `tower-sessions`.",
+                ja: "アクションを守る extractor は、サインインしていないリクエストに 401 などのステータスで応答します。ブラウザの `fetch` はリダイレクトをたどるので、リダイレクトで応答したアクションはサインインのページの HTML を受け取り、ページには何も表示されません。2 つは `Accept` ヘッダーで見分けられます。ランタイムは `text/event-stream` を求めます。このサンプルはエクストラクタを示すために Cookie を手で読んでいます。セッションを `tower-sessions` で持つ方法は [サインインとセッション](learn/sessions/) にあります。",
             },
         ),
         heading(

@@ -9,6 +9,7 @@ mod javascript;
 mod requests;
 mod security;
 mod server;
+mod sessions;
 pub mod snippet;
 mod state;
 mod testing;
@@ -32,6 +33,7 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::CallsInDepth => server::calls_in_depth(site),
         Learn::Forms => forms::forms(site),
         Learn::Requests => requests::requests(site),
+        Learn::Sessions => sessions::sessions(site),
         Learn::Database => database::database(site),
         Learn::Api => api::api(site),
         Learn::Pages => server::pages(site),

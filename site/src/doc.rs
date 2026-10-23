@@ -38,6 +38,7 @@ pub enum Learn {
     Server,
     Forms,
     Requests,
+    Sessions,
     Database,
     Api,
     Pages,
@@ -260,6 +261,7 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::Server),
             Doc::Learn(Learn::Forms),
             Doc::Learn(Learn::Requests),
+            Doc::Learn(Learn::Sessions),
             Doc::Learn(Learn::Database),
             Doc::Learn(Learn::Api),
             Doc::Learn(Learn::Pages),
@@ -504,6 +506,7 @@ impl Doc {
         Self::Learn(Learn::Server),
         Self::Learn(Learn::Forms),
         Self::Learn(Learn::Requests),
+        Self::Learn(Learn::Sessions),
         Self::Learn(Learn::Database),
         Self::Learn(Learn::Api),
         Self::Learn(Learn::Pages),
@@ -619,6 +622,7 @@ impl Doc {
                     "Requests, cookies, and errors",
                     "リクエスト、Cookie、エラー",
                 ),
+                Learn::Sessions => ("Signing in", "サインインとセッション"),
                 Learn::Database => ("Storing data", "データを保存する"),
                 Learn::Api => (
                     "Calling another service's API",
@@ -728,6 +732,10 @@ impl Doc {
                 Learn::Requests => L {
                     en: "A handler reads the request through an axum extractor, sets cookies by returning headers beside its answer, and fails with `?`.",
                     ja: "ハンドラは axum の extractor でリクエストを読み、応答と一緒にヘッダーを返して Cookie を設定し、`?` で失敗を返します。",
+                },
+                Learn::Sessions => L {
+                    en: "The `tower-sessions` layer keeps a session for each browser behind a cookie, and an extractor reads the signed-in member from it. Without one, a page goes to the sign-in page and an action answers with a 401.",
+                    ja: "`tower-sessions` のレイヤーがブラウザごとのセッションを Cookie の向こうに持ち、エクストラクタがそこからサインイン中のメンバーを読みます。サインインしていなければ、ページはサインインのページへ移り、アクションには 401 を返します。",
                 },
                 Learn::Server => L {
                     en: "The browser calls an action, and the server answers with patches: new values for signals, or new HTML for a part of the page.",
@@ -950,6 +958,7 @@ impl Learn {
             Self::Server => "server",
             Self::Forms => "forms",
             Self::Requests => "requests",
+            Self::Sessions => "sessions",
             Self::Database => "database",
             Self::Api => "api",
             Self::Pages => "pages",
