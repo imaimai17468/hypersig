@@ -263,6 +263,20 @@ fn processes(site: Site) -> Part {
                 ja: "変更のたびに一覧を送るストリームは、ルーターの状態にある `tokio::sync::broadcast` のチャネルで変更を知ります。このチャネルは 1 つのプロセスのものです。`examples/database` では、同じ SQLite のファイルを開いた 2 つ目のプロセスも同じ todo を読みますが、一方のプロセスの書き込みはもう一方のプロセスのストリームには届きません。もう一方のプロセスが配信したタブには、ページを読み込み直したときに書き込みが表示されます。`examples/postgres` のマイグレーションは、テーブルを変更する文のたびに `pg_notify` を呼ぶトリガーを作ります。PostgreSQL はその知らせをトランザクションのコミット時に届けます。各プロセスは sqlx の `PgListener` でそのチャネルを聞き、受け取った知らせを自分の `broadcast` に流すので、開いているすべてのタブに書き込みがすぐ表示されます。",
             },
         ),
+        para(
+            site,
+            L {
+                en: "`PgListener` waits for notifications on the connection that sent `LISTEN`, so that connection has to stay the listener's on PostgreSQL's side too. A pooler in transaction mode hands its connection to PostgreSQL to another client after each transaction, and [PgBouncer's feature table](https://www.pgbouncer.org/features.html) lists `LISTEN` as never supported in that mode, so a listener opened through one hears nothing. Where the pool connects through such a pooler, as on Vercel, open the listener with `PgListener::connect` and a connection string that reaches the database directly or through the pooler's session mode.",
+                ja: "`PgListener` は `LISTEN` を送った接続で知らせを待つので、その接続は PostgreSQL の側でもリスナーのものであり続ける必要があります。トランザクションモードのプーラーは、トランザクションのたびに PostgreSQL への接続を別のクライアントに渡します。[PgBouncer の機能表](https://www.pgbouncer.org/features.html) も、このモードの `LISTEN` を「Never」としています。そのため、このプーラーを経由して開いたリスナーには知らせが届きません。Vercel のようにプールがこうしたプーラーを経由するときは、データベースに直接つなぐか、プーラーのセッションモードを通る接続文字列を `PgListener::connect` に渡してリスナーを開いてください。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Without PostgreSQL, a service that delivers each message to every subscriber can take its place, such as Redis with `PUBLISH` and `SUBSCRIBE`. The action publishes once its write succeeds, which the trigger does here, and in each process a task spawned in `main`, as `listen` is, subscribes and calls `changed.send(())` for each message. The streams stay as they are. A message published while the subscription reconnects is lost, as a notification is here, so the task sends on `changed` after reconnecting too. The repository has no example of this.",
+                ja: "PostgreSQL を使わないときは、購読しているすべての相手にメッセージを届けるサービスで代わりができます。Redis の `PUBLISH` と `SUBSCRIBE` がその例です。ここではトリガーが知らせを送りますが、その場合はアクションが書き込みに成功したあとに `PUBLISH` します。各プロセスでは、`listen` と同じように `main` で起動したタスクが購読し、メッセージを受け取るたびに `changed.send(())` を呼びます。ストリームのコードは変わりません。購読をつなぎ直しているあいだに送られたメッセージは、ここでの知らせと同じように失われるので、タスクはつなぎ直したあとにも `changed` に送ります。リポジトリにはこの方法の例はありません。",
+            },
+        ),
         note(
             site,
             L {

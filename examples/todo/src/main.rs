@@ -2,6 +2,11 @@
 //! and each todo has a page of its own at `/todos/{id}`.
 //!
 //! Run with `cargo run -p example-todo` and open <http://localhost:3001> in two tabs.
+//!
+//! The list and the channel that tells the streams of a change live in this
+//! process's memory, so a second process serves a list of its own.
+//! `examples/postgres` keeps the list in PostgreSQL and tells the streams of
+//! every process.
 
 use std::sync::{Arc, Mutex};
 

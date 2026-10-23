@@ -241,6 +241,10 @@ fn on_vercel(site: Site) -> Part {
                     ja: "Vercel は関数のインスタンスを複数動かすことがあり、使われていないインスタンスは止めます。メモリに置いた値は次のリクエストで消えていることがあるので、リクエストをまたいで共有する状態は、関数がネットワーク越しにつなぐデータベースに置いてください。置き方は [データを保存する](learn/database/) にあります。",
                 },
                 L {
+                    en: "Each instance of the function is one process, and a `broadcast` channel that tells the streams of a change, as in `examples/todo`, reaches only the streams of its own instance. A change made through one instance then shows in a tab served by another only when that tab loads the page again. [Updates with more than one process](learn/database/#updates-with-more-than-one-process) carries the change to every instance through PostgreSQL, with the listener's own connection string where the pool goes through a pooler.",
+                    ja: "関数のインスタンスはそれぞれ 1 つのプロセスです。`examples/todo` のようにストリームに変更を知らせる `broadcast` のチャネルは、自分のインスタンスのストリームにしか届きません。そのため、あるインスタンスを通した変更は、別のインスタンスが配信したタブでは、ページを読み込み直すまで表示されません。PostgreSQL を通してすべてのインスタンスに変更を届ける方法は [プロセスが複数あるときの更新](learn/database/#updates-with-more-than-one-process) にあります。プールがプーラーを経由するときは、リスナーには別の接続文字列を渡します。",
+                },
+                L {
                     en: "`VercelLayer` reads the whole request body before the `Router` sees it, so a file upload read in chunks arrives in memory at once. Vercel refuses a request body over 4.5 MB.",
                     ja: "`VercelLayer` はリクエストの本文をすべて読んでから `Router` に渡します。ファイルのアップロードを少しずつ読むコードでも、本文は一度にメモリに載ります。Vercel は 4.5 MB を超える本文を受け付けません。",
                 },
