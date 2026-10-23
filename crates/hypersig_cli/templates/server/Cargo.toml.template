@@ -9,3 +9,10 @@ axum = "0.8"
 hypersig = "{{hypersig-version}}"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
+
+# Clippy's pedantic group adds warnings for code that compiles but hides a
+# mistake or reads worse, such as a cast that can lose digits or an argument
+# taken by value that is only read. Turn one off by name, such as
+# `module_name_repetitions = "allow"`, where it does not fit this project.
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }

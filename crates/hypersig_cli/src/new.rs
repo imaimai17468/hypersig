@@ -4,7 +4,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use crate::Error;
-use crate::host::{self, Host};
+use crate::host::Host;
 
 pub fn run(path: &Path, host: Host) -> Result<(), Error> {
     let package = path
@@ -25,7 +25,7 @@ pub fn run(path: &Path, host: Host) -> Result<(), Error> {
                 Error::new(format!("cannot create `{}`: {error}", parent.display()))
             })?;
         }
-        std::fs::write(&dest, host::fill(file.text, package))
+        std::fs::write(&dest, host.fill(file.text, package))
             .map_err(|error| Error::new(format!("cannot write `{}`: {error}", dest.display())))?;
     }
     let git = init_git(path);

@@ -27,6 +27,9 @@ pub enum Kind {
     Ignore,
     /// A file the host reads, which `add` writes as its `moved` text.
     Config,
+    /// A file a coding agent reads, which `add` writes only where the
+    /// project has none, since a project's own instructions outrank it.
+    Guide,
 }
 
 /// One file of a template.
@@ -34,7 +37,8 @@ pub enum Kind {
 pub struct File {
     /// Where the file goes in the project.
     pub path: &'static str,
-    /// The text, with `{{project-name}}` and `{{hypersig-version}}` in it.
+    /// The text, with `{{project-name}}`, `{{hypersig-version}}`, and
+    /// `{{host-notes}}` in it.
     pub text: &'static str,
     /// What `add` writes in place of `text`, which leaves out what only the
     /// template's own code uses.
@@ -64,6 +68,16 @@ macro_rules! file {
             kind: Kind::$kind,
         }
     };
+    // `AGENTS.md` is one text for every host, with the host's notes from
+    // `templates/$host/AGENTS.host.md` in place of `{{host-notes}}`.
+    ($host:literal, guide $path:literal) => {
+        File {
+            path: $path,
+            text: include_str!(concat!("../templates/", $path)),
+            moved: include_str!(concat!("../templates/", $path)),
+            kind: Kind::Guide,
+        }
+    };
     ($host:literal, $path:literal, $kind:ident, moved = $moved:literal) => {
         File {
             path: $path,
@@ -80,6 +94,8 @@ const SERVER: &[File] = &[
     file!("server", "Dockerfile", Config),
     file!("server", ".dockerignore", Ignore),
     file!("server", ".gitignore", Ignore),
+    file!("server", guide "AGENTS.md"),
+    file!("server", guide "CLAUDE.md"),
 ];
 
 const CLOUDFLARE: &[File] = &[
@@ -95,6 +111,8 @@ const CLOUDFLARE: &[File] = &[
     ),
     file!("cloudflare", "rust-toolchain.toml", Config),
     file!("cloudflare", ".gitignore", Ignore),
+    file!("cloudflare", guide "AGENTS.md"),
+    file!("cloudflare", guide "CLAUDE.md"),
 ];
 
 const VERCEL: &[File] = &[
@@ -104,6 +122,8 @@ const VERCEL: &[File] = &[
     file!("vercel", "rust-toolchain.toml", Config),
     file!("vercel", ".vercelignore", Ignore),
     file!("vercel", ".gitignore", Ignore),
+    file!("vercel", guide "AGENTS.md"),
+    file!("vercel", guide "CLAUDE.md"),
 ];
 
 impl Host {
@@ -134,7 +154,26 @@ impl Host {
             .iter()
             .find(|file| file.kind == Kind::Manifest)
             .expect("every template lists its Cargo.toml");
-        fill(file.text, package)
+        self.fill(file.text, package)
+    }
+
+    /// The paragraphs of `AGENTS.md` about this host.
+    fn notes(self) -> &'static str {
+        match self {
+            Self::Server => include_str!("../templates/server/AGENTS.host.md"),
+            Self::Cloudflare => include_str!("../templates/cloudflare/AGENTS.host.md"),
+            Self::Vercel => include_str!("../templates/vercel/AGENTS.host.md"),
+        }
+    }
+
+    /// `text` with the package's name, this CLI's version, and the host's
+    /// notes in place of the placeholders. The CLI is released with hypersig
+    /// at the same version, so its version is the hypersig the template was
+    /// tested against.
+    pub fn fill(self, text: &str, package: &str) -> String {
+        text.replace("{{project-name}}", package)
+            .replace("{{hypersig-version}}", env!("CARGO_PKG_VERSION"))
+            .replace("{{host-notes}}", self.notes().trim_end())
     }
 }
 
@@ -157,12 +196,4 @@ impl FromStr for Host {
                 ))
             })
     }
-}
-
-/// `text` with the package's name and this CLI's version in place of the
-/// placeholders. The CLI is released with hypersig at the same version, so
-/// its version is the hypersig the template was tested against.
-pub fn fill(text: &str, package: &str) -> String {
-    text.replace("{{project-name}}", package)
-        .replace("{{hypersig-version}}", env!("CARGO_PKG_VERSION"))
 }

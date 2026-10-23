@@ -72,6 +72,8 @@ struct Home {
     draft: String,
     saving: bool,
     problem: String,
+    /// The status of the last failed note, or `0`.
+    failure: i32,
     /// What the member's picture is, such as `cat.png, 1024 bytes`, or `""`.
     picture: String,
     uploading: bool,
@@ -233,6 +235,7 @@ async fn home(state: AppState, member: Member, (): ()) -> Page<Home> {
         draft: String::new(),
         saving: false,
         problem: String::new(),
+        failure: 0,
         uploading: false,
         picture_problem: String::new(),
     };
@@ -362,7 +365,8 @@ fn home_card() -> El<Home> {
                                 ADD_NOTE
                                     .call_with(draft)
                                     .indicator(saving)
-                                    .error(Home::problem()),
+                                    .error(Home::problem())
+                                    .status(Home::failure()),
                             )
                             .child(TextField::new("Note", draft))
                             .child(
@@ -375,11 +379,23 @@ fn home_card() -> El<Home> {
                                     .attr("role", "alert")
                                     .css(Style::new().color(token::destructive().var()))
                                     .bind_text(Home::problem()),
+                            )
+                            .child(
+                                a().id("sign-in-again")
+                                    .show(signed_out())
+                                    .href(LOGIN.link())
+                                    .text("Sign in again"),
                             ),
                     )
                     .child(picture_form()),
             ),
     )
+}
+
+/// Whether the last note failed because the session had ended, which the
+/// status of `SignedOut`'s answer says.
+fn signed_out() -> hypersig::Expr<Home, bool> {
+    Home::failure().equals(i32::from(StatusCode::UNAUTHORIZED.as_u16()))
 }
 
 fn picture_form() -> El<Home> {

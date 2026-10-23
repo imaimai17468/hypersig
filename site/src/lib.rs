@@ -193,6 +193,10 @@ const STAR_RATING_FILE: &str = "star-rating.js";
 /// The list of the site's pages that search engines read.
 const SITEMAP_FILE: &str = "sitemap.xml";
 
+/// The index of the guide that coding agents read, as llmstxt.org describes
+/// it, one in each language's directory.
+const LLMS_FILE: &str = "llms.txt";
+
 /// The file Google Search Console reads to confirm that the owner of the
 /// site added it, under the name Search Console gave for
 /// `https://imaimai17468.github.io/hypersig/`.
@@ -216,8 +220,9 @@ pub const API_DIR: &str = "api";
 /// Every file of the site.
 ///
 /// These are the pages, the live demos and the script of the rating demo,
-/// the runtime, the icon, the link preview pictures, the Search Console file,
-/// and, for a site that knows its origin, the sitemap.
+/// the runtime, the icon, the link preview pictures, each language's
+/// `llms.txt`, the Search Console file, and, for a site that knows its
+/// origin, the sitemap.
 #[must_use]
 pub fn render(site: Site) -> Vec<File> {
     let mut files = Vec::new();
@@ -231,6 +236,10 @@ pub fn render(site: Site) -> Vec<File> {
             path: format!("{}{}index.html", lang.dir(), demo.path()),
             contents: demo.render(site).into_bytes(),
         }));
+        files.push(File {
+            path: format!("{}{LLMS_FILE}", lang.dir()),
+            contents: llms(site).into_bytes(),
+        });
         let (path, contents) = og_image(lang);
         files.push(File {
             path: path.to_owned(),
@@ -301,6 +310,65 @@ fn sitemap(site: Site) -> Option<String> {
     }
     xml.push_str("</urlset>\n");
     Some(xml)
+}
+
+/// The `llms.txt` of the pages in the site's language: the framework's
+/// description, then one line per page of each sidebar with the page's lead.
+/// The URLs are absolute where the site knows its origin, since an agent
+/// fetches them from the file alone, and start at the site's base otherwise.
+///
+/// The Learn section comes first. The reference, the components, the styles,
+/// and the i18n pages go under `Optional`, which an agent may skip.
+fn llms(site: Site) -> String {
+    let mut text = format!(
+        "# hypersig\n\n> {}\n\n{}\n",
+        site.t(Doc::Home.leads()),
+        site.t(L {
+            en: "Each page's Rust samples are compiled by the repository's tests. The pages follow the main branch, which can be ahead of the release on crates.io, so confirm an API in the source or on docs.rs of the version a project uses.",
+            ja: "各ページの Rust のサンプルは、リポジトリのテストでコンパイルされています。ページはメインブランチに合わせて書かれていて、crates.io の最新リリースより先に進んでいることがあります。API は、プロジェクトが使うバージョンのソースか docs.rs で確かめてください。",
+        }),
+    );
+    let list = |text: &mut String, docs: &[Doc]| {
+        for &doc in docs {
+            let url = match site.canonical(&doc.path()) {
+                Some((origin, url)) => format!("{origin}{url}"),
+                None => doc.url(site),
+            };
+            let lead = without_links(site.t(doc.leads()));
+            let _ = writeln!(text, "- [{}]({url}): {lead}", doc.title(site));
+        }
+    };
+    for group in doc::LEARN {
+        let _ = write!(text, "\n## {}\n\n", site.t(group.title));
+        list(&mut text, group.docs);
+    }
+    text.push_str("\n## Optional\n\n");
+    for groups in [doc::REFERENCE, doc::COMPONENTS, doc::STYLE, doc::I18N] {
+        for group in groups {
+            list(&mut text, group.docs);
+        }
+    }
+    text
+}
+
+/// `text` with each `[label](target)` replaced by its label. A lead's
+/// targets are relative to the site, which an agent reading `llms.txt` has no
+/// base for, and the other marks are Markdown already.
+fn without_links(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(open) = rest.find('[') {
+        let link = rest[open..].find("](").and_then(|middle| {
+            let close = rest[open + middle..].find(')')?;
+            Some((middle, middle + close))
+        });
+        let Some((middle, close)) = link else { break };
+        out.push_str(&rest[..open]);
+        out.push_str(&rest[open + 1..open + middle]);
+        rest = &rest[open + close + 1..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// A link inside the site that names no file of the site, or no section of the
@@ -502,6 +570,31 @@ mod tests {
         assert!(html.contains(r#"<meta property="og:locale" content="en_US">"#));
         assert!(html.contains(r#"<meta property="og:type" content="article">"#));
         assert!(html.contains(r#"<meta name="description" content="A form"#));
+    }
+
+    #[test]
+    fn a_lead_keeps_the_label_of_its_link() {
+        assert_eq!(
+            without_links("Read [`Page`](api:hypersig/struct.Page.html) and [x"),
+            "Read `Page` and [x"
+        );
+    }
+
+    #[test]
+    fn llms_txt_lists_every_page_once_with_its_url() {
+        let site = Site::new("/hypersig").with_origin(Origin::new("https://example.com"));
+        let text = llms(site);
+        assert!(text.starts_with("# hypersig\n\n> "));
+        let listed = text.lines().filter(|line| line.starts_with("- [")).count();
+        let pages = Doc::ALL
+            .iter()
+            .filter(|doc| !doc.groups().is_empty())
+            .count();
+        assert_eq!(listed, pages);
+        assert!(text.contains("](https://example.com/hypersig/learn/sessions/): "));
+        let ja = llms(site.with_lang(Lang::Ja));
+        assert!(ja.contains("](https://example.com/hypersig/ja/learn/sessions/): "));
+        assert!(llms(Site::new("/hypersig")).contains("](/hypersig/learn/sessions/): "));
     }
 
     #[test]

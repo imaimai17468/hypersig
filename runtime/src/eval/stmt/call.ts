@@ -21,21 +21,30 @@ function runLater(stmt: unknown, ctx: Context, host: Host): void {
 }
 
 /**
- * What a call's `{"error": [depth, statement], "ok": statement, "part": path}`
+ * What a call's `{"error": [depth, statement], "ok": statement, "status": path, "part": path}`
  * element asks for. The statements run when the call fails or succeeds, in
  * the context of the statement that made the call, so they reach its list
  * items and `let` values, and the error statement reads the error text as
- * the `let` value at `depth`.
+ * the `let` value at `depth`. `status` names the signal that holds the
+ * status of a failed answer.
  */
 function outcomes(
   spec: unknown,
   ctx: Context,
   host: Host,
-): Pick<CallOptions, "failed" | "succeeded" | "part"> {
+): Pick<CallOptions, "failed" | "succeeded" | "status" | "part"> {
   if (spec === null || typeof spec !== "object") return {};
-  const { error, ok, part } = spec as { error?: [number, unknown]; ok?: unknown; part?: string };
-  const found: { -readonly [K in "failed" | "succeeded" | "part"]?: CallOptions[K] } = {};
+  const { error, ok, status, part } = spec as {
+    error?: [number, unknown];
+    ok?: unknown;
+    status?: string;
+    part?: string;
+  };
+  const found: {
+    -readonly [K in "failed" | "succeeded" | "status" | "part"]?: CallOptions[K];
+  } = {};
   if (part !== undefined) found.part = part;
+  if (status !== undefined) found.status = status;
   if (error !== undefined) {
     const [depth, stmt] = error;
     found.failed = (message) =>

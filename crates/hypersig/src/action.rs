@@ -130,6 +130,45 @@ impl<S, A> Action<S, A> {
     }
 }
 
+#[cfg(feature = "axum")]
+impl<S, A: serde::Serialize> Action<S, A> {
+    /// The request the runtime sends to call this action with `args`.
+    ///
+    /// A test hands it to the router with `tower::ServiceExt::oneshot`. It
+    /// carries `Accept: text/event-stream`, which the runtime sends with
+    /// every call and [`RequestKind::of`](crate::RequestKind::of) reads. A
+    /// `POST` sends `args` as its JSON body with `Content-Type:
+    /// application/json`, and a `GET` sends them as JSON in the `args` query
+    /// parameter. The path is [`Action::path`], without the [`Base`], as the
+    /// router registers it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Votes {
+    ///     likes: i32,
+    /// }
+    ///
+    /// const LIKE: Action<Votes, i32> = Action::post("/like");
+    /// let request = LIKE.request(&3);
+    /// assert_eq!(request.uri(), "/like");
+    /// assert_eq!(request.headers()["content-type"], "application/json");
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `args` does not serialize to JSON, such as a map whose keys
+    /// are not strings.
+    #[must_use]
+    pub fn request(&self, args: &A) -> axum::http::Request<axum::body::Body> {
+        runtime_request(self.method, self.path, args)
+    }
+}
+
 impl<S> Action<S, ()> {
     /// A call to this action, which takes no arguments.
     #[must_use]
@@ -200,6 +239,8 @@ pub struct Call<S> {
     connected: bool,
     /// The name of the [`FileInput`](crate::FileInput) whose files an upload sends.
     files: Option<&'static str>,
+    /// The path of the signal that holds the status of a failed answer.
+    status: Option<Value>,
     /// The `let` depth the error text is named at, and the statement that reads it.
     on_error: Option<(u8, Value)>,
     on_success: Option<Value>,
@@ -221,6 +262,7 @@ impl<S> Call<S> {
             resends: false,
             connected: false,
             files: None,
+            status: None,
             on_error: None,
             on_success: None,
             part: current_part(),
@@ -259,6 +301,38 @@ impl<S> Call<S> {
     #[must_use]
     pub fn error(mut self, message: Sig<S, String>) -> Self {
         self.error = Value::from(message.path());
+        self
+    }
+
+    /// Sets `status` to the HTTP status of a failed answer, and to `0` when the call is sent.
+    ///
+    /// It stays `0` when no answer arrives, such as when the connection
+    /// fails. A page compares it with a status the server answers with,
+    /// written from `StatusCode` rather than as a number, to tell one
+    /// failure from another without reading the text [`Call::error`] holds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use axum::http::StatusCode;
+    /// use hypersig::html::{a, button, div};
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Notes {
+    ///     failure: i32,
+    /// }
+    ///
+    /// const SAVE: Action<Notes> = Action::post("/save");
+    /// let signed_out = Notes::failure().equals(i32::from(StatusCode::UNAUTHORIZED.as_u16()));
+    /// let _page = div()
+    ///     .child(button().on_click(SAVE.call().status(Notes::failure())).text("Save"))
+    ///     .child(a().show(signed_out).text("Sign in again"));
+    /// ```
+    #[must_use]
+    pub fn status(mut self, status: Sig<S, i32>) -> Self {
+        self.status = Some(Value::from(status.path()));
         self
     }
 
@@ -389,6 +463,9 @@ impl<S> IntoStmt<S> for Call<S> {
         if let Some((depth, stmt)) = call.on_error {
             outcomes.insert("error".to_owned(), json!([depth, stmt]));
         }
+        if let Some(status) = call.status {
+            outcomes.insert("status".to_owned(), status);
+        }
         if let Some(stmt) = call.on_success {
             outcomes.insert("ok".to_owned(), stmt);
         }
@@ -478,6 +555,23 @@ impl<S, A> StreamAction<S, A> {
         self.path
     }
 
+    /// The request the runtime sends to open this stream with `args`.
+    ///
+    /// It is the `GET` that [`Action::request`] builds: `Accept:
+    /// text/event-stream`, with `args` as JSON in the `args` query parameter.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `args` does not serialize to JSON.
+    #[cfg(feature = "axum")]
+    #[must_use]
+    pub fn request(&self, args: &A) -> axum::http::Request<axum::body::Body>
+    where
+        A: serde::Serialize,
+    {
+        runtime_request(Method::Get, self.path, args)
+    }
+
     /// A call to this stream with `args`, evaluated in the browser when the call runs.
     ///
     /// A call that [reconnects](StreamCall::reconnect) evaluates `args`
@@ -540,6 +634,12 @@ impl<S> StreamCall<S> {
     #[must_use]
     pub fn error(self, message: Sig<S, String>) -> Self {
         Self(self.0.error(message))
+    }
+
+    /// Sets `status` as [`Call::status`] does, and to `0` when the stream connects.
+    #[must_use]
+    pub fn status(self, status: Sig<S, i32>) -> Self {
+        Self(self.0.status(status))
     }
 
     /// Opens the stream again when its connection fails, breaks off, or answers 5xx.
@@ -802,6 +902,39 @@ impl<S> fmt::Debug for DialogRef<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("DialogRef").field(&self.name).finish()
     }
+}
+
+/// The request the runtime's `call` sends to `path` with `args`, as
+/// `runtime/src/runtime/action/call.ts` builds it.
+#[cfg(feature = "axum")]
+fn runtime_request(
+    method: Method,
+    path: &str,
+    args: &impl serde::Serialize,
+) -> axum::http::Request<axum::body::Body> {
+    use axum::body::Body;
+    use axum::http::{Request, header};
+
+    let json = serde_json::to_string(args).expect("the arguments serialize to JSON");
+    let request = Request::builder()
+        .method(method.as_str())
+        .header(header::ACCEPT, "text/event-stream");
+    let request = match method {
+        // The runtime leaves the parameter out for arguments that are `null`,
+        // such as `()`.
+        Method::Get if json == "null" => request.uri(path).body(Body::empty()),
+        Method::Get => {
+            let query = crate::route::encode_uri_component(&json);
+            request
+                .uri(format!("{path}?args={query}"))
+                .body(Body::empty())
+        }
+        Method::Post => request
+            .uri(path)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(json)),
+    };
+    request.expect("a path that starts with `/` and these headers make a request")
 }
 
 #[cfg(test)]

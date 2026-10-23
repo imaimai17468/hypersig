@@ -10,7 +10,7 @@ use std::path::Path;
 
 use toml_edit::{Array, ArrayOfTables, DocumentMut, InlineTable, Item, Table, TableLike, Value};
 
-use crate::host::{self, Host, Kind};
+use crate::host::{Host, Kind};
 use crate::{Error, diff};
 
 /// A change to the Rust code that `add` prints and leaves to the reader.
@@ -144,7 +144,7 @@ fn plan(dir: &Path, host: Host, force: bool) -> Result<Plan, Error> {
                 if dest.exists() && !force {
                     taken.push(file.path);
                 }
-                writes.push((file.path, host::fill(file.moved, &package)));
+                writes.push((file.path, host.fill(file.moved, &package)));
             }
             Kind::Ignore => {
                 let current = if dest.exists() {
@@ -154,6 +154,16 @@ fn plan(dir: &Path, host: Host, force: bool) -> Result<Plan, Error> {
                 };
                 if let Some((text, missing)) = append(current, file.moved) {
                     appends.push((file.path, text, missing));
+                }
+            }
+            Kind::Guide => {
+                if dest.exists() {
+                    notes.push(format!(
+                        "`{path}` is already here, so it stays as it is. The template's `{path}` is at https://github.com/imaimai17468/hypersig/blob/main/crates/hypersig_cli/templates/{path}.",
+                        path = file.path
+                    ));
+                } else {
+                    writes.push((file.path, host.fill(file.moved, &package)));
                 }
             }
             Kind::Manifest | Kind::Source => {}

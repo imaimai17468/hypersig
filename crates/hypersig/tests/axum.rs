@@ -24,6 +24,7 @@ const ADD: Action<Counter, (i32, i32)> = Action::post("/add");
 const PEEK: Action<Counter, i32> = Action::get("/peek");
 const MOVE: Action<Counter, i32> = Action::post("/move");
 const TICKS: StreamAction<Counter, i32> = StreamAction::new("/ticks");
+const LENGTH: Action<Counter, String> = Action::get("/length");
 
 hypersig::routes! {
     fn pages(Router<()>);
@@ -101,6 +102,9 @@ fn app() -> Router {
             Patches::from(Counter::count().patch(id))
                 .navigate(ORG_MEMBER.url(("acme".to_owned(), id)))
         })
+        .action(LENGTH, |(), text: String| async move {
+            Patches::from(Counter::count().patch(i32::try_from(text.chars().count()).unwrap()))
+        })
         .stream(TICKS, |(), from: i32| {
             stream::iter([from, from + 1]).map(|count| Counter::count().patch(count).into())
         })
@@ -167,6 +171,35 @@ async fn get_reads_the_arguments_from_the_query() {
     .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, "event: hs-signals\ndata: {\"count\":5}\n\n");
+}
+
+#[tokio::test]
+async fn the_requests_actions_build_reach_their_handlers_with_the_arguments() {
+    let (status, body) = send(ADD.request(&(4, 3))).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, "event: hs-signals\ndata: {\"count\":7}\n\n");
+
+    // A text the query has to escape: a space, `&`, `=`, `/`, `?`, `#`, and
+    // a character outside ASCII.
+    let (status, body) = send(LENGTH.request(&"a b&c=d/e?f#gé".to_owned())).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, "event: hs-signals\ndata: {\"count\":14}\n\n");
+
+    let (status, body) = send(TICKS.request(&4)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.starts_with("event: hs-signals\ndata: {\"count\":4}\n\n"));
+}
+
+#[test]
+fn the_request_of_a_call_carries_the_headers_the_runtime_sends() {
+    let post = ADD.request(&(4, 3));
+    assert_eq!(post.method(), "POST");
+    assert_eq!(post.headers()[header::ACCEPT], "text/event-stream");
+    assert_eq!(post.headers()[header::CONTENT_TYPE], "application/json");
+    let get = PEEK.request(&5);
+    assert_eq!(get.uri(), "/peek?args=5");
+    assert_eq!(get.headers()[header::ACCEPT], "text/event-stream");
+    assert!(get.headers().get(header::CONTENT_TYPE).is_none());
 }
 
 #[tokio::test]

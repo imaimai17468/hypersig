@@ -66,7 +66,7 @@ async fn main() -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use axum::body::Body;
-    use axum::http::{Request, header};
+    use axum::http::Request;
     use http_body_util::BodyExt as _;
     use tower::ServiceExt as _;
 
@@ -98,13 +98,10 @@ mod tests {
 
     #[tokio::test]
     async fn the_router_answers_the_action_with_its_patches() {
-        let request = Request::builder()
-            .method(LIKE.method().as_str())
-            .uri(LIKE.path())
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(serde_json::to_vec(&3).unwrap()))
+        let response = app(Likes::default())
+            .oneshot(LIKE.request(&3))
+            .await
             .unwrap();
-        let response = app(Likes::default()).oneshot(request).await.unwrap();
         assert_eq!(response.status(), StatusCode::OK);
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let expected = Patches::from(Votes::likes().patch(3)).to_event_stream();

@@ -94,8 +94,11 @@ impl DurableObject for Hub {
     /// `/subscribe` answers with a body that receives one line per save, and
     /// `/publish` sends that line to every subscriber whose body is still
     /// being read.
-    async fn fetch(&self, request: worker::Request) -> worker::Result<worker::Response> {
-        match request.path().as_str() {
+    fn fetch(
+        &self,
+        request: worker::Request,
+    ) -> impl Future<Output = worker::Result<worker::Response>> {
+        std::future::ready(match request.path().as_str() {
             "/subscribe" => {
                 let (sender, receiver) = mpsc::unbounded();
                 self.subscribers.borrow_mut().push(sender);
@@ -108,7 +111,7 @@ impl DurableObject for Hub {
                 worker::Response::empty()
             }
             _ => worker::Response::error("Not Found", 404),
-        }
+        })
     }
 }
 
