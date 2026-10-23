@@ -16,7 +16,7 @@ test = false
 axum.workspace = true
 futures.workspace = true
 hypersig.workspace = true
-sqlx = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls"] }
+sqlx = { workspace = true, features = ["macros", "migrate", "postgres", "runtime-tokio", "tls-rustls"] }
 serde.workspace = true
 tokio.workspace = true
 tokio-stream = { workspace = true, features = ["sync"] }

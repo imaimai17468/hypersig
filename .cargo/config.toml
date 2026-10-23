@@ -1,0 +1,7 @@
+# The `sqlx::query!` macros of examples/postgres check each query against the
+# description `cargo sqlx prepare` wrote to examples/postgres/.sqlx, so a build
+# needs no database even where DATABASE_URL is set, as in the e2e tests.
+# `cargo sqlx prepare` sets SQLX_OFFLINE=false itself, which this does not
+# override.
+[env]
+SQLX_OFFLINE = "true"

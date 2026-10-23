@@ -60,6 +60,20 @@ jobs:
       - name: The Vercel template
         run: dir=$(crates/hypersig_cli/stage.sh vercel) && cd "$dir" && cargo fmt --check && cargo clippy -- -D warnings
       - run: cargo check -p hypersig --no-default-features
+      # The `sqlx::query!` macros of examples/postgres build from the query
+      # descriptions in examples/postgres/.sqlx. `--check` fails when a query
+      # or a migration changed and that directory was not written again.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: sqlx-cli@0.9.0
+      - name: examples/postgres/.sqlx matches its queries
+        env:
+          DATABASE_URL: postgres://postgres:hypersig@127.0.0.1:5432/postgres
+        run: |
+          docker run -d --rm --name postgres -e POSTGRES_PASSWORD=hypersig -p 127.0.0.1:5432:5432 postgres:18
+          until docker exec postgres pg_isready -h 127.0.0.1 -U postgres; do sleep 1; done
+          cargo sqlx migrate run --source examples/postgres/migrations
+          cd examples/postgres && cargo sqlx prepare --check
       - run: cargo doc --workspace --no-deps
         env:
           RUSTDOCFLAGS: -D warnings

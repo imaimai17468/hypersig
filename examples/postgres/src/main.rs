@@ -3,9 +3,21 @@
 //! change made through one process reaches the open tabs of the others over
 //! PostgreSQL's `LISTEN` and `NOTIFY`.
 //!
-//! Start PostgreSQL, then run
-//! `DATABASE_URL=postgres://postgres:password@localhost/postgres cargo run -p example-postgres`
-//! and open <http://localhost:3011>. A hosted database, such as Supabase,
+//! Each query is a `sqlx::query!` macro, which checks its SQL, its parameters,
+//! and its columns against the tables of `migrations/` when the example is
+//! built. The build reads that check's input from `.sqlx`, so it needs no
+//! database. After changing a query or a migration, apply the migrations to a
+//! database and write `.sqlx` again:
+//!
+//! ```sh
+//! export DATABASE_URL=postgres://postgres:password@localhost/postgres
+//! cargo sqlx migrate run --source examples/postgres/migrations
+//! (cd examples/postgres && cargo sqlx prepare)
+//! ```
+//!
+//! Start PostgreSQL, then run `cargo run -p example-postgres` with
+//! `DATABASE_URL` set and open <http://localhost:3011>. The server applies
+//! the migrations when it starts. A hosted database, such as Supabase,
 //! Cloud SQL, or RDS, takes its own connection string in `DATABASE_URL`.
 
 use std::time::Duration;
@@ -34,8 +46,10 @@ struct TodoDetail {
     done: bool,
 }
 
-/// The `id` column of a todo, a `BIGINT`.
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+/// The `id` column of a todo, a `BIGINT`. A query names it as
+/// `id AS "id: TodoId"`, and the macro reads the column into this type.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, sqlx::Type)]
+#[sqlx(transparent)]
 struct TodoId(i64);
 
 hypersig::routes! {
@@ -49,31 +63,16 @@ const TOGGLE: Action<TodoPage, TodoId> = Action::post("/todos/toggle");
 const REMOVE: Action<TodoPage, TodoId> = Action::post("/todos/remove");
 const UPDATES: StreamAction<TodoPage> = StreamAction::new("/todos/updates");
 
-/// Runs when the server starts. `IF NOT EXISTS` leaves the table of an
-/// earlier run, or of another process, in place.
-const SCHEMA: &str = "CREATE TABLE IF NOT EXISTS todos (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    title TEXT NOT NULL,
-    done BOOLEAN NOT NULL DEFAULT FALSE
-)";
-
-/// The channel each write notifies and each process listens on.
+/// The channel the trigger of `migrations/` notifies after each change to
+/// `todos`, and each process listens on. The two names are written apart, so
+/// a listener on another name hears nothing and the tabs of other processes
+/// show a change only once they load the page again.
 const CHANGED: &str = "todos_changed";
 
 struct Todo {
     id: TodoId,
     title: String,
     done: bool,
-}
-
-impl From<(i64, String, bool)> for Todo {
-    fn from((id, title, done): (i64, String, bool)) -> Self {
-        Self {
-            id: TodoId(id),
-            title,
-            done,
-        }
-    }
 }
 
 /// A query that failed.
@@ -103,20 +102,45 @@ struct Db(PgPool);
 
 impl Db {
     async fn list(&self) -> Result<Vec<Todo>, DbError> {
-        let rows: Vec<(i64, String, bool)> =
-            sqlx::query_as("SELECT id, title, done FROM todos ORDER BY id")
-                .fetch_all(&self.0)
-                .await?;
-        Ok(rows.into_iter().map(Todo::from).collect())
+        let todos = sqlx::query_as!(
+            Todo,
+            r#"SELECT id AS "id: TodoId", title, done FROM todos ORDER BY id"#
+        )
+        .fetch_all(&self.0)
+        .await?;
+        Ok(todos)
     }
 
     async fn find(&self, id: TodoId) -> Result<Option<Todo>, DbError> {
-        let row: Option<(i64, String, bool)> =
-            sqlx::query_as("SELECT id, title, done FROM todos WHERE id = $1")
-                .bind(id.0)
-                .fetch_optional(&self.0)
-                .await?;
-        Ok(row.map(Todo::from))
+        let todo = sqlx::query_as!(
+            Todo,
+            r#"SELECT id AS "id: TodoId", title, done FROM todos WHERE id = $1"#,
+            id.0
+        )
+        .fetch_optional(&self.0)
+        .await?;
+        Ok(todo)
+    }
+
+    async fn add(&self, title: &str) -> Result<(), DbError> {
+        sqlx::query!("INSERT INTO todos (title) VALUES ($1)", title)
+            .execute(&self.0)
+            .await?;
+        Ok(())
+    }
+
+    async fn toggle(&self, id: TodoId) -> Result<(), DbError> {
+        sqlx::query!("UPDATE todos SET done = NOT done WHERE id = $1", id.0)
+            .execute(&self.0)
+            .await?;
+        Ok(())
+    }
+
+    async fn remove(&self, id: TodoId) -> Result<(), DbError> {
+        sqlx::query!("DELETE FROM todos WHERE id = $1", id.0)
+            .execute(&self.0)
+            .await?;
+        Ok(())
     }
 }
 
@@ -124,27 +148,15 @@ impl Db {
 struct AppState {
     db: Db,
     /// Tells this process's update streams that a todo changed. `listen`
-    /// sends on it for each notification on `CHANGED`, which comes from a
-    /// write by any process on the database, this one included.
+    /// sends on it for each notification on `CHANGED`, which the trigger
+    /// sends after a write by any process on the database, this one included.
     changed: broadcast::Sender<()>,
 }
 
-impl AppState {
-    /// Runs `query` and notifies `CHANGED` in one transaction, so a process
-    /// hears of the change only once it is committed.
-    async fn write(
-        &self,
-        query: sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments>,
-    ) -> Result<Patches<TodoPage>, DbError> {
-        let mut transaction = self.db.0.begin().await?;
-        query.execute(&mut *transaction).await?;
-        sqlx::query("SELECT pg_notify($1, '')")
-            .bind(CHANGED)
-            .execute(&mut *transaction)
-            .await?;
-        transaction.commit().await?;
-        Ok(TodoPage::problem().patch(String::new()).into())
-    }
+/// The patch an action answers with once its write succeeded. The trigger
+/// tells the streams, so the list arrives over them.
+fn written() -> Patches<TodoPage> {
+    TodoPage::problem().patch(String::new()).into()
 }
 
 struct TodoList {
@@ -352,27 +364,24 @@ async fn todo(state: AppState, id: i64) -> Result<Option<Page<TodoDetail>>, DbEr
 }
 
 async fn add(state: AppState, draft: String) -> Result<Patches<TodoPage>, DbError> {
-    let title = draft.trim().to_owned();
+    let title = draft.trim();
     let patches = if title.is_empty() {
         Patches::new()
     } else {
-        state
-            .write(sqlx::query("INSERT INTO todos (title) VALUES ($1)").bind(title))
-            .await?
+        state.db.add(title).await?;
+        written()
     };
     Ok(patches.signals(TodoPage::draft().patch(String::new())))
 }
 
 async fn toggle(state: AppState, id: TodoId) -> Result<Patches<TodoPage>, DbError> {
-    state
-        .write(sqlx::query("UPDATE todos SET done = NOT done WHERE id = $1").bind(id.0))
-        .await
+    state.db.toggle(id).await?;
+    Ok(written())
 }
 
 async fn remove(state: AppState, id: TodoId) -> Result<Patches<TodoPage>, DbError> {
-    state
-        .write(sqlx::query("DELETE FROM todos WHERE id = $1").bind(id.0))
-        .await
+    state.db.remove(id).await?;
+    Ok(written())
 }
 
 /// Sends the list once, then again after each change any process makes. A
@@ -420,7 +429,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .max_connections(5)
         .connect(&url)
         .await?;
-    sqlx::raw_sql(SCHEMA).execute(&pool).await?;
+    // Applies the migrations a database has not run yet. A second process
+    // that starts meanwhile waits on sqlx's lock and finds them applied.
+    sqlx::migrate!().run(&pool).await?;
     let mut listener = PgListener::connect_with(&pool).await?;
     listener.listen(CHANGED).await?;
     let (changed, _) = broadcast::channel(16);
