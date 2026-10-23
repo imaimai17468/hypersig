@@ -2216,6 +2216,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "サーバーで、`value` を `T` のルールで検査します。",
                             },
                         ),
+                        (
+                            "Form::value",
+                            "struct.Form.html#method.value",
+                            L {
+                                en: "The values the form holds now.",
+                                ja: "フォームがいま持つ値",
+                            },
+                        ),
                     ],
                 },
                 Section {

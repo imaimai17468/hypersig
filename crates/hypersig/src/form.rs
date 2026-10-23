@@ -91,6 +91,36 @@ impl<T: Clone> Form<T> {
     }
 }
 
+impl<T> Form<T> {
+    /// The values the form holds now.
+    ///
+    /// A test reads with it the form a handler answered with, through
+    /// [`Patches::value_of`](crate::Patches::value_of).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hypersig::{Form, Rules, Sig, Signals, Validate};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize, Clone, Default, PartialEq, Debug)]
+    /// struct Entry {
+    ///     name: String,
+    /// }
+    ///
+    /// impl Validate for Entry {
+    ///     fn rules<S>(_form: Sig<S, Self>, _rules: &mut Rules<S, Self>) {}
+    /// }
+    ///
+    /// let form = Form::new(Entry { name: "Ada".to_owned() });
+    /// assert_eq!(form.value().name, "Ada");
+    /// ```
+    #[must_use]
+    pub fn value(&self) -> &T {
+        &self.value
+    }
+}
+
 impl<T: Validate> Form<T> {
     /// Checks `value` against the rules of `T` on the server.
     ///
