@@ -16,40 +16,6 @@ A web framework written all in Rust: the page, its behavior in the browser, and 
 - CSS properties and values are type-checked too ([Styling](https://imaimai17468.github.io/hypersig/style/)).
 - A component set that looks like shadcn/ui, and a translation crate that makes a missing translation a compile error ([Components](https://imaimai17468.github.io/hypersig/components/), [Translations](https://imaimai17468.github.io/hypersig/i18n/)).
 
-## Framework comparison
-
-Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build, and Topcoat writes the browser's expressions in Rust too.
-
-|  | Topcoat and Datastar | hypersig |
-|---|---|---|
-| Signal names and URLs (Datastar) | Strings in HTML attributes. A typo shows up when the browser runs it | Written from Rust values. A typo stops `cargo build` |
-| Link parameters (Topcoat) | `href!` checks only the handler. A missing or extra path parameter panics when the page renders, and the request answers 500 | `Route` takes its parameters as a typed value. A wrong one is a compile error |
-| Adding to a list (Topcoat) | Expressions cannot add an item, so the list changes once the server answers and renders it again | The list is a signal, so the browser shows the change before the server answers |
-
-| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
-|---|---|---|---|---|---|---|---|
-| Page written in | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript and Vue templates | HTML attributes |
-| Server written in | Rust | Rust | Any | TypeScript | TypeScript | TypeScript | Any |
-| No browser build | Yes | Yes | No (Vite) | No (Node bundler) | No (Vite) | No (Vite) | Yes |
-| Request types checked at compile time | Yes | Yes | No | Yes | Yes | No | No |
-| Links checked against routes at compile time | Yes | Handler only (parameters at run time) | No (no router) | Opt-in (`typedRoutes`) | Yes | Experimental (`typedPages`) | No |
-| State kept in the browser | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-
-## Benchmarks
-
-A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request.
-
-| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
-|---|---|---|---|---|---|---|---|
-| JS (gzip) | 19.2 KB | 14.8 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 13.1 KB |
-| First Contentful Paint | 186 ms | 165 ms | 196 ms | 198 ms | 193 ms | 177 ms | 182 ms |
-| Total Blocking Time | 0 ms | 313 ms | 5 ms | 10 ms | 0 ms | 29 ms | 16 ms |
-| Interaction to Next Paint | 24 ms | 24 ms | 24 ms | 24 ms | 24 ms | 16 ms | 16 ms |
-
-The apps and the harness are in [`bench/compare`](bench/compare). Results of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), which compares list operations in the browser alone, are in [`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md).
-
-The same page styled with `hypersig::style`, Tailwind CSS, Panda CSS, StyleX, and vanilla-extract is measured in the [`hypersig_style` README](crates/hypersig_style/README.md#benchmarks).
-
 ## Quick start
 
 Add the dependencies to `Cargo.toml`:
@@ -107,6 +73,40 @@ async fn main() -> std::io::Result<()> {
 ```
 
 Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. Misspelling `count`, or adding a string to it, stops `cargo build`. `cargo hypersig dev`, which `cargo install --locked hypersig_cli` installs, builds and starts the server again after each change, and the open tab reloads from the new one. The [documentation](https://imaimai17468.github.io/hypersig/learn/) continues from here.
+
+## Framework comparison
+
+Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build, and Topcoat writes the browser's expressions in Rust too.
+
+|  | Topcoat and Datastar | hypersig |
+|---|---|---|
+| Signal names and URLs (Datastar) | Strings in HTML attributes. A typo shows up when the browser runs it | Written from Rust values. A typo stops `cargo build` |
+| Link parameters (Topcoat) | `href!` checks only the handler. A missing or extra path parameter panics when the page renders, and the request answers 500 | `Route` takes its parameters as a typed value. A wrong one is a compile error |
+| Adding to a list (Topcoat) | Expressions cannot add an item, so the list changes once the server answers and renders it again | The list is a signal, so the browser shows the change before the server answers |
+
+| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
+|---|---|---|---|---|---|---|---|
+| Page written in | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript and Vue templates | HTML attributes |
+| Server written in | Rust | Rust | Any | TypeScript | TypeScript | TypeScript | Any |
+| No browser build | Yes | Yes | No (Vite) | No (Node bundler) | No (Vite) | No (Vite) | Yes |
+| Request types checked at compile time | Yes | Yes | No | Yes | Yes | No | No |
+| Links checked against routes at compile time | Yes | Handler only (parameters at run time) | No (no router) | Opt-in (`typedRoutes`) | Yes | Experimental (`typedPages`) | No |
+| State kept in the browser | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+
+## Benchmarks
+
+A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request.
+
+| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
+|---|---|---|---|---|---|---|---|
+| JS (gzip) | 19.2 KB | 14.8 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 13.1 KB |
+| First Contentful Paint | 186 ms | 165 ms | 196 ms | 198 ms | 193 ms | 177 ms | 182 ms |
+| Total Blocking Time | 0 ms | 313 ms | 5 ms | 10 ms | 0 ms | 29 ms | 16 ms |
+| Interaction to Next Paint | 24 ms | 24 ms | 24 ms | 24 ms | 24 ms | 16 ms | 16 ms |
+
+The apps and the harness are in [`bench/compare`](bench/compare). Results of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), which compares list operations in the browser alone, are in [`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md).
+
+The same page styled with `hypersig::style`, Tailwind CSS, Panda CSS, StyleX, and vanilla-extract is measured in the [`hypersig_style` README](crates/hypersig_style/README.md#benchmarks).
 
 ## Deploying
 
