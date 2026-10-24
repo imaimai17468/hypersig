@@ -12,7 +12,7 @@ categories = ["command-line-utilities", "development-tools::cargo-plugins", "web
 readme = "../../README.md"
 # The templates are part of the binary, so the package holds them, and the
 # tests, which read the quick start from site/, stay in the repository.
-include = ["src/**/*.rs", "steps/*.rs", "templates/**"]
+include = ["src/**/*.rs", "steps/*.rs", "steps/*.toml", "templates/**"]
 
 [[bin]]
 name = "cargo-hypersig"
