@@ -729,7 +729,7 @@ impl Doc {
                 self.library().descriptions()
             }
             Self::UseCases => L {
-                en: "Applications that hypersig suits, each with a request it gets and the change that request makes in hypersig and in Next.js.",
+                en: "Applications that hypersig suits. For a request each one gets, the page shows the change it makes in hypersig and in Next.js.",
                 ja: "hypersig に向くアプリと、そこに来る依頼ごとに、hypersig と Next.js でコードがどう変わるかを並べます。",
             },
             Self::Learn(page) => match page {
@@ -746,7 +746,7 @@ impl Doc {
                     ja: "フォームのルールは Rust で 1 回だけ書きます。ブラウザは入力に合わせてそのルールを検査し、ハンドラは値を使う前に同じルールで検査します。",
                 },
                 Learn::Database => L {
-                    en: "A handler keeps the data requests share in a database it reaches from its own Rust code, so the data outlives the process and every instance of the server reads the same values.",
+                    en: "A handler keeps data shared across requests in a database that its own Rust code connects to, so the data outlives the process and every instance of the server reads the same values.",
                     ja: "ハンドラはリクエストをまたいで使うデータを、自分の Rust のコードからつなぐデータベースに置きます。データはプロセスが終わっても残り、サーバーのどのインスタンスも同じ値を読みます。",
                 },
                 Learn::Api => L {
@@ -774,7 +774,7 @@ impl Doc {
                     ja: "スタイルも Rust の値です。プロパティやキーワードの打ち間違いや、型の違う値はコンパイルエラーになります。",
                 },
                 Learn::EscapeHatches => L {
-                    en: "Most pages need only bindings and statements. These cover focus, timers, and reactions to a change, links outside the router, and serving a page as a static file.",
+                    en: "Most pages need only bindings and statements. The pages here cover focus, timers, and reactions to a change, links outside the router, and serving a page as a static file.",
                     ja: "たいていのページは束縛と文だけで書けます。ここで扱うのは、フォーカス、タイマー、変化への反応、ルーターの外へのリンク、ページを静的ファイルとして配信する方法です。",
                 },
                 Learn::JavaScript => L {

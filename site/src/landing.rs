@@ -254,7 +254,7 @@ pub fn style(site: Site) -> String {
                             (
                                 Library::Framework,
                                 "hypersig",
-                                site.t(L { en: "The framework: the page, its behavior, and the server, all in Rust.", ja: "フレームワーク本体です。画面もその動きもサーバーも、すべて Rust で書きます。" }),
+                                site.t(L { en: "The framework itself. The page, its behavior, and the server are all written in Rust.", ja: "フレームワーク本体です。画面もその動きもサーバーも、すべて Rust で書きます。" }),
                             ),
                             (
                                 Library::Components,
@@ -427,7 +427,7 @@ pub fn components(site: Site) -> String {
                     ),
                     (
                         site.t(L { en: "Contrast that meets WCAG 2.2 AA", ja: "WCAG 2.2 AA を満たすコントラスト" }),
-                        site.t(L { en: "shadcn/ui's zinc theme, with a control's border at 3:1, secondary text at 4.5:1, and focus drawn as a solid outline.", ja: "shadcn/ui の zinc テーマをもとに、コントロールの境界線を 3:1、補足のテキストを 4.5:1 にし、フォーカスを単色の outline で描きます。" }),
+                        site.t(L { en: "The colors start from shadcn/ui's zinc theme, with a control's border at 3:1, secondary text at 4.5:1, and focus drawn as a solid outline.", ja: "shadcn/ui の zinc テーマをもとに、コントロールの境界線を 3:1、補足のテキストを 4.5:1 にし、フォーカスを単色の outline で描きます。" }),
                     ),
                 ],
             ),

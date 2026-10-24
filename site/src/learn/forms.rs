@@ -44,7 +44,7 @@ pub fn forms(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`error(field)` shows a rule's message once the visitor has left the field, which `touch` records, or has submitted the form. `TextField::in_form` binds a text field to the form's value and wires both.",
+                en: "`error(field)` shows a rule's message once the visitor has left the field, which `touch` records, or has submitted the form. `TextField::in_form` binds a text field to the form's value and attaches both `touch` and `error`.",
                 ja: "`error(field)` は、訪問者がそのフィールドを離れたか（`touch` が記録します）、フォームを送信したあとに、ルールのメッセージを返します。`TextField::in_form` はテキストフィールドをフォームの値に束縛し、この 2 つを付けます。",
             },
         ),

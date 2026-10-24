@@ -87,7 +87,7 @@ pub fn signals(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Page::computed(signal, value)` keeps a field equal to an expression over other fields. Bindings read it like any field and run again only when its value changes, rather than each evaluating the expression. Computed signals are evaluated in the order they are declared, so one may read an earlier one.",
+                en: "`Page::computed(signal, value)` keeps a field equal to an expression over other fields. Bindings read it like any field and run again only when its value changes, so no binding evaluates the expression itself. Computed signals are evaluated in the order they are declared, so one may read an earlier one.",
                 ja: "`Page::computed(signal, value)` は、フィールドをほかのフィールドを使った式の値に合わせ続けます。束縛はそれぞれ式を評価する代わりに、ほかのフィールドと同じようにこの値を読み、値が変わったときだけ評価し直します。計算されるシグナルは宣言した順に評価されるので、先に宣言したものを読めます。",
             },
         ),
@@ -324,7 +324,7 @@ pub fn lists(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Sig` has a third type parameter that says where its path starts. It defaults to `Root`, the page's signal struct, so `Sig<S, T>` is a field reached from the page. A field of an item is a `Sig<S, T, Local>`, whose path starts at the item and is resolved per item in the browser. It has no `patch` method, so the server cannot address one item's field by position. The server replaces the whole list with a patch of the list field, changes the items it names by key with a list patch such as `patch_append` or `patch_remove`, which [Calls in depth](learn/calls/#list-patches) covers, or re-renders a part of the page as a fragment, which [Talking to the server](learn/server/) covers.",
+                en: "`Sig` has a third type parameter that says where its path starts. It defaults to `Root`, the page's signal struct, so `Sig<S, T>` is a field reached from the page. A field of an item is a `Sig<S, T, Local>`, whose path starts at the item and is resolved per item in the browser. It has no `patch` method, so the server cannot address one item's field by position. The server instead replaces the whole list with a patch of the list field, changes the items it names by key with a list patch such as `patch_append` or `patch_remove`, or re-renders a part of the page as a fragment. [Calls in depth](learn/calls/#list-patches) covers list patches, and [Talking to the server](learn/server/) covers fragments.",
                 ja: "`Sig` には、パスの起点を表す 3 つ目の型パラメータがあります。省略すると `Root`（ページのシグナル構造体）になるので、`Sig<S, T>` はページから辿ったフィールドです。項目のフィールドは `Sig<S, T, Local>` で、パスは項目から始まり、ブラウザで項目ごとに解決されます。`patch` メソッドがないので、サーバーは位置を指定して 1 つの項目のフィールドを書き換えられません。サーバーは、リストのフィールドの差分でリスト全体を置き換えるか、`patch_append` や `patch_remove` のようなリストの差分でキーを指定した項目だけを変えるか、ページの一部をフラグメントとして描画し直します。リストの差分は [呼び出しの詳細](learn/calls/#list-patches) で、フラグメントは [サーバーとのやり取り](learn/server/) で説明します。",
             },
         ),

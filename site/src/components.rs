@@ -207,7 +207,7 @@ fn theming(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`hypersig_ui::theme()` sets the dark values under `prefers-color-scheme: dark`. To let a signal pick the scheme instead, put `hypersig_ui::dark()` or `hypersig_ui::light()` on an element with `css_when` or `css_match`. Each sets every color token for the element and those inside it, and `color-scheme` with them, so native controls such as a scrollbar follow.",
+                en: "`hypersig_ui::theme()` sets the dark values under `prefers-color-scheme: dark`. To let a signal pick the scheme instead, put `hypersig_ui::dark()` or `hypersig_ui::light()` on an element with `css_when` or `css_match`. Each sets every color token and `color-scheme` on the element and those inside it, so native controls such as a scrollbar follow the scheme.",
                 ja: "`hypersig_ui::theme()` は `prefers-color-scheme: dark` のときにダークの値を設定します。代わりにシグナルで配色を選ぶには、`hypersig_ui::dark()` か `hypersig_ui::light()` を `css_when` や `css_match` で要素に付けます。どちらもその要素と内側の要素に色のトークンをすべて設定し、`color-scheme` も一緒に設定するので、スクロールバーのようなネイティブのコントロールも配色に従います。",
             },
         ),
@@ -882,7 +882,7 @@ fn component_page(page: Component) -> Page {
                         ja: "Escape",
                     },
                     L {
-                        en: "Closes the list, or clears the text when it is closed. A dialog around the combobox does not close on it from the text field.",
+                        en: "Closes the list, or clears the text when the list is already closed. Escape pressed in the text field does not close a dialog around the combobox.",
                         ja: "一覧を閉じます。一覧が閉じているときは、テキストを消します。コンボボックスを囲むダイアログは、テキストフィールドで押された Escape では閉じません。",
                     },
                 ),
@@ -1138,7 +1138,7 @@ fn component_page(page: Component) -> Page {
                     ja: "どれも受け取ったラベルを名前に持つ `<nav>` で、中にリンクの一覧を持ちます。そのため、スクリーンリーダーはページのランドマークの 1 つとして一覧に出します。リンクはルートから作った型付きの `Link` で、訪問者がいるページへのリンクは `aria-current=\"page\"` を持ちます。",
                 },
                 L {
-                    en: "`NavList` decides the mark on the server, from the page's own `Url` that `Route::url` writes. A link to the same path has `aria-current=\"page\"`, and a link to a path that the page's path continues has `aria-current=\"true\"`. `Breadcrumb::current` ends the trail with the current page as text and returns the element, so no link can follow it. `pagination` shows the first and the last page and the pages next to the current one, and marks the link to the page before or after `aria-disabled` where there is none. The links in the demo lead to pages of this site.",
+                    en: "`NavList` decides the mark on the server, from the page's own `Url` that `Route::url` writes. A link to the same path has `aria-current=\"page\"`, and a link to a path that the page's path begins with has `aria-current=\"true\"`. `Breadcrumb::current` ends the trail with the current page as text and returns the element, so no link can follow it. `pagination` shows the first and the last page and the pages next to the current one, and marks the previous or next link `aria-disabled` where that page does not exist. The links in the demo lead to pages of this site.",
                     ja: "`NavList` は `Route::url` で書いたページ自身の `Url` をもとに、どのリンクに印を付けるかをサーバーで決めます。同じパスへのリンクは `aria-current=\"page\"` を持ち、ページのパスがリンク先のパスの続きになっているリンクは `aria-current=\"true\"` を持ちます。`Breadcrumb::current` は今のページをテキストとして最後に置き、要素を返すので、そのあとにリンクは続けられません。`pagination` は最初と最後のページ、今のページの前後のページを表示し、前や次のページがないときはそのリンクを `aria-disabled` にします。デモのリンクは、このサイトのページにつながります。",
                 },
             ],
@@ -1210,7 +1210,7 @@ fn component_page(page: Component) -> Page {
             demo: Demo::DataTable,
             built_on: &[
                 L {
-                    en: "It is a `<table>` whose headers have `scope=\"col\"`. A sortable column's header holds a button and carries `aria-sort`, which says whether the rows are sorted ascending, descending, or not by it. The header checkbox is a button with `role=\"checkbox\"` whose `aria-checked` is `mixed` while some rows are selected, since a native checkbox's indeterminate state is a property no attribute sets.",
+                    en: "It is a `<table>` whose headers have `scope=\"col\"`. A sortable column's header holds a button and carries `aria-sort`, which says whether the rows are sorted by that column in ascending order, in descending order, or not at all. The header checkbox is a button with `role=\"checkbox\"` whose `aria-checked` is `mixed` while some rows are selected, because a native checkbox's indeterminate state is a property that no attribute can set.",
                     ja: "見出しに `scope=\"col\"` を付けた `<table>` です。並べ替えられる列の見出しはボタンを持ち、その列で昇順か降順に並んでいるか、並んでいないかを `aria-sort` で伝えます。見出しのチェックボックスは `role=\"checkbox\"` のボタンで、一部の行が選ばれている間は `aria-checked` が `mixed` になります。ネイティブのチェックボックスの中間状態はプロパティで、属性からは設定できないためです。",
                 },
                 L {
@@ -1775,7 +1775,7 @@ fn component_page(page: Component) -> Page {
             demo: Demo::Tooltip,
             built_on: &[
                 L {
-                    en: "It follows the WAI-ARIA tooltip pattern. The tooltip has `role=\"tooltip\"` and the button `aria-describedby` pointing at it, so a screen reader reads the text after the button's name. `Tooltip` builds the button and puts on it the attributes the tooltip needs.",
+                    en: "It follows the WAI-ARIA tooltip pattern. The tooltip has `role=\"tooltip\"` and the button `aria-describedby` pointing at it, so a screen reader reads the text after the button's name. `Tooltip` builds the button and gives it the attributes the tooltip needs.",
                     ja: "WAI-ARIA tooltip パターンに従います。ツールチップは `role=\"tooltip\"` を持ち、ボタンの `aria-describedby` がツールチップを指すので、スクリーンリーダーはボタンの名前のあとにツールチップのテキストを読み上げます。ボタンは `Tooltip` が作り、ツールチップに必要な属性をそのボタンに付けます。",
                 },
                 L {

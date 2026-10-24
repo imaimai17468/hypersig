@@ -67,7 +67,7 @@ hypersig_i18n = "0.4""#,
         para(
             site,
             L {
-                en: "A text is a struct literal, and Rust requires a literal to give every field, so a text without its Japanese fails to compile. A language added to the enum also causes compile errors in two places until it is handled. One is the `match` in `pick`, and the other is the struct. Every text has to give the field added to the struct.",
+                en: "A text is a struct literal, and Rust requires a literal to give every field, so a text without its Japanese fails to compile. A language added to the enum also fails to compile in two places until it is handled. One is the `match` in `pick`, and the other is the struct, because every text has to give the field added to it.",
                 ja: "文は構造体のリテラルで、Rust はリテラルにすべてのフィールドを書くよう求めます。そのため、日本語の訳がない文はコンパイルエラーになります。enum に言語を追加したときも、その言語への対応を書くまで 2 か所がコンパイルエラーになります。1 つは `pick` の `match` で、もう 1 つは構造体です。構造体に追加したフィールドは、すべての文で書く必要があります。",
             },
         ),
@@ -87,7 +87,7 @@ hypersig_i18n = "0.4""#,
                     ja: "`Locale::ALL` は `negotiate` が選ぶ言語の一覧で、すべてのバリアントが並んでいるかはコンパイラが検査しません。一覧にないバリアントが選ばれることはありません。",
                 },
                 L {
-                    en: "The check is that a translation exists, not that it is correct. A Japanese field that holds English compiles.",
+                    en: "The compiler checks only that a translation exists. A Japanese field that holds English compiles.",
                     ja: "検査するのは訳があることで、訳が正しいことではありません。日本語のフィールドに英語を書いても、コンパイルは通ります。",
                 },
                 L {
@@ -135,7 +135,7 @@ fn pages(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "A link to the same page in another language is made by passing `link_with` the other language with the same remaining parameters, so the route checks it as it checks other links. A language switcher lists `Locale::ALL` and links, in each language, to the page the reader is on.",
+                en: "To link to the same page in another language, pass `link_with` the other language and the same remaining parameters. The route then checks that link as it checks any other. A language switcher lists `Locale::ALL` and links, in each language, to the page the reader is on.",
                 ja: "同じページの別の言語へのリンクは、`link_with` に別の言語とそのほかの同じパラメータを渡して作ります。そのため、ほかのリンクと同じくルートがこのリンクを検査します。言語を切り替える UI は `Locale::ALL` を並べ、言語ごとに読者が今いるページへリンクします。",
             },
         ),

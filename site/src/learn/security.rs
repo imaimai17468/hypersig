@@ -162,7 +162,7 @@ fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A script on another site can still send that `Accept` header with a GET, and a browser that sends no `Sec-Fetch-Site` lets it through, so a GET action changes nothing.",
+                en: "A script on another site can still send that `Accept` header with a GET, and a browser that sends no `Sec-Fetch-Site` lets it through, so a GET action should change nothing.",
                 ja: "別のサイトのスクリプトは GET にこの `Accept` を付けて送れます。`Sec-Fetch-Site` を送らないブラウザではそれが通るので、GET のアクションでは何も変更しないでください。",
             },
         ),
@@ -205,7 +205,7 @@ fn server_code(site: Site) -> Part {
                     ja: "リクエストが運ぶのは JSON の引数だけです。`serde_json` が、アクションがコンパイル時に宣言した引数の型に読み込み、合わないものには 400 を返します。この JSON には、関数、サーバーのオブジェクトへの参照、組み立てるクラスを書く形がないので、読み込みはデータを作るだけで、何も呼びません。",
                 },
                 L {
-                    en: "`serde_json` stops at 128 levels of nesting, so a deeply nested body is refused rather than exhausting the stack.",
+                    en: "`serde_json` stops at 128 levels of nesting, so a deeply nested body is refused before it can exhaust the stack.",
                     ja: "`serde_json` は入れ子が 128 段を超えると読むのをやめるので、深く入れ子にした本文はスタックを使い切る前に拒否されます。",
                 },
                 L {
@@ -251,7 +251,7 @@ fn application(site: Site) -> Part {
                     ja: "URL のホスト。`SafeUrl` はどのホストでも持てるので、訪問者が入力した URL は訪問者がたどるリンクに使い、スクリプトの `src` や `<base>` の `href` には使わないでください。",
                 },
                 L {
-                    en: "Ids built from stored data. Rendering panics for two fixed ids alike, but two `String` ids alike render, and a link or a patch to that id reaches the first of them. Build an id from a value visitors stored, such as a tag name, together with the record's key, so that it stays unique.",
+                    en: "Ids built from stored data. Rendering panics when two fixed ids are the same, but two identical `String` ids render, and a link or a patch to that id reaches the first of them. Build an id from a value visitors stored, such as a tag name, together with the record's key, so that it stays unique.",
                     ja: "保存したデータから作る id。固定の id が 2 つ同じなら描画はパニックしますが、`String` の id が 2 つ同じでもそのまま描画され、その id へのリンクや差分は最初の要素に届きます。タグ名のように訪問者が保存した値から id を作るときは、レコードのキーと組み合わせて一意にしてください。",
                 },
                 L {
