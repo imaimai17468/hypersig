@@ -118,7 +118,7 @@ async fn main() -> std::io::Result<()> {
 
 ## 向かないアプリ
 
-ブラウザだけで完結するのは、hypersig が用意した演算と命令と、ページが読み込んだスクリプトだけです。地図やリッチテキストエディタのような JavaScript のライブラリはカスタム要素の中で動かせます。ページは属性で値を渡し、型付きのイベントを受け取ります（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。それ以外の処理はサーバーを通すので、次のようなアプリには向きません。
+ブラウザだけで完結するのは、hypersig が用意した演算と命令と、ページが読み込んだスクリプトだけです。地図やリッチテキストエディタのような JavaScript のライブラリはカスタム要素の中で動かせます。ページは属性で値を渡し、型付きのイベントを受け取ります（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。Custom Elements Manifest（`custom-elements.json`）を同梱したライブラリなら、`cargo hypersig elements` がタグ、属性名、イベント名を Rust の項目として書き出すので、つづりの間違いはコンパイルエラーになります。それ以外の処理はサーバーを通すので、次のようなアプリには向きません。
 
 - お絵かきツールや表計算ソフトのように、主な処理が JavaScript のライブラリの中で動くアプリ
 - サーバーにつながらない状態で動くアプリ

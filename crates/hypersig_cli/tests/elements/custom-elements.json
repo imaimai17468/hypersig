@@ -1,0 +1,461 @@
+{
+  "schemaVersion": "1.0.0",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "components/button/button.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "SlButton",
+          "events": [
+            {
+              "name": "sl-blur"
+            },
+            {
+              "name": "sl-focus"
+            },
+            {
+              "name": "sl-invalid"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "variant",
+              "type": {
+                "text": "'default' | 'primary' | 'success' | 'neutral' | 'warning' | 'danger' | 'text'"
+              }
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "type",
+              "type": {
+                "text": "'button' | 'submit' | 'reset'"
+              }
+            },
+            {
+              "name": "href",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "download",
+              "type": {
+                "text": "string | undefined"
+              }
+            },
+            {
+              "name": "formaction",
+              "type": {
+                "text": "string"
+              }
+            }
+          ],
+          "superclass": {
+            "name": "ShoelaceElement",
+            "module": "/src/internal/shoelace-element.js"
+          },
+          "tagNameWithoutPrefix": "button",
+          "tagName": "sl-button",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SlButton",
+            "module": "components/button/button.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "components/rating/rating.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "SlRating",
+          "events": [
+            {
+              "name": "sl-change"
+            },
+            {
+              "type": {
+                "text": "{ phase: 'start' | 'move' | 'end', value: number }"
+              },
+              "name": "sl-hover"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "label",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "value",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "max",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "precision",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "readonly",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "getSymbol",
+              "type": {
+                "text": "(value: number) => string"
+              }
+            }
+          ],
+          "superclass": {
+            "name": "ShoelaceElement",
+            "module": "/src/internal/shoelace-element.js"
+          },
+          "tagNameWithoutPrefix": "rating",
+          "tagName": "sl-rating",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SlRating",
+            "module": "components/rating/rating.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "components/stepper/stepper.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "WaStepper",
+          "events": [
+            {
+              "name": "detail",
+              "type": {
+                "text": "WaStepChangeEvent"
+              }
+            },
+            {
+              "type": {
+                "text": "{ name: string, previousName: string | null, step: WaStep, previousStep: WaStep | null }"
+              },
+              "name": "wa-before-step-change"
+            },
+            {
+              "type": {
+                "text": "{ name: string, previousName: string | null, step: WaStep, previousStep: WaStep | null }"
+              },
+              "name": "wa-step-change"
+            }
+          ],
+          "attributes": [
+            {
+              "name": "orientation",
+              "type": {
+                "text": "'horizontal' | 'vertical' | 'auto'"
+              }
+            },
+            {
+              "name": "linear",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "did-ssr"
+            }
+          ],
+          "superclass": {
+            "name": "WebAwesomeElement",
+            "module": "/src/internal/webawesome-element.js"
+          },
+          "ssr": [
+            {
+              "name": "-"
+            }
+          ],
+          "tagName": "wa-stepper",
+          "customElement": true,
+          "modulePath": "components/stepper/stepper.js",
+          "definitionPath": "components/stepper/stepper.js"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "WaStepper",
+            "module": "components/stepper/stepper.js"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "wa-stepper",
+          "declaration": {
+            "name": "WaStepper",
+            "module": "components/stepper/stepper.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "button/elevated-button.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "MdElevatedButton",
+          "superclass": {
+            "name": "ElevatedButton",
+            "package": "@material/web",
+            "module": "button/internal/elevated-button.js"
+          },
+          "tagName": "md-elevated-button",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "MdElevatedButton",
+          "declaration": {
+            "name": "MdElevatedButton"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "md-elevated-button",
+          "declaration": {
+            "name": "MdElevatedButton"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "button/internal/button.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "buttonBaseClass",
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "mixins": [
+            {
+              "name": "mixinDelegatesAria",
+              "package": "@material/web",
+              "module": "internal/aria/delegate.js"
+            },
+            {
+              "name": "mixinFormSubmitter",
+              "package": "@material/web",
+              "module": "labs/behaviors/form-submitter.js"
+            },
+            {
+              "name": "mixinFormAssociated",
+              "package": "@material/web",
+              "module": "labs/behaviors/form-associated.js"
+            },
+            {
+              "name": "mixinElementInternals",
+              "package": "@material/web",
+              "module": "labs/behaviors/element-internals.js"
+            }
+          ]
+        },
+        {
+          "kind": "class",
+          "name": "Button",
+          "superclass": {
+            "name": "buttonBaseClass",
+            "package": "@material/web",
+            "module": "button/internal/button.js"
+          },
+          "customElement": true,
+          "attributes": [
+            {
+              "name": "soft-disabled",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "href",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "download",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "target",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "trailing-icon",
+              "type": {
+                "text": "boolean"
+              }
+            },
+            {
+              "name": "has-icon",
+              "type": {
+                "text": "boolean"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Button",
+          "declaration": {
+            "name": "Button"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "button/internal/elevated-button.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "ElevatedButton",
+          "superclass": {
+            "name": "Button",
+            "package": "@material/web",
+            "module": "button/internal/button.js"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ElevatedButton",
+          "declaration": {
+            "name": "ElevatedButton"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/picker.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "TestPicker",
+          "attributes": [
+            {
+              "name": "id",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "onpick",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "max-items",
+              "type": {
+                "text": "number | undefined"
+              }
+            },
+            {
+              "name": "max_items",
+              "type": {
+                "text": "number"
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "pick",
+              "type": {
+                "text": "{ type: string; ids: number[]; note?: string; strict: true | false; self: string; range: { from: number } }"
+              }
+            },
+            {
+              "name": "count",
+              "type": {
+                "text": "number | null"
+              }
+            },
+            {
+              "name": "test-picker-selection-changed-after-the-user-confirms",
+              "type": {
+                "text": "Array<string>"
+              }
+            },
+            {
+              "name": "bad name"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "custom-element-definition",
+          "name": "test-picker",
+          "declaration": {
+            "name": "TestPicker",
+            "module": "./src/picker.js"
+          }
+        }
+      ]
+    }
+  ]
+}

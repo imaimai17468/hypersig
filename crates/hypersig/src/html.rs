@@ -798,7 +798,8 @@ impl Event {
 /// The name and `T` describe code outside hypersig, so nothing checks them:
 /// an event the script never dispatches runs nothing, and a `detail` of
 /// another shape reaches the statement as it is, where reading a field it
-/// lacks gives `null`.
+/// lacks gives `null`. For a library that ships a Custom Elements Manifest,
+/// `cargo hypersig elements` writes these constants from the manifest.
 ///
 /// ```
 /// use hypersig::html::{CustomEvent, el};
