@@ -165,6 +165,16 @@ impl Library {
         })
     }
 
+    /// The path a program imports the library from.
+    pub fn path(self) -> &'static str {
+        match self {
+            Self::Framework => "hypersig",
+            Self::Style => "hypersig::style",
+            Self::Components => "hypersig_ui",
+            Self::I18n => "hypersig_i18n",
+        }
+    }
+
     /// What the library is, as the description of its landing page that
     /// search results and link previews show.
     fn descriptions(self) -> L<&'static str> {
