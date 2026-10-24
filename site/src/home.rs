@@ -17,7 +17,7 @@ pub fn render(site: Site) -> String {
             hero(
                 site,
                 site.t(L {
-                    en: "A web framework written all in Rust",
+                    en: "A web framework written entirely in Rust",
                     ja: "Rust だけで書く Web フレームワーク",
                 }),
                 site.t(L {
@@ -25,7 +25,7 @@ pub fn render(site: Site) -> String {
                     ja: "サーバーが状態を、型が正しさを。",
                 }),
                 site.t(L {
-                    en: "`cargo build` builds it, with no Node and no wasm, and a mismatch between the page and the server is a compile error.",
+                    en: "`cargo build` builds the whole application. There is no Node or wasm step, and a mismatch between the page and the server is a compile error.",
                     ja: "`cargo build` だけでビルドでき、Node も wasm も不要です。画面とサーバーの食い違いはコンパイルエラーになります。",
                 }),
                 &[
@@ -72,7 +72,7 @@ pub fn render(site: Site) -> String {
                             ja: "ブラウザ向けのビルドが不要",
                         }),
                         site.t(L {
-                            en: "`cargo build` builds it, with no Node and no wasm. The crate embeds a prebuilt runtime of about 14 KB gzipped.",
+                            en: "`cargo build` builds the whole application, with no Node or wasm step. The crate embeds a prebuilt runtime of about 14 KB gzipped.",
                             ja: "`cargo build` だけでビルドでき、Node も wasm も不要です。gzip で約 14 KB のランタイムをビルド済みの状態でクレートに埋め込んでいます。",
                         }),
                     ),

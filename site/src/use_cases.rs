@@ -30,7 +30,7 @@ pub fn render(site: Site) -> String {
                     ja: "仕様の追加で、コードのどこが変わるか",
                 }),
                 site.t(L {
-                    en: "A screen built with hypersig can look and behave like one built with Next.js. The difference shows when someone asks for one more thing: which files change, and what has to be written by hand. Each hypersig change below is code that `cargo test` compiles, beside the work the same request takes in Next.js 16 with the App Router.",
+                    en: "A screen built with hypersig can look and behave like one built with Next.js. The difference shows when someone asks for one more thing, in which files change and in what has to be written by hand. Each hypersig change below is code that `cargo test` compiles, beside the work the same request takes in Next.js 16 with the App Router.",
                     ja: "hypersig で作った画面も Next.js で作った画面も、見た目と動きは同じにできます。差が出るのは、あとから仕様を 1 つ足すときに、どのファイルが変わり、何を手で書くかです。下の hypersig の差分は `cargo test` がコンパイルしているコードで、それぞれに Next.js 16 の App Router で同じ依頼に要る作業を並べています。",
                 }),
                 &[
@@ -62,7 +62,7 @@ pub fn render(site: Site) -> String {
                     para(
                         site,
                         L {
-                            en: "The requests on this page fall into three kinds, by what the framework carries for them. The Next.js work starts from the shape of the TodoMVC in `bench/compare/next`, where a Server Component reads the data and a Client Component holds it in `useState`. In each hypersig change, a green line was added and a red line removed.",
+                            en: "The requests on this page fall into three kinds, by what the framework handles for them. The Next.js work starts from the shape of the TodoMVC in `bench/compare/next`, where a Server Component reads the data and a Client Component holds it in `useState`. In each hypersig change, a green line was added and a red line removed.",
                             ja: "このページの依頼は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は `bench/compare/next` の TodoMVC と同じ構成から始めた場合のものです。その構成では、Server Component がデータを読み、Client Component がそれを `useState` に持ちます。hypersig の差分では、緑の行は足した行、赤の行は消した行です。",
                         },
                     ),
@@ -456,7 +456,7 @@ const CONCEPTS: &[Concept] = &[
     Concept {
         kind: Kind::Names,
         text: L {
-            en: "A message the server reports under a field, a filter kept in the URL, the status of a failed request, and a translated text each work only while the browser and the server agree on a name. In Next.js, a query key and a translation key are strings, and an error from a Server Action reaches the page through a Client Component that holds the action's state. In hypersig, the name comes from a Rust item that both sides read: a field of a `Signals` struct, a `Search` struct, a `StatusCode`, or a field of the translation struct, so a name that does not match fails to compile. [Forms](learn/forms/) covers the rules both sides check.",
+            en: "A message the server reports under a field, a filter kept in the URL, the status of a failed request, and a translated text each work only while the browser and the server agree on a name. In Next.js, a query key and a translation key are strings, and an error from a Server Action reaches the page through a Client Component that holds the action's state. In hypersig, the name comes from a Rust item that both sides read, so a name that does not match fails to compile. The item is a field of a `Signals` struct, a `Search` struct, a `StatusCode`, or a field of the translation struct. [Forms](learn/forms/) covers the rules both sides check.",
             ja: "欄の下に出すサーバーのエラー、URL に入れる絞り込み、失敗したリクエストのステータス、訳した文言は、どれもブラウザとサーバーが同じ名前を使っている間だけ動きます。Next.js ではクエリのキーも訳のキーも文字列で、Server Action のエラーは、アクションの状態を持つ Client Component を通ってページに届きます。hypersig では、名前は両側が読む Rust の項目から作られます。その項目は `Signals` 構造体のフィールド、`Search` 構造体、`StatusCode`、訳の構造体のフィールドなので、名前が合わなければコンパイルエラーになります。両側が検査するルールは [フォーム](learn/forms/) で説明しています。",
         },
         request: L {
@@ -474,7 +474,7 @@ const CONCEPTS: &[Concept] = &[
                     ja: "フォームに `\"use client\"` を付け、`useActionState` でアクションを呼びます。`useActionState` がアクションの戻り値を返します。",
                 },
                 L {
-                    en: "Render `state.errors?.email` under the field. Where a library checks the field in the browser, its message lives in another state, and showing both in one place is joined by hand.",
+                    en: "Render `state.errors?.email` under the field. Where a library checks the field in the browser, its message lives in another state, and showing both in one place takes code written by hand.",
                     ja: "欄の下に `state.errors?.email` を表示します。ブラウザ側で欄を検査するライブラリを使っていると、そのメッセージは別の状態に入るので、両方を同じ場所に出すには手でつなぎます。",
                 },
             ],
@@ -512,7 +512,7 @@ const CONCEPTS: &[Concept] = &[
             ],
             change: Snippet::UseLatest,
             caption: L {
-                en: "`.latest()` aborts the call still waiting, and drops the patches of it that had not arrived.",
+                en: "`.latest()` aborts the call still waiting, and drops those of its patches that had not arrived yet.",
                 ja: "`.latest()` は待っている呼び出しを止め、その呼び出しのまだ届いていない差分を捨てます。",
             },
         },
@@ -600,7 +600,7 @@ const CASES: &[Case] = &[
         detailed: (
             Kind::Calls,
             L {
-                en: "After the connection drops, go on from the next line, with no line twice.",
+                en: "After the connection drops, continue from the next line without repeating a line.",
                 ja: "接続が切れたら、同じ行を繰り返さずに、続きの行から再開してください。",
             },
         ),
@@ -812,7 +812,7 @@ const CASES: &[Case] = &[
                     ja: "ページを `[locale]` のセグメントの下に移し、`/` を開いた訪問者の言語を選ぶ処理を足します。",
                 },
                 L {
-                    en: "Unless the project's types check every language's file, a key missing from one file is no type error, and shows up as a missing text at run time.",
+                    en: "Unless the project's types check every language's file, a key missing from one file is not a type error, and shows up as a missing text at run time.",
                     ja: "型の設定で言語ごとのファイルをすべて検査していなければ、1 つのファイルに足りないキーは型エラーにならず、実行時に訳のない文言として出ます。",
                 },
             ],

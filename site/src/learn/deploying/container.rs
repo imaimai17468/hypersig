@@ -105,7 +105,7 @@ gcloud run deploy my-app --source . --region asia-northeast1 --allow-unauthentic
         para(
             site,
             L {
-                en: "Fly.io and Render build from the `Dockerfile` too; follow their guides for a Dockerfile app. The server listens on the port in `PORT`, and on 3000 when `PORT` is unset, so tell the host that port or set `PORT` to the one it connects to. A host that runs an image you push to its registry takes the one `docker build` makes. An image built on a Mac with Apple Silicon is for arm64, so build with `docker build --platform linux/amd64 -t my-app .` for a host that runs amd64.",
+                en: "Fly.io and Render build from the `Dockerfile` too. Follow their guides for a Dockerfile app. The server listens on the port in `PORT`, and on 3000 when `PORT` is unset, so tell the host that port or set `PORT` to the one it connects to. A host that runs an image you push to its registry takes the one `docker build` makes. An image built on a Mac with Apple Silicon is for arm64, so build with `docker build --platform linux/amd64 -t my-app .` for a host that runs amd64.",
                 ja: "Fly.io と Render も `Dockerfile` からビルドします。それぞれの Dockerfile のアプリの手順に従ってください。サーバーは `PORT` のポート（`PORT` がなければ 3000）で待ち受けるので、ホストにそのポートを伝えるか、ホストが接続するポートを `PORT` に設定してください。レジストリに push したイメージを動かすホストには、`docker build` で作ったイメージを渡します。Apple Silicon の Mac でビルドしたイメージは arm64 向けなので、amd64 で動かすホストには `docker build --platform linux/amd64 -t my-app .` でビルドしてください。",
             },
         ),

@@ -105,7 +105,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                     ja: "`span().bind_text(count.to_text())` はテキストをカウントの値に合わせ続けます。`Page::render` が初期値でこの式を評価するので、HTML の時点で `0` が表示されています。",
                 },
                 L {
-                    en: "`INDEX` is a `Route`, the page at `/`. `routes!` declares it on one line with its handler `index`. The first line, `fn pages(Router<()>);`, names the function the macro writes, which registers every route of the block on a router, and `Router<()>` is a router without state. `main` calls `pages(Router::new())`, and a link to the page is `INDEX.link()`. [Pages and links](learn/pages/) covers routes with parameters.",
+                    en: "`INDEX` is a `Route`, the page at `/`. `routes!` declares it on one line with its handler `index`. The first line, `fn pages(Router<()>);`, names the function the macro writes. That function registers every route of the block on a router, and `Router<()>` is a router without state. `main` calls `pages(Router::new())`, and a link to the page is `INDEX.link()`. [Pages and links](learn/pages/) covers routes with parameters.",
                     ja: "`INDEX` は `/` のページを表す `Route` です。`routes!` は、このルートをハンドラ `index` と同じ行で宣言します。1 行目の `fn pages(Router<()>);` はマクロが生成する関数の名前で、この関数がブロック内のルートをすべてルーターに登録します。`Router<()>` は状態を持たないルーターです。`main` は `pages(Router::new())` を呼び出し、このページへのリンクは `INDEX.link()` で作ります。パラメータを持つルートは [ページとリンク](learn/pages/) で説明します。",
                 },
                 L {

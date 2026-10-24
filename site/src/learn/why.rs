@@ -73,7 +73,7 @@ fn halves(site: Site) -> [Part; 4] {
         para(
             site,
             L {
-                en: "hypersig builds the page as Datastar does, as HTML with attributes, and Rust writes every attribute from a typed value. A link takes its route's parameters as a typed value, and a list is a signal the browser can change before the server answers.",
+                en: "Like Datastar, hypersig builds the page as HTML with attributes, and Rust writes every attribute from a typed value. A link takes its route's parameters as a typed value, and a list is a signal the browser can change before the server answers.",
                 ja: "hypersig は Datastar と同じく、ページを属性付きの HTML で組み立て、Rust がすべての属性を型の付いた値から書きます。リンクはルートのパラメータを型の付いた値で受け取り、一覧はサーバーが応答する前にブラウザが変えられるシグナルです。",
             },
         ),
@@ -127,7 +127,7 @@ fn hydration(site: Site) -> [Part; 3] {
         para(
             site,
             L {
-                en: "The page's code is written in Rust and is not sent to the browser. When the page loads, the runtime reads the state from `data-hs-signals` into a store, adds one listener per event type on `<body>`, and reads the `data-hs-*` attributes. It downloads no component code and runs no component again, because the attributes already hold every expression and statement the browser runs. Like Qwik's resumability, the state and the listeners are sent in the HTML.",
+                en: "The page's code is written in Rust and is not sent to the browser. When the page loads, the runtime reads the state from `data-hs-signals` into a store, adds one listener per event type on `<body>`, and reads the `data-hs-*` attributes. It downloads no component code and runs no component again, because the attributes already hold every expression and statement the browser runs. As with Qwik's resumability, the state and the listeners are sent in the HTML.",
                 ja: "ページのコードは Rust で書かれ、ブラウザには送られません。ページを読み込むと、ランタイムは `data-hs-signals` から状態を読んでストアに入れ、`<body>` にイベントの種類ごとに 1 つのリスナーを付け、`data-hs-*` 属性を読みます。ブラウザが実行する式と文はすべて属性に入っているので、コンポーネントのコードをダウンロードすることも、コンポーネントを実行し直すこともありません。Qwik の resumability と同じく、状態とリスナーは HTML に含めて送られます。",
             },
         ),
@@ -153,7 +153,7 @@ fn typed(site: Site) -> [Part; 4] {
         para(
             site,
             L {
-                en: "The rule that keeps the attributes correct is that the browser never receives a string written by hand. Each kind of string has a type that produces it:",
+                en: "The attributes stay correct because the browser never receives a string written by hand. Each kind of string has a type that produces it:",
                 ja: "属性を正しく保つ決まりは、手で書いた文字列をブラウザに渡さないことです。文字列の種類ごとに、それを作る型があります。",
             },
         ),
@@ -202,7 +202,7 @@ fn state(site: Site) -> [Part; 2] {
         para(
             site,
             L {
-                en: "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML that replaces an element of the page. A statement runs in the browser at once, and an action call sent with it reaches the server after, so the page changes before the server answers without extra code. [Talking to the server](learn/server/) covers actions, patches, and streams.",
+                en: "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML that replaces an element of the page. A statement runs in the browser at once, and an action call sent with it reaches the server afterwards, so the page changes before the server answers, with no extra code. [Talking to the server](learn/server/) covers actions, patches, and streams.",
                 ja: "ブラウザはページの上で変わるものをシグナルとして持ち、データはサーバーが持ちます。アクションは Server-Sent Events で差分を返します。差分はシグナルの新しい値か、ページの要素と差し替える HTML の断片です。文はブラウザでただちに実行され、一緒に送ったアクションの呼び出しはそのあとでサーバーに届くので、サーバーの応答を待たずに画面が変わります。そのための追加のコードは不要です。アクション、差分、ストリームは [サーバーとのやり取り](learn/server/) で説明します。",
             },
         ),
