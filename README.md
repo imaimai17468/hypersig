@@ -125,7 +125,7 @@ The browser does on its own only the operations and statements hypersig provides
 
 ## Development
 
-[`AGENTS.md`](AGENTS.md) describes the repository layout and the checks a change runs.
+[`CONTRIBUTING.md`](CONTRIBUTING.md) covers bug reports and pull requests, and [`AGENTS.md`](AGENTS.md) describes the repository layout and the checks a change runs.
 
 ## License
 

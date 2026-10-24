@@ -125,7 +125,7 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 
 ## 開発
 
-リポジトリの構成と、変更のたびに通す確認は [`AGENTS.md`](AGENTS.md) にあります。
+不具合の報告とプルリクエストについては [`CONTRIBUTING.md`](CONTRIBUTING.md)（英語）に、リポジトリの構成と変更のたびに通す確認は [`AGENTS.md`](AGENTS.md) にあります。
 
 ## License
 
