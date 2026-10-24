@@ -348,7 +348,8 @@ impl<S, T> Sig<S, T, Root> {
     /// # Panics
     ///
     /// Panics if `value` fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
+    /// which the browser would round.
     #[must_use]
     pub fn patch(self, value: T) -> SignalPatch<S>
     where

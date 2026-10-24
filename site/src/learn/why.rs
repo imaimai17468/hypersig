@@ -327,8 +327,8 @@ fn costs(site: Site) -> [Part; 3] {
                     ja: "ブラウザで実行できるのは、`Expr` と `Stmt` で書けることだけです。四則演算、比較、テキスト、リスト、条件、サーバーと DOM の呼び出しが書けます。それ以外の計算はサーバーで実行します。束縛と文のほかにページから使えるブラウザの機能と、JavaScript のライブラリが必要で hypersig に向かないアプリケーションは、[束縛と文で足りないとき](learn/escape-hatches/) で説明します。",
                 },
                 L {
-                    en: "Signal values cross as JSON, so a signal's type implements serde's traits, and an `i64` past 2^53 loses precision in the browser.",
-                    ja: "シグナルの値は JSON で送るので、シグナルの型は serde のトレイトを実装します。`i64` は 2^53 を超えると、ブラウザで精度が落ちます。",
+                    en: "Signal values cross as JSON, so a signal's type implements serde's traits. The browser holds integers exactly only from -2^53 to 2^53, so the server panics before it sends an integer past that in a page, a patch, or a literal, and an identifier or an amount that large belongs in a `String`. Arithmetic in the browser that leaves the range is not checked and loses precision.",
+                    ja: "シグナルの値は JSON で送るので、シグナルの型は serde のトレイトを実装します。ブラウザが整数を正確に持てるのは -2^53 から 2^53 までです。そのため、サーバーはページ、パッチ、リテラルでそれを超える整数を送る前にパニックします。それほど大きい ID や金額は `String` に入れてください。ブラウザでの計算が範囲を超えた場合は検査されず、精度が落ちます。",
                 },
                 L {
                     en: "Following a link loads the next page from the server. There is no client-side navigation that keeps the current page on screen.",

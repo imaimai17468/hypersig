@@ -644,8 +644,8 @@ impl<S: Signals> Page<S> {
 
     /// The signals as JSON, with each computed signal set from the others.
     fn initial_values(&self) -> Tape {
-        let mut root =
-            Tape::new(&self.signals).expect("a Signals struct serializes to a JSON object");
+        let mut root = Tape::new(&self.signals)
+            .unwrap_or_else(|error| panic!("the page's signals do not serialize to JSON: {error}"));
         for (path, value) in &self.computed {
             let ctx = Ctx {
                 root: root.root(),
@@ -741,7 +741,8 @@ impl<S: Signals> Page<S> {
     /// # Panics
     ///
     /// Panics if the signal struct fails to serialize to JSON, which only
-    /// happens for a `Serialize` impl that returns an error, or if two
+    /// happens for a `Serialize` impl that returns an error, or if it holds an
+    /// integer outside -2^53 to 2^53, which the browser would round, or if two
     /// elements carry one [`NodeRef`](crate::NodeRef) name, one
     /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
     /// the runtime can reach both, or if an element inside a list template has an id set with
