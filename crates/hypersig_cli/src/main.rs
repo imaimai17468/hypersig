@@ -1,5 +1,6 @@
-//! `cargo hypersig`: creates a hypersig project for a host, or moves the
-//! project in the current directory to one.
+//! `cargo hypersig`: creates a hypersig project for a host, moves the
+//! project in the current directory to one, or writes the Rust names of a
+//! library's custom elements.
 //!
 //! The templates are compiled into the binary, so a project made with one
 //! release of this crate always holds the same files, and the build commands
@@ -9,6 +10,7 @@
 mod add;
 mod dev;
 mod diff;
+mod elements;
 mod host;
 mod new;
 
@@ -26,6 +28,10 @@ Usage:
                                             Build and run the server, and again after each
                                             change; in a debug build, the open pages reload
                                             from the new one
+  cargo hypersig elements <custom-elements.json>
+                                            Print a Rust module of the custom elements,
+                                            attributes, and events that a library's
+                                            Custom Elements Manifest declares
 
 Hosts:
   server       A container image, for a host such as Fly.io, Cloud Run, or Render
@@ -33,7 +39,8 @@ Hosts:
   vercel       A Vercel Function
 
 `add` writes no file that is already there unless it is given --force.
-`dev` passes <build options>, such as -p or --bin, to `cargo build`, and <args> to the server.";
+`dev` passes <build options>, such as -p or --bin, to `cargo build`, and <args> to the server.
+`elements` prints the module, which a redirect such as `> src/shoelace.rs` saves.";
 
 /// A failure to report to the person running the command, as one message.
 #[derive(Debug)]
@@ -56,6 +63,7 @@ impl std::error::Error for Error {}
 enum Command {
     New { path: PathBuf, host: Host },
     Add { host: Host, force: bool },
+    Elements { manifest: PathBuf },
     Help,
     Version,
 }
@@ -115,6 +123,21 @@ fn parse(mut args: impl Iterator<Item = String>) -> Result<Command, Error> {
                 .parse()?;
             Command::Add { host, force }
         }
+        Some("elements") => {
+            if force || host.is_some() {
+                return Err(Error::new(
+                    "`elements` prints the module and takes only the manifest's path: cargo hypersig elements <custom-elements.json>",
+                ));
+            }
+            let manifest = positional.next().ok_or_else(|| {
+                Error::new(format!(
+                    "`elements` needs the path of a custom-elements.json\n\n{USAGE}"
+                ))
+            })?;
+            Command::Elements {
+                manifest: manifest.into(),
+            }
+        }
         Some(other) => return Err(Error::new(format!("unknown command `{other}`\n\n{USAGE}"))),
         None => return Ok(Command::Help),
     };
@@ -161,6 +184,7 @@ fn run() -> Result<(), Error> {
             })?;
             add::run(&dir, host, force)
         }
+        Command::Elements { manifest } => elements::run(&manifest),
         Command::Help => {
             println!("{USAGE}");
             Ok(())

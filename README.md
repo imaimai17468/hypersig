@@ -118,7 +118,7 @@ Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the 
 
 ## What it does not suit
 
-The browser does on its own only the operations and statements hypersig provides, and the scripts a page loads. A JavaScript library such as a map or a rich text editor can run inside a custom element, which the page passes values to through attributes and takes typed events from ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)). Anything else goes through the server, so it does not suit these applications:
+The browser does on its own only the operations and statements hypersig provides, and the scripts a page loads. A JavaScript library such as a map or a rich text editor can run inside a custom element, which the page passes values to through attributes and takes typed events from ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)). For a library that ships a Custom Elements Manifest (`custom-elements.json`), `cargo hypersig elements` writes its tags, attribute names, and event names as Rust items, so a misspelled one is a compile error. Anything else goes through the server, so it does not suit these applications:
 
 - An application whose main work runs inside a JavaScript library, such as a drawing tool or a spreadsheet
 - An application that works without a connection to the server

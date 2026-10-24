@@ -1,5 +1,7 @@
 //! Runs `cargo hypersig new` and `cargo hypersig add` for each host and
-//! checks the projects they write, through `cargo check`.
+//! checks the projects they write, through `cargo check`, and runs
+//! `cargo hypersig elements` on a manifest and checks a page that uses the
+//! module it prints, through `cargo clippy`.
 //!
 //! The checks build against this repository's hypersig, as
 //! `crates/hypersig_cli/stage.sh` does, and download the host's crates
@@ -374,4 +376,95 @@ fn new_refuses_a_directory_that_exists() {
     let output = hypersig(&dir, &["new", "taken", "--host", "server"]);
     assert!(!output.status.success());
     assert_eq!(files(&dir.join("taken")), Vec::<String>::new());
+}
+
+/// The manifest under `tests/elements/` holds `sl-button` and `sl-rating`
+/// from Shoelace 2.20.1, `wa-stepper` from Web Awesome 3.14.0, and
+/// `md-elevated-button` with the classes it extends from Material Web 2.5.0,
+/// each trimmed to a few attributes and stripped of descriptions, and
+/// `test-picker`, written for this test, whose names and `detail` types
+/// reach the cases the others leave out.
+#[test]
+fn elements_prints_a_module_that_a_page_checks_against() {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/elements");
+    let dir = scratch("elements");
+    let module = succeeds(&hypersig(
+        &dir,
+        &[
+            "elements",
+            fixtures.join("custom-elements.json").to_str().unwrap(),
+        ],
+    ));
+    assert_eq!(
+        module,
+        read(fixtures.join("expected.rs")),
+        "run the command on tests/elements/custom-elements.json and save its output as tests/elements/expected.rs, after reading the difference"
+    );
+
+    // The JavaScript page of the site shows the part for `sl-rating`.
+    let shown = include_str!("../../../site/snippets/elements_module.rs");
+    let (imports, part) = shown.split_once("\n\n").unwrap();
+    assert!(module.contains(imports) && module.contains(part));
+
+    std::fs::create_dir_all(dir.join("src")).unwrap();
+    std::fs::write(
+        dir.join("Cargo.toml"),
+        "[package]\nname = \"elements\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n\
+         [dependencies]\nhypersig = \"0.3\"\nserde = { version = \"1\", features = [\"derive\"] }\n\n\
+         [lints.clippy]\npedantic = { level = \"warn\", priority = -1 }\n",
+    )
+    .unwrap();
+    std::fs::write(dir.join("src/elements.rs"), &module).unwrap();
+    std::fs::write(dir.join("src/main.rs"), read(fixtures.join("page.rs"))).unwrap();
+    let target = dir.join("target");
+    check(&dir, &target, &[]);
+
+    let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
+    let status = Command::new(&cargo)
+        .args(["clippy", "--quiet", "--", "-D", "warnings"])
+        .env("CARGO_TARGET_DIR", &target)
+        .current_dir(&dir)
+        .status()
+        .unwrap();
+    assert!(status.success(), "cargo clippy failed in {}", dir.display());
+    let status = Command::new(&cargo)
+        .args(["fmt", "--check"])
+        .current_dir(&dir)
+        .status()
+        .unwrap();
+    assert!(status.success(), "the module is not as rustfmt writes it");
+
+    let run = Command::new(&cargo)
+        .args(["run", "--quiet"])
+        .env("CARGO_TARGET_DIR", &target)
+        .current_dir(&dir)
+        .output()
+        .unwrap();
+    let html = succeeds(&run);
+    for name in [
+        "sl-hover",
+        "sl-change",
+        "wa-step-change",
+        "previousName",
+        "pick",
+    ] {
+        assert!(html.contains(name), "{name} in {html}");
+    }
+}
+
+#[test]
+fn elements_refuses_a_manifest_without_elements() {
+    let dir = scratch("elements-empty");
+    std::fs::write(
+        dir.join("custom-elements.json"),
+        r#"{"schemaVersion":"1.0.0","modules":[]}"#,
+    )
+    .unwrap();
+    let output = hypersig(&dir, &["elements", "custom-elements.json"]);
+    assert!(!output.status.success());
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("no custom element"),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }

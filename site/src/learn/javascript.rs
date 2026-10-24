@@ -1,7 +1,7 @@
 //! The page on running a JavaScript library, such as a map or an editor,
 //! inside a page.
 
-use super::snippet::{Snippet, show};
+use super::snippet::{Snippet, show, show_file};
 use crate::Site;
 use crate::code::{self, Lang};
 use crate::demo::{self, Demo};
@@ -43,6 +43,41 @@ pub fn javascript(site: Site) -> Part {
         heading(
             site,
             L {
+                en: "Write the names from the library's manifest",
+                ja: "ライブラリのマニフェストから名前を書き出す",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A component library such as Shoelace, Web Awesome, or Material Web ships a `custom-elements.json`, the Custom Elements Manifest, which lists each element's tag, attributes, and events. `cargo hypersig elements` reads it and prints a Rust module, which you save as a file of your crate and declare with `mod`. `cargo install --locked hypersig_cli` installs the command.",
+                ja: "Shoelace、Web Awesome、Material Web のようなコンポーネントのライブラリは、要素ごとのタグ、属性、イベントを並べた `custom-elements.json`（Custom Elements Manifest）を同梱しています。`cargo hypersig elements` はこれを読んで Rust のモジュールを出力します。出力をクレートのファイルとして保存し、`mod` で宣言してください。コマンドは `cargo install --locked hypersig_cli` でインストールできます。",
+            },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "cargo hypersig elements node_modules/@shoelace-style/shoelace/dist/custom-elements.json > src/shoelace.rs",
+        ),
+        para(
+            site,
+            L {
+                en: "Each element gets a function that creates it, a module `attr` with a constant per attribute, and a module `event` with a `CustomEvent` per event. A `detail` that the manifest types as a primitive, a union of string literals, or an object literal of them becomes a Rust type, and the object literal a struct that derives `Signals`, so a handler reads its fields with `Expr::at`. Most events in these manifests give no type, and their `detail` is `()`. An attribute that `bind_attr` refuses, such as `href`, is left out with a comment that names the method that sets it. Here is the part of the module for Shoelace's rating:",
+                ja: "要素ごとに、要素を作る関数、属性ごとの定数を持つモジュール `attr`、イベントごとの `CustomEvent` を持つモジュール `event` が出力されます。マニフェストが `detail` をプリミティブ型、文字列リテラルのユニオン、それらからなるオブジェクトリテラルとして書いていれば、`detail` は Rust の型になります。オブジェクトリテラルは `Signals` を derive した構造体になり、ハンドラは `Expr::at` でそのフィールドを読めます。これらのマニフェストでは型のないイベントが大半で、その `detail` は `()` になります。`href` のように `bind_attr` が受け付けない属性は出力されず、代わりに設定するメソッドをコメントで示します。Shoelace の評価の要素については、次の部分が出力されます。",
+            },
+        ),
+        show_file(Snippet::ElementsModule, "src/shoelace.rs"),
+        para(
+            site,
+            L {
+                en: "The page names the element, its attribute, and its event through the module, so a misspelled name is a compile error:",
+                ja: "ページは要素、属性、イベントをモジュールを通して指定するので、名前のつづりを間違えるとコンパイルエラーになります。",
+            },
+        ),
+        show(Snippet::ElementsPage),
+        heading(
+            site,
+            L {
                 en: "What the compiler checks",
                 ja: "コンパイラが検査する範囲",
             },
@@ -50,8 +85,8 @@ pub fn javascript(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The event's name and the type of its `detail` describe the script, so nothing checks them against it. An event the script never dispatches runs nothing, and a field the `detail` lacks reads as `null`. What the page does with the `detail` is checked: putting it into a signal of another type is a compile error.",
-                ja: "イベント名と `detail` の型はスクリプトの側の取り決めなので、スクリプトと突き合わせる検査はありません。スクリプトが投げないイベントでは何も実行されず、`detail` にないフィールドを読むと `null` になります。検査するのは、ページが `detail` をどう使うかです。型の違うシグナルに入れると、コンパイルエラーになります。",
+                en: "What the page does with the `detail` is checked: putting it into a signal of another type is a compile error. With the module `cargo hypersig elements` writes, a tag, an attribute, or an event the manifest does not list is a compile error too. The manifest describes the script, so nothing checks it against the script: an event the script never dispatches runs nothing, and a field the `detail` lacks reads as `null`. A `CustomEvent` you declare by hand, as the rating above does, is checked against nothing but your own declaration.",
+                ja: "ページが `detail` をどう使うかは検査されます。型の違うシグナルに入れると、コンパイルエラーになります。`cargo hypersig elements` が書いたモジュールを使えば、マニフェストにないタグ、属性、イベントもコンパイルエラーになります。マニフェストはスクリプトの説明なので、スクリプトと突き合わせる検査はありません。スクリプトが投げないイベントでは何も実行されず、`detail` にないフィールドを読むと `null` になります。上の評価のように手で宣言した `CustomEvent` は、その宣言のほかに照らし合わせるものがありません。",
             },
         ),
         heading(
