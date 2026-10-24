@@ -56,7 +56,7 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 
 ```toml
 [dependencies]
-hypersig = "0.3"
+hypersig = "0.4"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
