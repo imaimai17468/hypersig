@@ -39,6 +39,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value, json};
 
+use crate::exact;
 use crate::expr::IntoExpr;
 use crate::html::El;
 use crate::route::Url;
@@ -101,7 +102,7 @@ pub struct SignalPatch<S> {
 
 impl<S> SignalPatch<S> {
     pub(crate) fn single(path: String, value: &impl Serialize) -> Self {
-        let value = serde_json::to_value(value).expect("a signal value serializes to JSON");
+        let value = exact::to_value(value, "a signal value does not serialize to JSON");
         let mut values = Map::new();
         values.insert(path, value);
         Self {
@@ -189,7 +190,8 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
     /// # Panics
     ///
     /// Panics if an item fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
+    /// which the browser would round.
     #[must_use]
     pub fn patch_append(self, items: &[T]) -> ListPatch<S> {
         ListPatch::single(json!(["append", self.dotted(), literal(items)]))
@@ -205,7 +207,8 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
     /// # Panics
     ///
     /// Panics if an item fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
+    /// which the browser would round.
     #[must_use]
     pub fn patch_prepend(self, items: &[T]) -> ListPatch<S> {
         ListPatch::single(json!(["prepend", self.dotted(), literal(items)]))
@@ -243,7 +246,8 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
     /// # Panics
     ///
     /// Panics if an item fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
+    /// which the browser would round.
     #[must_use]
     pub fn patch_upsert<K, E: IntoExpr<S, K>>(
         self,
@@ -263,7 +267,8 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
     /// # Panics
     ///
     /// Panics if a key fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
+    /// which the browser would round.
     #[must_use]
     pub fn patch_remove<K: Serialize, E: IntoExpr<S, K>>(
         self,
@@ -292,7 +297,7 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
 fn literal<T: Serialize>(values: &[T]) -> Value {
     json!([
         "lit",
-        serde_json::to_value(values).expect("a list item serializes to JSON")
+        exact::to_value(values, "a list item does not serialize to JSON")
     ])
 }
 
@@ -465,11 +470,12 @@ impl<S: Signals> Patches<S> {
     /// # Panics
     ///
     /// Panics if `signals` fails to serialize to a JSON object, which only
-    /// happens for a `Serialize` impl that returns an error.
+    /// happens for a `Serialize` impl that returns an error, or if it holds an
+    /// integer outside -2^53 to 2^53, which the browser would round.
     #[must_use]
     pub fn all_signals(mut self, signals: &S) -> Self {
         let Value::Object(values) =
-            serde_json::to_value(signals).expect("a Signals struct serializes to JSON")
+            exact::to_value(signals, "a Signals struct does not serialize to JSON")
         else {
             panic!("a Signals struct serializes to a JSON object");
         };

@@ -54,6 +54,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::action::NodeRef;
+use crate::exact;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
 use crate::href::IntoHref;
 use crate::signal::{Item, Part, Sig, in_item_scope, in_part};
@@ -1696,14 +1697,15 @@ impl<S> El<S> {
     /// # Panics
     ///
     /// Panics if `value` fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
+    /// which the browser would round.
     #[must_use]
     pub fn bind_radio<T: Serialize + PartialEq, R>(
         mut self,
         signal: Sig<S, T, R>,
         value: &T,
     ) -> Self {
-        let value = serde_json::to_value(value).expect("a radio value serializes to JSON");
+        let value = exact::to_value(value, "a radio value does not serialize to JSON");
         self.attrs.push(("type", "radio".to_owned()));
         self.bind = Some(json!([signal.raw_path().place_json(), "radio", value]));
         self
@@ -1717,7 +1719,8 @@ impl<S> El<S> {
     /// # Panics
     ///
     /// Panics if a value fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
+    /// which the browser would round.
     #[must_use]
     pub fn bind_select<T: Serialize + PartialEq, R, L: Into<String>>(
         mut self,
@@ -1725,7 +1728,8 @@ impl<S> El<S> {
         options: impl IntoIterator<Item = (T, L)>,
     ) -> Self {
         for (value, label) in options {
-            let value = serde_json::to_string(&value).expect("an option value serializes to JSON");
+            let value =
+                exact::to_value(&value, "an option value does not serialize to JSON").to_string();
             self.children
                 .push(option().attr("value", value).text(label).into());
         }

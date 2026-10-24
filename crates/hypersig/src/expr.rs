@@ -73,6 +73,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::Segment;
+use crate::exact;
 use crate::signal::Sig;
 
 /// An expression over the signals of `S` that evaluates to a `T` in the browser.
@@ -115,13 +116,14 @@ impl<S, T> Expr<S, T> {
     /// # Panics
     ///
     /// Panics if `value` fails to serialize to JSON, which only happens for a
-    /// `Serialize` impl that returns an error.
+    /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
+    /// which the browser would round.
     #[must_use]
     pub fn lit(value: &T) -> Self
     where
         T: Serialize,
     {
-        let value = serde_json::to_value(value).expect("a literal serializes to JSON");
+        let value = exact::to_value(value, "a literal does not serialize to JSON");
         Self::from_json(json!(["lit", value]))
     }
 
@@ -291,7 +293,9 @@ macro_rules! literal {
     ($($ty:ty => $target:ty),* $(,)?) => {$(
         impl<S> IntoExpr<S, $target> for $ty {
             fn into_expr(self) -> Expr<S, $target> {
-                Expr::from_json(json!(["lit", self]))
+                let value = json!(self);
+                exact::check(&value);
+                Expr::from_json(json!(["lit", value]))
             }
         }
     )*};
@@ -338,8 +342,11 @@ pub fn if_else<S, T>(
 /// action and the action answers 400.
 ///
 /// An `i64` is exact in the browser from -2^53 to 2^53
-/// (9,007,199,254,740,992). Past that the browser rounds it to the nearest
-/// double, and the server reads back the rounded value. Keep an amount of
+/// (9,007,199,254,740,992). An integer past that, sent by the server in a
+/// page, a patch, or a literal, panics before it becomes JSON, because the
+/// browser would round it to the nearest double and the server would read
+/// back the rounded value. Arithmetic in the browser that leaves the range
+/// is not checked and rounds the same way. Keep an amount of
 /// money in minor units, such as cents, in an `i64`, and show it with
 /// `(cents.to_f64() / 100.0).format(&format)`.
 #[diagnostic::on_unimplemented(

@@ -19,6 +19,8 @@ use serde::ser::{
 };
 use serde_json::{Number, Value};
 
+use crate::exact;
+
 static NULL: Value = Value::Null;
 
 /// One node of a `Tape`. An array is followed by its items, and an object by
@@ -55,7 +57,8 @@ pub(crate) struct Tape {
 }
 
 impl Tape {
-    /// The JSON that `serde_json::to_value(value)` would build.
+    /// The JSON that `serde_json::to_value(value)` would build, or an error
+    /// for an integer outside -2^53 to 2^53, which the browser would round.
     pub(crate) fn new(value: &impl Serialize) -> Result<Tape, serde_json::Error> {
         let mut tape = Tape {
             nodes: Vec::new(),
@@ -576,6 +579,9 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
     }
 
     fn serialize_i64(self, v: i64) -> Result<(), serde_json::Error> {
+        if !exact::holds_i64(v) {
+            return Err(error(exact::message(v)));
+        }
         self.tape.nodes.push(Node::Number(v.into()));
         Ok(())
     }
@@ -603,6 +609,9 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
     }
 
     fn serialize_u64(self, v: u64) -> Result<(), serde_json::Error> {
+        if !exact::holds_u64(v) {
+            return Err(error(exact::message(v)));
+        }
         self.tape.nodes.push(Node::Number(v.into()));
         Ok(())
     }
@@ -1148,8 +1157,8 @@ mod tests {
         let value = Everything {
             flag: true,
             small: -3,
-            big: u64::MAX,
-            negative: i64::MIN,
+            big: 1 << 53,
+            negative: -(1 << 53),
             wide: 1 << 40,
             float: 0.1,
             nan: f64::NAN,
@@ -1177,6 +1186,21 @@ mod tests {
             tape.root().to_value(),
             serde_json::to_value(&value).expect("serializes")
         );
+    }
+
+    #[test]
+    fn refuses_an_integer_the_browser_would_round() {
+        for value in [
+            json!(u64::MAX),
+            json!([i64::MIN]),
+            json!({ "k": (1_u64 << 53) + 1 }),
+        ] {
+            let error = Tape::new(&value).err().expect("refused");
+            assert!(
+                error.to_string().contains("outside -2^53 to 2^53"),
+                "{error}"
+            );
+        }
     }
 
     #[test]
