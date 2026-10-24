@@ -63,7 +63,7 @@ pub fn render(site: Site) -> String {
                         site,
                         L {
                             en: "The requests on this page fall into three kinds, by what the framework carries for them. The Next.js work starts from the shape of the TodoMVC in `bench/compare/next`, where a Server Component reads the data and a Client Component holds it in `useState`. In each hypersig change, a green line was added and a red line removed.",
-                            ja: "このページの依頼は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は、`bench/compare/next` の TodoMVC と同じ構成、つまり Server Component がデータを読み、Client Component がそれを `useState` に持つ構成から始めた場合です。hypersig の差分では、緑の行が足した行、赤の行が消した行です。",
+                            ja: "このページの依頼は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は `bench/compare/next` の TodoMVC と同じ構成から始めた場合のものです。その構成では、Server Component がデータを読み、Client Component がそれを `useState` に持ちます。hypersig の差分では、緑の行は足した行、赤の行は消した行です。",
                         },
                     ),
                     div().children(CONCEPTS.iter().map(|concept| concept_section(site, concept))),
@@ -143,11 +143,11 @@ impl Kind {
         match self {
             Self::Push => L {
                 en: "A change made on the server reaches every open tab",
-                ja: "サーバーで起きた変更が、開いているタブに届く",
+                ja: "サーバーで起きた変更が開いているタブに届く",
             },
             Self::Names => L {
                 en: "The browser and the server use one name from a Rust type",
-                ja: "ブラウザとサーバーが、Rust の型から同じ名前を使う",
+                ja: "ブラウザとサーバーが Rust の型から同じ名前を使う",
             },
             Self::Calls => L {
                 en: "The runtime orders the requests and handles their failures",
@@ -160,7 +160,6 @@ impl Kind {
 /// One request, with the work it takes in Next.js and the change it makes
 /// in hypersig.
 struct Detail {
-    request: L<&'static str>,
     next: &'static [L<&'static str>],
     change: Snippet,
     caption: L<&'static str>,
@@ -170,6 +169,7 @@ struct Detail {
 struct Concept {
     kind: Kind,
     text: L<&'static str>,
+    request: L<&'static str>,
     detail: Detail,
 }
 
@@ -177,7 +177,10 @@ struct Concept {
 struct Case {
     title: L<&'static str>,
     scene: L<&'static str>,
-    requests: &'static [(Kind, L<&'static str>)],
+    /// The requests listed before the one `detail` is about.
+    before: &'static [(Kind, L<&'static str>)],
+    detailed: (Kind, L<&'static str>),
+    after: &'static [(Kind, L<&'static str>)],
     detail: Detail,
 }
 
@@ -200,13 +203,41 @@ fn concept_section(site: Site, concept: &Concept) -> Part {
                 .child(span().text(site.t(kind.title()))),
         )
         .child(para(site, concept.text))
+        .child(
+            p().css(
+                Style::new()
+                    .margin_top(rem(1.5))
+                    .padding_left(rem(1))
+                    .border_left_width(px(3))
+                    .border_left_style(BorderLeftStyle::Solid)
+                    .border_left_color(token::border().var())
+                    .font_style(FontStyle::Italic)
+                    .line_height(LineHeight::Length(rem(1.75))),
+            )
+            .children(inline(site, site.t(concept.request))),
+        )
         .child(detail(site, &concept.detail))
+}
+
+impl Case {
+    /// Every request of the application, each with whether it is the one
+    /// `detail` is about.
+    fn requests(&self) -> impl Iterator<Item = (Kind, L<&'static str>, bool)> {
+        let listed = |requests: &'static [(Kind, L<&'static str>)]| {
+            requests
+                .iter()
+                .map(|&(kind, request)| (kind, request, false))
+        };
+        listed(self.before)
+            .chain(std::iter::once((self.detailed.0, self.detailed.1, true)))
+            .chain(listed(self.after))
+    }
 }
 
 fn case_card(site: Site, case: &Case) -> Part {
     let kinds = [Kind::Push, Kind::Names, Kind::Calls]
         .into_iter()
-        .filter(|&kind| case.requests.iter().any(|&(of, _)| of == kind));
+        .filter(|&kind| case.requests().any(|(of, _, _)| of == kind));
     details()
         .css(
             Style::new()
@@ -280,43 +311,40 @@ fn case_card(site: Site, case: &Case) -> Part {
                             .padding_left(px(0))
                             .list_style_type(ListStyleType::None),
                     )
-                    .children(case.requests.iter().map(|&(kind, request)| {
-                        li().css(
-                            Style::new()
-                                .display(Display::Flex)
-                                .align_items(AlignItems::Baseline)
-                                .gap(rem(0.75))
-                                .font_size(rem(0.9375))
-                                .line_height(LineHeight::Length(rem(1.5))),
-                        )
-                        .child(
-                            a().href(href(site, &format!("use-cases/#{}", kind.id())))
-                                .css(Style::new().flex_shrink(0))
-                                .child(letter(kind)),
-                        )
-                        .child(span().children(inline(site, site.t(request))))
-                    })),
+                    .children(case.requests().map(
+                        |(kind, request, detailed)| {
+                            // The change below is about one of the requests, so
+                            // it stands out from the others.
+                            let text = if detailed {
+                                Style::new().font_weight(FontWeight::Number(500.0))
+                            } else {
+                                Style::new().color(token::muted_foreground().var())
+                            };
+                            li().css(
+                                Style::new()
+                                    .display(Display::Flex)
+                                    .align_items(AlignItems::Baseline)
+                                    .gap(rem(0.75))
+                                    .font_size(rem(0.9375))
+                                    .line_height(LineHeight::Length(rem(1.5)))
+                                    .merge(text),
+                            )
+                            .child(
+                                a().href(href(site, &format!("use-cases/#{}", kind.id())))
+                                    .css(Style::new().flex_shrink(0))
+                                    .child(letter(kind)),
+                            )
+                            .child(span().children(inline(site, site.t(request))))
+                        },
+                    )),
                 )
                 .child(detail(site, &case.detail)),
         )
 }
 
-/// A request quoted, the work it takes in Next.js, and the hypersig change.
+/// The work a request takes in Next.js, and the hypersig change.
 fn detail(site: Site, detail: &Detail) -> Part {
     div()
-        .child(
-            p().css(
-                Style::new()
-                    .margin_top(rem(1.5))
-                    .padding_left(rem(1))
-                    .border_left_width(px(3))
-                    .border_left_style(BorderLeftStyle::Solid)
-                    .border_left_color(token::border().var())
-                    .font_style(FontStyle::Italic)
-                    .line_height(LineHeight::Length(rem(1.75))),
-            )
-            .children(inline(site, site.t(detail.request))),
-        )
         .child(label(site.t(L {
             en: "In Next.js 16 with the App Router",
             ja: "Next.js 16（App Router）での作業",
@@ -397,13 +425,13 @@ const CONCEPTS: &[Concept] = &[
         kind: Kind::Push,
         text: L {
             en: "Another visitor's write, a job's progress, or a deadline changes the screen while the visitor does nothing. A Server Action answers only the tab that called it, so in Next.js these changes need a second path: a stream of their own, and client code that merges what arrives into the state. In hypersig, a stream sends the same `Patches` an action answers with, and the runtime applies both the same way. [Talking to the server](learn/server/) covers streams.",
-            ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が要ります。専用のストリームと、届いた値を状態に混ぜるクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [サーバーとのやり取り](learn/server/) で説明しています。",
+            ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が要ります。専用のストリームと、届いた値を状態に取り込むクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [サーバーとのやり取り](learn/server/) で説明しています。",
+        },
+        request: L {
+            en: "Show the tasks other people add, without a reload.",
+            ja: "ほかの人が足したタスクも、読み込み直さずに出してください。",
         },
         detail: Detail {
-            request: L {
-                en: "Show the tasks other people add, without a reload.",
-                ja: "ほかの人が足したタスクも、読み込み直さずに出してください。",
-            },
             next: &[
                 L {
                     en: "Add a Route Handler such as `app/api/tasks/stream/route.ts` that returns a `ReadableStream` with the `text/event-stream` content type. Keep the open streams in a list, and write to each of them after a Server Action saves a task.",
@@ -429,13 +457,13 @@ const CONCEPTS: &[Concept] = &[
         kind: Kind::Names,
         text: L {
             en: "A message the server reports under a field, a filter kept in the URL, the status of a failed request, and a translated text each work only while the browser and the server agree on a name. In Next.js, a query key and a translation key are strings, and an error from a Server Action reaches the page through a Client Component that holds the action's state. In hypersig, the name comes from a Rust item that both sides read: a field of a `Signals` struct, a `Search` struct, a `StatusCode`, or a field of the translation struct, so a name that does not match fails to compile. [Forms](learn/forms/) covers the rules both sides check.",
-            ja: "欄の下に出すサーバーのエラー、URL に入れる絞り込み、失敗したリクエストのステータス、訳した文言は、どれもブラウザとサーバーが同じ名前を使っている間だけ動きます。Next.js ではクエリのキーも訳のキーも文字列で、Server Action のエラーは、アクションの状態を持つ Client Component を通ってページに届きます。hypersig では、名前は両側が読む Rust の項目から作られます。`Signals` 構造体のフィールド、`Search` 構造体、`StatusCode`、訳の構造体のフィールドなので、名前が合わなければコンパイルエラーになります。両側が検査するルールは [フォーム](learn/forms/) で説明しています。",
+            ja: "欄の下に出すサーバーのエラー、URL に入れる絞り込み、失敗したリクエストのステータス、訳した文言は、どれもブラウザとサーバーが同じ名前を使っている間だけ動きます。Next.js ではクエリのキーも訳のキーも文字列で、Server Action のエラーは、アクションの状態を持つ Client Component を通ってページに届きます。hypersig では、名前は両側が読む Rust の項目から作られます。その項目は `Signals` 構造体のフィールド、`Search` 構造体、`StatusCode`、訳の構造体のフィールドなので、名前が合わなければコンパイルエラーになります。両側が検査するルールは [フォーム](learn/forms/) で説明しています。",
+        },
+        request: L {
+            en: "If the email address is already registered, say so under the email field.",
+            ja: "登録済みのメールアドレスなら、メールアドレスの欄の下にそう出してください。",
         },
         detail: Detail {
-            request: L {
-                en: "If the email address is already registered, say so under the email field.",
-                ja: "登録済みのメールアドレスなら、メールアドレスの欄の下にそう出してください。",
-            },
             next: &[
                 L {
                     en: "Make the Server Action return the errors, as in `{ errors: { email?: string } }`, where it only saved and redirected before.",
@@ -463,11 +491,11 @@ const CONCEPTS: &[Concept] = &[
             en: "A slow answer arrives after a newer one, the connection drops, or the visitor presses the button again while it waits. In Next.js, the component handles these with an `AbortController`, a pending flag, and code that reconnects. In hypersig, each is a method on the call: `.latest()` aborts the earlier call, `.indicator()` sets a flag while the call waits, and `.reconnect()` opens a stream again. [Calls in depth](learn/calls/) covers calls that overlap.",
             ja: "遅い応答が新しい応答のあとに届く、接続が切れる、待っている間にボタンがもう一度押される、という場面です。Next.js では、`AbortController`、処理中のフラグ、つなぎ直す処理をコンポーネントに書きます。hypersig では、どれも呼び出しのメソッドです。`.latest()` は前の呼び出しを止め、`.indicator()` は待っている間フラグを立て、`.reconnect()` はストリームをつなぎ直します。重なった呼び出しは [呼び出しの詳細](learn/calls/) で説明しています。",
         },
+        request: L {
+            en: "Search as the visitor types, show that it is searching, and never let an older result replace a newer one.",
+            ja: "入力に合わせて検索し、検索中であることを出してください。古い結果が新しい結果を上書きしないようにしてください。",
+        },
         detail: Detail {
-            request: L {
-                en: "Search as the visitor types, show that it is searching, and never let an older result replace a newer one.",
-                ja: "入力に合わせて検索し、検索中であることを出してください。古い結果が新しい結果を上書きしないようにしてください。",
-            },
             next: &[
                 L {
                     en: "Move the search box into a Client Component, and from the input's change handler, after a timer for the debounce, call a Route Handler with `fetch`.",
@@ -501,21 +529,21 @@ const CASES: &[Case] = &[
             en: "Many visitors watch one item, and each bid changes the price on every screen.",
             ja: "大勢が 1 つの品物を見ていて、入札のたびに全員の画面の価格が変わります。",
         },
-        requests: &[
-            (
-                Kind::Push,
-                L {
-                    en: "Show each bid on every open screen as it is placed.",
-                    ja: "入札を、すぐに全員の画面に出してください。",
-                },
-            ),
-            (
-                Kind::Push,
-                L {
-                    en: "Tell each bidder whether they hold the highest bid.",
-                    ja: "自分が最高額かどうかを、入札者ごとに出してください。",
-                },
-            ),
+        before: &[(
+            Kind::Push,
+            L {
+                en: "Show each bid on every open screen as it is placed.",
+                ja: "入札をすぐに全員の画面に出してください。",
+            },
+        )],
+        detailed: (
+            Kind::Push,
+            L {
+                en: "Tell each bidder whether they hold the highest bid.",
+                ja: "自分が最高額かどうかを、入札者ごとに出してください。",
+            },
+        ),
+        after: &[
             (
                 Kind::Names,
                 L {
@@ -532,10 +560,6 @@ const CASES: &[Case] = &[
             ),
         ],
         detail: Detail {
-            request: L {
-                en: "Tell each bidder whether they hold the highest bid.",
-                ja: "自分が最高額かどうかを、入札者ごとに出してください。",
-            },
             next: &[
                 L {
                     en: "In the stream's Route Handler, read the session with `cookies()` and keep the bidder beside each open stream.",
@@ -547,7 +571,7 @@ const CASES: &[Case] = &[
                 },
                 L {
                     en: "Add `leading` to the state the `EventSource` handler merges in the Client Component, and render it.",
-                    ja: "Client Component では、`EventSource` のハンドラが混ぜる状態に `leading` を足し、表示します。",
+                    ja: "Client Component では、`EventSource` のハンドラが取り込む状態に `leading` を足し、表示します。",
                 },
             ],
             change: Snippet::UseAuction,
@@ -566,34 +590,28 @@ const CASES: &[Case] = &[
             en: "A deploy writes its log for minutes, and the people waiting on it keep the page open.",
             ja: "デプロイは数分かけてログを書き、待っている人はその間ページを開いたままにします。",
         },
-        requests: &[
-            (
-                Kind::Push,
-                L {
-                    en: "Stream each log line as the deploy writes it.",
-                    ja: "デプロイが書いたログを、1 行ずつ流してください。",
-                },
-            ),
-            (
-                Kind::Calls,
-                L {
-                    en: "After the connection drops, go on from the next line, with no line twice.",
-                    ja: "接続が切れたら、同じ行を繰り返さずに、続きの行から再開してください。",
-                },
-            ),
-            (
-                Kind::Names,
-                L {
-                    en: "When the session has expired, show a link to sign in again in place of the error.",
-                    ja: "セッションが切れていたら、エラーの代わりにサインインし直すリンクを出してください。",
-                },
-            ),
-        ],
-        detail: Detail {
-            request: L {
+        before: &[(
+            Kind::Push,
+            L {
+                en: "Stream each log line as the deploy writes it.",
+                ja: "デプロイが書いたログを、1 行ずつ流してください。",
+            },
+        )],
+        detailed: (
+            Kind::Calls,
+            L {
                 en: "After the connection drops, go on from the next line, with no line twice.",
                 ja: "接続が切れたら、同じ行を繰り返さずに、続きの行から再開してください。",
             },
+        ),
+        after: &[(
+            Kind::Names,
+            L {
+                en: "When the session has expired, show a link to sign in again in place of the error.",
+                ja: "セッションが切れていたら、エラーの代わりにサインインし直すリンクを出してください。",
+            },
+        )],
+        detail: Detail {
             next: &[
                 L {
                     en: "Write an `id:` line with each event, so that `EventSource` sends the last one back in the `Last-Event-ID` header when it reconnects.",
@@ -607,7 +625,7 @@ const CASES: &[Case] = &[
             change: Snippet::UseDeployLog,
             caption: L {
                 en: "The id of the last line is a signal the stream's patches keep up to date, and each reconnection sends it as the stream's argument. A response the host closes before the stream ends, as a host does at its time limit, also counts as broken off, and the runtime opens it again.",
-                ja: "最後の行の id は、ストリームの差分が更新し続けるシグナルで、つなぎ直すたびにストリームの引数として送られます。ホストが時間の上限でするように、ストリームが終わる前に応答が閉じられた場合も、ランタイムは途切れたものとしてつなぎ直します。",
+                ja: "最後の行の id は、ストリームの差分が更新し続けるシグナルで、つなぎ直すたびにストリームの引数として送られます。時間の上限に達したホストがするように、ストリームが終わる前に応答が閉じられた場合も、ランタイムは途切れたものとしてつなぎ直します。",
             },
         },
     },
@@ -620,27 +638,22 @@ const CASES: &[Case] = &[
             en: "Staff on the floor send orders from tablets, and a screen in the kitchen lists them.",
             ja: "ホールのスタッフがタブレットから注文を送り、厨房の画面に一覧が出ます。",
         },
-        requests: &[
-            (
-                Kind::Push,
-                L {
-                    en: "Show an order on the kitchen screen as soon as it is sent.",
-                    ja: "送った注文を、すぐに厨房の画面に出してください。",
-                },
-            ),
-            (
-                Kind::Names,
-                L {
-                    en: "If a dish is sold out, say so on that line of the order.",
-                    ja: "品切れの料理は、注文のその行に品切れと出してください。",
-                },
-            ),
-        ],
-        detail: Detail {
-            request: L {
-                en: "If a dish is sold out, say so on that line of the order.",
-                ja: "品切れの料理は、注文のその行に品切れと出してください。",
+        before: &[(
+            Kind::Push,
+            L {
+                en: "Show an order on the kitchen screen as soon as it is sent.",
+                ja: "送った注文をすぐに厨房の画面に出してください。",
             },
+        )],
+        detailed: (
+            Kind::Names,
+            L {
+                en: "If a dish is sold out, say so on that line of the order.",
+                ja: "品切れの料理は注文のその行に品切れと出してください。",
+            },
+        ),
+        after: &[],
+        detail: Detail {
             next: &[
                 L {
                     en: "Make the Server Action return which line failed and why. The Next.js guide to error handling models an expected error as a returned value, and leaves thrown errors to error boundaries.",
@@ -658,7 +671,7 @@ const CASES: &[Case] = &[
             change: Snippet::UseKitchen,
             caption: L {
                 en: "`.on_error` runs where the call was made, so inside `each` it reaches the line whose button was pressed.",
-                ja: "`.on_error` は呼び出した場所で実行されるので、`each` の中では、ボタンを押した行に届きます。",
+                ja: "`.on_error` は呼び出した場所で実行されるので、`each` の中ではボタンを押した行に届きます。",
             },
         },
     },
@@ -671,27 +684,22 @@ const CASES: &[Case] = &[
             en: "Visitors pick from one seat map at the same time, and two of them can pick one seat.",
             ja: "訪問者が同じ座席表から同時に席を選ぶので、2 人が同じ席を選ぶことがあります。",
         },
-        requests: &[
-            (
-                Kind::Push,
-                L {
-                    en: "Mark a seat as taken on every screen once someone holds it.",
-                    ja: "だれかが押さえた席は、すぐ全員の画面で埋まった表示にしてください。",
-                },
-            ),
-            (
-                Kind::Names,
-                L {
-                    en: "If someone else took the seat a moment ago, tell the visitor so.",
-                    ja: "直前にほかの人が取った席なら、そのことを訪問者に伝えてください。",
-                },
-            ),
-        ],
-        detail: Detail {
-            request: L {
+        before: &[(
+            Kind::Push,
+            L {
+                en: "Mark a seat as taken on every screen once someone holds it.",
+                ja: "だれかが押さえた席は、すぐ全員の画面で埋まった表示にしてください。",
+            },
+        )],
+        detailed: (
+            Kind::Names,
+            L {
                 en: "If someone else took the seat a moment ago, tell the visitor so.",
                 ja: "直前にほかの人が取った席なら、そのことを訪問者に伝えてください。",
             },
+        ),
+        after: &[],
+        detail: Detail {
             next: &[
                 L {
                     en: "Return a value that tells the outcomes apart from the Server Action, such as `{ ok: false, reason: \"taken\" }`, as the Next.js guide to error handling does for an expected error.",
@@ -716,9 +724,9 @@ const CASES: &[Case] = &[
         },
         scene: L {
             en: "Employees file expenses, and approvers work through the list of the ones waiting.",
-            ja: "社員が経費を申請し、承認する人が、待っている申請の一覧を順に片付けます。",
+            ja: "社員が経費を申請し、承認する人が待っている申請の一覧を順に片付けます。",
         },
-        requests: &[
+        before: &[
             (
                 Kind::Push,
                 L {
@@ -733,19 +741,16 @@ const CASES: &[Case] = &[
                     ja: "予算の超過をサーバーで判定し、金額の欄の下に出してください。",
                 },
             ),
-            (
-                Kind::Names,
-                L {
-                    en: "Keep the list's filter in the URL, so a link to it can be shared.",
-                    ja: "一覧の絞り込みを URL に入れて、リンクで共有できるようにしてください。",
-                },
-            ),
         ],
-        detail: Detail {
-            request: L {
+        detailed: (
+            Kind::Names,
+            L {
                 en: "Keep the list's filter in the URL, so a link to it can be shared.",
                 ja: "一覧の絞り込みを URL に入れて、リンクで共有できるようにしてください。",
             },
+        ),
+        after: &[],
+        detail: Detail {
             next: &[
                 L {
                     en: "Read the filter from the page's `searchParams`, whose values arrive as `string | string[] | undefined`. Parse the page number, and check the status against the ones that exist.",
@@ -772,7 +777,7 @@ const CASES: &[Case] = &[
             en: "Visitors search for products as they type and filter the results, and the pages come in English and Japanese.",
             ja: "訪問者は入力しながら商品を探して絞り込み、ページは英語と日本語で出ます。",
         },
-        requests: &[
+        before: &[
             (
                 Kind::Calls,
                 L {
@@ -787,19 +792,16 @@ const CASES: &[Case] = &[
                     ja: "絞り込みを URL に入れてください。",
                 },
             ),
-            (
-                Kind::Names,
-                L {
-                    en: "Add an English version of each page.",
-                    ja: "各ページに英語版を足してください。",
-                },
-            ),
         ],
-        detail: Detail {
-            request: L {
+        detailed: (
+            Kind::Names,
+            L {
                 en: "Add an English version of each page.",
                 ja: "各ページに英語版を足してください。",
             },
+        ),
+        after: &[],
+        detail: Detail {
             next: &[
                 L {
                     en: "With a library such as next-intl, move each text to a key in `messages/en.json` and `messages/ja.json`, and call `t(\"cart.title\")` where the text was.",

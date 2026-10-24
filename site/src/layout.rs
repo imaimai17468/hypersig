@@ -128,7 +128,6 @@ pub fn article(site: Site, doc: Doc, content: Part) -> String {
 
 fn top_bar(site: Site, doc: Doc) -> Part {
     let library = doc.library();
-    let has_sidebar = doc.has_sidebar();
     header()
         .css(
             Style::new()
@@ -150,7 +149,7 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                         .height(rem(3.5))
                         .on(Media::Md, Style::new().gap(rem(1.5))),
                 )
-                .children(has_sidebar.then(|| menu_button(site)))
+                .child(menu_button(site))
                 .child(brand(site, library))
                 .child(
                     nav()
@@ -162,19 +161,13 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                             }),
                         )
                         .css(
-                            hstack(rem(1))
-                                .on(Media::Md, Style::new().gap(rem(1.25)))
+                            hstack(rem(1.25))
                                 .font_size(rem(0.875))
                                 .white_space(hypersig::style::value::WhiteSpace::Nowrap)
-                                // On a phone, a page with a sidebar lists the
-                                // sections in it instead.
-                                .merge(if has_sidebar {
-                                    Style::new()
-                                        .display(Display::None)
-                                        .on(Media::Md, Style::new().display(Display::Flex))
-                                } else {
-                                    Style::new()
-                                }),
+                                // On a phone, the menu lists the sections
+                                // instead.
+                                .display(Display::None)
+                                .on(Media::Md, Style::new().display(Display::Flex)),
                         )
                         .children(library.sections().iter().map(|&(label, target)| {
                             let current = in_section(doc, target);
@@ -205,6 +198,30 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                 )
                 .child(other_language(site, doc)),
         )
+        .children((!doc.has_sidebar()).then(|| menu(site, doc)))
+}
+
+/// The menu below the header on a phone, for a page without a sidebar to
+/// hold the sections.
+fn menu(site: Site, doc: Doc) -> Part {
+    nav()
+        .id(SIDEBAR)
+        .attr(
+            "aria-label",
+            site.t(L {
+                en: "Pages",
+                ja: "ページ",
+            }),
+        )
+        .css(
+            container(rem(88), rem(1))
+                .display(Display::None)
+                .padding_block(rem(1)),
+        )
+        // The menu button that opens it is hidden from the medium
+        // breakpoint up.
+        .css_when(Style::new().display(Display::Block), Docs::menu())
+        .child(phone_sections(site, doc))
 }
 
 /// A link to `doc` in the other language, at the right of the header on a
@@ -444,7 +461,18 @@ fn sidebar(site: Site, doc: Doc) -> Part {
         .child(
             div()
                 .css(stack(rem(1.5)))
-                .child(phone_sections(site, doc))
+                .child(
+                    div()
+                        .css(
+                            Style::new()
+                                .padding_bottom(rem(1))
+                                .border_bottom_width(px(1))
+                                .border_bottom_style(BorderBottomStyle::Solid)
+                                .border_bottom_color(token::border().var())
+                                .on(Media::Md, Style::new().display(Display::None)),
+                        )
+                        .child(phone_sections(site, doc)),
+                )
                 .children(doc.groups().iter().map(|group| {
                     div()
                         .child(
@@ -471,19 +499,12 @@ fn sidebar(site: Site, doc: Doc) -> Part {
         )
 }
 
-/// The sections, the libraries, and the outside links, at the top of the
-/// sidebar on a phone, where the header has no room for them.
+/// The sections, the libraries, and the outside links, in the menu on a
+/// phone, where the header has no room for them.
 fn phone_sections(site: Site, doc: Doc) -> Part {
     let library = doc.library();
     div()
-        .css(
-            stack(px(2))
-                .padding_bottom(rem(1))
-                .border_bottom_width(px(1))
-                .border_bottom_style(BorderBottomStyle::Solid)
-                .border_bottom_color(token::border().var())
-                .on(Media::Md, Style::new().display(Display::None)),
-        )
+        .css(stack(px(2)))
         .children(library.sections().iter().map(|&(label, target)| {
             let current = in_section(doc, target);
             mark_section(a().href(own(target.url(site))), current)
@@ -502,10 +523,7 @@ fn phone_sections(site: Site, doc: Doc) -> Part {
                 .map(|other| {
                     a().href(own(other.home().url(site)))
                         .css(sidebar_link_style(false))
-                        .text(site.t(L {
-                            en: format!("{} docs", other.name(site)),
-                            ja: format!("{}のドキュメント", other.name(site)),
-                        }))
+                        .text(other.path())
                 }),
         )
         .child(
