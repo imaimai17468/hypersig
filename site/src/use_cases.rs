@@ -63,7 +63,7 @@ pub fn render(site: Site) -> String {
                         site,
                         L {
                             en: "The requests on this page fall into three kinds, by what the framework carries for them. The Next.js work starts from the shape of the TodoMVC in `bench/compare/next`, where a Server Component reads the data and a Client Component holds it in `useState`. In each hypersig change, a green line was added and a red line removed.",
-                            ja: "このページの依頼は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は、`bench/compare/next` の TodoMVC と同じ構成、つまり Server Component がデータを読み、Client Component がそれを `useState` に持つ構成から始めた場合です。hypersig の差分では、緑の行が足した行、赤の行が消した行です。",
+                            ja: "このページの依頼は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は `bench/compare/next` の TodoMVC と同じ構成から始めた場合のものです。その構成では、Server Component がデータを読み、Client Component がそれを `useState` に持ちます。hypersig の差分では、緑の行は足した行、赤の行は消した行です。",
                         },
                     ),
                     div().children(CONCEPTS.iter().map(|concept| concept_section(site, concept))),
@@ -143,11 +143,11 @@ impl Kind {
         match self {
             Self::Push => L {
                 en: "A change made on the server reaches every open tab",
-                ja: "サーバーで起きた変更が、開いているタブに届く",
+                ja: "サーバーで起きた変更が開いているタブに届く",
             },
             Self::Names => L {
                 en: "The browser and the server use one name from a Rust type",
-                ja: "ブラウザとサーバーが、Rust の型から同じ名前を使う",
+                ja: "ブラウザとサーバーが Rust の型から同じ名前を使う",
             },
             Self::Calls => L {
                 en: "The runtime orders the requests and handles their failures",
@@ -425,7 +425,7 @@ const CONCEPTS: &[Concept] = &[
         kind: Kind::Push,
         text: L {
             en: "Another visitor's write, a job's progress, or a deadline changes the screen while the visitor does nothing. A Server Action answers only the tab that called it, so in Next.js these changes need a second path: a stream of their own, and client code that merges what arrives into the state. In hypersig, a stream sends the same `Patches` an action answers with, and the runtime applies both the same way. [Talking to the server](learn/server/) covers streams.",
-            ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が要ります。専用のストリームと、届いた値を状態に混ぜるクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [サーバーとのやり取り](learn/server/) で説明しています。",
+            ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が要ります。専用のストリームと、届いた値を状態に取り込むクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [サーバーとのやり取り](learn/server/) で説明しています。",
         },
         request: L {
             en: "Show the tasks other people add, without a reload.",
@@ -457,7 +457,7 @@ const CONCEPTS: &[Concept] = &[
         kind: Kind::Names,
         text: L {
             en: "A message the server reports under a field, a filter kept in the URL, the status of a failed request, and a translated text each work only while the browser and the server agree on a name. In Next.js, a query key and a translation key are strings, and an error from a Server Action reaches the page through a Client Component that holds the action's state. In hypersig, the name comes from a Rust item that both sides read: a field of a `Signals` struct, a `Search` struct, a `StatusCode`, or a field of the translation struct, so a name that does not match fails to compile. [Forms](learn/forms/) covers the rules both sides check.",
-            ja: "欄の下に出すサーバーのエラー、URL に入れる絞り込み、失敗したリクエストのステータス、訳した文言は、どれもブラウザとサーバーが同じ名前を使っている間だけ動きます。Next.js ではクエリのキーも訳のキーも文字列で、Server Action のエラーは、アクションの状態を持つ Client Component を通ってページに届きます。hypersig では、名前は両側が読む Rust の項目から作られます。`Signals` 構造体のフィールド、`Search` 構造体、`StatusCode`、訳の構造体のフィールドなので、名前が合わなければコンパイルエラーになります。両側が検査するルールは [フォーム](learn/forms/) で説明しています。",
+            ja: "欄の下に出すサーバーのエラー、URL に入れる絞り込み、失敗したリクエストのステータス、訳した文言は、どれもブラウザとサーバーが同じ名前を使っている間だけ動きます。Next.js ではクエリのキーも訳のキーも文字列で、Server Action のエラーは、アクションの状態を持つ Client Component を通ってページに届きます。hypersig では、名前は両側が読む Rust の項目から作られます。その項目は `Signals` 構造体のフィールド、`Search` 構造体、`StatusCode`、訳の構造体のフィールドなので、名前が合わなければコンパイルエラーになります。両側が検査するルールは [フォーム](learn/forms/) で説明しています。",
         },
         request: L {
             en: "If the email address is already registered, say so under the email field.",
@@ -533,7 +533,7 @@ const CASES: &[Case] = &[
             Kind::Push,
             L {
                 en: "Show each bid on every open screen as it is placed.",
-                ja: "入札を、すぐに全員の画面に出してください。",
+                ja: "入札をすぐに全員の画面に出してください。",
             },
         )],
         detailed: (
@@ -571,7 +571,7 @@ const CASES: &[Case] = &[
                 },
                 L {
                     en: "Add `leading` to the state the `EventSource` handler merges in the Client Component, and render it.",
-                    ja: "Client Component では、`EventSource` のハンドラが混ぜる状態に `leading` を足し、表示します。",
+                    ja: "Client Component では、`EventSource` のハンドラが取り込む状態に `leading` を足し、表示します。",
                 },
             ],
             change: Snippet::UseAuction,
@@ -625,7 +625,7 @@ const CASES: &[Case] = &[
             change: Snippet::UseDeployLog,
             caption: L {
                 en: "The id of the last line is a signal the stream's patches keep up to date, and each reconnection sends it as the stream's argument. A response the host closes before the stream ends, as a host does at its time limit, also counts as broken off, and the runtime opens it again.",
-                ja: "最後の行の id は、ストリームの差分が更新し続けるシグナルで、つなぎ直すたびにストリームの引数として送られます。ホストが時間の上限でするように、ストリームが終わる前に応答が閉じられた場合も、ランタイムは途切れたものとしてつなぎ直します。",
+                ja: "最後の行の id は、ストリームの差分が更新し続けるシグナルで、つなぎ直すたびにストリームの引数として送られます。時間の上限に達したホストがするように、ストリームが終わる前に応答が閉じられた場合も、ランタイムは途切れたものとしてつなぎ直します。",
             },
         },
     },
@@ -642,14 +642,14 @@ const CASES: &[Case] = &[
             Kind::Push,
             L {
                 en: "Show an order on the kitchen screen as soon as it is sent.",
-                ja: "送った注文を、すぐに厨房の画面に出してください。",
+                ja: "送った注文をすぐに厨房の画面に出してください。",
             },
         )],
         detailed: (
             Kind::Names,
             L {
                 en: "If a dish is sold out, say so on that line of the order.",
-                ja: "品切れの料理は、注文のその行に品切れと出してください。",
+                ja: "品切れの料理は注文のその行に品切れと出してください。",
             },
         ),
         after: &[],
@@ -671,7 +671,7 @@ const CASES: &[Case] = &[
             change: Snippet::UseKitchen,
             caption: L {
                 en: "`.on_error` runs where the call was made, so inside `each` it reaches the line whose button was pressed.",
-                ja: "`.on_error` は呼び出した場所で実行されるので、`each` の中では、ボタンを押した行に届きます。",
+                ja: "`.on_error` は呼び出した場所で実行されるので、`each` の中ではボタンを押した行に届きます。",
             },
         },
     },
@@ -724,7 +724,7 @@ const CASES: &[Case] = &[
         },
         scene: L {
             en: "Employees file expenses, and approvers work through the list of the ones waiting.",
-            ja: "社員が経費を申請し、承認する人が、待っている申請の一覧を順に片付けます。",
+            ja: "社員が経費を申請し、承認する人が待っている申請の一覧を順に片付けます。",
         },
         before: &[
             (
