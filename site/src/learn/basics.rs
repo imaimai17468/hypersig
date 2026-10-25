@@ -74,12 +74,30 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                 ja: "`http://127.0.0.1:3000` を開いてください。`+1` ボタンはリクエストを送らずにブラウザで数を増やします。リセットボタンは `/reset` を呼び出し、ハンドラが返す差分が `count` を 0 に戻します。ランタイムはページの文と束縛をブラウザで実行する小さな JavaScript のファイルです。`hypersig_runtime()` がこのファイルをクレートから配信するので、Node も JavaScript のビルドも使いません。",
             },
         ),
-        code::block(Lang::Shell, None, "cargo hypersig dev"),
         para(
             site,
             L {
-                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. A build that fails leaves the last server running. The state the server holds in memory starts over at each restart. `cargo install --locked hypersig_cli` installs the command.",
-                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。ビルドが失敗したときは前のサーバーが動き続けます。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。コマンドは `cargo install --locked hypersig_cli` でインストールできます。",
+                en: "While you edit, run the server with `cargo hypersig dev` in place of `cargo run`. Install the command first:",
+                ja: "コードを書き換えながら動かすときは、`cargo run` の代わりに `cargo hypersig dev` でサーバーを起動します。先にコマンドをインストールしてください。",
+            },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "cargo install --locked hypersig_cli\ncargo hypersig dev",
+        ),
+        para(
+            site,
+            L {
+                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. A build that fails leaves the last server running. The state the server holds in memory starts over at each restart.",
+                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。ビルドが失敗したときは前のサーバーが動き続けます。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The same command can also start a project. `cargo hypersig new counter --host server` writes a directory `counter` with a counter like the one above and a Dockerfile, in place of `cargo new` and the two files written by hand. `--host cloudflare` and `--host vercel` write a project for those hosts, which [Choosing a host](learn/deploying/) compares.",
+                ja: "このコマンドでプロジェクトを作ることもできます。`cargo hypersig new counter --host server` は、上と同じようなカウンターと Dockerfile を入れたディレクトリ `counter` を書き出すので、`cargo new` と、手で書いた 2 つのファイルの代わりになります。`--host cloudflare` と `--host vercel` はそれぞれのホスト向けのプロジェクトを書き出します。ホストの違いは [デプロイ先の選び方](learn/deploying/) で比べています。",
             },
         ),
         heading(
