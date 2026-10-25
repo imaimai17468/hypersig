@@ -11,7 +11,7 @@ struct Post {
 #[derive(Signals, Serialize, Deserialize)]
 struct Feed {
     posts: Vec<Post>,
-    // The page the next load asks for. The first page is 0 and is in the HTML.
+    // The page the next load asks for: 1 at first, because page 0 is in the HTML.
     page: i32,
     loading: bool,
     more: bool,
