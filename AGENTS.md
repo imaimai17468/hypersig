@@ -54,6 +54,7 @@ Report a step you could not run as "not run", never as "passed".
 
 - `.claude/rules/rust.md` covers every `.rs` file. It is the short list of guidelines this codebase leans on.
 - `.claude/skills/rust-guidelines/` holds the full Pragmatic Rust Guidelines. Invoke the skill where a decision is not covered by the rule file: a new public type, an error type, a new crate, an `unsafe` block.
+- The `beautiful-rust` plugin, enabled in `.claude/settings.json`, loads its `rust-best-practices` skill on every Rust task. It is general advice written for any Rust project, so `.claude/rules/rust.md` and this file win where they disagree. Three disagreements are known: the skill allows `unsafe` for three reasons, where this workspace forbids it; it puts serde impls behind a `serde` feature, where `serde`'s traits sit in the public API unconditionally (M-DONT-LEAK-TYPES); and its checklist accepts a public `&str` parameter, where a public function that takes `&str` for a signal path, an element id, or an expression breaks this project's thesis (M-STRONG-TYPES). Its verification commands are also replaced by the list under Verification before completion.
 - `.claude/rules/prose.md` covers every text a person reads.
 - `.claude/skills/japanese-prose/` holds the polite Japanese register and the rules that keep `README.md` and `README.ja.md` one document. Invoke it before writing Japanese prose that a person reads.
 
