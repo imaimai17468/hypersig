@@ -67,8 +67,8 @@ hypersig_i18n = "0.4""#,
         para(
             site,
             L {
-                en: "A text is a struct literal, and Rust requires a literal to give every field, so a text without its Japanese fails to compile. A language added to the enum also fails to compile in two places until it is handled. One is the `match` in `pick`, and the other is the struct, because every text has to give the field added to it.",
-                ja: "文は構造体のリテラルで、Rust はリテラルにすべてのフィールドを書くよう求めます。そのため、日本語の訳がない文はコンパイルエラーになります。enum に言語を追加したときも、その言語への対応を書くまで 2 か所がコンパイルエラーになります。1 つは `pick` の `match` で、もう 1 つは構造体です。構造体に追加したフィールドは、すべての文で書く必要があります。",
+                en: "A text is a struct literal, and Rust requires a literal to give every field, so a text without its Japanese fails to compile. A language added to the enum also fails to compile in two places until it is handled. One is the `match` in `pick`, and the other is the struct, because every text has to give the field added to it. The sample below uses the `Lang` and `ByLang` of [Declare the languages](i18n/overview/#declare-the-languages).",
+                ja: "文は構造体のリテラルで、Rust はリテラルにすべてのフィールドを書くよう求めます。そのため、日本語の訳がない文はコンパイルエラーになります。enum に言語を追加したときも、その言語への対応を書くまで 2 か所がコンパイルエラーになります。1 つは `pick` の `match` で、もう 1 つは構造体です。構造体に追加したフィールドは、すべての文で書く必要があります。下のサンプルは [言語を宣言する](i18n/overview/#declare-the-languages) の `Lang` と `ByLang` を使います。",
             },
         ),
         show(Snippet::I18nMissing),
