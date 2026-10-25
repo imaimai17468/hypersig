@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use axum::Router;
 use hypersig::html::{
-    El, Event, Key, Stylesheet, button, div, each, each_keyed, form, h1, h2, input, label, li, p,
-    section, select, small, span, textarea, ul,
+    El, Event, Key, Stylesheet, attr, button, div, each, each_keyed, form, h1, h2, input, label,
+    li, p, section, select, small, span, textarea, ul,
 };
 use hypersig::{
     Action, DateFormat, DateStyle, DialogRef, Expr, Fragment, IntlLocale, NodeRef, Page, Patches,
@@ -155,7 +155,7 @@ fn disclosure<S>(state: Sig<S, Disclosure>, title: &str, body: &str) -> El<S> {
         .child(
             button()
                 .class(class::DISCLOSURE_TITLE)
-                .bind_attr("aria-expanded", if_else(open, "true", "false"))
+                .bind_attr(attr::ARIA_EXPANDED, if_else(open, "true", "false"))
                 .on_click(open.toggle())
                 .text(title),
         )
@@ -169,16 +169,16 @@ fn stepper<S>(name: &str, value: Sig<S, i32>, min: i32, max: i32) -> El<S> {
         .child(span().class(class::NAME).text(name))
         .child(
             button()
-                .attr("aria-label", "fewer")
-                .attr_when("disabled", value.le(min))
+                .attr(attr::ARIA_LABEL, "fewer")
+                .attr_when(attr::DISABLED, value.le(min))
                 .on_click(value.set(value - 1))
                 .text("−"),
         )
         .child(span().class(class::VALUE).bind_text(value.to_text()))
         .child(
             button()
-                .attr("aria-label", "more")
-                .attr_when("disabled", value.ge(max))
+                .attr(attr::ARIA_LABEL, "more")
+                .attr_when(attr::DISABLED, value.ge(max))
                 .on_click(value.set(value + 1))
                 .text("+"),
         )
@@ -242,7 +242,7 @@ fn stopwatch() -> El<Showcase> {
         .child(
             button()
                 .class(class::RESET)
-                .attr_when("disabled", running)
+                .attr_when(attr::DISABLED, running)
                 .on_click(elapsed.set(0.0))
                 .text("Reset"),
         )
@@ -344,7 +344,7 @@ fn search(find: &Find) -> El<Showcase> {
                 .child(
                     input()
                         .node_ref(SEARCH_FIELD)
-                        .attr("placeholder", "Search fruit")
+                        .attr(attr::PLACEHOLDER, "Search fruit")
                         .bind(query)
                         .on_debounced(
                             Event::Input,
@@ -392,10 +392,10 @@ fn palette() -> El<Showcase> {
         .child(
             PALETTE
                 .dialog()
-                .attr("aria-label", "Commands")
+                .attr(attr::ARIA_LABEL, "Commands")
                 .child(
                     input()
-                        .attr("placeholder", "Type a command")
+                        .attr(attr::PLACEHOLDER, "Type a command")
                         .bind(Showcase::command()),
                 )
                 .child(
@@ -436,8 +436,8 @@ fn order_form() -> El<Showcase> {
                     label().text("Quantity ").child(
                         input()
                             .class(class::QUANTITY)
-                            .attr("type", "number")
-                            .attr("min", "0")
+                            .attr(attr::TYPE, "number")
+                            .attr(attr::MIN, "0")
                             .bind(quantity),
                     ),
                 )
@@ -453,7 +453,7 @@ fn order_form() -> El<Showcase> {
                         .child(
                             input()
                                 .class(class::GIFT)
-                                .attr("type", "checkbox")
+                                .attr(attr::TYPE, "checkbox")
                                 .bind(order.at(Order::gift())),
                         )
                         .text(" Gift wrap"),
@@ -461,7 +461,7 @@ fn order_form() -> El<Showcase> {
                 .child(
                     textarea()
                         .class(class::NOTE)
-                        .attr("placeholder", "Note")
+                        .attr(attr::PLACEHOLDER, "Note")
                         .bind(note),
                 )
                 .child(
@@ -481,7 +481,7 @@ fn order_form() -> El<Showcase> {
                 .child(
                     button()
                         .class(class::PLACE)
-                        .attr_when("disabled", invalid.or(placing))
+                        .attr_when(attr::DISABLED, invalid.or(placing))
                         .bind_text(if_else(placing, "Placing…", "Place order")),
                 ),
         )
@@ -562,7 +562,7 @@ fn feed() -> El<Showcase> {
                 .child(
                     button()
                         .class(class::OLDER)
-                        .attr_when("disabled", oldest.le(1))
+                        .attr_when(attr::DISABLED, oldest.le(1))
                         .on_click(OLDER.call_with(oldest))
                         .text("Load older"),
                 )

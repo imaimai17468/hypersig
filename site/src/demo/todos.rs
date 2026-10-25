@@ -1,6 +1,6 @@
 //! A to-do list kept in the browser, for the page on lists.
 
-use hypersig::html::{div, each_keyed, form, input, label, li, p, span, ul};
+use hypersig::html::{div, each_keyed, form, input, label, li, p, span, ul, attr};
 use hypersig::style::Style;
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{AlignItems, Display, JustifyContent, rem};
@@ -107,7 +107,7 @@ pub fn page(site: Site) -> Page<Todos> {
                         .child(
                             label()
                                 .css(hstack(rem(0.5)))
-                                .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
+                                .child(input().attr(attr::TYPE, "checkbox").bind(todo.at(Todo::done())))
                                 .child(span().bind_text(todo.at(Todo::title()))),
                         )
                         .child(

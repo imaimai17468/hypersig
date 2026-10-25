@@ -3,7 +3,9 @@
 
 use std::fmt;
 
-use hypersig::html::{El, Node, div, each, el, li, span, table, tbody, td, th, thead, tr, ul};
+use hypersig::html::{
+    El, Node, attr, div, each, el, li, span, table, tbody, td, th, thead, tr, ul,
+};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Display, FlexDirection, FlexWrap, FontVariantNumeric,
     FontWeight, JustifyContent, Opacity, Overflow, PointerEvents, Position, TextAlign, WhiteSpace,
@@ -235,10 +237,10 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         let count = self.rows.len().to_f64();
         let band = Expr::lit(&100.0) / count;
         let plot = el("svg")
-            .attr("viewBox", "0 0 100 100")
-            .attr("preserveAspectRatio", "none")
-            .attr("width", "100%")
-            .attr("height", "100%")
+            .attr(attr::VIEW_BOX, "0 0 100 100")
+            .attr(attr::PRESERVE_ASPECT_RATIO, "none")
+            .attr(attr::WIDTH, "100%")
+            .attr(attr::HEIGHT, "100%")
             .css(
                 Style::new()
                     .display(Display::Block)
@@ -247,14 +249,14 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             .children((0..TICKS).map(|tick| {
                 let at = self.tick(tick, |value, lo, hi| self.place(value, lo, hi).to_fixed(3));
                 let (along, across) = if self.horizontal() {
-                    (["y1", "y2"], ["x1", "x2"])
+                    ([attr::Y1, attr::Y2], [attr::X1, attr::X2])
                 } else {
-                    (["x1", "x2"], ["y1", "y2"])
+                    ([attr::X1, attr::X2], [attr::Y1, attr::Y2])
                 };
                 el("line")
                     .attr(along[0], "0")
                     .attr(along[1], "100")
-                    .attr("vector-effect", "non-scaling-stroke")
+                    .attr(attr::VECTOR_EFFECT, "non-scaling-stroke")
                     .css(
                         Style::new()
                             .stroke(token::border().var())
@@ -266,7 +268,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             }))
             .children(self.marks(&band));
         let visual = div()
-            .attr("aria-hidden", "true")
+            .attr(attr::ARIA_HIDDEN, "true")
             .css(
                 Style::new()
                     .display(Display::Grid)
@@ -296,7 +298,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                 self.category_labels(band)
             });
         el("figure")
-            .attr("aria-label", self.label.clone())
+            .attr(attr::ARIA_LABEL, self.label.clone())
             .css(
                 Style::new()
                     .display(Display::Flex)
@@ -476,9 +478,9 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             a.clone().max(b.clone()) - a.min(b)
         });
         let ([value_at, value_size], [band_at, band_size]) = if self.horizontal() {
-            (["x", "width"], ["y", "height"])
+            ([attr::X, attr::WIDTH], [attr::Y, attr::HEIGHT])
         } else {
-            (["y", "height"], ["x", "width"])
+            ([attr::Y, attr::HEIGHT], [attr::X, attr::WIDTH])
         };
         el("rect")
             .css(Style::new().fill(color.var()))
@@ -501,13 +503,13 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         let y1 = self.scaled(|lo, hi, _| y_of(value, lo, hi).to_fixed(3));
         let y2 = self.scaled(|lo, hi, _| y_of(next, lo, hi).to_fixed(3));
         let line = el("line")
-            .attr("vector-effect", "non-scaling-stroke")
-            .attr("stroke-linecap", "round")
+            .attr(attr::VECTOR_EFFECT, "non-scaling-stroke")
+            .attr(attr::STROKE_LINECAP, "round")
             .css(Style::new().stroke(color.var()).stroke_width(px(2)))
-            .bind_attr("x1", x1.clone().to_fixed(3))
-            .bind_attr("x2", x2.clone().to_fixed(3))
-            .bind_attr("y1", y1.clone())
-            .bind_attr("y2", y2.clone());
+            .bind_attr(attr::X1, x1.clone().to_fixed(3))
+            .bind_attr(attr::X2, x2.clone().to_fixed(3))
+            .bind_attr(attr::Y1, y1.clone())
+            .bind_attr(attr::Y2, y2.clone());
         if self.kind != Kind::Area {
             return el("g").child(line);
         }
@@ -524,7 +526,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             .child(
                 el("polygon")
                     .css(Style::new().fill(color.var()).fill_opacity(0.25))
-                    .bind_attr("points", points),
+                    .bind_attr(attr::POINTS, points),
             )
             .child(line)
     }
@@ -691,7 +693,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
 
     /// A swatch and the name of each series.
     fn legend(&self) -> El<S> {
-        ul().attr("aria-hidden", "true")
+        ul().attr(attr::ARIA_HIDDEN, "true")
             .css(
                 Style::new()
                     .display(Display::Flex)
@@ -717,9 +719,9 @@ impl<S: 'static, T: 'static> Chart<S, T> {
 
     /// The rows as a table that only a screen reader reads.
     fn data_table(&self) -> El<S> {
-        let mut head = tr().child(th().attr("scope", "col"));
+        let mut head = tr().child(th().attr(attr::SCOPE, "col"));
         for series in &self.series {
-            head = head.child(th().attr("scope", "col").text(series.name.clone()));
+            head = head.child(th().attr(attr::SCOPE, "col").text(series.name.clone()));
         }
         let category = self.category;
         let series = &self.series;
@@ -728,7 +730,8 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             .child(el("caption").text(self.label.clone()))
             .child(thead().child(head))
             .child(tbody().child(each(self.rows, |row| {
-                let mut line = tr().child(th().attr("scope", "row").bind_text(row.at(category)));
+                let mut line =
+                    tr().child(th().attr(attr::SCOPE, "row").bind_text(row.at(category)));
                 for series in series {
                     line = line.child(td().bind_text((series.text)(row, self.format.as_ref())));
                 }

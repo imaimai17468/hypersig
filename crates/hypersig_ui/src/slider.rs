@@ -1,6 +1,6 @@
 //! Sliders: a labeled native range input drawn as a track and a thumb.
 
-use hypersig::html::{El, div, input, label, span};
+use hypersig::html::{El, attr, div, input, label, span};
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     AlignItems, BorderRadius, BorderStyle, Cursor, Display, JustifyContent, Opacity, PointerEvents,
@@ -125,15 +125,15 @@ impl<S> Slider<S> {
             .unwrap_or_else(|| self.value.to_text());
 
         let mut control = input()
-            .attr("type", "range")
+            .attr(attr::TYPE, "range")
             .id(id.clone())
-            .attr("min", self.min.to_string())
-            .attr("max", self.max.to_string())
-            .attr("step", self.step.to_string())
+            .attr(attr::MIN, self.min.to_string())
+            .attr(attr::MAX, self.max.to_string())
+            .attr(attr::STEP, self.step.to_string())
             .bind(self.value)
             .css(input_style());
         if let Some(text) = self.value_text {
-            control = control.bind_attr("aria-valuetext", text);
+            control = control.bind_attr(attr::ARIA_VALUETEXT, text);
         }
         let mut out = div().css(stack(rem(0.75)));
         if let Some(when) = self.disabled {
@@ -151,10 +151,15 @@ impl<S> Slider<S> {
                         .align_items(AlignItems::Center)
                         .justify_content(JustifyContent::SpaceBetween),
                 )
-                .child(label().attr("for", id).css(label_style()).text(self.label))
+                .child(
+                    label()
+                        .attr(attr::FOR, id)
+                        .css(label_style())
+                        .text(self.label),
+                )
                 .child(
                     span()
-                        .attr("aria-hidden", "true")
+                        .attr(attr::ARIA_HIDDEN, "true")
                         .css(look::small_text().color(token::muted_foreground().var()))
                         .bind_text(shown),
                 ),

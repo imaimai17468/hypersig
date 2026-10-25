@@ -3,7 +3,7 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
-use hypersig::html::{El, div, each_keyed, li, ol, p, section};
+use hypersig::html::{El, attr, div, each_keyed, li, ol, p, section};
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     AlignItems, BorderStyle, Display, FontWeight, Position, ZIndex, pct, px, raw, rem,
@@ -210,10 +210,10 @@ impl<S> Toaster<S> {
     pub fn render(self) -> El<S> {
         let dismiss_after = self.dismiss_after;
         section()
-            .attr("aria-label", self.label)
+            .attr(attr::ARIA_LABEL, self.label)
             .css(region_style())
             .child(
-                ol().attr("aria-live", "polite")
+                ol().attr(attr::ARIA_LIVE, "polite")
                     .css(stack(rem(0.5)))
                     .child(each_keyed(
                         self.toasts,
@@ -222,7 +222,7 @@ impl<S> Toaster<S> {
                             let tone = toast.at(Toast::tone());
                             let body = toast.at(Toast::body());
                             let mut item = li()
-                                .attr("aria-atomic", "true")
+                                .attr(attr::ARIA_ATOMIC, "true")
                                 .css(toast_style())
                                 .child(
                                     div()

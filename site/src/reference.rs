@@ -918,6 +918,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Attr",
+                            "html/struct.Attr.html",
+                            L {
+                                en: "The name of an attribute that `El::attr`, `El::bind_attr`, and `El::attr_when` write.",
+                                ja: "`El::attr`、`El::bind_attr`、`El::attr_when` が書く属性の名前",
+                            },
+                        ),
+                        (
+                            "attr!",
+                            "macro.attr.html",
+                            L {
+                                en: "Builds an `Attr` for a name with no constant in `html::attr`.",
+                                ja: "`html::attr` に定数のない名前の `Attr` を作ります。",
+                            },
+                        ),
+                        (
                             "Event",
                             "html/enum.Event.html",
                             L {

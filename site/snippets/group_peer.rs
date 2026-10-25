@@ -1,4 +1,4 @@
-use hypersig::html::{a, div, input, label, span};
+use hypersig::html::{a, div, input, label, span, attr};
 use hypersig::style::value::{Color, Opacity};
 use hypersig::style::{Condition, PseudoClass, Style};
 use hypersig::{SafeUrl, Signals};
@@ -26,7 +26,7 @@ let card = a::<Settings>()
 
 // The text turns green while the checkbox before it is checked.
 let agree = label::<Settings>()
-    .child(input().attr("type", "checkbox").css(Style::new().peer()).bind(Settings::agreed()))
+    .child(input().attr(attr::TYPE, "checkbox").css(Style::new().peer()).bind(Settings::agreed()))
     .child(
         span()
             .css(Style::new().on(Condition::Peer(PseudoClass::Checked), Style::new().color(Color::GREEN)))

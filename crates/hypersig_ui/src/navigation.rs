@@ -1,7 +1,7 @@
 //! Navigation between pages: a breadcrumb trail, a list of the sections of
 //! an application, and the links between the pages of a long list.
 
-use hypersig::html::{El, a, li, nav, ol, span, ul};
+use hypersig::html::{El, a, attr, li, nav, ol, span, ul};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{AlignItems, FlexWrap, JustifyContent, pct, rem};
 use hypersig::style::{PseudoClass, Style};
@@ -71,8 +71,8 @@ impl<S> Breadcrumb<S> {
     #[must_use]
     pub fn current(self, text: impl Into<String>) -> El<S> {
         let separator = || {
-            li().attr("role", "presentation")
-                .attr("aria-hidden", "true")
+            li().attr(attr::ROLE, "presentation")
+                .attr(attr::ARIA_HIDDEN, "true")
                 .css(Style::new().display(hypersig::style::value::Display::InlineFlex))
                 .child(icon(look::icon::CHEVRON_RIGHT, rem(0.875)))
         };
@@ -104,12 +104,12 @@ impl<S> Breadcrumb<S> {
         list = list.child(
             li().child(
                 span()
-                    .attr("aria-current", "page")
+                    .attr(attr::ARIA_CURRENT, "page")
                     .css(Style::new().color(token::foreground().var()))
                     .text(text),
             ),
         );
-        nav().attr("aria-label", self.label).child(list)
+        nav().attr(attr::ARIA_LABEL, self.label).child(list)
     }
 }
 
@@ -216,12 +216,12 @@ impl<S> NavList<S> {
             }
             let mut item = a().href(link).css(style).text(text);
             if let Some(mark) = mark {
-                item = item.attr("aria-current", mark);
+                item = item.attr(attr::ARIA_CURRENT, mark);
             }
             li().child(item)
         });
         nav()
-            .attr("aria-label", self.label)
+            .attr(attr::ARIA_LABEL, self.label)
             .child(ul().css(stack(rem(0.25))).children(items))
     }
 }
@@ -334,8 +334,8 @@ pub fn pagination<S>(
         let style =
             button_style(ButtonVariant::Ghost, ButtonSize::Default).padding_inline(rem(0.625));
         let el = match target {
-            Some(page) => a().href(link(page)).attr("rel", rel).css(style),
-            None => span().attr("aria-disabled", "true").css(
+            Some(page) => a().href(link(page)).attr(attr::REL, rel).css(style),
+            None => span().attr(attr::ARIA_DISABLED, "true").css(
                 style
                     .opacity(hypersig::style::value::Opacity::Number(0.5))
                     .cursor(hypersig::style::value::Cursor::NotAllowed),
@@ -371,7 +371,7 @@ pub fn pagination<S>(
         }
         if page > shown + 1 {
             list = list.child(
-                li().attr("aria-hidden", "true")
+                li().attr(attr::ARIA_HIDDEN, "true")
                     .css(
                         Style::new()
                             .width(rem(2.25))
@@ -384,7 +384,7 @@ pub fn pagination<S>(
         let mut item = a().href(link(page));
         if page == current {
             item = item
-                .attr("aria-current", "page")
+                .attr(attr::ARIA_CURRENT, "page")
                 .css(square(ButtonVariant::Outline));
         } else {
             item = item.css(square(ButtonVariant::Ghost));
@@ -398,7 +398,7 @@ pub fn pagination<S>(
         false,
     ));
     nav()
-        .attr("aria-label", text.label.clone())
+        .attr(attr::ARIA_LABEL, text.label.clone())
         .css(
             Style::new()
                 .display(hypersig::style::value::Display::Flex)

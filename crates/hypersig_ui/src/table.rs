@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Node, button, div, each_keyed, input, p, span, table, tbody, td, th, thead, tr,
+    El, Event, Node, attr, button, div, each_keyed, input, p, span, table, tbody, td, th, thead, tr,
 };
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
@@ -998,7 +998,7 @@ fn header_row<S: 'static, T: 'static>(
     let mut head = tr().children(lead);
     let mut cells = Vec::with_capacity(columns.len());
     for Entry { column, sort } in columns {
-        let heading = th().attr("scope", "col").css(head_cell(column.numeric));
+        let heading = th().attr(attr::SCOPE, "col").css(head_cell(column.numeric));
         let mut heading = match sort {
             Some(sort) => sort_header(heading, column.header, column.numeric, sort, state),
             None => heading.text(column.header),
@@ -1055,7 +1055,7 @@ fn frame<S>(
         );
     }
     let table = table()
-        .attr("aria-label", label)
+        .attr(attr::ARIA_LABEL, label)
         .css(table_style())
         .child(header.child(head));
     border.child(if grouped {
@@ -1068,7 +1068,7 @@ fn frame<S>(
 /// The row that spans `width` columns and says `text` while `when` is true.
 fn empty_row<S>(when: Expr<S, bool>, width: usize, text: String) -> El<S> {
     tr().show(when).child(
-        td().attr("colspan", width.to_string())
+        td().attr(attr::COLSPAN, width.to_string())
             .css(empty_cell())
             .text(text),
     )
@@ -1077,9 +1077,9 @@ fn empty_row<S>(when: Expr<S, bool>, width: usize, text: String) -> El<S> {
 /// The search field named `label` bound to `query`.
 fn filter_field<S>(label: String, query: Sig<S, String>) -> El<S> {
     input()
-        .attr("type", "search")
-        .attr("aria-label", label.clone())
-        .attr("placeholder", label)
+        .attr(attr::TYPE, "search")
+        .attr(attr::ARIA_LABEL, label.clone())
+        .attr(attr::PLACEHOLDER, label)
         .css(field_style().max_width(rem(24)))
         .bind(query)
 }
@@ -1110,7 +1110,7 @@ fn sort_header<S>(
     );
     heading
         .bind_attr(
-            "aria-sort",
+            attr::ARIA_SORT,
             if_else(
                 up.clone(),
                 "ascending",
@@ -1119,7 +1119,7 @@ fn sort_header<S>(
         )
         .child(
             button()
-                .attr("type", "button")
+                .attr(attr::TYPE, "button")
                 .css(sort_button(numeric))
                 .on_click(toggle)
                 .child(span().text(header))
@@ -1222,7 +1222,7 @@ impl<S, T> Body<S, T> {
             line = line.child(
                 td().css(select_cell()).child(
                     icon_button(ButtonVariant::Ghost, self.text.expand_row.clone())
-                        .bind_attr("aria-expanded", if_else(open.clone(), "true", "false"))
+                        .bind_attr(attr::ARIA_EXPANDED, if_else(open.clone(), "true", "false"))
                         .on_click((expansion.keys.toggle)(row))
                         .child(
                             icon(icon::CHEVRON_RIGHT, rem(1))
@@ -1237,7 +1237,7 @@ impl<S, T> Body<S, T> {
             line = line.css_when(selected_row(), checked.clone()).child(
                 td().css(select_cell()).child(check_mark(
                     input()
-                        .attr("aria-label", self.text.select_row.clone())
+                        .attr(attr::ARIA_LABEL, self.text.select_row.clone())
                         .bind_checked(checked)
                         .on_change((selection.keys.toggle)(row)),
                 )),
@@ -1251,7 +1251,7 @@ impl<S, T> Body<S, T> {
             };
         };
         let details = tr().show((expansion.keys.has)(row)).child(
-            td().attr("colspan", self.width().to_string())
+            td().attr(attr::COLSPAN, self.width().to_string())
                 .css(details_cell())
                 .child((expansion.details)(row)),
         );
@@ -1277,7 +1277,7 @@ fn lead_heads<S, T>(
     }
     if let Some(selection) = selection {
         lead.push(
-            th().attr("scope", "col")
+            th().attr(attr::SCOPE, "col")
                 .css(select_cell())
                 .child(select_all(rows, selection, &text.select_all)),
         );
@@ -1293,17 +1293,17 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>, label: &s
     let all = count.clone().equals(rows.len()).and(rows.len().gt(0));
     let some = count.gt(0);
     let mark = span()
-        .attr("aria-hidden", "true")
+        .attr(attr::ARIA_HIDDEN, "true")
         .css(check_box())
         .css_when(check_box_checked(), some.clone())
         .child(icon(icon::CHECK, rem(0.875)).show(all.clone()))
         .child(icon(icon::MINUS, rem(0.875)).show(some.clone().and(!all.clone())));
     button()
-        .attr("type", "button")
-        .attr("role", "checkbox")
-        .attr("aria-label", label)
+        .attr(attr::TYPE, "button")
+        .attr(attr::ROLE, "checkbox")
+        .attr(attr::ARIA_LABEL, label)
         .bind_attr(
-            "aria-checked",
+            attr::ARIA_CHECKED,
             if_else(all.clone(), "true", if_else(some, "mixed", "false")),
         )
         .on_click(Stmt::if_else(
@@ -1357,7 +1357,7 @@ fn pager<S>(
                     .font_variant_numeric(FontVariantNumeric::TabularNums)
                     .merge(look::small_text()),
             )
-            .attr("aria-live", "polite")
+            .attr(attr::ARIA_LIVE, "polite")
             .bind_text(
                 first
                     .to_text()

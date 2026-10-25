@@ -1,7 +1,7 @@
 //! The use cases page: the three kinds of request where hypersig and Next.js
 //! differ in the code a change takes, and the applications that get them.
 
-use hypersig::html::{a, details, div, h3, h4, li, p, span, summary, ul};
+use hypersig::html::{a, attr, details, div, h3, h4, li, p, span, summary, ul};
 use hypersig::style::pattern::{stack, wrap};
 use hypersig::style::value::{
     AlignItems, BorderLeftStyle, BorderStyle, Cursor, Display, FontStyle, FontWeight,
@@ -285,7 +285,7 @@ fn case_card(site: Site, case: &Case) -> Part {
                 )
                 .child(
                     span()
-                        .attr("aria-hidden", "true")
+                        .attr(attr::ARIA_HIDDEN, "true")
                         .css(
                             Style::new()
                                 .font_size(rem(1.25))

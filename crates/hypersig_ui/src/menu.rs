@@ -3,7 +3,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Key, Orientation, button as button_el, div};
+use hypersig::html::{El, Key, Orientation, attr, button as button_el, div};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Cursor, Display, PositionTryFallbacks, TextAlign, px, raw, rem,
 };
@@ -85,9 +85,9 @@ impl<S> Menu<S> {
     pub fn trigger(self, variant: ButtonVariant, size: ButtonSize) -> El<S> {
         button(variant, size)
             .id(self.trigger_id())
-            .attr("aria-haspopup", "menu")
-            .attr("commandfor", self.name)
-            .attr("command", "toggle-popover")
+            .attr(attr::ARIA_HASPOPUP, "menu")
+            .attr(attr::COMMANDFOR, self.name)
+            .attr(attr::COMMAND, "toggle-popover")
             .css(Style::new().anchor_name(raw(self.anchor())))
     }
 
@@ -97,9 +97,9 @@ impl<S> Menu<S> {
         let node_ref = NodeRef::new(self.name);
         div()
             .id(self.name)
-            .attr("popover", "auto")
-            .attr("role", "menu")
-            .attr("aria-labelledby", self.trigger_id())
+            .attr(attr::POPOVER, "auto")
+            .attr(attr::ROLE, "menu")
+            .attr(attr::ARIA_LABELLEDBY, self.trigger_id())
             .node_ref(node_ref)
             .roving_focus(Orientation::Vertical)
             // Tab and Shift+Tab both leave the menu, which closes it.
@@ -108,9 +108,9 @@ impl<S> Menu<S> {
             .css(menu_style(self.anchor()))
             .children(items.into_iter().enumerate().map(|(index, item)| {
                 let mut action = button_el()
-                    .attr("type", "button")
-                    .attr("role", "menuitem")
-                    .attr("tabindex", "-1")
+                    .attr(attr::TYPE, "button")
+                    .attr(attr::ROLE, "menuitem")
+                    .attr(attr::TABINDEX, "-1")
                     .css(item_style(item.destructive))
                     // The menu closes from the statement rather than from a
                     // `command`, because a statement that disables this item
@@ -120,7 +120,7 @@ impl<S> Menu<S> {
                 // The browser focuses an element with `autofocus` inside a
                 // popover as the popover opens.
                 if index == 0 {
-                    action = action.attr("autofocus", "");
+                    action = action.attr(attr::AUTOFOCUS, "");
                 }
                 if let Some(disabled) = item.disabled {
                     action = action.disabled(disabled);

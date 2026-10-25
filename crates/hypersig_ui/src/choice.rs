@@ -5,7 +5,7 @@
 //! keyboard handling, and its place in a form, and the drawn box follows its
 //! state through `Style::peer`.
 
-use hypersig::html::{El, div, fieldset, input, label, legend, span};
+use hypersig::html::{El, attr, div, fieldset, input, label, legend, span};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{
     Appearance, BorderStyle, Color, Cursor, Display, Opacity, Position, TextAlign, px, rem,
@@ -154,12 +154,12 @@ pub(crate) fn check_control<S, R>(input: El<S>, checked: Sig<S, bool, R>) -> El<
 /// state its caller binds.
 pub(crate) fn check_mark<S>(input: El<S>) -> El<S> {
     let mark = span()
-        .attr("aria-hidden", "true")
+        .attr(attr::ARIA_HIDDEN, "true")
         .css(check_box().on(Condition::Peer(PseudoClass::Checked), check_box_checked()))
         .child(icon(icon::CHECK, rem(0.875)));
     span()
         .css(holder(rem(1)))
-        .child(input.attr("type", "checkbox").css(hidden_input()))
+        .child(input.attr(attr::TYPE, "checkbox").css(hidden_input()))
         .child(mark)
 }
 
@@ -259,7 +259,7 @@ pub fn switch_in_form<S, T: Validate>(
 /// A switch labeled `text` with `input` as its checkbox, bound to `on`.
 fn switch_with<S, R>(text: String, on: Sig<S, bool, R>, input: El<S>) -> El<S> {
     let (wrapper, text) = row(text);
-    let track = span().attr("aria-hidden", "true").css(
+    let track = span().attr(attr::ARIA_HIDDEN, "true").css(
         Style::new()
             .display(Display::Block)
             .width(rem(2))
@@ -277,7 +277,7 @@ fn switch_with<S, R>(text: String, on: Sig<S, bool, R>, input: El<S>) -> El<S> {
             .merge(look::peer_focus_ring())
             .merge(peer_disabled()),
     );
-    let thumb = span().attr("aria-hidden", "true").css(
+    let thumb = span().attr(attr::ARIA_HIDDEN, "true").css(
         Style::new()
             .position(Position::Absolute)
             .top(rem(0.15))
@@ -303,8 +303,8 @@ fn switch_with<S, R>(text: String, on: Sig<S, bool, R>, input: El<S>) -> El<S> {
                 )
                 .child(
                     input
-                        .attr("type", "checkbox")
-                        .attr("role", "switch")
+                        .attr(attr::TYPE, "checkbox")
+                        .attr(attr::ROLE, "switch")
                         .css(hidden_input())
                         .bind(on),
                 )
@@ -423,7 +423,7 @@ fn radio_with<S, T: Serialize + PartialEq, L: Into<String>>(
     let name = crate::id::of(selected, "radio");
     let radio = |value: T, text: L| {
         let (wrapper, text) = row(text.into());
-        let dot = span().attr("aria-hidden", "true").css(
+        let dot = span().attr(attr::ARIA_HIDDEN, "true").css(
             Style::new()
                 .display(Display::Block)
                 .width(rem(1))
@@ -448,7 +448,7 @@ fn radio_with<S, T: Serialize + PartialEq, L: Into<String>>(
                     .css(holder(rem(1)))
                     .child(
                         input()
-                            .attr("name", name.clone())
+                            .attr(attr::NAME, name.clone())
                             .css(hidden_input())
                             .bind_radio(selected, &value),
                     )
@@ -469,8 +469,8 @@ fn radio_with<S, T: Serialize + PartialEq, L: Into<String>>(
         let legend_id = crate::id::of(selected, "legend");
         caption = caption.id(legend_id.clone());
         group = feedback
-            .describe(group.attr("role", "radiogroup"))
-            .attr("aria-labelledby", legend_id)
+            .describe(group.attr(attr::ROLE, "radiogroup"))
+            .attr(attr::ARIA_LABELLEDBY, legend_id)
             .on_blur(feedback.touch());
     }
     group

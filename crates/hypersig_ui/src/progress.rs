@@ -1,6 +1,6 @@
 //! Progress bars and loading placeholders.
 
-use hypersig::html::{El, div};
+use hypersig::html::{El, attr, div};
 use hypersig::style::value::{
     AnimationIterationCount, BorderRadius, Opacity, Overflow, ms, pct, px, rem,
 };
@@ -33,11 +33,11 @@ use crate::token;
 pub fn progress<S>(label: impl Into<String>, percent: impl IntoExpr<S, i32>) -> El<S> {
     let percent: Expr<S, i32> = percent.into_expr().max(0).min(100);
     div()
-        .attr("role", "progressbar")
-        .attr("aria-label", label)
-        .attr("aria-valuemin", "0")
-        .attr("aria-valuemax", "100")
-        .bind_attr("aria-valuenow", percent.clone().to_text())
+        .attr(attr::ROLE, "progressbar")
+        .attr(attr::ARIA_LABEL, label)
+        .attr(attr::ARIA_VALUEMIN, "0")
+        .attr(attr::ARIA_VALUEMAX, "100")
+        .bind_attr(attr::ARIA_VALUENOW, percent.clone().to_text())
         .css(
             Style::new()
                 .position(hypersig::style::value::Position::Relative)
@@ -82,7 +82,7 @@ pub fn progress<S>(label: impl Into<String>, percent: impl IntoExpr<S, i32>) -> 
 #[must_use]
 pub fn skeleton<S>() -> El<S> {
     let pulse = Keyframes::new("hs-ui-pulse").at(50, Style::new().opacity(Opacity::Number(0.5)));
-    div().attr("aria-hidden", "true").css(
+    div().attr(attr::ARIA_HIDDEN, "true").css(
         Style::new()
             .border_radius(px(6))
             .background_color(token::accent().var())

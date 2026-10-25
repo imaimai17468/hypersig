@@ -965,7 +965,7 @@ mod tests {
         )
         .child(p().bind_style(Property::Width, Search::query()))
         .child(
-            p().attr("style", "color: red")
+            p().attr(crate::html::attr::STYLE, "color: red")
                 .bind_style(Property::Height, Search::query())
                 .bind_token(&Token::new("ink", Color::RED), "blue".to_owned()),
         )

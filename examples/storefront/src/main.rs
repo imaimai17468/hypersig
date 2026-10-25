@@ -21,8 +21,8 @@ use std::time::Duration;
 use axum::Router;
 use axum::http::StatusCode;
 use hypersig::html::{
-    El, Stylesheet, a, button, div, each, footer, form, h1, h2, input, label, li, nav, p, part,
-    span, ul,
+    El, Stylesheet, a, attr, button, div, each, footer, form, h1, h2, input, label, li, nav, p,
+    part, span, ul,
 };
 use hypersig::{Action, Expr, Fragment, Page, Part, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
@@ -94,23 +94,23 @@ impl Fragment for Body {
                                 .indicator(joining)
                                 .error(Newsletter::problem()),
                         )
-                        .child(label().attr("for", "newsletter-email").text("Email"))
+                        .child(label().attr(attr::FOR, "newsletter-email").text("Email"))
                         .child(
                             input()
                                 .id("newsletter-email")
-                                .attr("type", "email")
+                                .attr(attr::TYPE, "email")
                                 .bind(email),
                         )
                         .child(
                             button()
-                                .attr("type", "submit")
-                                .attr_when("disabled", joining)
+                                .attr(attr::TYPE, "submit")
+                                .attr_when(attr::DISABLED, joining)
                                 .text("Join"),
                         ),
                 )
                 .child(
                     p().class(class::PROBLEM)
-                        .attr("role", "alert")
+                        .attr(attr::ROLE, "alert")
                         .bind_text(Newsletter::problem()),
                 ),
             // The address comes from the signal the handler patched, which
@@ -298,9 +298,9 @@ fn wish_form() -> El<Home> {
     });
     form()
         .on_submit(hypersig::Stmt::when(!draft.trim().is_empty(), add))
-        .child(label().attr("for", "wish").text("Wish"))
+        .child(label().attr(attr::FOR, "wish").text("Wish"))
         .child(input().id("wish").bind(draft))
-        .child(button().attr("type", "submit").text("Add"))
+        .child(button().attr(attr::TYPE, "submit").text("Add"))
 }
 
 async fn wish(state: AppState, name: String) -> Result<Patches<Home>, (StatusCode, String)> {

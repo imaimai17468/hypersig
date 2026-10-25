@@ -1,6 +1,6 @@
 //! A dialog, a sheet, and an alert dialog, for the dialog page.
 
-use hypersig::html::{div, p};
+use hypersig::html::{div, p, attr};
 use hypersig::style::pattern::{stack, wrap};
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
@@ -65,7 +65,7 @@ pub fn page(site: Site) -> Page<Project> {
                             })),
                     ),
             )
-            .child(p().attr("role", "status").bind_text(status))
+            .child(p().attr(attr::ROLE, "status").bind_text(status))
             .child(
                 RENAME.dialog(
                     site.t(L {

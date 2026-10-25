@@ -7,7 +7,7 @@
 use std::sync::{Arc, Mutex};
 
 use axum::Router;
-use hypersig::html::{El, div, h1, p, span};
+use hypersig::html::{El, attr, div, h1, p, span};
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::rem;
@@ -171,7 +171,7 @@ fn signup() -> El<Join> {
                     .css(hstack(rem(0.75)))
                     .child(
                         submit_button(ButtonVariant::Default, ButtonSize::Default)
-                            .attr_when("disabled", saving)
+                            .attr_when(attr::DISABLED, saving)
                             .bind_text(if_else(saving, "Creating…", "Create account")),
                     )
                     .child(
@@ -190,7 +190,7 @@ fn signup() -> El<Join> {
             )
             .child(
                 p().id("welcome")
-                    .attr("role", "status")
+                    .attr(attr::ROLE, "status")
                     .css(muted.padding_inline(rem(1.5)))
                     .bind_text(Join::welcome()),
             ),

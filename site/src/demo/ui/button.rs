@@ -1,6 +1,6 @@
 //! The button variants and sizes, for the button page.
 
-use hypersig::html::{div, p, span};
+use hypersig::html::{div, p, span, attr};
 use hypersig::style::pattern::{stack, wrap};
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
@@ -60,7 +60,7 @@ pub fn page(site: Site) -> Page<Buttons> {
                     )
                     .child(
                         button(ButtonVariant::Outline, ButtonSize::Default)
-                            .attr("disabled", "")
+                            .attr(attr::DISABLED, "")
                             .text(site.t(L {
                                 en: "Disabled",
                                 ja: "無効",

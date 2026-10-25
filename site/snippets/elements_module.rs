@@ -10,20 +10,22 @@ pub fn sl_rating<S>() -> El<S> {
 pub mod sl_rating {
     /// The attributes of `<sl-rating>`.
     pub mod attr {
+        use hypersig::html::Attr;
+
         /// `label`, of type `string`.
-        pub const LABEL: &str = "label";
+        pub const LABEL: Attr = hypersig::attr!("label");
         /// `value`, of type `number`.
-        pub const VALUE: &str = "value";
+        pub const VALUE: Attr = hypersig::attr!("value");
         /// `max`, of type `number`.
-        pub const MAX: &str = "max";
+        pub const MAX: Attr = hypersig::attr!("max");
         /// `precision`, of type `number`.
-        pub const PRECISION: &str = "precision";
+        pub const PRECISION: Attr = hypersig::attr!("precision");
         /// `readonly`, of type `boolean`. Set it with `El::attr_when`.
-        pub const READONLY: &str = "readonly";
+        pub const READONLY: Attr = hypersig::attr!("readonly");
         /// `disabled`, of type `boolean`. Set it with `El::attr_when`.
-        pub const DISABLED: &str = "disabled";
+        pub const DISABLED: Attr = hypersig::attr!("disabled");
         /// `getSymbol`, of type `(value: number) => string`.
-        pub const GET_SYMBOL: &str = "getSymbol";
+        pub const GET_SYMBOL: Attr = hypersig::attr!("getSymbol");
     }
 
     /// The events `<sl-rating>` dispatches.

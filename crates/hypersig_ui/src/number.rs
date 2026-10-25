@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use hypersig::html::{Bindable, El, input};
+use hypersig::html::{Bindable, El, attr, input};
 use hypersig::style::value::rem;
 use hypersig::{Form, IntoExpr, Sig, Validate};
 
@@ -209,21 +209,21 @@ impl<S, T: Numeric> NumberField<S, T> {
     #[must_use]
     pub fn render(self) -> El<S> {
         let mut control = input()
-            .attr("type", "number")
+            .attr(attr::TYPE, "number")
             .css(field_style().height(rem(2.25)))
             .bind(self.value);
         if self.min.is_some_and(|min| min >= T::ZERO) {
-            control = control.attr("inputmode", T::NON_NEGATIVE_MODE);
+            control = control.attr(attr::INPUTMODE, T::NON_NEGATIVE_MODE);
         }
         if let Some(min) = self.min {
-            control = control.attr("min", min.to_string());
+            control = control.attr(attr::MIN, min.to_string());
         }
         if let Some(max) = self.max {
-            control = control.attr("max", max.to_string());
+            control = control.attr(attr::MAX, max.to_string());
         }
         match (self.step, T::DEFAULT_STEP) {
-            (Some(step), _) => control = control.attr("step", step.to_string()),
-            (None, Some(step)) => control = control.attr("step", step),
+            (Some(step), _) => control = control.attr(attr::STEP, step.to_string()),
+            (None, Some(step)) => control = control.attr(attr::STEP, step),
             (None, None) => {}
         }
         self.frame.render(&crate::id::of(self.value, ""), control)

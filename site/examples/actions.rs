@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 
 use axum::Router;
-use hypersig::html::{button, form, input, label, p, span};
+use hypersig::html::{attr, button, form, input, label, p, span};
 use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -51,8 +51,8 @@ async fn index(likes: Likes, (): ()) -> Page<Profile> {
                 .child(label().text("Name ").child(input().bind(name)))
                 .child(
                     button()
-                        .attr("type", "submit")
-                        .attr_when("disabled", saving)
+                        .attr(attr::TYPE, "submit")
+                        .attr_when(attr::DISABLED, saving)
                         .text("Save"),
                 )
                 .child(p().bind_text(Profile::error()))

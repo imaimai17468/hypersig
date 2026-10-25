@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, a, button, div, each_keyed, form, h1, input, li, p, span, ul};
+use hypersig::html::{El, a, attr, button, div, each_keyed, form, h1, input, li, p, span, ul};
 use hypersig::{Action, Page, Patches, Route, RouterExt, Signals, StreamAction, if_else};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
@@ -106,7 +106,7 @@ fn todo_list() -> El<TodoPage> {
                 .child(
                     button()
                         .css(styles::icon_button())
-                        .attr("aria-label", "toggle")
+                        .attr(attr::ARIA_LABEL, "toggle")
                         .on_click(TOGGLE.call_with(id))
                         .bind_text(if_else(done, "✓", "○")),
                 )
@@ -123,7 +123,7 @@ fn todo_list() -> El<TodoPage> {
                 .child(
                     button()
                         .css(styles::icon_button())
-                        .attr("aria-label", "remove")
+                        .attr(attr::ARIA_LABEL, "remove")
                         .on_click(REMOVE.call_with(id))
                         .text("×"),
                 )
@@ -224,7 +224,7 @@ async fn index(state: AppState, (): ()) -> Page<TodoPage> {
                     .child(
                         input()
                             .css(styles::input())
-                            .attr("placeholder", "What needs doing?")
+                            .attr(attr::PLACEHOLDER, "What needs doing?")
                             .bind(draft),
                     )
                     .child(

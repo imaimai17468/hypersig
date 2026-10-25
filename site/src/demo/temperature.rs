@@ -1,6 +1,6 @@
 //! A temperature converter, for the page on expressions and statements.
 
-use hypersig::html::{div, input, label, p, span};
+use hypersig::html::{div, input, label, p, span, attr};
 use hypersig::style::Style;
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{BorderStyle, px, rem};
@@ -37,7 +37,7 @@ pub fn page(site: Site) -> Page<Weather> {
                         ja: "摂氏",
                     }))
                     .child(
-                        input().attr("type", "number").bind(celsius).css(
+                        input().attr(attr::TYPE, "number").bind(celsius).css(
                             Style::new()
                                 .width(rem(6))
                                 .padding_inline(rem(0.5))

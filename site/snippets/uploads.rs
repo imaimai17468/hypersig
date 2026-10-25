@@ -1,6 +1,6 @@
 use axum::Router;
 use axum::http::StatusCode;
-use hypersig::html::{button, div};
+use hypersig::html::{button, div, attr};
 use hypersig::{FileInput, Page, Patches, RouterExt, Signals, Upload, Uploaded};
 use serde::{Deserialize, Serialize};
 
@@ -18,7 +18,7 @@ const AVATAR: Upload<Profile> = Upload::post("/avatar").max_bytes(256 * 1024);
 let signals = Profile { picture: String::new(), uploading: false, problem: String::new() };
 let page = Page::new("Profile", signals).child(
     div()
-        .child(PICTURE.input().attr("accept", "image/png"))
+        .child(PICTURE.input().attr(attr::ACCEPT, "image/png"))
         .child(
             button()
                 .on_click(

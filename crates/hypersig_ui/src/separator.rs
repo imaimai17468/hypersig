@@ -1,6 +1,6 @@
 //! Separators: a line between groups of content.
 
-use hypersig::html::{El, Orientation, div, hr};
+use hypersig::html::{El, Orientation, attr, div, hr};
 use hypersig::style::Style;
 use hypersig::style::value::{AlignSelf, BorderStyle, px};
 
@@ -32,8 +32,8 @@ pub fn separator<S>(orientation: Orientation) -> El<S> {
         .background_color(token::border().var());
     match orientation {
         Orientation::Vertical => div()
-            .attr("role", "separator")
-            .attr("aria-orientation", "vertical")
+            .attr(attr::ROLE, "separator")
+            .attr(attr::ARIA_ORIENTATION, "vertical")
             .css(line.width(px(1)).align_self(AlignSelf::Stretch)),
         _ => hr().css(line.height(px(1)).width(hypersig::style::value::pct(100))),
     }

@@ -1,6 +1,6 @@
 //! Listboxes: a list of options of which one is selected.
 
-use hypersig::html::{El, Event, Orientation, div};
+use hypersig::html::{El, Event, Orientation, attr, div};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Cursor, Display, JustifyContent, Opacity, px, rem,
 };
@@ -82,8 +82,8 @@ impl<S, T: Serialize + PartialEq> Listbox<S, T> {
                 none.and(selected.not_equals(value))
             });
         div()
-            .attr("role", "listbox")
-            .attr("aria-label", self.label)
+            .attr(attr::ROLE, "listbox")
+            .attr(attr::ARIA_LABEL, self.label)
             .roving_focus(Orientation::Vertical)
             .css(list_style())
             .children(
@@ -98,10 +98,13 @@ impl<S, T: Serialize + PartialEq> Listbox<S, T> {
                             chosen.clone()
                         };
                         div()
-                            .attr("role", "option")
+                            .attr(attr::ROLE, "option")
                             .id(crate::id::of(selected, &format!("option-{index}")))
-                            .bind_attr("aria-selected", if_else(chosen.clone(), "true", "false"))
-                            .bind_attr("tabindex", if_else(stop, "0", "-1"))
+                            .bind_attr(
+                                attr::ARIA_SELECTED,
+                                if_else(chosen.clone(), "true", "false"),
+                            )
+                            .bind_attr(attr::TABINDEX, if_else(stop, "0", "-1"))
                             .on(Event::Focus, selected.set(&value))
                             .on_click(selected.set(&value))
                             .css(option_style())

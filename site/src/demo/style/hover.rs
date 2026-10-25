@@ -1,7 +1,7 @@
 //! Styles under pseudo-classes, a marked ancestor, and a marked sibling,
 //! for the page on conditions.
 
-use hypersig::html::{a, div, input, label, p, span};
+use hypersig::html::{a, div, input, label, p, span, attr};
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     BorderStyle, Color, FontWeight, Opacity, TextDecorationLine, px, rem,
@@ -63,7 +63,7 @@ pub fn page(site: Site) -> Page<Settings> {
     let agree = label()
         .child(
             input()
-                .attr("type", "checkbox")
+                .attr(attr::TYPE, "checkbox")
                 .css(Style::new().peer())
                 .bind(Settings::agreed()),
         )

@@ -11,7 +11,7 @@ use axum::http::{HeaderValue, header};
 use axum::middleware::{self, Next};
 use axum::response::Response;
 use axum::{Extension, Router};
-use hypersig::html::{El, button, div, h1, h2, input, label, p, section, span};
+use hypersig::html::{El, attr, button, div, h1, h2, input, label, p, section, span};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, if_else};
 use serde::{Deserialize, Serialize};
 
@@ -130,10 +130,14 @@ fn grid_section() -> El<Gallery> {
                 .child(
                     input()
                         .id("details-toggle")
-                        .attr("type", "checkbox")
+                        .attr(attr::TYPE, "checkbox")
                         .css(look::peer()),
                 )
-                .child(label().attr("for", "details-toggle").text("Show details"))
+                .child(
+                    label()
+                        .attr(attr::FOR, "details-toggle")
+                        .text("Show details"),
+                )
                 .child(
                     p().id("details")
                         .css(look::details())

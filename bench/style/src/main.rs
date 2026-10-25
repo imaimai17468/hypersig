@@ -13,10 +13,7 @@ use std::path::Path;
 use std::time::Instant;
 
 use hypersig::IntoExpr;
-use hypersig::html::{
-    Class, El, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
-    ul,
-};
+use hypersig::html::{Class, El, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong, ul, attr};
 use hypersig::{Page, SafeUrl, Signals, if_else};
 use serde::{Deserialize, Serialize};
 
@@ -169,7 +166,7 @@ fn todo_list(look: &Look) -> El<TodoMvc> {
             look.dress_when(item, Part::ItemDone, done)
                 .child(
                     look.dress(input(), Part::Toggle)
-                        .attr("type", "checkbox")
+                        .attr(attr::TYPE, "checkbox")
                         .bind(done),
                 )
                 .child(
@@ -212,7 +209,7 @@ fn page(look: &Look) -> Page<TodoMvc> {
                         .child(look.dress(h1(), Part::Heading).text("todos"))
                         .child(
                             look.dress(input(), Part::NewTodo)
-                                .attr("placeholder", "What needs to be done?")
+                                .attr(attr::PLACEHOLDER, "What needs to be done?")
                                 .bind(TodoMvc::draft()),
                         ),
                 )

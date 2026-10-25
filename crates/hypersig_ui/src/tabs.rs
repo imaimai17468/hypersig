@@ -1,6 +1,6 @@
 //! Tabs: a tab list that shows one panel at a time.
 
-use hypersig::html::{El, Event, Orientation, button, div};
+use hypersig::html::{El, Event, Orientation, attr, button, div};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Cursor, Display, FontWeight, JustifyContent, WhiteSpace, px,
     rem,
@@ -76,8 +76,8 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
     pub fn render(self) -> El<S> {
         let selected = self.selected;
         let mut list = div()
-            .attr("role", "tablist")
-            .attr("aria-label", self.label)
+            .attr(attr::ROLE, "tablist")
+            .attr(attr::ARIA_LABEL, self.label)
             .roving_focus(Orientation::Horizontal)
             .css(list_style());
         let mut panels = Vec::with_capacity(self.entries.len());
@@ -87,12 +87,15 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
             let active = selected.equals(&value);
             list = list.child(
                 button()
-                    .attr("type", "button")
-                    .attr("role", "tab")
+                    .attr(attr::TYPE, "button")
+                    .attr(attr::ROLE, "tab")
                     .id(tab_id.clone())
-                    .attr("aria-controls", panel_id.clone())
-                    .bind_attr("aria-selected", if_else(active.clone(), "true", "false"))
-                    .bind_attr("tabindex", if_else(active.clone(), "0", "-1"))
+                    .attr(attr::ARIA_CONTROLS, panel_id.clone())
+                    .bind_attr(
+                        attr::ARIA_SELECTED,
+                        if_else(active.clone(), "true", "false"),
+                    )
+                    .bind_attr(attr::TABINDEX, if_else(active.clone(), "0", "-1"))
                     .on(Event::Focus, selected.set(&value))
                     .on_click(selected.set(&value))
                     .css(tab_style())
@@ -101,10 +104,10 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
             );
             panels.push(
                 div()
-                    .attr("role", "tabpanel")
+                    .attr(attr::ROLE, "tabpanel")
                     .id(panel_id)
-                    .attr("aria-labelledby", tab_id)
-                    .attr("tabindex", "0")
+                    .attr(attr::ARIA_LABELLEDBY, tab_id)
+                    .attr(attr::TABINDEX, "0")
                     .show(active)
                     .css(Style::new().margin_top(rem(0.5)).merge(look::focus_ring()))
                     .child(panel),

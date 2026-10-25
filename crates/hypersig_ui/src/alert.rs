@@ -1,6 +1,6 @@
 //! Alerts: a message that stands out from the content around it.
 
-use hypersig::html::{El, div};
+use hypersig::html::{El, attr, div};
 use hypersig::style::Style;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{BorderStyle, FontWeight, px, rem};
@@ -46,7 +46,7 @@ pub fn alert<S>(variant: AlertVariant) -> El<S> {
         AlertVariant::Default => ("status", token::card_foreground().var()),
         AlertVariant::Destructive => ("alert", token::destructive().var()),
     };
-    div().attr("role", role).css(
+    div().attr(attr::ROLE, role).css(
         stack(rem(0.125))
             .padding_block(rem(0.75))
             .padding_inline(rem(1))

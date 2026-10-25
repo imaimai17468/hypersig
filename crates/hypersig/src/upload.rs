@@ -7,7 +7,7 @@ use serde_json::json;
 
 use crate::action::Call;
 use crate::expr::{IntoExpr, Stmt};
-use crate::html::{El, input};
+use crate::html::{El, attr, input};
 use crate::route::Base;
 
 /// A server endpoint on the page whose signals are `S`, which receives
@@ -26,7 +26,7 @@ use crate::route::Base;
 /// Large`.
 ///
 /// ```
-/// use hypersig::html::{button, div};
+/// use hypersig::html::{attr, button, div};
 /// use hypersig::{FileInput, Signals, Upload};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -39,7 +39,7 @@ use crate::route::Base;
 /// const AVATAR: Upload<Profile> = Upload::post("/avatar").max_bytes(1024 * 1024);
 ///
 /// let _form = div()
-///     .child(PICTURE.input().attr("accept", "image/*"))
+///     .child(PICTURE.input().attr(attr::ACCEPT, "image/*"))
 ///     .child(button().on_click(AVATAR.call(PICTURE).indicator(Profile::uploading())).text("Upload"));
 /// ```
 pub struct Upload<S, A = ()> {
@@ -176,7 +176,7 @@ impl<S> FileInput<S> {
     /// The `<input type="file">` element. Add `multiple` or `accept` to it as to any element.
     #[must_use]
     pub fn input(self) -> El<S> {
-        input().attr("type", "file").file_input(self.name)
+        input().attr(attr::TYPE, "file").file_input(self.name)
     }
 
     /// A statement that empties the input, such as after its files were sent.
