@@ -39,11 +39,12 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
     }
     let before = snapshot(&dir, None);
     let mut built = build(build_args)?;
+    let mut seen = as_built(&before, snapshot(&dir, built.as_ref()));
+    eprintln!("{}", watching(&dir, before.len(), seen.len()));
     let mut server = match &built {
-        Some(built) => Some(start(&built.binary, program_args)?),
+        Some(built) => Some(start(&dir, &built.binary, program_args, "Started")?),
         None => None,
     };
-    let mut seen = as_built(&before, snapshot(&dir, built.as_ref()));
     loop {
         std::thread::sleep(POLL);
         if let Some(child) = &mut server
@@ -69,8 +70,7 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
                 if let Some(mut child) = server.take() {
                     stop(&mut child);
                 }
-                eprintln!("Restarting `{}`", next.binary.display());
-                server = Some(start(&next.binary, program_args)?);
+                server = Some(start(&dir, &next.binary, program_args, "Restarted")?);
             }
             built = Some(next);
         }
@@ -279,13 +279,33 @@ fn modified(path: &Path) -> Option<SystemTime> {
         .ok()
 }
 
+/// The line that names what `snapshot` reads, from the number of files the
+/// walk of `dir` found and the number it reads with the build's sources.
+fn watching(dir: &Path, walked: usize, watched: usize) -> String {
+    let more = match watched.saturating_sub(walked) {
+        0 => String::new(),
+        1 => ", and 1 more file the build read".to_owned(),
+        more => format!(", and {more} more files the build read"),
+    };
+    format!(
+        "Watching the `.rs` files, `Cargo.toml`, and `Cargo.lock` under {}{more}",
+        dir.display()
+    )
+}
+
 /// Starts the server, which shares the terminal, so it prints there and
-/// stops with the same Ctrl+C.
-fn start(binary: &Path, program_args: &[String]) -> Result<Child, Error> {
-    Command::new(binary)
+/// stops with the same Ctrl+C, and prints `verb` and the binary once it runs.
+///
+/// The line names no address, because the server picks its own and prints
+/// it where it prints one.
+fn start(dir: &Path, binary: &Path, program_args: &[String], verb: &str) -> Result<Child, Error> {
+    let child = Command::new(binary)
         .args(program_args)
         .spawn()
-        .map_err(|error| Error::new(format!("cannot run `{}`: {error}", binary.display())))
+        .map_err(|error| Error::new(format!("cannot run `{}`: {error}", binary.display())))?;
+    let shown = binary.strip_prefix(dir).unwrap_or(binary);
+    eprintln!("{verb} `{}`", shown.display());
+    Ok(child)
 }
 
 /// Stops the server at once. A graceful shutdown would wait for the stream
