@@ -1,0 +1,15 @@
+error[E0277]: `impl futures::Future<Output = impl Stream<Item = Patches<Feed>>>` is not a stream of `Patches<Feed>` a stream's handler returns
+  --> tests/ui/fail/stream_handler_async.rs:20:35
+   |
+20 |     let _: Router = Router::new().stream(UPDATES, updates);
+   |                                   ^^^^^^ the trait `PatchStream<Feed>` is not implemented for `impl futures::Future<Output = impl Stream<Item = Patches<Feed>>>`
+   |
+   = note: a stream's handler is a plain `fn` returning a `Stream<Item = Patches<Feed>> + Send + 'static`; an `async fn` returns a future, which is not a stream
+note: required by a bound in `stream`
+  --> src/axum.rs
+   |
+   |     fn stream<S, A, H, M, Str>(self, stream: StreamAction<S, A>, handler: H) -> Self
+   |        ------ required by a bound in this associated function
+...
+   |         Str: PatchStream<S>;
+   |              ^^^^^^^^^^^^^^ required by this bound in `RouterExt::stream`

@@ -79,7 +79,7 @@ pub trait RouterExt<St>: Sized {
     ///
     /// The handler receives the router state and the arguments the call
     /// passed, already deserialized, and returns anything that converts into
-    /// an [`ActionResponse`]. A [`RequestError`] refuses the request before
+    /// an [`ActionResponse`], as [`IntoActionResponse`] lists. A [`RequestError`] refuses the request before
     /// the handler runs: a request from another site, a POST whose body is not
     /// JSON, a GET without the `Accept: text/event-stream` the runtime sends,
     /// or arguments that do not deserialize.
@@ -96,7 +96,7 @@ pub trait RouterExt<St>: Sized {
         H: Handler<St, A, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = P> + Send + 'static,
-        P: Into<ActionResponse<S>>;
+        P: IntoActionResponse<S>;
 
     /// Serves `stream` on `GET` with a handler that returns a stream of patches.
     ///
@@ -111,7 +111,7 @@ pub trait RouterExt<St>: Sized {
         A: DeserializeOwned + Send + 'static,
         H: Handler<St, A, M, Output = Str>,
         M: 'static,
-        Str: Stream<Item = Patches<S>> + Send + 'static;
+        Str: PatchStream<S>;
 
     /// Serves `upload` with a handler that receives its arguments and files
     /// as an [`Uploaded`] and answers as an action's handler does.
@@ -132,7 +132,7 @@ pub trait RouterExt<St>: Sized {
         H: Handler<St, Uploaded<A>, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = P> + Send + 'static,
-        P: Into<ActionResponse<S>>;
+        P: IntoActionResponse<S>;
 
     /// Serves `upload` with a handler that receives its arguments and reads
     /// the files in chunks from an [`UploadStream`], for files too large to
@@ -149,7 +149,7 @@ pub trait RouterExt<St>: Sized {
         H: Handler<St, UploadStream<A>, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = P> + Send + 'static,
-        P: Into<ActionResponse<S>>;
+        P: IntoActionResponse<S>;
 }
 
 /// The runtime's file, compressed with Brotli where `headers` accept it.
@@ -303,7 +303,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         H: Handler<St, A, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = P> + Send + 'static,
-        P: Into<ActionResponse<S>>,
+        P: IntoActionResponse<S>,
     {
         let method = action.method();
         let route = move |State(state): State<St>,
@@ -314,7 +314,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
             in_called_part(called_part(&request.headers), async move {
                 let args = read_args::<A>(method, &request.headers, &query, &body)?;
                 Ok::<_, RequestError>(match handler.call(state, request, ready(args)).await {
-                    Ok(reply) => reply.await.into().into_response(),
+                    Ok(reply) => reply.await.into_action_response().into_response(),
                     Err(rejection) => rejection,
                 })
             })
@@ -328,7 +328,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         A: DeserializeOwned + Send + 'static,
         H: Handler<St, A, M, Output = Str>,
         M: 'static,
-        Str: Stream<Item = Patches<S>> + Send + 'static,
+        Str: PatchStream<S>,
     {
         let method = Method::Get;
         let route = move |State(state): State<St>,
@@ -368,7 +368,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         H: Handler<St, Uploaded<A>, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = P> + Send + 'static,
-        P: Into<ActionResponse<S>>,
+        P: IntoActionResponse<S>,
     {
         let limit = upload.limit();
         let route = move |State(state): State<St>, request: Request| {
@@ -382,7 +382,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                         .map_err(IntoResponse::into_response)
                 };
                 Ok::<_, RequestError>(match handler.call(state, request, uploaded).await {
-                    Ok(reply) => reply.await.into().into_response(),
+                    Ok(reply) => reply.await.into_action_response().into_response(),
                     Err(rejection) => rejection,
                 })
             })
@@ -398,7 +398,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         H: Handler<St, UploadStream<A>, M, Output = Fut>,
         M: 'static,
         Fut: Future<Output = P> + Send + 'static,
-        P: Into<ActionResponse<S>>,
+        P: IntoActionResponse<S>,
     {
         let limit = upload.limit();
         let route = move |State(state): State<St>, request: Request| {
@@ -413,7 +413,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                     Ok(UploadStream::new(args, multipart))
                 };
                 Ok::<_, RequestError>(match handler.call(state, request, uploaded).await {
-                    Ok(reply) => reply.await.into().into_response(),
+                    Ok(reply) => reply.await.into_action_response().into_response(),
                     Err(rejection) => rejection,
                 })
             })
@@ -1096,6 +1096,47 @@ impl<S, R: Into<ActionResponse<S>>, E: IntoResponse> From<Result<R, E>> for Acti
         result.map_or_else(|error| Self::new(error.into_response()), Into::into)
     }
 }
+
+/// A value an action's handler returns for the page whose signals are `S`.
+///
+/// It is implemented for every type that converts into an
+/// [`ActionResponse<S>`]: [`Patches`], a [`SignalPatch`], a [`ListPatch`], a
+/// tuple of response parts and one of them, and a `Result` of one of them
+/// whose error implements [`IntoResponse`].
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a reply of an action on the page whose signals are `{S}`",
+    note = "an action's handler returns `Patches<{S}>`, a `SignalPatch<{S}>`, a `ListPatch<{S}>`, a tuple of response parts and one of those, or a `Result` of one of those whose error implements `IntoResponse`"
+)]
+pub trait IntoActionResponse<S> {
+    /// Converts `self` into the response the action answers with.
+    fn into_action_response(self) -> ActionResponse<S>;
+}
+
+// Without `do_not_recommend`, rustc reports the failed `From` bound below
+// this impl, naming `ActionResponse` in place of the message above.
+#[diagnostic::do_not_recommend]
+impl<S, P: Into<ActionResponse<S>>> IntoActionResponse<S> for P {
+    fn into_action_response(self) -> ActionResponse<S> {
+        self.into()
+    }
+}
+
+/// A stream of patch batches for the page whose signals are `S`.
+///
+/// It is implemented for every `Stream` of [`Patches<S>`] that is `Send` and
+/// `'static`. A stream's handler is a plain `fn` that returns the stream,
+/// such as one `futures::stream::unfold` builds. An `async fn` returns a
+/// future of the stream, which does not implement it.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a stream of `Patches<{S}>` a stream's handler returns",
+    note = "a stream's handler is a plain `fn` returning a `Stream<Item = Patches<{S}>> + Send + 'static`; an `async fn` returns a future, which is not a stream"
+)]
+pub trait PatchStream<S>: Stream<Item = Patches<S>> + Send + 'static {}
+
+// Without `do_not_recommend`, rustc reports the failed `Stream` bound below
+// this impl in place of the message above.
+#[diagnostic::do_not_recommend]
+impl<S, T: Stream<Item = Patches<S>> + Send + 'static> PatchStream<S> for T {}
 
 impl<S> IntoResponse for ActionResponse<S> {
     fn into_response(self) -> Response {

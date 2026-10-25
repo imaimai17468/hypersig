@@ -10,8 +10,8 @@ use serde_json::{Value, json};
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
-    Escape, HIDE, INLINE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json,
-    write_attr, write_json_attr,
+    Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, check_names, escape_into,
+    keys_json, write_attr, write_json_attr,
 };
 use crate::route::{Base, Url};
 use crate::signal::{Sig, Signals};
@@ -637,8 +637,8 @@ impl<S: Signals> Page<S> {
 
     /// Appends a node to `<body>`.
     #[must_use]
-    pub fn child(mut self, child: impl Into<Node<S>>) -> Self {
-        self.body.push(child.into());
+    pub fn child(mut self, child: impl IntoNode<S>) -> Self {
+        self.body.push(child.into_node());
         self
     }
 

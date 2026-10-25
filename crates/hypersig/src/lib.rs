@@ -80,7 +80,8 @@ struct ReadmeJa;
 pub use action::{Action, Call, DialogRef, Method, NodeRef, StreamAction, StreamCall};
 #[cfg(feature = "axum")]
 pub use axum::{
-    ActionResponse, Handler, PageResponse, RequestError, RequestKind, RouterExt, Unserved,
+    ActionResponse, Handler, IntoActionResponse, PageResponse, PatchStream, RequestError,
+    RequestKind, RouterExt, Unserved,
 };
 pub use date::{DateFormat, DateStyle, TimeStyle, TimeZone, Timestamp};
 pub use expr::{

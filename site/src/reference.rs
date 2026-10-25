@@ -910,6 +910,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "IntoNode",
+                            "html/trait.IntoNode.html",
+                            L {
+                                en: "A value `El::child` takes as a child on the page whose signals are `S`.",
+                                ja: "シグナルが `S` のページで `El::child` が子として受け取る値",
+                            },
+                        ),
+                        (
                             "Event",
                             "html/enum.Event.html",
                             L {
@@ -2538,6 +2546,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "items_of",
+                            "struct.Patches.html#method.items_of",
+                            L {
+                                en: "The items the batch adds to or replaces in `list`, for a test of an action.",
+                                ja: "このまとまりが `list` に加える項目と置き換える項目です。アクションのテストで使います。",
+                            },
+                        ),
+                        (
+                            "removed_keys_of",
+                            "struct.Patches.html#method.removed_keys_of",
+                            L {
+                                en: "The keys the batch removes from `list` by `key`, for a test of an action.",
+                                ja: "このまとまりが `key` で `list` から取り除くキーです。アクションのテストで使います。",
+                            },
+                        ),
+                        (
                             "navigates_to",
                             "struct.Patches.html#method.navigates_to",
                             L {
@@ -2974,6 +2998,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A function that serves a page, an action, or a stream.",
                                 ja: "ページ、アクション、ストリームを配信する関数です。",
+                            },
+                        ),
+                        (
+                            "IntoActionResponse",
+                            "trait.IntoActionResponse.html",
+                            L {
+                                en: "A value an action's handler returns for the page whose signals are `S`.",
+                                ja: "シグナルが `S` のページに向けて、アクションのハンドラが返す値です。",
+                            },
+                        ),
+                        (
+                            "PatchStream",
+                            "trait.PatchStream.html",
+                            L {
+                                en: "A stream of patch batches for the page whose signals are `S`.",
+                                ja: "シグナルが `S` のページへの差分のまとまりを流すストリームです。",
                             },
                         ),
                         (

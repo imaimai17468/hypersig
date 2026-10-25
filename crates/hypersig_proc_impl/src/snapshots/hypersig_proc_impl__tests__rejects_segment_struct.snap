@@ -5,3 +5,18 @@ expression: "expand_segment(quote! { struct S; })"
 ::core::compile_error! {
     "`Segment` can only be derived for an enum whose variants have no fields"
 }
+#[automatically_derived]
+impl ::hypersig::_private::Sealed for S {}
+#[automatically_derived]
+impl ::hypersig::Segment for S {
+    fn parse(_segment: &str) -> ::core::option::Option<Self> {
+        ::core::option::Option::None
+    }
+    fn write(&self) -> ::std::string::String {
+        ::core::unreachable!("the derive of `Segment` failed to compile")
+    }
+}
+#[automatically_derived]
+impl ::hypersig::Variants for S {
+    const VARIANTS: &'static [Self] = &[];
+}

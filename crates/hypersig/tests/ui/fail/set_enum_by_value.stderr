@@ -1,0 +1,18 @@
+error[E0277]: `Column` is not an expression of type `Column` on the page whose signals are `Board`
+  --> tests/ui/fail/set_enum_by_value.rs:19:60
+   |
+19 |     let _ = button::<Board>().on_click(Board::column().set(Column::Done));
+   |                                                        --- ^^^^^^^^^^^^ the trait `IntoExpr<Board, Column>` is not implemented for `Column`
+   |                                                        |
+   |                                                        required by a bound introduced by this call
+   |
+   = note: the trait bound `Column: IntoExpr<Board, Column>` is not satisfied
+note: required by a bound in `Sig::<S, T, R>::set`
+  --> src/signal.rs
+   |
+   |     pub fn set(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
+   |                                  ^^^^^^^^^^^^^^ required by this bound in `Sig::<S, T, R>::set`
+help: consider borrowing here
+   |
+19 |     let _ = button::<Board>().on_click(Board::column().set(&Column::Done));
+   |                                                            +
