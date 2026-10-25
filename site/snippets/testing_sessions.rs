@@ -76,8 +76,8 @@ assert_eq!(patches.navigates_to(), Some(&HOME.url(())));
 let member = session.get::<String>(MEMBER).await.unwrap();
 assert_eq!(member.as_deref(), Some("ada"));
 
-// Through the router, the layer reads and writes the cookie as it does for a
-// visitor.
+// A second test sends the action through the router, where the layer reads
+// and writes the cookie as it does for a visitor.
 let credentials = Credentials { name: "ada".to_owned(), password: "secret".to_owned() };
 let response = app().oneshot(SIGN_IN.request(&credentials)).await.unwrap();
 assert_eq!(response.status(), StatusCode::OK);
