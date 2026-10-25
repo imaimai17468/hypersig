@@ -13,8 +13,11 @@ struct Office {
     center: Center,
 }
 
-// The script in `/map.js` draws a map into the element named `MAP`, reads
-// `data-lat` and `data-lng`, and dispatches `map-moved` with the new center.
+// The script in `/map.js` finds the element whose `data-hs-foreign` is the
+// path of `MAP`, such as `office::MAP` in a crate named `office`, with
+// `'[data-hs-foreign="' + CSS.escape("office::MAP") + '"]'`. It draws a map there,
+// reads `data-lat` and `data-lng`, and dispatches `map-moved` with the new
+// center.
 hypersig::node_ref!(const MAP: NodeRef<Office>);
 const MOVED: CustomEvent<Center> = CustomEvent::new("map-moved");
 # fn main() {
