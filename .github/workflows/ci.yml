@@ -56,9 +56,9 @@ jobs:
       - name: The Cloudflare template
         run: dir=$(crates/hypersig_cli/stage.sh cloudflare) && cd "$dir" && cargo fmt --check && cargo clippy --target wasm32-unknown-unknown -- -D warnings
       - name: The server template
-        run: dir=$(crates/hypersig_cli/stage.sh server) && cd "$dir" && cargo fmt --check && cargo clippy -- -D warnings
+        run: dir=$(crates/hypersig_cli/stage.sh server) && cd "$dir" && cargo fmt --check && cargo clippy --all-targets -- -D warnings
       - name: The Vercel template
-        run: dir=$(crates/hypersig_cli/stage.sh vercel) && cd "$dir" && cargo fmt --check && cargo clippy -- -D warnings
+        run: dir=$(crates/hypersig_cli/stage.sh vercel) && cd "$dir" && cargo fmt --check && cargo clippy --all-targets -- -D warnings
       - run: cargo check -p hypersig --no-default-features
       # The `sqlx::query!` macros of examples/postgres build from the query
       # descriptions in examples/postgres/.sqlx. `--check` fails when a query
