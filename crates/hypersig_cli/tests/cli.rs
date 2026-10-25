@@ -213,7 +213,7 @@ fn add_refuses_to_overwrite(dir: &Path, host: &str, taken: &str) {
 #[test]
 fn server_projects_check() {
     let target = scratch("target-server").join("target");
-    new("server", &target, &[]);
+    new("server", &target, &["--all-targets"]);
 
     let dir = quick_start("add-server");
     let stdout = succeeds(&hypersig(&dir, &["add", "server"]));
@@ -306,7 +306,7 @@ worker = { version = "0.8", features = ["http", "axum", "d1"] }
 #[test]
 fn vercel_projects_check() {
     let target = scratch("target-vercel").join("target");
-    new("vercel", &target, &[]);
+    new("vercel", &target, &["--all-targets"]);
 
     let dir = quick_start("add-vercel");
     let stdout = succeeds(&hypersig(&dir, &["add", "vercel"]));
