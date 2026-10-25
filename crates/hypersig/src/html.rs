@@ -65,8 +65,10 @@ use crate::tape::Ref;
 const RESERVED_PREFIX: &str = "data-hs-";
 
 pub mod attr;
+mod id;
 mod role;
 
+pub use id::Id;
 pub use role::Role;
 
 /// The name of an attribute that [`El::attr`], [`El::bind_attr`], and
@@ -79,7 +81,9 @@ pub use role::Role;
 ///
 /// An `Attr` never names an attribute that hypersig writes itself (`id`,
 /// `class`, and those starting with `data-hs-`), nor `role`, which
-/// [`El::role`] sets from a [`Role`], nor one whose value can run a
+/// [`El::role`] sets from a [`Role`], nor an attribute whose value names
+/// another element, such as `for` or `aria-describedby`, which the methods
+/// that take an [`Id`] set, nor one whose value can run a
 /// script or load a URL: `href` and `src`, which [`El::href`] and [`El::src`]
 /// set from a value that cannot, an event handler `on*`, `srcdoc`, `action`,
 /// `formaction`, `xlink:href`, `data`, which `<object>` loads, `http-equiv`,
@@ -123,6 +127,10 @@ impl Attr {
         );
         assert!(!is(bytes, "role"), "`El::role` sets `role` from a `Role`");
         assert!(
+            !points_at_an_element(bytes),
+            "this attribute names an element; set it with the `El` method that takes an `Id`"
+        );
+        assert!(
             !is(bytes, "href") && !is(bytes, "src"),
             "`El::href` and `El::src` set `href` and `src` from a `Link` or a `SafeUrl`"
         );
@@ -148,6 +156,26 @@ impl Attr {
     pub const fn name(self) -> &'static str {
         self.0
     }
+}
+
+/// Whether `name` is an attribute whose value is the id of another element,
+/// which the `El` methods that take an [`Id`] write.
+const fn points_at_an_element(name: &[u8]) -> bool {
+    is(name, "for")
+        || is(name, "aria-labelledby")
+        || is(name, "aria-describedby")
+        || is(name, "aria-controls")
+        || is(name, "aria-owns")
+        || is(name, "aria-details")
+        || is(name, "aria-flowto")
+        || is(name, "aria-errormessage")
+        || is(name, "aria-activedescendant")
+        || is(name, "commandfor")
+        || is(name, "popovertarget")
+        || is(name, "list")
+        || is(name, "form")
+        || is(name, "headers")
+        || is(name, "itemref")
 }
 
 /// Whether `name` is `lower`, ignoring ASCII case.
@@ -1517,16 +1545,128 @@ impl<S> El<S> {
     /// An element rendered through a [`Fragment`](crate::Fragment) gets the
     /// fragment's id instead. Rendering panics if the element sits inside a
     /// list template, whose every item would repeat it, and if another
-    /// element the runtime can reach carries the same `&'static str` id.
+    /// element the runtime can reach carries the same id from [`Id::new`].
     ///
-    /// Two ids alike where either is a `String` render, because a `String`
-    /// may come from data visitors stored. An anchor, a label's `for`, an
-    /// `aria-*` reference, or a fragment's patch to that id then reaches the
-    /// first of them, so an id built from stored data is made unique by the
-    /// program, such as with the record's key.
+    /// Two ids alike where either comes from [`Id::with_key`] render, because
+    /// the key may come from data visitors stored. An anchor, a label's
+    /// `for`, an `aria-*` reference, or a fragment's patch to that id then
+    /// reaches the first of them, so a key from stored data is made unique by
+    /// the program, such as the record's own key.
     #[must_use]
-    pub fn id(mut self, id: impl Into<Cow<'static, str>>) -> Self {
-        self.id = Some(id.into());
+    pub fn id(mut self, id: Id) -> Self {
+        self.id = Some(id.0);
+        self
+    }
+
+    /// Points a `<label>` or an `<output>` at the control it names, through `for`.
+    #[must_use]
+    pub fn label_for(mut self, control: &Id) -> Self {
+        self.attrs.push(("for", control.as_str().to_owned()));
+        self
+    }
+
+    /// Names the elements whose text labels this one, through `aria-labelledby`.
+    #[must_use]
+    pub fn aria_labelledby(mut self, labels: &[&Id]) -> Self {
+        self.attrs.push(("aria-labelledby", id::list(labels)));
+        self
+    }
+
+    /// Names the elements whose text describes this one, through `aria-describedby`.
+    #[must_use]
+    pub fn aria_describedby(mut self, descriptions: &[&Id]) -> Self {
+        self.attrs
+            .push(("aria-describedby", id::list(descriptions)));
+        self
+    }
+
+    /// Names the elements this one shows, hides, or changes, through `aria-controls`.
+    #[must_use]
+    pub fn aria_controls(mut self, controlled: &[&Id]) -> Self {
+        self.attrs.push(("aria-controls", id::list(controlled)));
+        self
+    }
+
+    /// Names elements outside this one that belong to it, through `aria-owns`.
+    #[must_use]
+    pub fn aria_owns(mut self, owned: &[&Id]) -> Self {
+        self.attrs.push(("aria-owns", id::list(owned)));
+        self
+    }
+
+    /// Names the elements that hold more detail on this one, through `aria-details`.
+    #[must_use]
+    pub fn aria_details(mut self, details: &[&Id]) -> Self {
+        self.attrs.push(("aria-details", id::list(details)));
+        self
+    }
+
+    /// Names the elements a reader goes to next, through `aria-flowto`.
+    #[must_use]
+    pub fn aria_flowto(mut self, next: &[&Id]) -> Self {
+        self.attrs.push(("aria-flowto", id::list(next)));
+        self
+    }
+
+    /// Names the elements that hold this control's error, through `aria-errormessage`.
+    ///
+    /// A screen reader reads them while `aria-invalid` is `true`.
+    #[must_use]
+    pub fn aria_errormessage(mut self, messages: &[&Id]) -> Self {
+        self.attrs.push(("aria-errormessage", id::list(messages)));
+        self
+    }
+
+    /// Names the descendant that has the focus, through `aria-activedescendant`.
+    ///
+    /// For a value that follows a signal, [`El::active_descendant`] binds it.
+    #[must_use]
+    pub fn aria_activedescendant(mut self, active: &Id) -> Self {
+        self.attrs
+            .push(("aria-activedescendant", active.as_str().to_owned()));
+        self
+    }
+
+    /// Names the element a `command` of this button acts on, through `commandfor`.
+    #[must_use]
+    pub fn command_for(mut self, target: &Id) -> Self {
+        self.attrs.push(("commandfor", target.as_str().to_owned()));
+        self
+    }
+
+    /// Names the popover this button shows and hides, through `popovertarget`.
+    #[must_use]
+    pub fn popover_target(mut self, popover: &Id) -> Self {
+        self.attrs
+            .push(("popovertarget", popover.as_str().to_owned()));
+        self
+    }
+
+    /// Names the `<datalist>` whose options this `<input>` suggests, through `list`.
+    #[must_use]
+    pub fn datalist(mut self, options: &Id) -> Self {
+        self.attrs.push(("list", options.as_str().to_owned()));
+        self
+    }
+
+    /// Names the `<form>` this control belongs to from outside it, through `form`.
+    #[must_use]
+    pub fn form_owner(mut self, form: &Id) -> Self {
+        self.attrs.push(("form", form.as_str().to_owned()));
+        self
+    }
+
+    /// Names the header cells of this table cell, through `headers`.
+    #[must_use]
+    pub fn headers(mut self, cells: &[&Id]) -> Self {
+        self.attrs.push(("headers", id::list(cells)));
+        self
+    }
+
+    /// Names the elements whose microdata properties this item adds, through `itemref`.
+    #[must_use]
+    pub fn itemref(mut self, elements: &[&Id]) -> Self {
+        self.attrs.push(("itemref", id::list(elements)));
         self
     }
 
@@ -2037,11 +2177,12 @@ impl<S> El<S> {
     /// view, and leaves a key alone while Alt, Control, or Meta is held.
     ///
     /// It runs before the handlers of [`El::on_key`], which then still see
-    /// the key. Bind `aria-activedescendant` to `active` and style the option
-    /// whose id equals it, since the runtime changes nothing but the signal.
+    /// the key. It also binds `aria-activedescendant` to `active`, so a
+    /// screen reader reads the option `active` names. Style that option
+    /// yourself, since the runtime changes nothing else.
     ///
     /// ```
-    /// use hypersig::html::{Role, attr, div, input};
+    /// use hypersig::html::{Role, div, input};
     /// use hypersig::{NodeRef, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -2056,7 +2197,6 @@ impl<S> El<S> {
     /// let field = input::<Search>()
     ///     .role(Role::Combobox)
     ///     .bind(Search::query())
-    ///     .bind_attr(attr::ARIA_ACTIVEDESCENDANT, Search::active())
     ///     .active_descendant(RESULTS, Search::active());
     /// let results = div::<Search>().role(Role::ListBox).node_ref(RESULTS);
     /// assert!(field.render().contains(r#"data-hs-active="[&quot;results&quot;"#));
@@ -2065,6 +2205,8 @@ impl<S> El<S> {
     #[must_use]
     pub fn active_descendant(mut self, listbox: NodeRef<S>, active: Sig<S, String>) -> Self {
         self.active = Some((listbox.name(), active.raw_path().place_json()));
+        self.attr_bind
+            .push(("aria-activedescendant", active.into_expr()));
         self
     }
 
@@ -2139,8 +2281,8 @@ impl<S> El<S> {
         self
     }
 
-    pub(crate) fn with_id(mut self, id: &'static str) -> Self {
-        self.id = Some(Cow::Borrowed(id));
+    pub(crate) fn with_id(mut self, id: Id) -> Self {
+        self.id = Some(id.0);
         self
     }
 
@@ -2792,7 +2934,7 @@ mod tests {
     }
 
     mod names {
-        use super::super::{each, li, ul, when};
+        use super::super::{Id, each, li, ul, when};
         use super::{Page, count, div, input, sig};
         use crate::{FileInput, NodeRef, Sig};
 
@@ -2872,8 +3014,8 @@ mod tests {
         #[should_panic(expected = "id `total`")]
         fn one_id_twice_panics() {
             let _ = div::<Page>()
-                .child(div().id("total"))
-                .child(div().id("total"))
+                .child(div().id(Id::new("total")))
+                .child(div().id(Id::new("total")))
                 .render();
         }
 
@@ -2881,18 +3023,19 @@ mod tests {
         #[should_panic(expected = "list template carries the fixed id `row`")]
         fn a_fixed_id_in_a_list_template_panics() {
             let _ = ul::<Page>()
-                .child(each(rows(), |_| li().id("row")))
+                .child(each(rows(), |_| li().id(Id::new("row"))))
                 .render();
         }
 
         #[test]
-        fn ids_built_at_runtime_may_repeat() {
-            let tag = |name: &str| li::<Page>().id(format!("tag-{name}"));
+        fn ids_with_a_key_may_repeat() {
+            const TAG: Id = Id::new("tag");
+            let tag = |name: &str| li::<Page>().id(TAG.with_key(name));
             let html = div::<Page>()
                 .child(tag("a"))
                 .child(tag("a"))
-                .child(div().id(String::from("total")))
-                .child(div().id("total"))
+                .child(div().id(Id::new("total").with_key(1)))
+                .child(div().id(Id::new("total").with_key(1)))
                 .render();
             assert_eq!(html.matches(r#"id="tag-a""#).count(), 2, "{html}");
         }
@@ -2900,8 +3043,8 @@ mod tests {
         #[test]
         fn sibling_conditional_copies_may_carry_one_id() {
             let _ = div::<Page>()
-                .child(when(count().gt(0), div().id("total")))
-                .child(when(count().le(0), div().id("total")))
+                .child(when(count().gt(0), div().id(Id::new("total"))))
+                .child(when(count().le(0), div().id(Id::new("total"))))
                 .render();
         }
     }

@@ -1,7 +1,7 @@
 //! The frame around every page: the header, the sidebar, and the links to
 //! the previous and the next page.
 
-use hypersig::html::{a, attr, div, el, footer, header, img, main, nav, p, span};
+use hypersig::html::{Id, a, attr, div, el, footer, header, img, main, nav, p, span};
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, BorderStyle, BorderTopStyle, Color, Display, FlexWrap,
@@ -22,7 +22,7 @@ use hypersig_i18n::Locale as _;
 pub const REPOSITORY: SafeUrl = SafeUrl::new("https://github.com/imaimai17468/hypersig");
 
 /// The id of the sidebar, which the menu button controls.
-const SIDEBAR: &str = "sidebar";
+const SIDEBAR: Id = Id::new("sidebar");
 
 /// A page of `doc` with the header and `body` below it, full width.
 pub fn document(site: Site, doc: Doc, body: Part) -> String {
@@ -416,7 +416,7 @@ fn menu_button(site: Site) -> Part {
             ja: "メニュー",
         }),
     )
-    .attr(attr::ARIA_CONTROLS, SIDEBAR)
+    .aria_controls(&[&SIDEBAR])
     .bind_attr(attr::ARIA_EXPANDED, if_else(menu, "true", "false"))
     .on_click(menu.toggle())
     .css(

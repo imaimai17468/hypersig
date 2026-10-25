@@ -7,7 +7,9 @@
 
 use std::fs;
 
-use hypersig::html::{El, Node, a, button, div, each_keyed, h1, span, table, tbody, td, tr, attr};
+use hypersig::html::{
+    El, Id, Node, a, attr, button, div, each_keyed, h1, span, table, tbody, td, tr,
+};
 use hypersig::{Expr, Page, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 
@@ -119,7 +121,7 @@ fn action(id: &'static str, text: &str, stmt: Stmt<Bench>) -> El<Bench> {
             .class(class::BTN)
             .class(class::BTN_PRIMARY)
             .class(class::BTN_BLOCK)
-            .id(id)
+            .id(Id::new(id))
             .on_click(stmt)
             .text(text),
     )
@@ -200,7 +202,7 @@ fn page() -> Page<Bench> {
         .stylesheet("/css/currentStyle.css")
         .runtime_src("bundled-dist/hypersig.js")
         .child(
-            div().id("main").child(
+            div().id(Id::new("main")).child(
                 div()
                     .class(class::CONTAINER)
                     .child(jumbotron)
@@ -210,7 +212,7 @@ fn page() -> Page<Bench> {
                             .class(class::TABLE_HOVER)
                             .class(class::TABLE_STRIPED)
                             .class(class::TEST_DATA)
-                            .child(tbody().id("tbody").child(rows())),
+                            .child(tbody().id(Id::new("tbody")).child(rows())),
                     )
                     .child(
                         span()

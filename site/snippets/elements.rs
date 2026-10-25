@@ -1,4 +1,4 @@
-use hypersig::html::{a, div, h1, p};
+use hypersig::html::{Id, a, div, h1, p};
 use hypersig::{Route, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +13,7 @@ hypersig::routes! {
 }
 
 let card = div::<Profile>()
-    .id("ada")
+    .id(Id::new("ada"))
     .child(h1().text("Ada Lovelace"))
     .child(
         p().text("Wrote the first program. ")

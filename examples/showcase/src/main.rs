@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use axum::Router;
 use hypersig::html::{
-    El, Event, Key, Stylesheet, attr, button, div, each, each_keyed, form, h1, h2, input, label,
-    li, p, section, select, small, span, textarea, ul,
+    El, Event, Id, Key, Stylesheet, attr, button, div, each, each_keyed, form, h1, h2, input,
+    label, li, p, section, select, small, span, textarea, ul,
 };
 use hypersig::{
     Action, DateFormat, DateStyle, DialogRef, Expr, Fragment, IntlLocale, NodeRef, Page, Patches,
@@ -188,7 +188,7 @@ fn components() -> El<Showcase> {
     let adults = Showcase::adults();
     let children = Showcase::children();
     section()
-        .id("components")
+        .id(Id::new("components"))
         .child(h2().text("Components with their own state"))
         .child(disclosure(
             Showcase::shipping(),
@@ -222,7 +222,7 @@ fn stopwatch() -> El<Showcase> {
     let running = Showcase::stopwatch().at(Stopwatch::running());
     let elapsed = Showcase::stopwatch().at(Stopwatch::elapsed());
     section()
-        .id("stopwatch")
+        .id(Id::new("stopwatch"))
         .on_interval(
             Duration::from_millis(100),
             Stmt::when(running, elapsed.set(elapsed + 0.1)),
@@ -264,7 +264,7 @@ fn dates() -> El<Showcase> {
     let rendered = Showcase::rendered();
     let now = Showcase::now();
     section()
-        .id("dates")
+        .id(Id::new("dates"))
         .on_interval(Duration::from_secs(1), now.set(Expr::timestamp_now()))
         .child(h2().text("Dates"))
         .child(
@@ -320,7 +320,7 @@ impl Results {
 
 impl Fragment for Results {
     type Signals = Showcase;
-    const ID: &'static str = "results";
+    const ID: Id = Id::new("results");
 
     fn render(&self) -> El<Showcase> {
         ul().children(self.matches.iter().map(|fruit| li().text(*fruit)))
@@ -336,7 +336,7 @@ fn search(find: &Find) -> El<Showcase> {
     let query = Showcase::search().at(Search::query());
     let searching = Showcase::search().at(Search::searching());
     section()
-        .id("search")
+        .id(Id::new("search"))
         .child(h2().text("Server search as you type"))
         .child(
             div()
@@ -380,7 +380,7 @@ fn search(find: &Find) -> El<Showcase> {
 /// A dialog that a statement opens and closes.
 fn palette() -> El<Showcase> {
     section()
-        .id("palette")
+        .id(Id::new("palette"))
         .child(h2().text("Dialogs and shortcuts"))
         .child(p().text("Command+K or Ctrl+K opens the commands, and / focuses the search."))
         .child(
@@ -418,7 +418,7 @@ fn order_form() -> El<Showcase> {
     let too_long = note.char_count().gt(NOTE_LIMIT);
     let invalid = quantity.lt(1).or(too_long.clone());
     section()
-        .id("order")
+        .id(Id::new("order"))
         .child(h2().text("Forms"))
         .child(
             form()
@@ -499,12 +499,12 @@ fn styles() -> El<Showcase> {
     let dark = look.at(Look::dark());
     let tone = look.at(Look::tone());
     section()
-        .id("styles")
+        .id(Id::new("styles"))
         .child(h2().text("Typed styles"))
         .child(
         div().css_when(look::dark_frame(), dark).child(
             div()
-                .id("card")
+                .id(Id::new("card"))
                 .css(look::card())
                 .child(p().css(look::wide_note()).text(
                     "Half as wide from a 48rem viewport, bold while the card is 24rem or wider.",
@@ -514,26 +514,26 @@ fn styles() -> El<Showcase> {
                         .css(look::buttons())
                         .child(
                             button()
-                                .id("theme")
+                                .id(Id::new("theme"))
                                 .on_click(dark.toggle())
                                 .text("Switch theme"),
                         )
                         .child(
                             button()
-                                .id("calm")
+                                .id(Id::new("calm"))
                                 .on_click(tone.set(&Tone::Calm))
                                 .text("Calm"),
                         )
                         .child(
                             button()
-                                .id("loud")
+                                .id(Id::new("loud"))
                                 .on_click(tone.set(&Tone::Loud))
                                 .text("Loud"),
                         ),
                 )
                 .child(
                     span()
-                        .id("badge")
+                        .id(Id::new("badge"))
                         .css(look::badge())
                         .css_match(
                             tone,
@@ -544,7 +544,7 @@ fn styles() -> El<Showcase> {
                             Tone::Loud => "LOUD",
                         })),
                 )
-                .child(div().id("spinner").css(look::spinner())),
+                .child(div().id(Id::new("spinner")).css(look::spinner())),
         ),
     )
 }
@@ -554,7 +554,7 @@ fn feed() -> El<Showcase> {
     let notes = feed.at(Feed::notes());
     let oldest = feed.at(Feed::oldest());
     section()
-        .id("feed")
+        .id(Id::new("feed"))
         .child(h2().text("A feed the server changes item by item"))
         .child(
             div()
@@ -800,7 +800,7 @@ fn numbers() -> El<Showcase> {
     let numbers = Showcase::numbers();
     let loading = Showcase::loading_more();
     section()
-        .id("numbers")
+        .id(Id::new("numbers"))
         .child(h2().text("Loading as you scroll"))
         .child(ul().child(each(numbers, |n| li().bind_text(n.value().to_text()))))
         .child(

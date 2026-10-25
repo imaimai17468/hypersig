@@ -209,8 +209,12 @@ pub fn describing_the_page(site: Site) -> Part {
             site,
             &[
                 L {
-                    en: "`id` and `class`, which `El::id` and `El::class` set.",
-                    ja: "`id` と `class`。`El::id` と `El::class` で設定します。",
+                    en: "`id` and `class`, which `El::id` and `El::class` set. `El::id` takes an [`Id`](api:hypersig/html/struct.Id.html), which you declare once, such as `const EMAIL: Id = Id::new(\"email\")`.",
+                    ja: "`id` と `class`。`El::id` と `El::class` で設定します。`El::id` は、`const EMAIL: Id = Id::new(\"email\")` のように 1 度だけ宣言した [`Id`](api:hypersig/html/struct.Id.html) を受け取ります。",
+                },
+                L {
+                    en: "An attribute whose value names another element by its id, such as `for`, `aria-describedby`, `aria-controls`, and `commandfor`. Methods such as `label_for(&EMAIL)` and `aria_describedby(&[&HINT])` set them from the same `Id` the element carries, so a reference cannot be spelled apart from its target.",
+                    ja: "`for`、`aria-describedby`、`aria-controls`、`commandfor` のように、値がほかの要素を id で指す属性。`label_for(&EMAIL)` や `aria_describedby(&[&HINT])` などのメソッドが、指す先の要素と同じ `Id` から設定するので、参照と参照先の綴りが食い違うことはありません。",
                 },
                 L {
                     en: "`role`, which `El::role` sets from a [`Role`](api:hypersig/html/enum.Role.html), so a misspelled role stops the build too.",

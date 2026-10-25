@@ -16,7 +16,7 @@ use axum::Router;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, Role, a, attr, button, div, form, h1, input, li, p, span, ul};
+use hypersig::html::{El, Id, Role, a, attr, button, div, form, h1, input, li, p, span, ul};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, StreamAction};
 use rusqlite::{Connection, OptionalExtension as _};
 use serde::{Deserialize, Serialize};
@@ -49,6 +49,7 @@ const ADD: Action<TodoPage, String> = Action::post("/todos");
 const TOGGLE: Action<TodoPage, TodoId> = Action::post("/todos/toggle");
 const REMOVE: Action<TodoPage, TodoId> = Action::post("/todos/remove");
 const UPDATES: StreamAction<TodoPage> = StreamAction::new("/todos/updates");
+const TODO_ROW: Id = Id::new("todo");
 
 /// Runs each time the file is opened. `IF NOT EXISTS` leaves the table of an
 /// earlier run in place, and the journal mode is stored in the file.
@@ -209,7 +210,7 @@ impl TodoList {
 
 impl Fragment for TodoList {
     type Signals = TodoPage;
-    const ID: &'static str = "todo-list";
+    const ID: Id = Id::new("todo-list");
 
     fn render(&self) -> El<TodoPage> {
         let problem = TodoPage::problem();
@@ -220,7 +221,7 @@ impl Fragment for TodoList {
                         .href(TODO.link_with(todo.id.0))
                         .text(todo.title.as_str()),
                 );
-                li().id(format!("todo-{}", todo.id.0))
+                li().id(TODO_ROW.with_key(todo.id.0))
                     .css(styles::item())
                     .child(
                         button()
@@ -355,7 +356,7 @@ async fn index(state: AppState, (): ()) -> Result<Page<TodoPage>, DbError> {
                     ),
             )
             .child(
-                p().id("problem")
+                p().id(Id::new("problem"))
                     .role(Role::Alert)
                     .css(styles::problem())
                     .show(!problem.is_empty())
@@ -363,13 +364,13 @@ async fn index(state: AppState, (): ()) -> Result<Page<TodoPage>, DbError> {
             )
             .child(hypersig::fragment(&list))
             .child(
-                p().id("summary-left")
+                p().id(Id::new("summary-left"))
                     .css(styles::summary())
                     .show(remaining.gt(0))
                     .bind_text(remaining.to_text().concat(" left")),
             )
             .child(
-                p().id("summary-done")
+                p().id(Id::new("summary-done"))
                     .css(styles::summary())
                     .show(remaining.equals(0))
                     .text("All done."),
@@ -387,8 +388,12 @@ async fn todo(state: AppState, id: i64) -> Result<Option<Page<TodoDetail>>, DbEr
             div()
                 .css(styles::page())
                 .child(h1().text(todo.title))
-                .child(p().id("status").show(done).text("Done."))
-                .child(p().id("status-open").show(!done).text("Still to do."))
+                .child(p().id(Id::new("status")).show(done).text("Done."))
+                .child(
+                    p().id(Id::new("status-open"))
+                        .show(!done)
+                        .text("Still to do."),
+                )
                 .child(a().href(INDEX.link()).text("All todos")),
         ),
     ))

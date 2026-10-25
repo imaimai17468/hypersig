@@ -3,7 +3,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Key, Orientation, Role, attr, button as button_el, div};
+use hypersig::html::{El, Id, Key, Orientation, Role, attr, button as button_el, div};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Cursor, Display, PositionTryFallbacks, TextAlign, px, raw, rem,
 };
@@ -72,8 +72,12 @@ impl<S> Menu<S> {
         }
     }
 
-    fn trigger_id(self) -> String {
-        format!("{}-trigger", self.name)
+    fn id(self) -> Id {
+        Id::new(self.name)
+    }
+
+    fn trigger_id(self) -> Id {
+        self.id().with_key("trigger")
     }
 
     fn anchor(self) -> String {
@@ -86,7 +90,7 @@ impl<S> Menu<S> {
         button(variant, size)
             .id(self.trigger_id())
             .attr(attr::ARIA_HASPOPUP, "menu")
-            .attr(attr::COMMANDFOR, self.name)
+            .command_for(&self.id())
             .attr(attr::COMMAND, "toggle-popover")
             .css(Style::new().anchor_name(raw(self.anchor())))
     }
@@ -96,10 +100,10 @@ impl<S> Menu<S> {
     pub fn menu(self, items: impl IntoIterator<Item = MenuItem<S>>) -> El<S> {
         let node_ref = NodeRef::new(self.name);
         div()
-            .id(self.name)
+            .id(self.id())
             .attr(attr::POPOVER, "auto")
             .role(Role::Menu)
-            .attr(attr::ARIA_LABELLEDBY, self.trigger_id())
+            .aria_labelledby(&[&self.trigger_id()])
             .node_ref(node_ref)
             .roving_focus(Orientation::Vertical)
             // Tab and Shift+Tab both leave the menu, which closes it.

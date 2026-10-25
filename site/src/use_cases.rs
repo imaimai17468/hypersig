@@ -1,7 +1,7 @@
 //! The use cases page: the three kinds of request where hypersig and Next.js
 //! differ in the code a change takes, and the applications that get them.
 
-use hypersig::html::{a, attr, details, div, h3, h4, li, p, span, summary, ul};
+use hypersig::html::{Id, a, attr, details, div, h3, h4, li, p, span, summary, ul};
 use hypersig::style::pattern::{stack, wrap};
 use hypersig::style::value::{
     AlignItems, BorderLeftStyle, BorderStyle, Cursor, Display, FontStyle, FontWeight,
@@ -189,7 +189,7 @@ fn concept_section(site: Site, concept: &Concept) -> Part {
     div()
         .css(Style::new().margin_top(rem(3)))
         .child(
-            h3().id(kind.id())
+            h3().id(Id::new(kind.id()))
                 .css(
                     Style::new()
                         .display(Display::Flex)

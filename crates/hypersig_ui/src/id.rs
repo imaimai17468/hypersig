@@ -1,12 +1,21 @@
 //! Element ids and names derived from a signal or a handle.
 
-use hypersig::Sig;
+use std::fmt::Display;
 
-/// `ui-<path>-<part>`, where `<path>` is the signal's path with each `.`
-/// replaced by `-`. A page signal's path is unique on its page, so ids built
-/// from different signals differ.
-pub(crate) fn of<S, T>(signal: Sig<S, T>, part: &str) -> String {
-    format!("ui-{}-{part}", signal.path().replace('.', "-"))
+use hypersig::Sig;
+use hypersig::html::Id;
+
+/// `ui-<path>`, where `<path>` is the signal's path with each `.` replaced
+/// by `-`. A page signal's path is unique on its page, so ids built from
+/// different signals differ.
+pub(crate) fn base<S, T>(signal: Sig<S, T>) -> Id {
+    const UI: Id = Id::new("ui");
+    UI.with_key(signal.path().replace('.', "-"))
+}
+
+/// `ui-<path>-<part>`, as [`base`] builds `ui-<path>`.
+pub(crate) fn of<S, T>(signal: Sig<S, T>, part: impl Display) -> Id {
+    base(signal).with_key(part)
 }
 
 /// Panics unless `name` is non-empty ASCII letters, digits, `-`, and `_`,

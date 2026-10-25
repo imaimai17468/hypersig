@@ -189,6 +189,21 @@ fn refused(name: &str) -> Option<&'static str> {
         "id" => "set it with `El::id`.",
         "class" => "set it with `El::class`.",
         "role" => "set it with `El::role`, which takes a `Role`.",
+        "for"
+        | "aria-labelledby"
+        | "aria-describedby"
+        | "aria-controls"
+        | "aria-owns"
+        | "aria-details"
+        | "aria-flowto"
+        | "aria-errormessage"
+        | "aria-activedescendant"
+        | "commandfor"
+        | "popovertarget"
+        | "list"
+        | "form"
+        | "headers"
+        | "itemref" => "its value names an element, so the `El` method that takes an `Id` sets it.",
         "href" => "set it with `El::href`, which takes a `Link` or a `SafeUrl`.",
         "src" => "set it with `El::src`, which takes a `SafeUrl`.",
         "attributename" => "`hypersig::attr!` refuses it, because its value could name `href`.",
@@ -689,6 +704,7 @@ mod tests {
             "formaction",
             "data-hs-x",
             "ROLE",
+            "aria-describedby",
             "a b",
         ] {
             assert!(refused(name).is_some(), "{name}");

@@ -1,7 +1,7 @@
 //! The landing pages of the Style and Components docs, and the parts every
 //! landing page shares.
 
-use hypersig::html::{a, div, h1, h2, h3, p, section, span};
+use hypersig::html::{Id, a, div, h1, h2, h3, p, section, span};
 use hypersig::style::pattern::{container, stack, wrap};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Display, FontWeight, JustifyContent, LineHeight, TextAlign, TextWrap,
@@ -125,7 +125,7 @@ pub fn titled<'a>(
     section()
         .css(Style::new().margin_top(rem(5)))
         .child(
-            h2().id(prose::anchor(heading.english()))
+            h2().id(Id::from_text(prose::anchor(heading.english())))
                 .css(
                     Style::new()
                         .font_size(rem(1.875))

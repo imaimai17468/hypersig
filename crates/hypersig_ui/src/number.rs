@@ -226,7 +226,7 @@ impl<S, T: Numeric> NumberField<S, T> {
             (None, Some(step)) => control = control.attr(attr::STEP, step),
             (None, None) => {}
         }
-        self.frame.render(&crate::id::of(self.value, ""), control)
+        self.frame.render(&crate::id::base(self.value), control)
     }
 }
 

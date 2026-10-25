@@ -8,9 +8,12 @@ it("moves the signal among the shown options that are not disabled, and clicks t
   key(field, "ArrowDown");
   await tick();
   expect(runtime.store.get("active")).toBe("o0");
+  // `active_descendant` binds the attribute a screen reader follows to the same signal.
+  expect(field.getAttribute("aria-activedescendant")).toBe("o0");
   key(field, "ArrowDown");
   await tick();
   expect(runtime.store.get("active")).toBe("o3");
+  expect(field.getAttribute("aria-activedescendant")).toBe("o3");
   key(field, "ArrowDown");
   await tick();
   expect(runtime.store.get("active")).toBe("o0");

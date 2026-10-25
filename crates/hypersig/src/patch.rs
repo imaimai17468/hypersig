@@ -41,7 +41,7 @@ use serde_json::{Map, Value, json};
 
 use crate::exact;
 use crate::expr::IntoExpr;
-use crate::html::El;
+use crate::html::{El, Id};
 use crate::route::Url;
 use crate::signal::{Item, Root, Sig, Signals, current_part, in_item_scope};
 use crate::style::Sheet;
@@ -52,7 +52,7 @@ use crate::style::Sheet;
 /// in a later patch cannot drift apart.
 ///
 /// ```
-/// use hypersig::html::{El, li, ul};
+/// use hypersig::html::{El, Id, li, ul};
 /// use hypersig::{Fragment, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -65,7 +65,7 @@ use crate::style::Sheet;
 ///
 /// impl Fragment for Cart {
 ///     type Signals = Shop;
-///     const ID: &'static str = "cart";
+///     const ID: Id = Id::new("cart");
 ///
 ///     fn render(&self) -> El<Shop> {
 ///         ul().children(self.items.iter().map(|item| li().text(item.as_str())))
@@ -80,7 +80,7 @@ pub trait Fragment {
     type Signals: Signals;
 
     /// The element id of the fragment's root.
-    const ID: &'static str;
+    const ID: Id;
 
     /// Renders the fragment's root element. Its own `id` is replaced by [`Self::ID`].
     fn render(&self) -> El<Self::Signals>;
@@ -317,7 +317,7 @@ pub(crate) enum PatchEvent {
     Signals(Map<String, Value>),
     List(Value),
     Element {
-        id: &'static str,
+        id: Id,
         html: String,
         css: Vec<(String, String)>,
         /// The part the fragment's paths were written under.
@@ -879,7 +879,7 @@ mod tests {
 
     impl Fragment for Count {
         type Signals = Badge;
-        const ID: &'static str = "count";
+        const ID: Id = Id::new("count");
 
         fn render(&self) -> El<Badge> {
             span().bind_text(count().to_text())
@@ -902,7 +902,7 @@ mod tests {
 
     impl Fragment for Total {
         type Signals = Shop;
-        const ID: &'static str = "total";
+        const ID: Id = Id::new("total");
 
         fn render(&self) -> El<Shop> {
             div()

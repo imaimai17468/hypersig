@@ -507,6 +507,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "label_for",
+                            "html/struct.El.html#method.label_for",
+                            L {
+                                en: "Points a `<label>` or an `<output>` at the control it names, through `for`.",
+                                ja: "`<label>` や `<output>` を、`for` で名前の対象のコントロールに向けます。",
+                            },
+                        ),
+                        (
+                            "aria_describedby",
+                            "html/struct.El.html#method.aria_describedby",
+                            L {
+                                en: "Names the elements whose text describes this one, through `aria-describedby`.",
+                                ja: "`aria-describedby` で、この要素を説明するテキストを持つ要素を指します。",
+                            },
+                        ),
+                        (
                             "class",
                             "html/struct.El.html#method.class",
                             L {
@@ -939,6 +955,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A WAI-ARIA role, which `El::role` writes into `role`.",
                                 ja: "`El::role` が `role` に書く WAI-ARIA のロール",
+                            },
+                        ),
+                        (
+                            "Id",
+                            "html/struct.Id.html",
+                            L {
+                                en: "The id of an element, which `El::id` writes and the methods that point at an element read.",
+                                ja: "`El::id` が書き、要素を指すメソッドが読む、要素の id",
                             },
                         ),
                         (

@@ -7,7 +7,7 @@
 use std::sync::{Arc, Mutex};
 
 use axum::Router;
-use hypersig::html::{El, Role, attr, div, h1, p, span};
+use hypersig::html::{El, Id, Role, attr, div, h1, p, span};
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::rem;
@@ -182,14 +182,14 @@ fn signup() -> El<Join> {
                     )
                     .child(
                         span()
-                            .id("unsaved")
+                            .id(Id::new("unsaved"))
                             .css(muted.clone())
                             .show(signup.is_dirty())
                             .text("Unsaved changes"),
                     ),
             )
             .child(
-                p().id("welcome")
+                p().id(Id::new("welcome"))
                     .role(Role::Status)
                     .css(muted.padding_inline(rem(1.5)))
                     .bind_text(Join::welcome()),

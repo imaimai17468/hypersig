@@ -4,7 +4,7 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use hypersig::NodeRef;
-use hypersig::html::{El, Event, Role, attr, div};
+use hypersig::html::{El, Event, Id, Role, attr, div};
 use hypersig::style::Style;
 use hypersig::style::value::{
     BackgroundClip, BorderStyle, Color, PositionTryFallbacks, px, raw, rem,
@@ -96,7 +96,7 @@ impl<S> Tooltip<S> {
     fn attach(self, button: El<S>) -> El<S> {
         let tip = self.node_ref();
         button
-            .attr(attr::ARIA_DESCRIBEDBY, self.name)
+            .aria_describedby(&[&Id::new(self.name)])
             .css(Style::new().anchor_name(raw(self.anchor())))
             .on(Event::MouseEnter, tip.show_popover())
             .on(Event::MouseLeave, tip.hide_popover())
@@ -112,7 +112,7 @@ impl<S> Tooltip<S> {
     pub fn tooltip(self, text: impl Into<String>) -> El<S> {
         let tip = self.node_ref();
         div()
-            .id(self.name)
+            .id(Id::new(self.name))
             .attr(attr::POPOVER, "hint")
             .role(Role::Tooltip)
             .node_ref(tip)

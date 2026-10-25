@@ -13,7 +13,8 @@ use axum::middleware::{self, Next};
 use axum::response::Response;
 use axum::{Extension, Router};
 use hypersig::html::{
-    self, El, Orientation, Role, attr, div, each, form, h1, h2, header, li, p, section, span, ul,
+    self, El, Id, Orientation, Role, attr, div, each, form, h1, h2, header, li, p, section, span,
+    ul,
 };
 
 use hypersig::style::Media;
@@ -287,7 +288,7 @@ fn top() -> El<Gallery> {
                         .text("shadcn/ui's look on native elements and the WAI-ARIA patterns."),
                 ),
         )
-        .child(div().id("scheme").child(select_field(
+        .child(div().id(Id::new("scheme")).child(select_field(
             "Theme",
             Gallery::scheme(),
             [
@@ -350,7 +351,7 @@ fn profile() -> El<Gallery> {
         .call_with((name, email))
         .indicator(saving)
         .then(Gallery::email_error().set(""));
-    card().id("profile").child(
+    card().id(Id::new("profile")).child(
         form()
             .on_submit(submit)
             .css(stack(rem(1.5)))
@@ -399,7 +400,7 @@ fn profile() -> El<Gallery> {
                     )
                     .child(
                         span()
-                            .id("saved")
+                            .id(Id::new("saved"))
                             .role(Role::Status)
                             .css(Style::new().color(token::muted_foreground().var()))
                             .bind_text(Gallery::saved()),
@@ -410,7 +411,7 @@ fn profile() -> El<Gallery> {
 
 fn choices() -> El<Gallery> {
     let preferences = Gallery::preferences();
-    card().id("choices").child(
+    card().id(Id::new("choices")).child(
         card_content()
             .css(stack(rem(1.25)))
             .child(checkbox(
@@ -449,7 +450,7 @@ fn pickers() -> El<Gallery> {
         div()
             .css(grid(1, rem(1.5)).on(Media::Md, grid(2, rem(1.5))))
             .child(
-                div().id("font").child(
+                div().id(Id::new("font")).child(
                     Listbox::new("Font", Gallery::font())
                         .option(Font::Sans, "Sans serif")
                         .option(Font::Serif, "Serif")
@@ -543,13 +544,13 @@ fn overlays() -> El<Gallery> {
                 .css(wrap(rem(0.5)))
                 .child(
                     EDIT.trigger(ButtonVariant::Outline, ButtonSize::Default)
-                        .id("open-edit")
+                        .id(Id::new("open-edit"))
                         .text("Edit profile"),
                 )
                 .child(
                     DELETE
                         .trigger(ButtonVariant::Destructive, ButtonSize::Default)
-                        .id("open-delete")
+                        .id(Id::new("open-delete"))
                         .text("Delete project"),
                 )
                 .child(
@@ -560,7 +561,7 @@ fn overlays() -> El<Gallery> {
                 .child(
                     FILTERS
                         .trigger(ButtonVariant::Outline, ButtonSize::Default)
-                        .id("open-filters")
+                        .id(Id::new("open-filters"))
                         .text("Filters"),
                 )
                 .child(
@@ -577,7 +578,7 @@ fn overlays() -> El<Gallery> {
                 ),
         )
         .child(
-            p().id("status")
+            p().id(Id::new("status"))
                 .role(Role::Status)
                 .css(Style::new().color(token::muted_foreground().var()))
                 .bind_text(status),
@@ -643,13 +644,13 @@ fn feedback() -> El<Gallery> {
                 .css(wrap(rem(0.5)))
                 .child(
                     button(ButtonVariant::Secondary, ButtonSize::Sm)
-                        .id("less")
+                        .id(Id::new("less"))
                         .on_click(percent.set((percent - 10).max(0)))
                         .text("−10%"),
                 )
                 .child(
                     button(ButtonVariant::Secondary, ButtonSize::Sm)
-                        .id("more")
+                        .id(Id::new("more"))
                         .on_click(percent.set((percent + 10).min(100)))
                         .text("+10%"),
                 ),
@@ -668,7 +669,7 @@ fn toasts() -> El<Gallery> {
         .css(wrap(rem(0.5)))
         .child(
             button(ButtonVariant::Outline, ButtonSize::Sm)
-                .id("toast")
+                .id(Id::new("toast"))
                 .on_click(
                     Toast::new("Event created")
                         .description("Sunday, December 3 at 9:00")
@@ -678,7 +679,7 @@ fn toasts() -> El<Gallery> {
         )
         .child(
             button(ButtonVariant::Outline, ButtonSize::Sm)
-                .id("toast-error")
+                .id(Id::new("toast-error"))
                 .on_click(
                     Toast::new("Upload failed")
                         .description("The file is larger than 10 MB.")
@@ -689,7 +690,7 @@ fn toasts() -> El<Gallery> {
         )
         .child(
             button(ButtonVariant::Outline, ButtonSize::Sm)
-                .id("toast-name")
+                .id(Id::new("toast-name"))
                 .on_click(Toast::push_expr(
                     toasts,
                     Expr::lit(&Toast::new("Name")).with(
@@ -770,23 +771,23 @@ fn charts() -> El<Gallery> {
         .child(
             div()
                 .css(grid(1, rem(1.5)).on(Media::Md, grid(2, rem(1.5))))
-                .child(div().id("bar-chart").child(visitors(Chart::bar(
+                .child(div().id(Id::new("bar-chart")).child(visitors(Chart::bar(
                     "Visitors (bars)",
                     Gallery::months(),
                     Month::name(),
                 ))))
-                .child(div().id("line-chart").child(visitors(Chart::line(
+                .child(div().id(Id::new("line-chart")).child(visitors(Chart::line(
                     "Visitors (line)",
                     Gallery::months(),
                     Month::name(),
                 ))))
-                .child(div().id("area-chart").child(visitors(Chart::area(
+                .child(div().id(Id::new("area-chart")).child(visitors(Chart::area(
                     "Visitors (area)",
                     Gallery::months(),
                     Month::name(),
                 ))))
                 .child(
-                    div().id("stacked-chart").child(
+                    div().id(Id::new("stacked-chart")).child(
                         visitors(Chart::stacked_bar(
                             "Visitors (stacked)",
                             Gallery::months(),
@@ -795,23 +796,21 @@ fn charts() -> El<Gallery> {
                         .max_labels(3),
                     ),
                 )
-                .child(
-                    div()
-                        .id("horizontal-chart")
-                        .child(visitors(Chart::horizontal_bar(
-                            "Visitors (horizontal)",
-                            Gallery::months(),
-                            Month::name(),
-                        ))),
-                )
-                .child(div().id("donut-chart").child(DonutChart::new(
+                .child(div().id(Id::new("horizontal-chart")).child(visitors(
+                    Chart::horizontal_bar(
+                        "Visitors (horizontal)",
+                        Gallery::months(),
+                        Month::name(),
+                    ),
+                )))
+                .child(div().id(Id::new("donut-chart")).child(DonutChart::new(
                     "Visitors by browser",
                     Gallery::browsers(),
                     Browser::name(),
                     Browser::visitors(),
                 )))
                 .child(
-                    div().id("lead-chart").child(
+                    div().id(Id::new("lead-chart")).child(
                         Chart::bar("Desktop lead", Gallery::months(), Month::name())
                             .series("Lead", Month::lead(), token::chart_3())
                             .format(NumberFormat::new()),
@@ -886,7 +885,7 @@ fn payments() -> El<Gallery> {
 fn server_table() -> El<Gallery> {
     panel("Server table")
         .child(
-            p().id("chosen-orders")
+            p().id(Id::new("chosen-orders"))
                 .bind_text(Gallery::chosen_orders().len().to_text().concat(" selected")),
         )
         .child(
@@ -1047,7 +1046,7 @@ fn gallery() -> Page<Gallery> {
     .on_key(html::Key::Char('k').primary(), EDIT.open())
     .child(
         div()
-            .id("app")
+            .id(Id::new("app"))
             .css(
                 Style::new()
                     .min_height(raw("100vh"))

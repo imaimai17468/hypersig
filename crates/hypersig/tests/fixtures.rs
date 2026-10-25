@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    CustomEvent, El, Event, Key, Orientation, Role, a, attr, button, div, each, each_keyed, el,
+    CustomEvent, El, Event, Id, Key, Orientation, Role, a, attr, button, div, each, each_keyed, el,
     input, label, li, main, p, select, span, textarea, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
@@ -71,8 +71,13 @@ fn todos() -> (El<TodoApp>, TodoApp) {
             .then(draft.set("")),
     );
     let el = main()
-        .child(input().id("draft").bind(draft).on_key(Key::Enter, add))
-        .child(ul().id("list").child(each_keyed(
+        .child(
+            input()
+                .id(Id::new("draft"))
+                .bind(draft)
+                .on_key(Key::Enter, add),
+        )
+        .child(ul().id(Id::new("list")).child(each_keyed(
             todos,
             |todo| todo.at(Todo::id()),
             |todo| {
@@ -107,19 +112,19 @@ fn todos() -> (El<TodoApp>, TodoApp) {
         )))
         .child(
             span()
-                .id("left")
+                .id(Id::new("left"))
                 .bind_text(todos.count(|todo| !todo.at(Todo::done())).to_text()),
         )
         .child(
             button()
-                .id("clear")
+                .id(Id::new("clear"))
                 .show(todos.count(|todo| todo.at(Todo::done())).gt(0))
                 .on_click(todos.retain(|todo| !todo.at(Todo::done())))
                 .text("Clear completed"),
         )
         .child(
             input()
-                .id("all")
+                .id(Id::new("all"))
                 .attr(attr::TYPE, "checkbox")
                 .bind_checked(todos.count(|todo| !todo.at(Todo::done())).equals(0))
                 .on_change(todos.set_all(
@@ -162,45 +167,45 @@ fn controls() -> (El<Controls>, Controls) {
     let el = main()
         .child(
             input()
-                .id("quantity")
+                .id(Id::new("quantity"))
                 .attr(attr::TYPE, "number")
                 .bind(quantity),
         )
         .child(
             input()
-                .id("price")
+                .id(Id::new("price"))
                 .attr(attr::TYPE, "number")
                 .bind(Controls::price()),
         )
         .child(
             select()
-                .id("size")
+                .id(Id::new("size"))
                 .bind_select(size, [(Size::Small, "Small"), (Size::Large, "Large")]),
         )
-        .child(input().id("note").bind(Controls::note()))
+        .child(input().id(Id::new("note")).bind(Controls::note()))
         .child(
             input()
-                .id("limit")
+                .id(Id::new("limit"))
                 .attr(attr::TYPE, "number")
                 .bind(Controls::limit()),
         )
-        .child(input().id("small").bind_radio(size, &Size::Small))
-        .child(input().id("large").bind_radio(size, &Size::Large))
+        .child(input().id(Id::new("small")).bind_radio(size, &Size::Small))
+        .child(input().id(Id::new("large")).bind_radio(size, &Size::Large))
         .child(
             button()
-                .id("buy")
+                .id(Id::new("buy"))
                 .attr_when(attr::DISABLED, quantity.le(0))
                 .bind_attr(attr::TITLE, (Controls::price() * 2.0).to_fixed(2))
                 .bind_style(Property::Width, quantity.to_text().concat("rem"))
                 .text("Buy"),
         )
         .child(
-            span().id("price-label").bind_text(
+            span().id(Id::new("price-label")).bind_text(
                 (Controls::price() * 1000.0)
                     .format(&hypersig::NumberFormat::new().digits(2).prefix("$")),
             ),
         )
-        .child(span().id("total").bind_text(hypersig::if_else(
+        .child(span().id(Id::new("total")).bind_text(hypersig::if_else(
             size.equals(&Size::Large),
             "large",
             "small",
@@ -244,22 +249,22 @@ fn timers() -> (El<Timers>, Timers) {
     let el = main()
         .child(
             span()
-                .id("clock")
+                .id(Id::new("clock"))
                 .on_interval(Duration::from_millis(100), ticks.set(ticks + 1)),
         )
-        .child(input().id("query").bind(query).on_debounced(
+        .child(input().id(Id::new("query")).bind(query).on_debounced(
             Event::Input,
             Duration::from_millis(50),
             Timers::searched().set(query),
         ))
         .child(
             span()
-                .id("effect")
+                .id(Id::new("effect"))
                 .on_signal_change(query, effects.set(effects + 1))
                 .effect(Timers::echo().set(query.to_uppercase())),
         )
         .child(
-            button().id("save").on_click(
+            button().id(Id::new("save")).on_click(
                 SEARCH
                     .call()
                     .indicator(Timers::saving())
@@ -268,7 +273,7 @@ fn timers() -> (El<Timers>, Timers) {
             ),
         )
         .child(
-            input().id("find").bind(Timers::find()).on_input(
+            input().id(Id::new("find")).bind(Timers::find()).on_input(
                 LOOKUP
                     .call_with(Timers::find())
                     .indicator(Timers::finding())
@@ -276,7 +281,7 @@ fn timers() -> (El<Timers>, Timers) {
             ),
         )
         .child(
-            button().id("follow").on_click(
+            button().id(Id::new("follow")).on_click(
                 FEED.call()
                     .error(Timers::error())
                     .status(Timers::failure())
@@ -285,12 +290,12 @@ fn timers() -> (El<Timers>, Timers) {
         )
         .child(
             span()
-                .id("soon")
+                .id(Id::new("soon"))
                 .on_timeout(Duration::from_millis(100), fired.set(fired + 1)),
         )
         .child(
             span()
-                .id("gone")
+                .id(Id::new("gone"))
                 .on_timeout(Duration::from_millis(100), fired.set(fired + 10)),
         );
     let signals = Timers {
@@ -359,9 +364,9 @@ fn outbox() -> (El<Outbox>, Outbox) {
             .then(next.set(next + 1))
     });
     let el = main()
-        .child(input().id("draft").bind(draft))
-        .child(button().id("send").on_click(send))
-        .child(ul().id("letters").child(each(letters, |line| {
+        .child(input().id(Id::new("draft")).bind(draft))
+        .child(button().id(Id::new("send")).on_click(send))
+        .child(ul().id(Id::new("letters")).child(each(letters, |line| {
             li().child(span().class(class::NAME).bind_text(line.at(Letter::text())))
                 .child(
                     span()
@@ -398,13 +403,13 @@ const SUBSCRIBE: Action<Mailing, String> = Action::post("/subscribe");
 impl Part for Mailing {
     fn render() -> El<Self> {
         div()
-            .child(input().id("email").bind(Mailing::email()))
+            .child(input().id(Id::new("email")).bind(Mailing::email()))
             .child(
                 button()
-                    .id("subscribe")
+                    .id(Id::new("subscribe"))
                     .on_click(SUBSCRIBE.call_with(Mailing::email())),
             )
-            .child(span().id("status").bind_text(Mailing::status()))
+            .child(span().id(Id::new("status")).bind_text(Mailing::status()))
     }
 }
 
@@ -465,31 +470,45 @@ fn join() -> (El<Join>, Join) {
     let (email, password) = (Signup::email(), Signup::password());
     let el = signup
         .form(JOIN.call_with(signup.value()))
-        .id("join")
+        .id(Id::new("join"))
         .child(
             input()
-                .id("email")
+                .id(Id::new("email"))
                 .bind(signup.field(email))
                 .on_blur(signup.touch(email)),
         )
-        .child(span().id("email-error").bind_text(signup.error(email)))
+        .child(
+            span()
+                .id(Id::new("email-error"))
+                .bind_text(signup.error(email)),
+        )
         .child(
             input()
-                .id("password")
+                .id(Id::new("password"))
                 .bind(signup.field(password))
                 .on_blur(signup.touch(password)),
         )
         .child(
             span()
-                .id("password-error")
+                .id(Id::new("password-error"))
                 .bind_text(signup.error(password)),
         )
-        .child(span().id("dirty").show(signup.is_dirty()).text("unsaved"))
-        .child(span().id("valid").show(signup.is_valid()).text("ok"))
-        .child(button().id("submit").attr(attr::TYPE, "submit"))
+        .child(
+            span()
+                .id(Id::new("dirty"))
+                .show(signup.is_dirty())
+                .text("unsaved"),
+        )
+        .child(
+            span()
+                .id(Id::new("valid"))
+                .show(signup.is_valid())
+                .text("ok"),
+        )
+        .child(button().id(Id::new("submit")).attr(attr::TYPE, "submit"))
         .child(
             button()
-                .id("reset")
+                .id(Id::new("reset"))
                 .attr(attr::TYPE, "button")
                 .on_click(signup.reset()),
         );
@@ -524,7 +543,7 @@ struct Nested {
 fn nested() -> (El<Nested>, Nested) {
     let hovered = Nested::hovered();
     let el = main()
-        .child(ul().id("rows").child(each_keyed(
+        .child(ul().id(Id::new("rows")).child(each_keyed(
             Nested::rows(),
             |row| row.at(Row::name()),
             |row| {
@@ -551,7 +570,7 @@ fn nested() -> (El<Nested>, Nested) {
         )))
         .child(
             div()
-                .id("field")
+                .id(Id::new("field"))
                 .on(Event::Focus, Nested::focused().set(true))
                 .on_blur(Nested::focused().set(false))
                 .child(input())
@@ -601,7 +620,7 @@ fn table() -> (El<Table>, Table) {
     });
     let el = main()
         .child(
-            button().id("run").on_click(
+            button().id(Id::new("run")).on_click(
                 lines
                     .clear()
                     .then(lines.extend(3, |i| {
@@ -613,28 +632,28 @@ fn table() -> (El<Table>, Table) {
                     .then(next_id.set(next_id + 3)),
             ),
         )
-        .child(button().id("update").on_click(lines.update_where(
+        .child(button().id(Id::new("update")).on_click(lines.update_where(
             |line| (line.index() % 2).equals(0),
             Line::label(),
             |line| line.at(Line::label()).concat(" !"),
         )))
-        .child(button().id("swap").on_click(lines.swap(0, 2)))
+        .child(button().id(Id::new("swap")).on_click(lines.swap(0, 2)))
         .child(
             button()
-                .id("sort")
+                .id(Id::new("sort"))
                 .on_click(lines.sort_by(|line| line.at(Line::id()))),
         )
         .child(
             button()
-                .id("sort-desc")
+                .id(Id::new("sort-desc"))
                 .on_click(lines.sort_by_desc(|line| line.at(Line::id()))),
         )
         .child(
             button()
-                .id("stamp")
+                .id(Id::new("stamp"))
                 .on_click(Table::stamp().set(Expr::now())),
         )
-        .child(ul().id("lines").child(each_keyed(
+        .child(ul().id(Id::new("lines")).child(each_keyed(
             lines,
             |line| line.at(Line::id()),
             |line| li().bind_text(line.at(Line::label())),
@@ -662,14 +681,20 @@ fn roving() -> (El<Roving>, Roving) {
     let tab = Roving::tab();
     let taken = Roving::taken();
     let tab_button = |i: i32| {
+        const TABS: [Id; 4] = [
+            Id::new("tab0"),
+            Id::new("tab1"),
+            Id::new("tab2"),
+            Id::new("tab3"),
+        ];
         button()
-            .id(format!("tab{i}"))
+            .id(TABS[usize::try_from(i).expect("a tab index")].clone())
             .bind_attr(attr::TABINDEX, if_else(tab.equals(i), "0", "-1"))
             .on(Event::Focus, tab.set(i))
     };
     let el = main().child(
         div()
-            .id("tabs")
+            .id(Id::new("tabs"))
             .roving_focus(Orientation::Horizontal)
             .child(tab_button(0))
             .child(tab_button(1))
@@ -677,14 +702,15 @@ fn roving() -> (El<Roving>, Roving) {
             .child(tab_button(3).on_key(Key::ArrowRight, taken.set(taken + 1)))
             .child(
                 div()
-                    .id("menu")
+                    .id(Id::new("menu"))
                     .roving_focus(Orientation::Vertical)
                     .node_ref(MENU)
                     .on_key(Key::Tab, MENU.hide_popover())
                     .on_key(Key::Tab.shift(), MENU.hide_popover())
                     .on_key(Key::Enter, MENU.show_popover())
                     .children(
-                        (0..2).map(|i| button().id(format!("item{i}")).attr(attr::TABINDEX, "-1")),
+                        [Id::new("item0"), Id::new("item1")]
+                            .map(|id| button().id(id).attr(attr::TABINDEX, "-1")),
                     ),
             ),
     );
@@ -709,15 +735,16 @@ fn combo() -> (El<Combo>, Combo) {
     let picked = Combo::picked();
     let downs = Combo::downs();
     let option = |i: i32| {
+        const OPTIONS: [Id; 4] = [Id::new("o0"), Id::new("o1"), Id::new("o2"), Id::new("o3")];
         div()
-            .id(format!("o{i}"))
+            .id(OPTIONS[usize::try_from(i).expect("an option index")].clone())
             .role(Role::Option)
             .on_click(picked.set(format!("o{i}")))
     };
     let el = main()
         .child(
             input()
-                .id("field")
+                .id(Id::new("field"))
                 .bind(query)
                 .active_descendant(OPTIONS, active)
                 .on_key(Key::ArrowDown, downs.set(downs + 1)),
@@ -778,10 +805,14 @@ fn plot() -> (El<Plot>, Plot) {
             .concat(heights.sum_of(|bar| bar.at(Bar::height())).to_text())
     });
     let el = main()
-        .child(button().id("mark").on_click(Plot::marked().toggle()))
-        .child(span().id("extent").bind_text(extent))
         .child(
-            span().id("second").bind_text(
+            button()
+                .id(Id::new("mark"))
+                .on_click(Plot::marked().toggle()),
+        )
+        .child(span().id(Id::new("extent")).bind_text(extent))
+        .child(
+            span().id(Id::new("second")).bind_text(
                 heights
                     .map(|bar| bar.at(Bar::id()))
                     .nth(1)
@@ -791,21 +822,21 @@ fn plot() -> (El<Plot>, Plot) {
         )
         .child(
             button()
-                .id("collect")
+                .id(Id::new("collect"))
                 .on_click(Plot::collected().append(heights.map(|bar| bar.at(Bar::id())))),
         )
         .child(
             span()
-                .id("collected")
+                .id(Id::new("collected"))
                 .bind_text(Plot::collected().len().to_text()),
         )
         .child(
             el("svg")
-                .id("plot")
+                .id(Id::new("plot"))
                 .attr(attr::VIEW_BOX, "0 0 100 100")
                 .child(
                     el("rect")
-                        .id("frame")
+                        .id(Id::new("frame"))
                         .attr(attr::WIDTH, "100")
                         .attr(attr::HEIGHT, "100")
                         .show(Plot::marked()),
@@ -827,7 +858,7 @@ fn plot() -> (El<Plot>, Plot) {
                 ))
                 .child(when(
                     Plot::marked(),
-                    el("circle").id("dot").attr(attr::R, "2"),
+                    el("circle").id(Id::new("dot")).attr(attr::R, "2"),
                 )),
         );
     let signals = Plot {
@@ -901,56 +932,58 @@ fn values() -> (El<Values>, Values) {
     let code = Values::code();
     let count = Values::count();
     let yes_no = |test: Expr<Values, bool>| if_else(test, "yes", "no");
-    let el =
-        main().child(
-            div()
-                .id("values")
-                .child(
-                    span()
-                        .id("zip-digits")
-                        .bind_text(yes_no(zip.all_chars(CharClass::AsciiDigit))),
-                )
-                .child(
-                    span()
-                        .id("code-digits")
-                        .bind_text(yes_no(code.all_chars(CharClass::AsciiDigit))),
-                )
-                .child(
-                    span()
-                        .id("code-upper")
-                        .bind_text(yes_no(code.any_char(CharClass::AsciiUppercase))),
-                )
-                .child(
-                    span()
-                        .id("code-space")
-                        .bind_text(yes_no(code.any_char(CharClass::AsciiWhitespace))),
-                )
-                .child(
-                    span()
-                        .id("items-en")
-                        .bind_text(count.to_text().concat(count.plural(
-                            IntlLocale::En,
-                            |category| match category {
-                                PluralCategory::One => " item",
-                                _ => " items",
-                            },
-                        ))),
-                )
-                .child(
-                    span().id("items-ja").bind_text(
+    let el = main().child(
+        div()
+            .id(Id::new("values"))
+            .child(
+                span()
+                    .id(Id::new("zip-digits"))
+                    .bind_text(yes_no(zip.all_chars(CharClass::AsciiDigit))),
+            )
+            .child(
+                span()
+                    .id(Id::new("code-digits"))
+                    .bind_text(yes_no(code.all_chars(CharClass::AsciiDigit))),
+            )
+            .child(
+                span()
+                    .id(Id::new("code-upper"))
+                    .bind_text(yes_no(code.any_char(CharClass::AsciiUppercase))),
+            )
+            .child(
+                span()
+                    .id(Id::new("code-space"))
+                    .bind_text(yes_no(code.any_char(CharClass::AsciiWhitespace))),
+            )
+            .child(
+                span()
+                    .id(Id::new("items-en"))
+                    .bind_text(
                         count
                             .to_text()
-                            .concat(count.plural(IntlLocale::Ja, |_| " 点")),
+                            .concat(count.plural(IntlLocale::En, |category| match category {
+                                PluralCategory::One => " item",
+                                _ => " items",
+                            })),
                     ),
-                )
-                .child(span().id("status").bind_text(Values::status().label(
-                    |status| match status {
+            )
+            .child(
+                span().id(Id::new("items-ja")).bind_text(
+                    count
+                        .to_text()
+                        .concat(count.plural(IntlLocale::Ja, |_| " 点")),
+                ),
+            )
+            .child(
+                span()
+                    .id(Id::new("status"))
+                    .bind_text(Values::status().label(|status| match status {
                         Status::Open => "Open",
                         Status::InReview => "In review",
                         Status::Closed => "Closed",
-                    },
-                ))),
-        );
+                    })),
+            ),
+    );
     let el = el.child(dates());
     let signals = Values {
         zip: "1500001".to_owned(),
@@ -969,15 +1002,20 @@ fn values() -> (El<Values>, Values) {
 fn dates() -> El<Values> {
     let posted = Values::posted();
     let now = Values::now();
-    let date =
-        |id: &'static str, format: DateFormat| span().id(id).bind_text(posted.format_date(&format));
+    let date = |id: &'static str, format: DateFormat| {
+        span()
+            .id(Id::new(id))
+            .bind_text(posted.format_date(&format))
+    };
     let ago = |id: &'static str, locale: IntlLocale| {
-        span().id(id).bind_text(posted.relative_to(now, locale))
+        span()
+            .id(Id::new(id))
+            .bind_text(posted.relative_to(now, locale))
     };
     div()
         .child(
             div()
-                .id("dates")
+                .id(Id::new("dates"))
                 .child(date(
                     "date-en-full",
                     DateFormat::date_time(IntlLocale::En, DateStyle::Full, TimeStyle::Medium),
@@ -1050,8 +1088,8 @@ fn computed_page() -> String {
     .bind_title(doubled.to_text().concat(" doubled"))
     .child(
         main()
-            .child(span().id("sum").bind_text(sum.to_text()))
-            .child(span().id("doubled").bind_text(doubled.to_text())),
+            .child(span().id(Id::new("sum")).bind_text(sum.to_text()))
+            .child(span().id(Id::new("doubled")).bind_text(doubled.to_text())),
     )
     .render()
 }
@@ -1089,7 +1127,7 @@ fn shortcuts_page() -> String {
     )
     .child(
         main()
-            .id("section")
+            .id(Id::new("section"))
             .attr(attr::TABINDEX, "-1")
             .on_key(
                 Key::Char('s'),
@@ -1099,14 +1137,14 @@ fn shortcuts_page() -> String {
                 Key::Char('s').ctrl().shift(),
                 Shortcuts::saves().set(Shortcuts::saves() + 100),
             )
-            .child(input().id("field").bind(Shortcuts::text()))
-            .child(textarea().id("notes").on_key(
+            .child(input().id(Id::new("field")).bind(Shortcuts::text()))
+            .child(textarea().id(Id::new("notes")).on_key(
                 Key::Escape,
                 Shortcuts::escapes().set(Shortcuts::escapes() + 1),
             ))
             .child(
                 input()
-                    .id("own")
+                    .id(Id::new("own"))
                     .on_key(
                         Key::Char('s'),
                         Shortcuts::saves().set(Shortcuts::saves() + 1000),
@@ -1131,12 +1169,12 @@ fn styled() -> (El<Styled>, Styled) {
     let el = main()
         .child(
             div()
-                .id("box")
+                .id(Id::new("box"))
                 .css(Style::new().on(Media::Md, Style::new().width(pct(50))))
                 .css_when(Style::new().color(Color::CRIMSON), Styled::on())
                 .on_click(Styled::on().toggle()),
         )
-        .child(div().id("slot"));
+        .child(div().id(Id::new("slot")));
     (el, Styled { on: false })
 }
 
@@ -1147,7 +1185,7 @@ struct Panel;
 
 impl Fragment for Panel {
     type Signals = Styled;
-    const ID: &'static str = "slot";
+    const ID: Id = Id::new("slot");
 
     fn render(&self) -> El<Styled> {
         let pulse = Keyframes::new("pulse")
@@ -1206,32 +1244,41 @@ async fn no_page<A>((): (), _: A) -> Option<Page<Roster>> {
 /// and the browser's `encodeURIComponent` are compared on the same values.
 fn links() -> (El<Roster>, Roster) {
     let el = main()
-        .child(a().id("home").href(HOME.link()))
-        .child(ul().id("members").child(each(Roster::members(), |member| {
-            let params = || (member.at(Member::team()), member.at(Member::id()));
-            let search = Expr::lit(&filter()).with(Filter::page(), member.at(Member::id()));
-            li().child(a().href(MEMBER.link_with(params())))
-                .child(button().on_click(MEMBER.link_with(params()).navigate()))
-                .child(a().href(TEAM_SEARCH.link_with((member.at(Member::team()), search))))
-        })))
-        .child(a().id("search-fixed").href(FIND.link_with(&filter())))
+        .child(a().id(Id::new("home")).href(HOME.link()))
         .child(
-            a().id("search-bound")
+            ul().id(Id::new("members"))
+                .child(each(Roster::members(), |member| {
+                    let params = || (member.at(Member::team()), member.at(Member::id()));
+                    let search = Expr::lit(&filter()).with(Filter::page(), member.at(Member::id()));
+                    li().child(a().href(MEMBER.link_with(params())))
+                        .child(button().on_click(MEMBER.link_with(params()).navigate()))
+                        .child(a().href(TEAM_SEARCH.link_with((member.at(Member::team()), search))))
+                })),
+        )
+        .child(
+            a().id(Id::new("search-fixed"))
+                .href(FIND.link_with(&filter())),
+        )
+        .child(
+            a().id(Id::new("search-bound"))
                 .href(FIND.link_with(Roster::filter())),
         )
         .child(
-            a().id("file-fixed")
+            a().id(Id::new("file-fixed"))
                 .href(FILE.link_with(&Rest::new("docs/a b/ü?.md"))),
         )
-        .child(a().id("file-bound").href(FILE.link_with(Roster::file())))
+        .child(
+            a().id(Id::new("file-bound"))
+                .href(FILE.link_with(Roster::file())),
+        )
         .child(
             button()
-                .id("push")
+                .id(Id::new("push"))
                 .on_click(FIND.link_with(Roster::filter()).push_url()),
         )
         .child(
             button()
-                .id("replace")
+                .id(Id::new("replace"))
                 .on_click(FILE.link_with(Roster::file()).replace_url()),
         );
     let signals = Roster {
@@ -1310,11 +1357,11 @@ fn feed() -> (El<Feed>, Feed) {
     let el = main()
         .child(
             button()
-                .id("older")
+                .id(Id::new("older"))
                 .on_click(Feed::notes().prepend(Feed::older()))
                 .text("Older"),
         )
-        .child(ul().id("feed").child(each_keyed(
+        .child(ul().id(Id::new("feed")).child(each_keyed(
             Feed::notes(),
             |note| note.at(Note::id()),
             |note| li().bind_text(note.at(Note::body())),
@@ -1369,7 +1416,7 @@ struct Atlas(&'static str);
 
 impl Fragment for Atlas {
     type Signals = Widgets;
-    const ID: &'static str = "atlas";
+    const ID: Id = Id::new("atlas");
 
     fn render(&self) -> El<Widgets> {
         div().child(p().text(self.0)).child(
@@ -1385,18 +1432,18 @@ fn widgets() -> (El<Widgets>, Widgets) {
     let el = main()
         .child(
             el("x-rating")
-                .id("rating")
+                .id(Id::new("rating"))
                 .on_custom(RATE, |stars| Widgets::stars().set(stars))
                 .on_custom(RATE, |stars| Widgets::stars().set(Widgets::stars() + stars)),
         )
-        .child(el("x-map").id("map").on_custom(MOVED, |point| {
+        .child(el("x-map").id(Id::new("map")).on_custom(MOVED, |point| {
             center
                 .at(Point::lat())
                 .set(point.clone().at(Point::lat()))
                 .then(center.at(Point::lng()).set(point.at(Point::lng())))
         }))
         .child(Atlas("Tokyo").render().id(Atlas::ID))
-        .child(ul().id("pins").child(each(Widgets::pins(), |pin| {
+        .child(ul().id(Id::new("pins")).child(each(Widgets::pins(), |pin| {
             li().child(
                 el("x-pin")
                     .on_custom(PICK, move |_| pin.at(Pin::picked()).set(true))
@@ -1547,16 +1594,25 @@ const PICTURES_NOTE: NodeRef<Uploads> = NodeRef::new("pictures");
 fn uploads() -> (El<Uploads>, Uploads) {
     let el = main()
         .child(
-            p().id("note")
+            p().id(Id::new("note"))
                 .attr(attr::TABINDEX, "-1")
                 .node_ref(PICTURES_NOTE)
                 .text("Pick pictures"),
         )
-        .child(button().id("focus").on_click(PICTURES_NOTE.focus()))
-        .child(PICTURES.input().id("pictures").attr(attr::MULTIPLE, ""))
-        .child(input().id("caption").bind(Uploads::caption()))
         .child(
-            button().id("send").on_click(
+            button()
+                .id(Id::new("focus"))
+                .on_click(PICTURES_NOTE.focus()),
+        )
+        .child(
+            PICTURES
+                .input()
+                .id(Id::new("pictures"))
+                .attr(attr::MULTIPLE, ""),
+        )
+        .child(input().id(Id::new("caption")).bind(Uploads::caption()))
+        .child(
+            button().id(Id::new("send")).on_click(
                 SEND.call_with(PICTURES, Uploads::caption())
                     .indicator(Uploads::uploading())
                     .error(Uploads::error())

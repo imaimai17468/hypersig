@@ -1,6 +1,6 @@
 //! Text fields with a label, a description, and an error message.
 
-use hypersig::html::{El, attr, div, input, label, p, span, textarea};
+use hypersig::html::{El, Id, attr, div, input, label, p, span, textarea};
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     BorderStyle, Color, FontWeight, LineHeight, MinWidth, Resize, pct, px, rem,
@@ -473,7 +473,7 @@ impl<S> TextField<S> {
         if let Some(placeholder) = self.placeholder {
             control = control.attr(attr::PLACEHOLDER, placeholder);
         }
-        self.frame.render(&crate::id::of(self.value, ""), control)
+        self.frame.render(&crate::id::base(self.value), control)
     }
 }
 
@@ -512,23 +512,23 @@ impl<S> Frame<S> {
     }
 
     /// `control` with its id and its ties to the label, the description, and
-    /// the error, in a `<div>` with them. The ids start with `base`.
-    pub(crate) fn render(self, base: &str, control: El<S>) -> El<S> {
-        let field_id = format!("{base}input");
-        let description_id = format!("{base}description");
-        let error_id = format!("{base}error");
+    /// the error, in a `<div>` with them. The ids are `base` with a key.
+    pub(crate) fn render(self, base: &Id, control: El<S>) -> El<S> {
+        let field_id = base.with_key("input");
+        let description_id = base.with_key("description");
+        let error_id = base.with_key("error");
 
         let mut described = Vec::new();
         if self.description.is_some() {
-            described.push(description_id.as_str());
+            described.push(&description_id);
         }
         if self.error.is_some() {
-            described.push(error_id.as_str());
+            described.push(&error_id);
         }
 
         let mut control = control.id(field_id.clone());
         if !described.is_empty() {
-            control = control.attr(attr::ARIA_DESCRIBEDBY, described.join(" "));
+            control = control.aria_describedby(&described);
         }
         if self.required {
             control = control.attr(attr::REQUIRED, "");
@@ -553,7 +553,7 @@ impl<S> Frame<S> {
         }
 
         let mut caption = label()
-            .attr(attr::FOR, field_id)
+            .label_for(&field_id)
             .css(label_style())
             .text(self.label);
         if self.required {
@@ -589,7 +589,7 @@ impl<S> Frame<S> {
 pub(crate) struct Feedback<S> {
     error: Expr<S, String>,
     touch: Stmt<S>,
-    error_id: String,
+    error_id: Id,
 }
 
 impl<S> Feedback<S> {
@@ -616,7 +616,7 @@ impl<S> Feedback<S> {
     /// `aria-invalid` true while the message is not empty.
     pub(crate) fn describe(&self, control: El<S>) -> El<S> {
         control
-            .attr(attr::ARIA_DESCRIBEDBY, self.error_id.clone())
+            .aria_describedby(&[&self.error_id])
             .bind_attr(attr::ARIA_INVALID, if_else(self.invalid(), "true", "false"))
     }
 

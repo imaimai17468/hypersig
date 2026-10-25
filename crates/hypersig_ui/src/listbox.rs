@@ -99,7 +99,7 @@ impl<S, T: Serialize + PartialEq> Listbox<S, T> {
                         };
                         div()
                             .role(Role::Option)
-                            .id(crate::id::of(selected, &format!("option-{index}")))
+                            .id(crate::id::of(selected, "option").with_key(index))
                             .bind_attr(
                                 attr::ARIA_SELECTED,
                                 if_else(chosen.clone(), "true", "false"),

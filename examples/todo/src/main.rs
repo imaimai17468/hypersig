@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, a, attr, button, div, each_keyed, form, h1, input, li, p, span, ul};
+use hypersig::html::{El, Id, a, attr, button, div, each_keyed, form, h1, input, li, p, span, ul};
 use hypersig::{Action, Page, Patches, Route, RouterExt, Signals, StreamAction, if_else};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
@@ -96,39 +96,41 @@ impl AppState {
 }
 
 fn todo_list() -> El<TodoPage> {
-    ul().id("todo-list").css(styles::list()).child(each_keyed(
-        TodoPage::todos(),
-        |todo| todo.at(Todo::id()),
-        |todo| {
-            let id = todo.at(Todo::id());
-            let done = todo.at(Todo::done());
-            li().css(styles::item())
-                .child(
-                    button()
-                        .css(styles::icon_button())
-                        .attr(attr::ARIA_LABEL, "toggle")
-                        .on_click(TOGGLE.call_with(id))
-                        .bind_text(if_else(done, "✓", "○")),
-                )
-                .child(
-                    span()
-                        .css(styles::title())
-                        .css_when(styles::title_done(), done)
-                        .child(
-                            a().css(styles::link())
-                                .href(TODO.link_with(id))
-                                .bind_text(todo.at(Todo::title())),
-                        ),
-                )
-                .child(
-                    button()
-                        .css(styles::icon_button())
-                        .attr(attr::ARIA_LABEL, "remove")
-                        .on_click(REMOVE.call_with(id))
-                        .text("×"),
-                )
-        },
-    ))
+    ul().id(Id::new("todo-list"))
+        .css(styles::list())
+        .child(each_keyed(
+            TodoPage::todos(),
+            |todo| todo.at(Todo::id()),
+            |todo| {
+                let id = todo.at(Todo::id());
+                let done = todo.at(Todo::done());
+                li().css(styles::item())
+                    .child(
+                        button()
+                            .css(styles::icon_button())
+                            .attr(attr::ARIA_LABEL, "toggle")
+                            .on_click(TOGGLE.call_with(id))
+                            .bind_text(if_else(done, "✓", "○")),
+                    )
+                    .child(
+                        span()
+                            .css(styles::title())
+                            .css_when(styles::title_done(), done)
+                            .child(
+                                a().css(styles::link())
+                                    .href(TODO.link_with(id))
+                                    .bind_text(todo.at(Todo::title())),
+                            ),
+                    )
+                    .child(
+                        button()
+                            .css(styles::icon_button())
+                            .attr(attr::ARIA_LABEL, "remove")
+                            .on_click(REMOVE.call_with(id))
+                            .text("×"),
+                    )
+            },
+        ))
 }
 
 mod styles {
@@ -236,13 +238,13 @@ async fn index(state: AppState, (): ()) -> Page<TodoPage> {
             )
             .child(todo_list())
             .child(
-                p().id("summary-left")
+                p().id(Id::new("summary-left"))
                     .css(styles::summary())
                     .show(remaining.clone().gt(0))
                     .bind_text(remaining.clone().to_text().concat(" left")),
             )
             .child(
-                p().id("summary-done")
+                p().id(Id::new("summary-done"))
                     .css(styles::summary())
                     .show(remaining.equals(0))
                     .text("All done."),
@@ -258,8 +260,12 @@ async fn todo(state: AppState, id: u64) -> Option<Page<TodoDetail>> {
             div()
                 .css(styles::page())
                 .child(h1().text(todo.title))
-                .child(p().id("status").show(done).text("Done."))
-                .child(p().id("status-open").show(!done).text("Still to do."))
+                .child(p().id(Id::new("status")).show(done).text("Done."))
+                .child(
+                    p().id(Id::new("status-open"))
+                        .show(!done)
+                        .text("Still to do."),
+                )
                 .child(a().href(INDEX.link()).text("All todos")),
         ),
     )

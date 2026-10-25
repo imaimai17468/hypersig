@@ -75,9 +75,6 @@ pub const ARABIC_FORM: Attr = Attr::new("arabic-form");
 /// `archive`, on `<applet>`, `<object>`.
 pub const ARCHIVE: Attr = Attr::new("archive");
 
-/// `aria-activedescendant`, on every element, as ARIA defines.
-pub const ARIA_ACTIVEDESCENDANT: Attr = Attr::new("aria-activedescendant");
-
 /// `aria-atomic`, on every element, as ARIA defines.
 pub const ARIA_ATOMIC: Attr = Attr::new("aria-atomic");
 
@@ -99,17 +96,8 @@ pub const ARIA_COLINDEX: Attr = Attr::new("aria-colindex");
 /// `aria-colspan`, on every element, as ARIA defines.
 pub const ARIA_COLSPAN: Attr = Attr::new("aria-colspan");
 
-/// `aria-controls`, on every element, as ARIA defines.
-pub const ARIA_CONTROLS: Attr = Attr::new("aria-controls");
-
 /// `aria-current`, on every element, as ARIA defines.
 pub const ARIA_CURRENT: Attr = Attr::new("aria-current");
-
-/// `aria-describedby`, on every element, as ARIA defines.
-pub const ARIA_DESCRIBEDBY: Attr = Attr::new("aria-describedby");
-
-/// `aria-details`, on every element, as ARIA defines.
-pub const ARIA_DETAILS: Attr = Attr::new("aria-details");
 
 /// `aria-disabled`, on every element, as ARIA defines.
 pub const ARIA_DISABLED: Attr = Attr::new("aria-disabled");
@@ -117,14 +105,8 @@ pub const ARIA_DISABLED: Attr = Attr::new("aria-disabled");
 /// `aria-dropeffect`, on every element, as ARIA defines.
 pub const ARIA_DROPEFFECT: Attr = Attr::new("aria-dropeffect");
 
-/// `aria-errormessage`, on every element, as ARIA defines.
-pub const ARIA_ERRORMESSAGE: Attr = Attr::new("aria-errormessage");
-
 /// `aria-expanded`, on every element, as ARIA defines.
 pub const ARIA_EXPANDED: Attr = Attr::new("aria-expanded");
-
-/// `aria-flowto`, on every element, as ARIA defines.
-pub const ARIA_FLOWTO: Attr = Attr::new("aria-flowto");
 
 /// `aria-grabbed`, on every element, as ARIA defines.
 pub const ARIA_GRABBED: Attr = Attr::new("aria-grabbed");
@@ -144,9 +126,6 @@ pub const ARIA_KEYSHORTCUTS: Attr = Attr::new("aria-keyshortcuts");
 /// `aria-label`, on every element, as ARIA defines.
 pub const ARIA_LABEL: Attr = Attr::new("aria-label");
 
-/// `aria-labelledby`, on every element, as ARIA defines.
-pub const ARIA_LABELLEDBY: Attr = Attr::new("aria-labelledby");
-
 /// `aria-level`, on every element, as ARIA defines.
 pub const ARIA_LEVEL: Attr = Attr::new("aria-level");
 
@@ -164,9 +143,6 @@ pub const ARIA_MULTISELECTABLE: Attr = Attr::new("aria-multiselectable");
 
 /// `aria-orientation`, on every element, as ARIA defines.
 pub const ARIA_ORIENTATION: Attr = Attr::new("aria-orientation");
-
-/// `aria-owns`, on every element, as ARIA defines.
-pub const ARIA_OWNS: Attr = Attr::new("aria-owns");
 
 /// `aria-placeholder`, on every element, as ARIA defines.
 pub const ARIA_PLACEHOLDER: Attr = Attr::new("aria-placeholder");
@@ -372,9 +348,6 @@ pub const COLSPAN: Attr = Attr::new("colspan");
 /// `command`, on `<button>`.
 pub const COMMAND: Attr = Attr::new("command");
 
-/// `commandfor`, on `<button>`.
-pub const COMMANDFOR: Attr = Attr::new("commandfor");
-
 /// `compact`, on `<dir>`, `<dl>`, `<menu>`, `<ol>`, `<ul>`.
 pub const COMPACT: Attr = Attr::new("compact");
 
@@ -564,12 +537,6 @@ pub const FONT_VARIANT: Attr = Attr::new("font-variant");
 /// `font-weight`, on every SVG element.
 pub const FONT_WEIGHT: Attr = Attr::new("font-weight");
 
-/// `for`, on `<label>`, `<output>`.
-pub const FOR: Attr = Attr::new("for");
-
-/// `form`, on 8 HTML elements.
-pub const FORM: Attr = Attr::new("form");
-
 /// `format`, on `<altGlyph>`, `<glyphRef>`.
 pub const FORMAT: Attr = Attr::new("format");
 
@@ -632,9 +599,6 @@ pub const HANDLER: Attr = Attr::new("handler");
 
 /// `hanging`, on `<font-face>`.
 pub const HANGING: Attr = Attr::new("hanging");
-
-/// `headers`, on `<td>`, `<th>`.
-pub const HEADERS: Attr = Attr::new("headers");
 
 /// `height`, on 11 HTML elements; 29 SVG elements.
 pub const HEIGHT: Attr = Attr::new("height");
@@ -705,9 +669,6 @@ pub const ITEMID: Attr = Attr::new("itemid");
 /// `itemprop`, on every HTML element.
 pub const ITEMPROP: Attr = Attr::new("itemprop");
 
-/// `itemref`, on every HTML element.
-pub const ITEMREF: Attr = Attr::new("itemref");
-
 /// `itemscope`, on every HTML element.
 pub const ITEMSCOPE: Attr = Attr::new("itemscope");
 
@@ -773,9 +734,6 @@ pub const LIMITING_CONE_ANGLE: Attr = Attr::new("limitingConeAngle");
 
 /// `link`, on `<body>`.
 pub const LINK: Attr = Attr::new("link");
-
-/// `list`, on `<input>`.
-pub const LIST: Attr = Attr::new("list");
 
 /// `loading`, on `<iframe>`, `<img>`.
 pub const LOADING: Attr = Attr::new("loading");
@@ -1034,9 +992,6 @@ pub const POINTS_AT_Z: Attr = Attr::new("pointsAtZ");
 
 /// `popover`, on every HTML element.
 pub const POPOVER: Attr = Attr::new("popover");
-
-/// `popovertarget`, on `<button>`, `<input>`.
-pub const POPOVERTARGET: Attr = Attr::new("popovertarget");
 
 /// `popovertargetaction`, on `<button>`, `<input>`.
 pub const POPOVERTARGETACTION: Attr = Attr::new("popovertargetaction");

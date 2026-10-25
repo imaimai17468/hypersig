@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicI32, Ordering};
 
 use axum::Router;
 use axum::routing::get;
-use hypersig::html::{a, button, h1, li, p, span, ul};
+use hypersig::html::{Id, a, button, h1, li, p, span, ul};
 use hypersig::{Action, Base, Page, PageResponse, Patches, Route, RouterExt, Signals, Unserved};
 use serde::{Deserialize, Serialize};
 
@@ -43,14 +43,14 @@ fn shop(state: &AppState, title: &str) -> Page<Shop> {
         in_cart: state.in_cart.load(Ordering::Relaxed),
     };
     Page::new(title, signals).child(
-        p().id("cart")
+        p().id(Id::new("cart"))
             .text("In the cart: ")
             .child(span().bind_text(Shop::in_cart().to_text())),
     )
 }
 
 async fn home(state: AppState, (): ()) -> Page<Shop> {
-    let mut list = ul().id("items");
+    let mut list = ul().id(Id::new("items"));
     for (id, name) in (0_u32..).zip(ITEMS) {
         list = list.child(li().child(a().href(ITEM.link_with(&id)).text(name)));
     }
@@ -70,7 +70,7 @@ async fn item(state: AppState, id: u32) -> Option<Page<Shop>> {
 async fn missing(state: AppState, unserved: Unserved) -> Page<Shop> {
     shop(&state, "Not found")
         .child(h1().text("Not found"))
-        .child(p().id("problem").text(unserved.to_string()))
+        .child(p().id(Id::new("problem")).text(unserved.to_string()))
         .child(a().href(HOME.link()).text("All items"))
 }
 

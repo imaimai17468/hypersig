@@ -21,8 +21,8 @@ use std::time::Duration;
 use axum::Router;
 use axum::http::StatusCode;
 use hypersig::html::{
-    El, Role, Stylesheet, a, attr, button, div, each, footer, form, h1, h2, input, label, li, nav,
-    p, part, span, ul,
+    El, Id, Role, Stylesheet, a, attr, button, div, each, footer, form, h1, h2, input, label, li,
+    nav, p, part, span, ul,
 };
 use hypersig::{Action, Expr, Fragment, Page, Part, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
@@ -70,6 +70,7 @@ struct Newsletter {
 
 const JOIN: Action<Newsletter, String> = Action::post("/newsletter/join");
 const ANOTHER: Action<Newsletter> = Action::post("/newsletter/another");
+const NEWSLETTER_EMAIL: Id = Id::new("newsletter-email");
 
 /// What the newsletter shows below its heading: the form, or the thanks
 /// that replace it once the server has added the address.
@@ -80,7 +81,7 @@ enum Body {
 
 impl Fragment for Body {
     type Signals = Newsletter;
-    const ID: &'static str = "newsletter";
+    const ID: Id = Id::new("newsletter");
 
     fn render(&self) -> El<Newsletter> {
         let email = Newsletter::email();
@@ -94,10 +95,10 @@ impl Fragment for Body {
                                 .indicator(joining)
                                 .error(Newsletter::problem()),
                         )
-                        .child(label().attr(attr::FOR, "newsletter-email").text("Email"))
+                        .child(label().label_for(&NEWSLETTER_EMAIL).text("Email"))
                         .child(
                             input()
-                                .id("newsletter-email")
+                                .id(NEWSLETTER_EMAIL)
                                 .attr(attr::TYPE, "email")
                                 .bind(email),
                         )
@@ -117,7 +118,7 @@ impl Fragment for Body {
             // this fragment reads under the field the part sits at.
             Self::Joined { readers } => div()
                 .child(
-                    p().id("newsletter-joined")
+                    p().id(Id::new("newsletter-joined"))
                         .text("Thanks, ")
                         .child(span().bind_text(email))
                         .text(format!(". The newsletter has {readers} readers.")),
@@ -220,6 +221,7 @@ struct Home {
 }
 
 const WISH: Action<Home, String> = Action::post("/wish");
+const WISH_FIELD: Id = Id::new("wish");
 
 async fn home(state: AppState, (): ()) -> Page<Home> {
     let wishes: Vec<Wish> = state
@@ -250,15 +252,18 @@ async fn home(state: AppState, (): ()) -> Page<Home> {
             )
             .child(h1().text("Wish list"))
             .child(wish_form())
-            .child(ul().id("wishes").child(each(Home::wishes(), |wish| {
-                li().child(span().bind_text(wish.at(Wish::name())))
-                    .text(" ")
-                    .child(
-                        span()
-                            .class(class::PROBLEM)
-                            .bind_text(wish.at(Wish::state())),
-                    )
-            })))
+            .child(
+                ul().id(Id::new("wishes"))
+                    .child(each(Home::wishes(), |wish| {
+                        li().child(span().bind_text(wish.at(Wish::name())))
+                            .text(" ")
+                            .child(
+                                span()
+                                    .class(class::PROBLEM)
+                                    .bind_text(wish.at(Wish::state())),
+                            )
+                    })),
+            )
             .child(part(Home::footer())),
     )
 }
@@ -298,8 +303,8 @@ fn wish_form() -> El<Home> {
     });
     form()
         .on_submit(hypersig::Stmt::when(!draft.trim().is_empty(), add))
-        .child(label().attr(attr::FOR, "wish").text("Wish"))
-        .child(input().id("wish").bind(draft))
+        .child(label().label_for(&WISH_FIELD).text("Wish"))
+        .child(input().id(WISH_FIELD).bind(draft))
         .child(button().attr(attr::TYPE, "submit").text("Add"))
 }
 

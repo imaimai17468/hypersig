@@ -420,7 +420,7 @@ fn radio_with<S, T: Serialize + PartialEq, L: Into<String>>(
     options: impl IntoIterator<Item = (T, L)>,
     feedback: Option<Feedback<S>>,
 ) -> El<S> {
-    let name = crate::id::of(selected, "radio");
+    let name = crate::id::of(selected, "radio").to_string();
     let radio = |value: T, text: L| {
         let (wrapper, text) = row(text.into());
         let dot = span().attr(attr::ARIA_HIDDEN, "true").css(
@@ -470,7 +470,7 @@ fn radio_with<S, T: Serialize + PartialEq, L: Into<String>>(
         caption = caption.id(legend_id.clone());
         group = feedback
             .describe(group.role(Role::RadioGroup))
-            .attr(attr::ARIA_LABELLEDBY, legend_id)
+            .aria_labelledby(&[&legend_id])
             .on_blur(feedback.touch());
     }
     group
