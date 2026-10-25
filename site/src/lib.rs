@@ -297,14 +297,13 @@ fn sitemap(site: Site) -> Option<String> {
     for &doc in Doc::ALL {
         let urls = absolute_urls(site, &doc.path())?;
         for (_, loc) in &urls {
-            writeln!(xml, "  <url>\n    <loc>{loc}</loc>").ok()?;
+            let _ = writeln!(xml, "  <url>\n    <loc>{loc}</loc>");
             for (lang, href) in &urls {
-                writeln!(
+                let _ = writeln!(
                     xml,
                     r#"    <xhtml:link rel="alternate" hreflang="{}" href="{href}"/>"#,
                     lang.tag()
-                )
-                .ok()?;
+                );
             }
             xml.push_str("  </url>\n");
         }
