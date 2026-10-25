@@ -265,16 +265,16 @@ macro_rules! time_operations {
         impl<S $(, $r)?> $ty<S, Timestamp $(, $r)?> {
             /// The milliseconds since the Unix epoch.
             #[must_use]
-            pub fn millis(self) -> Expr<S, i64> {
-                Expr::from_json(self.into_expr().into_json())
+            pub fn millis(&self) -> Expr<S, i64> {
+                Expr::from_json(self.operand().into_json())
             }
 
             /// The time `millis` milliseconds later, or earlier for a negative value.
             #[must_use]
-            pub fn add_millis(self, millis: impl IntoExpr<S, i64>) -> Expr<S, Timestamp> {
+            pub fn add_millis(&self, millis: impl IntoExpr<S, i64>) -> Expr<S, Timestamp> {
                 Expr::from_json(json!([
                     "add",
-                    self.into_expr().into_json(),
+                    self.operand().into_json(),
                     millis.into_expr().into_json()
                 ]))
             }
@@ -295,10 +295,10 @@ macro_rules! time_operations {
             /// let _label = Post::posted().format_date(&POSTED);
             /// ```
             #[must_use]
-            pub fn format_date(self, format: &DateFormat) -> Expr<S, String> {
+            pub fn format_date(&self, format: &DateFormat) -> Expr<S, String> {
                 Expr::from_json(json!([
                     "date",
-                    self.into_expr().into_json(),
+                    self.operand().into_json(),
                     format.locale.tag(),
                     format.date.map(DateStyle::name),
                     format.time.map(TimeStyle::name),
@@ -332,13 +332,13 @@ macro_rules! time_operations {
             /// ```
             #[must_use]
             pub fn relative_to(
-                self,
+                &self,
                 now: impl IntoExpr<S, Timestamp>,
                 locale: IntlLocale,
             ) -> Expr<S, String> {
                 Expr::from_json(json!([
                     "reltime",
-                    self.into_expr().into_json(),
+                    self.operand().into_json(),
                     now.into_expr().into_json(),
                     locale.tag()
                 ]))

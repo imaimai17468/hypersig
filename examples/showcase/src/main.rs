@@ -416,7 +416,7 @@ fn order_form() -> El<Showcase> {
     let unit = if_else(size.equals(&Size::Large), 4.5, 3.0);
     let total = unit * quantity.to_f64();
     let too_long = note.char_count().gt(NOTE_LIMIT);
-    let invalid = quantity.lt(1).or(too_long.clone());
+    let invalid = quantity.lt(1).or(&too_long);
     section()
         .id(Id::new("order"))
         .child(h2().text("Forms"))

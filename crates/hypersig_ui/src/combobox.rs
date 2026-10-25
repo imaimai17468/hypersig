@@ -150,14 +150,14 @@ impl<S> Combobox<S> {
         for (index, title) in options.into_iter().enumerate() {
             let title: String = title.into();
             let id = Id::new(self.list).with_key(index);
-            let shown = Expr::lit(&title.to_lowercase()).contains(query.clone());
-            none_shown = none_shown.and(!shown.clone());
+            let shown = Expr::lit(&title.to_lowercase()).contains(&query);
+            none_shown = none_shown.and(!&shown);
             let reached = active.equals(id.to_string());
             items.push(
                 div()
                     .role(Role::Option)
                     .id(id)
-                    .bind_attr(attr::ARIA_SELECTED, reached.clone().to_text())
+                    .bind_attr(attr::ARIA_SELECTED, reached.to_text())
                     .show(shown)
                     .on_click(
                         text.set(title.clone())
@@ -208,7 +208,7 @@ impl<S> Combobox<S> {
                     .role(Role::ListBox)
                     .attr(attr::ARIA_LABEL, "Suggestions")
                     .node_ref(list_ref)
-                    .show(!none_shown.clone())
+                    .show(!&none_shown)
                     .css(
                         Style::new()
                             .display(Display::Flex)

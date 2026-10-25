@@ -540,7 +540,7 @@ impl<S> Frame<S> {
             control = control.on_blur(touch);
         }
         if let Some(error) = &self.error {
-            let invalid = !error.clone().is_empty();
+            let invalid = !error.is_empty();
             control = control
                 .bind_attr(
                     attr::ARIA_INVALID,
@@ -609,7 +609,7 @@ impl<S> Feedback<S> {
 
     /// Whether the message is not empty.
     pub(crate) fn invalid(&self) -> Expr<S, bool> {
-        !self.error.clone().is_empty()
+        !self.error.is_empty()
     }
 
     /// `control` with `aria-describedby` pointing at the message, and

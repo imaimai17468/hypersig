@@ -173,7 +173,7 @@ impl<S> Slider<S> {
                         .css(track_style())
                         .child(div().css(fill_style()).bind_style(
                             hypersig::style::Property::Width,
-                            (share.clone() * 100.0).to_fixed(3).concat("%"),
+                            (&share * 100.0).to_fixed(3).concat("%"),
                         )),
                 )
                 .child(

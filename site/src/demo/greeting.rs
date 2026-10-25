@@ -39,7 +39,7 @@ pub fn page(site: Site) -> Page<Greeting> {
                 }),
                 name,
             ))
-            .child(p().show(!typed.clone()).text(site.t(L {
+            .child(p().show(!&typed).text(site.t(L {
                 en: "Type your name above.",
                 ja: "上の欄に名前を入力してください。",
             })))

@@ -320,37 +320,37 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         let (top, bottom) = self.extremes();
         bottom.let_in(|bottom| {
             // With every value 0, or no rows, the scale runs from 0 to 1.
-            let top = if_else(top.clone().gt(bottom.clone()), top, bottom.clone() + 1.0);
+            let top = if_else(top.gt(&bottom), top, &bottom + 1.0);
             top.let_in(|top| {
-                ((top.clone() - bottom.clone()) / 4.0).let_in(|rough| {
+                ((&top - &bottom) / 4.0).let_in(|rough| {
                     let guess = Expr::lit(&10.0).pow(rough.clone().log10().floor());
                     guess.let_in(|guess| {
                         // A last-bit error in `log10` at a power of ten puts the
                         // guess one power off, and the ratio brings it back.
-                        let ratio = rough.clone() / guess.clone();
+                        let ratio = &rough / &guess;
                         let power = if_else(
-                            ratio.clone().ge(10.0),
-                            guess.clone() * 10.0,
-                            if_else(ratio.lt(1.0), guess.clone() / 10.0, guess),
+                            ratio.ge(10.0),
+                            &guess * 10.0,
+                            if_else(ratio.lt(1.0), &guess / 10.0, guess),
                         );
                         power.let_in(|power| {
                             let n = rough / power.clone();
                             let factor = if_else(
-                                n.clone().le(1.0),
+                                n.le(1.0),
                                 Expr::lit(&1.0),
                                 if_else(
-                                    n.clone().le(2.0),
+                                    n.le(2.0),
                                     Expr::lit(&2.0),
                                     if_else(
-                                        n.clone().le(2.5),
+                                        n.le(2.5),
                                         Expr::lit(&2.5),
                                         if_else(n.le(5.0), Expr::lit(&5.0), Expr::lit(&10.0)),
                                     ),
                                 ),
                             );
                             (power * factor).let_in(|step| {
-                                let lo = clean((bottom / step.clone()).floor() * step.clone());
-                                let hi = clean((top / step.clone()).ceil() * step.clone());
+                                let lo = clean((bottom / &step).floor() * &step);
+                                let hi = clean((top / &step).ceil() * &step);
                                 lo.let_in(|lo| hi.let_in(|hi| body(lo, hi, step)))
                             })
                         })
@@ -370,7 +370,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     /// from the left.
     fn place(&self, value: Expr<S, f64>, lo: Expr<S, f64>, hi: Expr<S, f64>) -> Expr<S, f64> {
         if self.horizontal() {
-            (value - lo.clone()) / (hi - lo) * 100.0
+            (value - &lo) / (hi - lo) * 100.0
         } else {
             y_of(value, lo, hi)
         }
@@ -403,14 +403,14 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         body: impl FnOnce(Expr<S, f64>, Expr<S, f64>, Expr<S, f64>) -> Expr<S, U>,
     ) -> Expr<S, U> {
         self.scaled(|lo, hi, step| {
-            let value = clean(lo.clone() + step * f64::from(tick));
+            let value = clean(&lo + step * f64::from(tick));
             body(value, lo, hi)
         })
     }
 
     /// Whether the scale reaches the grid line numbered `tick`.
     fn tick_shown(&self, tick: i32) -> Expr<S, bool> {
-        self.scaled(|lo, hi, step| (lo + step.clone() * f64::from(tick)).le(hi + step / 2.0))
+        self.scaled(|lo, hi, step| (lo + &step * f64::from(tick)).le(hi + step / 2.0))
     }
 
     /// The bars, or the lines and areas, of every series.
@@ -425,29 +425,29 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                 let x = row.index().to_f64() * band.clone();
                 match self.kind {
                     Kind::Bar | Kind::HorizontalBar => {
-                        let width = band.clone() * (BAR_SHARE / count);
+                        let width = band * (BAR_SHARE / count);
                         #[expect(
                             clippy::cast_precision_loss,
                             reason = "a chart has far fewer than 2^52 series"
                         )]
-                        let left = x + band.clone() * BAR_INSET + width.clone() * (index as f64);
-                        self.bar_mark(Expr::lit(&0.0), value, left, width, color)
+                        let left = x + band * BAR_INSET + &width * (index as f64);
+                        self.bar_mark(Expr::lit(&0.0), value, &left, &width, color)
                     }
                     Kind::StackedBar => {
                         let start = if_else(
-                            value.clone().ge(0.0),
+                            value.ge(0.0),
                             stack(earlier, row, true),
                             stack(earlier, row, false),
                         );
-                        let end = start.clone() + value;
-                        let left = x + band.clone() * BAR_INSET;
-                        self.bar_mark(start, end, left, band.clone() * BAR_SHARE, color)
+                        let end = &start + value;
+                        let left = x + band * BAR_INSET;
+                        self.bar_mark(start, end, &left, &(band * BAR_SHARE), color)
                     }
                     Kind::Line | Kind::Area => {
                         let next =
                             (series.value)(self.rows.nth(row.index() + 1).unwrap_or(row.value()));
-                        let x1 = x + band.clone() * 0.5;
-                        let x2 = x1.clone() + band.clone();
+                        let x1 = x + band * 0.5;
+                        let x2 = &x1 + band;
                         self.segment(value, next, x1, x2, color)
                             .show(self.rows.len().gt(row.index() + 1))
                     }
@@ -464,8 +464,8 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         &self,
         start: Expr<S, f64>,
         end: Expr<S, f64>,
-        offset: Expr<S, f64>,
-        thickness: Expr<S, f64>,
+        offset: &Expr<S, f64>,
+        thickness: &Expr<S, f64>,
         color: &Token<Color>,
     ) -> El<S> {
         let near = self.scaled(|lo, hi, _| {
@@ -475,7 +475,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         let length = self.scaled(|lo, hi, _| {
             let a = self.place(start, lo.clone(), hi.clone());
             let b = self.place(end, lo, hi);
-            a.clone().max(b.clone()) - a.min(b)
+            a.max(&b) - a.min(b)
         });
         let ([value_at, value_size], [band_at, band_size]) = if self.horizontal() {
             ([attr::X, attr::WIDTH], [attr::Y, attr::HEIGHT])
@@ -506,8 +506,8 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             .attr(attr::VECTOR_EFFECT, "non-scaling-stroke")
             .attr(attr::STROKE_LINECAP, "round")
             .css(Style::new().stroke(color.var()).stroke_width(px(2)))
-            .bind_attr(attr::X1, x1.clone().to_fixed(3))
-            .bind_attr(attr::X2, x2.clone().to_fixed(3))
+            .bind_attr(attr::X1, x1.to_fixed(3))
+            .bind_attr(attr::X2, x2.to_fixed(3))
             .bind_attr(attr::Y1, y1.clone())
             .bind_attr(attr::Y2, y2.clone());
         if self.kind != Kind::Area {
@@ -581,7 +581,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         div()
             .css(Style::new().position(Position::Absolute).inset(px(0)))
             .child(each(self.rows, |row| {
-                let start = (row.index().to_f64() * band.clone())
+                let start = (row.index().to_f64() * band)
                     .to_fixed(3)
                     .concat("%");
                 let (place, span_style, across) = if self.horizontal() {
@@ -634,7 +634,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                             ),
                     )
                     .bind_style(place, start)
-                    .bind_style(span_style, band.clone().to_fixed(3).concat("%"))
+                    .bind_style(span_style, band.to_fixed(3).concat("%"))
                     .child(
                         div()
                             .css(tooltip_style())
@@ -685,7 +685,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                         .white_space(WhiteSpace::Nowrap)
                         .merge(label),
                 )
-                .show((row.index().to_f64() % every.clone()).equals(0.0))
+                .show((row.index().to_f64() % &every).equals(0.0))
                 .bind_style(side, middle)
                 .bind_text(row.at(category))
         }))
@@ -789,7 +789,7 @@ fn stack<S, T>(series: &[Series<S, T>], row: Item<S, T>, positive: bool) -> Expr
 /// The distance from the top of the drawing to `value`, in hundredths of
 /// its height, on the scale from `lo` to `hi`.
 fn y_of<S>(value: Expr<S, f64>, lo: Expr<S, f64>, hi: Expr<S, f64>) -> Expr<S, f64> {
-    (hi.clone() - value) / (hi - lo) * 100.0
+    (&hi - value) / (hi - lo) * 100.0
 }
 
 /// `value` rounded to nine decimal places, which removes the error of a

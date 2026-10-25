@@ -340,6 +340,12 @@ impl<S, T, R> Sig<S, T, R> {
     pub(crate) fn expr(self) -> Expr<S, T> {
         Expr::from_json(self.path.expr_json())
     }
+
+    /// The expression that reads this signal, which the methods
+    /// `operations!` writes on `&self` put inside the tree they build.
+    pub(crate) fn operand(&self) -> Expr<S, T> {
+        self.expr()
+    }
 }
 
 impl<S, T> Sig<S, T, Root> {

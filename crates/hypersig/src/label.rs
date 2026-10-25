@@ -66,8 +66,8 @@ macro_rules! label_operations {
             /// Panics if `T` lists no variants, which `#[derive(Segment)]`
             /// never writes.
             #[must_use]
-            pub fn label<L: IntoExpr<S, String>>(self, label: impl Fn(&T) -> L) -> Expr<S, String> {
-                let value = self.into_expr();
+            pub fn label<L: IntoExpr<S, String>>(&self, label: impl Fn(&T) -> L) -> Expr<S, String> {
+                let value = self.operand();
                 match value.as_json().get(0).and_then(Value::as_str) {
                     // Reading a signal again costs no more than reading a name.
                     Some("sig" | "item" | "lit" | "var") => {

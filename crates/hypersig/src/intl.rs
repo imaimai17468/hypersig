@@ -100,13 +100,13 @@ macro_rules! intl_operations {
             /// ```
             #[must_use]
             pub fn plural<U, L: IntoExpr<S, U>>(
-                self,
+                &self,
                 locale: IntlLocale,
                 form: impl Fn(PluralCategory) -> L,
             ) -> Expr<S, U> {
                 Expr::from_json(json!([
                     "plural",
-                    self.into_expr().into_json(),
+                    self.operand().into_json(),
                     locale.tag(),
                     plural_forms(form)
                 ]))

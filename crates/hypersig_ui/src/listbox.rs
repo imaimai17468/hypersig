@@ -93,7 +93,7 @@ impl<S, T: Serialize + PartialEq> Listbox<S, T> {
                     .map(|(index, (value, title))| {
                         let chosen = selected.equals(&value);
                         let stop = if index == 0 {
-                            chosen.clone().or(none.clone())
+                            chosen.or(&none)
                         } else {
                             chosen.clone()
                         };

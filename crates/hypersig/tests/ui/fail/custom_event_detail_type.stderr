@@ -7,13 +7,14 @@ error[E0277]: `Expr<Map, i32>` is not an expression of type `String` on the page
    |                                                                                      required by a bound introduced by this call
    |
    = note: an expression must have the type the attribute expects, and use signals of the same page
-help: the trait `IntoExpr<Map, String>` is not implemented for `Expr<Map, i32>`
-      but trait `IntoExpr<Map, i32>` is implemented for it
+help: the following other types implement trait `IntoExpr<S, T>`
   --> src/expr.rs
    |
    | impl<S, T> IntoExpr<S, T> for Expr<S, T> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   = help: for that trait implementation, expected `i32`, found `String`
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Expr<S, T>`
+...
+   | impl<S, T> IntoExpr<S, T> for &Expr<S, T> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `&Expr<S, T>`
 note: required by a bound in `Sig::<S, T, R>::set`
   --> src/signal.rs
    |
