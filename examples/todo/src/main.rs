@@ -12,8 +12,8 @@ use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, a, button, div, form, h1, input, li, p, span, ul};
-use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, StreamAction};
+use hypersig::html::{El, a, button, div, each_keyed, form, h1, input, li, p, span, ul};
+use hypersig::{Action, Page, Patches, Route, RouterExt, Signals, StreamAction, if_else};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
@@ -21,16 +21,20 @@ use tokio_stream::wrappers::BroadcastStream;
 #[derive(Signals, Serialize, Deserialize)]
 struct TodoPage {
     draft: String,
-    remaining: i32,
+    todos: Vec<Todo>,
+}
+
+#[derive(Signals, Serialize, Deserialize, Clone)]
+struct Todo {
+    id: u64,
+    title: String,
+    done: bool,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
 struct TodoDetail {
     done: bool,
 }
-
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-struct TodoId(u64);
 
 hypersig::routes! {
     fn pages(Router<AppState>);
@@ -39,16 +43,9 @@ hypersig::routes! {
 }
 
 const ADD: Action<TodoPage, String> = Action::post("/todos");
-const TOGGLE: Action<TodoPage, TodoId> = Action::post("/todos/toggle");
-const REMOVE: Action<TodoPage, TodoId> = Action::post("/todos/remove");
+const TOGGLE: Action<TodoPage, u64> = Action::post("/todos/toggle");
+const REMOVE: Action<TodoPage, u64> = Action::post("/todos/remove");
 const UPDATES: StreamAction<TodoPage> = StreamAction::new("/todos/updates");
-
-#[derive(Clone)]
-struct Todo {
-    id: TodoId,
-    title: String,
-    done: bool,
-}
 
 #[derive(Default)]
 struct Todos {
@@ -56,10 +53,32 @@ struct Todos {
     items: Vec<Todo>,
 }
 
+/// One change to the list, which each open stream turns into a patch of the
+/// one todo it touched.
+#[derive(Clone)]
+enum Change {
+    Put(Todo),
+    Removed(u64),
+}
+
+impl Change {
+    fn patches(&self) -> Patches<TodoPage> {
+        let todos = TodoPage::todos();
+        match self {
+            Change::Put(todo) => todos
+                .patch_upsert(std::slice::from_ref(todo), |todo| todo.at(Todo::id()))
+                .into(),
+            Change::Removed(id) => todos
+                .patch_remove(&[*id], |todo| todo.at(Todo::id()))
+                .into(),
+        }
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
     todos: Arc<Mutex<Todos>>,
-    changed: broadcast::Sender<()>,
+    changed: broadcast::Sender<Change>,
 }
 
 impl AppState {
@@ -67,60 +86,49 @@ impl AppState {
         self.todos.lock().expect("todo lock poisoned").items.clone()
     }
 
-    fn update(&self, change: impl FnOnce(&mut Todos)) {
-        change(&mut self.todos.lock().expect("todo lock poisoned"));
-        let _ = self.changed.send(());
+    /// Applies `change` to the list and sends each stream the change it returns.
+    fn update(&self, change: impl FnOnce(&mut Todos) -> Option<Change>) {
+        let change = change(&mut self.todos.lock().expect("todo lock poisoned"));
+        if let Some(change) = change {
+            let _ = self.changed.send(change);
+        }
     }
 }
 
-struct TodoList {
-    items: Vec<Todo>,
-}
-
-impl TodoList {
-    fn remaining(&self) -> i32 {
-        let open = self.items.iter().filter(|todo| !todo.done).count();
-        i32::try_from(open).unwrap_or(i32::MAX)
-    }
-
-    fn patches(&self) -> Patches<TodoPage> {
-        Patches::new()
-            .element(self)
-            .signals(TodoPage::remaining().patch(self.remaining()))
-    }
-}
-
-impl Fragment for TodoList {
-    type Signals = TodoPage;
-    const ID: &'static str = "todo-list";
-
-    fn render(&self) -> El<TodoPage> {
-        ul().css(styles::list())
-            .children(self.items.iter().map(|todo| {
-                let title = span().css(styles::title(todo.done)).child(
-                    a().css(styles::link())
-                        .href(TODO.link_with(&todo.id.0))
-                        .text(todo.title.as_str()),
-                );
-                li().id(format!("todo-{}", todo.id.0))
-                    .css(styles::item())
-                    .child(
-                        button()
-                            .css(styles::icon_button())
-                            .attr("aria-label", "toggle")
-                            .on_click(TOGGLE.call_with(&todo.id))
-                            .text(if todo.done { "✓" } else { "○" }),
-                    )
-                    .child(title)
-                    .child(
-                        button()
-                            .css(styles::icon_button())
-                            .attr("aria-label", "remove")
-                            .on_click(REMOVE.call_with(&todo.id))
-                            .text("×"),
-                    )
-            }))
-    }
+fn todo_list() -> El<TodoPage> {
+    ul().id("todo-list").css(styles::list()).child(each_keyed(
+        TodoPage::todos(),
+        |todo| todo.at(Todo::id()),
+        |todo| {
+            let id = todo.at(Todo::id());
+            let done = todo.at(Todo::done());
+            li().css(styles::item())
+                .child(
+                    button()
+                        .css(styles::icon_button())
+                        .attr("aria-label", "toggle")
+                        .on_click(TOGGLE.call_with(id))
+                        .bind_text(if_else(done, "✓", "○")),
+                )
+                .child(
+                    span()
+                        .css(styles::title())
+                        .css_when(styles::title_done(), done)
+                        .child(
+                            a().css(styles::link())
+                                .href(TODO.link_with(id))
+                                .bind_text(todo.at(Todo::title())),
+                        ),
+                )
+                .child(
+                    button()
+                        .css(styles::icon_button())
+                        .attr("aria-label", "remove")
+                        .on_click(REMOVE.call_with(id))
+                        .text("×"),
+                )
+        },
+    ))
 }
 
 mod styles {
@@ -169,15 +177,14 @@ mod styles {
             .border_bottom_color(Color::hex(0x00ee_eeee))
     }
 
-    pub fn title(done: bool) -> Style {
-        let title = Style::new().flex_grow(1);
-        if done {
-            title
-                .text_decoration_line(TextDecorationLine::LineThrough)
-                .color(Color::hex(0x0088_8888))
-        } else {
-            title
-        }
+    pub fn title() -> Style {
+        Style::new().flex_grow(1)
+    }
+
+    pub fn title_done() -> Style {
+        Style::new()
+            .text_decoration_line(TextDecorationLine::LineThrough)
+            .color(Color::hex(0x0088_8888))
     }
 
     pub fn icon_button() -> Style {
@@ -196,16 +203,13 @@ mod styles {
 }
 
 async fn index(state: AppState, (): ()) -> Page<TodoPage> {
-    let list = TodoList {
-        items: state.snapshot(),
-    };
     let draft = TodoPage::draft();
-    let remaining = TodoPage::remaining();
+    let remaining = TodoPage::todos().count(|todo| !todo.at(Todo::done()));
     Page::new(
         "hypersig todo",
         TodoPage {
             draft: String::new(),
-            remaining: list.remaining(),
+            todos: state.snapshot(),
         },
     )
     .child(
@@ -230,12 +234,12 @@ async fn index(state: AppState, (): ()) -> Page<TodoPage> {
                             .text("Add"),
                     ),
             )
-            .child(hypersig::fragment(&list))
+            .child(todo_list())
             .child(
                 p().id("summary-left")
                     .css(styles::summary())
-                    .show(remaining.gt(0))
-                    .bind_text(remaining.to_text().concat(" left")),
+                    .show(remaining.clone().gt(0))
+                    .bind_text(remaining.clone().to_text().concat(" left")),
             )
             .child(
                 p().id("summary-done")
@@ -247,10 +251,7 @@ async fn index(state: AppState, (): ()) -> Page<TodoPage> {
 }
 
 async fn todo(state: AppState, id: u64) -> Option<Page<TodoDetail>> {
-    let todo = state
-        .snapshot()
-        .into_iter()
-        .find(|todo| todo.id == TodoId(id))?;
+    let todo = state.snapshot().into_iter().find(|todo| todo.id == id)?;
     let done = TodoDetail::done();
     Some(
         Page::new(todo.title.clone(), TodoDetail { done: todo.done }).child(
@@ -269,42 +270,45 @@ async fn add(state: AppState, draft: String) -> Patches<TodoPage> {
     if !title.is_empty() {
         state.update(|todos| {
             todos.next_id += 1;
-            let id = TodoId(todos.next_id);
-            todos.items.push(Todo {
-                id,
+            let todo = Todo {
+                id: todos.next_id,
                 title,
                 done: false,
-            });
+            };
+            todos.items.push(todo.clone());
+            Some(Change::Put(todo))
         });
     }
     TodoPage::draft().patch(String::new()).into()
 }
 
-async fn toggle(state: AppState, id: TodoId) -> Patches<TodoPage> {
+async fn toggle(state: AppState, id: u64) -> Patches<TodoPage> {
     state.update(|todos| {
-        if let Some(todo) = todos.items.iter_mut().find(|todo| todo.id == id) {
-            todo.done = !todo.done;
-        }
+        let todo = todos.items.iter_mut().find(|todo| todo.id == id)?;
+        todo.done = !todo.done;
+        Some(Change::Put(todo.clone()))
     });
     Patches::new()
 }
 
-async fn remove(state: AppState, id: TodoId) -> Patches<TodoPage> {
-    state.update(|todos| todos.items.retain(|todo| todo.id != id));
+async fn remove(state: AppState, id: u64) -> Patches<TodoPage> {
+    state.update(|todos| {
+        let before = todos.items.len();
+        todos.items.retain(|todo| todo.id != id);
+        (todos.items.len() < before).then_some(Change::Removed(id))
+    });
     Patches::new()
 }
 
+/// Sends the whole list once, then one patch per change. A stream that falls
+/// more than the channel's capacity behind has missed changes, so it gets the
+/// whole list again.
 fn updates(state: AppState, (): ()) -> impl Stream<Item = Patches<TodoPage>> {
     let changes = BroadcastStream::new(state.changed.subscribe());
-    let current = TodoList {
-        items: state.snapshot(),
-    }
-    .patches();
-    stream::once(async { current }).chain(changes.map(move |_| {
-        TodoList {
-            items: state.snapshot(),
-        }
-        .patches()
+    let current: Patches<TodoPage> = TodoPage::todos().patch(state.snapshot()).into();
+    stream::once(async { current }).chain(changes.map(move |change| match change {
+        Ok(change) => change.patches(),
+        Err(_lagged) => TodoPage::todos().patch(state.snapshot()).into(),
     }))
 }
 
