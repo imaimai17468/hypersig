@@ -27,6 +27,21 @@ export const APPS = {
   "tanstack-start": { port: 4106, cmd: ["npm", "--prefix", "tanstack-start", "run", "start"] },
   nuxt: { port: 4107, cmd: ["npm", "--prefix", "nuxt", "run", "start"] },
   datastar: { port: 4102, cmd: ["datastar/target/release/bench-datastar"] },
+  // The server reads its address and the directory that `cargo leptos build`
+  // writes the wasm and its JavaScript into from these variables, which
+  // `cargo leptos serve` would otherwise set from Cargo.toml.
+  leptos: {
+    port: 4108,
+    cmd: ["leptos/target/release/bench-leptos"],
+    env: { LEPTOS_SITE_ADDR: "127.0.0.1:4108", LEPTOS_SITE_ROOT: "leptos/target/site", LEPTOS_ENV: "PROD" },
+  },
+  // `dx build` writes the server beside a public/ directory holding the wasm
+  // and its JavaScript, which the server finds next to its own executable.
+  dioxus: {
+    port: 4109,
+    cmd: ["dioxus/target/dx/bench-dioxus/release/web/server"],
+    env: { IP: "127.0.0.1", PORT: "4109" },
+  },
 };
 
 export const url = (name) => `http://127.0.0.1:${APPS[name].port}/`;
