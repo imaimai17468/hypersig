@@ -104,7 +104,7 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 | Total Blocking Time | 0 ms | 313 ms | 5 ms | 10 ms | 0 ms | 29 ms | 16 ms |
 | Interaction to Next Paint | 24 ms | 24 ms | 24 ms | 24 ms | 24 ms | 16 ms | 16 ms |
 
-測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。
+測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。hypersig の JS の行は、計測したコミット 72e62b8 のランタイムを計測の仕組みが gzip した大きさです。ランタイムはその後大きくなり、今は gzip で約 20 KB です。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。
 
 同じページを `hypersig::style`、Tailwind CSS、Panda CSS、StyleX、vanilla-extract でスタイルした計測は、[`hypersig_style` の README](crates/hypersig_style/README.ja.md#ベンチマーク) にあります。
 
