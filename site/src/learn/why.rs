@@ -1,5 +1,5 @@
-//! Why hypersig: the problem it addresses, how the HTML carries the page's
-//! behavior, and what that costs.
+//! Why hypersig: what hypermedia is, the problem hypersig addresses, how the
+//! HTML carries the page's behavior, and what that costs.
 
 use super::snippet::{Snippet, show};
 use crate::Site;
@@ -24,6 +24,7 @@ pub fn why(site: Site) -> Part {
     parts(
         intro(site)
             .into_iter()
+            .chain(hypermedia(site))
             .chain(halves(site))
             .chain(html(site))
             .chain(hydration(site))
@@ -38,6 +39,75 @@ fn intro(site: Site) -> [Part; 2] {
     [
         title(Doc::Learn(Learn::Why).title(site)),
         lead(site, Doc::Learn(Learn::Why).leads()),
+    ]
+}
+
+fn hypermedia(site: Site) -> [Part; 4] {
+    [
+        heading(
+            site,
+            L {
+                en: "Hypermedia",
+                ja: "ハイパーメディア",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Hypermedia is data that holds the actions a reader can take next. HTML is the common example: besides its text, a page holds links such as `<a href=\"/items/3\">` and forms such as `<form action=\"/cart\" method=\"post\">`, and the browser follows them without knowing the application's API beforehand. Roy Fielding's dissertation, which defined REST, names this constraint hypermedia as the engine of application state (HATEOAS).",
+                ja: "ハイパーメディアは、読み手が次に取れる操作を中に持つデータです。代表は HTML で、ページは文章のほかに `<a href=\"/items/3\">` のようなリンクや `<form action=\"/cart\" method=\"post\">` のようなフォームを持ちます。ブラウザはアプリケーションの API を前もって知らなくても、それをたどって操作できます。REST を定義した Roy Fielding の論文は、この制約を HATEOAS（hypermedia as the engine of application state）と呼びます。",
+            },
+        ),
+        table_of(
+            site,
+            L {
+                en: &["", "JSON API and a single-page app", "Hypermedia"],
+                ja: &["", "JSON API とシングルページアプリ", "ハイパーメディア"],
+            },
+            L {
+                en: &[
+                    &[
+                        "What the server answers with",
+                        "Data such as `{\"id\": 3, \"stock\": 0}`",
+                        "HTML to show, with its buttons and links",
+                    ],
+                    &[
+                        "Where \"hide the buy button when out of stock\" is decided",
+                        "JavaScript in the browser",
+                        "The server, which leaves the button out of the HTML",
+                    ],
+                    &[
+                        "Where the URLs the page calls are written",
+                        "On the server and again in the browser's code",
+                        "Only in the HTML the server sends",
+                    ],
+                ],
+                ja: &[
+                    &[
+                        "サーバーが返すもの",
+                        "`{\"id\": 3, \"stock\": 0}` のようなデータ",
+                        "表示する HTML（ボタンとリンクを含む）",
+                    ],
+                    &[
+                        "「在庫がなければ購入ボタンを隠す」を決める場所",
+                        "ブラウザの JavaScript",
+                        "サーバー（ボタンを HTML に入れない）",
+                    ],
+                    &[
+                        "ページが呼び出す URL を書く場所",
+                        "サーバーと、ブラウザのコードの両方",
+                        "サーバーが送る HTML だけ",
+                    ],
+                ],
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "hypersig is a hypermedia framework in this sense. The server answers with HTML that holds the page's controls, the action URLs its buttons call, and its links, and an action answers with fragments of HTML or new signal values. The runtime in the browser runs what the attributes say and knows none of the application's URLs. htmx and Datastar build on the same idea, and the next section shows what hypersig adds to it.",
+                ja: "hypersig はこの意味でのハイパーメディアのフレームワークです。サーバーはページの操作部品、ボタンが呼び出すアクションの URL、リンクを含む HTML を返し、アクションは HTML の断片かシグナルの新しい値を返します。ブラウザのランタイムは属性に書かれたとおりに動くだけで、アプリケーションの URL を 1 つも知りません。htmx と Datastar も同じ考え方に立っています。hypersig がそこに何を加えるかは次の節で説明します。",
+            },
+        ),
     ]
 }
 

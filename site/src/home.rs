@@ -17,8 +17,8 @@ pub fn render(site: Site) -> String {
             hero(
                 site,
                 site.t(L {
-                    en: "A web framework written entirely in Rust",
-                    ja: "Rust だけで書く Web フレームワーク",
+                    en: "A hypermedia web framework written entirely in Rust",
+                    ja: "Rust だけで書くハイパーメディアの Web フレームワーク",
                 }),
                 site.t(L {
                     en: "Server-owned state, type-checked strings.",
