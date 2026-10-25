@@ -109,7 +109,7 @@ fn write_element(out: &mut String, element: &Element, name: &str) {
 /// Creates `<{tag}>`, the element of {class} in {module}.
 #[must_use]
 pub fn {name}<S>() -> El<S> {{
-    el({tag:?})
+    el(hypersig::tag!({tag:?}))
 }}
 ",
         class = code(&element.class),

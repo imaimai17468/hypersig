@@ -236,7 +236,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     pub fn render(self) -> El<S> {
         let count = self.rows.len().to_f64();
         let band = Expr::lit(&100.0) / count;
-        let plot = el("svg")
+        let plot = el(hypersig::tag!("svg"))
             .attr(attr::VIEW_BOX, "0 0 100 100")
             .attr(attr::PRESERVE_ASPECT_RATIO, "none")
             .attr(attr::WIDTH, "100%")
@@ -253,7 +253,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                 } else {
                     ([attr::X1, attr::X2], [attr::Y1, attr::Y2])
                 };
-                el("line")
+                el(hypersig::tag!("line"))
                     .attr(along[0], "0")
                     .attr(along[1], "100")
                     .attr(attr::VECTOR_EFFECT, "non-scaling-stroke")
@@ -297,7 +297,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             } else {
                 self.category_labels(band)
             });
-        el("figure")
+        el(hypersig::tag!("figure"))
             .attr(attr::ARIA_LABEL, self.label.clone())
             .css(
                 Style::new()
@@ -482,7 +482,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         } else {
             ([attr::Y, attr::HEIGHT], [attr::X, attr::WIDTH])
         };
-        el("rect")
+        el(hypersig::tag!("rect"))
             .css(Style::new().fill(color.var()))
             .bind_attr(band_at, offset.to_fixed(3))
             .bind_attr(band_size, thickness.to_fixed(3))
@@ -502,7 +502,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     ) -> El<S> {
         let y1 = self.scaled(|lo, hi, _| y_of(value, lo, hi).to_fixed(3));
         let y2 = self.scaled(|lo, hi, _| y_of(next, lo, hi).to_fixed(3));
-        let line = el("line")
+        let line = el(hypersig::tag!("line"))
             .attr(attr::VECTOR_EFFECT, "non-scaling-stroke")
             .attr(attr::STROKE_LINECAP, "round")
             .css(Style::new().stroke(color.var()).stroke_width(px(2)))
@@ -511,7 +511,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             .bind_attr(attr::Y1, y1.clone())
             .bind_attr(attr::Y2, y2.clone());
         if self.kind != Kind::Area {
-            return el("g").child(line);
+            return el(hypersig::tag!("g")).child(line);
         }
         let base = self.scaled(|lo, hi, _| y_of(Expr::lit(&0.0), lo, hi).to_fixed(3));
         let point = |x: Expr<S, f64>, y: Expr<S, String>| x.to_fixed(3).concat(",").concat(y);
@@ -522,9 +522,9 @@ impl<S: 'static, T: 'static> Chart<S, T> {
             .concat(point(x2.clone(), y2))
             .concat(" ")
             .concat(point(x2, base));
-        el("g")
+        el(hypersig::tag!("g"))
             .child(
-                el("polygon")
+                el(hypersig::tag!("polygon"))
                     .css(Style::new().fill(color.var()).fill_opacity(0.25))
                     .bind_attr(attr::POINTS, points),
             )
@@ -727,7 +727,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
         let series = &self.series;
         table()
             .css(visually_hidden())
-            .child(el("caption").text(self.label.clone()))
+            .child(el(hypersig::tag!("caption")).text(self.label.clone()))
             .child(thead().child(head))
             .child(tbody().child(each(self.rows, |row| {
                 let mut line =

@@ -197,7 +197,7 @@ pub fn show(site: Site, demo: Demo) -> Part {
                 })),
             )
             .child(
-                el("iframe")
+                el(hypersig::tag!("iframe"))
                     .src(own(site.page_url(&demo.path())))
                     .attr(
                         attr::TITLE,

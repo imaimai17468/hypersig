@@ -33,7 +33,7 @@ pub fn page(site: Site) -> Page<Review> {
         div()
             .css(hstack(rem(1)))
             .child(
-                el("star-rating")
+                el(hypersig::tag!("star-rating"))
                     .bind_attr(attr::VALUE, stars.to_text())
                     .on_custom(RATE, move |rated| stars.set(rated)),
             )

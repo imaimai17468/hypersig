@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/ui/fail/el_from_string.rs:4:22
+  |
+4 |     let _ = el::<()>("x-map");
+  |             -------- ^^^^^^^ expected `Tag`, found `&str`
+  |             |
+  |             arguments to this function are incorrect
+  |
+note: function defined here
+ --> src/html.rs
+  |
+  | pub fn el<S>(tag: Tag) -> El<S> {
+  |        ^^

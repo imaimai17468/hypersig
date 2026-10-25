@@ -186,8 +186,8 @@ pub fn describing_the_page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The [`html`](api:hypersig/html/index.html) module has one function per common tag, such as `div()`, `p()`, and `button()`, and `el(\"tag\")` for any other. Each returns an `El<S>`, where `S` is the page's signal struct, and its methods return the element, so a tree is one expression.",
-                ja: "[`html`](api:hypersig/html/index.html) モジュールには `div()`、`p()`、`button()` のようによく使うタグごとの関数と、それ以外のタグに使う `el(\"tag\")` があります。どれも `El<S>` を返します。`S` はページのシグナル構造体です。`El` のメソッドは要素そのものを返すので、木全体を 1 つの式で書けます。",
+                en: "The [`html`](api:hypersig/html/index.html) module has one function per common tag, such as `div()`, `p()`, and `button()`, and `el(hypersig::tag!(\"tag\"))` for any other, which checks the tag at compile time and refuses `script`, `style`, and `base`. Each returns an `El<S>`, where `S` is the page's signal struct, and its methods return the element, so a tree is one expression.",
+                ja: "[`html`](api:hypersig/html/index.html) モジュールには `div()`、`p()`、`button()` のようによく使うタグごとの関数と、それ以外のタグに使う `el(hypersig::tag!(\"tag\"))` があります。`tag!` はタグをコンパイル時に検査し、`script`、`style`、`base` を拒否します。どれも `El<S>` を返します。`S` はページのシグナル構造体です。`El` のメソッドは要素そのものを返すので、木全体を 1 つの式で書けます。",
             },
         ),
         show(Snippet::Elements),

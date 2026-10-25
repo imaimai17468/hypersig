@@ -118,13 +118,13 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
     /// The ring, its total, its legend, and the table a screen reader reads, in a `<figure>`.
     #[must_use]
     pub fn render(self) -> El<S> {
-        let ring = el("svg")
+        let ring = el(hypersig::tag!("svg"))
             .attr(attr::VIEW_BOX, "0 0 100 100")
             .attr(attr::WIDTH, "100%")
             .attr(attr::HEIGHT, "100%")
             .css(Style::new().display(Display::Block).rotate(raw("-90deg")))
             .child(
-                el("circle")
+                el(hypersig::tag!("circle"))
                     .attr(attr::CX, "50")
                     .attr(attr::CY, "50")
                     .attr(attr::R, "40")
@@ -162,7 +162,7 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
             )
             .child(ring)
             .child(middle);
-        el("figure")
+        el(hypersig::tag!("figure"))
             .attr(attr::ARIA_LABEL, self.label.clone())
             .css(
                 Style::new()
@@ -207,7 +207,7 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
         let offset = self
             .total()
             .let_in(|total| Expr::lit(&0.0) - before / total * 100.0);
-        let mut arc = el("circle")
+        let mut arc = el(hypersig::tag!("circle"))
             .attr(attr::CX, "50")
             .attr(attr::CY, "50")
             .attr(attr::R, "40")
@@ -263,7 +263,7 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
         let category = self.category;
         table()
             .css(visually_hidden())
-            .child(el("caption").text(self.label.clone()))
+            .child(el(hypersig::tag!("caption")).text(self.label.clone()))
             .child(
                 thead().child(
                     tr().child(th().attr(attr::SCOPE, "col"))

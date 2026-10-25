@@ -18,7 +18,7 @@ use hypersig::html::{El, el};
 /// Creates `<md-elevated-button>`, the element of `MdElevatedButton` in `button/elevated-button.js`.
 #[must_use]
 pub fn md_elevated_button<S>() -> El<S> {
-    el("md-elevated-button")
+    el(hypersig::tag!("md-elevated-button"))
 }
 
 /// The attributes and events of `<md-elevated-button>`.
@@ -44,7 +44,7 @@ pub mod md_elevated_button {
 /// Creates `<sl-button>`, the element of `SlButton` in `components/button/button.js`.
 #[must_use]
 pub fn sl_button<S>() -> El<S> {
-    el("sl-button")
+    el(hypersig::tag!("sl-button"))
 }
 
 /// The attributes and events of `<sl-button>`.
@@ -83,7 +83,7 @@ pub mod sl_button {
 /// Creates `<sl-rating>`, the element of `SlRating` in `components/rating/rating.js`.
 #[must_use]
 pub fn sl_rating<S>() -> El<S> {
-    el("sl-rating")
+    el(hypersig::tag!("sl-rating"))
 }
 
 /// The attributes and events of `<sl-rating>`.
@@ -134,7 +134,7 @@ pub mod sl_rating {
 /// Creates `<test-picker>`, the element of `TestPicker` in `src/picker.js`.
 #[must_use]
 pub fn test_picker<S>() -> El<S> {
-    el("test-picker")
+    el(hypersig::tag!("test-picker"))
 }
 
 /// The attributes and events of `<test-picker>`.
@@ -189,7 +189,7 @@ pub mod test_picker {
 /// Creates `<wa-stepper>`, the element of `WaStepper` in `components/stepper/stepper.js`.
 #[must_use]
 pub fn wa_stepper<S>() -> El<S> {
-    el("wa-stepper")
+    el(hypersig::tag!("wa-stepper"))
 }
 
 /// The attributes and events of `<wa-stepper>`.

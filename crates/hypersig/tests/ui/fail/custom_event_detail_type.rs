@@ -13,5 +13,5 @@ struct Map {
 const ZOOMED: CustomEvent<i32> = CustomEvent::new("zoomed");
 
 fn main() {
-    let _ = el::<Map>("x-map").on_custom(ZOOMED, |zoom| Map::label().set(zoom));
+    let _ = el::<Map>(hypersig::tag!("x-map")).on_custom(ZOOMED, |zoom| Map::label().set(zoom));
 }
