@@ -65,8 +65,11 @@ async function code(browser, name) {
       .map((entry) => entry.name),
   );
   await page.close();
-  let bytes = 0;
-  for (const src of new Set(scripts)) bytes += gzipSync(Buffer.from(await (await fetch(src)).arrayBuffer())).length;
+  const bytes = { js: 0, wasm: 0 };
+  for (const src of new Set(scripts)) {
+    const size = gzipSync(Buffer.from(await (await fetch(src)).arrayBuffer())).length;
+    bytes[new URL(src).pathname.endsWith(".wasm") ? "wasm" : "js"] += size;
+  }
   return bytes;
 }
 
@@ -168,7 +171,7 @@ for (const name of names) {
     const sessions = [];
     for (let k = 0; k < SESSIONS; k++) sessions.push(await session(browser, name));
     results.apps[name] = {
-      js: await code(browser, name),
+      ...(await code(browser, name)),
       ...(await load(name)),
       inp: median(sessions.map((s) => s.inp)),
       toggleShown: median(sessions.map((s) => s.shown)),
@@ -194,6 +197,7 @@ ${results.date}, commit ${results.commit}, Chrome ${results.chrome}, ${results.m
 | | ${names.join(" | ")} |
 |---|${names.map(() => "---").join("|")}|
 | JS (gzip) | ${names.map((n) => kb(results.apps[n].js)).join(" | ")} |
+| Wasm (gzip) | ${names.map((n) => (results.apps[n].wasm === 0 ? "-" : kb(results.apps[n].wasm))).join(" | ")} |
 | FCP | ${names.map((n) => ms(results.apps[n].fcp)).join(" | ")} |
 | TBT | ${names.map((n) => ms(results.apps[n].tbt)).join(" | ")} |
 | INP | ${names.map((n) => inp(results.apps[n].inp)).join(" | ")} |
