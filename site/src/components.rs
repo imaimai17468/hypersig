@@ -42,14 +42,17 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
         title(Doc::Components(page).title(site)),
         lead(site, content.lead),
         demo::show(site, content.demo),
-        heading(
-            site,
-            L {
-                en: "Accessibility",
-                ja: "アクセシビリティ",
-            },
-        ),
     ];
+    if matches!(page, Component::Toast) {
+        children.extend(toast_from_the_server(site));
+    }
+    children.push(heading(
+        site,
+        L {
+            en: "Accessibility",
+            ja: "アクセシビリティ",
+        },
+    ));
     children.extend(content.built_on.iter().map(|&text| para(site, text)));
     if !content.keys.is_empty() {
         let rows: Vec<[&str; 2]> = content
@@ -98,6 +101,35 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
         Text::Chosen(rows.as_slice()),
     ));
     parts(children)
+}
+
+/// The section of the toast page on toasts a handler adds, which the demo
+/// cannot show because the site has no server.
+fn toast_from_the_server(site: Site) -> [Part; 4] {
+    [
+        heading(
+            site,
+            L {
+                en: "Add a toast from the server",
+                ja: "サーバーからトーストを追加する",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A handler adds a toast with `patch_append`, which puts it after the toasts the browser shows, where `patch` would replace them. A failed call shows the server's message when `on_error` passes it to `Toast::push_expr` as `Toast::body()`.",
+                ja: "ハンドラーは `patch_append` でトーストを追加します。`patch_append` はブラウザが表示中のトーストの後ろに追加し、`patch` はそれらを置き換えます。呼び出しが失敗したときにサーバーのメッセージを表示するには、`on_error` が渡すメッセージを `Toast::push_expr` で `Toast::body()` に入れます。",
+            },
+        ),
+        show(Snippet::ToastServer),
+        para(
+            site,
+            L {
+                en: "A toast from `Toast::new` has an id below 0, and a toast the browser pushes has an id above 0, so a toast from the server and one from the browser never share an id.",
+                ja: "`Toast::new` で作ったトーストの id は 0 未満で、ブラウザが追加したトーストの id は 0 より大きいので、サーバーのトーストとブラウザのトーストの id は重なりません。",
+            },
+        ),
+    ]
 }
 
 fn installation(site: Site) -> Part {
@@ -1929,6 +1961,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "A statement that adds `toast`, which the browser evaluates, to `toasts`.",
                         ja: "ブラウザが評価する `toast` を `toasts` に追加する文",
+                    },
+                ),
+                (
+                    "Toast::body",
+                    "hypersig_ui/struct.Toast.html#method.body",
+                    L {
+                        en: "Typed reference to the `body` signal.",
+                        ja: "`body` シグナルへの型付きの参照",
                     },
                 ),
             ],
