@@ -4,6 +4,7 @@
 
 use super::snippet::{Snippet, show};
 use crate::Site;
+use crate::code::{self, Lang};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
 use crate::prose::{Part, heading, lead, note, para, parts, subheading, title};
@@ -49,6 +50,7 @@ pub fn requests(site: Site) -> Part {
             },
         ),
         show(Snippet::HandlerErrors),
+        logging(site),
         heading(
             site,
             L {
@@ -64,6 +66,35 @@ pub fn requests(site: Site) -> Part {
             },
         ),
         uploads(site),
+    ])
+}
+
+/// Logging with `tracing`, and a line per request from `TraceLayer`.
+fn logging(site: Site) -> Part {
+    parts([
+        subheading(
+            site,
+            L {
+                en: "Logging",
+                ja: "ログ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The samples on this site write the server's side of an error with `eprintln!` to stay short. An application logs with [`tracing`](https://docs.rs/tracing/0.1): a handler writes an event with `tracing::warn!` or `tracing::error!`, and `tracing-subscriber` writes the events to stderr. [`TraceLayer`](https://docs.rs/tower-http/0.7/tower_http/trace/struct.TraceLayer.html) from `tower-http`, put on the router with `layer`, adds a line for each request with the answer's status and how long it took. Add the three crates to `Cargo.toml`:",
+                ja: "このサイトのサンプルは、短く保つためにエラーのサーバー側の内容を `eprintln!` で書いています。アプリケーションでは [`tracing`](https://docs.rs/tracing/0.1) でログを書きます。ハンドラは `tracing::warn!` や `tracing::error!` でイベントを書き、`tracing-subscriber` がイベントを標準エラー出力に書きます。`tower-http` の [`TraceLayer`](https://docs.rs/tower-http/0.7/tower_http/trace/struct.TraceLayer.html) を `layer` でルーターに付けると、リクエストごとに、応答のステータスとかかった時間を書いた行が加わります。`Cargo.toml` に 3 つのクレートを足してください。",
+            },
+        ),
+        code::block(
+            Lang::Toml,
+            Some("Cargo.toml"),
+            r#"[dependencies]
+tower-http = { version = "0.7", features = ["trace"] }
+tracing = "0.1"
+tracing-subscriber = "0.3""#,
+        ),
+        show(Snippet::Logging),
     ])
 }
 

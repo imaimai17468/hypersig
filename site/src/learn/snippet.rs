@@ -59,6 +59,7 @@ snippets! {
     Parts => "parts.rs";
     Extractors => "extractors.rs";
     HandlerErrors => "handler_errors.rs";
+    Logging => "logging.rs";
     Uploads => "uploads.rs";
     Sessions => "sessions.rs";
     TestingSessions => "testing_sessions.rs";
