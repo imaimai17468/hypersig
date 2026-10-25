@@ -16,14 +16,14 @@ hypersig::routes! {
 
 async fn index((): (), (): ()) -> Page<Review> {
     Page::new("Rating", Review { stars: 3 })
-        .icon("/icon.svg")
-        .script("/static/star-rating.js")
+        .icon("/assets/icon.svg")
+        .script("/star-rating.js")
 }
 
 let app: Router = pages(Router::new())
     .hypersig_runtime()
     // One file at one path.
-    .route_service("/icon.svg", ServeFile::new("assets/icon.svg"))
-    // Each file under `static/` at the same path under `/static`.
-    .nest_service("/static", ServeDir::new("static"));
+    .route_service("/star-rating.js", ServeFile::new("star-rating.js"))
+    // Each file under `assets/` at the same path under `/assets`.
+    .nest_service("/assets", ServeDir::new("assets"));
 # let _ = (app, INDEX);

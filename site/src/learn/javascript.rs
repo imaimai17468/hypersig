@@ -63,8 +63,8 @@ pub fn javascript(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The paths given to `ServeFile` and `ServeDir` are read from the directory the server was started in, so the server above expects `assets/` and `static/` there.",
-                ja: "`ServeFile` と `ServeDir` に渡したパスは、サーバーを起動したディレクトリから読みます。上のサーバーは、そこに `assets/` と `static/` があるものとして動きます。",
+                en: "The paths given to `ServeFile` and `ServeDir` are read from the directory the server was started in, so the server above expects `star-rating.js` and `assets/` there.",
+                ja: "`ServeFile` と `ServeDir` に渡したパスは、サーバーを起動したディレクトリから読みます。上のサーバーは、そこに `star-rating.js` と `assets/` があるものとして動きます。",
             },
         ),
         heading(
