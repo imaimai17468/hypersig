@@ -464,7 +464,7 @@ impl Names {
             .map(|word| {
                 let mut chars = word.chars();
                 chars.next().map_or_else(String::new, |first| {
-                    first.to_ascii_uppercase().to_string() + chars.as_str()
+                    format!("{}{}", first.to_ascii_uppercase(), chars.as_str())
                 })
             })
             .collect();
