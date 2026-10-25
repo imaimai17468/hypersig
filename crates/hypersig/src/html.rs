@@ -965,7 +965,7 @@ impl Event {
 /// const RATE: CustomEvent<i32> = CustomEvent::new("rate");
 ///
 /// let html = Page::new("Rating", Rating { stars: 0 })
-///     .child(el("star-rating").on_custom(RATE, |stars| Rating::stars().set(stars)))
+///     .child(el(hypersig::tag!("star-rating")).on_custom(RATE, |stars| Rating::stars().set(stars)))
 ///     .render();
 /// assert!(html.contains("data-hs-on-custom"));
 /// ```
@@ -1323,14 +1323,63 @@ fn plain_css(value: &str) -> bool {
     depth == 0 && !value.contains("/*")
 }
 
-/// Creates an element with any tag.
+/// Creates an element with a tag that has no named constructor, such as an
+/// SVG element or a custom element.
 ///
-/// Use the named constructors such as [`div`] where one exists. A tag the
-/// HTML standard lists as void, such as `source` or `meta`, is written
-/// without children or a closing tag, as the browser parses it.
+/// Use the named constructors such as [`div`] where one exists, and build
+/// `tag` with [`tag!`](hypersig::tag!). A tag the HTML standard lists as void,
+/// such as `source` or `meta`, is written without children or a closing tag,
+/// as the browser parses it.
 #[must_use]
-pub fn el<S>(tag: &'static str) -> El<S> {
-    El::new(tag, VOID.contains(&tag))
+pub fn el<S>(tag: Tag) -> El<S> {
+    El::new(tag.0, VOID.contains(&tag.0))
+}
+
+/// The name of an element that [`el`] creates.
+///
+/// [`tag!`](hypersig::tag!) builds one at compile time. A tag is ASCII letters,
+/// digits, `-`, `_`, `.`, and `:`, starting with a letter, so the name cannot
+/// end the tag and start an attribute. It is never `script`, `style`, or
+/// `base`, in any case: the first two run their text as code, and `base`
+/// moves every relative URL of the page, the action URLs among them, to
+/// another origin.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct Tag(&'static str);
+
+impl Tag {
+    /// Checks `name` against the rules of [`Tag`].
+    ///
+    /// # Panics
+    ///
+    /// Panics for a name that breaks them. In a `const`, the panic is a
+    /// compile error.
+    pub(crate) const fn new(name: &'static str) -> Self {
+        let bytes = name.as_bytes();
+        assert!(
+            !bytes.is_empty() && bytes[0].is_ascii_alphabetic(),
+            "a tag starts with a letter"
+        );
+        let mut i = 0;
+        while i < bytes.len() {
+            let b = bytes[i];
+            assert!(
+                b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':'),
+                "a tag is letters, digits, `-`, `_`, `.`, and `:`"
+            );
+            i += 1;
+        }
+        assert!(
+            !is(bytes, "script") && !is(bytes, "style") && !is(bytes, "base"),
+            "`script` and `style` run their text as code, and `base` moves the page's URLs"
+        );
+        Self(name)
+    }
+
+    /// The tag's name, as the HTML holds it.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        self.0
+    }
 }
 
 /// The tags the HTML standard defines as void elements, which take no
@@ -2765,7 +2814,7 @@ mod tests {
     fn a_void_tag_has_no_closing_tag_from_its_constructor_or_from_el() {
         let html = picture::<Page>()
             .child(source().attr(attr::SRCSET, "/a.avif"))
-            .child(el("meta").attr(attr::ITEMPROP, "name"))
+            .child(el(crate::tag!("meta")).attr(attr::ITEMPROP, "name"))
             .child(img().src(crate::SafeUrl::new("/a.png")))
             .render();
         assert_eq!(
@@ -3063,7 +3112,9 @@ mod tests {
 
     #[test]
     fn an_attr_keeps_the_case_it_was_given() {
-        let html = el::<Page>("animate").attr(attr::TO, "0").render();
+        let html = el::<Page>(crate::tag!("animate"))
+            .attr(attr::TO, "0")
+            .render();
         assert_eq!(html, r#"<animate to="0"></animate>"#);
         assert_eq!(attr::VIEW_BOX.name(), "viewBox");
     }

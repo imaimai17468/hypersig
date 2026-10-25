@@ -219,6 +219,13 @@ pub mod _private {
     pub const fn attr(name: &'static str) -> crate::html::Attr {
         crate::html::Attr::new(name)
     }
+
+    /// Called by `tag!` inside a `const` block, so a name `Tag` refuses is
+    /// a compile error.
+    #[must_use]
+    pub const fn tag(name: &'static str) -> crate::html::Tag {
+        crate::html::Tag::new(name)
+    }
 }
 
 /// Builds an [`Attr`](html::Attr) for a name with no constant in [`html::attr`].
@@ -241,5 +248,24 @@ pub mod _private {
 macro_rules! attr {
     ($name:literal) => {
         const { $crate::_private::attr($name) }
+    };
+}
+
+/// Builds a [`Tag`](html::Tag) for [`html::el`], checked at compile time.
+///
+/// ```
+/// use hypersig::html::el;
+///
+/// let icon = el::<()>(hypersig::tag!("svg"));
+/// assert_eq!(icon.render(), "<svg></svg>");
+/// ```
+///
+/// ```compile_fail
+/// let _ = hypersig::html::el::<()>(hypersig::tag!("img onerror=alert(1)"));
+/// ```
+#[macro_export]
+macro_rules! tag {
+    ($name:literal) => {
+        const { $crate::_private::tag($name) }
     };
 }

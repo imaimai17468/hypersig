@@ -3,7 +3,7 @@ use hypersig::html::{El, el};
 /// Creates `<sl-rating>`, the element of `SlRating` in `components/rating/rating.js`.
 #[must_use]
 pub fn sl_rating<S>() -> El<S> {
-    el("sl-rating")
+    el(hypersig::tag!("sl-rating"))
 }
 
 /// The attributes and events of `<sl-rating>`.

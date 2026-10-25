@@ -120,7 +120,7 @@ pub fn article(site: Site, doc: Doc, content: Part) -> String {
                         .max_width(rem(46))
                         .min_width(px(0)),
                 )
-                .child(el("article").child(content))
+                .child(el(hypersig::tag!("article")).child(content))
                 .child(pager(site, before, after))
                 .child(page_footer(site)),
         );
@@ -425,7 +425,7 @@ fn menu_button(site: Site) -> Part {
             .on(Media::Md, Style::new().display(Display::None)),
     )
     .child(
-        el("svg")
+        el(hypersig::tag!("svg"))
             .attr(attr::VIEW_BOX, "0 0 24 24")
             .attr(attr::FILL, "none")
             .attr(attr::STROKE, "currentColor")
@@ -436,7 +436,7 @@ fn menu_button(site: Site) -> Part {
             .children(
                 ["M4 6h16", "M4 12h16", "M4 18h16"]
                     .into_iter()
-                    .map(|d| el("path").attr(attr::D, d)),
+                    .map(|d| el(hypersig::tag!("path")).attr(attr::D, d)),
             ),
     )
 }

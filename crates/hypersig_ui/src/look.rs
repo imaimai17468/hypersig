@@ -82,7 +82,7 @@ pub(crate) mod icon {
 /// An icon drawn in the current text color, hidden from assistive
 /// technology because the element around it carries the name.
 pub(crate) fn icon<S>(paths: &[&str], size: Length) -> El<S> {
-    el("svg")
+    el(hypersig::tag!("svg"))
         .attr(hypersig::attr!("xmlns"), "http://www.w3.org/2000/svg")
         .attr(attr::VIEW_BOX, "0 0 24 24")
         .attr(attr::FILL, "none")
@@ -99,5 +99,9 @@ pub(crate) fn icon<S>(paths: &[&str], size: Length) -> El<S> {
                 .flex_shrink(0.0)
                 .pointer_events(PointerEvents::None),
         )
-        .children(paths.iter().map(|d| el("path").attr(attr::D, *d)))
+        .children(
+            paths
+                .iter()
+                .map(|d| el(hypersig::tag!("path")).attr(attr::D, *d)),
+        )
 }

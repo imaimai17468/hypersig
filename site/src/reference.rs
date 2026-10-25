@@ -872,8 +872,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "el",
                             "html/fn.el.html",
                             L {
-                                en: "Creates an element with any tag.",
-                                ja: "任意のタグの要素を作ります。",
+                                en: "Creates an element with a tag that has no named constructor, such as an SVG element or a custom element.",
+                                ja: "SVG の要素やカスタム要素のように、専用の関数がないタグの要素を作ります。",
                             },
                         ),
                         (
@@ -963,6 +963,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The id of an element, which `El::id` writes and the methods that point at an element read.",
                                 ja: "`El::id` が書き、要素を指すメソッドが読む、要素の id",
+                            },
+                        ),
+                        (
+                            "Tag",
+                            "html/struct.Tag.html",
+                            L {
+                                en: "The name of an element that `el` creates.",
+                                ja: "`el` が作る要素の名前",
+                            },
+                        ),
+                        (
+                            "tag!",
+                            "macro.tag.html",
+                            L {
+                                en: "Builds a `Tag` for `html::el`, checked at compile time.",
+                                ja: "`html::el` に渡す `Tag` を作り、コンパイル時に検査します。",
                             },
                         ),
                         (

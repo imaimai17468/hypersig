@@ -831,11 +831,11 @@ fn plot() -> (El<Plot>, Plot) {
                 .bind_text(Plot::collected().len().to_text()),
         )
         .child(
-            el("svg")
+            el(hypersig::tag!("svg"))
                 .id(Id::new("plot"))
                 .attr(attr::VIEW_BOX, "0 0 100 100")
                 .child(
-                    el("rect")
+                    el(hypersig::tag!("rect"))
                         .id(Id::new("frame"))
                         .attr(attr::WIDTH, "100")
                         .attr(attr::HEIGHT, "100")
@@ -845,20 +845,23 @@ fn plot() -> (El<Plot>, Plot) {
                     Plot::bars(),
                     |bar| bar.at(Bar::id()),
                     |bar| {
-                        el("g")
+                        el(hypersig::tag!("g"))
                             .child(
-                                el("rect")
+                                el(hypersig::tag!("rect"))
                                     .attr(attr::WIDTH, "5")
                                     .bind_attr(attr::HEIGHT, bar.at(Bar::height()).to_text()),
                             )
                             .child(each(bar.at(Bar::marks()), |mark| {
-                                el("line").bind_attr(attr::Y1, mark.value().to_text())
+                                el(hypersig::tag!("line"))
+                                    .bind_attr(attr::Y1, mark.value().to_text())
                             }))
                     },
                 ))
                 .child(when(
                     Plot::marked(),
-                    el("circle").id(Id::new("dot")).attr(attr::R, "2"),
+                    el(hypersig::tag!("circle"))
+                        .id(Id::new("dot"))
+                        .attr(attr::R, "2"),
                 )),
         );
     let signals = Plot {
@@ -1431,21 +1434,25 @@ fn widgets() -> (El<Widgets>, Widgets) {
     let center = Widgets::center();
     let el = main()
         .child(
-            el("x-rating")
+            el(hypersig::tag!("x-rating"))
                 .id(Id::new("rating"))
                 .on_custom(RATE, |stars| Widgets::stars().set(stars))
                 .on_custom(RATE, |stars| Widgets::stars().set(Widgets::stars() + stars)),
         )
-        .child(el("x-map").id(Id::new("map")).on_custom(MOVED, |point| {
-            center
-                .at(Point::lat())
-                .set(point.clone().at(Point::lat()))
-                .then(center.at(Point::lng()).set(point.at(Point::lng())))
-        }))
+        .child(
+            el(hypersig::tag!("x-map"))
+                .id(Id::new("map"))
+                .on_custom(MOVED, |point| {
+                    center
+                        .at(Point::lat())
+                        .set(point.clone().at(Point::lat()))
+                        .then(center.at(Point::lng()).set(point.at(Point::lng())))
+                }),
+        )
         .child(Atlas("Tokyo").render().id(Atlas::ID))
         .child(ul().id(Id::new("pins")).child(each(Widgets::pins(), |pin| {
             li().child(
-                el("x-pin")
+                el(hypersig::tag!("x-pin"))
                     .on_custom(PICK, move |_| pin.at(Pin::picked()).set(true))
                     .bind_text(pin.at(Pin::name())),
             )

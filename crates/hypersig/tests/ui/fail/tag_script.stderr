@@ -1,0 +1,32 @@
+error[E0080]: evaluation panicked: `script` and `style` run their text as code, and `base` moves the page's URLs
+ --> tests/ui/fail/tag_script.rs:4:22
+  |
+4 |     let _ = el::<()>(hypersig::tag!("SCRIPT")).text("alert(1)");
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed inside this call
+  |
+note: inside `hypersig::_private::tag`
+ --> src/lib.rs
+  |
+  |         crate::html::Tag::new(name)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: inside `Tag::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/html.rs
+  |
+  | /         assert!(
+  | |             !is(bytes, "script") && !is(bytes, "style") && !is(bytes, "base"),
+  | |             "`script` and `style` run their text as code, and `base` moves the page's URLs"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/tag_script.rs:4:22
+  |
+4 |     let _ = el::<()>(hypersig::tag!("SCRIPT")).text("alert(1)");
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this note originates in the macro `hypersig::tag` (in Nightly builds, run with -Z macro-backtrace for more info)
