@@ -261,8 +261,8 @@ pub fn describing_the_page(site: Site) -> Part {
                     ja: "`bind_attr` は属性を文字列の式の値に合わせ続けます。`attr_when` は、条件が成り立つ間だけ `disabled` のような真偽値の属性を付けます。",
                 },
                 L {
-                    en: "`show` hides the element while a condition is false. `when(cond, el)` removes it instead, so its `on_load` runs again and its inputs start empty each time it returns.",
-                    ja: "`show` は条件が偽の間、要素を隠します。`when(cond, el)` は要素を取り除くので、要素が戻るたびに `on_load` がもう一度実行され、入力欄は空から始まります。",
+                    en: "`show` hides the element while a condition is false. `when(cond, el)` removes it instead, so each time it returns its inputs start empty and its `on_load`, the statement that runs when an element enters the document, runs again.",
+                    ja: "`show` は条件が偽の間、要素を隠します。`when(cond, el)` は要素を取り除くので、要素が戻るたびに入力欄は空から始まり、`on_load`（要素が文書に入ったときに実行する文）がもう一度実行されます。",
                 },
                 L {
                     en: "`class_when` and `css_when` add a class or a style while a condition holds. [Styling](learn/styling/) covers them.",
