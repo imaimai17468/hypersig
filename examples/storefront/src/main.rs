@@ -291,7 +291,7 @@ fn wish_form() -> El<Home> {
             .then(
                 WISH.call_with(draft.trim())
                     .on_error(mark)
-                    .on_success(mark(Expr::lit(&"saved".to_owned()))),
+                    .on_success(mark(Expr::text("saved"))),
             )
             .then(next_id.set(next_id + 1))
             .then(draft.set(""))

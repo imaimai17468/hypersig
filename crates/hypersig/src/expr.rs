@@ -93,6 +93,22 @@ impl<S> Expr<S, i32> {
     }
 }
 
+impl<S> Expr<S, String> {
+    /// A constant string, for the start of a [`concat`](Self::concat) chain.
+    ///
+    /// ```
+    /// # use hypersig::{Expr, Signals};
+    /// # #[derive(Signals, serde::Serialize, serde::Deserialize)]
+    /// # struct Gallery { name: String }
+    /// let greeting = Expr::text("Your name is ").concat(Gallery::name());
+    /// # let _ = greeting;
+    /// ```
+    #[must_use]
+    pub fn text(value: &str) -> Self {
+        Self::from_json(json!(["lit", value]))
+    }
+}
+
 impl<S> Expr<S, f64> {
     /// The browser's current time, in milliseconds since the Unix epoch.
     ///

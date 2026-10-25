@@ -345,7 +345,7 @@ fn outbox() -> (El<Outbox>, Outbox) {
                 DELIVER
                     .call_with(id.clone())
                     .on_error(mark)
-                    .on_success(mark(Expr::lit(&"sent".to_owned()))),
+                    .on_success(mark(Expr::text("sent"))),
             )
             .then(next.set(next + 1))
     });
