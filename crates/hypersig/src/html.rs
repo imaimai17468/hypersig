@@ -2106,10 +2106,7 @@ impl<S> El<S> {
         ctx.for_each_item(depth, items, |item, index| {
             key.clear();
             match &self.key {
-                None => {
-                    key.push('#');
-                    key.push_str(&index.to_string());
-                }
+                None => ssr::write_into(&mut key, format_args!("#{index}")),
                 Some(expr) => match ssr::evaluate(expr, item) {
                     Some(value) => ssr::write_js_json(&mut key, &value),
                     None => return Some(()),
@@ -2399,10 +2396,10 @@ impl<S> El<S> {
     fn write_selected(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
         let mut out_el = String::new();
         self.write(&mut out_el, ctx, None);
-        let open = format!("<{}", self.tag);
-        out.push_str(&open);
+        let open = '<'.len_utf8() + self.tag.len();
+        out.push_str(&out_el[..open]);
         out.push_str(" selected=\"\"");
-        out.push_str(&out_el[open.len()..]);
+        out.push_str(&out_el[open..]);
     }
 }
 

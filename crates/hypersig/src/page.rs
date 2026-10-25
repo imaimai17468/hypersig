@@ -836,13 +836,7 @@ impl<S: Signals> Page<S> {
             style.push_str("]{display:none!important}");
         }
         for (at, rule) in rules.iter().enumerate() {
-            style.push('[');
-            style.push_str(INLINE);
-            style.push_str("=\"");
-            style.push_str(&at.to_string());
-            style.push_str("\"]{");
-            style.push_str(rule);
-            style.push('}');
+            ssr::write_into(&mut style, format_args!("[{INLINE}=\"{at}\"]{{{rule}}}"));
         }
         style.push_str("</style>");
         style
