@@ -351,7 +351,7 @@ impl PatchEvent {
     pub(crate) fn try_data(&self) -> Result<String, PartMismatch> {
         Ok(match self {
             Self::Signals(values) => match current_part() {
-                None => Value::Object(values.clone()).to_string(),
+                None => serde_json::to_string(values).expect("a JSON map serializes"),
                 Some(part) => Value::Object(
                     values
                         .iter()
