@@ -57,6 +57,6 @@ Each app is written the way an experienced user of that framework would write it
 - **FCP** and **TBT** (First Contentful Paint, Total Blocking Time): from Lighthouse 13.5.0 with the settings above. Largest Contentful Paint is left out, because in every app it equals First Contentful Paint.
 - **INP** (Interaction to Next Paint): from the Event Timing API, over one page session of 15 checkbox clicks and 15 additions with the Enter key after 3 warm-up clicks. With fewer than 50 interactions, INP is the slowest one. Chrome reports only interactions of 16 ms or more, so a faster page shows as "< 16 ms".
 
-Each value is the median of 3 runs. `results/latest.json` also records, for each app, the median time from a checkbox click until the DOM shows the item done and the new count, which shows whether the app waits for the server.
+Each value is the median of 10 runs, reported with the smallest and largest of them. `results/latest.json` also records, for each app, the median time from a checkbox click until the DOM shows the item done and the new count, which shows whether the app waits for the server.
 
 `harness/parity.mjs` checks the behavior above on every app before measuring.

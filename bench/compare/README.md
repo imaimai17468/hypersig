@@ -30,4 +30,4 @@ node harness/measure.mjs          # writes results/latest.json and results/lates
 node harness/measure.mjs datastar # one app only
 ```
 
-The harness starts each app itself, one at a time, and drives the Chrome installed on the machine. A full run takes about half an hour. CI does not run it, because it needs Node, the Topcoat, Leptos, and Dioxus CLIs, and a local Chrome.
+The harness starts each app itself, one at a time, and drives the Chrome installed on the machine. A full run takes about an hour. CI does not run it, because it needs Node, the Topcoat, Leptos, and Dioxus CLIs, and a local Chrome.
