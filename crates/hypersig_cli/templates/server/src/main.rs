@@ -43,6 +43,7 @@ async fn main() -> std::io::Result<()> {
     // container, so listen on every interface.
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_owned());
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
+    println!("Listening on http://localhost:{port}");
     // The server stops once the requests in progress finish. A stream that
     // stays open holds it until the host's grace period ends.
     axum::serve(listener, app)
@@ -65,4 +66,21 @@ async fn shutdown() {
     }
     #[cfg(not(unix))]
     let _ = tokio::signal::ctrl_c().await;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn the_page_starts_at_zero() {
+        let page = index((), ()).await;
+        assert_eq!(page.value_of(Counter::count()), 0);
+    }
+
+    #[tokio::test]
+    async fn reset_sets_the_count_to_zero() {
+        let patches = reset((), ()).await;
+        assert_eq!(patches.value_of(Counter::count()), Some(0));
+    }
 }

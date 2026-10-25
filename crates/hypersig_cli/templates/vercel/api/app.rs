@@ -91,3 +91,20 @@ async fn main() -> Result<(), vercel_runtime::Error> {
     // `VERCEL_DEV_PORT`, or 3000.
     vercel_runtime::run(ServiceBuilder::new().layer(VercelLayer::new()).service(app)).await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn the_page_starts_at_zero() {
+        let page = index((), ()).await;
+        assert_eq!(page.value_of(Counter::count()), 0);
+    }
+
+    #[tokio::test]
+    async fn double_doubles_the_count_it_is_sent() {
+        let patches = double((), 3).await;
+        assert_eq!(patches.value_of(Counter::count()), Some(6));
+    }
+}

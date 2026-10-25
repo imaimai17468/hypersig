@@ -213,7 +213,7 @@ fn add_refuses_to_overwrite(dir: &Path, host: &str, taken: &str) {
 #[test]
 fn server_projects_check() {
     let target = scratch("target-server").join("target");
-    new("server", &target, &[]);
+    new("server", &target, &["--all-targets"]);
 
     let dir = quick_start("add-server");
     let stdout = succeeds(&hypersig(&dir, &["add", "server"]));
@@ -306,7 +306,7 @@ worker = { version = "0.8", features = ["http", "axum", "d1"] }
 #[test]
 fn vercel_projects_check() {
     let target = scratch("target-vercel").join("target");
-    new("vercel", &target, &[]);
+    new("vercel", &target, &["--all-targets"]);
 
     let dir = quick_start("add-vercel");
     let stdout = succeeds(&hypersig(&dir, &["add", "vercel"]));
@@ -381,6 +381,20 @@ fn new_refuses_a_directory_that_exists() {
     let output = hypersig(&dir, &["new", "taken", "--host", "server"]);
     assert!(!output.status.success());
     assert_eq!(files(&dir.join("taken")), Vec::<String>::new());
+}
+
+#[test]
+fn new_without_a_host_lists_the_hosts_and_an_example() {
+    let dir = scratch("new-no-host");
+    let output = hypersig(&dir, &["new", "kanban"]);
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("  cloudflare   Cloudflare Workers")
+            && stderr.contains("cargo hypersig new kanban --host server"),
+        "{stderr}"
+    );
+    assert!(!dir.join("kanban").exists());
 }
 
 /// The manifest under `tests/elements/` holds `sl-button` and `sl-rating`

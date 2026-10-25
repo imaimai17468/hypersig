@@ -37,10 +37,11 @@ pub fn run(path: &Path, host: Host) -> Result<(), Error> {
         println!("It is not a Git repository; run `git init` there to make it one.");
     }
     println!("\nNext:\n  cd {}", path.display());
-    // The commands of the host's deploy page, after `cd`.
+    // The command that serves the project on this machine, then the
+    // commands of the host's deploy page, after `cd`.
     let next = match host {
         Host::Server => format!(
-            "  docker build -t {package} .\n  docker run --rm -p 3000:3000 {package}    # http://localhost:3000"
+            "  cargo hypersig dev                        # http://localhost:3000\n  docker build -t {package} .\n  docker run --rm -p 3000:3000 {package}    # http://localhost:3000"
         ),
         Host::Cloudflare => "  npx wrangler dev                          # http://localhost:8787\n  npx wrangler login\n  npx wrangler deploy".to_owned(),
         Host::Vercel => "  cargo run                                 # http://localhost:3000\n  npx vercel login\n  npx vercel deploy --prod".to_owned(),
