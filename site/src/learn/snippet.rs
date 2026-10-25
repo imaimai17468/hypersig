@@ -54,6 +54,7 @@ snippets! {
     ListStatements => "list_statements.rs";
     Patches => "patches.rs";
     ListPatches => "list_patches.rs";
+    TestingListPatches => "testing_list_patches.rs";
     Forms => "forms.rs";
     Latest => "latest.rs";
     Parts => "parts.rs";

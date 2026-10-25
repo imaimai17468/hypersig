@@ -54,6 +54,14 @@ tower = { version = "0.5", features = ["util"] }"#,
         para(
             site,
             L {
+                en: "A handler that answers with a list patch sends only the items that change, so `value_of` does not see them. [`Patches::items_of`](api:hypersig/struct.Patches.html#method.items_of) returns the items a batch appends, prepends, or upserts into a list, and [`Patches::removed_keys_of`](api:hypersig/struct.Patches.html#method.removed_keys_of) the keys it removes. The second takes the key closure the handler passed to `patch_remove`, and leaves out a removal by another key, so the test also checks the key the browser compares.",
+                ja: "リストの差分で答えるハンドラは変わる項目だけを送るので、`value_of` からは見えません。[`Patches::items_of`](api:hypersig/struct.Patches.html#method.items_of) は差分がリストの末尾か先頭に加える項目と upsert で入れる項目を返し、[`Patches::removed_keys_of`](api:hypersig/struct.Patches.html#method.removed_keys_of) は取り除くキーを返します。`removed_keys_of` はハンドラが `patch_remove` に渡したのと同じキーのクロージャを受け取り、別のキーでの削除は含めません。そのため、テストはブラウザが比べるキーも確かめます。",
+            },
+        ),
+        show(Snippet::TestingListPatches),
+        para(
+            site,
+            L {
                 en: "[`Page::render`](api:hypersig/struct.Page.html#method.render) returns the document the server sends, with each bound text and attribute written from the initial values, so a test can look for a text in it. It panics where two elements share an id or a `NodeRef` name, so a test that renders each page finds those before a visitor does.",
                 ja: "[`Page::render`](api:hypersig/struct.Page.html#method.render) はサーバーが送る文書を返します。束縛したテキストと属性は初期値で書かれているので、テストはその中から文字列を探せます。2 つの要素が同じ id や `NodeRef` の名前を持つと `render` はパニックするので、ページごとに描画するテストを書いておくと、訪問者が開く前にそれがわかります。",
             },
