@@ -7,7 +7,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::ext::IdentExt as _;
 use syn::spanned::Spanned as _;
-use syn::{Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, FieldsNamed};
 
 /// Expands `#[derive(Signals)]` for the struct in `input`.
 ///
@@ -30,37 +30,11 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
 fn expand(input: TokenStream) -> syn::Result<TokenStream> {
     let input: DeriveInput = syn::parse2(input)?;
     reject_serde_attributes(&input.attrs)?;
-
-    if !input.generics.params.is_empty() {
-        return Err(syn::Error::new_spanned(
-            &input.generics,
-            "`Signals` cannot be derived for a generic struct",
-        ));
-    }
-
-    let named = match &input.data {
-        Data::Struct(data) => match &data.fields {
-            Fields::Named(named) => named,
-            other => {
-                return Err(syn::Error::new_spanned(
-                    other,
-                    "`Signals` needs a struct with named fields, because each field name becomes a signal path",
-                ));
-            }
-        },
-        Data::Enum(data) => {
-            return Err(syn::Error::new_spanned(
-                data.enum_token,
-                "`Signals` can only be derived for a struct",
-            ));
-        }
-        Data::Union(data) => {
-            return Err(syn::Error::new_spanned(
-                data.union_token,
-                "`Signals` can only be derived for a struct",
-            ));
-        }
-    };
+    let named = named_fields(
+        &input,
+        "Signals",
+        "because each field name becomes a signal path",
+    )?;
 
     let mut accessors = Vec::with_capacity(named.named.len());
     for field in &named.named {
@@ -113,35 +87,11 @@ pub fn derive_search(input: TokenStream) -> TokenStream {
 
 fn expand_search(input: TokenStream) -> syn::Result<TokenStream> {
     let input: DeriveInput = syn::parse2(input)?;
-    if !input.generics.params.is_empty() {
-        return Err(syn::Error::new_spanned(
-            &input.generics,
-            "`Search` cannot be derived for a generic struct",
-        ));
-    }
-    let named = match &input.data {
-        Data::Struct(data) => match &data.fields {
-            Fields::Named(named) => named,
-            other => {
-                return Err(syn::Error::new_spanned(
-                    other,
-                    "`Search` needs a struct with named fields, because each field name becomes a query parameter",
-                ));
-            }
-        },
-        Data::Enum(data) => {
-            return Err(syn::Error::new_spanned(
-                data.enum_token,
-                "`Search` can only be derived for a struct",
-            ));
-        }
-        Data::Union(data) => {
-            return Err(syn::Error::new_spanned(
-                data.union_token,
-                "`Search` can only be derived for a struct",
-            ));
-        }
-    };
+    let named = named_fields(
+        &input,
+        "Search",
+        "because each field name becomes a query parameter",
+    )?;
     let bounds = named.named.iter().map(|field| {
         let ty = &field.ty;
         quote_spanned! {ty.span()=> #ty: ::hypersig::SearchValue}
@@ -255,16 +205,47 @@ fn expand_segment(input: TokenStream) -> syn::Result<TokenStream> {
     })
 }
 
-fn reject_serde_attributes(attrs: &[syn::Attribute]) -> syn::Result<()> {
-    reject_serde(
-        attrs,
-        "`#[serde(...)]` is not supported on a `Signals` struct, because the signal path must equal the field name",
-    )
+/// The named fields of the struct in `input`, for the derive named `derive`.
+///
+/// A generic struct, a tuple or unit struct, an enum, and a union are each a
+/// compile error at the offending span. `because` ends the message for a
+/// struct whose fields have no names.
+fn named_fields<'input>(
+    input: &'input DeriveInput,
+    derive: &str,
+    because: &str,
+) -> syn::Result<&'input FieldsNamed> {
+    if !input.generics.params.is_empty() {
+        return Err(syn::Error::new_spanned(
+            &input.generics,
+            format!("`{derive}` cannot be derived for a generic struct"),
+        ));
+    }
+    match &input.data {
+        Data::Struct(data) => match &data.fields {
+            Fields::Named(named) => Ok(named),
+            other => Err(syn::Error::new_spanned(
+                other,
+                format!("`{derive}` needs a struct with named fields, {because}"),
+            )),
+        },
+        Data::Enum(data) => Err(syn::Error::new_spanned(
+            data.enum_token,
+            format!("`{derive}` can only be derived for a struct"),
+        )),
+        Data::Union(data) => Err(syn::Error::new_spanned(
+            data.union_token,
+            format!("`{derive}` can only be derived for a struct"),
+        )),
+    }
 }
 
-fn reject_serde(attrs: &[syn::Attribute], message: &str) -> syn::Result<()> {
+fn reject_serde_attributes(attrs: &[syn::Attribute]) -> syn::Result<()> {
     match attrs.iter().find(|attr| attr.path().is_ident("serde")) {
-        Some(attr) => Err(syn::Error::new_spanned(attr, message)),
+        Some(attr) => Err(syn::Error::new_spanned(
+            attr,
+            "`#[serde(...)]` is not supported on a `Signals` struct, because the signal path must equal the field name",
+        )),
         None => Ok(()),
     }
 }
