@@ -406,11 +406,11 @@ async fn content_security_policy(mut request: Request, next: Next) -> Response {
     getrandom::fill(&mut bytes).expect("the operating system provides random bytes");
     // Hex digits are a subset of the base64 alphabet a nonce is written in.
     let nonce = format!("{:032x}", u128::from_ne_bytes(bytes));
-    request.extensions_mut().insert(Nonce(nonce.clone()));
-    let mut response = next.run(request).await;
     let policy = format!(
         "default-src 'self'; script-src 'self'; style-src 'nonce-{nonce}'; img-src 'self' data:"
     );
+    request.extensions_mut().insert(Nonce(nonce));
+    let mut response = next.run(request).await;
     response.headers_mut().insert(
         header::CONTENT_SECURITY_POLICY,
         HeaderValue::from_str(&policy).expect("the policy is ASCII"),
