@@ -64,6 +64,20 @@ pub fn server(site: Site) -> Part {
                 ja: "呼び出しの前に文を置くと、ページがすぐに変わり、そのあとにリクエストが送られます。`count.set(count + 1).then(LIKE.call())` のように書きます。続いて、サーバーが保存したカウントをハンドラの差分が設定します。サーバーがエラーを返した場合、変更はブラウザに残ります。`error` で失敗を表示できますが、値を元に戻す処理はありません。",
             },
         ),
+        subheading(
+            site,
+            L {
+                en: "What actions leave unchecked",
+                ja: "アクションが検査しないこと",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Nothing checks that the router serves an action the page calls. A page whose action was never passed to `RouterExt::action` compiles, and each call gets a 404 with an empty body, which `error` receives as a failed call. A `StreamAction` left out of `RouterExt::stream` fails the same way. A test that sends `LIKE.request(&3)` to the router with `oneshot` and expects a 200, as on [Testing](learn/testing/), fails for an action the router does not serve.",
+                ja: "ページが呼ぶアクションをルーターが配信しているかどうかは検査されません。`RouterExt::action` に渡していないアクションを呼ぶページもコンパイルは通り、呼び出しのたびに本文が空の 404 が返ります。`error` はこれを失敗した呼び出しとして受け取ります。`RouterExt::stream` に渡していない `StreamAction` も同じです。[テストを書く](learn/testing/) の例のように `LIKE.request(&3)` を `oneshot` でルーターに送って 200 を期待するテストは、ルーターが配信しないアクションで失敗します。",
+            },
+        ),
         heading(
             site,
             L {
@@ -123,6 +137,21 @@ pub fn calls_in_depth(site: Site) -> Part {
                 ja: "`each_keyed` のリストの先頭に項目を加えると、画面に出ていた項目はその位置に残ります。ランタイムがいちばん近いスクロールできる祖先要素を、新しい項目の高さの分だけスクロールします。Chrome のスクロールアンカリングもリストをスクロールした後なら同じことをしますが、いちばん上では働きません。古い項目を読み込むリストは、読み込むときにちょうどいちばん上にあります。ブラウザの中では `Sig::prepend` が同じように動きます。`each` で描いたリストは要素を位置で対応させるので、先頭の要素に新しい最初の項目が表示され、スクロールはしません。",
             },
         ),
+        subheading(
+            site,
+            L {
+                en: "Loading more as the visitor scrolls",
+                ja: "スクロールに合わせて続きを読み込む",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A feed that loads its next page as the visitor reaches the bottom is built from `on_visible`, `patch_append`, and a `page` signal. An element after the items runs `on_visible` when it comes into view, which calls a `GET` action with the `page` signal as its argument. The handler appends the page's items with `patch_append`, so the items already in the browser are not sent again, and patches `page` to the next number and `more` to whether a full page came back. `indicator` sets `loading` while the call runs, and `show` hides the element during the load and once `more` is false. When the new items still leave it in view, showing it again runs `on_visible` again and loads the next page.",
+                ja: "下まで来ると次のページを読み込むフィードは、`on_visible`、`patch_append`、`page` のシグナルで作ります。項目のあとに置いた要素は、見える位置に入ると `on_visible` を実行し、`page` のシグナルを引数にして `GET` のアクションを呼び出します。ハンドラは `patch_append` でそのページの項目を末尾に加えるので、ブラウザにある項目は送り直しません。あわせて `page` を次の番号に、`more` を 1 ページ分そろって返ったかどうかに設定します。呼び出しの間は `indicator` が `loading` を真にし、`show` は読み込み中と `more` が偽になったあとに要素を隠します。新しい項目を加えても要素が見える位置に残っていれば、再び表示されたときに `on_visible` がもう一度実行され、次のページを読み込みます。",
+            },
+        ),
+        show(Snippet::LoadMore),
         calls(site),
         shared_parts(site),
     ])
@@ -360,8 +389,8 @@ pub fn pages(site: Site) -> Part {
             para(
                 site,
                 L {
-                    en: "`El::href` takes a [`Link`](api:hypersig/struct.Link.html), which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
-                    ja: "`El::href` は [`Link`](api:hypersig/struct.Link.html) を受け取ります。パラメータのないルートでは `link()` が、パラメータのあるルートでは `link_with(params)` がリンクを作ります。パラメータは、アクションを呼び出すときの引数と同じく、ルートの型の式です。リテラルを渡すと `href` は固定になります。上のチームのページのようにシグナルやリストの項目を読むパラメータは、ブラウザで評価され、値が変わるたびに更新されます。両側とも `encodeURIComponent` と同じ方法で値をパーセントエンコードするので、最初の HTML とランタイムは同じ URL を書きます。",
+                    en: "`El::href` takes a [`Link`](api:hypersig/struct.Link.html) for a page the router serves, which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
+                    ja: "`El::href` は、ルーターが配信するページへの [`Link`](api:hypersig/struct.Link.html) を受け取ります。パラメータのないルートでは `link()` が、パラメータのあるルートでは `link_with(params)` がリンクを作ります。パラメータは、アクションを呼び出すときの引数と同じく、ルートの型の式です。リテラルを渡すと `href` は固定になります。上のチームのページのようにシグナルやリストの項目を読むパラメータは、ブラウザで評価され、値が変わるたびに更新されます。両側とも `encodeURIComponent` と同じ方法で値をパーセントエンコードするので、最初の HTML とランタイムは同じ URL を書きます。",
                 },
             ),
             show(Snippet::Links),
@@ -408,6 +437,21 @@ pub fn pages(site: Site) -> Part {
             heading(
                 site,
                 L {
+                    en: "Error pages",
+                    ja: "エラーのページ",
+                },
+            ),
+            para(
+                site,
+                L {
+                    en: "A page handler that cannot build its page, such as one whose database does not answer, returns an error page of its own with [`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status). The browser shows the page, and the status tells a crawler or a monitor that the request failed. A handler that returns `PageResponse` converts its usual page with `.into()`. The page for a path no route matches is named once in `routes!`, as [Routes in depth](learn/routes/#pages-for-missing-paths) shows.",
+                    ja: "データベースが応答しないときのように、ページを組み立てられなかったハンドラは、[`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status) で自分のエラーのページを返します。ブラウザはそのページを表示し、ステータスはクローラーや監視の仕組みにリクエストの失敗を伝えます。`PageResponse` を返すハンドラは、ふだんのページを `.into()` で変換します。どのルートにも合わないパスのページは、[ルートの詳細](learn/routes/#pages-for-missing-paths) のとおり `routes!` の中で 1 回だけ指定します。",
+                },
+            ),
+            show(Snippet::ErrorPage),
+            heading(
+                site,
+                L {
                     en: "What routes leave unchecked",
                     ja: "ルートが検査しないこと",
                 },
@@ -428,8 +472,8 @@ pub fn pages(site: Site) -> Part {
                         ja: "リンクは普通の `<a href>` なので、たどると次のページをサーバーから読み込み、離れたページのシグナルは失われます。",
                     },
                     L {
-                        en: "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
-                        ja: "ほかのサイトや `#fragment` へのリンクのために、`attr(\"href\", ...)` で任意の URL を書くこともできます。",
+                        en: "A link to another site or to a `#fragment` is a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), which [When bindings and statements are not enough](learn/escape-hatches/) covers. It checks the URL's scheme, and nothing checks that the address it names exists.",
+                        ja: "ほかのサイトや `#fragment` へのリンクには [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を使います。これは [束縛と文で足りないとき](learn/escape-hatches/) で説明します。`SafeUrl` が検査するのは URL のスキームだけで、その先のアドレスがあるかどうかは検査されません。",
                     },
                 ],
             ),
@@ -622,8 +666,16 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`El::href` takes only a link built from a [`Route`](learn/pages/). A link to another site, or to a `#fragment` on the same page, goes through `attr(\"href\", url)`, which writes the string as it is and checks nothing.",
-                ja: "`El::href` が受け取るのは [`Route`](learn/pages/) から作ったリンクだけです。ほかのサイトや、同じページの `#fragment` へのリンクは `attr(\"href\", url)` で書きます。`attr` は文字列をそのまま書き、何も検査しません。",
+                en: "`El::href` and `El::src` take a link built from a [`Route`](learn/pages/), or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html) for an address the router does not serve, such as another site or a `#fragment` on the same page. A `SafeUrl` holds only a URL whose scheme cannot run a script: `http:`, `https:`, `mailto:`, or none at all. `SafeUrl::new` takes a URL written in the program, and in a `const` a `javascript:` URL fails to compile. `SafeUrl::parse` reads a URL from outside the program, such as one a visitor typed, and returns an [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) error where `SafeUrl::new` would refuse it. `attr` panics on `href` and `src`, so neither can be written from a plain string.",
+                ja: "`El::href` と `El::src` は、[`Route`](learn/pages/) から作ったリンクのほかに、ルーターが配信しないアドレスのための [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を受け取ります。ほかのサイトや、同じページの `#fragment` へのリンクがこれにあたります。`SafeUrl` に入るのは、スクリプトを実行できないスキーム（`http:`、`https:`、`mailto:`）の URL と、スキームのない URL だけです。`SafeUrl::new` はプログラムに書いた URL を受け取り、`const` の中では `javascript:` の URL がコンパイルエラーになります。`SafeUrl::parse` は訪問者が入力したものなど、プログラムの外から来た URL を読み、`SafeUrl::new` が受け付けない URL には [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) のエラーを返します。`attr` は `href` と `src` を渡すとパニックするので、どちらも素の文字列からは書けません。",
+            },
+        ),
+        show(Snippet::SafeUrl),
+        para(
+            site,
+            L {
+                en: "The host is not checked, so `https://evil.example/a.js` is a `SafeUrl` too. A visitor's URL suits a link the visitor follows, and not the `src` of a `<script>`, which would load whatever the host serves.",
+                ja: "ホストは検査しないので、`https://evil.example/a.js` も `SafeUrl` です。訪問者の URL は訪問者自身がたどるリンクには使えますが、`<script>` の `src` には使えません。そのホストが配信するものをそのまま読み込むからです。",
             },
         ),
         heading(

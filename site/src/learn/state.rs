@@ -216,8 +216,8 @@ pub fn expressions(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`on_click`, `on_input`, `on_submit`, `on_change`, and `on_blur` run a statement on their event, and `on(Event::Focus, ...)` covers the rest of [`Event`](api:hypersig/html/enum.Event.html). `on_key` filters `keydown` by a [`Key`](api:hypersig/html/enum.Key.html) or a [`Shortcut`](api:hypersig/html/struct.Shortcut.html) such as `Key::Char('k').primary()`, and leaves the characters a text field inside the element types to the field. [`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) does the same for the whole page, even while nothing has focus. `on_visible` runs each time the element scrolls into view, which loads the next page of a list. `on_debounced` waits until the event has stopped firing for a given time.",
-                ja: "`on_click`、`on_input`、`on_submit`、`on_change`、`on_blur` は、それぞれのイベントで文を実行します。[`Event`](api:hypersig/html/enum.Event.html) のほかのイベントには `on(Event::Focus, ...)` を使います。`on_key` は `keydown` を [`Key`](api:hypersig/html/enum.Key.html) か、`Key::Char('k').primary()` のような [`Shortcut`](api:hypersig/html/struct.Shortcut.html) で絞り込みます。要素の中のテキスト欄に入力する文字は、その欄に任せます。[`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) は同じことをページ全体で行い、どこにもフォーカスがないときにも動きます。`on_visible` は要素がスクロールして見えるたびに実行し、リストの続きを読み込むのに使えます。`on_debounced` は、イベントが起きない状態が指定した時間続くまで待ちます。",
+                en: "`on_click`, `on_double_click`, `on_input`, `on_submit`, `on_change`, and `on_blur` run a statement on their event, and `on(Event::Focus, ...)` covers the rest of [`Event`](api:hypersig/html/enum.Event.html), such as `KeyDown`, `MouseEnter`, and `MouseLeave`. `on_load` runs a statement once when the element enters the document, as a stream that sends changes made elsewhere needs. `on_key` filters `keydown` by a [`Key`](api:hypersig/html/enum.Key.html) or a [`Shortcut`](api:hypersig/html/struct.Shortcut.html) such as `Key::Char('k').primary()`, and leaves the characters a text field inside the element types to the field. [`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) does the same for the whole page, even while nothing has focus. `on_visible` runs each time the element scrolls into view, which loads the next page of a list. `on_debounced` waits until the event has stopped firing for a given time.",
+                ja: "`on_click`、`on_double_click`、`on_input`、`on_submit`、`on_change`、`on_blur` は、それぞれのイベントで文を実行します。`KeyDown`、`MouseEnter`、`MouseLeave` など、[`Event`](api:hypersig/html/enum.Event.html) のほかのイベントには `on(Event::Focus, ...)` を使います。`on_load` は、要素が文書に入ったときに文を 1 回実行します。ほかの場所で起きた変更を送るストリームは、ここから開きます。`on_key` は `keydown` を [`Key`](api:hypersig/html/enum.Key.html) か、`Key::Char('k').primary()` のような [`Shortcut`](api:hypersig/html/struct.Shortcut.html) で絞り込みます。要素の中のテキスト欄に入力する文字は、その欄に任せます。[`Page::on_key`](api:hypersig/struct.Page.html#method.on_key) は同じことをページ全体で行い、どこにもフォーカスがないときにも動きます。`on_visible` は要素がスクロールして見えるたびに実行し、リストの続きを読み込むのに使えます。`on_debounced` は、イベントが起きない状態が指定した時間続くまで待ちます。",
             },
         ),
         para(
@@ -247,7 +247,7 @@ pub fn expressions(site: Site) -> Part {
 }
 
 pub fn lists(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Learn(Learn::Lists).title(site)),
         lead(site, Doc::Learn(Learn::Lists).leads()),
         heading(
@@ -328,6 +328,21 @@ pub fn lists(site: Site) -> Part {
                 ja: "`Sig` には、パスの起点を表す 3 つ目の型パラメータがあります。省略すると `Root`（ページのシグナル構造体）になるので、`Sig<S, T>` はページから辿ったフィールドです。項目のフィールドは `Sig<S, T, Local>` で、パスは項目から始まり、ブラウザで項目ごとに解決されます。`patch` メソッドがないので、サーバーは位置を指定して 1 つの項目のフィールドを書き換えられません。サーバーは、リストのフィールドの差分でリスト全体を置き換えるか、`patch_append` や `patch_remove` のようなリストの差分でキーを指定した項目だけを変えるか、ページの一部をフラグメントとして描画し直します。リストの差分は [呼び出しの詳細](learn/calls/#list-patches) で、フラグメントは [サーバーとのやり取り](learn/server/) で説明します。",
             },
         ),
+        subheading(
+            site,
+            L {
+                en: "Browser-only state of an item",
+                ja: "ブラウザだけで持つ項目の状態",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A patch from the server writes each item it carries whole. `patch_upsert` puts the server's item in place of the one with the same key, and `patch` replaces the whole list. A field held on the item only for the browser, such as whether a card is open for editing, takes the value the server sent, so a card someone is editing closes when another user's change to it arrives. Keep such state at the page's root as the key of the item it applies to, and compare it with each item's key:",
+                ja: "サーバーからの差分は、運ぶ項目を丸ごと書き込みます。`patch_upsert` は同じキーの項目をサーバーの項目で置き換え、`patch` はリスト全体を置き換えます。カードを編集中かどうかのように、ブラウザのためだけに項目に持たせたフィールドはサーバーが送った値になるので、編集中のカードはほかのユーザーの変更が届いた時点で閉じます。こうした状態は、対象の項目のキーとしてページの構造体の直下に持ち、各項目のキーと比べてください。",
+            },
+        ),
+        show(Snippet::EditState),
         heading(
             site,
             L {

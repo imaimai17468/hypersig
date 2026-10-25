@@ -2,8 +2,8 @@ use axum::Router;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::{HeaderName, StatusCode, header};
-use axum::response::{IntoResponse, Redirect, Response};
-use hypersig::{Action, Patches, RouterExt, Signals};
+use axum::response::{IntoResponse, Response};
+use hypersig::{Action, Page, PageResponse, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -48,9 +48,17 @@ impl IntoResponse for SignedOut {
         if self.from_action {
             (StatusCode::UNAUTHORIZED, "Sign in again.").into_response()
         } else {
-            Redirect::to("/login").into_response()
+            PageResponse::redirect(LOGIN.url(())).into_response()
         }
     }
+}
+
+# async fn login(_: AppState, (): ()) -> Page<Home> {
+#     Page::new("Sign in", Home { name: String::new() })
+# }
+hypersig::routes! {
+    fn pages(Router<AppState>);
+    const LOGIN: Route = "/login" => login;
 }
 
 const REFRESH: Action<Home> = Action::post("/refresh");
@@ -69,7 +77,7 @@ async fn sign_out(_: AppState, _: Member, (): ()) -> (Cookie, Patches<Home>) {
     (forget, Patches::new())
 }
 
-let _app: Router = Router::new()
+let _app: Router = pages(Router::new())
     .action(REFRESH, refresh)
     .action(SIGN_OUT, sign_out)
     .with_state(AppState);

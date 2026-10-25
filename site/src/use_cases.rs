@@ -763,8 +763,8 @@ const CASES: &[Case] = &[
             ],
             change: Snippet::UseUrlFilter,
             caption: L {
-                en: "The handler receives a `Filter`, and a link passes one. `Route::link` exists only on a route without parameters, so once the route takes a filter, each link that passes none fails to compile.",
-                ja: "ハンドラは `Filter` を受け取り、リンクは `Filter` を渡します。`Route::link` はパラメータのないルートにしかないので、ルートが絞り込みを受け取るようになると、絞り込みを渡していないリンクはどれもコンパイルエラーになります。",
+                en: "The handler receives a `Filter`, and a link passes one. A field that is `None` stays out of the link, and a missing key arrives as `None`, so the bare `/requests` loads where a required field would get a 400. `Route::link` exists only on a route without parameters, so once the route takes a filter, each link that passes none fails to compile.",
+                ja: "ハンドラは `Filter` を受け取り、リンクは `Filter` を渡します。`None` のフィールドはリンクに入らず、クエリにないキーは `None` として届くので、クエリのない `/requests` も読み込めます。フィールドが必須なら 400 が返るところです。`Route::link` はパラメータのないルートにしかないので、ルートが絞り込みを受け取るようになると、絞り込みを渡していないリンクはどれもコンパイルエラーになります。",
             },
         },
     },

@@ -53,6 +53,7 @@ impl FromRequestParts<AppState> for Member {
     }
 }
 
+#[derive(Debug)]
 struct StoreFailed(tower_sessions::session::Error);
 
 impl IntoResponse for StoreFailed {

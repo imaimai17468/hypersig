@@ -72,8 +72,8 @@ pub fn render(site: Site) -> String {
                             ja: "ブラウザ向けのビルドが不要",
                         }),
                         site.t(L {
-                            en: "`cargo build` builds the whole application, with no Node or wasm step. The crate embeds a prebuilt runtime of about 14 KB gzipped.",
-                            ja: "`cargo build` だけでビルドでき、Node も wasm も不要です。gzip で約 14 KB のランタイムをビルド済みの状態でクレートに埋め込んでいます。",
+                            en: "`cargo build` builds the whole application, with no Node or wasm step. The crate embeds a prebuilt runtime of about 20 KB gzipped.",
+                            ja: "`cargo build` だけでビルドでき、Node も wasm も不要です。gzip で約 20 KB のランタイムをビルド済みの状態でクレートに埋め込んでいます。",
                         }),
                     ),
                     (
@@ -82,8 +82,8 @@ pub fn render(site: Site) -> String {
                             ja: "画面からサーバーまで型で検査",
                         }),
                         site.t(L {
-                            en: "Signal names, expressions, actions, and links come from Rust types. A link whose page has no handler, or whose path parameters or query do not fit the page, is a compile error, as is any other mismatch between the page and the server.",
-                            ja: "シグナルの名前、式、アクション、リンクは Rust の型から作られます。ハンドラのないページへのリンクや、パスのパラメータやクエリがページに合わないリンクは、画面とサーバーのほかの食い違いと同じくコンパイルエラーになります。",
+                            en: "Signal names, expressions, actions, and links come from Rust types. A link whose page has no handler, a link whose path parameters or query do not fit the page, and an action call whose arguments do not fit its handler are compile errors. Whether the router serves each action a page calls is left to a test.",
+                            ja: "シグナルの名前、式、アクション、リンクは Rust の型から作られます。ハンドラのないページへのリンク、パスのパラメータやクエリがページに合わないリンク、引数がハンドラに合わないアクションの呼び出しは、コンパイルエラーになります。ページが呼ぶアクションをルーターが配信しているかどうかは、テストで確かめます。",
                         }),
                     ),
                     (
@@ -394,8 +394,8 @@ fn benchmarks(site: Site) -> Part {
             para(
                 site,
                 L {
-                    en: "A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request. The apps and the harness are in [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare).",
-                    ja: "追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を加えています。測ったアプリと計測の仕組みは [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にあります。",
+                    en: "A 2000-item TodoMVC that stores every add, toggle, and delete on the server. Medians of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request. The apps and the harness are in [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare). The JS row for hypersig is its runtime at commit 72e62b8, where these runs were made, gzipped by the harness. The runtime has grown since, to about 20 KB gzipped.",
+                    ja: "追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を加えています。測ったアプリと計測の仕組みは [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にあります。hypersig の JS の行は、計測したコミット 72e62b8 のランタイムを計測の仕組みが gzip した大きさです。ランタイムはその後大きくなり、今は gzip で約 20 KB です。",
                 },
             ),
             table_of(

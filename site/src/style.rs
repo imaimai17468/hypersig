@@ -505,12 +505,12 @@ fn unchecked(site: Site, head: Part) -> Part {
             site,
             &[
                 L {
-                    en: "`raw(css)` writes a value as given, for the forms a property's generated type leaves out, such as `margin: 0 auto`, a shadow, or a `calc()`. If the browser rejects the value, it ignores the declaration. `raw` panics on `;`, `{`, `}`, and `<`, which would end the declaration or the rule, or close the `<style>` element.",
-                    ja: "`raw(css)` は値を渡されたとおりに書きます。`margin: 0 auto`、影、`calc()` のように、プロパティの生成された型に含まれない書き方に使います。ブラウザが受け付けない値なら、ブラウザはその宣言を無視します。`;`、`{`、`}`、`<` は宣言やルールを終わらせたり `<style>` 要素を閉じたりするので、`raw` はこれらを受け取るとパニックします。",
+                    en: "`raw(css)` writes a value as given, for the forms a property's generated type leaves out, such as `margin: 0 auto`, a shadow, or a `calc()`. If the browser rejects the value, it ignores the declaration. `raw` panics on `;`, `{`, `}`, `<`, a backslash, `/*`, a control character, and a quote or a parenthesis left open. The first three would end the declaration or the rule, `<` could close the `<style>` element, and the rest would carry the value on into the rules after it.",
+                    ja: "`raw(css)` は値を渡されたとおりに書きます。`margin: 0 auto`、影、`calc()` のように、プロパティの生成された型に含まれない書き方に使います。ブラウザが受け付けない値なら、ブラウザはその宣言を無視します。`raw` は `;`、`{`、`}`、`<`、バックスラッシュ、`/*`、制御文字を含む値と、引用符や括弧を閉じていない値を受け取るとパニックします。最初の 3 つは宣言やルールを終わらせ、`<` は `<style>` 要素を閉じることがあり、残りは値をその後のルールまで続けてしまうからです。",
                 },
                 L {
-                    en: "`Stylesheet::new(css)` makes a `Stylesheet` from CSS you already have, and `Page::style` adds it to the page. `Stylesheet::class(\"name\")` checks at compile time that the CSS has a selector for the class, and `Class::new` refers to a class by name without that check.",
-                    ja: "`Stylesheet::new(css)` は手元にある CSS から `Stylesheet` を作り、`Page::style` でそれをページに追加します。`Stylesheet::class(\"name\")` は、その CSS にクラスのセレクタがあるかをコンパイル時に確かめます。`Class::new` はその確認をせずにクラス名を指定します。",
+                    en: "`Stylesheet::new(css)` makes a `Stylesheet` from CSS you already have, and `Page::style` adds it to the page. `Stylesheet::class(\"name\")` checks that the CSS has a selector for the class and panics if it does not. In a `const`, as in the sample, the panic is a compile error, and outside one it happens when the line runs. `Class::new` refers to a class by name without that check.",
+                    ja: "`Stylesheet::new(css)` は手元にある CSS から `Stylesheet` を作り、`Page::style` でそれをページに追加します。`Stylesheet::class(\"name\")` は、その CSS にクラスのセレクタがあるかを確かめ、なければパニックします。サンプルのように `const` の中ではこのパニックがコンパイルエラーになり、`const` の外ではその行を実行したときに起きます。`Class::new` はその確認をせずにクラス名を指定します。",
                 },
                 L {
                     en: "`El::bind_style` and `El::bind_token` set a property from a string expression over the signals. The expression is not checked.",

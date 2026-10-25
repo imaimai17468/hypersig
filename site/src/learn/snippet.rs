@@ -59,8 +59,10 @@ snippets! {
     Parts => "parts.rs";
     Extractors => "extractors.rs";
     HandlerErrors => "handler_errors.rs";
+    Logging => "logging.rs";
     Uploads => "uploads.rs";
     Sessions => "sessions.rs";
+    TestingSessions => "testing_sessions.rs";
     Database => "database.rs", "no_run";
     DynamoDb => "dynamodb.rs", "no_run";
     Api => "api.rs", "no_run";
@@ -104,6 +106,11 @@ snippets! {
     // The code `cargo hypersig add server` prints, so the page and the CLI
     // show one text.
     Listen => "../../crates/hypersig_cli/steps/server.rs";
+    SafeUrl => "safe_url.rs";
+    StaticFiles => "static_files.rs";
+    ErrorPage => "error_page.rs";
+    LoadMore => "load_more.rs";
+    EditState => "edit_state.rs";
 }
 
 /// The lines of `snippet` that the page shows.

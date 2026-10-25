@@ -74,12 +74,30 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                 ja: "`http://127.0.0.1:3000` を開いてください。`+1` ボタンはリクエストを送らずにブラウザで数を増やします。リセットボタンは `/reset` を呼び出し、ハンドラが返す差分が `count` を 0 に戻します。ランタイムはページの文と束縛をブラウザで実行する小さな JavaScript のファイルです。`hypersig_runtime()` がこのファイルをクレートから配信するので、Node も JavaScript のビルドも使いません。",
             },
         ),
-        code::block(Lang::Shell, None, "cargo hypersig dev"),
         para(
             site,
             L {
-                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. A build that fails leaves the last server running. The state the server holds in memory starts over at each restart. `cargo install --locked hypersig_cli` installs the command.",
-                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。ビルドが失敗したときは前のサーバーが動き続けます。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。コマンドは `cargo install --locked hypersig_cli` でインストールできます。",
+                en: "While you edit, run the server with `cargo hypersig dev` in place of `cargo run`. Install the command first:",
+                ja: "コードを書き換えながら動かすときは、`cargo run` の代わりに `cargo hypersig dev` でサーバーを起動します。先にコマンドをインストールしてください。",
+            },
+        ),
+        code::block(
+            Lang::Shell,
+            None,
+            "cargo install --locked hypersig_cli\ncargo hypersig dev",
+        ),
+        para(
+            site,
+            L {
+                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. A build that fails leaves the last server running. The state the server holds in memory starts over at each restart.",
+                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。ビルドが失敗したときは前のサーバーが動き続けます。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The same command can also start a project. `cargo hypersig new counter --host server` writes a directory `counter` with a counter like the one above and a Dockerfile, in place of `cargo new` and the two files written by hand. `--host cloudflare` and `--host vercel` write a project for those hosts, which [Choosing a host](learn/deploying/) compares.",
+                ja: "このコマンドでプロジェクトを作ることもできます。`cargo hypersig new counter --host server` は、上と同じようなカウンターと Dockerfile を入れたディレクトリ `counter` を書き出すので、`cargo new` と、手で書いた 2 つのファイルの代わりになります。`--host cloudflare` と `--host vercel` はそれぞれのホスト向けのプロジェクトを書き出します。ホストの違いは [デプロイ先の選び方](learn/deploying/) で比べています。",
             },
         ),
         heading(
@@ -183,9 +201,42 @@ pub fn describing_the_page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. `id` and `class` have their own methods, and `attr` panics on them and on names starting with `data-hs-`, which only the typed methods write.",
-                ja: "`text` は固定のテキストを、`child` は要素か文字列を末尾に追加します。`href` は `Route` からページへのリンクを張ります。これは [ページとリンク](learn/pages/) で説明します。`attr` は普通の属性を設定します。`id` と `class` には専用のメソッドがあり、`attr` にこの 2 つや `data-hs-` で始まる名前を渡すとパニックします。`data-hs-` の属性は型付きのメソッドだけが書きます。",
+                en: "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. It panics, ignoring case, on a name that another method sets, whose value can run a script, or that is not an attribute name, and `bind_attr` and `attr_when` panic on the same names:",
+                ja: "`text` は固定のテキストを、`child` は要素か文字列を末尾に追加します。`href` は `Route` からページへのリンクを張ります。これは [ページとリンク](learn/pages/) で説明します。`attr` は普通の属性を設定します。ほかのメソッドが設定する名前、値がスクリプトを実行できる名前、属性名にならない名前を渡すと、大文字と小文字を区別せずにパニックします。`bind_attr` と `attr_when` も同じ名前でパニックします。",
             },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "`id` and `class`, which `El::id` and `El::class` set.",
+                    ja: "`id` と `class`。`El::id` と `El::class` で設定します。",
+                },
+                L {
+                    en: "A name starting with `data-hs-`, which only the typed methods write, because the runtime reads those attributes.",
+                    ja: "`data-hs-` で始まる名前。ランタイムがこの属性を読むので、型付きのメソッドだけが書きます。",
+                },
+                L {
+                    en: "`href` and `src`, which `El::href` and `El::src` set from a `Link` or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), a URL whose scheme cannot run a script. [When bindings and statements are not enough](learn/escape-hatches/) covers `SafeUrl`.",
+                    ja: "`href` と `src`。`El::href` と `El::src` が、`Link` か、スクリプトを実行できないスキームの URL を持つ [`SafeUrl`](api:hypersig/struct.SafeUrl.html) から設定します。`SafeUrl` は [束縛と文で足りないとき](learn/escape-hatches/) で説明します。",
+                },
+                L {
+                    en: "A name starting with `on`, such as `onclick`. The `on_*` methods, such as `on_click`, attach a statement in its place.",
+                    ja: "`onclick` のように `on` で始まる名前。代わりに `on_click` などの `on_*` のメソッドで文を付けます。",
+                },
+                L {
+                    en: "`srcdoc`, `action`, `formaction`, `xlink:href`, `data`, and `http-equiv`, which have no method of their own. A form sends its values through an action call, as [Forms](learn/forms/) shows.",
+                    ja: "`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`。これらを設定するメソッドはありません。フォームの値は [フォーム](learn/forms/) のとおりアクションの呼び出しで送ります。",
+                },
+                L {
+                    en: "`attributeName` set to `href` or `xlink:href`, which would make an SVG animation write into a link. `bind_attr` refuses `attributeName` with any value.",
+                    ja: "値が `href` か `xlink:href` の `attributeName`。SVG のアニメーションがリンクに書き込むことになるからです。`bind_attr` は `attributeName` を値にかかわらず受け付けません。",
+                },
+                L {
+                    en: "A name holding a character other than a letter, a digit, `-`, `_`, `.`, and `:`.",
+                    ja: "英字、数字、`-`、`_`、`.`、`:` 以外の文字を含む名前。",
+                },
+            ],
         ),
         heading(
             site,
@@ -228,8 +279,8 @@ pub fn describing_the_page(site: Site) -> Part {
                     ja: "`bind_attr` は属性を文字列の式の値に合わせ続けます。`attr_when` は、条件が成り立つ間だけ `disabled` のような真偽値の属性を付けます。",
                 },
                 L {
-                    en: "`show` hides the element while a condition is false. `when(cond, el)` removes it instead, so its `on_load` runs again and its inputs start empty each time it returns.",
-                    ja: "`show` は条件が偽の間、要素を隠します。`when(cond, el)` は要素を取り除くので、要素が戻るたびに `on_load` がもう一度実行され、入力欄は空から始まります。",
+                    en: "`show` hides the element while a condition is false. `when(cond, el)` removes it instead, so each time it returns its inputs start empty and its `on_load`, the statement that runs when an element enters the document, runs again.",
+                    ja: "`show` は条件が偽の間、要素を隠します。`when(cond, el)` は要素を取り除くので、要素が戻るたびに入力欄は空から始まり、`on_load`（要素が文書に入ったときに実行する文）がもう一度実行されます。",
                 },
                 L {
                     en: "`class_when` and `css_when` add a class or a style while a condition holds. [Styling](learn/styling/) covers them.",

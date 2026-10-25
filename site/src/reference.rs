@@ -99,8 +99,8 @@ fn overview(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Styles are in `hypersig::style`, a module that re-exports the `hypersig_style` crate. See [Styling](learn/styling/) and the [`style` module](api:hypersig/style/index.html).",
-                ja: "スタイルは `hypersig::style` にあります。これは `hypersig_style` クレートを再エクスポートしたモジュールです。[スタイル](learn/styling/)と [`style` モジュール](api:hypersig/style/index.html)をご覧ください。",
+                en: "Styles are in `hypersig::style`, a module that re-exports the `hypersig_style` crate. The [Styling](learn/styling/) page under Learn introduces it, the [Style](style/) documentation covers it in full, and the [`style` module](api:hypersig/style/index.html) lists its items.",
+                ja: "スタイルは `hypersig::style` にあります。これは `hypersig_style` クレートを再エクスポートしたモジュールです。「学ぶ」の [スタイル](learn/styling/) のページで紹介し、[Style のドキュメント](style/) で詳しく説明しています。項目の一覧は [`style` モジュール](api:hypersig/style/index.html) にあります。",
             },
         ),
     ])
@@ -1635,6 +1635,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "How `format_date` writes a `Timestamp`: a locale, styles, and a time zone.",
                                 ja: "`format_date` が `Timestamp` を書く形。ロケール、スタイル、タイムゾーン",
+                            },
+                        ),
+                        (
+                            "DateStyle",
+                            "enum.DateStyle.html",
+                            L {
+                                en: "How much of the date `DateFormat` writes, as `Intl.DateTimeFormat`'s `dateStyle`.",
+                                ja: "`DateFormat` が日付をどこまで書くか。`Intl.DateTimeFormat` の `dateStyle` に当たります。",
+                            },
+                        ),
+                        (
+                            "TimeStyle",
+                            "enum.TimeStyle.html",
+                            L {
+                                en: "How much of the time of day `DateFormat` writes, as `Intl.DateTimeFormat`'s `timeStyle`.",
+                                ja: "`DateFormat` が時刻をどこまで書くか。`Intl.DateTimeFormat` の `timeStyle` に当たります。",
+                            },
+                        ),
+                        (
+                            "TimeZone",
+                            "enum.TimeZone.html",
+                            L {
+                                en: "The time zone `DateFormat` writes a time in.",
+                                ja: "`DateFormat` が時刻を書くときのタイムゾーン",
                             },
                         ),
                         (
