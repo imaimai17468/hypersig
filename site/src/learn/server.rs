@@ -422,6 +422,21 @@ pub fn pages(site: Site) -> Part {
             heading(
                 site,
                 L {
+                    en: "Error pages",
+                    ja: "エラーのページ",
+                },
+            ),
+            para(
+                site,
+                L {
+                    en: "A page handler that cannot build its page, such as one whose database does not answer, returns an error page of its own with [`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status). The browser shows the page, and the status tells a crawler or a monitor that the request failed. A handler that returns `PageResponse` converts its usual page with `.into()`. The page for a path no route matches is named once in `routes!`, as [Routes in depth](learn/routes/#pages-for-missing-paths) shows.",
+                    ja: "データベースが応答しないときのように、ページを組み立てられなかったハンドラは、[`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status) で自分のエラーのページを返します。ブラウザはそのページを表示し、ステータスはクローラーや監視の仕組みにリクエストの失敗を伝えます。`PageResponse` を返すハンドラは、ふだんのページを `.into()` で変換します。どのルートにも合わないパスのページは、[ルートの詳細](learn/routes/#pages-for-missing-paths) のとおり `routes!` の中で 1 回だけ指定します。",
+                },
+            ),
+            show(Snippet::ErrorPage),
+            heading(
+                site,
+                L {
                     en: "What routes leave unchecked",
                     ja: "ルートが検査しないこと",
                 },

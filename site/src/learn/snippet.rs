@@ -106,6 +106,7 @@ snippets! {
     Listen => "../../crates/hypersig_cli/steps/server.rs";
     SafeUrl => "safe_url.rs";
     StaticFiles => "static_files.rs";
+    ErrorPage => "error_page.rs";
 }
 
 /// The lines of `snippet` that the page shows.
