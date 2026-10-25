@@ -180,8 +180,8 @@ impl Library {
     fn descriptions(self) -> L<&'static str> {
         match self {
             Self::Framework => L {
-                en: "hypersig is a server-driven hypermedia library for Rust. Signal names, expressions, actions, and links are built from Rust types, so a mistake in one is a compile error.",
-                ja: "hypersig は Rust のサーバー駆動のハイパーメディアライブラリです。シグナル名、式、アクション、リンクを Rust の型から作るので、その誤りはコンパイルエラーになります。",
+                en: "hypersig is a server-driven hypermedia web framework for Rust. Signal names, expressions, actions, and links are built from Rust types, so a mistake in one is a compile error.",
+                ja: "hypersig は Rust で書くサーバー駆動のハイパーメディアの Web フレームワークです。シグナル名、式、アクション、リンクを Rust の型から作るので、その誤りはコンパイルエラーになります。",
             },
             Self::Style => L {
                 en: "Typed atomic CSS for hypersig, with properties and values generated from MDN's data.",
