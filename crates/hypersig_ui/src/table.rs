@@ -526,7 +526,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
     /// Panics if `size` is less than 1.
     #[must_use]
     pub fn paginate(mut self, size: i32) -> Self {
-        assert!(size >= 1, "a page holds at least one row");
+        assert!(size >= 1, "a page holds at least one row, not {size}");
         self.page_size = Some(size);
         self
     }
@@ -880,7 +880,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
     /// Panics if `size` is less than 1.
     #[must_use]
     pub fn paginate(mut self, size: i32, total: Sig<S, i32>) -> Self {
-        assert!(size >= 1, "a page holds at least one row");
+        assert!(size >= 1, "a page holds at least one row, not {size}");
         self.pages = Some((size, total));
         self
     }

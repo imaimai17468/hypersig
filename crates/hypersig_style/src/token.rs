@@ -74,7 +74,7 @@ impl<T: TokenValue> Token<T> {
                 && name
                     .bytes()
                     .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_'),
-            "a token name is ASCII letters, digits, `-`, and `_`"
+            "a token name is ASCII letters, digits, `-`, and `_`, not {name:?}"
         );
         Self { name, default }
     }

@@ -124,11 +124,16 @@ impl<S, T: Numeric> NumberField<S, T> {
     /// Panics if `min` is above a maximum set before, or is not a number.
     #[must_use]
     pub fn min(mut self, min: T) -> Self {
-        assert!(min.is_number(), "a number field's minimum is a number");
         assert!(
-            self.max.is_none_or(|max| min <= max),
-            "a number field's minimum is not above its maximum"
+            min.is_number(),
+            "a number field's minimum is a number, not {min}"
         );
+        if let Some(max) = self.max {
+            assert!(
+                min <= max,
+                "a number field's minimum is not above its maximum, but {min} is above {max}"
+            );
+        }
         self.min = Some(min);
         self
     }
@@ -140,11 +145,16 @@ impl<S, T: Numeric> NumberField<S, T> {
     /// Panics if `max` is below a minimum set before, or is not a number.
     #[must_use]
     pub fn max(mut self, max: T) -> Self {
-        assert!(max.is_number(), "a number field's maximum is a number");
         assert!(
-            self.min.is_none_or(|min| min <= max),
-            "a number field's maximum is not below its minimum"
+            max.is_number(),
+            "a number field's maximum is a number, not {max}"
         );
+        if let Some(min) = self.min {
+            assert!(
+                min <= max,
+                "a number field's maximum is not below its minimum, but {max} is below {min}"
+            );
+        }
         self.max = Some(max);
         self
     }
@@ -157,7 +167,10 @@ impl<S, T: Numeric> NumberField<S, T> {
     /// Panics if `step` is not above zero.
     #[must_use]
     pub fn step(mut self, step: T) -> Self {
-        assert!(step > T::ZERO, "a number field's step is above zero");
+        assert!(
+            step > T::ZERO,
+            "a number field's step is above zero, not {step}"
+        );
         self.step = Some(step);
         self
     }

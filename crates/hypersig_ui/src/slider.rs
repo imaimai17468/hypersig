@@ -74,7 +74,10 @@ impl<S> Slider<S> {
     /// Panics if `min` is not below `max`.
     #[must_use]
     pub fn range(mut self, min: i32, max: i32) -> Self {
-        assert!(min < max, "a slider's minimum is below its maximum");
+        assert!(
+            min < max,
+            "a slider's minimum is below its maximum, not {min} and {max}"
+        );
         self.min = min;
         self.max = max;
         self
@@ -87,7 +90,7 @@ impl<S> Slider<S> {
     /// Panics if `step` is not positive.
     #[must_use]
     pub fn step(mut self, step: i32) -> Self {
-        assert!(step > 0, "a slider's step is positive");
+        assert!(step > 0, "a slider's step is positive, not {step}");
         self.step = step;
         self
     }

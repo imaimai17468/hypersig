@@ -50,7 +50,7 @@ impl Keyframes {
                 && name
                     .bytes()
                     .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_'),
-            "a keyframes name is an identifier of ASCII letters, digits, `-`, and `_`"
+            "a keyframes name is an identifier of ASCII letters, digits, `-`, and `_`, not {name:?}"
         );
         Self {
             name,
@@ -68,7 +68,10 @@ impl Keyframes {
     /// Panics if `percent` is over 100.
     #[must_use]
     pub fn at(mut self, percent: u8, style: Style) -> Self {
-        assert!(percent <= 100, "a keyframe is at 0 to 100 percent");
+        assert!(
+            percent <= 100,
+            "a keyframe is at 0 to 100 percent, not {percent}"
+        );
         self.steps.push((percent, style));
         self
     }
