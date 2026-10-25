@@ -5,3 +5,18 @@ expression: "expand_segment(quote! { enum E { A, B(i32) } })"
 ::core::compile_error! {
     "a `Segment` variant has no fields, because the segment is the variant's name"
 }
+#[automatically_derived]
+impl ::hypersig::_private::Sealed for E {}
+#[automatically_derived]
+impl ::hypersig::Segment for E {
+    fn parse(_segment: &str) -> ::core::option::Option<Self> {
+        ::core::option::Option::None
+    }
+    fn write(&self) -> ::std::string::String {
+        ::core::unreachable!("the derive of `Segment` failed to compile")
+    }
+}
+#[automatically_derived]
+impl ::hypersig::Variants for E {
+    const VARIANTS: &'static [Self] = &[];
+}

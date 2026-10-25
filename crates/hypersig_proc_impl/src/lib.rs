@@ -19,26 +19,47 @@ use syn::{Data, DeriveInput, Fields, FieldsNamed};
 /// unions, tuple and unit structs, generic structs, and any `#[serde(...)]`
 /// attribute on the struct or a field, because a rename or a skip would make
 /// the signal path disagree with the JSON the runtime sends.
+///
+/// The error comes with the items a valid input would get, as far as the
+/// input allows: the impl and the field functions for a struct with a serde
+/// attribute, and the empty impl for an enum or a struct without named
+/// fields. Code that uses them then compiles past them, so the rejection is
+/// the only error the struct causes. A generic struct and a union get no
+/// items, because the impl would need bounds or a `Serialize` impl the input
+/// does not have.
 #[must_use]
 pub fn derive_signals(input: TokenStream) -> TokenStream {
-    match expand(input) {
-        Ok(tokens) => tokens,
-        Err(error) => error.to_compile_error(),
-    }
-}
-
-fn expand(input: TokenStream) -> syn::Result<TokenStream> {
-    let input: DeriveInput = syn::parse2(input)?;
-    reject_serde_attributes(&input.attrs)?;
-    let named = named_fields(
+    let input: DeriveInput = match syn::parse2(input) {
+        Ok(input) => input,
+        Err(error) => return error.to_compile_error(),
+    };
+    let mut errors = Errors::default();
+    errors.push(reject_serde_attributes(&input.attrs));
+    let name = &input.ident;
+    let named = match named_fields(
         &input,
         "Signals",
         "because each field name becomes a signal path",
-    )?;
+    ) {
+        Ok(named) => named,
+        Err(error) => {
+            let impl_signals = (input.generics.params.is_empty()
+                && !matches!(input.data, Data::Union(_)))
+            .then(|| {
+                quote! {
+                    #[automatically_derived]
+                    impl ::hypersig::Signals for #name {}
+                }
+            });
+            errors.push(Err(error));
+            let errors = errors.into_compile_error();
+            return quote! { #errors #impl_signals };
+        }
+    };
 
     let mut accessors = Vec::with_capacity(named.named.len());
     for field in &named.named {
-        reject_serde_attributes(&field.attrs)?;
+        errors.push(reject_serde_attributes(&field.attrs));
         let Some(ident) = &field.ident else {
             unreachable!("fields of a named struct always have an identifier");
         };
@@ -56,8 +77,10 @@ fn expand(input: TokenStream) -> syn::Result<TokenStream> {
         });
     }
 
-    let name = &input.ident;
-    Ok(quote! {
+    let errors = errors.into_compile_error();
+    quote! {
+        #errors
+
         #[automatically_derived]
         impl ::hypersig::Signals for #name {}
 
@@ -65,7 +88,26 @@ fn expand(input: TokenStream) -> syn::Result<TokenStream> {
         impl #name {
             #(#accessors)*
         }
-    })
+    }
+}
+
+/// The compile errors of one derive, gathered so that each shows.
+#[derive(Default)]
+struct Errors(Option<syn::Error>);
+
+impl Errors {
+    fn push(&mut self, result: syn::Result<()>) {
+        if let Err(error) = result {
+            match &mut self.0 {
+                Some(errors) => errors.combine(error),
+                None => self.0 = Some(error),
+            }
+        }
+    }
+
+    fn into_compile_error(self) -> Option<TokenStream> {
+        self.0.map(|error| error.to_compile_error())
+    }
 }
 
 /// Expands `#[derive(Search)]` for the struct in `input`.
@@ -117,16 +159,52 @@ fn expand_search(input: TokenStream) -> syn::Result<TokenStream> {
 /// unknown `rename_all` rule, and any other `#[serde(...)]` attribute on the
 /// enum or a variant, because it could make serde write a variant as
 /// something other than its segment.
+///
+/// The error comes with impls of `Segment`, its seal, and `Variants` that
+/// parse no segment and list no variant, for any input but a generic one,
+/// so a route or a `bind_select` over the type does not add errors of its
+/// own.
 #[must_use]
 pub fn derive_segment(input: TokenStream) -> TokenStream {
-    match expand_segment(input) {
+    let input: DeriveInput = match syn::parse2(input) {
+        Ok(input) => input,
+        Err(error) => return error.to_compile_error(),
+    };
+    match expand_segment(&input) {
         Ok(tokens) => tokens,
-        Err(error) => error.to_compile_error(),
+        Err(error) => {
+            let error = error.to_compile_error();
+            if !input.generics.params.is_empty() {
+                return error;
+            }
+            let name = &input.ident;
+            quote! {
+                #error
+
+                #[automatically_derived]
+                impl ::hypersig::_private::Sealed for #name {}
+
+                #[automatically_derived]
+                impl ::hypersig::Segment for #name {
+                    fn parse(_segment: &str) -> ::core::option::Option<Self> {
+                        ::core::option::Option::None
+                    }
+
+                    fn write(&self) -> ::std::string::String {
+                        ::core::unreachable!("the derive of `Segment` failed to compile")
+                    }
+                }
+
+                #[automatically_derived]
+                impl ::hypersig::Variants for #name {
+                    const VARIANTS: &'static [Self] = &[];
+                }
+            }
+        }
     }
 }
 
-fn expand_segment(input: TokenStream) -> syn::Result<TokenStream> {
-    let input: DeriveInput = syn::parse2(input)?;
+fn expand_segment(input: &DeriveInput) -> syn::Result<TokenStream> {
     let rename_all = serde_rename(&input.attrs, "rename_all")?;
 
     if !input.generics.params.is_empty() {
@@ -362,6 +440,14 @@ mod tests {
     fn rejects_serde_rename() {
         insta::assert_snapshot!(expand(quote! {
             struct R { #[serde(rename = "n")] name: String }
+        }));
+    }
+
+    #[test]
+    fn rejects_each_serde_attribute() {
+        insta::assert_snapshot!(expand(quote! {
+            #[serde(deny_unknown_fields)]
+            struct R { #[serde(skip)] name: String, count: i32 }
         }));
     }
 

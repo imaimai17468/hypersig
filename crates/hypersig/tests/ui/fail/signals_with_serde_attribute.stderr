@@ -1,0 +1,5 @@
+error: `#[serde(...)]` is not supported on a `Signals` struct, because the signal path must equal the field name
+ --> tests/ui/fail/signals_with_serde_attribute.rs:9:5
+  |
+9 |     #[serde(rename = "q")]
+  |     ^^^^^^^^^^^^^^^^^^^^^^

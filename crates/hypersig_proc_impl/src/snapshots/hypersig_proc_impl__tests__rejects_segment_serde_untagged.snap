@@ -5,3 +5,18 @@ expression: "expand_segment(quote! { #[serde(untagged)] enum E { A } })"
 ::core::compile_error! {
     "a `Segment` enum takes only `#[serde(rename_all = \"...\")]` here, because serde must write each variant as the string its segment holds"
 }
+#[automatically_derived]
+impl ::hypersig::_private::Sealed for E {}
+#[automatically_derived]
+impl ::hypersig::Segment for E {
+    fn parse(_segment: &str) -> ::core::option::Option<Self> {
+        ::core::option::Option::None
+    }
+    fn write(&self) -> ::std::string::String {
+        ::core::unreachable!("the derive of `Segment` failed to compile")
+    }
+}
+#[automatically_derived]
+impl ::hypersig::Variants for E {
+    const VARIANTS: &'static [Self] = &[];
+}

@@ -5,3 +5,5 @@ expression: "expand(quote! { struct T(i32); })"
 ::core::compile_error! {
     "`Signals` needs a struct with named fields, because each field name becomes a signal path"
 }
+#[automatically_derived]
+impl ::hypersig::Signals for T {}

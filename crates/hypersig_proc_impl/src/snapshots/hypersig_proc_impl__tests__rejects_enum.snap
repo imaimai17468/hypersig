@@ -5,3 +5,5 @@ expression: "expand(quote! { enum E { A } })"
 ::core::compile_error! {
     "`Signals` can only be derived for a struct"
 }
+#[automatically_derived]
+impl ::hypersig::Signals for E {}
