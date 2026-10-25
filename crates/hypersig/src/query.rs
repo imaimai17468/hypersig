@@ -10,6 +10,8 @@ use serde::de::{
     self, DeserializeOwned, DeserializeSeed, Deserializer, IntoDeserializer, MapAccess, Visitor,
 };
 
+use crate::route::percent_escape;
+
 /// Reads `query`, without its `?`, into `T`.
 ///
 /// A field whose key is absent reads as an empty group, so a `Vec` is empty,
@@ -33,22 +35,16 @@ fn decode(text: &str) -> String {
     let mut out = Vec::with_capacity(bytes.len());
     let mut index = 0;
     while let Some(&byte) = bytes.get(index) {
-        let hex = |at: usize| {
-            bytes
-                .get(at)
-                .and_then(|digit| char::from(*digit).to_digit(16))
-        };
-        match (byte, hex(index + 1), hex(index + 2)) {
-            (b'%', Some(high), Some(low)) => {
-                // Two hex digits make at most 0xFF.
-                out.push(u8::try_from(high * 16 + low).unwrap_or(u8::MAX));
+        match (byte, percent_escape(bytes, index)) {
+            (_, Some(escaped)) => {
+                out.push(escaped);
                 index += 3;
             }
-            (b'+', ..) => {
+            (b'+', None) => {
                 out.push(b' ');
                 index += 1;
             }
-            _ => {
+            (_, None) => {
                 out.push(byte);
                 index += 1;
             }

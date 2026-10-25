@@ -650,10 +650,15 @@ impl PageResponse {
     /// ```
     #[must_use]
     pub fn with_status<S: Signals + Send + 'static>(status: StatusCode, page: Page<S>) -> Self {
+        Self::page(page, Some(status))
+    }
+
+    /// The reply that renders `page`, answering with `status` where there is one.
+    fn page<S: Signals + Send + 'static>(page: Page<S>, status: Option<StatusCode>) -> Self {
         Self::new(Reply::Page {
             framing: page.framing().clone(),
             render: Box::new(move |base, dev| page.render_under(base, dev)),
-            status: Some(status),
+            status,
         })
     }
 
@@ -730,11 +735,7 @@ impl Reply {
 
 impl<S: Signals + Send + 'static> From<Page<S>> for PageResponse {
     fn from(page: Page<S>) -> Self {
-        Self::new(Reply::Page {
-            framing: page.framing().clone(),
-            render: Box::new(move |base, dev| page.render_under(base, dev)),
-            status: None,
-        })
+        Self::page(page, None)
     }
 }
 
