@@ -16,11 +16,13 @@ use serde_json::Value;
 
 use crate::Error;
 
-/// How often the files are read for a change.
-const POLL: Duration = Duration::from_millis(300);
+/// How often the files are read for a change. Reading them costs one
+/// `stat` per file, so a short interval costs little next to a build.
+const POLL: Duration = Duration::from_millis(50);
 
-/// How long to wait after a change for the rest of an editor's writes.
-const SETTLE: Duration = Duration::from_millis(100);
+/// How long to wait after a change for the rest of an editor's writes. A
+/// write that comes later still starts another build, as any change does.
+const SETTLE: Duration = Duration::from_millis(50);
 
 /// Builds with `cargo build` and `build_args`, runs the binary with
 /// `program_args`, and repeats both after each change until interrupted.
