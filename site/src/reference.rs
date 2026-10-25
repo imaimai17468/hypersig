@@ -3001,6 +3001,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "IntoActionResponse",
+                            "trait.IntoActionResponse.html",
+                            L {
+                                en: "A value an action's handler returns for the page whose signals are `S`.",
+                                ja: "シグナルが `S` のページに向けて、アクションのハンドラが返す値です。",
+                            },
+                        ),
+                        (
+                            "PatchStream",
+                            "trait.PatchStream.html",
+                            L {
+                                en: "A stream of patch batches for the page whose signals are `S`.",
+                                ja: "シグナルが `S` のページへの差分のまとまりを流すストリームです。",
+                            },
+                        ),
+                        (
                             "RequestError",
                             "struct.RequestError.html",
                             L {

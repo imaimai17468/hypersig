@@ -1,31 +1,15 @@
-error[E0277]: the trait bound `DatabaseError: IntoResponse` is not satisfied
+error[E0277]: `Result<Patches<Counter>, DatabaseError>` is not a reply of an action on the page whose signals are `Counter`
   --> tests/ui/fail/handler_error_not_a_response.rs:20:35
    |
 20 |     let _: Router = Router::new().action(ADD, add);
-   |                                   ^^^^^^ unsatisfied trait bound
+   |                                   ^^^^^^ the trait `IntoActionResponse<Counter>` is not implemented for `Result<Patches<Counter>, DatabaseError>`
    |
-help: the trait `IntoResponse` is not implemented for `DatabaseError`
-  --> tests/ui/fail/handler_error_not_a_response.rs:11:1
-   |
-11 | struct DatabaseError;
-   | ^^^^^^^^^^^^^^^^^^^^
-   = help: the following other types implement trait `IntoResponse`:
-             ()
-             (R,)
-             (Response<()>, R)
-             (StatusCode, R)
-             (T1, R)
-             (axum::http::response::Parts, R)
-             (Response<()>, T1, R)
-             (StatusCode, T1, R)
-           and $N others
-   = note: required for `ActionResponse<Counter>` to implement `From<Result<Patches<Counter>, DatabaseError>>`
-   = note: required for `Result<Patches<Counter>, DatabaseError>` to implement `Into<ActionResponse<Counter>>`
+   = note: an action's handler returns `Patches<Counter>`, a `SignalPatch<Counter>`, a `ListPatch<Counter>`, a tuple of response parts and one of those, or a `Result` of one of those whose error implements `IntoResponse`
 note: required by a bound in `action`
   --> src/axum.rs
    |
    |     fn action<S, A, H, M, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
    |        ------ required by a bound in this associated function
 ...
-   |         P: Into<ActionResponse<S>>;
-   |            ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `RouterExt::action`
+   |         P: IntoActionResponse<S>;
+   |            ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `RouterExt::action`
