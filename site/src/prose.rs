@@ -8,6 +8,8 @@
 //! `api:hypersig/struct.Page.html`, or a full `https://` URL. The links
 //! inside the site are checked by `check_links`.
 
+use std::iter;
+
 use hypersig::html::{El, Node, a, code, div, h1, h2, h3, li, p, strong, table, td, th, tr, ul};
 use hypersig::style::value::{
     BorderBottomStyle, BorderCollapse, BorderStyle, FontWeight, LineHeight, OverflowWrap,
@@ -201,71 +203,82 @@ pub fn anchor(text: &str) -> String {
     id.trim_end_matches('-').to_owned()
 }
 
+/// One piece of a text with inline marks: plain text, or a mark with the
+/// text inside it.
+enum Mark<'a> {
+    Text(&'a str),
+    Code(&'a str),
+    Bold(&'a str),
+    Link { label: &'a str, target: &'a str },
+}
+
+/// The pieces of `text`, in order. A `` ` ``, `*`, or `[` that opens no mark
+/// is a [`Mark::Text`] of its own.
+///
+/// # Panics
+///
+/// Panics if a code or bold mark is not closed, which is a typo in the
+/// page's source.
+fn marks(text: &str) -> impl Iterator<Item = Mark<'_>> {
+    let mut rest = text;
+    iter::from_fn(move || {
+        if rest.is_empty() {
+            return None;
+        }
+        let at = rest.find(['`', '*', '[']).unwrap_or(rest.len());
+        if at > 0 {
+            let (before, mark) = rest.split_at(at);
+            rest = mark;
+            return Some(Mark::Text(before));
+        }
+        let mark = rest;
+        Some(if let Some(after) = mark.strip_prefix('`') {
+            let end = after.find('`').expect("a code mark is closed");
+            rest = &after[end + 1..];
+            Mark::Code(&after[..end])
+        } else if let Some(after) = mark.strip_prefix("**") {
+            let end = after.find("**").expect("a bold mark is closed");
+            rest = &after[end + 2..];
+            Mark::Bold(&after[..end])
+        } else if let Some((label, target, after)) = split_link(mark) {
+            rest = after;
+            Mark::Link { label, target }
+        } else {
+            rest = &mark[1..];
+            Mark::Text(&mark[..1])
+        })
+    })
+}
+
 /// `text` with its inline marks turned into elements.
 ///
 /// # Panics
 ///
 /// Panics if a mark is not closed, which is a typo in the page's source.
 pub fn inline(site: Site, text: &str) -> Vec<Node<Docs>> {
-    let mut nodes = Vec::new();
-    let mut rest = text;
-    while let Some(at) = rest.find(['`', '*', '[']) {
-        let (before, mark) = rest.split_at(at);
-        if !before.is_empty() {
-            nodes.push(before.into());
-        }
-        if let Some(after) = mark.strip_prefix('`') {
-            let end = after.find('`').expect("a code mark is closed");
-            nodes.push(inline_code(&after[..end]).into());
-            rest = &after[end + 1..];
-        } else if let Some(after) = mark.strip_prefix("**") {
-            let end = after.find("**").expect("a bold mark is closed");
-            nodes.push(
-                strong()
-                    .css(Style::new().font_weight(FontWeight::Number(600.0)))
-                    .text(&after[..end])
-                    .into(),
-            );
-            rest = &after[end + 2..];
-        } else if let Some((label, target, after)) = split_link(mark) {
-            nodes.push(link(site, target).children(inline(site, label)).into());
-            rest = after;
-        } else {
-            nodes.push(mark[..1].into());
-            rest = &mark[1..];
-        }
-    }
-    if !rest.is_empty() {
-        nodes.push(rest.into());
-    }
-    nodes
+    marks(text)
+        .map(|mark| match mark {
+            Mark::Text(text) => text.into(),
+            Mark::Code(text) => inline_code(text).into(),
+            Mark::Bold(text) => strong()
+                .css(Style::new().font_weight(FontWeight::Number(600.0)))
+                .text(text)
+                .into(),
+            Mark::Link { label, target } => link(site, target).children(inline(site, label)).into(),
+        })
+        .collect()
 }
 
 /// `text` with the marks [`inline`] reads taken out, for a place that shows
 /// no markup, such as a page's description.
 pub fn plain(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
-    let mut rest = text;
-    while let Some(at) = rest.find(['`', '*', '[']) {
-        let (before, mark) = rest.split_at(at);
-        out.push_str(before);
-        if let Some(after) = mark.strip_prefix('`') {
-            let end = after.find('`').expect("a code mark is closed");
-            out.push_str(&after[..end]);
-            rest = &after[end + 1..];
-        } else if let Some(after) = mark.strip_prefix("**") {
-            let end = after.find("**").expect("a bold mark is closed");
-            out.push_str(&after[..end]);
-            rest = &after[end + 2..];
-        } else if let Some((label, _, after)) = split_link(mark) {
-            out.push_str(&plain(label));
-            rest = after;
-        } else {
-            out.push_str(&mark[..1]);
-            rest = &mark[1..];
+    for mark in marks(text) {
+        match mark {
+            Mark::Text(text) | Mark::Code(text) | Mark::Bold(text) => out.push_str(text),
+            Mark::Link { label, .. } => out.push_str(&plain(label)),
         }
     }
-    out.push_str(rest);
     out
 }
 
