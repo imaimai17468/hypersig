@@ -282,9 +282,8 @@ impl<P: Params, Q: Search> Route<P, Q> {
             (false, _) => (args, None),
             (true, 0) => (Value::Null, Some(args)),
             (true, _) => {
-                let mut parts = split_tuple(args, 2).into_iter();
-                let params = parts.next().unwrap_or_default();
-                (params, parts.next())
+                let (params, search) = split_pair(args);
+                (params, Some(search))
             }
         };
         let values = match P::COUNT {
@@ -590,6 +589,21 @@ fn split_tuple(ast: Value, count: usize) -> Vec<Value> {
             .map(|index| json!(["nth", ast, ["lit", index]]))
             .collect(),
     }
+}
+
+/// The two halves of the pair `ast`, read off a literal `tuple` where it is
+/// one, and taken from the value in the browser otherwise.
+fn split_pair(ast: Value) -> (Value, Value) {
+    let ast = match ast {
+        Value::Array(items) => match <[Value; 3]>::try_from(items) {
+            Ok([tag, first, second]) if tag == "tuple" => return (first, second),
+            Ok(items) => Value::Array(items.into()),
+            Err(items) => Value::Array(items),
+        },
+        ast => ast,
+    };
+    let nth = |index: usize| json!(["nth", ast, ["lit", index]]);
+    (nth(0), nth(1))
 }
 
 /// The URL of a page, written on the server by [`Route::url`].
