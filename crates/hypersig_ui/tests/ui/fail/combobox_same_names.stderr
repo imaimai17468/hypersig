@@ -1,8 +1,8 @@
-error[E0080]: evaluation panicked: a combobox's field and list have different names
-  --> tests/ui/fail/combobox_same_names.rs:10:33
+error[E0080]: evaluation panicked: a combobox's field and list are two node refs
+  --> tests/ui/fail/combobox_same_names.rs:11:33
    |
-10 | const COUNTRY: Combobox<Form> = Combobox::new("country", "country");
-   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `COUNTRY` failed inside this call
+11 | const COUNTRY: Combobox<Form> = Combobox::new(COUNTRY_FIELD, COUNTRY_FIELD);
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `COUNTRY` failed inside this call
    |
 note: inside `hypersig_ui::Combobox::<Form>::new`
   --> $RUST/core/src/panic.rs
@@ -13,7 +13,7 @@ note: inside `hypersig_ui::Combobox::<Form>::new`
   ::: src/combobox.rs
    |
    | /         assert!(
-   | |             !crate::id::same(field, list),
-   | |             "a combobox's field and list have different names"
+   | |             !hypersig::_private::same_node_ref(field, list),
+   | |             "a combobox's field and list are two node refs"
    | |         );
    | |_________- in this macro invocation

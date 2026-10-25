@@ -1,0 +1,10 @@
+error[E0624]: associated function `new` is private
+ --> tests/ui/fail/node_ref_from_string.rs:5:37
+  |
+5 | const FIELD: NodeRef<()> = NodeRef::new("field");
+  |                                     ^^^ private associated function
+  |
+ ::: src/action.rs
+  |
+  |     pub(crate) const fn new(name: &'static str) -> Self {
+  |     --------------------------------------------------- private associated function defined here

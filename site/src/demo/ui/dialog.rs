@@ -16,9 +16,12 @@ pub struct Project {
     status: String,
 }
 
-const RENAME: Dialog<Project> = Dialog::new("rename");
-const DELETE: Dialog<Project> = Dialog::new("delete");
-const DETAILS: Dialog<Project> = Dialog::new("details");
+hypersig::dialog_ref!(const RENAME_DIALOG: DialogRef<Project>);
+hypersig::dialog_ref!(const DELETE_DIALOG: DialogRef<Project>);
+hypersig::dialog_ref!(const DETAILS_SHEET: DialogRef<Project>);
+const RENAME: Dialog<Project> = Dialog::new(RENAME_DIALOG);
+const DELETE: Dialog<Project> = Dialog::new(DELETE_DIALOG);
+const DETAILS: Dialog<Project> = Dialog::new(DETAILS_SHEET);
 
 pub fn page(site: Site) -> Page<Project> {
     let name = Project::name();

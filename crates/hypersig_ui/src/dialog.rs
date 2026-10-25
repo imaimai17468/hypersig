@@ -1,7 +1,6 @@
 //! Modal dialogs, opened and closed by the browser's invoker commands.
 
 use std::fmt;
-use std::marker::PhantomData;
 
 use hypersig::html::{El, Id, Node, Role, attr, button as button_el, div, h2, p};
 use hypersig::style::pattern::{hstack, stack};
@@ -12,14 +11,16 @@ use hypersig::style::{PseudoElement, Style};
 use hypersig::{DialogRef, Stmt};
 
 use crate::button::{ButtonSize, ButtonVariant, button};
-use crate::id::check_name;
+
 use crate::look::{self, icon};
 use crate::token;
 
 /// A modal dialog on a page whose signals are `S`.
 ///
-/// Declare one as a `const` and use the same value for the dialog and for the
-/// buttons that open and close it, so they agree on its id. The buttons carry
+/// Declare one as a `const` from a [`DialogRef`] that
+/// [`dialog_ref!`](hypersig::dialog_ref) declares, and use the same value
+/// for the dialog and for the buttons that open and close it, so they agree
+/// on its id, which is the dialog ref's name. The buttons carry
 /// `commandfor` and `command`, and the browser opens the `<dialog>` with
 /// `showModal()`: it makes the rest of the page inert, so that Tab moves
 /// between the dialog's controls and the browser's own and never reaches the
@@ -29,11 +30,11 @@ use crate::token;
 /// and Safari 26.2 ship.
 ///
 /// The dialog is labeled by its title and described by its description
-/// through ids derived from the name. Two dialogs with the same name on one
-/// page share an id, and rendering the page panics.
+/// through ids derived from the name. One dialog placed twice on a page
+/// shares those ids, and rendering the page panics.
 ///
 /// ```
-/// use hypersig::Signals;
+/// use hypersig::{DialogRef, Signals};
 /// use hypersig::html::p;
 /// use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, dialog_footer};
 /// use serde::{Deserialize, Serialize};
@@ -41,36 +42,30 @@ use crate::token;
 /// #[derive(Signals, Serialize, Deserialize)]
 /// struct Profile {}
 ///
-/// const EDIT: Dialog<Profile> = Dialog::new("edit-profile");
+/// hypersig::dialog_ref!(const EDIT_PROFILE: DialogRef<Profile>);
+/// const EDIT: Dialog<Profile> = Dialog::new(EDIT_PROFILE);
 ///
+/// # fn main() {
 /// let open = EDIT.trigger(ButtonVariant::Outline, ButtonSize::Default).text("Edit profile");
 /// let dialog = EDIT.dialog(
 ///     "Edit profile",
 ///     "Changes are saved when you press Save.",
 ///     dialog_footer().child(EDIT.close(ButtonVariant::Default, ButtonSize::Default).text("Save")),
 /// );
+/// let labelled = format!(r#"aria-labelledby="{}::EDIT_PROFILE-title""#, module_path!());
 /// assert!(open.render().contains(r#"command="show-modal""#));
-/// assert!(dialog.render().contains(r#"aria-labelledby="edit-profile-title""#));
+/// assert!(dialog.render().contains(&labelled));
+/// # }
 /// ```
 pub struct Dialog<S> {
-    name: &'static str,
-    marker: PhantomData<fn() -> S>,
+    dialog: DialogRef<S>,
 }
 
 impl<S> Dialog<S> {
-    /// A dialog whose id is `name`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `name` is empty or holds a character other than an ASCII
-    /// letter, digit, `-`, or `_`. In a `const`, that is a compile error.
+    /// A dialog that `dialog` names, whose id is the name of `dialog`.
     #[must_use]
-    pub const fn new(name: &'static str) -> Self {
-        check_name(name);
-        Self {
-            name,
-            marker: PhantomData,
-        }
+    pub const fn new(dialog: DialogRef<S>) -> Self {
+        Self { dialog }
     }
 
     /// A button that opens the dialog.
@@ -83,7 +78,7 @@ impl<S> Dialog<S> {
     }
 
     fn id(self) -> Id {
-        Id::new(self.name)
+        self.dialog.id()
     }
 
     /// A statement that opens the dialog, as its trigger button does.
@@ -93,13 +88,13 @@ impl<S> Dialog<S> {
     /// element that had it when the dialog closes.
     #[must_use]
     pub fn open(self) -> Stmt<S> {
-        DialogRef::new(self.name).show_modal()
+        self.dialog.show_modal()
     }
 
     /// A statement that closes the dialog, as its close button does.
     #[must_use]
     pub fn dismiss(self) -> Stmt<S> {
-        DialogRef::new(self.name).close()
+        self.dialog.close()
     }
 
     /// A button that closes the dialog. Put it inside the dialog.
@@ -142,7 +137,7 @@ impl<S> Dialog<S> {
     /// or the bottom.
     ///
     /// ```
-    /// use hypersig::Signals;
+    /// use hypersig::{DialogRef, Signals};
     /// use hypersig::html::p;
     /// use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, Side};
     /// use serde::{Deserialize, Serialize};
@@ -150,12 +145,16 @@ impl<S> Dialog<S> {
     /// #[derive(Signals, Serialize, Deserialize)]
     /// struct Shop {}
     ///
-    /// const CART: Dialog<Shop> = Dialog::new("cart");
+    /// hypersig::dialog_ref!(const CART_SHEET: DialogRef<Shop>);
+    /// const CART: Dialog<Shop> = Dialog::new(CART_SHEET);
     ///
+    /// # fn main() {
     /// let open = CART.trigger(ButtonVariant::Outline, ButtonSize::Default).text("Cart");
     /// let sheet = CART.sheet(Side::Right, "Cart", "Two items.", p().text("Tea, cups"));
-    /// assert!(sheet.render().contains(r#"aria-labelledby="cart-title""#));
+    /// let labelled = format!(r#"aria-labelledby="{}::CART_SHEET-title""#, module_path!());
+    /// assert!(sheet.render().contains(&labelled));
     /// # let _ = open;
+    /// # }
     /// ```
     #[must_use]
     pub fn sheet(
@@ -214,7 +213,7 @@ impl<S> Dialog<S> {
     fn frame(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {
         let title_id = self.id().with_key("title");
         let description_id = self.id().with_key("description");
-        DialogRef::new(self.name)
+        self.dialog
             .dialog()
             .id(self.id())
             .aria_labelledby(&[&title_id])
@@ -257,7 +256,7 @@ impl<S> Copy for Dialog<S> {}
 
 impl<S> fmt::Debug for Dialog<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Dialog").field(&self.name).finish()
+        f.debug_tuple("Dialog").field(&self.dialog).finish()
     }
 }
 

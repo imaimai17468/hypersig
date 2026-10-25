@@ -1,7 +1,6 @@
 //! Menu buttons: a button that opens a menu of actions in a popover.
 
 use std::fmt;
-use std::marker::PhantomData;
 
 use hypersig::html::{El, Id, Key, Orientation, Role, attr, button as button_el, div};
 use hypersig::style::value::{
@@ -11,14 +10,16 @@ use hypersig::style::{PseudoClass, Style};
 use hypersig::{Expr, IntoExpr, IntoStmt, NodeRef, Stmt};
 
 use crate::button::{ButtonSize, ButtonVariant, button};
-use crate::id::check_name;
+use crate::id::anchor;
 use crate::look;
 use crate::token;
 
 /// A menu of actions on a page whose signals are `S`, opened by a button.
 ///
-/// Declare one as a `const` and use the same value for the button and the
-/// menu, so they agree on the menu's id. It follows the WAI-ARIA menu button
+/// Declare one as a `const` from a [`NodeRef`] that
+/// [`node_ref!`](hypersig::node_ref) declares, and use the same value for
+/// the button and the menu, so they agree on the menu's id, which is the
+/// node ref's name. It follows the WAI-ARIA menu button
 /// pattern: the button has `aria-haspopup="menu"`, the menu `role="menu"` and
 /// each action `role="menuitem"`. The menu is a `popover`, so the browser
 /// puts it above the page, closes it on Escape or on a click outside, and
@@ -27,12 +28,12 @@ use crate::token;
 /// runs its statement and closes the menu, and Tab closes it.
 ///
 /// The menu is placed under the button with CSS anchor positioning and flips
-/// above it where there is no room below. The menu carries a node ref with
-/// its name, so two menus with one name on a page make
+/// above it where there is no room below. The menu carries the node ref, so
+/// placing one menu twice on a page makes
 /// [`Page::render`](hypersig::Page::render) panic.
 ///
 /// ```
-/// use hypersig::Signals;
+/// use hypersig::{NodeRef, Signals};
 /// use hypersig_ui::{ButtonSize, ButtonVariant, Menu, MenuItem};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -41,8 +42,10 @@ use crate::token;
 ///     archived: bool,
 /// }
 ///
-/// const ACTIONS: Menu<Doc> = Menu::new("doc-actions");
+/// hypersig::node_ref!(const DOC_ACTIONS: NodeRef<Doc>);
+/// const ACTIONS: Menu<Doc> = Menu::new(DOC_ACTIONS);
 ///
+/// # fn main() {
 /// let open = ACTIONS.trigger(ButtonVariant::Outline, ButtonSize::Default).text("Actions");
 /// let menu = ACTIONS.menu([
 ///     MenuItem::new("Archive", Doc::archived().set(true)),
@@ -50,30 +53,21 @@ use crate::token;
 /// ]);
 /// assert!(open.render().contains(r#"aria-haspopup="menu""#));
 /// assert!(menu.render().contains(r#"role="menuitem""#));
+/// # }
 /// ```
 pub struct Menu<S> {
-    name: &'static str,
-    marker: PhantomData<fn() -> S>,
+    menu: NodeRef<S>,
 }
 
 impl<S> Menu<S> {
-    /// A menu whose id is `name`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `name` is empty or holds a character other than an ASCII
-    /// letter, digit, `-`, or `_`. In a `const`, that is a compile error.
+    /// A menu that `menu` names, whose id is the name of `menu`.
     #[must_use]
-    pub const fn new(name: &'static str) -> Self {
-        check_name(name);
-        Self {
-            name,
-            marker: PhantomData,
-        }
+    pub const fn new(menu: NodeRef<S>) -> Self {
+        Self { menu }
     }
 
     fn id(self) -> Id {
-        Id::new(self.name)
+        self.menu.id()
     }
 
     fn trigger_id(self) -> Id {
@@ -81,7 +75,7 @@ impl<S> Menu<S> {
     }
 
     fn anchor(self) -> String {
-        format!("--{}", self.name)
+        anchor(&self.id())
     }
 
     /// The button that opens and closes the menu.
@@ -98,7 +92,7 @@ impl<S> Menu<S> {
     /// The menu, holding `items` in order.
     #[must_use]
     pub fn menu(self, items: impl IntoIterator<Item = MenuItem<S>>) -> El<S> {
-        let node_ref = NodeRef::new(self.name);
+        let node_ref = self.menu;
         div()
             .id(self.id())
             .attr(attr::POPOVER, "auto")
@@ -144,7 +138,7 @@ impl<S> Copy for Menu<S> {}
 
 impl<S> fmt::Debug for Menu<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Menu").field(&self.name).finish()
+        f.debug_tuple("Menu").field(&self.menu).finish()
     }
 }
 
@@ -248,11 +242,12 @@ mod tests {
 
     struct Page;
 
-    const ACTIONS: Menu<Page> = Menu::new("actions");
+    hypersig::node_ref!(const MENU: NodeRef<Page>);
+    const ACTIONS: Menu<Page> = Menu::new(MENU);
 
     #[test]
-    #[should_panic(expected = "`actions` where the runtime can reach both")]
-    fn two_menus_with_one_name_panic_when_rendered() {
+    #[should_panic(expected = "`hypersig_ui::menu::tests::MENU` where the runtime can reach both")]
+    fn one_menu_placed_twice_panics_when_rendered() {
         let _ = div::<Page>()
             .child(ACTIONS.menu([]))
             .child(ACTIONS.menu([]))

@@ -7,7 +7,8 @@ struct Form {
     country: ComboboxState,
 }
 
-const COUNTRY: Combobox<Form> = Combobox::new("country", "country");
+hypersig::node_ref!(const COUNTRY_FIELD: NodeRef<Form>);
+const COUNTRY: Combobox<Form> = Combobox::new(COUNTRY_FIELD, COUNTRY_FIELD);
 
 fn main() {
     let _ = COUNTRY.render("Country", Form::country(), ["Japan"]);

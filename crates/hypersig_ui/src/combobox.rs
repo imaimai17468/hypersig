@@ -2,9 +2,8 @@
 //! types.
 
 use std::fmt;
-use std::marker::PhantomData;
 
-use hypersig::html::{El, Event, Id, Key, Role, attr, div, input, label, p};
+use hypersig::html::{El, Event, Key, Role, attr, div, input, label, p};
 use hypersig::style::Style;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{Display, FlexDirection, OverflowY, Position, ZIndex, pct, raw, rem};
@@ -60,8 +59,10 @@ impl ComboboxState {
 /// A combobox on a page whose signals are `S`: a text field with a list of
 /// options that the text filters.
 ///
-/// Declare one as a `const` naming its text field and its list, since the
-/// runtime finds both by name. It follows the WAI-ARIA combobox pattern with
+/// Declare one as a `const` from two [`NodeRef`]s that
+/// [`node_ref!`](hypersig::node_ref) declares, one for its text field and
+/// one for its list, since the runtime finds both by name. Each element's id
+/// is its node ref's name. It follows the WAI-ARIA combobox pattern with
 /// list autocomplete. The text field has `role="combobox"`,
 /// `aria-expanded`, `aria-controls`, and `aria-activedescendant`, and focus
 /// stays in it while the up and down arrows move through the options shown,
@@ -77,11 +78,11 @@ impl ComboboxState {
 /// dialog around it closes on Escape only from elsewhere. The visitor can
 /// also leave text that matches no option, which the page
 /// checks where it needs one of the options. The text field and the list
-/// carry node refs with their names, so two comboboxes with one name on a page
-/// make [`Page::render`](hypersig::Page::render) panic.
+/// carry the node refs, so placing one combobox twice on a page makes
+/// [`Page::render`](hypersig::Page::render) panic.
 ///
 /// ```
-/// use hypersig::Signals;
+/// use hypersig::{NodeRef, Signals};
 /// use hypersig_ui::{Combobox, ComboboxState};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -90,41 +91,37 @@ impl ComboboxState {
 ///     country: ComboboxState,
 /// }
 ///
-/// const COUNTRY: Combobox<Form> = Combobox::new("country", "country-options");
+/// hypersig::node_ref!(const COUNTRY_FIELD: NodeRef<Form>);
+/// hypersig::node_ref!(const COUNTRY_OPTIONS: NodeRef<Form>);
+/// const COUNTRY: Combobox<Form> = Combobox::new(COUNTRY_FIELD, COUNTRY_OPTIONS);
 ///
+/// # fn main() {
 /// let field = COUNTRY.render("Country", Form::country(), ["France", "Japan", "Kenya"]);
 /// let html = field.render();
+/// let controls = format!(r#"aria-controls="{}::COUNTRY_OPTIONS""#, module_path!());
 /// assert!(html.contains(r#"role="combobox""#));
-/// assert!(html.contains(r#"aria-controls="country-options""#));
+/// assert!(html.contains(&controls));
+/// # }
 /// ```
 pub struct Combobox<S> {
-    field: &'static str,
-    list: &'static str,
-    marker: PhantomData<fn() -> S>,
+    field: NodeRef<S>,
+    list: NodeRef<S>,
 }
 
 impl<S> Combobox<S> {
-    /// A combobox whose text field has the id `field` and whose list has the
-    /// id `list`.
+    /// A combobox whose text field `field` names and whose list `list` names.
     ///
     /// # Panics
     ///
-    /// Panics if either name is empty or holds a character other than an
-    /// ASCII letter, digit, `-`, or `_`, or if the two are equal. In a
-    /// `const`, that is a compile error.
+    /// Panics if `field` and `list` are one constant. In a `const`, that is
+    /// a compile error.
     #[must_use]
-    pub const fn new(field: &'static str, list: &'static str) -> Self {
-        crate::id::check_name(field);
-        crate::id::check_name(list);
+    pub const fn new(field: NodeRef<S>, list: NodeRef<S>) -> Self {
         assert!(
-            !crate::id::same(field, list),
-            "a combobox's field and list have different names"
+            !hypersig::_private::same_node_ref(field, list),
+            "a combobox's field and list are two node refs"
         );
-        Self {
-            field,
-            list,
-            marker: PhantomData,
-        }
+        Self { field, list }
     }
 
     /// The label, the text field, and the list of `options`, in a `<div>`,
@@ -140,8 +137,8 @@ impl<S> Combobox<S> {
         let open = state.at(ComboboxState::open());
         let active = state.at(ComboboxState::active());
         let pointer = state.at(ComboboxState::pointer());
-        let field_ref = NodeRef::new(self.field);
-        let list_ref = NodeRef::new(self.list);
+        let field_ref = self.field;
+        let list_ref = self.list;
         let query = text.to_lowercase();
 
         let close: Stmt<S> = open.set(false).then(active.set(""));
@@ -149,7 +146,7 @@ impl<S> Combobox<S> {
         let mut items = Vec::new();
         for (index, title) in options.into_iter().enumerate() {
             let title: String = title.into();
-            let id = Id::new(self.list).with_key(index);
+            let id = self.list.id().with_key(index);
             let shown = Expr::lit(&title.to_lowercase()).contains(&query);
             none_shown = none_shown.and(!&shown);
             let reached = active.equals(id.to_string());
@@ -177,10 +174,10 @@ impl<S> Combobox<S> {
 
         let field = input()
             .attr(attr::TYPE, "text")
-            .id(Id::new(self.field))
+            .id(self.field.id())
             .role(Role::Combobox)
             .attr(attr::ARIA_AUTOCOMPLETE, "list")
-            .aria_controls(&[&Id::new(self.list)])
+            .aria_controls(&[&self.list.id()])
             .attr(attr::AUTOCOMPLETE, "off")
             .bind_attr(attr::ARIA_EXPANDED, if_else(open, "true", "false"))
             .bind(text)
@@ -204,7 +201,7 @@ impl<S> Combobox<S> {
             .css(drop_down_style())
             .child(
                 div()
-                    .id(Id::new(self.list))
+                    .id(self.list.id())
                     .role(Role::ListBox)
                     .attr(attr::ARIA_LABEL, "Suggestions")
                     .node_ref(list_ref)
@@ -231,7 +228,7 @@ impl<S> Combobox<S> {
             .css(stack(rem(0.5)))
             .child(
                 label()
-                    .label_for(&Id::new(self.field))
+                    .label_for(&self.field.id())
                     .css(label_style())
                     .text(label_text),
             )

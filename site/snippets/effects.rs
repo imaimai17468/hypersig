@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use hypersig::html::{div, input, p};
-use hypersig::{Expr, NodeRef, Signals};
+use hypersig::{Expr, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -12,7 +12,8 @@ struct Editor {
     dirty: bool,
 }
 
-const FIELD: NodeRef<Editor> = NodeRef::new("editor-text");
+hypersig::node_ref!(const FIELD: NodeRef<Editor>);
+# fn main() {
 
 let editor = div::<Editor>()
     // Focus the field when the page loads.
@@ -30,3 +31,4 @@ let editor = div::<Editor>()
     .child(input().node_ref(FIELD).bind(Editor::text()))
     .child(p().show(Editor::dirty()).text("Unsaved changes"));
 # let _ = editor;
+# }

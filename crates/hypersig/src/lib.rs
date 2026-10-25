@@ -226,6 +226,117 @@ pub mod _private {
     pub const fn tag(name: &'static str) -> crate::html::Tag {
         crate::html::Tag::new(name)
     }
+
+    /// Called by `node_ref!` with the path of its constant.
+    #[must_use]
+    pub const fn node_ref<S>(name: &'static str) -> crate::NodeRef<S> {
+        crate::NodeRef::new(name)
+    }
+
+    /// Called by `dialog_ref!` with the path of its constant.
+    #[must_use]
+    pub const fn dialog_ref<S>(name: &'static str) -> crate::DialogRef<S> {
+        crate::DialogRef::new(name)
+    }
+
+    /// Whether `a` and `b` carry one name, for a check in a `const`, such as
+    /// `hypersig_ui`'s refusal of one constant as both parts of a combobox.
+    #[must_use]
+    pub const fn same_node_ref<S>(a: crate::NodeRef<S>, b: crate::NodeRef<S>) -> bool {
+        let (a, b) = (a.name().as_bytes(), b.name().as_bytes());
+        if a.len() != b.len() {
+            return false;
+        }
+        let mut i = 0;
+        while i < a.len() {
+            if a[i] != b[i] {
+                return false;
+            }
+            i += 1;
+        }
+        true
+    }
+}
+
+/// Declares a [`NodeRef`] constant named after its own path.
+///
+/// The input is the constant's declaration without a value. The macro writes
+/// that constant, with the name `module_path!()` and the identifier give it,
+/// and a `const _` that reads it back through `self::`. The second item
+/// stops the build where the declaration sits in a function body, because
+/// two functions in one module could otherwise each declare a constant of
+/// one identifier and give two constants one name. Attributes go on both
+/// items.
+///
+/// ```
+/// use hypersig::html::input;
+/// use hypersig::{NodeRef, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Search {
+///     query: String,
+/// }
+///
+/// hypersig::node_ref!(pub const FIELD: NodeRef<Search>);
+///
+/// # fn main() {
+/// let field = input().node_ref(FIELD).bind(Search::query());
+/// assert!(field.render().contains(&format!(r#"data-hs-ref="{}::FIELD""#, module_path!())));
+/// # }
+/// ```
+///
+/// # Compile errors
+///
+/// A declaration inside a function body, where `self::NAME` does not reach
+/// the constant, and a type other than `NodeRef<..>`.
+#[macro_export]
+macro_rules! node_ref {
+    ($(#[$attr:meta])* $vis:vis const $name:ident: NodeRef<$signals:ty>) => {
+        $(#[$attr])*
+        $vis const $name: $crate::NodeRef<$signals> =
+            $crate::_private::node_ref(::core::concat!(::core::module_path!(), "::", ::core::stringify!($name)));
+        $(#[$attr])*
+        const _: () = {
+            let _ = self::$name;
+        };
+    };
+}
+
+/// Declares a [`DialogRef`] constant named after its own path.
+///
+/// It writes the same two items as [`node_ref!`], with a `DialogRef`.
+///
+/// ```
+/// use hypersig::{DialogRef, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Palette {}
+///
+/// hypersig::dialog_ref!(const PALETTE: DialogRef<Palette>);
+///
+/// # fn main() {
+/// let html = PALETTE.dialog().render();
+/// assert!(html.contains(&format!(r#"<dialog data-hs-ref="{}::PALETTE">"#, module_path!())));
+/// # }
+/// ```
+///
+/// # Compile errors
+///
+/// A declaration inside a function body, and a type other than
+/// `DialogRef<..>`.
+#[macro_export]
+macro_rules! dialog_ref {
+    ($(#[$attr:meta])* $vis:vis const $name:ident: DialogRef<$signals:ty>) => {
+        $(#[$attr])*
+        $vis const $name: $crate::DialogRef<$signals> =
+            $crate::_private::dialog_ref(::core::concat!(::core::module_path!(), "::", ::core::stringify!($name)));
+        $(#[$attr])*
+        const _: () = {
+            let _ = self::$name;
+        };
+    };
 }
 
 /// Builds an [`Attr`](html::Attr) for a name with no constant in [`html::attr`].

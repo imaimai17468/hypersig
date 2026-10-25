@@ -1,0 +1,5 @@
+error[E0425]: cannot find value `FIELD` in module `self`
+ --> tests/ui/fail/node_ref_in_function.rs:6:31
+  |
+6 |     hypersig::node_ref!(const FIELD: NodeRef<()>);
+  |                               ^^^^^ not found in `self`

@@ -1,24 +1,25 @@
 //! Tooltips: a short description shown while a button is hovered or focused.
 
 use std::fmt;
-use std::marker::PhantomData;
 
 use hypersig::NodeRef;
-use hypersig::html::{El, Event, Id, Role, attr, div};
+use hypersig::html::{El, Event, Role, attr, div};
 use hypersig::style::Style;
 use hypersig::style::value::{
     BackgroundClip, BorderStyle, Color, PositionTryFallbacks, px, raw, rem,
 };
 
 use crate::button::{ButtonSize, ButtonVariant, button, icon_button};
-use crate::id::check_name;
+use crate::id::anchor;
 use crate::token;
 
 /// A tooltip on a page whose signals are `S`, describing the button it is
 /// attached to.
 ///
-/// Declare one as a `const` and use the same value for the button and the
-/// tooltip, so they agree on the tooltip's id. It follows the WAI-ARIA
+/// Declare one as a `const` from a [`NodeRef`] that
+/// [`node_ref!`](hypersig::node_ref) declares, and use the same value for
+/// the button and the tooltip, so they agree on the tooltip's id, which is
+/// the node ref's name. It follows the WAI-ARIA
 /// tooltip pattern: the tooltip has `role="tooltip"` and the button
 /// `aria-describedby` pointing at it, so a screen reader reads the text
 /// after the button's name. It opens while the pointer is on the button or
@@ -34,51 +35,45 @@ use crate::token;
 ///
 /// The button carries the attributes the tooltip needs, so build it here
 /// rather than adding a tooltip to a button made elsewhere. The tooltip
-/// carries a node ref with its name, so two tooltips with one name on a page
-/// make [`Page::render`](hypersig::Page::render) panic.
+/// carries the node ref, so placing one tooltip twice on a page makes
+/// [`Page::render`](hypersig::Page::render) panic.
 ///
 /// ```
-/// use hypersig::Signals;
+/// use hypersig::{NodeRef, Signals};
 /// use hypersig_ui::{ButtonVariant, Tooltip};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
 /// struct Editor {}
 ///
-/// const BOLD: Tooltip<Editor> = Tooltip::new("bold-tip");
+/// hypersig::node_ref!(const BOLD_TIP: NodeRef<Editor>);
+/// const BOLD: Tooltip<Editor> = Tooltip::new(BOLD_TIP);
 ///
+/// # fn main() {
 /// let button = BOLD.icon_trigger(ButtonVariant::Outline, "Bold").text("B");
 /// let tip = BOLD.tooltip("Ctrl+B");
-/// assert!(button.render().contains(r#"aria-describedby="bold-tip""#));
+/// let described = format!(r#"aria-describedby="{}::BOLD_TIP""#, module_path!());
+/// assert!(button.render().contains(&described));
 /// assert!(tip.render().contains(r#"role="tooltip""#));
+/// # }
 /// ```
 pub struct Tooltip<S> {
-    name: &'static str,
-    marker: PhantomData<fn() -> S>,
+    tip: NodeRef<S>,
 }
 
 impl<S> Tooltip<S> {
-    /// A tooltip whose id is `name`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `name` is empty or holds a character other than an ASCII
-    /// letter, digit, `-`, or `_`. In a `const`, that is a compile error.
+    /// A tooltip that `tip` names, whose id is the name of `tip`.
     #[must_use]
-    pub const fn new(name: &'static str) -> Self {
-        check_name(name);
-        Self {
-            name,
-            marker: PhantomData,
-        }
+    pub const fn new(tip: NodeRef<S>) -> Self {
+        Self { tip }
     }
 
     fn anchor(self) -> String {
-        format!("--{}", self.name)
+        anchor(&self.tip.id())
     }
 
     fn node_ref(self) -> NodeRef<S> {
-        NodeRef::new(self.name)
+        self.tip
     }
 
     /// A button described by the tooltip.
@@ -96,7 +91,7 @@ impl<S> Tooltip<S> {
     fn attach(self, button: El<S>) -> El<S> {
         let tip = self.node_ref();
         button
-            .aria_describedby(&[&Id::new(self.name)])
+            .aria_describedby(&[&self.tip.id()])
             .css(Style::new().anchor_name(raw(self.anchor())))
             .on(Event::MouseEnter, tip.show_popover())
             .on(Event::MouseLeave, tip.hide_popover())
@@ -112,7 +107,7 @@ impl<S> Tooltip<S> {
     pub fn tooltip(self, text: impl Into<String>) -> El<S> {
         let tip = self.node_ref();
         div()
-            .id(Id::new(self.name))
+            .id(self.tip.id())
             .attr(attr::POPOVER, "hint")
             .role(Role::Tooltip)
             .node_ref(tip)
@@ -136,7 +131,7 @@ impl<S> Copy for Tooltip<S> {}
 
 impl<S> fmt::Debug for Tooltip<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Tooltip").field(&self.name).finish()
+        f.debug_tuple("Tooltip").field(&self.tip).finish()
     }
 }
 

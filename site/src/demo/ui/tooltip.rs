@@ -15,8 +15,10 @@ pub struct Editor {
     bold: bool,
 }
 
-const BOLD: Tooltip<Editor> = Tooltip::new("bold-tip");
-const SHARE: Tooltip<Editor> = Tooltip::new("share-tip");
+hypersig::node_ref!(const BOLD_TIP: NodeRef<Editor>);
+hypersig::node_ref!(const SHARE_TIP: NodeRef<Editor>);
+const BOLD: Tooltip<Editor> = Tooltip::new(BOLD_TIP);
+const SHARE: Tooltip<Editor> = Tooltip::new(SHARE_TIP);
 
 pub fn page(site: Site) -> Page<Editor> {
     Page::new(

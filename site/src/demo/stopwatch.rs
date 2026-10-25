@@ -7,7 +7,7 @@ use hypersig::html::{div, span};
 use hypersig::style::Style;
 use hypersig::style::pattern::hstack;
 use hypersig::style::value::{FontWeight, rem};
-use hypersig::{NodeRef, Page, Signals, Stmt, if_else};
+use hypersig::{Page, Signals, Stmt, if_else};
 use hypersig_ui::{ButtonSize, ButtonVariant, button};
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,7 @@ pub struct Stopwatch {
     tenths: i32,
 }
 
-const START: NodeRef<Stopwatch> = NodeRef::new("start");
+hypersig::node_ref!(const START: NodeRef<Stopwatch>);
 
 pub fn page(site: Site) -> Page<Stopwatch> {
     let running = Stopwatch::running();

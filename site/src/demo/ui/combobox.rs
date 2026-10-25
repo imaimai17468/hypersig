@@ -15,7 +15,9 @@ pub struct Shipping {
     country: ComboboxState,
 }
 
-const COUNTRY: Combobox<Shipping> = Combobox::new("country", "country-options");
+hypersig::node_ref!(const COUNTRY_FIELD: NodeRef<Shipping>);
+hypersig::node_ref!(const COUNTRY_OPTIONS: NodeRef<Shipping>);
+const COUNTRY: Combobox<Shipping> = Combobox::new(COUNTRY_FIELD, COUNTRY_OPTIONS);
 
 pub fn page(site: Site) -> Page<Shipping> {
     let initial = Shipping {
