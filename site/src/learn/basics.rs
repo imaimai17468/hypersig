@@ -201,8 +201,8 @@ pub fn describing_the_page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. It panics, ignoring case, on a name that another method sets or whose value can run a script, and `bind_attr` and `attr_when` panic on the same names:",
-                ja: "`text` は固定のテキストを、`child` は要素か文字列を末尾に追加します。`href` は `Route` からページへのリンクを張ります。これは [ページとリンク](learn/pages/) で説明します。`attr` は普通の属性を設定します。ほかのメソッドが設定する名前と、値がスクリプトを実行できる名前を渡すと、大文字と小文字を区別せずにパニックします。`bind_attr` と `attr_when` も同じ名前でパニックします。",
+                en: "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. It panics, ignoring case, on a name that another method sets, whose value can run a script, or that is not an attribute name, and `bind_attr` and `attr_when` panic on the same names:",
+                ja: "`text` は固定のテキストを、`child` は要素か文字列を末尾に追加します。`href` は `Route` からページへのリンクを張ります。これは [ページとリンク](learn/pages/) で説明します。`attr` は普通の属性を設定します。ほかのメソッドが設定する名前、値がスクリプトを実行できる名前、属性名にならない名前を渡すと、大文字と小文字を区別せずにパニックします。`bind_attr` と `attr_when` も同じ名前でパニックします。",
             },
         ),
         bullets(
