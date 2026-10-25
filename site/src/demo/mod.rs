@@ -224,8 +224,10 @@ pub fn show(site: Site, demo: Demo) -> Part {
 }
 
 /// `source` as the article shows it in `lang`: each `site.t(L { en, ja })`
-/// replaced by the value for `lang`, and the lines that only serve the
-/// translation removed, so the code reads as an application would write it.
+/// replaced by the value for `lang`, the lines that only serve the
+/// translation removed, and the script path this site builds under its base
+/// replaced by the path an application serves it at, so the code reads as an
+/// application would write it.
 fn shown_source(source: &str, lang: crate::Lang) -> String {
     let mut out = String::with_capacity(source.len());
     let mut rest = source;
@@ -255,7 +257,12 @@ fn shown_source(source: &str, lang: crate::Lang) -> String {
                 "use crate::Site;" | "use crate::lang::L;" | "let site = Site::rendering();"
             )
         })
-        .map(|line| line.replace("(site: Site)", "()"))
+        .map(|line| {
+            line.replace("(site: Site)", "()").replace(
+                "site.star_rating()",
+                &format!("\"/{}\"", crate::STAR_RATING_FILE),
+            )
+        })
         .collect::<Vec<_>>()
         .join("\n")
         .replace("\n\n\n", "\n\n")
@@ -332,6 +339,12 @@ mod tests {
             shown_source(source, crate::Lang::Ja)
                 .contains("p().text(format!(\"{}、こんにちは\", x))")
         );
+    }
+
+    #[test]
+    fn the_shown_source_names_the_script_by_its_path() {
+        let shown = shown_source("    .script(site.star_rating())\n", crate::Lang::En);
+        assert_eq!(shown, "    .script(\"/star-rating.js\")");
     }
 
     #[test]
