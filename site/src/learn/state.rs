@@ -247,7 +247,7 @@ pub fn expressions(site: Site) -> Part {
 }
 
 pub fn lists(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Learn(Learn::Lists).title(site)),
         lead(site, Doc::Learn(Learn::Lists).leads()),
         heading(
@@ -328,6 +328,21 @@ pub fn lists(site: Site) -> Part {
                 ja: "`Sig` には、パスの起点を表す 3 つ目の型パラメータがあります。省略すると `Root`（ページのシグナル構造体）になるので、`Sig<S, T>` はページから辿ったフィールドです。項目のフィールドは `Sig<S, T, Local>` で、パスは項目から始まり、ブラウザで項目ごとに解決されます。`patch` メソッドがないので、サーバーは位置を指定して 1 つの項目のフィールドを書き換えられません。サーバーは、リストのフィールドの差分でリスト全体を置き換えるか、`patch_append` や `patch_remove` のようなリストの差分でキーを指定した項目だけを変えるか、ページの一部をフラグメントとして描画し直します。リストの差分は [呼び出しの詳細](learn/calls/#list-patches) で、フラグメントは [サーバーとのやり取り](learn/server/) で説明します。",
             },
         ),
+        subheading(
+            site,
+            L {
+                en: "Browser-only state of an item",
+                ja: "ブラウザだけで持つ項目の状態",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A patch from the server writes each item it carries whole. `patch_upsert` puts the server's item in place of the one with the same key, and `patch` replaces the whole list. A field held on the item only for the browser, such as whether a card is open for editing, takes the value the server sent, so a card someone is editing closes when another user's change to it arrives. Keep such state at the page's root as the key of the item it applies to, and compare it with each item's key:",
+                ja: "サーバーからの差分は、運ぶ項目を丸ごと書き込みます。`patch_upsert` は同じキーの項目をサーバーの項目で置き換え、`patch` はリスト全体を置き換えます。カードを編集中かどうかのように、ブラウザのためだけに項目に持たせたフィールドはサーバーが送った値になるので、編集中のカードはほかのユーザーの変更が届いた時点で閉じます。こうした状態は、対象の項目のキーとしてページの構造体の直下に持ち、各項目のキーと比べてください。",
+            },
+        ),
+        show(Snippet::EditState),
         heading(
             site,
             L {

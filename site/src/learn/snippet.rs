@@ -108,6 +108,7 @@ snippets! {
     StaticFiles => "static_files.rs";
     ErrorPage => "error_page.rs";
     LoadMore => "load_more.rs";
+    EditState => "edit_state.rs";
 }
 
 /// The lines of `snippet` that the page shows.
