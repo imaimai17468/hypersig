@@ -20,7 +20,20 @@ use std::process::ExitCode;
 
 use host::Host;
 
-const USAGE: &str = "\
+/// The `Hosts:` lines of the usage, which the refusal of a `new` without
+/// `--host` prints too.
+macro_rules! hosts {
+    () => {
+        "\
+Hosts:
+  server       A container image, for a host such as Fly.io, Cloud Run, or Render
+  cloudflare   Cloudflare Workers
+  vercel       A Vercel Function"
+    };
+}
+
+const USAGE: &str = concat!(
+    "\
 Usage:
   cargo hypersig new <path> --host <host>   Create a project from the host's template
   cargo hypersig add <host> [--force]       Move the project here to the host
@@ -33,14 +46,14 @@ Usage:
                                             attributes, and events that a library's
                                             Custom Elements Manifest declares
 
-Hosts:
-  server       A container image, for a host such as Fly.io, Cloud Run, or Render
-  cloudflare   Cloudflare Workers
-  vercel       A Vercel Function
+",
+    hosts!(),
+    "
 
 `add` writes no file that is already there unless it is given --force.
 `dev` passes <build options>, such as -p or --bin, to `cargo build`, and <args> to the server.
-`elements` prints the module, which a redirect such as `> src/shoelace.rs` saves.";
+`elements` prints the module, which a redirect such as `> src/shoelace.rs` saves."
+);
 
 /// A failure to report to the person running the command, as one message.
 #[derive(Debug)]
@@ -104,7 +117,10 @@ fn parse(mut args: impl Iterator<Item = String>) -> Result<Command, Error> {
                 .next()
                 .ok_or_else(|| Error::new(format!("`new` needs the project's path\n\n{USAGE}")))?;
             let host = host.ok_or_else(|| {
-                Error::new("`new` needs --host server, --host cloudflare, or --host vercel")
+                Error::new(format!(
+                    "`new` needs --host, which picks the template's files and the crate's shape\n\n{}\n\nFor example:\n  cargo hypersig new {path} --host server",
+                    hosts!()
+                ))
             })?;
             Command::New {
                 path: path.into(),

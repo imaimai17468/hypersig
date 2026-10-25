@@ -383,6 +383,20 @@ fn new_refuses_a_directory_that_exists() {
     assert_eq!(files(&dir.join("taken")), Vec::<String>::new());
 }
 
+#[test]
+fn new_without_a_host_lists_the_hosts_and_an_example() {
+    let dir = scratch("new-no-host");
+    let output = hypersig(&dir, &["new", "kanban"]);
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("  cloudflare   Cloudflare Workers")
+            && stderr.contains("cargo hypersig new kanban --host server"),
+        "{stderr}"
+    );
+    assert!(!dir.join("kanban").exists());
+}
+
 /// The manifest under `tests/elements/` holds `sl-button` and `sl-rating`
 /// from Shoelace 2.20.1, `wa-stepper` from Web Awesome 3.14.0, and
 /// `md-elevated-button` with the classes it extends from Material Web 2.5.0,
