@@ -18,9 +18,8 @@ struct Counter {
 hypersig::routes! {
     fn pages(Router<()>);
     const INDEX: Route = "/" => index;
+    action RESET: Action<Counter> = post "/reset" => reset;
 }
-
-const RESET: Action<Counter> = Action::post("/reset");
 
 async fn index((): (), (): ()) -> Page<Counter> {
     let count = Counter::count();
@@ -38,7 +37,7 @@ async fn reset((): (), (): ()) -> Patches<Counter> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = pages(Router::new()).hypersig_runtime().action(RESET, reset);
+    let app = pages(Router::new()).hypersig_runtime();
     // A container host names the port in `PORT` and connects from outside the
     // container, so listen on every interface.
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_owned());

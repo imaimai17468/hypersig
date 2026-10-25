@@ -1,6 +1,6 @@
 use axum::Router;
 use hypersig::html::button;
-use hypersig::{Action, Expr, Patches, RouterExt, Signals};
+use hypersig::{Action, Expr, Patches, Signals};
 use hypersig_ui::{Toast, ToastVariant};
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,10 @@ struct App {
     toasts: Vec<Toast>,
 }
 
-const SAVE: Action<App> = Action::post("/save");
+hypersig::routes! {
+    fn pages(Router<()>);
+    action SAVE: Action<App> = post "/save" => save;
+}
 
 // The server adds its toast after the ones the browser already shows.
 async fn save((): (), (): ()) -> Patches<App> {
@@ -24,4 +27,4 @@ let call = SAVE.call().on_error(|message| {
     Toast::push_expr(App::toasts(), Expr::lit(&failed).with(Toast::body(), message))
 });
 let _save = button().on_click(call).text("Save");
-let _app: Router = Router::new().action(SAVE, save);
+let _app: Router = pages(Router::new());

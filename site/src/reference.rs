@@ -2120,24 +2120,16 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         ja: "Action",
                     },
                     text: L {
-                        en: "Declare one as a `const` and use the same value on the page and in the router.",
-                        ja: "`const` として宣言し、同じ値をページとルーターの両方で使います。",
+                        en: "Declare one on an `action` line of `routes!`, which names its handler, and call it from the page.",
+                        ja: "`routes!` の `action` の行にハンドラと一緒に宣言し、ページから呼び出します。",
                     },
                     rows: &[
                         (
-                            "Action::post",
-                            "struct.Action.html#method.post",
+                            "routes!",
+                            "macro.routes.html",
                             L {
-                                en: "An action served on `POST path`.",
-                                ja: "`POST path` で配信するアクション",
-                            },
-                        ),
-                        (
-                            "Action::get",
-                            "struct.Action.html#method.get",
-                            L {
-                                en: "An action served on `GET path`, for a read that changes nothing.",
-                                ja: "何も変更しない読み取りに使う、`GET path` で配信するアクション",
+                                en: "Declares the pages and actions of an application and the function that serves them.",
+                                ja: "アプリケーションのページとアクション、それを配信する関数を宣言します。",
                             },
                         ),
                         (
@@ -2162,14 +2154,6 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The path the action is served on, without its `Base`.",
                                 ja: "アクションを配信するパス（`Base` を除く）",
-                            },
-                        ),
-                        (
-                            "under",
-                            "struct.Action.html#method.under",
-                            L {
-                                en: "The same action under `base`, which the page's calls put before the path.",
-                                ja: "`base` の下に置いた同じアクション。ページからの呼び出しはパスの前に `base` を付けます。",
                             },
                         ),
                         (
@@ -2272,26 +2256,10 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         ja: "StreamAction と StreamCall",
                     },
                     text: L {
-                        en: "A stream of patches is served on `GET` with `RouterExt::stream`, and only its call can reconnect.",
-                        ja: "差分のストリームは `RouterExt::stream` で `GET` に配信し、その呼び出しだけが再接続できます。",
+                        en: "A stream of patches is declared on a `stream` line of `routes!` and served on `GET`, and only its call can reconnect.",
+                        ja: "差分のストリームは `routes!` の `stream` の行に宣言して `GET` で配信し、その呼び出しだけが再接続できます。",
                     },
                     rows: &[
-                        (
-                            "StreamAction::new",
-                            "struct.StreamAction.html#method.new",
-                            L {
-                                en: "A stream served on `GET path`.",
-                                ja: "`GET path` で配信するストリーム",
-                            },
-                        ),
-                        (
-                            "under",
-                            "struct.StreamAction.html#method.under",
-                            L {
-                                en: "The same stream under `base`, which the page's calls put before the path.",
-                                ja: "`base` の下に置いた同じストリーム。ページからの呼び出しはパスの前に `base` を付けます。",
-                            },
-                        ),
                         (
                             "call",
                             "struct.StreamAction.html#method.call",
@@ -2762,8 +2730,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "routes!",
                             "macro.routes.html",
                             L {
-                                en: "Declares the pages of an application and the function that serves them.",
-                                ja: "アプリケーションのページと、それを配信する関数を宣言します。",
+                                en: "Declares the pages and actions of an application and the function that serves them.",
+                                ja: "アプリケーションのページとアクション、それを配信する関数を宣言します。",
                             },
                         ),
                         (
@@ -2981,8 +2949,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
         ),
         Reference::RouterExt => (
             L {
-                en: "`RouterExt` adds hypersig routes to an axum `Router`. It needs the `axum` feature, which is on by default.",
-                ja: "`RouterExt` は axum の `Router` に hypersig のルートを追加します。`axum` の feature が必要で、この feature は既定で有効です。",
+                en: "`RouterExt` adds the browser runtime to an axum `Router`, and the function `routes!` generates adds the pages and actions. Both need the `axum` feature, which is on by default.",
+                ja: "`RouterExt` は axum の `Router` にブラウザのランタイムを追加し、`routes!` が生成する関数がページとアクションを追加します。どちらも `axum` の feature が必要で、この feature は既定で有効です。",
             },
             &[
                 Section {
@@ -2998,22 +2966,6 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "Serves the browser runtime at `RUNTIME_PATH`.",
                                 ja: "ブラウザのランタイムを `RUNTIME_PATH` で配信します。",
-                            },
-                        ),
-                        (
-                            "action",
-                            "trait.RouterExt.html#tymethod.action",
-                            L {
-                                en: "Serves `action` with a handler that returns one batch of patches.",
-                                ja: "差分のまとまりを 1 つ返すハンドラで `action` を配信します。",
-                            },
-                        ),
-                        (
-                            "stream",
-                            "trait.RouterExt.html#tymethod.stream",
-                            L {
-                                en: "Serves `stream` on `GET` with a handler that returns a stream of patches.",
-                                ja: "差分のストリームを返すハンドラで、`stream` を `GET` に配信します。",
                             },
                         ),
                         (
@@ -3128,18 +3080,10 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         ja: "アップロード",
                     },
                     text: L {
-                        en: "An upload is an action that also receives the files picked in a file input. Both carry the page's type.",
-                        ja: "アップロードはファイル入力で選んだファイルも受け取るアクションです。どちらもページの型を持ちます。",
+                        en: "An upload is an action that also receives the files picked in a file input, declared on an `upload` line of `routes!`. Both carry the page's type.",
+                        ja: "アップロードはファイル入力で選んだファイルも受け取るアクションで、`routes!` の `upload` の行に宣言します。どちらもページの型を持ちます。",
                     },
                     rows: &[
-                        (
-                            "upload",
-                            "trait.RouterExt.html#tymethod.upload",
-                            L {
-                                en: "Serves `upload` with a handler that receives its arguments and files as an `Uploaded`.",
-                                ja: "引数とファイルを `Uploaded` として受け取るハンドラで `upload` を配信します。",
-                            },
-                        ),
                         (
                             "Upload",
                             "struct.Upload.html",
@@ -3149,19 +3093,11 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
-                            "Upload::max_bytes",
-                            "struct.Upload.html#method.max_bytes",
+                            "Upload::DEFAULT_MAX_BYTES",
+                            "struct.Upload.html#associatedconstant.DEFAULT_MAX_BYTES",
                             L {
-                                en: "The same upload, accepting a body of at most `bytes` bytes. The default is 8 MiB.",
-                                ja: "本文を最大 `bytes` バイトまで受け付ける、同じアップロードです。既定は 8 MiB です。",
-                            },
-                        ),
-                        (
-                            "Upload::under",
-                            "struct.Upload.html#method.under",
-                            L {
-                                en: "The same upload under `base`, which the page's calls put before the path.",
-                                ja: "`base` の下に置いた同じアップロードです。ページからの呼び出しはパスの前に `base` を付けます。",
+                                en: "The longest body an upload accepts unless its line in `routes!` says otherwise: 8 MiB.",
+                                ja: "`routes!` の行で指定しないときにアップロードが受け付ける本文の上限です。8 MiB です。",
                             },
                         ),
                         (
@@ -3210,14 +3146,6 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "One file of an upload, read into memory: its name, media type, and bytes.",
                                 ja: "メモリに読み込んだ、アップロードの 1 つのファイルです。名前、メディアタイプ、中身を持ちます。",
-                            },
-                        ),
-                        (
-                            "upload_stream",
-                            "trait.RouterExt.html#tymethod.upload_stream",
-                            L {
-                                en: "Serves `upload` with a handler that reads the files in chunks from an `UploadStream`.",
-                                ja: "ファイルを `UploadStream` からチャンクで読むハンドラで、`upload` を配信します。",
                             },
                         ),
                         (

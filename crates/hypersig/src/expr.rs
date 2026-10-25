@@ -237,7 +237,11 @@ impl<S, T> Expr<S, T> {
     ///     failed: Vec<i32>,
     /// }
     ///
-    /// const SAVE: Action<Notes, i32> = Action::post("/save");
+    /// hypersig::routes! {
+    ///     fn actions(Router<()>);
+    ///     action SAVE: Action<Notes, i32> = post "/save" => save;
+    /// }
+    /// # async fn save((): (), _: i32) -> hypersig::Patches<Notes> { hypersig::Patches::new() }
     /// let next = Notes::next();
     /// let _save = next.let_in_stmt(|sent| {
     ///     SAVE.call_with(&sent)

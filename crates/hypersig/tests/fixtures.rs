@@ -237,9 +237,12 @@ struct Timers {
     found: String,
 }
 
-const SEARCH: Action<Timers> = Action::post("/search");
-const LOOKUP: Action<Timers, String> = Action::get("/lookup");
-const FEED: StreamAction<Timers> = StreamAction::new("/feed");
+hypersig::routes! {
+    fn timer_actions(Router<()>);
+    action SEARCH: Action<Timers> = post "/search" => no_answer;
+    action LOOKUP: Action<Timers, String> = get "/lookup" => no_answer;
+    stream FEED: StreamAction<Timers> = "/feed" => no_stream;
+}
 
 fn timers() -> (El<Timers>, Timers) {
     let ticks = Timers::ticks();
@@ -329,7 +332,10 @@ struct Outbox {
     next: i32,
 }
 
-const DELIVER: Action<Outbox, i32> = Action::post("/send");
+hypersig::routes! {
+    fn outbox_actions(Router<()>);
+    action DELIVER: Action<Outbox, i32> = post "/send" => no_answer;
+}
 
 /// Sends each line in its own call, and marks only the line whose call failed.
 fn outbox() -> (El<Outbox>, Outbox) {
@@ -398,7 +404,10 @@ struct Mailing {
     status: String,
 }
 
-const SUBSCRIBE: Action<Mailing, String> = Action::post("/subscribe");
+hypersig::routes! {
+    fn mailing_actions(Router<()>);
+    action SUBSCRIBE: Action<Mailing, String> = post "/subscribe" => no_answer;
+}
 
 impl Part for Mailing {
     fn render() -> El<Self> {
@@ -463,7 +472,10 @@ struct Join {
     signup: Form<Signup>,
 }
 
-const JOIN: Action<Join, Signup> = Action::post("/join");
+hypersig::routes! {
+    fn join_actions(Router<()>);
+    action JOIN: Action<Join, Signup> = post "/join" => no_answer;
+}
 
 fn join() -> (El<Join>, Join) {
     let signup = Join::signup();
@@ -1243,6 +1255,30 @@ async fn no_page<A>((): (), _: A) -> Option<Page<Roster>> {
     None
 }
 
+#[expect(
+    dead_code,
+    reason = "the fixtures call these actions from the browser, which no server answers"
+)]
+async fn no_answer<S: hypersig::Signals, A>((): (), _: A) -> Patches<S> {
+    Patches::new()
+}
+
+#[expect(
+    dead_code,
+    reason = "the fixtures open this stream from the browser, which no server answers"
+)]
+fn no_stream<S, A>((): (), _: A) -> futures::stream::Empty<Patches<S>> {
+    futures::stream::empty()
+}
+
+#[expect(
+    dead_code,
+    reason = "the fixtures send this upload from the browser, which no server answers"
+)]
+async fn no_upload<S: hypersig::Signals, A>((): (), _: hypersig::Uploaded<A>) -> Patches<S> {
+    Patches::new()
+}
+
 /// Links whose parameters need percent-encoding, so the server's encoding
 /// and the browser's `encodeURIComponent` are compared on the same values.
 fn links() -> (El<Roster>, Roster) {
@@ -1594,7 +1630,10 @@ struct Uploads {
 }
 
 const PICTURES: FileInput<Uploads> = FileInput::new("pictures");
-const SEND: Upload<Uploads, String> = Upload::post("/pictures");
+hypersig::routes! {
+    fn upload_actions(Router<()>);
+    upload SEND: Upload<Uploads, String> = "/pictures" => no_upload;
+}
 // The same name as the file input, which the browser looks up apart from it.
 hypersig::node_ref!(const PICTURES_NOTE: NodeRef<Uploads>);
 

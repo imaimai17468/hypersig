@@ -20,10 +20,9 @@ struct Counter {
 hypersig::routes! {
     fn pages(Router<AppState>);
     const INDEX: Route = "/" => index;
+    action SAVE: Action<Counter, (i32, String)> = post "/save" => save;
+    action RESET: Action<Counter> = post "/reset" => reset;
 }
-
-const SAVE: Action<Counter, (i32, String)> = Action::post("/save");
-const RESET: Action<Counter> = Action::post("/reset");
 
 #[derive(Clone, Default)]
 struct AppState {
@@ -130,8 +129,6 @@ async fn reset(state: AppState, (): ()) -> Patches<Counter> {
 async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
-        .action(SAVE, save)
-        .action(RESET, reset)
         .with_state(AppState::default());
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;

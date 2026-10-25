@@ -2112,8 +2112,12 @@ impl<S> El<S> {
     ///     more: bool,
     /// }
     ///
-    /// // The handler appends the items after the first `i32` and sets `more`.
-    /// const MORE: Action<Feed, i32> = Action::get("/more");
+    /// hypersig::routes! {
+    ///     fn actions(Router<()>);
+    ///     // The handler appends the items after the first `i32` and sets `more`.
+    ///     action MORE: Action<Feed, i32> = get "/more" => more;
+    /// }
+    /// # async fn more((): (), _: i32) -> hypersig::Patches<Feed> { hypersig::Patches::new() }
     /// let feed = div::<Feed>()
     ///     .child(ul().child(each(Feed::items(), |item| li().bind_text(item))))
     ///     .child(

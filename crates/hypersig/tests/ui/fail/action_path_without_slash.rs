@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use hypersig::html::{button, div, input, span};
-use hypersig::{Action, Signals};
+use hypersig::{Action, Patches, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -15,7 +15,10 @@ struct Other {
     flag: bool,
 }
 
-const BAD: Action<Counter> = Action::post("reset");
+hypersig::routes! {
+    fn actions(Router<()>);
+    action BAD: Action<Counter> = post "reset" => |(), ()| async { Patches::<Counter>::new() };
+}
 
 fn main() {
     let _ = BAD.call();

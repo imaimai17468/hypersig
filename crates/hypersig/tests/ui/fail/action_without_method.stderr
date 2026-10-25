@@ -1,0 +1,10 @@
+error: this line of `routes!` is not one of `const NAME: Route<..> = "/path" => handler;`, `const NAME: Route<..> = "/path" in PARENT => handler;`, `action NAME: Action<..> = post "/path" => handler;` (or `get`), `stream NAME: StreamAction<..> = "/path" => handler;`, or `upload NAME: Upload<..> = "/path" => handler;` (`stream` before the path to read the files in chunks, `max_bytes N` after it to set the limit), not ` action ADD : Action<Counter> = "/add"`
+  --> tests/ui/fail/action_without_method.rs:11:1
+   |
+11 | / hypersig::routes! {
+12 | |     fn pages(Router<()>);
+13 | |     action ADD: Action<Counter> = "/add" => add;
+14 | | }
+   | |_^
+   |
+   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

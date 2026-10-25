@@ -69,9 +69,6 @@ struct Credentials {
     password: String,
 }
 
-const SIGN_IN: Action<Login, Credentials> = Action::post("/sign-in");
-const SIGN_OUT: Action<Home> = Action::post("/sign-out");
-
 async fn home(_: AppState, member: Member, (): ()) -> Page<Home> {
     Page::new("Home", Home { name: member.name })
 }
@@ -98,6 +95,8 @@ hypersig::routes! {
     fn pages(Router<AppState>);
     const HOME: Route = "/" => home;
     const LOGIN: Route = "/login" => login;
+    action SIGN_IN: Action<Login, Credentials> = post "/sign-in" => sign_in;
+    action SIGN_OUT: Action<Home> = post "/sign-out" => sign_out;
 }
 
 let sessions = SessionManagerLayer::new(MemoryStore::default())
@@ -105,7 +104,5 @@ let sessions = SessionManagerLayer::new(MemoryStore::default())
     .with_same_site(SameSite::Lax);
 let _app: Router = pages(Router::new())
     .hypersig_runtime()
-    .action(SIGN_IN, sign_in)
-    .action(SIGN_OUT, sign_out)
     .with_state(AppState)
     .layer(sessions);

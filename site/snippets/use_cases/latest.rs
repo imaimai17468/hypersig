@@ -1,7 +1,7 @@
 # use std::time::Duration;
 #
 # use hypersig::html::{Event, div, input, p};
-# use hypersig::{Action, Signals};
+# use hypersig::{Action, Patches, Signals};
 # use serde::{Deserialize, Serialize};
 #
 # #[derive(Signals, Serialize, Deserialize)]
@@ -11,7 +11,11 @@
 #     searching: bool,
 # }
 #
-# const FIND: Action<Search, String> = Action::get("/find");
+# hypersig::routes! {
+#     fn pages(Router<()>);
+#     action FIND: Action<Search, String> = get "/find" => find;
+# }
+# async fn find((): (), _: String) -> Patches<Search> { Patches::new() }
 #
 # let query = Search::query();
 let _ = div()

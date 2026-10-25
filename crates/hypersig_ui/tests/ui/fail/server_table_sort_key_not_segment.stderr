@@ -1,7 +1,7 @@
 error[E0277]: the trait bound `By: Segment` is not satisfied
-  --> tests/ui/fail/server_table_sort_key_not_segment.rs:33:60
+  --> tests/ui/fail/server_table_sort_key_not_segment.rs:38:60
    |
-33 |     .sortable_column(Column::text("Title", Task::title()), &By::Title);
+38 |     .sortable_column(Column::text("Title", Task::title()), &By::Title);
    |      ---------------                                       ^^^^^^^^^^ unsatisfied trait bound
    |      |
    |      required by a bound introduced by this call

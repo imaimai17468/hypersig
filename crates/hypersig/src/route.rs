@@ -66,10 +66,10 @@ pub struct Route<P = (), Q = ()> {
 /// The path prefix an application is served under, such as `/app` behind a proxy.
 ///
 /// Name it once, as a `const`, after `under` on the first line of
-/// [`routes!`](crate::routes), and on each action, stream, and upload with
-/// their `under`. Links, [`Url`]s, action calls, and the path a page loads
-/// the runtime from then start with it, and the router still registers each
-/// path without it, so the application runs either inside
+/// [`routes!`](crate::routes). Links, [`Url`]s, the calls to the block's
+/// actions, streams, and uploads, and the path a page loads the runtime
+/// from then start with it, and the router still registers each path
+/// without it, so the application runs either inside
 /// `Router::nest(BASE.as_str(), ...)` or behind a proxy that strips the
 /// prefix before the request arrives.
 ///
@@ -94,9 +94,8 @@ pub struct Route<P = (), Q = ()> {
 ///     fn pages(Router<()>) under APP;
 ///     const HOME: Route = "/" => home;
 ///     const ITEM: Route<u32> = "/items/{id}" => item;
+///     action ADD: Action<Shop> = post "/add" => |(), ()| async { Patches::from(Shop::count().patch(1)) };
 /// }
-///
-/// const ADD: Action<Shop> = Action::post("/add").under(APP);
 ///
 /// async fn home((): (), (): ()) -> Page<Shop> {
 ///     Page::new("Shop", Shop { count: 0 }).child(a().href(ITEM.link_with(&3_u32)).text("Tea"))
@@ -109,19 +108,19 @@ pub struct Route<P = (), Q = ()> {
 /// assert_eq!(ITEM.url(3).as_str(), "/app/items/3");
 /// assert_eq!(HOME.url(()).as_str(), "/app");
 /// assert_eq!(ITEM.path(), "/items/{id}");
+/// assert_eq!(ADD.path(), "/add");
 ///
-/// let app = pages(Router::new())
-///     .hypersig_runtime()
-///     .action(ADD, |(), (): ()| async { Patches::from(Shop::count().patch(1)) });
+/// let app = pages(Router::new()).hypersig_runtime();
 /// let _served: Router = Router::new().nest(APP.as_str(), app);
 /// ```
 ///
 /// # What stays unchecked
 ///
 /// The compiler does not check that an action, a stream, or an upload a
-/// page calls is under the same base as the page. One declared without
-/// `under(APP)` calls its path without the prefix, which a proxy answers
-/// with its own 404, and which the router answers with 404 inside `nest`.
+/// page calls comes from a `routes!` block under the same base as the
+/// page's. One from a block without `under APP` calls its path without the
+/// prefix, which a proxy answers with its own 404, and which the router
+/// answers with 404 inside `nest`.
 /// A page served by a router nested at a path other than its base answers
 /// with a 500 that names both. The paths given to
 /// [`Page::stylesheet`](crate::Page::stylesheet),
@@ -389,25 +388,37 @@ impl Route<(), ()> {
     }
 }
 
-/// Declares the pages of an application and the function that serves them.
+/// Declares the pages and actions of an application and the function that serves them.
 ///
 /// The first line names the function and the router state its handlers
-/// take. Each line after it declares a [`Route`] constant with its path and
-/// the handler that builds the page, so every route has a handler. The
-/// generated function registers each route with its handler on `GET`. Add
-/// `in PARENT` after the path to declare a page under another page of an
-/// earlier line: its path continues the parent's and its parameters start
-/// with the parent's.
+/// take. Each line after it declares one constant and names the handler that
+/// serves it after `=>`, so nothing the browser can reach is declared
+/// without a handler. The generated function registers every line with its
+/// handler. A line is one of:
 ///
-/// Write `under BASE` after `Router<STATE>` to serve every page of the block
-/// under the path prefix that `BASE` names, which every link and URL to the
-/// pages then starts with. `BASE` is the name of a [`Base`] constant in
-/// scope, without a path before it.
+/// | Line | Constant | Served on |
+/// |---|---|---|
+/// | `const NAME: Route<P, Q> = "/path" => handler;` | a [`Route`] | `GET` |
+/// | `action NAME: Action<S, A> = post "/path" => handler;` | an [`Action`](crate::Action) | `POST`, or `GET` with `get` in place of `post` |
+/// | `stream NAME: StreamAction<S, A> = "/path" => handler;` | a [`StreamAction`](crate::StreamAction) | `GET` |
+/// | `upload NAME: Upload<S, A> = "/path" => handler;` | an [`Upload`](crate::Upload) | `POST` |
+///
+/// Add `in PARENT` after the path of a route to declare a page under
+/// another page of an earlier line: its path continues the parent's and its
+/// parameters start with the parent's. Write `stream` before the path of an
+/// upload to hand its handler the files in chunks, and `max_bytes N` after
+/// the path to accept a body of at most `N` bytes in place of
+/// [`Upload::DEFAULT_MAX_BYTES`](crate::Upload::DEFAULT_MAX_BYTES).
+///
+/// Write `under BASE` after `Router<STATE>` to serve every line of the
+/// block under the path prefix that `BASE` names, which every link, URL,
+/// and call to the block's constants then starts with. `BASE` is the name
+/// of a [`Base`] constant in scope, without a path before it.
 ///
 /// ```
 /// use axum::Router;
-/// use hypersig::html::{a, h1};
-/// use hypersig::{Page, Route, RouterExt, Signals};
+/// use hypersig::html::{a, button, h1};
+/// use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -416,16 +427,19 @@ impl Route<(), ()> {
 /// }
 ///
 /// hypersig::routes! {
-///     /// Serves every page of the application.
+///     /// Serves every page and action of the application.
 ///     fn pages(Router<()>);
 ///     const HOME: Route = "/" => home;
 ///     const ORG: Route<String> = "/orgs/{org}" => org;
 ///     const MEMBER: Route<(String, i32)> = "/orgs/{org}/members/{id}" in ORG => member;
+///     action RENAME: Action<Profile, String> = post "/rename" => rename;
 /// }
 ///
 /// async fn home((): (), (): ()) -> Page<Profile> {
 ///     let signals = Profile { name: "Ada".to_owned() };
-///     Page::new("Home", signals).child(a().href(MEMBER.link_with(("acme", 1))).text("Ada"))
+///     Page::new("Home", signals)
+///         .child(a().href(MEMBER.link_with(("acme", 1))).text("Ada"))
+///         .child(button().on_click(RENAME.call_with("Grace")).text("Rename"))
 /// }
 ///
 /// async fn org((): (), org: String) -> Page<Profile> {
@@ -438,15 +452,50 @@ impl Route<(), ()> {
 ///     Some(Page::new(*name, signals).child(a().href(HOME.link()).text("Home")))
 /// }
 ///
+/// async fn rename((): (), name: String) -> Patches<Profile> {
+///     Profile::name().patch(name).into()
+/// }
+///
 /// let _app: Router = pages(Router::new()).hypersig_runtime();
 /// ```
 ///
-/// A handler receives the router state and the route's arguments, already
-/// parsed, and answers with a [`Page`](crate::Page), an `Option<Page>`, or a
+/// # Handlers
+///
+/// Each handler takes the router state and its arguments, and may take one
+/// `FromRequestParts` extractor between them, as [`Handler`](crate::Handler)
+/// says. A page's handler receives the route's arguments, already parsed,
+/// and answers with a [`Page`](crate::Page), an `Option<Page>`, or a
 /// [`PageResponse`](crate::PageResponse). A path whose segments do not parse
 /// into the parameter types, or a handler that answers `None`, gets a 404,
 /// and a query string that does not deserialize into the search parameters
 /// gets a 400.
+///
+/// An action's handler receives the arguments the call passed, already
+/// deserialized, and answers with anything that converts into an
+/// [`ActionResponse`](crate::ActionResponse), as
+/// [`IntoActionResponse`](crate::IntoActionResponse) lists. A stream's
+/// handler is a plain `fn` that returns a stream of [`Patches`](crate::Patches),
+/// as [`PatchStream`](crate::PatchStream) says, and the response stays open
+/// until the stream ends or the browser leaves the page. An upload's handler
+/// receives an [`Uploaded`](crate::Uploaded), or an
+/// [`UploadStream`](crate::UploadStream) with `stream`, and answers as an
+/// action's does.
+///
+/// A [`RequestError`](crate::RequestError) refuses a call before its
+/// handler runs: a request from another site, a `POST` whose body is not
+/// JSON, a `GET` without the `Accept: text/event-stream` the runtime sends,
+/// or arguments that do not deserialize. An upload is also refused without
+/// the header the runtime adds, with a body that is not
+/// `multipart/form-data`, one longer than its limit, or one whose first part
+/// is not the arguments, and parts other than the arguments and the files
+/// are skipped. A handler's extractor runs after the header checks and
+/// before the body is read, so one that refuses a visitor who is not signed
+/// in answers before any file arrives.
+///
+/// The arguments come from the visitor's browser, which can send any value
+/// of `A`, so an action's handler checks that the visitor may act on them.
+/// Read the visitor from the request with an extractor, as the `auth`
+/// example does.
 ///
 /// # A page for a request that reaches no page
 ///
@@ -485,17 +534,35 @@ impl Route<(), ()> {
 /// let _app: Router = pages(Router::new());
 /// ```
 ///
+/// # Parts
+///
+/// The actions, streams, and uploads of a [`Part`](crate::Part) are lines of
+/// the application's block like any other, and the part's `render` calls
+/// the constants they declare. Each is then registered once, and its one
+/// handler serves every page that embeds the part, under the field the call
+/// came from.
+///
 /// # What stays unchecked
 ///
-/// The macro guarantees that each route has a handler, and nothing checks
+/// The macro guarantees that each line has a handler, and nothing checks
 /// that the generated function is called. A function that is never called
-/// leaves every page of its block answering 404. rustc's `dead_code` lint
-/// does not report the function, because it comes from the macro, but it
-/// does report a handler `fn` that only the function names as never used.
-/// A closure written as the handler gets no such warning. Each `routes!`
-/// block is its own function, so declare every page of the application in
-/// one block: the application then calls one function, and a missing call
-/// shows on its first page.
+/// leaves every page of its block answering 404, and every action, stream,
+/// and upload of it answering 404 to the runtime, which writes the status
+/// to the console and to the signal a call names with
+/// [`Call::error`](crate::Call::error), so a call without one changes
+/// nothing on the page. rustc's `dead_code` lint does not report the
+/// function, because it comes from the macro, but it does report a handler
+/// `fn` that only the function names as never used. A closure written as
+/// the handler gets no such warning. Each `routes!` block is its own
+/// function, so declare every page and action of the application in one
+/// block: the application then calls one function, and a missing call shows
+/// on its first page.
+///
+/// A page can call an action, a stream, or an upload of another block,
+/// whose [`Base`] may differ from the base of the page's own block. Such a
+/// call goes to the other block's prefix, which answers 404 unless that
+/// block is served there too. One block per application keeps every line
+/// under one base.
 ///
 /// A router passed to `Router::nest` serves its pages under a longer path
 /// than their links point to, unless it is nested at the [`Base`] the first
@@ -507,21 +574,91 @@ impl Route<(), ()> {
 ///
 /// # Compile errors
 ///
-/// A line without `=> handler`, a path that does not start with `/`, a `{`
-/// or `}` that does not enclose a whole named segment, a path whose
-/// segments differ in number from the route's parameters, a `{*name}`
-/// segment that is not last or whose value is not a [`Rest`], and a child
-/// whose path or parameters do not continue its parent's.
+/// A line without `=> handler`, an `action` line without `post` or `get`,
+/// a line whose word before the name is not `const`, `action`, `stream`, or
+/// `upload`, an action, a stream, or an upload made outside the macro, a
+/// path that does not start with `/`, a `{` or `}` that does not enclose a
+/// whole named segment, a path whose segments differ in number from the
+/// route's parameters, a `{*name}` segment that is not last or whose value
+/// is not a [`Rest`], a child whose path or parameters do not continue its
+/// parent's, and a handler whose arguments or answer do not fit its line.
 ///
 /// This macro needs the `axum` feature.
 #[cfg(feature = "axum")]
 #[macro_export]
 macro_rules! routes {
-    (@route $base:expr, $path:literal) => {
-        $crate::_private::route($base, $path)
+    (@decl [$base:expr] $(#[$attr:meta])* $vis:vis const $name:ident: $ty:ty = $path:literal) => {
+        $(#[$attr])*
+        $vis const $name: $ty = $crate::_private::route($base, $path);
     };
-    (@route $base:expr, $path:literal, $parent:ident) => {
-        $crate::_private::child(&$parent, $path)
+    (
+        @decl [$base:expr] $(#[$attr:meta])* $vis:vis const $name:ident: $ty:ty = $path:literal
+        in $parent:ident
+    ) => {
+        $(#[$attr])*
+        $vis const $name: $ty = $crate::_private::child(&$parent, $path);
+    };
+    (@decl [$base:expr] $(#[$attr:meta])* $vis:vis action $name:ident: $ty:ty = post $path:literal) => {
+        $(#[$attr])*
+        $vis const $name: $ty = $crate::_private::action($base, $crate::Method::Post, $path);
+    };
+    (@decl [$base:expr] $(#[$attr:meta])* $vis:vis action $name:ident: $ty:ty = get $path:literal) => {
+        $(#[$attr])*
+        $vis const $name: $ty = $crate::_private::action($base, $crate::Method::Get, $path);
+    };
+    (@decl [$base:expr] $(#[$attr:meta])* $vis:vis stream $name:ident: $ty:ty = $path:literal) => {
+        $(#[$attr])*
+        $vis const $name: $ty = $crate::_private::stream($base, $path);
+    };
+    (
+        @decl [$base:expr] $(#[$attr:meta])* $vis:vis upload $name:ident: $ty:ty =
+        $(stream)? $path:literal
+    ) => {
+        $(#[$attr])*
+        $vis const $name: $ty =
+            $crate::_private::upload($base, $path, $crate::_private::UPLOAD_MAX_BYTES);
+    };
+    (
+        @decl [$base:expr] $(#[$attr:meta])* $vis:vis upload $name:ident: $ty:ty =
+        $(stream)? $path:literal max_bytes $bytes:expr
+    ) => {
+        $(#[$attr])*
+        $vis const $name: $ty = $crate::_private::upload($base, $path, $bytes);
+    };
+    (@decl [$base:expr] $($line:tt)*) => {
+        ::core::compile_error!(::core::concat!(
+            "this line of `routes!` is not one of `const NAME: Route<..> = \"/path\" => handler;`, ",
+            "`const NAME: Route<..> = \"/path\" in PARENT => handler;`, ",
+            "`action NAME: Action<..> = post \"/path\" => handler;` (or `get`), ",
+            "`stream NAME: StreamAction<..> = \"/path\" => handler;`, ",
+            "or `upload NAME: Upload<..> = \"/path\" => handler;` ",
+            "(`stream` before the path to read the files in chunks, `max_bytes N` after it to set the limit), not `",
+            ::core::stringify!($($line)*),
+            "`"
+        ));
+    };
+    (@register $router:ident $unserved:ident const [] $name:ident $handler:expr) => {
+        $crate::RouterExt::page(
+            $router, $name, $handler, $unserved.clone(),
+        )
+    };
+    (@register $router:ident $unserved:ident action [$($mode:ident)?] $name:ident $handler:expr) => {
+        $crate::RouterExt::action($router, $name, $handler)
+    };
+    (@register $router:ident $unserved:ident stream [] $name:ident $handler:expr) => {
+        $crate::RouterExt::stream($router, $name, $handler)
+    };
+    (@register $router:ident $unserved:ident upload [] $name:ident $handler:expr) => {
+        $crate::RouterExt::upload($router, $name, $handler)
+    };
+    (@register $router:ident $unserved:ident upload [stream] $name:ident $handler:expr) => {
+        $crate::RouterExt::upload_stream(
+            $router, $name, $handler,
+        )
+    };
+    // A line `@decl` refused has already raised its error, so this one adds none.
+    (@register $router:ident $unserved:ident $($line:tt)*) => {
+        $router
     };
     (
         @main [$base:expr]
@@ -529,12 +666,15 @@ macro_rules! routes {
         $fn_vis:vis fn $fn_name:ident(Router<$state:ty>) $(else $unserved:expr)?;
         $(
             $(#[$attr:meta])*
-            $vis:vis const $name:ident: $ty:ty = $path:literal $(in $parent:ident)? => $handler:expr;
+            $vis:vis $kind:ident $name:ident: $ty:ty = $($mode:ident)? $path:literal
+                $(in $parent:ident)? $(max_bytes $bytes:expr)? => $handler:expr;
         )+
     ) => {
         $(
-            $(#[$attr])*
-            $vis const $name: $ty = $crate::routes!(@route $base, $path $(, $parent)?);
+            $crate::routes!(
+                @decl [$base] $(#[$attr])* $vis $kind $name: $ty = $($mode)? $path
+                $(in $parent)? $(max_bytes $bytes)?
+            );
         )+
 
         $(#[$fn_attr])*
@@ -545,9 +685,8 @@ macro_rules! routes {
                 ::core::option::Option::None
                 $(.or(::core::option::Option::Some($crate::_private::UnservedPage::new($base, $unserved))))?;
             $(
-                let router = <$crate::_private::Router<$state> as $crate::RouterExt<$state>>::page(
-                    router, $name, $handler, unserved.clone(),
-                );
+                let router: $crate::_private::Router<$state> =
+                    $crate::routes!(@register router unserved $kind [$($mode)?] $name $handler);
             )+
             match unserved {
                 ::core::option::Option::Some(unserved) => unserved.fallback(router),
@@ -557,7 +696,7 @@ macro_rules! routes {
     };
     (@main $($input:tt)*) => {
         ::core::compile_error!(
-            "`routes!` takes `fn NAME(Router<STATE>);`, with `under BASE` and `else HANDLER` before the `;` where wanted, then one `const NAME: Route<..> = \"/path\" => handler;` per page, each naming its handler after `=>`"
+            "`routes!` takes `fn NAME(Router<STATE>);`, with `under BASE` and `else HANDLER` before the `;` where wanted, then one line per page, action, stream, and upload, each naming its handler after `=>`: `const NAME: Route<..> = \"/path\" => handler;`, `action NAME: Action<..> = post \"/path\" => handler;`, `stream NAME: StreamAction<..> = \"/path\" => handler;`, or `upload NAME: Upload<..> = \"/path\" => handler;`"
         );
     };
     (
@@ -834,12 +973,12 @@ impl<S> Link<S> {
     /// }
     ///
     /// # async fn fruit((): (), _: Filter) -> Option<hypersig::Page<Fruit>> { None }
+    /// # async fn search((): (), _: String) -> hypersig::Patches<Fruit> { hypersig::Patches::new() }
     /// hypersig::routes! {
     ///     fn pages(Router<()>);
     ///     const FRUIT: Route<(), Filter> = "/fruit" => fruit;
+    ///     action SEARCH: Action<Fruit, String> = post "/search" => search;
     /// }
-    ///
-    /// const SEARCH: Action<Fruit, String> = Action::post("/search");
     ///
     /// let query = Fruit::query();
     /// let filter = Expr::lit(&Filter::default()).with(Filter::q(), query);

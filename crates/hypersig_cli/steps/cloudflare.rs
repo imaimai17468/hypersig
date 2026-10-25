@@ -7,6 +7,6 @@ async fn fetch(
     _env: Env,
     _context: Context,
 ) -> worker::Result<axum::http::Response<axum::body::Body>> {
-    let mut app = pages(Router::new()).hypersig_runtime().action(RESET, reset);
+    let mut app = pages(Router::new()).hypersig_runtime();
     Ok(app.call(request).await?)
 }

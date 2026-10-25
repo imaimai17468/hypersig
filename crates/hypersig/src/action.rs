@@ -34,10 +34,12 @@ impl Method {
 
 /// A server endpoint on the page whose signals are `S`, which receives arguments `A`.
 ///
-/// Declare one as a `const` and use the same value on both sides: the page
-/// calls it with [`Action::call`] or [`Action::call_with`], and the router
-/// registers its handler with `RouterExt::action`. Both sides then agree on the
-/// path, the method, the argument type, and the signal struct its patches target.
+/// Declare one on an `action` line of [`routes!`](crate::routes), which
+/// names its handler, and call it from the page with [`Action::call`] or
+/// [`Action::call_with`]. The function `routes!` generates registers the
+/// handler, so both sides agree on the path, the method, the argument type,
+/// and the signal struct its patches target, and an action without a
+/// handler cannot be declared.
 ///
 /// The request carries the arguments and nothing else. A handler that needs
 /// several values takes a tuple, which the page passes as a tuple of expressions.
@@ -50,7 +52,7 @@ impl Method {
 /// order whose id it takes.
 ///
 /// ```
-/// use hypersig::{Action, Signals};
+/// use hypersig::{Action, Patches, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -58,10 +60,23 @@ impl Method {
 ///     count: i32,
 /// }
 ///
-/// const INCREMENT: Action<Counter> = Action::post("/increment");
-/// const SET: Action<Counter, (i32, String)> = Action::post("/set");
+/// hypersig::routes! {
+///     fn actions(Router<()>);
+///     action INCREMENT: Action<Counter> = post "/increment" => increment;
+///     action SET: Action<Counter, (i32, String)> = post "/set" => set;
+/// }
+///
+/// async fn increment((): (), (): ()) -> Patches<Counter> {
+///     Counter::count().patch(1).into()
+/// }
+///
+/// async fn set((): (), (count, _note): (i32, String)) -> Patches<Counter> {
+///     Counter::count().patch(count).into()
+/// }
+///
 /// let _click = INCREMENT.call();
 /// let _save = SET.call_with((Counter::count(), "typed"));
+/// let _app: axum::Router = actions(axum::Router::new());
 /// ```
 pub struct Action<S, A = ()> {
     method: Method,
@@ -71,50 +86,20 @@ pub struct Action<S, A = ()> {
 }
 
 impl<S, A> Action<S, A> {
-    /// An action served on `POST path`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `path` does not start with `/`. In a `const`, that is a
-    /// compile error.
-    #[must_use]
-    pub const fn post(path: &'static str) -> Self {
-        Self::new(Method::Post, path)
-    }
-
-    /// An action served on `GET path`, for a read that changes nothing.
-    ///
-    /// A long-lived stream of patches is a [`StreamAction`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if `path` does not start with `/`. In a `const`, that is a
-    /// compile error.
-    #[must_use]
-    pub const fn get(path: &'static str) -> Self {
-        Self::new(Method::Get, path)
-    }
-
-    const fn new(method: Method, path: &'static str) -> Self {
+    /// An action served on `method path` under `base`, which the page's
+    /// calls put before the path. [`routes!`](crate::routes) calls it in a
+    /// `const`, so a path that does not start with `/` is a compile error.
+    pub(crate) const fn at(method: Method, base: Base, path: &'static str) -> Self {
         assert!(
             !path.is_empty() && path.as_bytes()[0] == b'/',
             "an action path starts with `/`"
         );
         Self {
             method,
-            base: Base::ROOT,
+            base,
             path,
             marker: PhantomData,
         }
-    }
-
-    /// The same action under `base`, which the page's calls put before the path.
-    ///
-    /// The router registers [`Action::path`] without it, as it does a
-    /// route's path. See [`Base`].
-    #[must_use]
-    pub const fn under(self, base: Base) -> Self {
-        Self { base, ..self }
     }
 
     /// The path the action is served on, without its [`Base`].
@@ -153,7 +138,11 @@ impl<S, A: serde::Serialize> Action<S, A> {
     ///     likes: i32,
     /// }
     ///
-    /// const LIKE: Action<Votes, i32> = Action::post("/like");
+    /// hypersig::routes! {
+    ///     fn actions(Router<()>);
+    ///     action LIKE: Action<Votes, i32> = post "/like" => like;
+    /// }
+    /// # async fn like((): (), _: i32) -> hypersig::Patches<Votes> { hypersig::Patches::new() }
     /// let request = LIKE.request(&3);
     /// assert_eq!(request.uri(), "/like");
     /// assert_eq!(request.headers()["content-type"], "application/json");
@@ -223,7 +212,11 @@ impl<S, A> fmt::Debug for Action<S, A> {
 ///     error: String,
 /// }
 ///
-/// const SAVE: Action<Form> = Action::post("/save");
+/// hypersig::routes! {
+///     fn actions(Router<()>);
+///     action SAVE: Action<Form> = post "/save" => save;
+/// }
+/// # async fn save((): (), (): ()) -> hypersig::Patches<Form> { hypersig::Patches::new() }
 /// let _click = SAVE.call().indicator(Form::saving()).error(Form::error());
 /// ```
 pub struct Call<S> {
@@ -324,7 +317,11 @@ impl<S> Call<S> {
     ///     failure: i32,
     /// }
     ///
-    /// const SAVE: Action<Notes> = Action::post("/save");
+    /// hypersig::routes! {
+    ///     fn actions(Router<()>);
+    ///     action SAVE: Action<Notes> = post "/save" => save;
+    /// }
+    /// # async fn save((): (), (): ()) -> hypersig::Patches<Notes> { hypersig::Patches::new() }
     /// let signed_out = Notes::failure().equals(i32::from(StatusCode::UNAUTHORIZED.as_u16()));
     /// let _page = div()
     ///     .child(button().on_click(SAVE.call().status(Notes::failure())).text("Save"))
@@ -359,7 +356,11 @@ impl<S> Call<S> {
     ///     results: Vec<String>,
     /// }
     ///
-    /// const FIND: Action<Search, String> = Action::get("/find");
+    /// hypersig::routes! {
+    ///     fn actions(Router<()>);
+    ///     action FIND: Action<Search, String> = get "/find" => find;
+    /// }
+    /// # async fn find((): (), _: String) -> hypersig::Patches<Search> { hypersig::Patches::new() }
     /// let query = Search::query();
     /// let _field = input().bind(query).on_input(FIND.call_with(query).latest());
     /// ```
@@ -396,7 +397,11 @@ impl<S> Call<S> {
     ///     lines: Vec<Line>,
     /// }
     ///
-    /// const ORDER: Action<Cart, i32> = Action::post("/order");
+    /// hypersig::routes! {
+    ///     fn actions(Router<()>);
+    ///     action ORDER: Action<Cart, i32> = post "/order" => order;
+    /// }
+    /// # async fn order((): (), _: i32) -> hypersig::Patches<Cart> { hypersig::Patches::new() }
     /// let _lines = each(Cart::lines(), |line| {
     ///     li().child(button().text("Order").on_click(
     ///         ORDER
@@ -497,10 +502,11 @@ impl<S> fmt::Debug for Call<S> {
 
 /// A stream of patches on the page whose signals are `S`, which receives arguments `A`.
 ///
-/// It is served on `GET` with `RouterExt::stream`, which accepts only this
-/// type, and an [`Action`] goes to `RouterExt::action`. A call to it can
-/// [`reconnect`](StreamCall::reconnect), which a call to an `Action` cannot,
-/// because sending a `POST` again could repeat a change the server already made.
+/// Declare one on a `stream` line of [`routes!`](crate::routes), which
+/// serves it on `GET` with a handler that returns a stream of patches. A call
+/// to it can [`reconnect`](StreamCall::reconnect), which a call to an
+/// [`Action`] cannot, because sending a `POST` again could repeat a change
+/// the server already made.
 ///
 /// ```
 /// use hypersig::html::div;
@@ -512,7 +518,12 @@ impl<S> fmt::Debug for Call<S> {
 ///     items: Vec<String>,
 /// }
 ///
-/// const UPDATES: StreamAction<Feed> = StreamAction::new("/updates");
+/// hypersig::routes! {
+///     fn streams(Router<()>);
+///     stream UPDATES: StreamAction<Feed> = "/updates" => |(), ()| {
+///         futures::stream::empty::<hypersig::Patches<Feed>>()
+///     };
+/// }
 /// let _feed = div().on_load(UPDATES.call().reconnect());
 /// ```
 pub struct StreamAction<S, A = ()> {
@@ -522,31 +533,19 @@ pub struct StreamAction<S, A = ()> {
 }
 
 impl<S, A> StreamAction<S, A> {
-    /// A stream served on `GET path`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `path` does not start with `/`. In a `const`, that is a
-    /// compile error.
-    #[must_use]
-    pub const fn new(path: &'static str) -> Self {
+    /// A stream served on `GET path` under `base`, which the page's calls
+    /// put before the path. [`routes!`](crate::routes) calls it in a
+    /// `const`, so a path that does not start with `/` is a compile error.
+    pub(crate) const fn at(base: Base, path: &'static str) -> Self {
         assert!(
             !path.is_empty() && path.as_bytes()[0] == b'/',
             "a stream path starts with `/`"
         );
         Self {
-            base: Base::ROOT,
+            base,
             path,
             marker: PhantomData,
         }
-    }
-
-    /// The same stream under `base`, which the page's calls put before the path.
-    ///
-    /// The router registers [`StreamAction::path`] without it. See [`Base`].
-    #[must_use]
-    pub const fn under(self, base: Base) -> Self {
-        Self { base, ..self }
     }
 
     /// The path the stream is served on, without its [`Base`].
@@ -671,8 +670,12 @@ impl<S> StreamCall<S> {
     ///     last_id: i32,
     /// }
     ///
-    /// // The handler sends the messages after `last_id` and patches `last_id`.
-    /// const SINCE: StreamAction<Chat, i32> = StreamAction::new("/messages");
+    /// hypersig::routes! {
+    ///     fn streams(Router<()>);
+    ///     // The handler sends the messages after `last_id` and patches `last_id`.
+    ///     stream SINCE: StreamAction<Chat, i32> = "/messages" => since;
+    /// }
+    /// # fn since((): (), _: i32) -> futures::stream::Empty<hypersig::Patches<Chat>> { futures::stream::empty() }
     /// let _feed = div().on_load(SINCE.call_with(Chat::last_id()).reconnect());
     /// ```
     #[must_use]
@@ -984,9 +987,9 @@ mod tests {
 
     enum Page {}
 
-    const FIND: Action<Page, String> = Action::get("/find");
-    const SAVE: Action<Page> = Action::post("/save");
-    const FEED: StreamAction<Page> = StreamAction::new("/feed");
+    const FIND: Action<Page, String> = Action::at(Method::Get, Base::ROOT, "/find");
+    const SAVE: Action<Page> = Action::at(Method::Post, Base::ROOT, "/save");
+    const FEED: StreamAction<Page> = StreamAction::at(Base::ROOT, "/feed");
 
     #[test]
     fn a_call_without_flags_keeps_six_elements() {

@@ -17,9 +17,8 @@ struct Clock {
 hypersig::routes! {
     fn pages(Router<()>);
     const INDEX: Route = "/" => index;
+    stream TICKS: StreamAction<Clock> = "/ticks" => ticks;
 }
-
-const TICKS: StreamAction<Clock> = StreamAction::new("/ticks");
 
 async fn index((): (), (): ()) -> Page<Clock> {
     Page::new("Clock", Clock { seconds: 0 }).child(
@@ -40,7 +39,7 @@ fn ticks((): (), (): ()) -> impl Stream<Item = Patches<Clock>> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = pages(Router::new()).hypersig_runtime().stream(TICKS, ticks);
+    let app = pages(Router::new()).hypersig_runtime();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     axum::serve(listener, app).await
 }

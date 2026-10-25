@@ -1,6 +1,7 @@
-# use hypersig::{Page, Signals};
+# use hypersig::{Page, Patches, Signals};
 # use serde::{Deserialize, Serialize};
 # async fn history((): (), _: i32) -> Option<Page<Counter>> { None }
+# async fn reset((): (), (): ()) -> Patches<Counter> { Counter::count().patch(0).into() }
 use hypersig::html::{a, button, div, span};
 use hypersig::{Action, Route};
 
@@ -12,9 +13,8 @@ struct Counter {
 hypersig::routes! {
     fn pages(Router<()>);
     const HISTORY: Route<i32> = "/history/{count}" => history;
+    action RESET: Action<Counter> = post "/reset" => reset;
 }
-
-const RESET: Action<Counter> = Action::post("/reset");
 
 let count = Counter::count();
 let page = Page::new("Counter", Counter { count: 0 }).child(

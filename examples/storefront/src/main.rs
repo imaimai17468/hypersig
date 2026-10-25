@@ -31,6 +31,10 @@ hypersig::routes! {
     fn pages(Router<AppState>);
     const HOME: Route = "/" => home;
     const ABOUT: Route = "/about" => about;
+    // The newsletter part's actions, which serve every page that embeds it.
+    action JOIN: Action<Newsletter, String> = post "/newsletter/join" => join;
+    action ANOTHER: Action<Newsletter> = post "/newsletter/another" => another;
+    action WISH: Action<Home, String> = post "/wish" => wish;
 }
 
 const STYLE: Stylesheet = Stylesheet::new(
@@ -68,8 +72,6 @@ struct Newsletter {
     problem: String,
 }
 
-const JOIN: Action<Newsletter, String> = Action::post("/newsletter/join");
-const ANOTHER: Action<Newsletter> = Action::post("/newsletter/another");
 const NEWSLETTER_EMAIL: Id = Id::new("newsletter-email");
 
 /// What the newsletter shows below its heading: the form, or the thanks
@@ -220,7 +222,6 @@ struct Home {
     footer: Newsletter,
 }
 
-const WISH: Action<Home, String> = Action::post("/wish");
 const WISH_FIELD: Id = Id::new("wish");
 
 async fn home(state: AppState, (): ()) -> Page<Home> {
@@ -327,9 +328,6 @@ async fn wish(state: AppState, name: String) -> Result<Patches<Home>, (StatusCod
 async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
-        .action(JOIN, join)
-        .action(ANOTHER, another)
-        .action(WISH, wish)
         .with_state(AppState::default());
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3008".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;

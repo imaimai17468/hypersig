@@ -1,8 +1,7 @@
-use axum::Router;
 use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
-use hypersig::{Action, Patches, RouterExt, Signals};
+use hypersig::{Action, Patches, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -24,12 +23,15 @@ impl FromRequestParts<Admin> for CurrentUser {
     }
 }
 
-const ADD: Action<Counter> = Action::post("/add");
+hypersig::routes! {
+    fn actions(Router<()>);
+    action ADD: Action<Counter> = post "/add" => add;
+}
 
 async fn add((): (), _: CurrentUser, (): ()) -> Patches<Counter> {
     Counter::count().patch(1).into()
 }
 
 fn main() {
-    let _: Router = Router::new().action(ADD, add);
+    let _ = actions;
 }

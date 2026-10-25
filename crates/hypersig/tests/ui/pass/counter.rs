@@ -1,5 +1,5 @@
 use hypersig::html::{button, div, input, span};
-use hypersig::{Action, Signals};
+use hypersig::{Action, Patches, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -13,7 +13,10 @@ struct Other {
     flag: bool,
 }
 
-const RESET: Action<Counter> = Action::post("/reset");
+hypersig::routes! {
+    fn actions(Router<()>);
+    action RESET: Action<Counter> = post "/reset" => |(), ()| async { Patches::<Counter>::new() };
+}
 
 fn main() {
     let count = Counter::count();
@@ -24,4 +27,5 @@ fn main() {
         .child(button().on_click(count.set(count + 1).then(RESET.call())))
         .render();
     let _ = div::<Other>().show(Other::flag());
+    let _ = actions;
 }

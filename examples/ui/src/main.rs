@@ -160,6 +160,9 @@ hypersig::routes! {
     const INDEX: Route = "/" => index;
     const CATALOG_HOME: Route = "/catalog" => catalog_home;
     const CATALOG: Route<u32> = "/catalog/{page}" => catalog;
+    action SAVE: Action<Gallery, (String, String)> = post "/save" => save;
+    action NEXT_HALF: Action<Gallery> = post "/next-half" => next_half;
+    action ORDERS: Action<Gallery, TableState> = post "/orders" => load_orders;
 }
 
 /// The items of the catalog page.
@@ -228,9 +231,6 @@ fn catalog_page(page: u32, here: Url) -> Page<Catalog> {
         )
 }
 
-const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
-const NEXT_HALF: Action<Gallery> = Action::post("/next-half");
-const ORDERS: Action<Gallery, TableState> = Action::post("/orders");
 const DOLLARS: NumberFormat = NumberFormat::new().digits(2).prefix("$");
 hypersig::dialog_ref!(const EDIT_PROFILE: DialogRef<Gallery>);
 hypersig::dialog_ref!(const DELETE_PROJECT: DialogRef<Gallery>);
@@ -1123,9 +1123,6 @@ async fn content_security_policy(mut request: Request, next: Next) -> Response {
 async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
-        .action(SAVE, save)
-        .action(NEXT_HALF, next_half)
-        .action(ORDERS, load_orders)
         .layer(middleware::from_fn(content_security_policy));
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3005".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;

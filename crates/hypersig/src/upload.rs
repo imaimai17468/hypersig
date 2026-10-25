@@ -10,24 +10,28 @@ use crate::expr::{IntoExpr, Stmt};
 use crate::html::{El, attr, input};
 use crate::route::Base;
 
+/// The value of [`Upload::DEFAULT_MAX_BYTES`], which `routes!` names without a type.
+pub(crate) const DEFAULT_MAX_BYTES: usize = 8 * 1024 * 1024;
+
 /// A server endpoint on the page whose signals are `S`, which receives
 /// arguments `A` and the files picked in a [`FileInput`].
 ///
-/// Declare one as a `const` and use the same value on both sides, as with an
-/// [`Action`](crate::Action): the page calls it with [`Upload::call`] or
-/// [`Upload::call_with`], and the router registers its handler with
-/// `RouterExt::upload`, which hands it an `Uploaded<A>`. The browser sends a
-/// `multipart/form-data` body, which a form on another site can send too, so
-/// the runtime adds a header such a form cannot set, and the router refuses a
-/// request without it.
+/// Declare one on an `upload` line of [`routes!`](crate::routes), which
+/// names its handler, as with an [`Action`](crate::Action), and call it from
+/// the page with [`Upload::call`] or [`Upload::call_with`]. The handler
+/// receives an [`Uploaded<A>`](crate::Uploaded), or an
+/// [`UploadStream<A>`](crate::UploadStream) where the line writes `stream`
+/// before the path. The browser sends a `multipart/form-data` body, which a
+/// form on another site can send too, so the runtime adds a header such a
+/// form cannot set, and the router refuses a request without it.
 ///
-/// The body may be [`Upload::DEFAULT_MAX_BYTES`] long unless
-/// [`Upload::max_bytes`] says otherwise. A longer one gets `413 Payload Too
-/// Large`.
+/// The body may be [`Upload::DEFAULT_MAX_BYTES`] long unless the line writes
+/// `max_bytes` and a number after the path. A longer one gets `413 Payload
+/// Too Large`.
 ///
 /// ```
 /// use hypersig::html::{attr, button, div};
-/// use hypersig::{FileInput, Signals, Upload};
+/// use hypersig::{FileInput, Patches, Signals, Upload, Uploaded};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -36,7 +40,16 @@ use crate::route::Base;
 /// }
 ///
 /// const PICTURE: FileInput<Profile> = FileInput::new("picture");
-/// const AVATAR: Upload<Profile> = Upload::post("/avatar").max_bytes(1024 * 1024);
+///
+/// hypersig::routes! {
+///     fn uploads(Router<()>);
+///     upload AVATAR: Upload<Profile> = "/avatar" max_bytes 1024 * 1024 => avatar;
+/// }
+///
+/// async fn avatar((): (), uploaded: Uploaded<()>) -> Patches<Profile> {
+///     let _picture = uploaded.files().first();
+///     Profile::uploading().patch(false).into()
+/// }
 ///
 /// let _form = div()
 ///     .child(PICTURE.input().attr(attr::ACCEPT, "image/*"))
@@ -50,45 +63,24 @@ pub struct Upload<S, A = ()> {
 }
 
 impl<S, A> Upload<S, A> {
-    /// The longest body an upload accepts unless [`Upload::max_bytes`] says otherwise: 8 MiB.
-    pub const DEFAULT_MAX_BYTES: usize = 8 * 1024 * 1024;
+    /// The longest body an upload accepts unless its line in `routes!` says otherwise: 8 MiB.
+    pub const DEFAULT_MAX_BYTES: usize = DEFAULT_MAX_BYTES;
 
-    /// An upload served on `POST path`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `path` does not start with `/`. In a `const`, that is a
-    /// compile error.
-    #[must_use]
-    pub const fn post(path: &'static str) -> Self {
+    /// An upload served on `POST path` under `base`, accepting a body of at
+    /// most `max_bytes` bytes, the arguments and the multipart framing
+    /// included. [`routes!`](crate::routes) calls it in a `const`, so a path
+    /// that does not start with `/` is a compile error.
+    pub(crate) const fn at(base: Base, path: &'static str, max_bytes: usize) -> Self {
         assert!(
             !path.is_empty() && path.as_bytes()[0] == b'/',
             "an upload path starts with `/`"
         );
         Self {
-            base: Base::ROOT,
+            base,
             path,
-            max_bytes: Self::DEFAULT_MAX_BYTES,
+            max_bytes,
             marker: PhantomData,
         }
-    }
-
-    /// The same upload, accepting a body of at most `bytes` bytes, the
-    /// arguments and the multipart framing included.
-    #[must_use]
-    pub const fn max_bytes(self, bytes: usize) -> Self {
-        Self {
-            max_bytes: bytes,
-            ..self
-        }
-    }
-
-    /// The same upload under `base`, which the page's calls put before the path.
-    ///
-    /// The router registers [`Upload::path`] without it. See [`Base`].
-    #[must_use]
-    pub const fn under(self, base: Base) -> Self {
-        Self { base, ..self }
     }
 
     /// The path the upload is served on, without its [`Base`].
@@ -287,7 +279,8 @@ impl UploadedFile {
 /// What a streaming upload's handler receives: the arguments, then the files
 /// one at a time, each in chunks as they arrive.
 ///
-/// `RouterExt::upload_stream` hands one to its handler, which keeps no file
+/// An `upload` line of [`routes!`](crate::routes) that writes `stream`
+/// before its path hands one to its handler, which keeps no file
 /// in memory unless it collects the chunks itself. The arguments are read
 /// before the handler runs, because the runtime sends them as the first part
 /// of the body. The limit of the [`Upload`] holds while the handler reads:
@@ -302,7 +295,7 @@ impl UploadedFile {
 ///
 /// ```
 /// use axum::Router;
-/// use hypersig::{Patches, RequestError, RouterExt, Signals, Upload, UploadStream};
+/// use hypersig::{Patches, RequestError, Signals, Upload, UploadStream};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -310,7 +303,10 @@ impl UploadedFile {
 ///     received: u64,
 /// }
 ///
-/// const VIDEO: Upload<Library> = Upload::post("/video").max_bytes(512 * 1024 * 1024);
+/// hypersig::routes! {
+///     fn uploads(Router<()>);
+///     upload VIDEO: Upload<Library> = stream "/video" max_bytes 512 * 1024 * 1024 => receive;
+/// }
 ///
 /// async fn receive((): (), mut upload: UploadStream<()>) -> Result<Patches<Library>, RequestError> {
 ///     let mut received = 0;
@@ -322,7 +318,7 @@ impl UploadedFile {
 ///     Ok(Library::received().patch(received).into())
 /// }
 ///
-/// let _app: Router = Router::new().upload_stream(VIDEO, receive);
+/// let _app: Router = uploads(Router::new());
 /// ```
 #[cfg(feature = "axum")]
 #[derive(Debug)]
@@ -347,8 +343,7 @@ impl<A> UploadStream<A> {
     /// the last one.
     ///
     /// The part of the previous file that was not read is skipped, and so is
-    /// a part other than a file, as [`RouterExt::upload`](crate::RouterExt::upload)
-    /// skips it.
+    /// a part other than a file, as an `upload` line without `stream` skips it.
     ///
     /// # Errors
     ///

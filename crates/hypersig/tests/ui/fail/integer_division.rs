@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use hypersig::html::{button, div, input, span};
-use hypersig::{Action, Signals};
+use hypersig::Signals;
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]

@@ -87,9 +87,8 @@ struct Join {
 hypersig::routes! {
     fn pages(Router<AppState>);
     const INDEX: Route = "/" => index;
+    action JOIN: Action<Join, Signup> = post "/join" => join;
 }
-
-const JOIN: Action<Join, Signup> = Action::post("/join");
 
 #[derive(Clone)]
 struct AppState {
@@ -221,10 +220,7 @@ async fn main() -> std::io::Result<()> {
     let state = AppState {
         members: Arc::new(Mutex::new(vec!["taken@example.com".to_owned()])),
     };
-    let app = pages(Router::new())
-        .hypersig_runtime()
-        .action(JOIN, join)
-        .with_state(state);
+    let app = pages(Router::new()).hypersig_runtime().with_state(state);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3006".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

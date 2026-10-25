@@ -56,12 +56,12 @@ hypersig::routes! {
     fn pages(Router<AppState>);
     const INDEX: Route = "/" => index;
     const TODO: Route<i64> = "/todos/{id}" => todo;
+    action ADD: Action<TodoPage, String> = post "/todos" => add;
+    action TOGGLE: Action<TodoPage, TodoId> = post "/todos/toggle" => toggle;
+    action REMOVE: Action<TodoPage, TodoId> = post "/todos/remove" => remove;
+    stream UPDATES: StreamAction<TodoPage> = "/todos/updates" => updates;
 }
 
-const ADD: Action<TodoPage, String> = Action::post("/todos");
-const TOGGLE: Action<TodoPage, TodoId> = Action::post("/todos/toggle");
-const REMOVE: Action<TodoPage, TodoId> = Action::post("/todos/remove");
-const UPDATES: StreamAction<TodoPage> = StreamAction::new("/todos/updates");
 const TODO_ROW: Id = Id::new("todo");
 
 /// The channel the trigger of `migrations/` notifies after each change to
@@ -439,13 +439,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         db: Db(pool),
         changed,
     };
-    let app = pages(Router::new())
-        .hypersig_runtime()
-        .action(ADD, add)
-        .action(TOGGLE, toggle)
-        .action(REMOVE, remove)
-        .stream(UPDATES, updates)
-        .with_state(state);
+    let app = pages(Router::new()).hypersig_runtime().with_state(state);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3011".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

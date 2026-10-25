@@ -45,12 +45,11 @@ struct Counter {
 hypersig::routes! {
     fn pages(Router<AppState>);
     const INDEX: Route = "/" => index;
+    action DOUBLE: Action<Counter, i32> = post "/double" => double;
+    action SAVE: Action<Counter, i32> = post "/save" => save;
+    stream CLOCK: StreamAction<Counter> = "/clock" => clock;
+    stream SAVES: StreamAction<Counter> = "/saves" => saves;
 }
-
-const DOUBLE: Action<Counter, i32> = Action::post("/double");
-const SAVE: Action<Counter, i32> = Action::post("/save");
-const CLOCK: StreamAction<Counter> = StreamAction::new("/clock");
-const SAVES: StreamAction<Counter> = StreamAction::new("/saves");
 
 const TIME: DateFormat =
     DateFormat::date_time(IntlLocale::En, DateStyle::Medium, TimeStyle::Medium);
@@ -306,10 +305,6 @@ async fn fetch(
     };
     let mut app = pages(Router::new())
         .hypersig_runtime()
-        .action(DOUBLE, double)
-        .action(SAVE, save)
-        .stream(CLOCK, clock)
-        .stream(SAVES, saves)
         .with_state(state);
     Ok(app.call(request).await?)
 }

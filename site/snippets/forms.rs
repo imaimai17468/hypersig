@@ -27,7 +27,10 @@ struct Join {
     signup: Form<Signup>,
 }
 
-const JOIN: Action<Join, Signup> = Action::post("/join");
+hypersig::routes! {
+    fn pages(Router<()>);
+    action JOIN: Action<Join, Signup> = post "/join" => join;
+}
 
 let signup = Join::signup();
 let email = Signup::email();
@@ -52,4 +55,4 @@ async fn join((): (), value: Signup) -> Patches<Join> {
     }
     signup.patch(Form::new(Signup::default())).into()
 }
-# let _ = (page.render(), join);
+# let _ = (page.render(), pages);

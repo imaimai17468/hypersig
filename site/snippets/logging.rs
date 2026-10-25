@@ -1,5 +1,5 @@
 # use axum::http::StatusCode;
-# use hypersig::{Action, Patches, RouterExt, Signals};
+# use hypersig::{Action, Patches, Signals};
 # use serde::{Deserialize, Serialize};
 use axum::Router;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
@@ -9,7 +9,10 @@ use tracing::Level;
 # struct Profile {
 #     saved: String,
 # }
-const SAVE: Action<Profile, String> = Action::post("/save");
+hypersig::routes! {
+    fn pages(Router<()>);
+    action SAVE: Action<Profile, String> = post "/save" => save;
+}
 
 async fn save((): (), name: String) -> Result<Patches<Profile>, (StatusCode, &'static str)> {
     if name.is_empty() {
@@ -28,4 +31,4 @@ tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 let trace = TraceLayer::new_for_http()
     .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
     .on_response(DefaultOnResponse::new().level(Level::INFO));
-let _app: Router = Router::new().action(SAVE, save).layer(trace);
+let _app: Router = pages(Router::new()).layer(trace);

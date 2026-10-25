@@ -27,9 +27,8 @@ hypersig::routes! {
     fn pages(Router<AppState>) under APP else missing;
     const HOME: Route = "/" => home;
     const ITEM: Route<u32> = "/items/{id}" => item;
+    action ADD: Action<Shop> = post "/cart" => add;
 }
-
-const ADD: Action<Shop> = Action::post("/cart").under(APP);
 
 const ITEMS: [&str; 3] = ["Tea", "Coffee", "Cocoa"];
 
@@ -83,7 +82,6 @@ async fn add(state: AppState, (): ()) -> Patches<Shop> {
 async fn main() -> std::io::Result<()> {
     let shop = pages(Router::new())
         .hypersig_runtime()
-        .action(ADD, add)
         .with_state(AppState::default());
     // Behind a proxy that strips `/app`, serve `shop` itself instead.
     let app = Router::new()

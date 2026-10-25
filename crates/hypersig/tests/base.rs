@@ -47,10 +47,11 @@ hypersig::routes! {
     const OLD: Route<i32> = "/old/{id}" => |(), id: i32| async move {
         PageResponse::redirect(ITEM.url(id))
     };
+    action ADD: Action<Shop, i32> = post "/add" => |(), count: i32| async move {
+        Patches::from(Shop::count().patch(count + 1)).navigate(REVIEW.url((count, 1)))
+    };
+    stream LIVE: StreamAction<Shop> = "/live" => |(), ()| futures::stream::empty::<Patches<Shop>>();
 }
-
-const ADD: Action<Shop, i32> = Action::post("/add").under(APP);
-const LIVE: StreamAction<Shop> = StreamAction::new("/live").under(APP);
 
 fn shop(title: &str) -> Page<Shop> {
     Page::new(title, Shop { count: 0 }).child(p().text(title))
@@ -62,11 +63,7 @@ async fn missing((): (), unserved: Unserved) -> Page<Shop> {
 
 /// The application as it is written, with each path registered without the base.
 fn app() -> Router {
-    pages(Router::new())
-        .hypersig_runtime()
-        .action(ADD, |(), count: i32| async move {
-            Patches::from(Shop::count().patch(count + 1)).navigate(REVIEW.url((count, 1)))
-        })
+    pages(Router::new()).hypersig_runtime()
 }
 
 async fn get(app: Router, path: &str) -> (StatusCode, String, Option<String>) {

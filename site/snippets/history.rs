@@ -18,10 +18,11 @@ struct Fruit {
 hypersig::routes! {
     fn pages(Router<()>);
     const FRUIT: Route<(), Filter> = "/fruit" => fruit;
+    action SEARCH: Action<Fruit, String> = post "/search" => search;
+    action CLEAR: Action<Fruit> = post "/clear" => clear;
 }
 
-const SEARCH: Action<Fruit, String> = Action::post("/search");
-
+# async fn search((): (), q: String) -> Patches<Fruit> { Fruit::matches().patch(find(&q)).into() }
 fn find(q: &str) -> Vec<String> {
     ["apple", "fig", "kiwi"].into_iter().filter(|name| name.contains(q)).map(String::from).collect()
 }
@@ -42,11 +43,9 @@ async fn fruit((): (), filter: Filter) -> Page<Fruit> {
     )
 }
 
-const CLEAR: Action<Fruit> = Action::post("/clear");
-
 // An action changes the URL too, here as a new entry after emptying the search.
 async fn clear((): (), (): ()) -> Patches<Fruit> {
     let empty = Fruit::query().patch(String::new()).and(Fruit::matches().patch(find("")));
     Patches::from(empty).push_url(FRUIT.url(Filter::default()))
 }
-# let _ = (pages, CLEAR, clear);
+# let _ = (pages, CLEAR);

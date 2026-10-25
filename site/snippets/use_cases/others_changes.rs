@@ -1,7 +1,7 @@
 # use axum::Router;
 use futures::{Stream, StreamExt as _, stream}; //+
 use hypersig::html::{div, each, li, ul};
-use hypersig::{Action, Page, Patches, RouterExt, Signals, StreamAction};
+use hypersig::{Action, Page, Patches, Signals, StreamAction};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 #
@@ -30,8 +30,11 @@ use tokio::sync::broadcast;
 #     }
 # }
 
-const ADD: Action<Board, String> = Action::post("/tasks");
-const UPDATES: StreamAction<Board> = StreamAction::new("/tasks/updates"); //+
+hypersig::routes! {
+    fn pages(Router<AppState>);
+    action ADD: Action<Board, String> = post "/tasks" => add;
+    stream UPDATES: StreamAction<Board> = "/tasks/updates" => updates; //+
+}
 
 let page = Page::new("Board", Board { tasks: Vec::new() }).child(
     div()
@@ -58,8 +61,5 @@ fn updates(state: AppState, (): ()) -> impl Stream<Item = Patches<Board>> { //+
 } //+
 
 let (changed, _) = broadcast::channel(16);
-let _app: Router = Router::new()
-    .action(ADD, add)
-    .stream(UPDATES, updates) //+
-    .with_state(AppState { changed });
+let _app: Router = pages(Router::new()).with_state(AppState { changed });
 # let _ = page.render();

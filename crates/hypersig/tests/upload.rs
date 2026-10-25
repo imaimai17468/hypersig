@@ -4,7 +4,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt as _;
-use hypersig::{Patches, RouterExt, Signals, Upload, Uploaded};
+use hypersig::{Patches, Signals, Upload, Uploaded};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -13,24 +13,29 @@ struct Gallery {
     summary: String,
 }
 
-const SEND: Upload<Gallery, String> = Upload::post("/send").max_bytes(1024);
+hypersig::routes! {
+    fn uploads(Router<()>);
+    upload SEND: Upload<Gallery, String> = "/send" max_bytes 1024 => summarize;
+}
+
+async fn summarize((): (), uploaded: Uploaded<String>) -> Patches<Gallery> {
+    let files: Vec<String> = uploaded
+        .files()
+        .iter()
+        .map(|file| {
+            format!(
+                "{}:{}:{}",
+                file.file_name().unwrap_or("?"),
+                file.content_type().unwrap_or("?"),
+                String::from_utf8_lossy(file.bytes())
+            )
+        })
+        .collect();
+    Patches::from(Gallery::summary().patch(format!("{} {}", uploaded.args(), files.join(","))))
+}
 
 fn app() -> Router {
-    Router::new().upload(SEND, |(), uploaded: Uploaded<String>| async move {
-        let files: Vec<String> = uploaded
-            .files()
-            .iter()
-            .map(|file| {
-                format!(
-                    "{}:{}:{}",
-                    file.file_name().unwrap_or("?"),
-                    file.content_type().unwrap_or("?"),
-                    String::from_utf8_lossy(file.bytes())
-                )
-            })
-            .collect();
-        Patches::from(Gallery::summary().patch(format!("{} {}", uploaded.args(), files.join(","))))
-    })
+    uploads(Router::new())
 }
 
 const BOUNDARY: &str = "XyZ";
@@ -204,9 +209,11 @@ async fn arguments_that_do_not_deserialize_get_400() {
 async fn an_ordinary_action_still_refuses_a_multipart_body() {
     use hypersig::Action;
 
-    const SAVE: Action<Gallery> = Action::post("/save");
-    let app: Router =
-        Router::new().action(SAVE, |(), (): ()| async move { Patches::<Gallery>::new() });
+    hypersig::routes! {
+        fn actions(Router<()>);
+        action SAVE: Action<Gallery> = post "/save" => |(), ()| async { Patches::<Gallery>::new() };
+    }
+    let app: Router = actions(Router::new());
     let request = Request::post("/save")
         .header(
             header::CONTENT_TYPE,
@@ -236,9 +243,12 @@ async fn an_extractor_that_refuses_answers_before_the_body_is_read() {
         }
     }
 
-    let app: Router = Router::new().upload(SEND, |(), _: Member, _: Uploaded<String>| async move {
-        Patches::<Gallery>::new()
-    });
+    hypersig::routes! {
+        fn uploads(Router<()>);
+        upload GUARDED: Upload<Gallery, String> = "/send" =>
+            |(), _: Member, _: Uploaded<String>| async { Patches::<Gallery>::new() };
+    }
+    let app: Router = uploads(Router::new());
     // The body's first part is a file, which reading the body would refuse
     // with a 400, so a 401 shows the body was never read.
     let body = format!(
@@ -259,12 +269,15 @@ mod streaming {
     use axum::http::{Request, StatusCode, header};
     use futures::StreamExt as _;
     use http_body_util::BodyExt as _;
-    use hypersig::{Patches, RequestError, RouterExt, Upload, UploadStream};
+    use hypersig::{Patches, RequestError, Upload, UploadStream};
     use tower::ServiceExt as _;
 
     use super::{BOUNDARY, FROM_PAGE, Gallery, multipart};
 
-    const STREAM: Upload<Gallery, String> = Upload::post("/stream").max_bytes(64 * 1024);
+    hypersig::routes! {
+        fn uploads(Router<()>);
+        upload STREAM: Upload<Gallery, String> = stream "/stream" max_bytes 64 * 1024 => receive;
+    }
 
     /// Set once the handler has read a chunk, so a refusal can be told apart
     /// from one made before the handler ran.
@@ -272,22 +285,27 @@ mod streaming {
 
     /// Answers with the arguments and, per file, its name, its length, and
     /// how many chunks it arrived in.
-    fn app() -> Router {
-        Router::new().upload_stream(STREAM, |(), mut upload: UploadStream<String>| async move {
-            let mut files = Vec::new();
-            while let Some(mut file) = upload.next_file().await? {
-                let name = file.file_name().unwrap_or("?").to_owned();
-                let (mut length, mut chunks) = (0, 0);
-                while let Some(chunk) = file.chunk().await? {
-                    READ_A_CHUNK.store(true, Ordering::SeqCst);
-                    length += chunk.len();
-                    chunks += 1;
-                }
-                files.push(format!("{name}:{length}:{chunks}"));
+    async fn receive(
+        (): (),
+        mut upload: UploadStream<String>,
+    ) -> Result<Patches<Gallery>, RequestError> {
+        let mut files = Vec::new();
+        while let Some(mut file) = upload.next_file().await? {
+            let name = file.file_name().unwrap_or("?").to_owned();
+            let (mut length, mut chunks) = (0, 0);
+            while let Some(chunk) = file.chunk().await? {
+                READ_A_CHUNK.store(true, Ordering::SeqCst);
+                length += chunk.len();
+                chunks += 1;
             }
-            let summary = format!("{} {}", upload.args(), files.join(","));
-            Ok::<_, RequestError>(Patches::from(Gallery::summary().patch(summary)))
-        })
+            files.push(format!("{name}:{length}:{chunks}"));
+        }
+        let summary = format!("{} {}", upload.args(), files.join(","));
+        Ok(Patches::from(Gallery::summary().patch(summary)))
+    }
+
+    fn app() -> Router {
+        uploads(Router::new())
     }
 
     /// A request whose body arrives in chunks of `chunk` bytes, with no `Content-Length`.

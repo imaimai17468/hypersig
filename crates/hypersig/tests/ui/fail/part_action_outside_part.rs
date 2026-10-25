@@ -1,6 +1,6 @@
 #![allow(unused)]
 use hypersig::html::{El, button, div, part};
-use hypersig::{Action, Part, Signals};
+use hypersig::{Action, Part, Patches, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -8,7 +8,10 @@ struct Account {
     signing_out: bool,
 }
 
-const SIGN_OUT: Action<Account> = Action::post("/sign-out");
+hypersig::routes! {
+    fn actions(Router<()>);
+    action SIGN_OUT: Action<Account> = post "/sign-out" => |(), ()| async { Patches::<Account>::new() };
+}
 
 impl Part for Account {
     fn render() -> El<Self> {

@@ -1,0 +1,10 @@
+error: `routes!` takes `fn NAME(Router<STATE>);`, with `under BASE` and `else HANDLER` before the `;` where wanted, then one line per page, action, stream, and upload, each naming its handler after `=>`: `const NAME: Route<..> = "/path" => handler;`, `action NAME: Action<..> = post "/path" => handler;`, `stream NAME: StreamAction<..> = "/path" => handler;`, or `upload NAME: Upload<..> = "/path" => handler;`
+  --> tests/ui/fail/action_without_handler.rs:11:1
+   |
+11 | / hypersig::routes! {
+12 | |     fn pages(Router<()>);
+13 | |     action ADD: Action<Counter> = post "/add";
+14 | | }
+   | |_^
+   |
+   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -21,10 +21,9 @@ struct Profile {
 hypersig::routes! {
     fn pages(Router<Likes>);
     const INDEX: Route = "/" => index;
+    action SAVE: Action<Profile, String> = post "/save" => save;
+    action LIKE: Action<Profile> = post "/like" => like;
 }
-
-const SAVE: Action<Profile, String> = Action::post("/save");
-const LIKE: Action<Profile> = Action::post("/like");
 
 #[derive(Clone, Default)]
 struct Likes(Arc<AtomicI32>);
@@ -80,8 +79,6 @@ async fn like(likes: Likes, (): ()) -> Patches<Profile> {
 async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
-        .action(SAVE, save)
-        .action(LIKE, like)
         .with_state(Likes::default());
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     axum::serve(listener, app).await

@@ -1,7 +1,7 @@
 error[E0277]: `Call<Other>` is not a statement on the page whose signals are `Counter`
-  --> tests/ui/fail/action_from_other_page.rs:21:42
+  --> tests/ui/fail/action_from_other_page.rs:24:42
    |
-21 |     let _ = button::<Counter>().on_click(TOGGLE.call());
+24 |     let _ = button::<Counter>().on_click(TOGGLE.call());
    |                                 -------- ^^^^^^^^^^^^^ the trait `IntoStmt<Counter>` is not implemented for `Call<Other>`
    |                                 |
    |                                 required by a bound introduced by this call

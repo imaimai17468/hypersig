@@ -1,5 +1,5 @@
 use hypersig::html::button;
-use hypersig::{Action, Signals};
+use hypersig::{Action, Patches, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -7,7 +7,10 @@ struct Counter {
     count: i32,
 }
 
-const ADD: Action<Counter> = Action::post("/add");
+hypersig::routes! {
+    fn actions(Router<()>);
+    action ADD: Action<Counter> = post "/add" => |(), ()| async { Patches::<Counter>::new() };
+}
 
 fn main() {
     // Sending a POST again could add twice, so only a `StreamCall` reconnects.
