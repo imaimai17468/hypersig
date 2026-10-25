@@ -360,8 +360,8 @@ pub fn pages(site: Site) -> Part {
             para(
                 site,
                 L {
-                    en: "`El::href` takes a [`Link`](api:hypersig/struct.Link.html), which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
-                    ja: "`El::href` は [`Link`](api:hypersig/struct.Link.html) を受け取ります。パラメータのないルートでは `link()` が、パラメータのあるルートでは `link_with(params)` がリンクを作ります。パラメータは、アクションを呼び出すときの引数と同じく、ルートの型の式です。リテラルを渡すと `href` は固定になります。上のチームのページのようにシグナルやリストの項目を読むパラメータは、ブラウザで評価され、値が変わるたびに更新されます。両側とも `encodeURIComponent` と同じ方法で値をパーセントエンコードするので、最初の HTML とランタイムは同じ URL を書きます。",
+                    en: "`El::href` takes a [`Link`](api:hypersig/struct.Link.html) for a page the router serves, which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
+                    ja: "`El::href` は、ルーターが配信するページへの [`Link`](api:hypersig/struct.Link.html) を受け取ります。パラメータのないルートでは `link()` が、パラメータのあるルートでは `link_with(params)` がリンクを作ります。パラメータは、アクションを呼び出すときの引数と同じく、ルートの型の式です。リテラルを渡すと `href` は固定になります。上のチームのページのようにシグナルやリストの項目を読むパラメータは、ブラウザで評価され、値が変わるたびに更新されます。両側とも `encodeURIComponent` と同じ方法で値をパーセントエンコードするので、最初の HTML とランタイムは同じ URL を書きます。",
                 },
             ),
             show(Snippet::Links),
@@ -428,8 +428,8 @@ pub fn pages(site: Site) -> Part {
                         ja: "リンクは普通の `<a href>` なので、たどると次のページをサーバーから読み込み、離れたページのシグナルは失われます。",
                     },
                     L {
-                        en: "`attr(\"href\", ...)` still writes any URL, for a link to another site or to a `#fragment`.",
-                        ja: "ほかのサイトや `#fragment` へのリンクのために、`attr(\"href\", ...)` で任意の URL を書くこともできます。",
+                        en: "A link to another site or to a `#fragment` is a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), which [When bindings and statements are not enough](learn/escape-hatches/) covers. It checks the URL's scheme, and nothing checks that the address it names exists.",
+                        ja: "ほかのサイトや `#fragment` へのリンクには [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を使います。これは [束縛と文で足りないとき](learn/escape-hatches/) で説明します。`SafeUrl` が検査するのは URL のスキームだけで、その先のアドレスがあるかどうかは検査されません。",
                     },
                 ],
             ),
@@ -622,8 +622,16 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`El::href` takes only a link built from a [`Route`](learn/pages/). A link to another site, or to a `#fragment` on the same page, goes through `attr(\"href\", url)`, which writes the string as it is and checks nothing.",
-                ja: "`El::href` が受け取るのは [`Route`](learn/pages/) から作ったリンクだけです。ほかのサイトや、同じページの `#fragment` へのリンクは `attr(\"href\", url)` で書きます。`attr` は文字列をそのまま書き、何も検査しません。",
+                en: "`El::href` and `El::src` take a link built from a [`Route`](learn/pages/), or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html) for an address the router does not serve, such as another site or a `#fragment` on the same page. A `SafeUrl` holds only a URL whose scheme cannot run a script: `http:`, `https:`, `mailto:`, or none at all. `SafeUrl::new` takes a URL written in the program, and in a `const` a `javascript:` URL fails to compile. `SafeUrl::parse` reads a URL from outside the program, such as one a visitor typed, and returns an [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) error where `SafeUrl::new` would refuse it. `attr` panics on `href` and `src`, so neither can be written from a plain string.",
+                ja: "`El::href` と `El::src` は、[`Route`](learn/pages/) から作ったリンクのほかに、ルーターが配信しないアドレスのための [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を受け取ります。ほかのサイトや、同じページの `#fragment` へのリンクがこれにあたります。`SafeUrl` に入るのは、スクリプトを実行できないスキーム（`http:`、`https:`、`mailto:`）の URL と、スキームのない URL だけです。`SafeUrl::new` はプログラムに書いた URL を受け取り、`const` の中では `javascript:` の URL がコンパイルエラーになります。`SafeUrl::parse` は訪問者が入力したものなど、プログラムの外から来た URL を読み、`SafeUrl::new` が受け付けない URL には [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) のエラーを返します。`attr` は `href` と `src` を渡すとパニックするので、どちらも素の文字列からは書けません。",
+            },
+        ),
+        show(Snippet::SafeUrl),
+        para(
+            site,
+            L {
+                en: "The host is not checked, so `https://evil.example/a.js` is a `SafeUrl` too. A visitor's URL suits a link the visitor follows, and not the `src` of a `<script>`, which would load whatever the host serves.",
+                ja: "ホストは検査しないので、`https://evil.example/a.js` も `SafeUrl` です。訪問者の URL は訪問者自身がたどるリンクには使えますが、`<script>` の `src` には使えません。そのホストが配信するものをそのまま読み込むからです。",
             },
         ),
         heading(

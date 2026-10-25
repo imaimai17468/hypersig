@@ -183,9 +183,42 @@ pub fn describing_the_page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. `id` and `class` have their own methods, and `attr` panics on them and on names starting with `data-hs-`, which only the typed methods write.",
-                ja: "`text` は固定のテキストを、`child` は要素か文字列を末尾に追加します。`href` は `Route` からページへのリンクを張ります。これは [ページとリンク](learn/pages/) で説明します。`attr` は普通の属性を設定します。`id` と `class` には専用のメソッドがあり、`attr` にこの 2 つや `data-hs-` で始まる名前を渡すとパニックします。`data-hs-` の属性は型付きのメソッドだけが書きます。",
+                en: "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. It panics, ignoring case, on a name that another method sets or whose value can run a script, and `bind_attr` and `attr_when` panic on the same names:",
+                ja: "`text` は固定のテキストを、`child` は要素か文字列を末尾に追加します。`href` は `Route` からページへのリンクを張ります。これは [ページとリンク](learn/pages/) で説明します。`attr` は普通の属性を設定します。ほかのメソッドが設定する名前と、値がスクリプトを実行できる名前を渡すと、大文字と小文字を区別せずにパニックします。`bind_attr` と `attr_when` も同じ名前でパニックします。",
             },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "`id` and `class`, which `El::id` and `El::class` set.",
+                    ja: "`id` と `class`。`El::id` と `El::class` で設定します。",
+                },
+                L {
+                    en: "A name starting with `data-hs-`, which only the typed methods write, because the runtime reads those attributes.",
+                    ja: "`data-hs-` で始まる名前。ランタイムがこの属性を読むので、型付きのメソッドだけが書きます。",
+                },
+                L {
+                    en: "`href` and `src`, which `El::href` and `El::src` set from a `Link` or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), a URL whose scheme cannot run a script. [When bindings and statements are not enough](learn/escape-hatches/) covers `SafeUrl`.",
+                    ja: "`href` と `src`。`El::href` と `El::src` が、`Link` か、スクリプトを実行できないスキームの URL を持つ [`SafeUrl`](api:hypersig/struct.SafeUrl.html) から設定します。`SafeUrl` は [束縛と文で足りないとき](learn/escape-hatches/) で説明します。",
+                },
+                L {
+                    en: "A name starting with `on`, such as `onclick`. The `on_*` methods, such as `on_click`, attach a statement in its place.",
+                    ja: "`onclick` のように `on` で始まる名前。代わりに `on_click` などの `on_*` のメソッドで文を付けます。",
+                },
+                L {
+                    en: "`srcdoc`, `action`, `formaction`, `xlink:href`, `data`, and `http-equiv`, which have no method of their own. A form sends its values through an action call, as [Forms](learn/forms/) shows.",
+                    ja: "`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`。これらを設定するメソッドはありません。フォームの値は [フォーム](learn/forms/) のとおりアクションの呼び出しで送ります。",
+                },
+                L {
+                    en: "`attributeName` set to `href` or `xlink:href`, which would make an SVG animation write into a link. `bind_attr` refuses `attributeName` with any value.",
+                    ja: "値が `href` か `xlink:href` の `attributeName`。SVG のアニメーションがリンクに書き込むことになるからです。`bind_attr` は `attributeName` を値にかかわらず受け付けません。",
+                },
+                L {
+                    en: "A name holding a character other than a letter, a digit, `-`, `_`, `.`, and `:`.",
+                    ja: "英字、数字、`-`、`_`、`.`、`:` 以外の文字を含む名前。",
+                },
+            ],
         ),
         heading(
             site,

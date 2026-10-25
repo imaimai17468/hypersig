@@ -104,6 +104,7 @@ snippets! {
     // The code `cargo hypersig add server` prints, so the page and the CLI
     // show one text.
     Listen => "../../crates/hypersig_cli/steps/server.rs";
+    SafeUrl => "safe_url.rs";
 }
 
 /// The lines of `snippet` that the page shows.
