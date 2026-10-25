@@ -216,11 +216,15 @@ impl Style {
         }
         self.keyframes.extend(style.keyframes);
         for marker in style.markers {
-            if !self.markers.contains(&marker) {
-                self.markers.push(marker);
-            }
+            self.mark(marker);
         }
         self
+    }
+
+    fn mark(&mut self, marker: &'static str) {
+        if !self.markers.contains(&marker) {
+            self.markers.push(marker);
+        }
     }
 
     /// Adds the declarations of `style`, applied only under `condition`.
@@ -269,9 +273,7 @@ impl Style {
     /// with the `group` of Tailwind CSS and Panda CSS.
     #[must_use]
     pub fn group(mut self) -> Self {
-        if !self.markers.contains(&GROUP) {
-            self.markers.push(GROUP);
-        }
+        self.mark(GROUP);
         self
     }
 
@@ -279,9 +281,7 @@ impl Style {
     /// tests, with the class `peer`.
     #[must_use]
     pub fn peer(mut self) -> Self {
-        if !self.markers.contains(&PEER) {
-            self.markers.push(PEER);
-        }
+        self.mark(PEER);
         self
     }
 

@@ -3,7 +3,7 @@
 
 use std::fmt::{self, Write as _};
 
-use crate::condition::Media;
+use crate::condition::{Media, open_block};
 use crate::sheet::{ORDER, TOKEN_LAYER};
 use crate::value::{Angle, Color, Length, Percentage, Time};
 
@@ -163,14 +163,7 @@ impl Theme {
         let mut out = format!("{ORDER}@layer {TOKEN_LAYER}{{");
         for media in groups {
             if !media.is_empty() {
-                out.push_str("@media ");
-                for (i, m) in media.iter().enumerate() {
-                    if i > 0 {
-                        out.push_str(" and ");
-                    }
-                    out.push_str(m.query());
-                }
-                out.push('{');
+                open_block(&mut out, "@media ", media.iter().map(|m| m.query()));
             }
             out.push_str(":root{");
             let mut first = true;
