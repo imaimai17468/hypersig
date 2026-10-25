@@ -132,10 +132,12 @@ const NO_SCHEME: &str = "an origin starts with `http://` or `https://`";
 
 /// The length of the scheme and `://` that `bytes` starts with.
 const fn scheme_len(bytes: &[u8]) -> Option<usize> {
-    if starts_with(bytes, b"https://") {
-        Some(8)
-    } else if starts_with(bytes, b"http://") {
-        Some(7)
+    const HTTPS: &[u8] = b"https://";
+    const HTTP: &[u8] = b"http://";
+    if starts_with(bytes, HTTPS) {
+        Some(HTTPS.len())
+    } else if starts_with(bytes, HTTP) {
+        Some(HTTP.len())
     } else {
         None
     }

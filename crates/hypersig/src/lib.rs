@@ -133,36 +133,50 @@ const RUNTIME_BR: &[u8] = include_bytes!("../assets/hypersig.js.br");
 ///
 /// The compiler computes it, so the path needs no build script and changes
 /// in the same build as the runtime.
-const RUNTIME_PATH_BYTES: [u8; 38] = {
-    const PREFIX: &[u8] = b"/_hypersig/runtime.";
-    const SUFFIX: &[u8] = b".js";
+const RUNTIME_PATH_BYTES: [u8; RUNTIME_PREFIX.len() + HASH_DIGITS + RUNTIME_SUFFIX.len()] = {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let js = RUNTIME_JS.as_bytes();
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    let mut hash = FNV_OFFSET_BASIS;
     let mut i = 0;
     while i < js.len() {
         hash ^= js[i] as u64;
-        hash = hash.wrapping_mul(0x0100_0000_01b3);
+        hash = hash.wrapping_mul(FNV_PRIME);
         i += 1;
     }
-    let mut out = [0u8; 38];
+    let mut out = [0u8; RUNTIME_PREFIX.len() + HASH_DIGITS + RUNTIME_SUFFIX.len()];
     let mut i = 0;
-    while i < PREFIX.len() {
-        out[i] = PREFIX[i];
+    while i < RUNTIME_PREFIX.len() {
+        out[i] = RUNTIME_PREFIX[i];
         i += 1;
     }
     let mut digit = 0;
-    while digit < 16 {
-        out[PREFIX.len() + digit] = HEX[((hash >> (60 - 4 * digit)) & 0xf) as usize];
+    while digit < HASH_DIGITS {
+        let shift = 4 * (HASH_DIGITS - 1 - digit);
+        out[RUNTIME_PREFIX.len() + digit] = HEX[((hash >> shift) & 0xf) as usize];
         digit += 1;
     }
     let mut i = 0;
-    while i < SUFFIX.len() {
-        out[PREFIX.len() + 16 + i] = SUFFIX[i];
+    while i < RUNTIME_SUFFIX.len() {
+        out[RUNTIME_PREFIX.len() + HASH_DIGITS + i] = RUNTIME_SUFFIX[i];
         i += 1;
     }
     out
 };
+
+/// What [`RUNTIME_PATH`] holds before the hash.
+const RUNTIME_PREFIX: &[u8] = b"/_hypersig/runtime.";
+
+/// What [`RUNTIME_PATH`] holds after the hash.
+const RUNTIME_SUFFIX: &[u8] = b".js";
+
+/// The hex digits of a 64-bit hash, most significant first.
+const HASH_DIGITS: usize = 16;
+
+/// The 64-bit offset basis of FNV-1a, from the FNV specification.
+const FNV_OFFSET_BASIS: u64 = 0xcbf2_9ce4_8422_2325;
+
+/// The 64-bit prime of FNV-1a, from the FNV specification.
+const FNV_PRIME: u64 = 0x0100_0000_01b3;
 
 #[doc(hidden)]
 pub mod _private {
