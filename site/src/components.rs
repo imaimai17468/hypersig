@@ -159,8 +159,8 @@ hypersig_ui = "0.4""#,
                     ja: "スクリーンリーダーやキーボードでの操作に必要な振る舞いは、ブラウザに備わっていればブラウザのものを使います。ネイティブの `<button>`、`<input>`、`<select>`、`<details>`、`<dialog>`、`popover` です。ブラウザに備わっていない振る舞いは、コンポーネントが WAI-ARIA Authoring Practices に従って作り、キーボード操作は `El::roving_focus` と `El::active_descendant` で扱います。",
                 },
                 L {
-                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox keep their names in a `const` handle that their parts share. A name that cannot be used in an id is a compile error.",
-                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ツールチップ、コンボボックスは名前を `const` のハンドルに持ち、部品どうしでそのハンドルを共有します。id に使えない名前はコンパイルエラーになります。",
+                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox keep their names in a `const` handle that their parts share. A handle declared as a `const`, as the component pages do, turns a name that cannot be used in an id into a compile error, and a handle made outside a `const` panics on it when the line runs.",
+                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ツールチップ、コンボボックスは名前を `const` のハンドルに持ち、部品どうしでそのハンドルを共有します。各コンポーネントのページのようにハンドルを `const` で宣言すると、id に使えない名前はコンパイルエラーになります。`const` の外で作ったハンドルは、その行を実行したときにパニックします。",
                 },
                 L {
                     en: "The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 AA: a control's border has 3:1 contrast or more, secondary text keeps 4.5:1 on the muted background, and focus is a solid outline, which forced-colors mode still draws.",
