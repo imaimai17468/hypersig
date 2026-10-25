@@ -1,0 +1,27 @@
+[package]
+name = "bench-dioxus"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+dioxus = { version = "0.7.10", features = ["fullstack"] }
+serde = { version = "1.0.229", features = ["derive"] }
+
+[features]
+default = []
+web = ["dioxus/web"]
+server = ["dioxus/server"]
+
+# The stable settings of Dioxus's optimizing guide, on the profile `dx` builds
+# the browser's wasm with, so the server keeps the default release profile.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+debug = false
+lto = true
+codegen-units = 1
+panic = "abort"
+incremental = false
+
+[workspace]

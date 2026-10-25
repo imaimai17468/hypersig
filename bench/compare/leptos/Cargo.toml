@@ -1,0 +1,46 @@
+[package]
+name = "bench-leptos"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "bench-leptos"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.8.9", optional = true }
+console_error_panic_hook = "0.1.7"
+leptos = "0.8.22"
+leptos_axum = { version = "0.8.10", optional = true }
+serde = { version = "1.0.229", features = ["derive"] }
+tokio = { version = "1.53.3", features = ["macros", "rt-multi-thread", "net"], optional = true }
+wasm-bindgen = "0.2"
+
+[features]
+hydrate = ["leptos/hydrate"]
+ssr = ["dep:axum", "dep:tokio", "dep:leptos_axum", "leptos/ssr"]
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.leptos]
+output-name = "bench-leptos"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+site-addr = "127.0.0.1:4108"
+reload-port = 4118
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false
+lib-profile-release = "wasm-release"
+
+[workspace]

@@ -76,7 +76,7 @@ Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the 
 
 ## Framework comparison
 
-Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build, and Topcoat writes the browser's expressions in Rust too.
+Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build, and Topcoat writes the browser's expressions in Rust too. Leptos and Dioxus write the page and the server in Rust as well, but compile the page to WebAssembly, which hydrates the server's HTML in the browser.
 
 |  | Topcoat and Datastar | hypersig |
 |---|---|---|
@@ -84,27 +84,28 @@ Topcoat and Datastar come closest to hypersig. Both keep signals in the browser 
 | Link parameters (Topcoat) | `href!` checks only the handler. A missing or extra path parameter panics when the page renders, and the request answers 500 | `Route` takes its parameters as a typed value. A wrong one is a compile error |
 | Adding to a list (Topcoat) | Expressions cannot add an item, so the list changes once the server answers and renders it again | The list is a signal, so the browser shows the change before the server answers |
 
-| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
-|---|---|---|---|---|---|---|---|
-| Page written in | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript and Vue templates | HTML attributes |
-| Server written in | Rust | Rust | Any | TypeScript | TypeScript | TypeScript | Any |
-| No browser build | Yes | Yes | No (Vite) | No (Node bundler) | No (Vite) | No (Vite) | Yes |
-| Request types checked at compile time | Yes | Yes | No | Yes | Yes | No | No |
-| Links checked against routes at compile time | Yes | Handler only (parameters at run time) | No (no router) | Opt-in (`typedRoutes`) | Yes | Experimental (`typedPages`) | No |
-| State kept in the browser | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar | Leptos | Dioxus |
+|---|---|---|---|---|---|---|---|---|---|
+| Page written in | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript and Vue templates | HTML attributes | Rust | Rust |
+| Server written in | Rust | Rust | Any | TypeScript | TypeScript | TypeScript | Any | Rust | Rust |
+| No browser build | Yes | Yes | No (Vite) | No (Node bundler) | No (Vite) | No (Vite) | Yes | No (`cargo leptos`, to Wasm) | No (`dx`, to Wasm) |
+| Request types checked at compile time | Yes | Yes | No | Yes | Yes | No | No | Yes | Yes |
+| Links checked against routes at compile time | Yes | Handler only (parameters at run time) | No (no router) | Opt-in (`typedRoutes`) | Yes | Experimental (`typedPages`) | No | No (`href` is a string) | Yes (a `Routable` enum value) |
+| State kept in the browser | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 
 ## Benchmarks
 
-The test app is a 2000-item TodoMVC that stores every add, toggle, and delete on the server. Each number is the median of 3 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request.
+The test app is a 2000-item TodoMVC that stores every add, toggle, and delete on the server. Each number is the median of 10 runs in Chrome 155 on an Apple M4 Max, with the CPU slowed 4x and 50 ms added to every request, and the fastest and slowest of the 10 runs are in parentheses.
 
-| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
-|---|---|---|---|---|---|---|---|
-| JS (gzip) | 19.2 KB | 14.8 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 13.1 KB |
-| First Contentful Paint | 186 ms | 165 ms | 196 ms | 198 ms | 193 ms | 177 ms | 182 ms |
-| Total Blocking Time | 0 ms | 313 ms | 5 ms | 10 ms | 0 ms | 29 ms | 16 ms |
-| Interaction to Next Paint | 24 ms | 24 ms | 24 ms | 24 ms | 24 ms | 16 ms | 16 ms |
+| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar | Leptos | Dioxus |
+|---|---|---|---|---|---|---|---|---|---|
+| JS (gzip) | 19.7 KB | 14.8 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 13.1 KB | 5.5 KB | 15.7 KB |
+| Wasm (gzip) | - | - | - | - | - | - | - | 145.1 KB | 441.4 KB |
+| First Contentful Paint | 239 ms (231–309) | 221 ms (206–241) | 209 ms (198–266) | 240 ms (229–261) | 237 ms (217–251) | 236 ms (223–263) | 217 ms (204–249) | 232 ms (222–240) | 213 ms (205–244) |
+| Total Blocking Time | 3 ms (0–37) | 318 ms (311–351) | 16 ms (11–23) | 14 ms (9–16) | 0 ms (0–0) | 36 ms (29–42) | 20 ms (17–23) | 47 ms (42–57) | 122 ms (114–126) |
+| Interaction to Next Paint | 24 ms (24–24) | 24 ms (24–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (24–24) | 16 ms (16–16) | 24 ms (16–24) | 72 ms (72–80) |
 
-The apps and the harness are in [`bench/compare`](bench/compare). The JS row for hypersig is its runtime at commit 72e62b8, where these runs were made, gzipped by the harness. The runtime has grown since, to about 20 KB gzipped. Results of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), which compares list operations in the browser alone, are in [`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md).
+The apps and the harness are in [`bench/compare`](bench/compare). Every app was measured at commit 7d031d0. Leptos and Dioxus load most of their code as WebAssembly, which the Wasm row counts apart from the JS row. Results of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), which compares list operations in the browser alone, are in [`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md).
 
 The same page styled with `hypersig::style`, Tailwind CSS, Panda CSS, StyleX, and vanilla-extract is measured in the [`hypersig_style` README](crates/hypersig_style/README.md#benchmarks).
 
