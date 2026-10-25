@@ -196,6 +196,10 @@ fn refused(name: &str) -> Option<&'static str> {
     })
 }
 
+/// rustfmt's default `max_width`. Past it, rustfmt moves the value of a
+/// `const` to the next line, so the module breaks the line there too.
+const RUSTFMT_WIDTH: usize = 100;
+
 /// The module `event` of the element `<tag>`.
 fn events(tag: &str, events: &[Member]) -> String {
     let mut consts = Vec::new();
@@ -260,8 +264,7 @@ fn events(tag: &str, events: &[Member]) -> String {
         let line = format!(
             "        pub const {ident}: CustomEvent<{detail}> = CustomEvent::new({name:?});"
         );
-        // rustfmt moves the value to the next line where the whole exceeds its 100 columns.
-        let line = if line.chars().count() > 100 {
+        let line = if line.chars().count() > RUSTFMT_WIDTH {
             format!(
                 "        pub const {ident}: CustomEvent<{detail}> =\n            CustomEvent::new({name:?});"
             )
