@@ -1,6 +1,6 @@
 //! Tabs: a tab list that shows one panel at a time.
 
-use hypersig::html::{El, Event, Orientation, attr, button, div};
+use hypersig::html::{El, Event, Orientation, Role, attr, button, div};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Cursor, Display, FontWeight, JustifyContent, WhiteSpace, px,
     rem,
@@ -76,7 +76,7 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
     pub fn render(self) -> El<S> {
         let selected = self.selected;
         let mut list = div()
-            .attr(attr::ROLE, "tablist")
+            .role(Role::TabList)
             .attr(attr::ARIA_LABEL, self.label)
             .roving_focus(Orientation::Horizontal)
             .css(list_style());
@@ -88,7 +88,7 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
             list = list.child(
                 button()
                     .attr(attr::TYPE, "button")
-                    .attr(attr::ROLE, "tab")
+                    .role(Role::Tab)
                     .id(tab_id.clone())
                     .attr(attr::ARIA_CONTROLS, panel_id.clone())
                     .bind_attr(
@@ -104,7 +104,7 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
             );
             panels.push(
                 div()
-                    .attr(attr::ROLE, "tabpanel")
+                    .role(Role::TabPanel)
                     .id(panel_id)
                     .attr(attr::ARIA_LABELLEDBY, tab_id)
                     .attr(attr::TABINDEX, "0")

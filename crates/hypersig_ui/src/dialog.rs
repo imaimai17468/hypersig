@@ -3,7 +3,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Node, attr, button as button_el, div, h2, p};
+use hypersig::html::{El, Node, Role, attr, button as button_el, div, h2, p};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{
     BorderStyle, Color, FontWeight, JustifyContent, LineHeight, Position, px, raw, rem,
@@ -204,7 +204,7 @@ impl<S> Dialog<S> {
             description.into(),
             content.into(),
         )
-        .attr(attr::ROLE, "alertdialog")
+        .role(Role::AlertDialog)
     }
 
     fn frame(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {

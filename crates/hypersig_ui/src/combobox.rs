@@ -4,7 +4,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Event, Key, attr, div, input, label, p};
+use hypersig::html::{El, Event, Key, Role, attr, div, input, label, p};
 use hypersig::style::Style;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{Display, FlexDirection, OverflowY, Position, ZIndex, pct, raw, rem};
@@ -155,7 +155,7 @@ impl<S> Combobox<S> {
             let reached = active.equals(id.clone());
             items.push(
                 div()
-                    .attr(attr::ROLE, "option")
+                    .role(Role::Option)
                     .id(id)
                     .bind_attr(attr::ARIA_SELECTED, reached.clone().to_text())
                     .show(shown)
@@ -178,7 +178,7 @@ impl<S> Combobox<S> {
         let field = input()
             .attr(attr::TYPE, "text")
             .id(self.field)
-            .attr(attr::ROLE, "combobox")
+            .role(Role::Combobox)
             .attr(attr::ARIA_AUTOCOMPLETE, "list")
             .attr(attr::ARIA_CONTROLS, self.list)
             .attr(attr::AUTOCOMPLETE, "off")
@@ -206,7 +206,7 @@ impl<S> Combobox<S> {
             .child(
                 div()
                     .id(self.list)
-                    .attr(attr::ROLE, "listbox")
+                    .role(Role::ListBox)
                     .attr(attr::ARIA_LABEL, "Suggestions")
                     .node_ref(list_ref)
                     .show(!none_shown.clone())

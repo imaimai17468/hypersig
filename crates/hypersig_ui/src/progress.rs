@@ -1,6 +1,6 @@
 //! Progress bars and loading placeholders.
 
-use hypersig::html::{El, attr, div};
+use hypersig::html::{El, Role, attr, div};
 use hypersig::style::value::{
     AnimationIterationCount, BorderRadius, Opacity, Overflow, ms, pct, px, rem,
 };
@@ -33,7 +33,7 @@ use crate::token;
 pub fn progress<S>(label: impl Into<String>, percent: impl IntoExpr<S, i32>) -> El<S> {
     let percent: Expr<S, i32> = percent.into_expr().max(0).min(100);
     div()
-        .attr(attr::ROLE, "progressbar")
+        .role(Role::ProgressBar)
         .attr(attr::ARIA_LABEL, label)
         .attr(attr::ARIA_VALUEMIN, "0")
         .attr(attr::ARIA_VALUEMAX, "100")

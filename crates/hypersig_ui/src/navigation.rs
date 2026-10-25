@@ -1,7 +1,7 @@
 //! Navigation between pages: a breadcrumb trail, a list of the sections of
 //! an application, and the links between the pages of a long list.
 
-use hypersig::html::{El, a, attr, li, nav, ol, span, ul};
+use hypersig::html::{El, Role, a, attr, li, nav, ol, span, ul};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{AlignItems, FlexWrap, JustifyContent, pct, rem};
 use hypersig::style::{PseudoClass, Style};
@@ -71,7 +71,7 @@ impl<S> Breadcrumb<S> {
     #[must_use]
     pub fn current(self, text: impl Into<String>) -> El<S> {
         let separator = || {
-            li().attr(attr::ROLE, "presentation")
+            li().role(Role::Presentation)
                 .attr(attr::ARIA_HIDDEN, "true")
                 .css(Style::new().display(hypersig::style::value::Display::InlineFlex))
                 .child(icon(look::icon::CHEVRON_RIGHT, rem(0.875)))

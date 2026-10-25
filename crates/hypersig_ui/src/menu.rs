@@ -3,7 +3,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Key, Orientation, attr, button as button_el, div};
+use hypersig::html::{El, Key, Orientation, Role, attr, button as button_el, div};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Cursor, Display, PositionTryFallbacks, TextAlign, px, raw, rem,
 };
@@ -98,7 +98,7 @@ impl<S> Menu<S> {
         div()
             .id(self.name)
             .attr(attr::POPOVER, "auto")
-            .attr(attr::ROLE, "menu")
+            .role(Role::Menu)
             .attr(attr::ARIA_LABELLEDBY, self.trigger_id())
             .node_ref(node_ref)
             .roving_focus(Orientation::Vertical)
@@ -109,7 +109,7 @@ impl<S> Menu<S> {
             .children(items.into_iter().enumerate().map(|(index, item)| {
                 let mut action = button_el()
                     .attr(attr::TYPE, "button")
-                    .attr(attr::ROLE, "menuitem")
+                    .role(Role::MenuItem)
                     .attr(attr::TABINDEX, "-1")
                     .css(item_style(item.destructive))
                     // The menu closes from the statement rather than from a

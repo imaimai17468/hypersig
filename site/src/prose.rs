@@ -11,7 +11,7 @@
 use std::iter;
 
 use hypersig::html::{
-    El, Node, a, attr, code, div, h1, h2, h3, li, p, strong, table, td, th, tr, ul,
+    El, Node, Role, a, code, div, h1, h2, h3, li, p, strong, table, td, th, tr, ul,
 };
 use hypersig::style::value::{
     BorderBottomStyle, BorderCollapse, BorderStyle, FontWeight, LineHeight, OverflowWrap,
@@ -171,7 +171,7 @@ pub fn table_of<'a, R: AsRef<[&'a str]> + 'a>(
 pub fn note<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
     let text = site.text(text);
     div()
-        .attr(attr::ROLE, "note")
+        .role(Role::Note)
         .css(
             body_text()
                 .margin_top(rem(1.5))

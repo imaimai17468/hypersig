@@ -21,7 +21,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use futures::channel::mpsc::{self, UnboundedSender};
 use futures::{Stream, StreamExt as _, future, stream};
-use hypersig::html::{Stylesheet, button, div, h1, p, span, strong, attr};
+use hypersig::html::{Role, Stylesheet, button, div, h1, p, span, strong};
 use hypersig::{
     Action, DateFormat, DateStyle, IntlLocale, Page, Patches, Route, RouterExt, Signals,
     StreamAction, TimeStyle, Timestamp,
@@ -244,7 +244,7 @@ async fn index(state: AppState, (): ()) -> Result<Page<Counter>, DbError> {
                         ),
                 )
                 .child(
-                    p().attr(attr::ROLE, "alert")
+                    p().role(Role::Alert)
                         .show(!problem.is_empty())
                         .bind_text(problem),
                 )

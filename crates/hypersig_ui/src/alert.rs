@@ -1,6 +1,6 @@
 //! Alerts: a message that stands out from the content around it.
 
-use hypersig::html::{El, attr, div};
+use hypersig::html::{El, Role, div};
 use hypersig::style::Style;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{BorderStyle, FontWeight, px, rem};
@@ -43,10 +43,10 @@ pub enum AlertVariant {
 #[must_use]
 pub fn alert<S>(variant: AlertVariant) -> El<S> {
     let (role, color) = match variant {
-        AlertVariant::Default => ("status", token::card_foreground().var()),
-        AlertVariant::Destructive => ("alert", token::destructive().var()),
+        AlertVariant::Default => (Role::Status, token::card_foreground().var()),
+        AlertVariant::Destructive => (Role::Alert, token::destructive().var()),
     };
-    div().attr(attr::ROLE, role).css(
+    div().role(role).css(
         stack(rem(0.125))
             .padding_block(rem(0.75))
             .padding_inline(rem(1))

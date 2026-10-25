@@ -13,7 +13,7 @@
 //! each time with its own state:
 //!
 //! ```
-//! use hypersig::html::{El, button, div, p};
+//! use hypersig::html::{El, Role, button, div, p};
 //! use hypersig::{Sig, Signals};
 //! use serde::{Deserialize, Serialize};
 //!
@@ -65,6 +65,9 @@ use crate::tape::Ref;
 const RESERVED_PREFIX: &str = "data-hs-";
 
 pub mod attr;
+mod role;
+
+pub use role::Role;
 
 /// The name of an attribute that [`El::attr`], [`El::bind_attr`], and
 /// [`El::attr_when`] write.
@@ -75,7 +78,8 @@ pub mod attr;
 /// custom element.
 ///
 /// An `Attr` never names an attribute that hypersig writes itself (`id`,
-/// `class`, and those starting with `data-hs-`), nor one whose value can run a
+/// `class`, and those starting with `data-hs-`), nor `role`, which
+/// [`El::role`] sets from a [`Role`], nor one whose value can run a
 /// script or load a URL: `href` and `src`, which [`El::href`] and [`El::src`]
 /// set from a value that cannot, an event handler `on*`, `srcdoc`, `action`,
 /// `formaction`, `xlink:href`, `data`, which `<object>` loads, `http-equiv`,
@@ -117,6 +121,7 @@ impl Attr {
             !is(bytes, "id") && !is(bytes, "class"),
             "`El::id` and `El::class` set `id` and `class`"
         );
+        assert!(!is(bytes, "role"), "`El::role` sets `role` from a `Role`");
         assert!(
             !is(bytes, "href") && !is(bytes, "src"),
             "`El::href` and `El::src` set `href` and `src` from a `Link` or a `SafeUrl`"
@@ -414,7 +419,7 @@ impl<S, N: Into<Node<S>>> IntoNode<S> for N {
 /// reordered or an item before another is removed.
 ///
 /// ```
-/// use hypersig::html::{each, li, ul};
+/// use hypersig::html::{Role, each, li, ul};
 /// use hypersig::Signals;
 /// use serde::{Deserialize, Serialize};
 ///
@@ -453,7 +458,7 @@ pub fn each<S, T, R>(list: Sig<S, Vec<T>, R>, render: impl FnOnce(Item<S, T>) ->
 /// is removed, so focus and the state of its inputs move with it.
 ///
 /// ```
-/// use hypersig::html::{each_keyed, li, ul};
+/// use hypersig::html::{Role, each_keyed, li, ul};
 /// use hypersig::Signals;
 /// use serde::{Deserialize, Serialize};
 ///
@@ -662,7 +667,7 @@ impl<S> fmt::Debug for El<S> {
 /// CSS text whose class selectors [`Stylesheet::class`] checks at compile time.
 ///
 /// ```
-/// use hypersig::html::{Class, Stylesheet, li};
+/// use hypersig::html::{Class, Role, Stylesheet, li};
 /// use hypersig::{Page, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -811,7 +816,7 @@ const fn is_ident_byte(b: u8) -> bool {
 /// [`Class::new`] is not, which suits a stylesheet the page loads from a URL.
 ///
 /// ```
-/// use hypersig::html::{Class, li};
+/// use hypersig::html::{Class, Role, li};
 /// use hypersig::{Sig, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -920,7 +925,7 @@ impl Event {
 /// `cargo hypersig elements` writes these constants from the manifest.
 ///
 /// ```
-/// use hypersig::html::{CustomEvent, el};
+/// use hypersig::html::{CustomEvent, Role, el};
 /// use hypersig::{Page, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -1076,7 +1081,7 @@ impl Key {
 /// there.
 ///
 /// ```
-/// use hypersig::html::{Key, Shortcut};
+/// use hypersig::html::{Key, Role, Shortcut};
 ///
 /// let palette: Shortcut = Key::Char('k').primary();
 /// let redo: Shortcut = Key::Char('z').primary().shift();
@@ -1384,6 +1389,20 @@ impl<S> El<S> {
         self
     }
 
+    /// Sets the WAI-ARIA role a screen reader announces the element by.
+    ///
+    /// ```
+    /// use hypersig::html::{Role, div};
+    ///
+    /// let html = div::<()>().role(Role::Status).text("Saved").render();
+    /// assert_eq!(html, r#"<div role="status">Saved</div>"#);
+    /// ```
+    #[must_use]
+    pub fn role(mut self, role: Role) -> Self {
+        self.attrs.push(("role", role.name().to_owned()));
+        self
+    }
+
     /// Keeps attribute `name` equal to `value` as signals change.
     #[must_use]
     pub fn bind_attr(mut self, name: Attr, value: impl IntoExpr<S, String>) -> Self {
@@ -1661,7 +1680,7 @@ impl<S> El<S> {
     /// the item or the condition again.
     ///
     /// ```
-    /// use hypersig::html::{El, div};
+    /// use hypersig::html::{El, Role, div};
     /// use hypersig::{NodeRef, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -1891,7 +1910,7 @@ impl<S> El<S> {
     /// the next page.
     ///
     /// ```
-    /// use hypersig::html::{div, each, li, ul};
+    /// use hypersig::html::{Role, div, each, li, ul};
     /// use hypersig::{Action, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -1937,7 +1956,7 @@ impl<S> El<S> {
     /// [`Page::on_key`](crate::Page::on_key) is the outermost.
     ///
     /// ```
-    /// use hypersig::html::{Key, div, input};
+    /// use hypersig::html::{Key, Role, div, input};
     /// use hypersig::Signals;
     /// use serde::{Deserialize, Serialize};
     ///
@@ -1978,7 +1997,7 @@ impl<S> El<S> {
     /// focus with [`Event::Focus`].
     ///
     /// ```
-    /// use hypersig::html::{Event, Orientation, attr, button, div};
+    /// use hypersig::html::{Event, Orientation, Role, attr, button, div};
     /// use hypersig::{Signals, if_else};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -1988,10 +2007,10 @@ impl<S> El<S> {
     /// }
     ///
     /// let tab = Tabs::tab();
-    /// let list = div::<Tabs>().attr(attr::ROLE, "tablist").roving_focus(Orientation::Horizontal).children(
+    /// let list = div::<Tabs>().role(Role::TabList).roving_focus(Orientation::Horizontal).children(
     ///     (0..3).map(|i| {
     ///         button()
-    ///             .attr(attr::ROLE, "tab")
+    ///             .role(Role::Tab)
     ///             .bind_attr(attr::TABINDEX, if_else(tab.equals(i), "0", "-1"))
     ///             .on(Event::Focus, tab.set(i))
     ///     }),
@@ -2022,7 +2041,7 @@ impl<S> El<S> {
     /// whose id equals it, since the runtime changes nothing but the signal.
     ///
     /// ```
-    /// use hypersig::html::{attr, div, input};
+    /// use hypersig::html::{Role, attr, div, input};
     /// use hypersig::{NodeRef, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -2035,11 +2054,11 @@ impl<S> El<S> {
     /// const RESULTS: NodeRef<Search> = NodeRef::new("results");
     ///
     /// let field = input::<Search>()
-    ///     .attr(attr::ROLE, "combobox")
+    ///     .role(Role::Combobox)
     ///     .bind(Search::query())
     ///     .bind_attr(attr::ARIA_ACTIVEDESCENDANT, Search::active())
     ///     .active_descendant(RESULTS, Search::active());
-    /// let results = div::<Search>().attr(attr::ROLE, "listbox").node_ref(RESULTS);
+    /// let results = div::<Search>().role(Role::ListBox).node_ref(RESULTS);
     /// assert!(field.render().contains(r#"data-hs-active="[&quot;results&quot;"#));
     /// # let _ = results;
     /// ```
@@ -2066,7 +2085,7 @@ impl<S> El<S> {
     /// ```
     /// use std::time::Duration;
     ///
-    /// use hypersig::html::{each_keyed, li, ul};
+    /// use hypersig::html::{Role, each_keyed, li, ul};
     /// use hypersig::Signals;
     /// use serde::{Deserialize, Serialize};
     ///

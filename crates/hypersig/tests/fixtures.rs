@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    CustomEvent, El, Event, Key, Orientation, a, attr, button, div, each, each_keyed, el, input,
-    label, li, main, p, select, span, textarea, ul, when,
+    CustomEvent, El, Event, Key, Orientation, Role, a, attr, button, div, each, each_keyed, el,
+    input, label, li, main, p, select, span, textarea, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
@@ -711,7 +711,7 @@ fn combo() -> (El<Combo>, Combo) {
     let option = |i: i32| {
         div()
             .id(format!("o{i}"))
-            .attr(attr::ROLE, "option")
+            .role(Role::Option)
             .on_click(picked.set(format!("o{i}")))
     };
     let el = main()
@@ -724,7 +724,7 @@ fn combo() -> (El<Combo>, Combo) {
         )
         .child(
             div()
-                .attr(attr::ROLE, "listbox")
+                .role(Role::ListBox)
                 .node_ref(OPTIONS)
                 .child(option(0))
                 .child(option(1).show(!query.is_empty()))

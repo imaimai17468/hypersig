@@ -39,6 +39,7 @@ fn accepted(name: &str) -> bool {
         && !matches!(
             lower.as_str(),
             "id" | "class"
+                | "role"
                 | "href"
                 | "src"
                 | "srcdoc"

@@ -1128,9 +1128,6 @@ pub const REV: Attr = Attr::new("rev");
 /// `reversed`, on `<ol>`.
 pub const REVERSED: Attr = Attr::new("reversed");
 
-/// `role`, on every element, as ARIA defines.
-pub const ROLE: Attr = Attr::new("role");
-
 /// `rotate`, on `<altGlyph>`, `<animateMotion>`, `<text>`, `<tref>`, `<tspan>`.
 pub const ROTATE: Attr = Attr::new("rotate");
 

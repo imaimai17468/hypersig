@@ -5,7 +5,7 @@
 //! keyboard handling, and its place in a form, and the drawn box follows its
 //! state through `Style::peer`.
 
-use hypersig::html::{El, attr, div, fieldset, input, label, legend, span};
+use hypersig::html::{El, Role, attr, div, fieldset, input, label, legend, span};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{
     Appearance, BorderStyle, Color, Cursor, Display, Opacity, Position, TextAlign, px, rem,
@@ -304,7 +304,7 @@ fn switch_with<S, R>(text: String, on: Sig<S, bool, R>, input: El<S>) -> El<S> {
                 .child(
                     input
                         .attr(attr::TYPE, "checkbox")
-                        .attr(attr::ROLE, "switch")
+                        .role(Role::Switch)
                         .css(hidden_input())
                         .bind(on),
                 )
@@ -469,7 +469,7 @@ fn radio_with<S, T: Serialize + PartialEq, L: Into<String>>(
         let legend_id = crate::id::of(selected, "legend");
         caption = caption.id(legend_id.clone());
         group = feedback
-            .describe(group.attr(attr::ROLE, "radiogroup"))
+            .describe(group.role(Role::RadioGroup))
             .attr(attr::ARIA_LABELLEDBY, legend_id)
             .on_blur(feedback.touch());
     }

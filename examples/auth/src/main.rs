@@ -17,7 +17,7 @@ use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
-use hypersig::html::{El, a, attr, div, each, form, h1, label, li, p, span, ul};
+use hypersig::html::{El, Role, a, attr, div, each, form, h1, label, li, p, span, ul};
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::rem;
@@ -376,7 +376,7 @@ fn home_card() -> El<Home> {
                             )
                             .child(
                                 p().id("problem")
-                                    .attr(attr::ROLE, "alert")
+                                    .role(Role::Alert)
                                     .css(Style::new().color(token::destructive().var()))
                                     .bind_text(Home::problem()),
                             )
@@ -432,7 +432,7 @@ fn picture_form() -> El<Home> {
         )
         .child(
             p().id("picture-problem")
-                .attr(attr::ROLE, "alert")
+                .role(Role::Alert)
                 .css(Style::new().color(token::destructive().var()))
                 .bind_text(Home::picture_problem()),
         )

@@ -1,7 +1,7 @@
 //! A sign-up form checked by its rules as the visitor types, with a select
 //! and a checkbox beside the text fields, for the page on forms.
 
-use hypersig::html::{div, p, attr};
+use hypersig::html::{Role, div, p};
 use hypersig::style::Style;
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::rem;
@@ -192,7 +192,7 @@ pub fn page(site: Site) -> Page<Join> {
                     ),
             )
             .child(
-                p().attr(attr::ROLE, "status")
+                p().role(Role::Status)
                     .css(Style::new().color(token::muted_foreground().var()))
                     .show(joined.and(!signup.is_dirty()))
                     .text(site.t(L {

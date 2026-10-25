@@ -21,8 +21,8 @@ use std::time::Duration;
 use axum::Router;
 use axum::http::StatusCode;
 use hypersig::html::{
-    El, Stylesheet, a, attr, button, div, each, footer, form, h1, h2, input, label, li, nav, p,
-    part, span, ul,
+    El, Role, Stylesheet, a, attr, button, div, each, footer, form, h1, h2, input, label, li, nav,
+    p, part, span, ul,
 };
 use hypersig::{Action, Expr, Fragment, Page, Part, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
@@ -110,7 +110,7 @@ impl Fragment for Body {
                 )
                 .child(
                     p().class(class::PROBLEM)
-                        .attr(attr::ROLE, "alert")
+                        .role(Role::Alert)
                         .bind_text(Newsletter::problem()),
                 ),
             // The address comes from the signal the handler patched, which

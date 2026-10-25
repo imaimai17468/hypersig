@@ -4,7 +4,7 @@ error[E0080]: evaluation panicked: a component name is ASCII letters, digits, `-
 8 | const BOLD: Tooltip<Editor> = Tooltip::new("bold.tip");
   |                               ^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `BOLD` failed inside this call
   |
-note: inside `Tooltip::<Editor>::new`
+note: inside `hypersig_ui::Tooltip::<Editor>::new`
  --> src/tooltip.rs
   |
   |         check_name(name);

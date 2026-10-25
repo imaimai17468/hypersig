@@ -1,6 +1,6 @@
 //! Listboxes: a list of options of which one is selected.
 
-use hypersig::html::{El, Event, Orientation, attr, div};
+use hypersig::html::{El, Event, Orientation, Role, attr, div};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Cursor, Display, JustifyContent, Opacity, px, rem,
 };
@@ -82,7 +82,7 @@ impl<S, T: Serialize + PartialEq> Listbox<S, T> {
                 none.and(selected.not_equals(value))
             });
         div()
-            .attr(attr::ROLE, "listbox")
+            .role(Role::ListBox)
             .attr(attr::ARIA_LABEL, self.label)
             .roving_focus(Orientation::Vertical)
             .css(list_style())
@@ -98,7 +98,7 @@ impl<S, T: Serialize + PartialEq> Listbox<S, T> {
                             chosen.clone()
                         };
                         div()
-                            .attr(attr::ROLE, "option")
+                            .role(Role::Option)
                             .id(crate::id::of(selected, &format!("option-{index}")))
                             .bind_attr(
                                 attr::ARIA_SELECTED,

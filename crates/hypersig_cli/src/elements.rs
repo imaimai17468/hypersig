@@ -188,6 +188,7 @@ fn refused(name: &str) -> Option<&'static str> {
     Some(match lower.as_str() {
         "id" => "set it with `El::id`.",
         "class" => "set it with `El::class`.",
+        "role" => "set it with `El::role`, which takes a `Role`.",
         "href" => "set it with `El::href`, which takes a `Link` or a `SafeUrl`.",
         "src" => "set it with `El::src`, which takes a `SafeUrl`.",
         "attributename" => "`hypersig::attr!` refuses it, because its value could name `href`.",
@@ -687,6 +688,7 @@ mod tests {
             "onclick",
             "formaction",
             "data-hs-x",
+            "ROLE",
             "a b",
         ] {
             assert!(refused(name).is_some(), "{name}");

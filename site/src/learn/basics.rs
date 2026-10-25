@@ -213,6 +213,10 @@ pub fn describing_the_page(site: Site) -> Part {
                     ja: "`id` と `class`。`El::id` と `El::class` で設定します。",
                 },
                 L {
+                    en: "`role`, which `El::role` sets from a [`Role`](api:hypersig/html/enum.Role.html), so a misspelled role stops the build too.",
+                    ja: "`role`。`El::role` が [`Role`](api:hypersig/html/enum.Role.html) から設定するので、ロールの書き間違いもビルドで止まります。",
+                },
+                L {
                     en: "A name starting with `data-hs-`, which only the typed methods write, because the runtime reads those attributes.",
                     ja: "`data-hs-` で始まる名前。ランタイムがこの属性を読むので、型付きのメソッドだけが書きます。",
                 },

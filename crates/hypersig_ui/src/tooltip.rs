@@ -4,7 +4,7 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use hypersig::NodeRef;
-use hypersig::html::{El, Event, attr, div};
+use hypersig::html::{El, Event, Role, attr, div};
 use hypersig::style::Style;
 use hypersig::style::value::{
     BackgroundClip, BorderStyle, Color, PositionTryFallbacks, px, raw, rem,
@@ -114,7 +114,7 @@ impl<S> Tooltip<S> {
         div()
             .id(self.name)
             .attr(attr::POPOVER, "hint")
-            .attr(attr::ROLE, "tooltip")
+            .role(Role::Tooltip)
             .node_ref(tip)
             // The pointer moving from the button onto the tooltip leaves one
             // and enters the other in the same event, so the tooltip closes

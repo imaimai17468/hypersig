@@ -13,7 +13,7 @@ use axum::middleware::{self, Next};
 use axum::response::Response;
 use axum::{Extension, Router};
 use hypersig::html::{
-    self, El, Orientation, attr, div, each, form, h1, h2, header, li, p, section, span, ul,
+    self, El, Orientation, Role, attr, div, each, form, h1, h2, header, li, p, section, span, ul,
 };
 
 use hypersig::style::Media;
@@ -400,7 +400,7 @@ fn profile() -> El<Gallery> {
                     .child(
                         span()
                             .id("saved")
-                            .attr(attr::ROLE, "status")
+                            .role(Role::Status)
                             .css(Style::new().color(token::muted_foreground().var()))
                             .bind_text(Gallery::saved()),
                     ),
@@ -578,7 +578,7 @@ fn overlays() -> El<Gallery> {
         )
         .child(
             p().id("status")
-                .attr(attr::ROLE, "status")
+                .role(Role::Status)
                 .css(Style::new().color(token::muted_foreground().var()))
                 .bind_text(status),
         )

@@ -26,7 +26,7 @@ use axum::Router;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, a, attr, button, div, form, h1, input, li, p, span, ul};
+use hypersig::html::{El, Role, a, attr, button, div, form, h1, input, li, p, span, ul};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, StreamAction};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -318,7 +318,7 @@ async fn index(state: AppState, (): ()) -> Result<Page<TodoPage>, DbError> {
             )
             .child(
                 p().id("problem")
-                    .attr(attr::ROLE, "alert")
+                    .role(Role::Alert)
                     .css(styles::problem())
                     .show(!problem.is_empty())
                     .bind_text(problem),

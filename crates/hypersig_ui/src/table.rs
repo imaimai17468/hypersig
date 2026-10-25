@@ -6,7 +6,8 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use hypersig::html::{
-    El, Event, Node, attr, button, div, each_keyed, input, p, span, table, tbody, td, th, thead, tr,
+    El, Event, Node, Role, attr, button, div, each_keyed, input, p, span, table, tbody, td, th,
+    thead, tr,
 };
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
@@ -1300,7 +1301,7 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>, label: &s
         .child(icon(icon::MINUS, rem(0.875)).show(some.clone().and(!all.clone())));
     button()
         .attr(attr::TYPE, "button")
-        .attr(attr::ROLE, "checkbox")
+        .role(Role::Checkbox)
         .attr(attr::ARIA_LABEL, label)
         .bind_attr(
             attr::ARIA_CHECKED,
