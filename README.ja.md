@@ -76,7 +76,7 @@ async fn main() -> std::io::Result<()> {
 
 ## フレームワークの比較
 
-hypersig に近いのは Topcoat と Datastar です。どちらもブラウザの中にシグナルを持ち、ブラウザ向けのビルドなしにサーバーから画面を更新します。Topcoat はブラウザで動く式も Rust で書きます。
+hypersig に近いのは Topcoat と Datastar です。どちらもブラウザの中にシグナルを持ち、ブラウザ向けのビルドなしにサーバーから画面を更新します。Topcoat はブラウザで動く式も Rust で書きます。Leptos と Dioxus も画面とサーバーを Rust で書きますが、画面を WebAssembly にコンパイルし、ブラウザでサーバーの HTML をハイドレートします。
 
 |  | Topcoat と Datastar | hypersig |
 |---|---|---|
@@ -84,27 +84,28 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 | リンクのパラメータ（Topcoat） | `href!` が検査するのはハンドラだけです。パスパラメータが足りないか多いと、ページを描くときにパニックし、リクエストは 500 を返します | `Route` がパラメータを型の付いた値で受け取ります。間違えるとコンパイルエラーになります |
 | 一覧への追加（Topcoat） | 式から項目を足せないので、サーバーが答えて描き直したときに一覧が変わります | 一覧をシグナルに持つので、サーバーが答える前にブラウザが変更を表示します |
 
-| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
-|---|---|---|---|---|---|---|---|
-| 画面を書く言語 | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript と Vue のテンプレート | HTML の属性 |
-| サーバーを書く言語 | Rust | Rust | 任意 | TypeScript | TypeScript | TypeScript | 任意 |
-| ブラウザ向けのビルドが不要 | はい | はい | いいえ（Vite） | いいえ（Node のバンドラー） | いいえ（Vite） | いいえ（Vite） | はい |
-| 送る値の型をコンパイル時に検査 | はい | はい | いいえ | はい | はい | いいえ | いいえ |
-| リンクの行き先をコンパイル時に検査 | はい | ハンドラだけ（パラメータは実行時） | いいえ（ルーターなし） | 設定で有効化（`typedRoutes`） | はい | 実験的（`typedPages`） | いいえ |
-| ブラウザの中で状態を持てる | はい | はい | はい | はい | はい | はい | はい |
+| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar | Leptos | Dioxus |
+|---|---|---|---|---|---|---|---|---|---|
+| 画面を書く言語 | Rust | Rust | TypeScript | TypeScript | TypeScript | TypeScript と Vue のテンプレート | HTML の属性 | Rust | Rust |
+| サーバーを書く言語 | Rust | Rust | 任意 | TypeScript | TypeScript | TypeScript | 任意 | Rust | Rust |
+| ブラウザ向けのビルドが不要 | はい | はい | いいえ（Vite） | いいえ（Node のバンドラー） | いいえ（Vite） | いいえ（Vite） | はい | いいえ（`cargo leptos` で Wasm に） | いいえ（`dx` で Wasm に） |
+| 送る値の型をコンパイル時に検査 | はい | はい | いいえ | はい | はい | いいえ | いいえ | はい | はい |
+| リンクの行き先をコンパイル時に検査 | はい | ハンドラだけ（パラメータは実行時） | いいえ（ルーターなし） | 設定で有効化（`typedRoutes`） | はい | 実験的（`typedPages`） | いいえ | いいえ（`href` は文字列） | はい（`Routable` の列挙型の値） |
+| ブラウザの中で状態を持てる | はい | はい | はい | はい | はい | はい | はい | はい | はい |
 
 ## ベンチマーク
 
-追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 3 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。
+追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 10 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。括弧の中は 10 回のうち最も速い回と遅い回の値です。
 
-| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar |
-|---|---|---|---|---|---|---|---|
-| JS（gzip） | 19.2 KB | 14.8 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 13.1 KB |
-| First Contentful Paint | 186 ms | 165 ms | 196 ms | 198 ms | 193 ms | 177 ms | 182 ms |
-| Total Blocking Time | 0 ms | 313 ms | 5 ms | 10 ms | 0 ms | 29 ms | 16 ms |
-| Interaction to Next Paint | 24 ms | 24 ms | 24 ms | 24 ms | 24 ms | 16 ms | 16 ms |
+| | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar | Leptos | Dioxus |
+|---|---|---|---|---|---|---|---|---|---|
+| JS（gzip） | 19.7 KB | 14.8 KB | 67.1 KB | 133.3 KB | 119.5 KB | 59.2 KB | 13.1 KB | 5.5 KB | 15.7 KB |
+| Wasm（gzip） | - | - | - | - | - | - | - | 145.1 KB | 441.4 KB |
+| First Contentful Paint | 239 ms (231–309) | 221 ms (206–241) | 209 ms (198–266) | 240 ms (229–261) | 237 ms (217–251) | 236 ms (223–263) | 217 ms (204–249) | 232 ms (222–240) | 213 ms (205–244) |
+| Total Blocking Time | 3 ms (0–37) | 318 ms (311–351) | 16 ms (11–23) | 14 ms (9–16) | 0 ms (0–0) | 36 ms (29–42) | 20 ms (17–23) | 47 ms (42–57) | 122 ms (114–126) |
+| Interaction to Next Paint | 24 ms (24–24) | 24 ms (24–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (24–24) | 16 ms (16–16) | 24 ms (16–24) | 72 ms (72–80) |
 
-測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。hypersig の JS の行は、計測したコミット 72e62b8 のランタイムを計測の仕組みが gzip した大きさです。ランタイムはその後大きくなり、今は gzip で約 20 KB です。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。
+測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。どのアプリもコミット 7d031d0 で測りました。Leptos と Dioxus はコードの大半を WebAssembly で読み込むので、その大きさを JS の行とは別に Wasm の行に数えています。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。
 
 同じページを `hypersig::style`、Tailwind CSS、Panda CSS、StyleX、vanilla-extract でスタイルした計測は、[`hypersig_style` の README](crates/hypersig_style/README.ja.md#ベンチマーク) にあります。
 
