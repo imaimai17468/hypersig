@@ -1,8 +1,22 @@
 import type { Navigation } from "./runtime/navigation.ts";
 import { readEventStream } from "./sse.ts";
 
-/** How long to wait before asking a server that did not answer again, in milliseconds. */
-const RETRY_MS = 250;
+/**
+ * How long to wait before asking again, in milliseconds. `cargo hypersig dev`
+ * stops the old server only once the new build is written and starts the new
+ * one at once, so the new server listens soon after the old stream ends.
+ */
+const RETRY_MS = 50;
+
+/**
+ * How long to wait before asking again once no server has answered for
+ * `IDLE_AFTER_MS`, in milliseconds. Each refused request writes an error to
+ * the console, so a server that stays down is asked less often.
+ */
+const IDLE_RETRY_MS = 1000;
+
+/** How long no server answers before the page asks every `IDLE_RETRY_MS`, in milliseconds. */
+const IDLE_AFTER_MS = 3000;
 
 /**
  * How long one request holds the stream before the page closes it and asks
@@ -25,6 +39,8 @@ const HOLD_MS = 2000;
  * that a server stopped with Ctrl+C waits for it no longer than that.
  */
 export function reloadOnRestart(url: string, navigation: Navigation): void {
+  // When the page lost the server, while no server has answered since.
+  let refusedSince: number | undefined;
   const ask = async (): Promise<void> => {
     if (navigation.leaving) return;
     let reload = false;
@@ -35,6 +51,7 @@ export function reloadOnRestart(url: string, navigation: Navigation): void {
         headers: { Accept: "text/event-stream" },
         signal: hold.signal,
       });
+      refusedSince = undefined;
       if (response.status === 404) return;
       if (response.ok && response.body !== null) {
         await readEventStream(response.body, (event) => {
@@ -44,11 +61,16 @@ export function reloadOnRestart(url: string, navigation: Navigation): void {
     } catch {
       // The server stopped, had not started listening yet, or held the
       // stream for `HOLD_MS`.
+      if (!hold.signal.aborted) refusedSince ??= Date.now();
     } finally {
       clearTimeout(timer);
     }
-    if (reload) navigation.reload();
-    else setTimeout(() => void ask(), RETRY_MS);
+    if (reload) {
+      navigation.reload();
+      return;
+    }
+    const idle = refusedSince !== undefined && Date.now() - refusedSince >= IDLE_AFTER_MS;
+    setTimeout(() => void ask(), idle ? IDLE_RETRY_MS : RETRY_MS);
   };
   void ask();
 }
