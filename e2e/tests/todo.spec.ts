@@ -19,7 +19,7 @@ test("two tabs see each other's changes over the update stream", async ({ page: 
   await a.getByPlaceholder("What needs doing?").press("Enter");
   await expect(items(b)).toHaveCount(2);
   await expect(b.locator("#summary-left")).toHaveText("2 left");
-  // The items arrived in a patch, so their rules did too.
+  // The items arrived in a list patch and were drawn from the page's template, rules included.
   const title = (page: typeof a, n: number) => items(page).nth(n).locator("span");
   await expect(items(b).nth(0)).toHaveCSS("display", "flex");
   await expect(title(b, 0)).toHaveCSS("text-decoration-line", "none");
