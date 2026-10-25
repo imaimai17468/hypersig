@@ -863,6 +863,9 @@ impl<S: Signals> Page<S> {
         }
         if let Some(url) = dev {
             write_attr(out, "data-hs-dev", url);
+            if !S::SHAPE.is_empty() {
+                write_attr(out, "data-hs-shape", S::SHAPE);
+            }
         }
     }
 

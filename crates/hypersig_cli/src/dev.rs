@@ -3,7 +3,9 @@
 //!
 //! A page that a debug build of hypersig serves keeps a stream to the server
 //! open and reloads once a new server answers in its place, so the browser
-//! shows the new build without a hand on the reload button.
+//! shows the new build without a hand on the reload button. The reloaded
+//! page keeps the signals the visitor changed, where its route and its
+//! signal struct's fields are the same.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;

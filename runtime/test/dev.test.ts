@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { reloadOnRestart } from "../src/dev.ts";
+import { followServer, keepSignals, reloadOnRestart, restoreSignals } from "../src/dev.ts";
+import { Runtime } from "../src/runtime.ts";
 import { Navigation } from "../src/runtime/navigation.ts";
 
 afterEach(() => {
@@ -107,4 +108,66 @@ it("stops asking once the page is loading another", () => {
   reloadOnRestart("/_hypersig/dev?since=a1", navigation);
 
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it("keeps the signals just before the reload", async () => {
+  vi.useFakeTimers();
+  const order: string[] = [];
+  vi.spyOn(location, "reload").mockImplementation(() => order.push("reload"));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof globalThis.fetch>().mockResolvedValue(events("event: hs-reload\ndata: {}\n\n")),
+  );
+
+  reloadOnRestart("/_hypersig/dev?since=a1", new Navigation(), () => order.push("keep"));
+  await vi.advanceTimersByTimeAsync(100);
+
+  expect(order).toEqual(["keep", "reload"]);
+});
+
+it("counts a signal as the visitor's only where it differs from the server's last write", () => {
+  const runtime = new Runtime(document.createElement("div"), { draft: "", todos: [] });
+  const changed = followServer(runtime, { draft: "", todos: [] });
+
+  runtime.store.set("draft", "half a");
+  runtime.apply({ event: "hs-signals", data: JSON.stringify({ todos: [{ id: 1 }] }) });
+
+  // The server wrote `todos`, so the new server's list stands after a reload.
+  expect(changed()).toEqual({ draft: "half a" });
+
+  runtime.apply({ event: "hs-signals", data: JSON.stringify({ draft: "" }) });
+
+  expect(changed()).toEqual({});
+});
+
+it("restores the kept signals over the new server's values", () => {
+  keepSignals("draft:String,count:i32", { draft: "half a" });
+
+  const restored = restoreSignals("draft:String,count:i32", { draft: "", count: 7 });
+
+  expect(restored).toEqual({ draft: "half a", count: 7 });
+  // The kept signals are read once.
+  expect(restoreSignals("draft:String,count:i32", { draft: "", count: 7 })).toEqual({
+    draft: "",
+    count: 7,
+  });
+});
+
+it("restores nothing into a struct of another shape", () => {
+  keepSignals("draft:String", { draft: "half a" });
+
+  expect(restoreSignals("draft:i32", { draft: 0 })).toEqual({ draft: 0 });
+  expect(sessionStorage.length).toBe(0);
+});
+
+it("restores nothing into a page of another route", () => {
+  keepSignals("draft:String", { draft: "half a" });
+  const shown = location.href;
+  history.replaceState(null, "", "/elsewhere");
+
+  try {
+    expect(restoreSignals("draft:String", { draft: "" })).toEqual({ draft: "" });
+  } finally {
+    history.replaceState(null, "", shown);
+  }
 });

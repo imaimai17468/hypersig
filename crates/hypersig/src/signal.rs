@@ -35,7 +35,22 @@ use crate::patch::SignalPatch;
 /// An action receives only the arguments its call passes, so a handler that
 /// needs a signal's value takes it as an argument. A field may itself be a
 /// `Signals` struct or a `Vec` of one; [`Sig::at`] reaches into it.
-pub trait Signals: Serialize + DeserializeOwned + Send + 'static {}
+pub trait Signals: Serialize + DeserializeOwned + Send + 'static {
+    /// The struct's field names and types, which `#[derive(Signals)]` writes.
+    ///
+    /// It reads `name:Type` for each field in declaration order, joined by
+    /// `,`, with the type written out token by token, as `Vec < Todo >`
+    /// for a `Vec<Todo>`. A page served by a debug
+    /// build carries it, and after `cargo hypersig dev` restarts the server,
+    /// the reloaded tab restores the signals the visitor changed only where
+    /// the new page's struct has the same shape. A field whose type is
+    /// another `Signals` struct contributes only that type's name, so a
+    /// change inside the nested struct alone is not seen, and the value
+    /// restored into that field keeps its old fields until the next reload.
+    /// An impl written by hand leaves it empty, and its page restores
+    /// nothing.
+    const SHAPE: &'static str = "";
+}
 
 /// A piece of page written once against its own signals, which any page can embed.
 ///

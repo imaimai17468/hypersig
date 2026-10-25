@@ -4,7 +4,12 @@
 //! A page whose server restarts with new code is shown by a process that no
 //! longer exists, so the page reloads to get the new one. Each process
 //! answers at the same path with a token of its own, and the page names the
-//! token of the process that rendered it. A release build, and a build for
+//! token of the process that rendered it. The runtime imports the code that
+//! reads the stream from a script served beside it, so the runtime a release
+//! build serves carries none of that code. Beside the URL, the page carries
+//! its signal struct's [`SHAPE`](crate::Signals::SHAPE), so the reloaded
+//! page restores the signals the visitor changed only into a struct with
+//! the same fields. A release build, and a build for
 //! wasm32-unknown-unknown, where the host restarts nothing in front of an
 //! open tab, serve no stream and write no URL.
 
@@ -20,6 +25,7 @@ mod served {
 
     use axum::Router;
     use axum::extract::Query;
+    use axum::http::header;
     use axum::response::sse::{Event, Sse};
     use axum::response::{IntoResponse, Response};
     use axum::routing::get;
@@ -29,6 +35,14 @@ mod served {
 
     /// The path of the stream, beside the runtime's.
     const PATH: &str = "/_hypersig/dev";
+
+    /// The path of the dev script. The runtime imports it from `dev.js`
+    /// resolved against the stream's URL, so it sits beside `PATH`.
+    const SCRIPT_PATH: &str = "/_hypersig/dev.js";
+
+    /// The code a page served by this build runs, which `pnpm build` writes
+    /// from `runtime/src/dev.ts` apart from the runtime.
+    const SCRIPT: &str = include_str!("../../assets/dev.js");
 
     /// This process's token, from the time it first rendered a page or
     /// answered the stream and its process id, which two processes started
@@ -49,9 +63,21 @@ mod served {
         Some(format!("{}?since={}", base.join(PATH), *TOKEN))
     }
 
-    /// Serves the stream on `router`.
+    /// Serves the stream and the dev script on `router`.
     pub(crate) fn route<St: Clone + Send + Sync + 'static>(router: Router<St>) -> Router<St> {
-        router.route(PATH, get(answer))
+        router
+            .route(PATH, get(answer))
+            .route(SCRIPT_PATH, get(script))
+    }
+
+    /// Serves the dev script. Its path names no hash, so the browser asks
+    /// for it again on each load rather than run a copy from an older build.
+    async fn script() -> Response {
+        let head = [
+            (header::CONTENT_TYPE, "text/javascript; charset=utf-8"),
+            (header::CACHE_CONTROL, "no-cache"),
+        ];
+        (head, SCRIPT).into_response()
     }
 
     /// Sends `hs-reload` at once to a page another process rendered, and

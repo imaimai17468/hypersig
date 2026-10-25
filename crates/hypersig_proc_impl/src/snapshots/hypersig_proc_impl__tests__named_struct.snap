@@ -3,7 +3,9 @@ source: crates/hypersig_proc_impl/src/lib.rs
 expression: "expand(quote!\n{ pub struct Counter { pub count: i32, label: String, pub r#type: bool, } })"
 ---
 #[automatically_derived]
-impl ::hypersig::Signals for Counter {}
+impl ::hypersig::Signals for Counter {
+    const SHAPE: &'static str = "count:i32,label:String,type:bool";
+}
 #[automatically_derived]
 impl Counter {
     ///Typed reference to the `count` signal.

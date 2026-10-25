@@ -6,7 +6,9 @@ expression: "expand(quote! { struct R { #[serde(rename = \"n\")] name: String } 
     "`#[serde(...)]` is not supported on a `Signals` struct, because the signal path must equal the field name"
 }
 #[automatically_derived]
-impl ::hypersig::Signals for R {}
+impl ::hypersig::Signals for R {
+    const SHAPE: &'static str = "name:String";
+}
 #[automatically_derived]
 impl R {
     ///Typed reference to the `name` signal.
