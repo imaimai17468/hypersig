@@ -308,6 +308,7 @@ async fn serves_the_runtime_at_a_path_named_after_its_hash_for_a_year() {
         r#"<script type="module" src="{}">"#,
         hypersig::RUNTIME_PATH
     )));
+    assert!(!html.contains("data-hs-shape"), "{html}");
 }
 
 /// The URL of the stream a page served by a debug build reloads from.
@@ -327,6 +328,17 @@ async fn a_page_reloads_from_a_server_started_after_the_one_that_rendered_it() {
     let (_, page) = send(Request::get("/").body(Body::empty()).expect("request")).await;
     let url = dev_url(&page);
     assert!(url.starts_with("/_hypersig/dev?since="), "{url}");
+    assert!(page.contains(r#" data-hs-shape="count:i32""#), "{page}");
+
+    // The runtime imports the dev script from beside the stream.
+    let (status, script) = send(
+        Request::get("/_hypersig/dev.js")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(script.starts_with("// hypersig dev script."), "{script}");
 
     let (status, body) = send(
         Request::get("/_hypersig/dev?since=0")

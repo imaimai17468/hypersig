@@ -11,8 +11,9 @@ use syn::{Data, DeriveInput, Fields, FieldsNamed};
 
 /// Expands `#[derive(Signals)]` for the struct in `input`.
 ///
-/// The expansion implements `hypersig::Signals` for the struct and adds one
-/// associated function per field, named after the field, returning a typed
+/// The expansion implements `hypersig::Signals` for the struct, with
+/// `SHAPE` set to each field's name and type, and adds one associated
+/// function per field, named after the field, returning a typed
 /// `hypersig::Sig` for it. It defines no other item.
 ///
 /// Rejected inputs, each with a compile error at the offending span: enums,
@@ -58,6 +59,7 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
     };
 
     let mut accessors = Vec::with_capacity(named.named.len());
+    let mut shape = Vec::with_capacity(named.named.len());
     for field in &named.named {
         errors.push(reject_serde_attributes(&field.attrs));
         let Some(ident) = &field.ident else {
@@ -66,6 +68,7 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
         let path = ident.unraw().to_string();
         let vis = &field.vis;
         let ty = &field.ty;
+        shape.push(format!("{path}:{}", quote!(#ty)));
         let doc = format!("Typed reference to the `{path}` signal.");
         accessors.push(quote! {
             #[doc = #doc]
@@ -78,11 +81,14 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
     }
 
     let errors = errors.into_compile_error();
+    let shape = shape.join(",");
     quote! {
         #errors
 
         #[automatically_derived]
-        impl ::hypersig::Signals for #name {}
+        impl ::hypersig::Signals for #name {
+            const SHAPE: &'static str = #shape;
+        }
 
         #[automatically_derived]
         impl #name {

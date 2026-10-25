@@ -96,6 +96,13 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
+                en: "The reloaded tab keeps the signals the visitor changed, such as a half-typed draft. Just before the reload, the page saves in the tab's `sessionStorage` each top-level signal whose value differs from the server's last write of it, in the page or in a patch. The new page puts those back over the new server's values, and every other signal, such as a list the server patched, takes the new server's value. It does so only where the new page shows the same path and query and its signal struct has the same field names and types, which `#[derive(Signals)]` writes into the page in a debug build. A change inside a nested struct alone is not detected. Otherwise the page starts from the server's values. The code that does this is a script of its own, which only a debug build serves, so a release build's runtime carries none of it.",
+                ja: "読み込み直したタブは、訪問者が変えたシグナル（書きかけの入力など）を保ちます。ページは読み込み直す直前に、最上位のシグナルのうち、サーバーが最後に書いた値（ページに書き込んだ値か差分で送った値）と異なるものをタブの `sessionStorage` に保存します。新しいページはそれを新しいサーバーの値の上に戻し、ほかのシグナル（サーバーが差分で書き換えた一覧など）には新しいサーバーの値を使います。戻すのは、新しいページのパスとクエリが同じで、シグナル構造体のフィールド名と型も同じときだけです。フィールド名と型は、デバッグビルドで `#[derive(Signals)]` がページに書き込みます。入れ子の構造体の中だけが変わった場合は検出されません。条件に合わないときは、ページはサーバーの値から始まります。この処理は独立したスクリプトにあり、デバッグビルドだけが配信するので、リリースビルドのランタイムには含まれません。",
+            },
+        ),
+        para(
+            site,
+            L {
                 en: "The same command can also start a project. `cargo hypersig new counter --host server` writes a directory `counter` with a counter like the one above and a Dockerfile, in place of `cargo new` and the two files written by hand. `--host cloudflare` and `--host vercel` write a project for those hosts, which [Choosing a host](learn/deploying/) compares.",
                 ja: "このコマンドでプロジェクトを作ることもできます。`cargo hypersig new counter --host server` は、上と同じようなカウンターと Dockerfile を入れたディレクトリ `counter` を書き出すので、`cargo new` と、手で書いた 2 つのファイルの代わりになります。`--host cloudflare` と `--host vercel` はそれぞれのホスト向けのプロジェクトを書き出します。ホストの違いは [デプロイ先の選び方](learn/deploying/) で比べています。",
             },

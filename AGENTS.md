@@ -18,7 +18,7 @@ That last sentence is the project's thesis. A change that lets a user write one 
 | `crates/hypersig/benches/render.rs` | divan benchmarks of `Page::render` over list pages, with allocation counts |
 | `crates/hypersig/tests/ui` | trybuild cases. Each `fail/*.rs` is a mistake that must not compile |
 | `crates/hypersig/tests/fixtures.rs` | Builds pages with the Rust builder and writes them to `runtime/test/fixtures/`, which the runtime tests load |
-| `runtime/` | The browser runtime in TypeScript. `pnpm build` writes `crates/hypersig/assets/hypersig.js` and its Brotli copy `hypersig.js.br`, both committed so that `cargo build` needs no Node |
+| `runtime/` | The browser runtime in TypeScript. `pnpm build` writes `crates/hypersig/assets/hypersig.js`, its Brotli copy `hypersig.js.br`, and `dev.js` from `src/dev.ts`, which only a debug build serves, all committed so that `cargo build` needs no Node |
 | `assets/` | The hypersig icon `hypersig.svg`, and the link preview pictures `og-en.png` and `og-ja.png` drawn from `og-en.svg` and `og-ja.svg`, which the site serves. Redraw a PNG after changing its SVG with `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars --window-size=1200,630 --screenshot=assets/og-en.png "file://$PWD/assets/og-en.svg"` |
 | `examples/` | Runnable axum applications |
 | `e2e/` | Playwright tests that start every example and drive it in Chrome |
