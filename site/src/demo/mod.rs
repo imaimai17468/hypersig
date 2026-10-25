@@ -8,7 +8,7 @@ use std::cell::Cell;
 
 use hypersig::Page;
 use hypersig::Signals;
-use hypersig::html::{div, el, p};
+use hypersig::html::{attr, div, el, p};
 use hypersig::style::value::{
     BorderBottomStyle, BorderStyle, Display, FontWeight, OverflowX, pct, px, raw, rem,
 };
@@ -200,13 +200,13 @@ pub fn show(site: Site, demo: Demo) -> Part {
                 el("iframe")
                     .src(own(site.page_url(&demo.path())))
                     .attr(
-                        "title",
+                        attr::TITLE,
                         site.t(L {
                             en: format!("The {} demo, running", demo.name().replace('_', " ")),
                             ja: format!("{} のデモの実行結果", demo.name().replace('_', " ")),
                         }),
                     )
-                    .attr("loading", "lazy")
+                    .attr(attr::LOADING, "lazy")
                     .css(
                         Style::new()
                             .display(Display::Block)

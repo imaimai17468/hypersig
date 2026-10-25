@@ -1,0 +1,32 @@
+error[E0080]: evaluation panicked: `El::href` and `El::src` set `href` and `src` from a `Link` or a `SafeUrl`
+ --> tests/ui/fail/attr_href.rs:4:28
+  |
+4 |     let _ = a::<()>().attr(hypersig::attr!("HREF"), "javascript:alert(1)");
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed inside this call
+  |
+note: inside `hypersig::_private::attr`
+ --> src/lib.rs
+  |
+  |         crate::html::Attr::new(name)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: inside `Attr::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/html.rs
+  |
+  | /         assert!(
+  | |             !is(bytes, "href") && !is(bytes, "src"),
+  | |             "`El::href` and `El::src` set `href` and `src` from a `Link` or a `SafeUrl`"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/attr_href.rs:4:28
+  |
+4 |     let _ = a::<()>().attr(hypersig::attr!("HREF"), "javascript:alert(1)");
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this note originates in the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)

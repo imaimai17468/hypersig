@@ -1,7 +1,7 @@
 //! The frame around every page: the header, the sidebar, and the links to
 //! the previous and the next page.
 
-use hypersig::html::{a, div, el, footer, header, img, main, nav, p, span};
+use hypersig::html::{a, attr, div, el, footer, header, img, main, nav, p, span};
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, BorderStyle, BorderTopStyle, Color, Display, FlexWrap,
@@ -155,7 +155,7 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                 .child(
                     nav()
                         .attr(
-                            "aria-label",
+                            attr::ARIA_LABEL,
                             site.t(L {
                                 en: "Sections",
                                 ja: "セクション",
@@ -208,7 +208,7 @@ fn menu(site: Site, doc: Doc) -> Part {
     nav()
         .id(SIDEBAR)
         .attr(
-            "aria-label",
+            attr::ARIA_LABEL,
             site.t(L {
                 en: "Pages",
                 ja: "ページ",
@@ -234,8 +234,8 @@ fn other_language(site: Site, doc: Doc) -> Part {
         Lang::En
     };
     a().href(own(doc.url(site.with_lang(other))))
-        .attr("hreflang", other.tag())
-        .attr("lang", other.tag())
+        .attr(attr::HREFLANG, other.tag())
+        .attr(attr::LANG, other.tag())
         .css(
             nav_link_style(Place::Other)
                 .margin_left(raw("auto"))
@@ -262,15 +262,15 @@ fn brand(site: Site, library: Library) -> Part {
                 .child(
                     img()
                         .src(own(site.icon()))
-                        .attr("alt", "")
-                        .attr("width", "24")
-                        .attr("height", "24"),
+                        .attr(attr::ALT, "")
+                        .attr(attr::WIDTH, "24")
+                        .attr(attr::HEIGHT, "24"),
                 )
                 .text("hypersig"),
         )
         .children((library != Library::Framework).then(|| {
             span()
-                .attr("aria-hidden", "true")
+                .attr(attr::ARIA_HIDDEN, "true")
                 .css(Style::new().color(token::muted_foreground().var()))
                 .text("/")
         }))
@@ -286,7 +286,7 @@ fn brand(site: Site, library: Library) -> Part {
 fn switcher(site: Site, current: Library) -> Part {
     nav()
         .attr(
-            "aria-label",
+            attr::ARIA_LABEL,
             site.t(L {
                 en: "Libraries",
                 ja: "ライブラリ",
@@ -323,7 +323,7 @@ fn switcher(site: Site, current: Library) -> Part {
 fn languages(site: Site, doc: Doc) -> Part {
     nav()
         .attr(
-            "aria-label",
+            attr::ARIA_LABEL,
             site.t(L {
                 en: "Languages",
                 ja: "言語",
@@ -334,8 +334,8 @@ fn languages(site: Site, doc: Doc) -> Part {
             let here = Place::current_if(lang == site.lang());
             let link = a()
                 .href(own(doc.url(site.with_lang(lang))))
-                .attr("hreflang", lang.tag())
-                .attr("lang", lang.tag())
+                .attr(attr::HREFLANG, lang.tag())
+                .attr(attr::LANG, lang.tag())
                 .css(nav_link_style(here));
             mark_current(link, here).text(lang.name())
         }))
@@ -372,7 +372,7 @@ impl Place {
 /// `link` marked as the current page where it leads to the current place.
 fn mark_current(link: Part, place: Place) -> Part {
     match place {
-        Place::Current => link.attr("aria-current", "page"),
+        Place::Current => link.attr(attr::ARIA_CURRENT, "page"),
         Place::Other => link,
     }
 }
@@ -381,7 +381,7 @@ fn mark_current(link: Part, place: Place) -> Part {
 /// to the current place. The page itself is marked in the sidebar.
 fn mark_section(link: Part, place: Place) -> Part {
     match place {
-        Place::Current => link.attr("aria-current", "true"),
+        Place::Current => link.attr(attr::ARIA_CURRENT, "true"),
         Place::Other => link,
     }
 }
@@ -416,8 +416,8 @@ fn menu_button(site: Site) -> Part {
             ja: "メニュー",
         }),
     )
-    .attr("aria-controls", SIDEBAR)
-    .bind_attr("aria-expanded", if_else(menu, "true", "false"))
+    .attr(attr::ARIA_CONTROLS, SIDEBAR)
+    .bind_attr(attr::ARIA_EXPANDED, if_else(menu, "true", "false"))
     .on_click(menu.toggle())
     .css(
         Style::new()
@@ -426,17 +426,17 @@ fn menu_button(site: Site) -> Part {
     )
     .child(
         el("svg")
-            .attr("viewBox", "0 0 24 24")
-            .attr("fill", "none")
-            .attr("stroke", "currentColor")
-            .attr("stroke-width", "2")
-            .attr("stroke-linecap", "round")
-            .attr("aria-hidden", "true")
+            .attr(attr::VIEW_BOX, "0 0 24 24")
+            .attr(attr::FILL, "none")
+            .attr(attr::STROKE, "currentColor")
+            .attr(attr::STROKE_WIDTH, "2")
+            .attr(attr::STROKE_LINECAP, "round")
+            .attr(attr::ARIA_HIDDEN, "true")
             .css(Style::new().width(rem(1.25)).height(rem(1.25)))
             .children(
                 ["M4 6h16", "M4 12h16", "M4 18h16"]
                     .into_iter()
-                    .map(|d| el("path").attr("d", d)),
+                    .map(|d| el("path").attr(attr::D, d)),
             ),
     )
 }
@@ -445,7 +445,7 @@ fn sidebar(site: Site, doc: Doc) -> Part {
     nav()
         .id(SIDEBAR)
         .attr(
-            "aria-label",
+            attr::ARIA_LABEL,
             site.t(L {
                 en: "Pages",
                 ja: "ページ",
@@ -608,7 +608,7 @@ fn pager(site: Site, before: Option<Doc>, after: Option<Doc>) -> Part {
     };
     nav()
         .attr(
-            "aria-label",
+            attr::ARIA_LABEL,
             site.t(L {
                 en: "Previous and next page",
                 ja: "前後のページ",

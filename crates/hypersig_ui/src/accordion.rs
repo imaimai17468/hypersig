@@ -1,6 +1,6 @@
 //! Accordions: a stack of sections that each open and close.
 
-use hypersig::html::{El, Node, details, div, summary};
+use hypersig::html::{El, Node, attr, details, div, summary};
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, Cursor, Display, FontWeight, JustifyContent, ListStyleType, px,
     raw, rem,
@@ -88,7 +88,7 @@ impl<S> Accordion<S> {
                     .group(),
             );
             let section = match name {
-                Some(name) => section.attr("name", name),
+                Some(name) => section.attr(attr::NAME, name),
                 None => section,
             };
             section

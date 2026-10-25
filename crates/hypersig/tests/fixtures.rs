@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use hypersig::html::{
-    CustomEvent, El, Event, Key, Orientation, a, button, div, each, each_keyed, el, input, label,
-    li, main, p, select, span, textarea, ul, when,
+    CustomEvent, El, Event, Key, Orientation, Role, a, attr, button, div, each, each_keyed, el,
+    input, label, li, main, p, select, span, textarea, ul, when,
 };
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
@@ -78,7 +78,11 @@ fn todos() -> (El<TodoApp>, TodoApp) {
             |todo| {
                 let id = todo.at(Todo::id());
                 li().class_when(class::DONE, todo.at(Todo::done()))
-                    .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
+                    .child(
+                        input()
+                            .attr(attr::TYPE, "checkbox")
+                            .bind(todo.at(Todo::done())),
+                    )
                     .child(
                         label()
                             .bind_text(todo.at(Todo::title()))
@@ -116,7 +120,7 @@ fn todos() -> (El<TodoApp>, TodoApp) {
         .child(
             input()
                 .id("all")
-                .attr("type", "checkbox")
+                .attr(attr::TYPE, "checkbox")
                 .bind_checked(todos.count(|todo| !todo.at(Todo::done())).equals(0))
                 .on_change(todos.set_all(
                     Todo::done(),
@@ -156,11 +160,16 @@ fn controls() -> (El<Controls>, Controls) {
     let quantity = Controls::quantity();
     let size = Controls::size();
     let el = main()
-        .child(input().id("quantity").attr("type", "number").bind(quantity))
+        .child(
+            input()
+                .id("quantity")
+                .attr(attr::TYPE, "number")
+                .bind(quantity),
+        )
         .child(
             input()
                 .id("price")
-                .attr("type", "number")
+                .attr(attr::TYPE, "number")
                 .bind(Controls::price()),
         )
         .child(
@@ -172,7 +181,7 @@ fn controls() -> (El<Controls>, Controls) {
         .child(
             input()
                 .id("limit")
-                .attr("type", "number")
+                .attr(attr::TYPE, "number")
                 .bind(Controls::limit()),
         )
         .child(input().id("small").bind_radio(size, &Size::Small))
@@ -180,8 +189,8 @@ fn controls() -> (El<Controls>, Controls) {
         .child(
             button()
                 .id("buy")
-                .attr_when("disabled", quantity.le(0))
-                .bind_attr("title", (Controls::price() * 2.0).to_fixed(2))
+                .attr_when(attr::DISABLED, quantity.le(0))
+                .bind_attr(attr::TITLE, (Controls::price() * 2.0).to_fixed(2))
                 .bind_style(Property::Width, quantity.to_text().concat("rem"))
                 .text("Buy"),
         )
@@ -477,11 +486,11 @@ fn join() -> (El<Join>, Join) {
         )
         .child(span().id("dirty").show(signup.is_dirty()).text("unsaved"))
         .child(span().id("valid").show(signup.is_valid()).text("ok"))
-        .child(button().id("submit").attr("type", "submit"))
+        .child(button().id("submit").attr(attr::TYPE, "submit"))
         .child(
             button()
                 .id("reset")
-                .attr("type", "button")
+                .attr(attr::TYPE, "button")
                 .on_click(signup.reset()),
         );
     let signals = Join {
@@ -655,7 +664,7 @@ fn roving() -> (El<Roving>, Roving) {
     let tab_button = |i: i32| {
         button()
             .id(format!("tab{i}"))
-            .bind_attr("tabindex", if_else(tab.equals(i), "0", "-1"))
+            .bind_attr(attr::TABINDEX, if_else(tab.equals(i), "0", "-1"))
             .on(Event::Focus, tab.set(i))
     };
     let el = main().child(
@@ -664,7 +673,7 @@ fn roving() -> (El<Roving>, Roving) {
             .roving_focus(Orientation::Horizontal)
             .child(tab_button(0))
             .child(tab_button(1))
-            .child(tab_button(2).attr("disabled", ""))
+            .child(tab_button(2).attr(attr::DISABLED, ""))
             .child(tab_button(3).on_key(Key::ArrowRight, taken.set(taken + 1)))
             .child(
                 div()
@@ -675,7 +684,7 @@ fn roving() -> (El<Roving>, Roving) {
                     .on_key(Key::Tab.shift(), MENU.hide_popover())
                     .on_key(Key::Enter, MENU.show_popover())
                     .children(
-                        (0..2).map(|i| button().id(format!("item{i}")).attr("tabindex", "-1")),
+                        (0..2).map(|i| button().id(format!("item{i}")).attr(attr::TABINDEX, "-1")),
                     ),
             ),
     );
@@ -702,7 +711,7 @@ fn combo() -> (El<Combo>, Combo) {
     let option = |i: i32| {
         div()
             .id(format!("o{i}"))
-            .attr("role", "option")
+            .role(Role::Option)
             .on_click(picked.set(format!("o{i}")))
     };
     let el = main()
@@ -715,11 +724,11 @@ fn combo() -> (El<Combo>, Combo) {
         )
         .child(
             div()
-                .attr("role", "listbox")
+                .role(Role::ListBox)
                 .node_ref(OPTIONS)
                 .child(option(0))
                 .child(option(1).show(!query.is_empty()))
-                .child(option(2).attr("aria-disabled", "true"))
+                .child(option(2).attr(attr::ARIA_DISABLED, "true"))
                 .child(option(3)),
         );
     let signals = Combo {
@@ -793,12 +802,12 @@ fn plot() -> (El<Plot>, Plot) {
         .child(
             el("svg")
                 .id("plot")
-                .attr("viewBox", "0 0 100 100")
+                .attr(attr::VIEW_BOX, "0 0 100 100")
                 .child(
                     el("rect")
                         .id("frame")
-                        .attr("width", "100")
-                        .attr("height", "100")
+                        .attr(attr::WIDTH, "100")
+                        .attr(attr::HEIGHT, "100")
                         .show(Plot::marked()),
                 )
                 .child(each_keyed(
@@ -808,15 +817,18 @@ fn plot() -> (El<Plot>, Plot) {
                         el("g")
                             .child(
                                 el("rect")
-                                    .attr("width", "5")
-                                    .bind_attr("height", bar.at(Bar::height()).to_text()),
+                                    .attr(attr::WIDTH, "5")
+                                    .bind_attr(attr::HEIGHT, bar.at(Bar::height()).to_text()),
                             )
                             .child(each(bar.at(Bar::marks()), |mark| {
-                                el("line").bind_attr("y1", mark.value().to_text())
+                                el("line").bind_attr(attr::Y1, mark.value().to_text())
                             }))
                     },
                 ))
-                .child(when(Plot::marked(), el("circle").id("dot").attr("r", "2"))),
+                .child(when(
+                    Plot::marked(),
+                    el("circle").id("dot").attr(attr::R, "2"),
+                )),
         );
     let signals = Plot {
         bars: vec![
@@ -1078,7 +1090,7 @@ fn shortcuts_page() -> String {
     .child(
         main()
             .id("section")
-            .attr("tabindex", "-1")
+            .attr(attr::TABINDEX, "-1")
             .on_key(
                 Key::Char('s'),
                 Shortcuts::saves().set(Shortcuts::saves() + 1),
@@ -1363,7 +1375,7 @@ impl Fragment for Atlas {
         div().child(p().text(self.0)).child(
             div()
                 .foreign(MAP)
-                .bind_attr("data-stars", Widgets::stars().to_text()),
+                .bind_attr(hypersig::attr!("data-stars"), Widgets::stars().to_text()),
         )
     }
 }
@@ -1536,12 +1548,12 @@ fn uploads() -> (El<Uploads>, Uploads) {
     let el = main()
         .child(
             p().id("note")
-                .attr("tabindex", "-1")
+                .attr(attr::TABINDEX, "-1")
                 .node_ref(PICTURES_NOTE)
                 .text("Pick pictures"),
         )
         .child(button().id("focus").on_click(PICTURES_NOTE.focus()))
-        .child(PICTURES.input().id("pictures").attr("multiple", ""))
+        .child(PICTURES.input().id("pictures").attr(attr::MULTIPLE, ""))
         .child(input().id("caption").bind(Uploads::caption()))
         .child(
             button().id("send").on_click(

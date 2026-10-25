@@ -1,6 +1,6 @@
 //! Text fields with a label, a description, and an error message.
 
-use hypersig::html::{El, div, input, label, p, span, textarea};
+use hypersig::html::{El, attr, div, input, label, p, span, textarea};
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     BorderStyle, Color, FontWeight, LineHeight, MinWidth, Resize, pct, px, rem,
@@ -454,24 +454,24 @@ impl<S> TextField<S> {
             textarea().css(field_style().min_height(rem(4)).resize(Resize::Vertical))
         } else {
             input()
-                .attr("type", self.kind.name())
+                .attr(attr::TYPE, self.kind.name())
                 .css(field_style().height(rem(2.25)))
         }
         .bind(self.value);
         if let Some(autocomplete) = self.autocomplete {
-            control = control.attr("autocomplete", autocomplete.name());
+            control = control.attr(attr::AUTOCOMPLETE, autocomplete.name());
         }
         if let Some(mode) = self.input_mode {
-            control = control.attr("inputmode", mode.name());
+            control = control.attr(attr::INPUTMODE, mode.name());
         }
         if let Some(count) = self.min_length {
-            control = control.attr("minlength", count.to_string());
+            control = control.attr(attr::MINLENGTH, count.to_string());
         }
         if let Some(count) = self.max_length {
-            control = control.attr("maxlength", count.to_string());
+            control = control.attr(attr::MAXLENGTH, count.to_string());
         }
         if let Some(placeholder) = self.placeholder {
-            control = control.attr("placeholder", placeholder);
+            control = control.attr(attr::PLACEHOLDER, placeholder);
         }
         self.frame.render(&crate::id::of(self.value, ""), control)
     }
@@ -528,10 +528,10 @@ impl<S> Frame<S> {
 
         let mut control = control.id(field_id.clone());
         if !described.is_empty() {
-            control = control.attr("aria-describedby", described.join(" "));
+            control = control.attr(attr::ARIA_DESCRIBEDBY, described.join(" "));
         }
         if self.required {
-            control = control.attr("required", "");
+            control = control.attr(attr::REQUIRED, "");
         }
         if let Some(disabled) = self.disabled {
             control = control.disabled(disabled);
@@ -542,7 +542,10 @@ impl<S> Frame<S> {
         if let Some(error) = &self.error {
             let invalid = !error.clone().is_empty();
             control = control
-                .bind_attr("aria-invalid", if_else(invalid.clone(), "true", "false"))
+                .bind_attr(
+                    attr::ARIA_INVALID,
+                    if_else(invalid.clone(), "true", "false"),
+                )
                 .css_when(
                     Style::new().border_color(token::destructive().var()),
                     invalid,
@@ -550,13 +553,13 @@ impl<S> Frame<S> {
         }
 
         let mut caption = label()
-            .attr("for", field_id)
+            .attr(attr::FOR, field_id)
             .css(label_style())
             .text(self.label);
         if self.required {
             caption = caption.child(
                 span()
-                    .attr("aria-hidden", "true")
+                    .attr(attr::ARIA_HIDDEN, "true")
                     .css(Style::new().color(token::destructive().var()))
                     .text(" *"),
             );
@@ -573,7 +576,7 @@ impl<S> Frame<S> {
             }))
             .children(self.error.map(|error| {
                 p().id(error_id)
-                    .attr("aria-live", "polite")
+                    .attr(attr::ARIA_LIVE, "polite")
                     .css(look::small_text().color(token::destructive().var()))
                     .bind_text(error)
             }))
@@ -613,14 +616,14 @@ impl<S> Feedback<S> {
     /// `aria-invalid` true while the message is not empty.
     pub(crate) fn describe(&self, control: El<S>) -> El<S> {
         control
-            .attr("aria-describedby", self.error_id.clone())
-            .bind_attr("aria-invalid", if_else(self.invalid(), "true", "false"))
+            .attr(attr::ARIA_DESCRIBEDBY, self.error_id.clone())
+            .bind_attr(attr::ARIA_INVALID, if_else(self.invalid(), "true", "false"))
     }
 
     /// The message, in an `aria-live="polite"` region as [`TextField`] shows it.
     pub(crate) fn message(self) -> El<S> {
         p().id(self.error_id)
-            .attr("aria-live", "polite")
+            .attr(attr::ARIA_LIVE, "polite")
             .css(look::small_text().color(token::destructive().var()))
             .bind_text(self.error)
     }

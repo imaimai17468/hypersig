@@ -12,7 +12,7 @@
 use axum::Router;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use hypersig::html::{El, button, div, form, h1, input, li, p, ul};
+use hypersig::html::{El, Role, attr, button, div, form, h1, input, li, p, ul};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -209,14 +209,14 @@ async fn index(state: AppState, (): ()) -> Result<Page<NotesPage>, ApiError> {
                     .child(
                         input()
                             .css(styles::input())
-                            .attr("placeholder", "Write a note")
+                            .attr(attr::PLACEHOLDER, "Write a note")
                             .bind(draft),
                     )
                     .child(button().css(styles::button()).text("Add")),
             )
             .child(
                 p().id("problem")
-                    .attr("role", "alert")
+                    .role(Role::Alert)
                     .css(styles::problem())
                     .show(!problem.is_empty())
                     .bind_text(problem),

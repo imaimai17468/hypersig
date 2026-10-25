@@ -1,5 +1,5 @@
 use axum::Router;
-use hypersig::html::{El, button, form, input, p, part};
+use hypersig::html::{El, button, form, input, p, part, attr};
 use hypersig::{Action, Page, Part, Patches, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +17,7 @@ impl Part for Newsletter {
         form()
             .on_submit(JOIN.call_with(email))
             .child(input().bind(email))
-            .child(button().attr("type", "submit").text("Join"))
+            .child(button().attr(attr::TYPE, "submit").text("Join"))
             .child(p().show(Newsletter::joined()).text("Thanks for joining."))
     }
 }

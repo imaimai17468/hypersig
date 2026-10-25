@@ -1,6 +1,6 @@
 //! Buttons, and the style that makes a link look like one.
 
-use hypersig::html::{El, button as button_el};
+use hypersig::html::{El, attr, button as button_el};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Cursor, Display, FontWeight, JustifyContent,
     TextDecorationLine, UserSelect, WhiteSpace, px, raw, rem,
@@ -181,7 +181,7 @@ fn hover_accent() -> Style {
 #[must_use]
 pub fn button<S>(variant: ButtonVariant, size: ButtonSize) -> El<S> {
     button_el()
-        .attr("type", "button")
+        .attr(attr::TYPE, "button")
         .css(button_style(variant, size))
 }
 
@@ -207,7 +207,7 @@ pub fn button<S>(variant: ButtonVariant, size: ButtonSize) -> El<S> {
 #[must_use]
 pub fn submit_button<S>(variant: ButtonVariant, size: ButtonSize) -> El<S> {
     button_el()
-        .attr("type", "submit")
+        .attr(attr::TYPE, "submit")
         .css(button_style(variant, size))
 }
 
@@ -230,8 +230,8 @@ pub fn submit_button<S>(variant: ButtonVariant, size: ButtonSize) -> El<S> {
 #[must_use]
 pub fn icon_button<S>(variant: ButtonVariant, label: impl Into<String>) -> El<S> {
     button_el()
-        .attr("type", "button")
-        .attr("aria-label", label)
+        .attr(attr::TYPE, "button")
+        .attr(attr::ARIA_LABEL, label)
         .css(
             base()
                 .width(rem(2.25))

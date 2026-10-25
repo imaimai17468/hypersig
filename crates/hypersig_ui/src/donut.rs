@@ -2,7 +2,9 @@
 
 use std::fmt;
 
-use hypersig::html::{El, Node, div, each, el, li, span, table, tbody, td, th, thead, tr, ul};
+use hypersig::html::{
+    El, Node, attr, div, each, el, li, span, table, tbody, td, th, thead, tr, ul,
+};
 use hypersig::style::value::{
     AlignItems, Color, Display, FlexDirection, FontVariantNumeric, FontWeight, JustifyContent,
     Position, px, raw, rem,
@@ -117,17 +119,17 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
     #[must_use]
     pub fn render(self) -> El<S> {
         let ring = el("svg")
-            .attr("viewBox", "0 0 100 100")
-            .attr("width", "100%")
-            .attr("height", "100%")
+            .attr(attr::VIEW_BOX, "0 0 100 100")
+            .attr(attr::WIDTH, "100%")
+            .attr(attr::HEIGHT, "100%")
             .css(Style::new().display(Display::Block).rotate(raw("-90deg")))
             .child(
                 el("circle")
-                    .attr("cx", "50")
-                    .attr("cy", "50")
-                    .attr("r", "40")
-                    .attr("fill", "none")
-                    .attr("stroke-width", "16")
+                    .attr(attr::CX, "50")
+                    .attr(attr::CY, "50")
+                    .attr(attr::R, "40")
+                    .attr(attr::FILL, "none")
+                    .attr(attr::STROKE_WIDTH, "16")
                     .css(Style::new().stroke(token::muted().var())),
             )
             .child(each(self.rows, |row| self.slice(row)));
@@ -150,7 +152,7 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
             )
             .child(span().bind_text(total));
         let visual = div()
-            .attr("aria-hidden", "true")
+            .attr(attr::ARIA_HIDDEN, "true")
             .css(
                 Style::new()
                     .position(Position::Relative)
@@ -161,7 +163,7 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
             .child(ring)
             .child(middle);
         el("figure")
-            .attr("aria-label", self.label.clone())
+            .attr(attr::ARIA_LABEL, self.label.clone())
             .css(
                 Style::new()
                     .display(Display::Flex)
@@ -206,15 +208,15 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
             .total()
             .let_in(|total| Expr::lit(&0.0) - before / total * 100.0);
         let mut arc = el("circle")
-            .attr("cx", "50")
-            .attr("cy", "50")
-            .attr("r", "40")
-            .attr("fill", "none")
-            .attr("stroke-width", "16")
-            .attr("pathLength", "100")
+            .attr(attr::CX, "50")
+            .attr(attr::CY, "50")
+            .attr(attr::R, "40")
+            .attr(attr::FILL, "none")
+            .attr(attr::STROKE_WIDTH, "16")
+            .attr(attr::PATH_LENGTH, "100")
             .show(self.total().gt(0.0))
-            .bind_attr("stroke-dasharray", length)
-            .bind_attr("stroke-dashoffset", offset.to_fixed(3));
+            .bind_attr(attr::STROKE_DASHARRAY, length)
+            .bind_attr(attr::STROKE_DASHOFFSET, offset.to_fixed(3));
         for (index, color) in (0..).zip(palette()) {
             arc = arc.css_when(
                 Style::new().stroke(color.var()),
@@ -227,7 +229,7 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
     /// A swatch, the category, and the value of each row.
     fn legend(&self) -> El<S> {
         let category = self.category;
-        ul().attr("aria-hidden", "true")
+        ul().attr(attr::ARIA_HIDDEN, "true")
             .css(
                 Style::new()
                     .display(Display::Grid)
@@ -264,12 +266,12 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
             .child(el("caption").text(self.label.clone()))
             .child(
                 thead().child(
-                    tr().child(th().attr("scope", "col"))
-                        .child(th().attr("scope", "col").text(self.label.clone())),
+                    tr().child(th().attr(attr::SCOPE, "col"))
+                        .child(th().attr(attr::SCOPE, "col").text(self.label.clone())),
                 ),
             )
             .child(tbody().child(each(self.rows, |row| {
-                tr().child(th().attr("scope", "row").bind_text(row.at(category)))
+                tr().child(th().attr(attr::SCOPE, "row").bind_text(row.at(category)))
                     .child(td().bind_text((self.text)(row, self.format.as_ref())))
             })))
     }

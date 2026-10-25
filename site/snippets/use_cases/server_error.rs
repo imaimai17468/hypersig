@@ -1,4 +1,4 @@
-# use hypersig::html::{button, input, span};
+# use hypersig::html::{attr, button, input, span};
 # use hypersig::{Action, FieldErrors, Form, Page, Patches, Rules, Sig, Signals, Validate};
 # use serde::{Deserialize, Serialize};
 #
@@ -38,7 +38,7 @@
 #         .child(input().bind(signup.field(email)).on_blur(signup.touch(email)))
 // Under the field, the message the browser's rules write.
 .child(span().bind_text(signup.error(email)))
-#         .child(button().attr("type", "submit").text("Join")),
+#         .child(button().attr(attr::TYPE, "submit").text("Join")),
 # );
 
 async fn join(state: AppState, value: Signup) -> Patches<Join> {

@@ -7,7 +7,7 @@
 
 use std::fs;
 
-use hypersig::html::{El, Node, a, button, div, each_keyed, h1, span, table, tbody, td, tr};
+use hypersig::html::{El, Node, a, button, div, each_keyed, h1, span, table, tbody, td, tr, attr};
 use hypersig::{Expr, Page, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 
@@ -115,7 +115,7 @@ fn create(count: i32) -> Stmt<Bench> {
 fn action(id: &'static str, text: &str, stmt: Stmt<Bench>) -> El<Bench> {
     div().class(class::COL_SM_6).class(class::SMALLPAD).child(
         button()
-            .attr("type", "button")
+            .attr(attr::TYPE, "button")
             .class(class::BTN)
             .class(class::BTN_PRIMARY)
             .class(class::BTN_BLOCK)
@@ -146,7 +146,7 @@ fn rows() -> Node<Bench> {
                             span()
                                 .class(class::GLYPHICON)
                                 .class(class::GLYPHICON_REMOVE)
-                                .attr("aria-hidden", "true"),
+                                .attr(attr::ARIA_HIDDEN, "true"),
                         ),
                     ),
                 )
@@ -217,7 +217,7 @@ fn page() -> Page<Bench> {
                             .class(class::PRELOADICON)
                             .class(class::GLYPHICON)
                             .class(class::GLYPHICON_REMOVE)
-                            .attr("aria-hidden", "true"),
+                            .attr(attr::ARIA_HIDDEN, "true"),
                     ),
             ),
         )

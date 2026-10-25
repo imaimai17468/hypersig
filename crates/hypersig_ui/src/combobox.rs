@@ -4,7 +4,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Event, Key, div, input, label, p};
+use hypersig::html::{El, Event, Key, Role, attr, div, input, label, p};
 use hypersig::style::Style;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{Display, FlexDirection, OverflowY, Position, ZIndex, pct, raw, rem};
@@ -155,9 +155,9 @@ impl<S> Combobox<S> {
             let reached = active.equals(id.clone());
             items.push(
                 div()
-                    .attr("role", "option")
+                    .role(Role::Option)
                     .id(id)
-                    .bind_attr("aria-selected", if_else(reached.clone(), "true", "false"))
+                    .bind_attr(attr::ARIA_SELECTED, reached.clone().to_text())
                     .show(shown)
                     .on_click(
                         text.set(title.clone())
@@ -176,14 +176,14 @@ impl<S> Combobox<S> {
         }
 
         let field = input()
-            .attr("type", "text")
+            .attr(attr::TYPE, "text")
             .id(self.field)
-            .attr("role", "combobox")
-            .attr("aria-autocomplete", "list")
-            .attr("aria-controls", self.list)
-            .attr("autocomplete", "off")
-            .bind_attr("aria-expanded", if_else(open, "true", "false"))
-            .bind_attr("aria-activedescendant", active)
+            .role(Role::Combobox)
+            .attr(attr::ARIA_AUTOCOMPLETE, "list")
+            .attr(attr::ARIA_CONTROLS, self.list)
+            .attr(attr::AUTOCOMPLETE, "off")
+            .bind_attr(attr::ARIA_EXPANDED, if_else(open, "true", "false"))
+            .bind_attr(attr::ARIA_ACTIVEDESCENDANT, active)
             .bind(text)
             .node_ref(field_ref)
             .active_descendant(list_ref, active)
@@ -206,8 +206,8 @@ impl<S> Combobox<S> {
             .child(
                 div()
                     .id(self.list)
-                    .attr("role", "listbox")
-                    .attr("aria-label", "Suggestions")
+                    .role(Role::ListBox)
+                    .attr(attr::ARIA_LABEL, "Suggestions")
                     .node_ref(list_ref)
                     .show(!none_shown.clone())
                     .css(
@@ -232,7 +232,7 @@ impl<S> Combobox<S> {
             .css(stack(rem(0.5)))
             .child(
                 label()
-                    .attr("for", self.field)
+                    .attr(attr::FOR, self.field)
                     .css(label_style())
                     .text(label_text),
             )

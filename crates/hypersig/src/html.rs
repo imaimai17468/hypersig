@@ -4,16 +4,16 @@
 //! A child must share it, so a signal, expression, or action from another page
 //! does not compile inside this one.
 //!
-//! The builder writes the `data-hs-*` attributes the runtime reads. Writing one
-//! of them by hand through [`El::attr`] panics, because it would bypass the
-//! types.
+//! The builder writes the `data-hs-*` attributes the runtime reads. No
+//! [`Attr`] names one of them, so [`El::attr`] cannot write one by hand and
+//! bypass the types.
 //!
 //! A component is a function that returns an [`El`]. One that takes a
 //! [`Sig`] to a nested signal struct can be placed several times on a page,
 //! each time with its own state:
 //!
 //! ```
-//! use hypersig::html::{El, button, div, p};
+//! use hypersig::html::{El, Role, button, div, p};
 //! use hypersig::{Sig, Signals};
 //! use serde::{Deserialize, Serialize};
 //!
@@ -63,6 +63,103 @@ use crate::style::{Property, Sheet, Style, Token, TokenValue};
 use crate::tape::Ref;
 
 const RESERVED_PREFIX: &str = "data-hs-";
+
+pub mod attr;
+mod role;
+
+pub use role::Role;
+
+/// The name of an attribute that [`El::attr`], [`El::bind_attr`], and
+/// [`El::attr_when`] write.
+///
+/// The [`attr`] module holds a constant for each attribute of HTML, SVG, and
+/// ARIA that `Attr` can name, and [`attr!`](crate::attr!) builds one at
+/// compile time for any other name, such as `data-lat` or an attribute of a
+/// custom element.
+///
+/// An `Attr` never names an attribute that hypersig writes itself (`id`,
+/// `class`, and those starting with `data-hs-`), nor `role`, which
+/// [`El::role`] sets from a [`Role`], nor one whose value can run a
+/// script or load a URL: `href` and `src`, which [`El::href`] and [`El::src`]
+/// set from a value that cannot, an event handler `on*`, `srcdoc`, `action`,
+/// `formaction`, `xlink:href`, `data`, which `<object>` loads, `http-equiv`,
+/// whose `refresh` loads the URL in `content`, and `attributeName`, with which
+/// SVG's `<animate>` and `<set>` could write into a link. Case is ignored, as
+/// the browser ignores it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct Attr(&'static str);
+
+impl Attr {
+    /// Checks `name` against the rules of [`Attr`].
+    ///
+    /// # Panics
+    ///
+    /// Panics for a name that breaks them. In a `const`, the panic is a
+    /// compile error.
+    pub(crate) const fn new(name: &'static str) -> Self {
+        let bytes = name.as_bytes();
+        // A space, a quote, `=`, or `>` would end the name and start another
+        // attribute.
+        assert!(
+            !bytes.is_empty(),
+            "an attribute name is letters, digits, `-`, `_`, `.`, and `:`"
+        );
+        let mut i = 0;
+        while i < bytes.len() {
+            let b = bytes[i];
+            assert!(
+                b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':'),
+                "an attribute name is letters, digits, `-`, `_`, `.`, and `:`"
+            );
+            i += 1;
+        }
+        assert!(
+            !starts_with(bytes, RESERVED_PREFIX),
+            "hypersig's typed methods write the `data-hs-` attributes"
+        );
+        assert!(
+            !is(bytes, "id") && !is(bytes, "class"),
+            "`El::id` and `El::class` set `id` and `class`"
+        );
+        assert!(!is(bytes, "role"), "`El::role` sets `role` from a `Role`");
+        assert!(
+            !is(bytes, "href") && !is(bytes, "src"),
+            "`El::href` and `El::src` set `href` and `src` from a `Link` or a `SafeUrl`"
+        );
+        assert!(
+            !starts_with(bytes, "on"),
+            "an `on*` attribute runs a script; attach a handler with the `on_*` methods"
+        );
+        assert!(
+            !is(bytes, "srcdoc")
+                && !is(bytes, "action")
+                && !is(bytes, "formaction")
+                && !is(bytes, "xlink:href")
+                && !is(bytes, "data")
+                && !is(bytes, "http-equiv")
+                && !is(bytes, "attributename"),
+            "the value of this attribute can run a script or load a URL"
+        );
+        Self(name)
+    }
+
+    /// The attribute's name, as the HTML holds it.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        self.0
+    }
+}
+
+/// Whether `name` is `lower`, ignoring ASCII case.
+const fn is(name: &[u8], lower: &str) -> bool {
+    name.eq_ignore_ascii_case(lower.as_bytes())
+}
+
+/// Whether `name` starts with `lower`, ignoring ASCII case.
+const fn starts_with(name: &[u8], lower: &str) -> bool {
+    let prefix = lower.as_bytes();
+    name.len() >= prefix.len() && name.split_at(prefix.len()).0.eq_ignore_ascii_case(prefix)
+}
 
 /// A node in the tree: an element, a run of text, or a template the browser expands.
 pub struct Node<S>(NodeKind<S>);
@@ -322,7 +419,7 @@ impl<S, N: Into<Node<S>>> IntoNode<S> for N {
 /// reordered or an item before another is removed.
 ///
 /// ```
-/// use hypersig::html::{each, li, ul};
+/// use hypersig::html::{Role, each, li, ul};
 /// use hypersig::Signals;
 /// use serde::{Deserialize, Serialize};
 ///
@@ -361,7 +458,7 @@ pub fn each<S, T, R>(list: Sig<S, Vec<T>, R>, render: impl FnOnce(Item<S, T>) ->
 /// is removed, so focus and the state of its inputs move with it.
 ///
 /// ```
-/// use hypersig::html::{each_keyed, li, ul};
+/// use hypersig::html::{Role, each_keyed, li, ul};
 /// use hypersig::Signals;
 /// use serde::{Deserialize, Serialize};
 ///
@@ -570,7 +667,7 @@ impl<S> fmt::Debug for El<S> {
 /// CSS text whose class selectors [`Stylesheet::class`] checks at compile time.
 ///
 /// ```
-/// use hypersig::html::{Class, Stylesheet, li};
+/// use hypersig::html::{Class, Role, Stylesheet, li};
 /// use hypersig::{Page, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -719,7 +816,7 @@ const fn is_ident_byte(b: u8) -> bool {
 /// [`Class::new`] is not, which suits a stylesheet the page loads from a URL.
 ///
 /// ```
-/// use hypersig::html::{Class, li};
+/// use hypersig::html::{Class, Role, li};
 /// use hypersig::{Sig, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -828,7 +925,7 @@ impl Event {
 /// `cargo hypersig elements` writes these constants from the manifest.
 ///
 /// ```
-/// use hypersig::html::{CustomEvent, el};
+/// use hypersig::html::{CustomEvent, Role, el};
 /// use hypersig::{Page, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -984,7 +1081,7 @@ impl Key {
 /// there.
 ///
 /// ```
-/// use hypersig::html::{Key, Shortcut};
+/// use hypersig::html::{Key, Role, Shortcut};
 ///
 /// let palette: Shortcut = Key::Char('k').primary();
 /// let redo: Shortcut = Key::Char('z').primary().shift();
@@ -1281,97 +1378,42 @@ impl<S> El<S> {
         }
     }
 
-    fn check_attr_name(name: &str) {
-        // A space, a quote, `=`, or `>` would end the name and start another
-        // attribute that no check below sees.
-        assert!(
-            !name.is_empty()
-                && name.bytes().all(|byte| byte.is_ascii_alphanumeric()
-                    || matches!(byte, b'-' | b'_' | b'.' | b':')),
-            "`{name}` is not an attribute name: use letters, digits, `-`, `_`, `.`, and `:`"
-        );
-        // The browser matches attribute names without regard to case.
-        let lower = name.to_ascii_lowercase();
-        assert!(
-            !lower.starts_with(RESERVED_PREFIX),
-            "`{name}` is written by hypersig's typed methods, not by `attr`"
-        );
-        assert!(
-            lower != "id" && lower != "class",
-            "use `El::id` or `El::class` to set `{name}`"
-        );
-        assert!(
-            lower != "href" && lower != "src",
-            "use `El::href` or `El::src`, which take a `Link` or a `SafeUrl`, to set `{name}`"
-        );
-        assert!(
-            !lower.starts_with("on")
-                && !matches!(
-                    lower.as_str(),
-                    "srcdoc" | "action" | "formaction" | "xlink:href" | "data" | "http-equiv"
-                ),
-            "`{name}` can run a script, so `attr` does not write it; attach a handler with \
-             the `on_*` methods"
-        );
-    }
-
     /// Sets a plain attribute.
     ///
-    /// # Panics
-    ///
-    /// Panics, ignoring case, if `name` is `id` or `class`, which have their
-    /// own methods, or starts with `data-hs-`, which only the typed methods
-    /// may write. Panics as well for an attribute whose value can run a script:
-    /// `href` and `src`, which [`El::href`] and [`El::src`] set from a value
-    /// that cannot, an event handler `on*`, `srcdoc`, `action`, `formaction`,
-    /// `xlink:href`, `data`, which `<object>` loads, and `http-equiv`, whose
-    /// `refresh` loads the URL in `content`. `attributeName` panics when its
-    /// value is `href` or `xlink:href`, because SVG's `<animate>` and `<set>`
-    /// would then write their `to` or `values` into the link. A name holds
-    /// only letters, digits, `-`, `_`, `.`, and `:`.
+    /// `name` is a constant of [`attr`] or a name built with
+    /// [`attr!`](crate::attr!), neither of which can name an attribute whose
+    /// value runs a script.
     #[must_use]
-    pub fn attr(mut self, name: &'static str, value: impl Into<String>) -> Self {
-        Self::check_attr_name(name);
-        let value = value.into();
-        assert!(
-            !name.eq_ignore_ascii_case("attributename")
-                || !matches!(
-                    value.trim().to_ascii_lowercase().as_str(),
-                    "href" | "xlink:href"
-                ),
-            "an animation of `{value}` writes its `to` or `values` into a link, which can run \
-             a script, so `attr` does not write it"
-        );
-        self.attrs.push((name, value));
+    pub fn attr(mut self, name: Attr, value: impl Into<String>) -> Self {
+        self.attrs.push((name.0, value.into()));
+        self
+    }
+
+    /// Sets the WAI-ARIA role a screen reader announces the element by.
+    ///
+    /// ```
+    /// use hypersig::html::{Role, div};
+    ///
+    /// let html = div::<()>().role(Role::Status).text("Saved").render();
+    /// assert_eq!(html, r#"<div role="status">Saved</div>"#);
+    /// ```
+    #[must_use]
+    pub fn role(mut self, role: Role) -> Self {
+        self.attrs.push(("role", role.name().to_owned()));
         self
     }
 
     /// Keeps attribute `name` equal to `value` as signals change.
-    ///
-    /// # Panics
-    ///
-    /// Panics for the same names as [`El::attr`], and for `attributeName`,
-    /// whose value the signals could turn into `href`.
     #[must_use]
-    pub fn bind_attr(mut self, name: &'static str, value: impl IntoExpr<S, String>) -> Self {
-        Self::check_attr_name(name);
-        assert!(
-            !name.eq_ignore_ascii_case("attributename"),
-            "a bound `{name}` could name `href`, so `bind_attr` does not write it; set it with `attr`"
-        );
-        self.attr_bind.push((name, value.into_expr()));
+    pub fn bind_attr(mut self, name: Attr, value: impl IntoExpr<S, String>) -> Self {
+        self.attr_bind.push((name.0, value.into_expr()));
         self
     }
 
     /// Sets the boolean attribute `name`, such as `disabled`, while `when` is true.
-    ///
-    /// # Panics
-    ///
-    /// Panics for the same names as [`El::attr`].
     #[must_use]
-    pub fn attr_when(mut self, name: &'static str, when: impl IntoExpr<S, bool>) -> Self {
-        Self::check_attr_name(name);
-        self.attr_when.push((name, when.into_expr()));
+    pub fn attr_when(mut self, name: Attr, when: impl IntoExpr<S, bool>) -> Self {
+        self.attr_when.push((name.0, when.into_expr()));
         self
     }
 
@@ -1398,7 +1440,7 @@ impl<S> El<S> {
     /// ```
     #[must_use]
     pub fn disabled(self, when: impl IntoExpr<S, bool>) -> Self {
-        self.attr_when("disabled", when)
+        self.attr_when(attr::DISABLED, when)
     }
 
     /// Keeps the CSS property `property` equal to `value` as signals change.
@@ -1638,7 +1680,7 @@ impl<S> El<S> {
     /// the item or the condition again.
     ///
     /// ```
-    /// use hypersig::html::{El, div};
+    /// use hypersig::html::{El, Role, div};
     /// use hypersig::{NodeRef, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -1649,7 +1691,7 @@ impl<S> El<S> {
     ///
     /// const MAP: NodeRef<Place> = NodeRef::new("map");
     ///
-    /// let map: El<Place> = div().foreign(MAP).bind_attr("data-zoom", Place::zoom().to_text());
+    /// let map: El<Place> = div().foreign(MAP).bind_attr(hypersig::attr!("data-zoom"), Place::zoom().to_text());
     /// assert!(map.render().contains(r#"data-hs-foreign="map""#));
     /// ```
     #[must_use]
@@ -1759,7 +1801,7 @@ impl<S> El<S> {
             let value =
                 exact::to_value(&value, "an option value does not serialize to JSON").to_string();
             self.children
-                .push(option().attr("value", value).text(label).into());
+                .push(option().attr(attr::VALUE, value).text(label).into());
         }
         self.bind = Some(json!([signal.raw_path().place_json(), "json"]));
         self
@@ -1868,7 +1910,7 @@ impl<S> El<S> {
     /// the next page.
     ///
     /// ```
-    /// use hypersig::html::{div, each, li, ul};
+    /// use hypersig::html::{Role, div, each, li, ul};
     /// use hypersig::{Action, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -1914,7 +1956,7 @@ impl<S> El<S> {
     /// [`Page::on_key`](crate::Page::on_key) is the outermost.
     ///
     /// ```
-    /// use hypersig::html::{Key, div, input};
+    /// use hypersig::html::{Key, Role, div, input};
     /// use hypersig::Signals;
     /// use serde::{Deserialize, Serialize};
     ///
@@ -1955,7 +1997,7 @@ impl<S> El<S> {
     /// focus with [`Event::Focus`].
     ///
     /// ```
-    /// use hypersig::html::{Event, Orientation, button, div};
+    /// use hypersig::html::{Event, Orientation, Role, attr, button, div};
     /// use hypersig::{Signals, if_else};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -1965,11 +2007,11 @@ impl<S> El<S> {
     /// }
     ///
     /// let tab = Tabs::tab();
-    /// let list = div::<Tabs>().attr("role", "tablist").roving_focus(Orientation::Horizontal).children(
+    /// let list = div::<Tabs>().role(Role::TabList).roving_focus(Orientation::Horizontal).children(
     ///     (0..3).map(|i| {
     ///         button()
-    ///             .attr("role", "tab")
-    ///             .bind_attr("tabindex", if_else(tab.equals(i), "0", "-1"))
+    ///             .role(Role::Tab)
+    ///             .bind_attr(attr::TABINDEX, if_else(tab.equals(i), "0", "-1"))
     ///             .on(Event::Focus, tab.set(i))
     ///     }),
     /// );
@@ -1999,7 +2041,7 @@ impl<S> El<S> {
     /// whose id equals it, since the runtime changes nothing but the signal.
     ///
     /// ```
-    /// use hypersig::html::{div, input};
+    /// use hypersig::html::{Role, attr, div, input};
     /// use hypersig::{NodeRef, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
@@ -2012,11 +2054,11 @@ impl<S> El<S> {
     /// const RESULTS: NodeRef<Search> = NodeRef::new("results");
     ///
     /// let field = input::<Search>()
-    ///     .attr("role", "combobox")
+    ///     .role(Role::Combobox)
     ///     .bind(Search::query())
-    ///     .bind_attr("aria-activedescendant", Search::active())
+    ///     .bind_attr(attr::ARIA_ACTIVEDESCENDANT, Search::active())
     ///     .active_descendant(RESULTS, Search::active());
-    /// let results = div::<Search>().attr("role", "listbox").node_ref(RESULTS);
+    /// let results = div::<Search>().role(Role::ListBox).node_ref(RESULTS);
     /// assert!(field.render().contains(r#"data-hs-active="[&quot;results&quot;"#));
     /// # let _ = results;
     /// ```
@@ -2043,7 +2085,7 @@ impl<S> El<S> {
     /// ```
     /// use std::time::Duration;
     ///
-    /// use hypersig::html::{each_keyed, li, ul};
+    /// use hypersig::html::{Role, each_keyed, li, ul};
     /// use hypersig::Signals;
     /// use serde::{Deserialize, Serialize};
     ///
@@ -2550,7 +2592,7 @@ pub(crate) fn escape_into(out: &mut String, text: &str, to: Escape) {
 
 #[cfg(test)]
 mod tests {
-    use super::{Class, a, button, div, el, img, input, picture, source, span};
+    use super::{Attr, Class, attr, button, div, el, img, input, picture, source, span};
     use crate::_private::sig;
     use crate::style::Token;
     use crate::{Sig, Stmt};
@@ -2580,8 +2622,8 @@ mod tests {
     #[test]
     fn a_void_tag_has_no_closing_tag_from_its_constructor_or_from_el() {
         let html = picture::<Page>()
-            .child(source().attr("srcset", "/a.avif"))
-            .child(el("meta").attr("itemprop", "name"))
+            .child(source().attr(attr::SRCSET, "/a.avif"))
+            .child(el("meta").attr(attr::ITEMPROP, "name"))
             .child(img().src(crate::SafeUrl::new("/a.png")))
             .render();
         assert_eq!(
@@ -2597,33 +2639,33 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "use `El::href` or `El::src`")]
-    fn attr_refuses_href() {
-        let _ = a::<Page>().attr("href", "javascript:alert(1)");
+    #[should_panic(expected = "`El::href` and `El::src` set")]
+    fn an_attr_cannot_name_href() {
+        let _ = Attr::new("href");
     }
 
     #[test]
-    #[should_panic(expected = "written by hypersig's typed methods")]
-    fn attr_refuses_a_runtime_attribute_in_any_case() {
-        let _ = div::<Page>().attr("DATA-HS-ON-CLICK", "[]");
+    #[should_panic(expected = "`El::href` and `El::src` set")]
+    fn an_attr_cannot_name_src_in_any_case() {
+        let _ = Attr::new("SRC");
     }
 
     #[test]
-    #[should_panic(expected = "is not an attribute name")]
-    fn attr_refuses_a_name_that_would_start_another_attribute() {
-        let _ = img::<Page>().attr("x onerror", "alert(1)");
+    #[should_panic(expected = "write the `data-hs-` attributes")]
+    fn an_attr_cannot_name_a_runtime_attribute_in_any_case() {
+        let _ = Attr::new("DATA-HS-ON-CLICK");
     }
 
     #[test]
-    #[should_panic(expected = "can run a script")]
-    fn attr_refuses_an_event_handler_in_any_case() {
-        let _ = img::<Page>().attr("onError", "alert(1)");
+    #[should_panic(expected = "an attribute name is letters")]
+    fn an_attr_cannot_start_another_attribute() {
+        let _ = Attr::new("x onerror");
     }
 
     #[test]
-    #[should_panic(expected = "use `El::href` or `El::src`")]
-    fn bind_attr_refuses_src() {
-        let _ = img::<Page>().bind_attr("SRC", name());
+    #[should_panic(expected = "an `on*` attribute runs a script")]
+    fn an_attr_cannot_name_an_event_handler_in_any_case() {
+        let _ = Attr::new("onError");
     }
 
     #[test]
@@ -2698,7 +2740,7 @@ mod tests {
     #[test]
     fn escapes_text_and_attributes() {
         let html = div::<Page>()
-            .attr("title", "a\"b<")
+            .attr(attr::TITLE, "a\"b<")
             .text("<script>&")
             .render();
         assert_eq!(
@@ -2865,35 +2907,21 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "writes its `to` or `values` into a link")]
-    fn an_animation_of_a_link_panics() {
-        let _ = el::<Page>("animate").attr("attributeName", " XLINK:href");
+    #[should_panic(expected = "can run a script or load a URL")]
+    fn an_attr_cannot_name_an_animation_target() {
+        let _ = Attr::new("attributeName");
     }
 
     #[test]
-    #[should_panic(expected = "does not write it; set it with `attr`")]
-    fn a_bound_animation_target_panics() {
-        let _ = el::<Page>("set").bind_attr("attributeName", "x");
+    #[should_panic(expected = "can run a script or load a URL")]
+    fn an_attr_cannot_name_http_equiv_in_any_case() {
+        let _ = Attr::new("HTTP-EQUIV");
     }
 
     #[test]
-    #[should_panic(expected = "`HTTP-EQUIV` can run a script")]
-    fn http_equiv_panics() {
-        let _ = el::<Page>("meta").attr("HTTP-EQUIV", "refresh");
-    }
-
-    #[test]
-    fn animations_of_other_attributes_render() {
-        let html = el::<Page>("animate")
-            .attr("attributeName", "opacity")
-            .attr("to", "0")
-            .render();
-        assert!(html.contains(r#"attributeName="opacity""#), "{html}");
-    }
-
-    #[test]
-    #[should_panic(expected = "typed methods")]
-    fn reserved_attribute_panics() {
-        let _ = div::<Page>().attr("data-hs-show", "true");
+    fn an_attr_keeps_the_case_it_was_given() {
+        let html = el::<Page>("animate").attr(attr::TO, "0").render();
+        assert_eq!(html, r#"<animate to="0"></animate>"#);
+        assert_eq!(attr::VIEW_BOX.name(), "viewBox");
     }
 }

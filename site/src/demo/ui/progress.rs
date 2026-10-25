@@ -1,6 +1,6 @@
 //! A progress bar and a skeleton, for the progress page.
 
-use hypersig::html::{div, p};
+use hypersig::html::{div, p, attr};
 use hypersig::style::Style;
 use hypersig::style::pattern::{stack, wrap};
 use hypersig::style::value::rem;
@@ -65,7 +65,7 @@ pub fn page(site: Site) -> Page<Upload> {
             )
             .child(
                 div()
-                    .attr("aria-busy", "true")
+                    .attr(attr::ARIA_BUSY, "true")
                     .css(stack(rem(0.5)))
                     .show(loading)
                     .child(skeleton().css(Style::new().height(rem(1)).width(rem(16))))

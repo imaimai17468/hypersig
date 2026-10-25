@@ -12,10 +12,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
-use hypersig::html::{
-    El, Key, Stylesheet, a, button, each_keyed, footer, h1, header, input, label, li, section,
-    span, strong, ul,
-};
+use hypersig::html::{El, Key, Stylesheet, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong, ul, attr};
 use hypersig::{Action, Expr, Page, Patches, RouterExt, SafeUrl, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
 
@@ -106,7 +103,7 @@ fn new_todo() -> El<TodoMvc> {
     );
     input()
         .class(class::NEW_TODO)
-        .attr("placeholder", "What needs to be done?")
+        .attr(attr::PLACEHOLDER, "What needs to be done?")
         .bind(draft)
         .on_key(Key::Enter, add)
 }
@@ -128,7 +125,7 @@ fn todo_list() -> El<TodoMvc> {
                 .child(
                     input()
                         .class(class::TOGGLE)
-                        .attr("type", "checkbox")
+                        .attr(attr::TYPE, "checkbox")
                         .bind(done)
                         .on_change(SET_DONE.call_with((id, done))),
                 )

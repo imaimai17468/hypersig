@@ -25,8 +25,8 @@ let page = Page::new("Office", Office { center: Center { lat: 35.68, lng: 139.77
         div()
             // A patch keeps the tiles and classes the script added.
             .foreign(MAP)
-            .bind_attr("data-lat", center.at(Center::lat()).to_text())
-            .bind_attr("data-lng", center.at(Center::lng()).to_text())
+            .bind_attr(hypersig::attr!("data-lat"), center.at(Center::lat()).to_text())
+            .bind_attr(hypersig::attr!("data-lng"), center.at(Center::lng()).to_text())
             .on_custom(MOVED, move |moved| center.set(moved)),
     );
 # assert!(page.render().contains(r#"data-hs-foreign="map""#));

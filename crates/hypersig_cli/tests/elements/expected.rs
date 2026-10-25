@@ -1,11 +1,12 @@
 //! The custom elements of `custom-elements.json`, written by `cargo hypersig elements`.
 //!
 //! Each element has a function that creates it, a module `attr` with the
-//! names of its attributes for `El::bind_attr` and `El::attr_when`, and a
-//! module `event` with its events for `El::on_custom`. The names and the
-//! `detail` types come from the manifest, so they hold as far as the
-//! manifest describes the library's script. An attribute or an event that a
-//! superclass or a mixin outside the manifest declares is not here.
+//! names of its attributes for `El::attr`, `El::bind_attr`, and
+//! `El::attr_when`, and a module `event` with its events for
+//! `El::on_custom`. The names and the `detail` types come from the manifest,
+//! so they hold as far as the manifest describes the library's script. An
+//! attribute or an event that a superclass or a mixin outside the manifest
+//! declares is not here.
 //!
 //! Run the command again after updating the library, rather than editing
 //! this file.
@@ -24,17 +25,19 @@ pub fn md_elevated_button<S>() -> El<S> {
 pub mod md_elevated_button {
     /// The attributes of `<md-elevated-button>`.
     pub mod attr {
+        use hypersig::html::Attr;
+
         /// `soft-disabled`, of type `boolean`. Set it with `El::attr_when`.
-        pub const SOFT_DISABLED: &str = "soft-disabled";
+        pub const SOFT_DISABLED: Attr = hypersig::attr!("soft-disabled");
         // `href` is left out: set it with `El::href`, which takes a `Link` or a `SafeUrl`.
         /// `download`, of type `string`.
-        pub const DOWNLOAD: &str = "download";
+        pub const DOWNLOAD: Attr = hypersig::attr!("download");
         /// `target`, of type `string`.
-        pub const TARGET: &str = "target";
+        pub const TARGET: Attr = hypersig::attr!("target");
         /// `trailing-icon`, of type `boolean`. Set it with `El::attr_when`.
-        pub const TRAILING_ICON: &str = "trailing-icon";
+        pub const TRAILING_ICON: Attr = hypersig::attr!("trailing-icon");
         /// `has-icon`, of type `boolean`. Set it with `El::attr_when`.
-        pub const HAS_ICON: &str = "has-icon";
+        pub const HAS_ICON: Attr = hypersig::attr!("has-icon");
     }
 }
 
@@ -48,16 +51,18 @@ pub fn sl_button<S>() -> El<S> {
 pub mod sl_button {
     /// The attributes of `<sl-button>`.
     pub mod attr {
+        use hypersig::html::Attr;
+
         /// `variant`, of type `'default' | 'primary' | 'success' | 'neutral' | 'warning' | 'danger' | 'text'`.
-        pub const VARIANT: &str = "variant";
+        pub const VARIANT: Attr = hypersig::attr!("variant");
         /// `disabled`, of type `boolean`. Set it with `El::attr_when`.
-        pub const DISABLED: &str = "disabled";
+        pub const DISABLED: Attr = hypersig::attr!("disabled");
         /// `type`, of type `'button' | 'submit' | 'reset'`.
-        pub const TYPE: &str = "type";
+        pub const TYPE: Attr = hypersig::attr!("type");
         // `href` is left out: set it with `El::href`, which takes a `Link` or a `SafeUrl`.
         /// `download`, of type `string | undefined`.
-        pub const DOWNLOAD: &str = "download";
-        // `formaction` is left out: its value can run a script, so `El::bind_attr` refuses it.
+        pub const DOWNLOAD: Attr = hypersig::attr!("download");
+        // `formaction` is left out: its value can run a script, so `hypersig::attr!` refuses it.
     }
 
     /// The events `<sl-button>` dispatches.
@@ -85,20 +90,22 @@ pub fn sl_rating<S>() -> El<S> {
 pub mod sl_rating {
     /// The attributes of `<sl-rating>`.
     pub mod attr {
+        use hypersig::html::Attr;
+
         /// `label`, of type `string`.
-        pub const LABEL: &str = "label";
+        pub const LABEL: Attr = hypersig::attr!("label");
         /// `value`, of type `number`.
-        pub const VALUE: &str = "value";
+        pub const VALUE: Attr = hypersig::attr!("value");
         /// `max`, of type `number`.
-        pub const MAX: &str = "max";
+        pub const MAX: Attr = hypersig::attr!("max");
         /// `precision`, of type `number`.
-        pub const PRECISION: &str = "precision";
+        pub const PRECISION: Attr = hypersig::attr!("precision");
         /// `readonly`, of type `boolean`. Set it with `El::attr_when`.
-        pub const READONLY: &str = "readonly";
+        pub const READONLY: Attr = hypersig::attr!("readonly");
         /// `disabled`, of type `boolean`. Set it with `El::attr_when`.
-        pub const DISABLED: &str = "disabled";
+        pub const DISABLED: Attr = hypersig::attr!("disabled");
         /// `getSymbol`, of type `(value: number) => string`.
-        pub const GET_SYMBOL: &str = "getSymbol";
+        pub const GET_SYMBOL: Attr = hypersig::attr!("getSymbol");
     }
 
     /// The events `<sl-rating>` dispatches.
@@ -134,12 +141,14 @@ pub fn test_picker<S>() -> El<S> {
 pub mod test_picker {
     /// The attributes of `<test-picker>`.
     pub mod attr {
+        use hypersig::html::Attr;
+
         // `id` is left out: set it with `El::id`.
-        // `onpick` is left out: its value can run a script, so `El::bind_attr` refuses it.
+        // `onpick` is left out: its value can run a script, so `hypersig::attr!` refuses it.
         /// `max-items`, of type `number | undefined`.
-        pub const MAX_ITEMS: &str = "max-items";
+        pub const MAX_ITEMS: Attr = hypersig::attr!("max-items");
         /// `max_items`, of type `number`.
-        pub const MAX_ITEMS_2: &str = "max_items";
+        pub const MAX_ITEMS_2: Attr = hypersig::attr!("max_items");
     }
 
     /// The events `<test-picker>` dispatches.
@@ -187,12 +196,14 @@ pub fn wa_stepper<S>() -> El<S> {
 pub mod wa_stepper {
     /// The attributes of `<wa-stepper>`.
     pub mod attr {
+        use hypersig::html::Attr;
+
         /// `orientation`, of type `'horizontal' | 'vertical' | 'auto'`.
-        pub const ORIENTATION: &str = "orientation";
+        pub const ORIENTATION: Attr = hypersig::attr!("orientation");
         /// `linear`, of type `boolean`. Set it with `El::attr_when`.
-        pub const LINEAR: &str = "linear";
+        pub const LINEAR: Attr = hypersig::attr!("linear");
         /// `did-ssr`.
-        pub const DID_SSR: &str = "did-ssr";
+        pub const DID_SSR: Attr = hypersig::attr!("did-ssr");
     }
 
     /// The events `<wa-stepper>` dispatches.

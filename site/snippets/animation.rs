@@ -1,3 +1,4 @@
+use hypersig::html::attr;
 use hypersig::html::span;
 use hypersig::style::value::{AnimationIterationCount, AnimationTimingFunction, ms, raw};
 use hypersig::style::{Keyframes, Media, Style};
@@ -14,7 +15,7 @@ let spin = Keyframes::new("spin")
     .at(100, Style::new().transform(raw("rotate(360deg)")));
 
 let spinner = span::<Upload>()
-    .attr("aria-hidden", "true")
+    .attr(attr::ARIA_HIDDEN, "true")
     .css(
         Style::new()
             .keyframes(&spin)

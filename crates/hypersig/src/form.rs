@@ -32,7 +32,7 @@ use crate::ssr::{self, Ctx};
 /// values and clears what the visitor has done.
 ///
 /// ```
-/// use hypersig::html::{button, input};
+/// use hypersig::html::{attr, button, input};
 /// use hypersig::{Action, Form, Page, Rules, Sig, Signals, Validate};
 /// use serde::{Deserialize, Serialize};
 ///
@@ -62,7 +62,7 @@ use crate::ssr::{self, Ctx};
 ///         signup
 ///             .form(JOIN.call_with(signup.value()))
 ///             .child(input().bind(signup.field(email)).on_blur(signup.touch(email)))
-///             .child(button().attr("type", "submit").text("Join")),
+///             .child(button().attr(attr::TYPE, "submit").text("Join")),
 ///     );
 /// assert!(page.render().contains("signup.touched.email"));
 /// ```
@@ -563,7 +563,9 @@ impl<S, T: Validate> Sig<S, Form<T>> {
                     .set(Expr::from_json(json!(["lit", {}]))),
             )
             .then(Stmt::when(rules.all_pass(), then));
-        html::form().attr("novalidate", "").on_submit(submit)
+        html::form()
+            .attr(html::attr::NOVALIDATE, "")
+            .on_submit(submit)
     }
 }
 

@@ -4,7 +4,7 @@
 use std::time::Duration;
 
 use axum::Router;
-use hypersig::html::{El, Event, input, li, ul};
+use hypersig::html::{El, Event, attr, input, li, ul};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, fragment};
 use serde::{Deserialize, Serialize};
 
@@ -52,7 +52,7 @@ async fn index((): (), (): ()) -> Page<Search> {
     )
     .child(
         input()
-            .attr("aria-label", "Search fruit")
+            .attr(attr::ARIA_LABEL, "Search fruit")
             .bind(query)
             .on_debounced(
                 Event::Input,

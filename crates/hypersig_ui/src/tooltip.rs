@@ -4,7 +4,7 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use hypersig::NodeRef;
-use hypersig::html::{El, Event, div};
+use hypersig::html::{El, Event, Role, attr, div};
 use hypersig::style::Style;
 use hypersig::style::value::{
     BackgroundClip, BorderStyle, Color, PositionTryFallbacks, px, raw, rem,
@@ -96,7 +96,7 @@ impl<S> Tooltip<S> {
     fn attach(self, button: El<S>) -> El<S> {
         let tip = self.node_ref();
         button
-            .attr("aria-describedby", self.name)
+            .attr(attr::ARIA_DESCRIBEDBY, self.name)
             .css(Style::new().anchor_name(raw(self.anchor())))
             .on(Event::MouseEnter, tip.show_popover())
             .on(Event::MouseLeave, tip.hide_popover())
@@ -113,8 +113,8 @@ impl<S> Tooltip<S> {
         let tip = self.node_ref();
         div()
             .id(self.name)
-            .attr("popover", "hint")
-            .attr("role", "tooltip")
+            .attr(attr::POPOVER, "hint")
+            .role(Role::Tooltip)
             .node_ref(tip)
             // The pointer moving from the button onto the tooltip leaves one
             // and enters the other in the same event, so the tooltip closes

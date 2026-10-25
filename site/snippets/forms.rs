@@ -1,4 +1,4 @@
-use hypersig::html::{button, input, span};
+use hypersig::html::{button, input, span, attr};
 use hypersig::{Action, FieldErrors, Form, Page, Patches, Rules, Sig, Signals, Validate};
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +37,7 @@ let page = Page::new("Join", Join { signup: Form::new(Signup::default()) }).chil
         .child(input().bind(signup.field(email)).on_blur(signup.touch(email)))
         .child(span().bind_text(signup.error(email)))
         .child(button().show(signup.is_dirty()).on_click(signup.reset()).text("Clear"))
-        .child(button().attr("type", "submit").text("Join")),
+        .child(button().attr(attr::TYPE, "submit").text("Join")),
 );
 
 // The handler checks the same rules, then what only the server knows.

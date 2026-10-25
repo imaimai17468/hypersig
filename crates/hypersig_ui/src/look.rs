@@ -1,6 +1,6 @@
 //! Style parts that several components share, and the icons they draw.
 
-use hypersig::html::{El, el};
+use hypersig::html::{El, attr, el};
 use hypersig::style::value::{
     Cursor, Length, LineHeight, Opacity, OutlineStyle, PointerEvents, TransitionDuration, ms, px,
     raw, rem,
@@ -83,15 +83,15 @@ pub(crate) mod icon {
 /// technology because the element around it carries the name.
 pub(crate) fn icon<S>(paths: &[&str], size: Length) -> El<S> {
     el("svg")
-        .attr("xmlns", "http://www.w3.org/2000/svg")
-        .attr("viewBox", "0 0 24 24")
-        .attr("fill", "none")
-        .attr("stroke", "currentColor")
-        .attr("stroke-width", "2")
-        .attr("stroke-linecap", "round")
-        .attr("stroke-linejoin", "round")
-        .attr("aria-hidden", "true")
-        .attr("focusable", "false")
+        .attr(hypersig::attr!("xmlns"), "http://www.w3.org/2000/svg")
+        .attr(attr::VIEW_BOX, "0 0 24 24")
+        .attr(attr::FILL, "none")
+        .attr(attr::STROKE, "currentColor")
+        .attr(attr::STROKE_WIDTH, "2")
+        .attr(attr::STROKE_LINECAP, "round")
+        .attr(attr::STROKE_LINEJOIN, "round")
+        .attr(attr::ARIA_HIDDEN, "true")
+        .attr(attr::FOCUSABLE, "false")
         .css(
             Style::new()
                 .width(size.clone())
@@ -99,5 +99,5 @@ pub(crate) fn icon<S>(paths: &[&str], size: Length) -> El<S> {
                 .flex_shrink(0.0)
                 .pointer_events(PointerEvents::None),
         )
-        .children(paths.iter().map(|d| el("path").attr("d", *d)))
+        .children(paths.iter().map(|d| el("path").attr(attr::D, *d)))
 }

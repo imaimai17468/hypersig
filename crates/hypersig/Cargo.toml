@@ -10,6 +10,9 @@ description.workspace = true
 keywords.workspace = true
 categories.workspace = true
 readme = "../../README.md"
+# `tests/generate.rs` reads the attribute lists in `data/` to write
+# `src/html/attr.rs`, so a build from the package does not need them.
+exclude = ["data"]
 
 [features]
 default = ["axum"]

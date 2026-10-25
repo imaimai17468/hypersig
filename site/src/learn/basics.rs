@@ -201,8 +201,8 @@ pub fn describing_the_page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute. It panics, ignoring case, on a name that another method sets, whose value can run a script, or that is not an attribute name, and `bind_attr` and `attr_when` panic on the same names:",
-                ja: "`text` は固定のテキストを、`child` は要素か文字列を末尾に追加します。`href` は `Route` からページへのリンクを張ります。これは [ページとリンク](learn/pages/) で説明します。`attr` は普通の属性を設定します。ほかのメソッドが設定する名前、値がスクリプトを実行できる名前、属性名にならない名前を渡すと、大文字と小文字を区別せずにパニックします。`bind_attr` と `attr_when` も同じ名前でパニックします。",
+                en: "`text` appends static text, and `child` appends an element or a string. `href` points a link at a page from a `Route`, which [Pages and links](learn/pages/) covers. `attr` sets a plain attribute, such as `.attr(attr::PLACEHOLDER, \"Name\")`, and takes the name as an [`Attr`](api:hypersig/html/struct.Attr.html). The module [`html::attr`](api:hypersig/html/attr/index.html) holds one for each attribute of HTML, SVG, and ARIA, so a misspelled name stops the build. A name outside those lists, such as `data-lat` or an attribute of a custom element, is written `hypersig::attr!(\"data-lat\")`, which checks it at compile time. Neither has an `Attr` for these names, ignoring case, so `attr`, `bind_attr`, and `attr_when` cannot write them:",
+                ja: "`text` は固定のテキストを、`child` は要素か文字列を末尾に追加します。`href` は `Route` からページへのリンクを張ります。これは [ページとリンク](learn/pages/) で説明します。`attr` は `.attr(attr::PLACEHOLDER, \"Name\")` のように普通の属性を設定し、名前を [`Attr`](api:hypersig/html/struct.Attr.html) で受け取ります。HTML、SVG、ARIA の属性はモジュール [`html::attr`](api:hypersig/html/attr/index.html) に 1 つずつ定数があるので、名前を書き間違えるとビルドが止まります。`data-lat` やカスタム要素の属性のように一覧にない名前は `hypersig::attr!(\"data-lat\")` と書き、コンパイル時に検査されます。次の名前にはどちらの方法でも `Attr` を作れないので、`attr`、`bind_attr`、`attr_when` で書けません。大文字と小文字は区別しません。",
             },
         ),
         bullets(
@@ -211,6 +211,10 @@ pub fn describing_the_page(site: Site) -> Part {
                 L {
                     en: "`id` and `class`, which `El::id` and `El::class` set.",
                     ja: "`id` と `class`。`El::id` と `El::class` で設定します。",
+                },
+                L {
+                    en: "`role`, which `El::role` sets from a [`Role`](api:hypersig/html/enum.Role.html), so a misspelled role stops the build too.",
+                    ja: "`role`。`El::role` が [`Role`](api:hypersig/html/enum.Role.html) から設定するので、ロールの書き間違いもビルドで止まります。",
                 },
                 L {
                     en: "A name starting with `data-hs-`, which only the typed methods write, because the runtime reads those attributes.",
@@ -229,8 +233,8 @@ pub fn describing_the_page(site: Site) -> Part {
                     ja: "`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`。これらを設定するメソッドはありません。フォームの値は [フォーム](learn/forms/) のとおりアクションの呼び出しで送ります。",
                 },
                 L {
-                    en: "`attributeName` set to `href` or `xlink:href`, which would make an SVG animation write into a link. `bind_attr` refuses `attributeName` with any value.",
-                    ja: "値が `href` か `xlink:href` の `attributeName`。SVG のアニメーションがリンクに書き込むことになるからです。`bind_attr` は `attributeName` を値にかかわらず受け付けません。",
+                    en: "`attributeName`, whose value `href` would make an SVG animation write into a link.",
+                    ja: "`attributeName`。値が `href` だと、SVG のアニメーションがリンクに書き込むことになるからです。",
                 },
                 L {
                     en: "A name holding a character other than a letter, a digit, `-`, `_`, `.`, and `:`.",

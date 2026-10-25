@@ -83,11 +83,12 @@ fn header(out: &mut String, source: &str) {
 //! The custom elements of {source}, written by `cargo hypersig elements`.
 //!
 //! Each element has a function that creates it, a module `attr` with the
-//! names of its attributes for `El::bind_attr` and `El::attr_when`, and a
-//! module `event` with its events for `El::on_custom`. The names and the
-//! `detail` types come from the manifest, so they hold as far as the
-//! manifest describes the library's script. An attribute or an event that a
-//! superclass or a mixin outside the manifest declares is not here.
+//! names of its attributes for `El::attr`, `El::bind_attr`, and
+//! `El::attr_when`, and a module `event` with its events for
+//! `El::on_custom`. The names and the `detail` types come from the manifest,
+//! so they hold as far as the manifest describes the library's script. An
+//! attribute or an event that a superclass or a mixin outside the manifest
+//! declares is not here.
 //!
 //! Run the command again after updating the library, rather than editing
 //! this file.
@@ -133,7 +134,9 @@ pub fn {name}<S>() -> El<S> {{
 
 /// The module `attr` of the element `<tag>`.
 fn attributes(tag: &str, attributes: &[Member]) -> String {
-    let mut out = format!("    /// The attributes of `<{tag}>`.\n    pub mod attr {{\n");
+    let mut out = format!(
+        "    /// The attributes of `<{tag}>`.\n    pub mod attr {{\n        use hypersig::html::Attr;\n\n"
+    );
     let mut names = Names::default();
     for attribute in attributes {
         let name = &attribute.name;
@@ -157,19 +160,22 @@ fn attributes(tag: &str, attributes: &[Member]) -> String {
             Some(ty) => format!("`{name}`, of type {}.", code(ty)),
             None => format!("`{name}`."),
         };
-        let _ = writeln!(out, "        /// {doc}");
-        let _ = writeln!(
-            out,
-            "        pub const {}: &str = {name:?};",
-            names.screaming(name)
-        );
+        let ident = names.screaming(name);
+        let line = format!("        pub const {ident}: Attr = hypersig::attr!({name:?});");
+        let line = if line.chars().count() > RUSTFMT_WIDTH {
+            format!("        pub const {ident}: Attr =\n            hypersig::attr!({name:?});")
+        } else {
+            line
+        };
+        let _ = writeln!(out, "        /// {doc}\n{line}");
     }
     out.push_str("    }\n");
     out
 }
 
-/// Why `El::bind_attr` and `El::attr_when` refuse the attribute `name`, as
-/// `check_attr_name` in hypersig's `html.rs` decides, or `None`.
+/// Why `hypersig::attr!` refuses the attribute `name`, as `Attr::new` in
+/// hypersig's `html.rs` decides, or `None`. A refused name would stop the
+/// written module from compiling, so the module leaves it out.
 fn refused(name: &str) -> Option<&'static str> {
     let lower = name.to_ascii_lowercase();
     if name.is_empty()
@@ -177,20 +183,21 @@ fn refused(name: &str) -> Option<&'static str> {
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b':'))
     {
-        return Some("it is not a name `El::bind_attr` accepts.");
+        return Some("it is not a name `hypersig::attr!` accepts.");
     }
     Some(match lower.as_str() {
         "id" => "set it with `El::id`.",
         "class" => "set it with `El::class`.",
+        "role" => "set it with `El::role`, which takes a `Role`.",
         "href" => "set it with `El::href`, which takes a `Link` or a `SafeUrl`.",
         "src" => "set it with `El::src`, which takes a `SafeUrl`.",
-        "attributename" => "`El::bind_attr` refuses it, because its value could name `href`.",
+        "attributename" => "`hypersig::attr!` refuses it, because its value could name `href`.",
         _ if lower.starts_with("data-hs-") => "hypersig writes the `data-hs-` attributes.",
         "srcdoc" | "action" | "formaction" | "xlink:href" | "data" | "http-equiv" => {
-            "its value can run a script, so `El::bind_attr` refuses it."
+            "its value can run a script, so `hypersig::attr!` refuses it."
         }
         _ if lower.starts_with("on") => {
-            "its value can run a script, so `El::bind_attr` refuses it."
+            "its value can run a script, so `hypersig::attr!` refuses it."
         }
         _ => return None,
     })
@@ -672,7 +679,7 @@ mod tests {
     }
 
     #[test]
-    fn refuses_what_bind_attr_refuses() {
+    fn refuses_what_attr_refuses() {
         for name in [
             "id",
             "CLASS",
@@ -681,6 +688,7 @@ mod tests {
             "onclick",
             "formaction",
             "data-hs-x",
+            "ROLE",
             "a b",
         ] {
             assert!(refused(name).is_some(), "{name}");

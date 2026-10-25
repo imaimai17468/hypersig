@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 
 use axum::Router;
-use hypersig::html::{Stylesheet, button, div, h1, input, label, p, span};
+use hypersig::html::{Stylesheet, attr, button, div, h1, input, label, p, span};
 use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -77,10 +77,11 @@ async fn index(state: AppState, (): ()) -> Page<Counter> {
                     .child(button().on_click(count.set(count + 1)).text("+")),
             )
             .child(
-                div()
-                    .class(class::ROW)
-                    .child(label().text("Note"))
-                    .child(input().attr("placeholder", "why this number?").bind(note)),
+                div().class(class::ROW).child(label().text("Note")).child(
+                    input()
+                        .attr(attr::PLACEHOLDER, "why this number?")
+                        .bind(note),
+                ),
             )
             .child(
                 p().show(!note.is_empty())

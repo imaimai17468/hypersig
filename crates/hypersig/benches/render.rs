@@ -3,7 +3,7 @@
 //! Run with `cargo bench -p hypersig --bench render`.
 
 use divan::{AllocProfiler, Bencher};
-use hypersig::html::{Class, El, Node, each_keyed, input, li, span, ul};
+use hypersig::html::{Class, El, Node, attr, each_keyed, input, li, span, ul};
 use hypersig::style::value::{Color, Display, rem};
 use hypersig::style::{Media, PseudoClass, Style};
 use hypersig::{Page, Signals};
@@ -50,7 +50,11 @@ fn list(left: impl Fn() -> El<Todos>) -> Node<Todos> {
         |todo| {
             li().class_when(DONE, todo.at(Todo::done()))
                 .show(Todos::filter().equals("all").or(!todo.at(Todo::done())))
-                .child(input().attr("type", "checkbox").bind(todo.at(Todo::done())))
+                .child(
+                    input()
+                        .attr(attr::TYPE, "checkbox")
+                        .bind(todo.at(Todo::done())),
+                )
                 .child(span().bind_text(todo.at(Todo::title())))
                 .child(left())
         },

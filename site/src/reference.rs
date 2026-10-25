@@ -475,6 +475,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "role",
+                            "html/struct.El.html#method.role",
+                            L {
+                                en: "Sets the WAI-ARIA role a screen reader announces the element by.",
+                                ja: "スクリーンリーダーが要素を読み上げるときの WAI-ARIA のロールを設定します。",
+                            },
+                        ),
+                        (
                             "href",
                             "html/struct.El.html#method.href",
                             L {
@@ -915,6 +923,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A value `El::child` takes as a child on the page whose signals are `S`.",
                                 ja: "シグナルが `S` のページで `El::child` が子として受け取る値",
+                            },
+                        ),
+                        (
+                            "Attr",
+                            "html/struct.Attr.html",
+                            L {
+                                en: "The name of an attribute that `El::attr`, `El::bind_attr`, and `El::attr_when` write.",
+                                ja: "`El::attr`、`El::bind_attr`、`El::attr_when` が書く属性の名前",
+                            },
+                        ),
+                        (
+                            "Role",
+                            "html/enum.Role.html",
+                            L {
+                                en: "A WAI-ARIA role, which `El::role` writes into `role`.",
+                                ja: "`El::role` が `role` に書く WAI-ARIA のロール",
+                            },
+                        ),
+                        (
+                            "attr!",
+                            "macro.attr.html",
+                            L {
+                                en: "Builds an `Attr` for a name with no constant in `html::attr`.",
+                                ja: "`html::attr` に定数のない名前の `Attr` を作ります。",
                             },
                         ),
                         (

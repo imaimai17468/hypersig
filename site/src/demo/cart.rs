@@ -1,6 +1,6 @@
 //! A cart line whose total is a computed signal, for the page on signals.
 
-use hypersig::html::{div, p, span};
+use hypersig::html::{div, p, span, attr};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
@@ -64,7 +64,7 @@ pub fn page(site: Site) -> Page<Cart> {
                     .css(hstack(rem(0.75)))
                     .child(
                         button(ButtonVariant::Outline, ButtonSize::Sm)
-                            .attr_when("disabled", quantity.le(1))
+                            .attr_when(attr::DISABLED, quantity.le(1))
                             .on_click(quantity.set(quantity - 1))
                             .text("-"),
                     )

@@ -1,6 +1,6 @@
 //! A menu button, for the menu page.
 
-use hypersig::html::{div, p};
+use hypersig::html::{Role, div, p};
 use hypersig::style::pattern::stack;
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
@@ -92,6 +92,6 @@ pub fn page(site: Site) -> Page<Project> {
                         ]),
                     ),
             )
-            .child(p().attr("role", "status").bind_text(status)),
+            .child(p().role(Role::Status).bind_text(status)),
     )
 }

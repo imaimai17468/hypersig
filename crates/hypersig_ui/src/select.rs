@@ -1,6 +1,6 @@
 //! Selects: a labeled native `<select>` bound to a signal.
 
-use hypersig::html::{El, div, label, select};
+use hypersig::html::{El, attr, div, label, select};
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{
     AlignItems, Appearance, BorderStyle, Cursor, Display, Position, px, raw, rem,
@@ -162,7 +162,7 @@ fn select_with<S, T: Serialize + PartialEq, L: Into<String>>(
     }
     div()
         .css(stack(rem(0.5)))
-        .child(label().attr("for", id).css(label_style()).text(title))
+        .child(label().attr(attr::FOR, id).css(label_style()).text(title))
         .child(
             div()
                 .css(Style::new().position(Position::Relative))

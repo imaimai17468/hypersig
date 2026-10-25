@@ -3,7 +3,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Node, button as button_el, div, h2, p};
+use hypersig::html::{El, Node, Role, attr, button as button_el, div, h2, p};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{
     BorderStyle, Color, FontWeight, JustifyContent, LineHeight, Position, px, raw, rem,
@@ -77,9 +77,9 @@ impl<S> Dialog<S> {
     #[must_use]
     pub fn trigger(self, variant: ButtonVariant, size: ButtonSize) -> El<S> {
         button(variant, size)
-            .attr("aria-haspopup", "dialog")
-            .attr("commandfor", self.name)
-            .attr("command", "show-modal")
+            .attr(attr::ARIA_HASPOPUP, "dialog")
+            .attr(attr::COMMANDFOR, self.name)
+            .attr(attr::COMMAND, "show-modal")
     }
 
     /// A statement that opens the dialog, as its trigger button does.
@@ -102,8 +102,8 @@ impl<S> Dialog<S> {
     #[must_use]
     pub fn close(self, variant: ButtonVariant, size: ButtonSize) -> El<S> {
         button(variant, size)
-            .attr("commandfor", self.name)
-            .attr("command", "close")
+            .attr(attr::COMMANDFOR, self.name)
+            .attr(attr::COMMAND, "close")
     }
 
     /// The dialog, with `title`, `description`, `content`, and a close button
@@ -173,13 +173,13 @@ impl<S> Dialog<S> {
     /// button in its corner after `content`.
     fn closable(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {
         self.frame(style, title, description, content)
-            .attr("closedby", "any")
+            .attr(attr::CLOSEDBY, "any")
             .child(
                 button_el()
-                    .attr("type", "button")
-                    .attr("aria-label", "Close")
-                    .attr("commandfor", self.name)
-                    .attr("command", "close")
+                    .attr(attr::TYPE, "button")
+                    .attr(attr::ARIA_LABEL, "Close")
+                    .attr(attr::COMMANDFOR, self.name)
+                    .attr(attr::COMMAND, "close")
                     .css(corner_style())
                     .child(icon(look::icon::X, rem(1))),
             )
@@ -204,7 +204,7 @@ impl<S> Dialog<S> {
             description.into(),
             content.into(),
         )
-        .attr("role", "alertdialog")
+        .role(Role::AlertDialog)
     }
 
     fn frame(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {
@@ -213,8 +213,8 @@ impl<S> Dialog<S> {
         DialogRef::new(self.name)
             .dialog()
             .id(self.name)
-            .attr("aria-labelledby", title_id.clone())
-            .attr("aria-describedby", description_id.clone())
+            .attr(attr::ARIA_LABELLEDBY, title_id.clone())
+            .attr(attr::ARIA_DESCRIBEDBY, description_id.clone())
             .css(style)
             .child(
                 div()

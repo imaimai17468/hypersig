@@ -1,0 +1,16 @@
+error[E0425]: cannot find value `ARIA_LABLE` in module `attr`
+ --> tests/ui/fail/attr_misspelled.rs:4:39
+  |
+4 |     let _ = button::<()>().attr(attr::ARIA_LABLE, "Close");
+  |                                       ^^^^^^^^^^
+  |
+ ::: src/html/attr.rs
+  |
+  | pub const ARIA_LABEL: Attr = Attr::new("aria-label");
+  | -------------------------- similarly named constant `ARIA_LABEL` defined here
+  |
+help: a constant with a similar name exists
+  |
+4 -     let _ = button::<()>().attr(attr::ARIA_LABLE, "Close");
+4 +     let _ = button::<()>().attr(attr::ARIA_LABEL, "Close");
+  |

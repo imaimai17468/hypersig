@@ -26,7 +26,7 @@ use axum::Router;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use futures::{Stream, StreamExt as _, stream};
-use hypersig::html::{El, a, button, div, form, h1, input, li, p, span, ul};
+use hypersig::html::{El, Role, a, attr, button, div, form, h1, input, li, p, span, ul};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, StreamAction};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -187,7 +187,7 @@ impl Fragment for TodoList {
                     .child(
                         button()
                             .css(styles::icon_button())
-                            .attr("aria-label", "toggle")
+                            .attr(attr::ARIA_LABEL, "toggle")
                             .on_click(TOGGLE.call_with(&todo.id).error(problem))
                             .text(if todo.done { "✓" } else { "○" }),
                     )
@@ -195,7 +195,7 @@ impl Fragment for TodoList {
                     .child(
                         button()
                             .css(styles::icon_button())
-                            .attr("aria-label", "remove")
+                            .attr(attr::ARIA_LABEL, "remove")
                             .on_click(REMOVE.call_with(&todo.id).error(problem))
                             .text("×"),
                     )
@@ -306,7 +306,7 @@ async fn index(state: AppState, (): ()) -> Result<Page<TodoPage>, DbError> {
                     .child(
                         input()
                             .css(styles::input())
-                            .attr("placeholder", "What needs doing?")
+                            .attr(attr::PLACEHOLDER, "What needs doing?")
                             .bind(draft),
                     )
                     .child(
@@ -318,7 +318,7 @@ async fn index(state: AppState, (): ()) -> Result<Page<TodoPage>, DbError> {
             )
             .child(
                 p().id("problem")
-                    .attr("role", "alert")
+                    .role(Role::Alert)
                     .css(styles::problem())
                     .show(!problem.is_empty())
                     .bind_text(problem),

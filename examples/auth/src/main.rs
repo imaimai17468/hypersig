@@ -17,7 +17,7 @@ use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
-use hypersig::html::{El, a, div, each, form, h1, label, li, p, span, ul};
+use hypersig::html::{El, Role, a, attr, div, each, form, h1, label, li, p, span, ul};
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::rem;
@@ -314,7 +314,7 @@ fn login_card() -> El<Login> {
                     )
                     .child(
                         submit_button(ButtonVariant::Default, ButtonSize::Default)
-                            .attr_when("disabled", signing_in)
+                            .attr_when(attr::DISABLED, signing_in)
                             .bind_text(if_else(signing_in, "Signing in…", "Sign in")),
                     ),
             ),
@@ -371,12 +371,12 @@ fn home_card() -> El<Home> {
                             .child(TextField::new("Note", draft))
                             .child(
                                 submit_button(ButtonVariant::Default, ButtonSize::Default)
-                                    .attr_when("disabled", saving)
+                                    .attr_when(attr::DISABLED, saving)
                                     .text("Add note"),
                             )
                             .child(
                                 p().id("problem")
-                                    .attr("role", "alert")
+                                    .role(Role::Alert)
                                     .css(Style::new().color(token::destructive().var()))
                                     .bind_text(Home::problem()),
                             )
@@ -404,12 +404,12 @@ fn picture_form() -> El<Home> {
     let muted = Style::new().color(token::muted_foreground().var());
     div()
         .css(stack(rem(0.75)))
-        .child(label().attr("for", "picture-file").text("Picture"))
+        .child(label().attr(attr::FOR, "picture-file").text("Picture"))
         .child(
             PICTURE_FILE
                 .input()
                 .id("picture-file")
-                .attr("accept", "image/png,image/jpeg"),
+                .attr(attr::ACCEPT, "image/png,image/jpeg"),
         )
         .child(
             p().id("picture")
@@ -420,7 +420,7 @@ fn picture_form() -> El<Home> {
         )
         .child(
             button(ButtonVariant::Default, ButtonSize::Default)
-                .attr_when("disabled", uploading)
+                .attr_when(attr::DISABLED, uploading)
                 .on_click(
                     UPLOAD_PICTURE
                         .call(PICTURE_FILE)
@@ -432,7 +432,7 @@ fn picture_form() -> El<Home> {
         )
         .child(
             p().id("picture-problem")
-                .attr("role", "alert")
+                .role(Role::Alert)
                 .css(Style::new().color(token::destructive().var()))
                 .bind_text(Home::picture_problem()),
         )

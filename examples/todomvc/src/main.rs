@@ -9,8 +9,8 @@ use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use hypersig::html::{
-    El, Key, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong,
-    ul, when,
+    El, Key, a, attr, button, each_keyed, footer, h1, header, input, label, li, section, span,
+    strong, ul, when,
 };
 use hypersig::{
     Action, Expr, NodeRef, Page, Patches, Route, RouterExt, SafeUrl, Signals, Stmt, if_else,
@@ -78,8 +78,8 @@ fn new_todo() -> El<TodoMvc> {
     );
     input()
         .css(styles::new_todo())
-        .attr("placeholder", "What needs to be done?")
-        .attr("autofocus", "")
+        .attr(attr::PLACEHOLDER, "What needs to be done?")
+        .attr(attr::AUTOFOCUS, "")
         .bind(draft)
         .on_key(Key::Enter, add)
 }
@@ -116,8 +116,8 @@ fn todo_list() -> El<TodoMvc> {
                     input()
                         .css(styles::toggle())
                         .css_when(styles::hidden(), is_editing.clone())
-                        .attr("type", "checkbox")
-                        .attr("aria-label", "Toggle")
+                        .attr(attr::TYPE, "checkbox")
+                        .attr(attr::ARIA_LABEL, "Toggle")
                         .bind(done),
                 )
                 .child(
@@ -137,14 +137,14 @@ fn todo_list() -> El<TodoMvc> {
                     button()
                         .css(styles::destroy())
                         .css_when(styles::hidden(), is_editing)
-                        .attr("aria-label", "Delete")
+                        .attr(attr::ARIA_LABEL, "Delete")
                         .on_click(todo.remove()),
                 )
                 .child(when(
                     editing.equals(id.some()),
                     input()
                         .css(styles::edit())
-                        .attr("aria-label", "Edit")
+                        .attr(attr::ARIA_LABEL, "Edit")
                         .node_ref(EDIT)
                         .bind(edit_text)
                         .on_key(Key::Enter, commit.clone())
@@ -202,14 +202,14 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                             input()
                                 .id("toggle-all")
                                 .css(styles::toggle_all())
-                                .attr("type", "checkbox")
+                                .attr(attr::TYPE, "checkbox")
                                 .bind_checked(left.equals(0))
                                 .on_change(list.set_all(Todo::done(), left.gt(0))),
                         )
                         .child(
                             label()
                                 .css(styles::toggle_all_label())
-                                .attr("for", "toggle-all")
+                                .attr(attr::FOR, "toggle-all")
                                 .text("Mark all as complete"),
                         )
                         .child(todo_list()),

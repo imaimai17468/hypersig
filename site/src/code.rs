@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use hypersig::html::{Node, code, div, pre, span};
+use hypersig::html::{Node, attr, code, div, pre, span};
 use hypersig::style::value::{
     BorderBottomStyle, BorderStyle, Color, Display, FontFamily, FontWeight, LineHeight, OverflowX,
     UserSelect, pct, px, rem,
@@ -124,7 +124,7 @@ pub fn diff<'a>(lang: Lang, lines: impl IntoIterator<Item = (Change, &'a str)>) 
         });
         row.child(
             span()
-                .attr("aria-hidden", "true")
+                .attr(attr::ARIA_HIDDEN, "true")
                 .css(
                     Style::new()
                         .user_select(UserSelect::None)

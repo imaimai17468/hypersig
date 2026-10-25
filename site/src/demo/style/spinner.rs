@@ -1,6 +1,6 @@
 //! A spinner animated with keyframes, for the page on animation.
 
-use hypersig::html::{div, span};
+use hypersig::html::{Role, attr, div, span};
 use hypersig::style::pattern::hstack;
 use hypersig::style::value::{
     AnimationIterationCount, AnimationTimingFunction, BorderStyle, ms, px, raw, rem,
@@ -49,8 +49,8 @@ pub fn page(site: Site) -> Page<Upload> {
     .child(
         div()
             .css(hstack(rem(1)))
-            .child(span().attr("aria-hidden", "true").css(ring).show(busy))
-            .child(span().attr("role", "status").bind_text(if_else(
+            .child(span().attr(attr::ARIA_HIDDEN, "true").css(ring).show(busy))
+            .child(span().role(Role::Status).bind_text(if_else(
                 busy,
                 site.t(L {
                     en: "Uploading…",

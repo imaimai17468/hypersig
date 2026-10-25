@@ -1,7 +1,7 @@
 //! A star rating drawn by a custom element that a script defines, for the
 //! page on JavaScript libraries.
 
-use hypersig::html::{CustomEvent, div, el, p};
+use hypersig::html::{CustomEvent, div, el, p, attr};
 use hypersig::style::pattern::hstack;
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals, if_else};
@@ -34,7 +34,7 @@ pub fn page(site: Site) -> Page<Review> {
             .css(hstack(rem(1)))
             .child(
                 el("star-rating")
-                    .bind_attr("value", stars.to_text())
+                    .bind_attr(attr::VALUE, stars.to_text())
                     .on_custom(RATE, move |rated| stars.set(rated)),
             )
             .child(

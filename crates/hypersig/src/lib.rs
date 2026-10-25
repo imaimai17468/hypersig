@@ -212,4 +212,34 @@ pub mod _private {
     pub fn sig<S, T>(field: &'static str) -> Sig<S, T> {
         Sig::from_path(Path::field(field))
     }
+
+    /// Called by `attr!` inside a `const` block, so a name `Attr` refuses
+    /// is a compile error.
+    #[must_use]
+    pub const fn attr(name: &'static str) -> crate::html::Attr {
+        crate::html::Attr::new(name)
+    }
+}
+
+/// Builds an [`Attr`](html::Attr) for a name with no constant in [`html::attr`].
+///
+/// Such a name is a `data-*` attribute, such as `data-lat`, or an attribute
+/// of a custom element. The name is checked at compile time against the rules of
+/// [`Attr`](html::Attr), so a name that could run a script stops the build:
+///
+/// ```
+/// use hypersig::html::div;
+///
+/// let map = div::<()>().attr(hypersig::attr!("data-zoom"), "12");
+/// assert!(map.render().contains(r#"data-zoom="12""#));
+/// ```
+///
+/// ```compile_fail
+/// let _ = hypersig::html::img::<()>().attr(hypersig::attr!("onerror"), "alert(1)");
+/// ```
+#[macro_export]
+macro_rules! attr {
+    ($name:literal) => {
+        const { $crate::_private::attr($name) }
+    };
 }
