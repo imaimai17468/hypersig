@@ -250,6 +250,23 @@ pub(crate) const GROUP: &str = "group";
 /// The class [`Style::peer`](crate::Style::peer) marks a sibling with.
 pub(crate) const PEER: &str = "peer";
 
+/// Writes `rule`, which ends with a space, then `queries` joined by ` and `,
+/// then the `{` that opens the block.
+pub(crate) fn open_block(
+    out: &mut String,
+    rule: &str,
+    queries: impl IntoIterator<Item = &'static str>,
+) {
+    out.push_str(rule);
+    for (i, query) in queries.into_iter().enumerate() {
+        if i > 0 {
+            out.push_str(" and ");
+        }
+        out.push_str(query);
+    }
+    out.push('{');
+}
+
 fn insert_ranked(list: &mut Vec<(usize, PseudoClass)>, p: PseudoClass) {
     let key = (p.rank(), p);
     if let Err(at) = list.binary_search(&key) {
@@ -319,25 +336,11 @@ impl Conditions {
     pub(crate) fn open(&self, out: &mut String) -> usize {
         let mut open = 0;
         if !self.media.is_empty() {
-            out.push_str("@media ");
-            for (i, m) in self.media.iter().enumerate() {
-                if i > 0 {
-                    out.push_str(" and ");
-                }
-                out.push_str(m.query());
-            }
-            out.push('{');
+            open_block(out, "@media ", self.media.iter().map(|m| m.query()));
             open += 1;
         }
         if !self.container.is_empty() {
-            out.push_str("@container ");
-            for (i, c) in self.container.iter().enumerate() {
-                if i > 0 {
-                    out.push_str(" and ");
-                }
-                out.push_str(c.query());
-            }
-            out.push('{');
+            open_block(out, "@container ", self.container.iter().map(|c| c.query()));
             open += 1;
         }
         open

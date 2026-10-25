@@ -102,6 +102,11 @@ fn files(dir: &Path) -> Vec<String> {
     out
 }
 
+/// The Cargo that runs the tests, which sets `CARGO` for them.
+fn cargo() -> String {
+    std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned())
+}
+
 /// Checks the project at `dir` against this repository's hypersig, in a
 /// target directory that the projects of one host share.
 fn check(dir: &Path, target: &Path, args: &[&str]) {
@@ -114,7 +119,7 @@ fn check(dir: &Path, target: &Path, args: &[&str]) {
         ),
     )
     .unwrap();
-    let status = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned()))
+    let status = Command::new(cargo())
         .arg("check")
         .args(args)
         .arg("--quiet")
@@ -419,7 +424,7 @@ fn elements_prints_a_module_that_a_page_checks_against() {
     let target = dir.join("target");
     check(&dir, &target, &[]);
 
-    let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
+    let cargo = cargo();
     let status = Command::new(&cargo)
         .args(["clippy", "--quiet", "--", "-D", "warnings"])
         .env("CARGO_TARGET_DIR", &target)

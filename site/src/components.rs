@@ -84,11 +84,11 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
             ]
         })
         .collect();
-    let rows: Vec<Vec<&str>> = cells
+    let rows: Vec<[&str; 2]> = cells
         .iter()
-        .map(|[name, summary]| vec![name.as_str(), summary.as_str()])
+        .map(|[name, summary]| [name.as_str(), summary.as_str()])
         .collect();
-    let rows: Vec<&[&str]> = rows.iter().map(Vec::as_slice).collect();
+    let rows: Vec<&[&str]> = rows.iter().map(<[&str; 2]>::as_slice).collect();
     children.push(table_of(
         site,
         L {

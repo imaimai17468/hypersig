@@ -106,7 +106,7 @@ pub trait Locale: Segment + Serialize + Copy + Eq + 'static {
     fn tag(self) -> String {
         match serde_json::to_value(self) {
             Ok(serde_json::Value::String(tag)) => tag,
-            _ => panic!("a `Segment` enum serializes to a string"),
+            other => panic!("a `Segment` enum serializes to a string, not {other:?}"),
         }
     }
 }

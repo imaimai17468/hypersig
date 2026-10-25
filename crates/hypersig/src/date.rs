@@ -246,7 +246,7 @@ impl DateFormat {
             self.locale.tag(),
             self.date.map(DateStyle::name),
             self.time.map(TimeStyle::name),
-            time.0.checked_add(i64::from(offset) * 60_000)?,
+            time.0.checked_add(i64::from(offset) * MILLIS_PER_MINUTE)?,
         )
     }
 
@@ -375,6 +375,12 @@ const WEEKDAYS_EN: [&str; 7] = [
 ];
 const WEEKDAYS_JA: [&str; 7] = ["日", "月", "火", "水", "木", "金", "土"];
 
+/// The milliseconds in a minute, which a [`TimeZone::Offset`] counts in.
+const MILLIS_PER_MINUTE: i64 = 60_000;
+
+/// The milliseconds in a day of UTC, which has no leap seconds in a [`Timestamp`].
+const MILLIS_PER_DAY: i64 = 86_400_000;
+
 /// The calendar date and the time of day of a moment, in UTC.
 struct Civil {
     year: i64,
@@ -390,8 +396,8 @@ struct Civil {
 
 impl Civil {
     fn new(millis: i64) -> Option<Self> {
-        let days = millis.div_euclid(86_400_000);
-        let seconds = millis.rem_euclid(86_400_000) / 1000;
+        let days = millis.div_euclid(MILLIS_PER_DAY);
+        let seconds = millis.rem_euclid(MILLIS_PER_DAY) / 1000;
         // Howard Hinnant's `civil_from_days`, with 400-year eras that start on 1 March.
         let shifted = days + 719_468;
         let era = shifted.div_euclid(146_097);
@@ -496,7 +502,7 @@ pub(crate) fn write_relative(locale: &str, millis: f64) -> Option<String> {
         .iter()
         .copied()
         .find(|(length, ..)| millis.abs() >= *length)
-        .unwrap_or(UNITS[5]);
+        .unwrap_or(UNITS[UNITS.len() - 1]);
     let count = (millis / length).trunc();
     let number = crate::ssr::format_number(count.abs(), 0, ",", ".", "", "");
     let past = count.is_sign_negative();

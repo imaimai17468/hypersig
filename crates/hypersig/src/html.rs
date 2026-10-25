@@ -115,7 +115,7 @@ impl<S> Node<S> {
     pub(crate) fn write(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
         match &self.0 {
             NodeKind::Element(el) => el.write(out, ctx, None),
-            NodeKind::Text(text) => escape_into(out, text, false),
+            NodeKind::Text(text) => escape_into(out, text, Escape::Text),
             NodeKind::Each {
                 list,
                 depth,
@@ -2106,10 +2106,7 @@ impl<S> El<S> {
         ctx.for_each_item(depth, items, |item, index| {
             key.clear();
             match &self.key {
-                None => {
-                    key.push('#');
-                    key.push_str(&index.to_string());
-                }
+                None => ssr::write_into(&mut key, format_args!("#{index}")),
                 Some(expr) => match ssr::evaluate(expr, item) {
                     Some(value) => ssr::write_js_json(&mut key, &value),
                     None => return Some(()),
@@ -2243,7 +2240,7 @@ impl<S> El<S> {
         let mut any_class = false;
         for class in classes {
             out.push_str(if any_class { " " } else { " class=\"" });
-            escape_into(out, class, true);
+            escape_into(out, class, Escape::Attribute);
             any_class = true;
         }
         if any_class {
@@ -2277,7 +2274,7 @@ impl<S> El<S> {
             return;
         }
         if let Some(text) = content {
-            escape_into(out, &text, false);
+            escape_into(out, &text, Escape::Text);
         } else {
             for child in &self.children {
                 match (&child.0, &selected) {
@@ -2399,10 +2396,10 @@ impl<S> El<S> {
     fn write_selected(&self, out: &mut String, ctx: Option<&Ctx<'_>>) {
         let mut out_el = String::new();
         self.write(&mut out_el, ctx, None);
-        let open = format!("<{}", self.tag);
-        out.push_str(&open);
+        let open = '<'.len_utf8() + self.tag.len();
+        out.push_str(&out_el[..open]);
         out.push_str(" selected=\"\"");
-        out.push_str(&out_el[open.len()..]);
+        out.push_str(&out_el[open..]);
     }
 }
 
@@ -2431,7 +2428,7 @@ pub(crate) fn write_attr(out: &mut String, name: &str, value: &str) {
     out.push(' ');
     out.push_str(name);
     out.push_str("=\"");
-    escape_into(out, value, true);
+    escape_into(out, value, Escape::Attribute);
     out.push('"');
 }
 
@@ -2501,7 +2498,17 @@ impl serde_json::ser::Formatter for AttrJson {
     }
 }
 
-pub(crate) fn escape_into(out: &mut String, text: &str, attribute: bool) {
+/// Where escaped text lands, which decides whether quotes are escaped.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Escape {
+    /// The content of an element.
+    Text,
+    /// A quoted attribute value.
+    Attribute,
+}
+
+pub(crate) fn escape_into(out: &mut String, text: &str, to: Escape) {
+    let attribute = to == Escape::Attribute;
     for c in text.chars() {
         match c {
             '&' => out.push_str("&amp;"),

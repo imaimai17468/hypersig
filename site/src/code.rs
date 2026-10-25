@@ -4,8 +4,8 @@ use std::ops::Range;
 
 use hypersig::html::{Node, code, div, pre, span};
 use hypersig::style::value::{
-    BorderBottomStyle, BorderStyle, Color, Display, FontWeight, LineHeight, OverflowX, UserSelect,
-    pct, px, rem,
+    BorderBottomStyle, BorderStyle, Color, Display, FontFamily, FontWeight, LineHeight, OverflowX,
+    UserSelect, pct, px, rem,
 };
 use hypersig::style::{Media, Style, Theme, Token};
 use hypersig_ui::token;
@@ -170,7 +170,7 @@ fn frame(file: Option<&str>, body: Part) -> Part {
                 .border_color(token::border().var())
                 .border_radius(token::radius().var())
                 .background_color(token::muted().var())
-                .overflow_x(hypersig::style::value::OverflowX::Hidden),
+                .overflow_x(OverflowX::Hidden),
         )
         .children(file.map(|file| {
             div()
@@ -184,7 +184,7 @@ fn frame(file: Option<&str>, body: Part) -> Part {
                         .font_size(rem(0.75))
                         .font_weight(FontWeight::Number(500.0))
                         .color(token::muted_foreground().var())
-                        .font_family(hypersig::style::value::FontFamily::Monospace),
+                        .font_family(FontFamily::Monospace),
                 )
                 .text(file)
         }))

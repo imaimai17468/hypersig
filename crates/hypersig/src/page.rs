@@ -10,8 +10,8 @@ use serde_json::{Value, json};
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
-    HIDE, INLINE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json, write_attr,
-    write_json_attr,
+    Escape, HIDE, INLINE, Node, Shortcut, Stylesheet, check_names, escape_into, keys_json,
+    write_attr, write_json_attr,
 };
 use crate::route::{Base, Url};
 use crate::signal::{Sig, Signals};
@@ -784,7 +784,7 @@ impl<S: Signals> Page<S> {
                 Cow::Owned(ssr::js_string(&title))
             });
         out.push_str("<title>");
-        escape_into(&mut out, &title, false);
+        escape_into(&mut out, &title, Escape::Text);
         out.push_str("</title>");
         self.write_metadata(&mut out);
         let styles_at = out.len();
@@ -836,13 +836,7 @@ impl<S: Signals> Page<S> {
             style.push_str("]{display:none!important}");
         }
         for (at, rule) in rules.iter().enumerate() {
-            style.push('[');
-            style.push_str(INLINE);
-            style.push_str("=\"");
-            style.push_str(&at.to_string());
-            style.push_str("\"]{");
-            style.push_str(rule);
-            style.push('}');
+            ssr::write_into(&mut style, format_args!("[{INLINE}=\"{at}\"]{{{rule}}}"));
         }
         style.push_str("</style>");
         style

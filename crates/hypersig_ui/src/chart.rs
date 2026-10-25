@@ -25,6 +25,17 @@ enum Kind {
     Area,
 }
 
+/// The share of a row's band that its bars cover, together for the bars of
+/// one row. A larger share narrows the gap between rows.
+const BAR_SHARE: f64 = 0.8;
+
+/// The share of a row's band left empty before its first bar, half of what
+/// [`BAR_SHARE`] leaves, so the bars sit in the middle of the band. It is
+/// written out rather than computed from [`BAR_SHARE`], because
+/// `(1.0 - 0.8) / 2.0` is not the `f64` nearest 0.1 and would change the
+/// number the expression carries.
+const BAR_INSET: f64 = 0.1;
+
 /// One series of a chart: its name, its color, and how a row's value reads
 /// in the browser.
 struct Series<S, T> {
@@ -412,12 +423,12 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                 let x = row.index().to_f64() * band.clone();
                 match self.kind {
                     Kind::Bar | Kind::HorizontalBar => {
-                        let width = band.clone() * (0.8 / count);
+                        let width = band.clone() * (BAR_SHARE / count);
                         #[expect(
                             clippy::cast_precision_loss,
                             reason = "a chart has far fewer than 2^52 series"
                         )]
-                        let left = x + band.clone() * 0.1 + width.clone() * (index as f64);
+                        let left = x + band.clone() * BAR_INSET + width.clone() * (index as f64);
                         self.bar_mark(Expr::lit(&0.0), value, left, width, color)
                     }
                     Kind::StackedBar => {
@@ -427,8 +438,8 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                             stack(earlier, row, false),
                         );
                         let end = start.clone() + value;
-                        let left = x + band.clone() * 0.1;
-                        self.bar_mark(start, end, left, band.clone() * 0.8, color)
+                        let left = x + band.clone() * BAR_INSET;
+                        self.bar_mark(start, end, left, band.clone() * BAR_SHARE, color)
                     }
                     Kind::Line | Kind::Area => {
                         let next =

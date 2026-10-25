@@ -4,7 +4,7 @@
 use hypersig::html::{a, div, h1, h2, h3, p, section, span};
 use hypersig::style::pattern::{container, stack, wrap};
 use hypersig::style::value::{
-    AlignItems, BorderStyle, FontWeight, JustifyContent, LineHeight, TextAlign, TextWrap,
+    AlignItems, BorderStyle, Display, FontWeight, JustifyContent, LineHeight, TextAlign, TextWrap,
     WordBreak, px, raw, rem,
 };
 use hypersig::style::{Media, PseudoClass, Style};
@@ -100,7 +100,7 @@ pub fn features(site: Site, cards: &[(&str, &str)]) -> Part {
             stack(rem(1)).on(
                 Media::Md,
                 Style::new()
-                    .display(hypersig::style::value::Display::Grid)
+                    .display(Display::Grid)
                     .grid_template_columns(raw("repeat(3, minmax(0, 1fr))")),
             ),
         )
@@ -473,7 +473,7 @@ fn catalog(site: Site) -> Part {
             stack(rem(1.5)).margin_top(rem(1.5)).on(
                 Media::Md,
                 Style::new()
-                    .display(hypersig::style::value::Display::Grid)
+                    .display(Display::Grid)
                     .grid_template_columns(raw("repeat(3, minmax(0, 1fr))")),
             ),
         )
@@ -514,7 +514,7 @@ pub fn library_cards<const N: usize>(site: Site, cards: [(Library, &str, &str); 
             stack(rem(1)).margin_top(rem(1.5)).on(
                 Media::Md,
                 Style::new()
-                    .display(hypersig::style::value::Display::Grid)
+                    .display(Display::Grid)
                     .grid_template_columns(raw(match N {
                         3 => "repeat(3, minmax(0, 1fr))",
                         _ => "repeat(2, minmax(0, 1fr))",

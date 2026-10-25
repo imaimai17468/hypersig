@@ -44,11 +44,11 @@ pub fn content(site: Site, page: Reference) -> Part {
                 ]
             })
             .collect();
-        let rows: Vec<Vec<&str>> = cells
+        let rows: Vec<[&str; 2]> = cells
             .iter()
-            .map(|[name, summary]| vec![name.as_str(), summary.as_str()])
+            .map(|[name, summary]| [name.as_str(), summary.as_str()])
             .collect();
-        let rows: Vec<&[&str]> = rows.iter().map(Vec::as_slice).collect();
+        let rows: Vec<&[&str]> = rows.iter().map(<[&str; 2]>::as_slice).collect();
         children.push(table_of(
             site,
             L {
@@ -73,11 +73,11 @@ fn overview(site: Site) -> Part {
             _ => None,
         })
         .collect();
-    let rows: Vec<Vec<&str>> = rows
+    let rows: Vec<[&str; 2]> = rows
         .iter()
-        .map(|[page, summary]| vec![page.as_str(), summary.as_str()])
+        .map(|[page, summary]| [page.as_str(), summary.as_str()])
         .collect();
-    let rows: Vec<&[&str]> = rows.iter().map(Vec::as_slice).collect();
+    let rows: Vec<&[&str]> = rows.iter().map(<[&str; 2]>::as_slice).collect();
     parts([
         title(Doc::Reference(Reference::Overview).title(site)),
         lead(site, Doc::Reference(Reference::Overview).leads()),

@@ -318,18 +318,12 @@ impl<P: Params, Q: Search> Route<P, Q> {
     #[must_use]
     pub fn url(&self, args: Q::Args<P>) -> Url {
         let (params, search) = Q::split(args);
-        let parts = self.parts();
-        let mut url = parts[0].clone();
-        let segments = params.segments();
-        for (index, (segment, part)) in segments.iter().zip(&parts[1..]).enumerate() {
-            url.push_str(&encode_segment(
-                segment,
-                P::REST_LAST && index + 1 == segments.len(),
-            ));
-            url.push_str(part);
-        }
-        url.push_str(&search.query());
-        Url(on_this_host(url))
+        Url(fixed_url(
+            &self.parts(),
+            &params.segments(),
+            P::REST_LAST,
+            &search.query(),
+        ))
     }
 
     /// The parameters this route's path takes from the start of `path`, percent-decoded.
@@ -366,23 +360,26 @@ fn percent_decode(text: &str) -> Option<String> {
     let mut out = Vec::with_capacity(bytes.len());
     let mut i = 0;
     while i < bytes.len() {
-        let hex = |at: usize| {
-            bytes
-                .get(at)
-                .and_then(|byte| char::from(*byte).to_digit(16))
-        };
-        match (bytes[i], hex(i + 1), hex(i + 2)) {
-            (b'%', Some(high), Some(low)) => {
-                out.push(u8::try_from(high * 16 + low).ok()?);
-                i += 3;
-            }
-            (byte, _, _) => {
-                out.push(byte);
-                i += 1;
-            }
+        if let Some(byte) = percent_escape(bytes, i) {
+            out.push(byte);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
         }
     }
     String::from_utf8(out).ok()
+}
+
+/// The byte that `bytes[at..]` stands for where it starts with `%` and two hex digits.
+#[cfg(feature = "axum")]
+pub(crate) fn percent_escape(bytes: &[u8], at: usize) -> Option<u8> {
+    let &[b'%', high, low] = bytes.get(at..at + 3)? else {
+        return None;
+    };
+    let digit = |byte: u8| char::from(byte).to_digit(16);
+    let value = digit(high)? * 16 + digit(low)?;
+    Some(u8::try_from(value).expect("two hex digits make at most 0xFF"))
 }
 
 impl Route<(), ()> {
@@ -729,25 +726,19 @@ impl<S> Link<S> {
     fn new(parts: &[String], values: Vec<Value>, search: Option<Value>, rest_last: bool) -> Self {
         let count = values.len();
         let is_rest = |index: usize| rest_last && index + 1 == count;
-        let literal = |value: &Value| match value.as_array().map(Vec::as_slice) {
-            Some([op, literal]) if op == "lit" => Some(literal.clone()),
-            _ => None,
-        };
-        let literals: Option<Vec<Value>> = values.iter().map(literal).collect();
+        let segments: Option<Vec<String>> = values
+            .iter()
+            .map(|value| literal(value).map(crate::ssr::js_string))
+            .collect();
         let search_literal = search.as_ref().map(literal);
-        if let (Some(literals), None | Some(Some(_))) = (literals, &search_literal) {
-            let mut url = parts[0].clone();
-            for (index, (literal, part)) in literals.iter().zip(&parts[1..]).enumerate() {
-                url.push_str(&encode_segment(
-                    &crate::ssr::js_string(literal),
-                    is_rest(index),
-                ));
-                url.push_str(part);
-            }
-            if let Some(Some(search)) = &search_literal {
-                url.push_str(&query_string(search));
-            }
-            return Self(LinkKind::Fixed(on_this_host(url)));
+        if let (Some(segments), None | Some(Some(_))) = (segments, search_literal) {
+            let query = search_literal
+                .flatten()
+                .map(query_string)
+                .unwrap_or_default();
+            return Self(LinkKind::Fixed(fixed_url(
+                parts, &segments, rest_last, &query,
+            )));
         }
         let mut ast = json!(["lit", parts[0]]);
         for (index, (value, part)) in values.into_iter().zip(&parts[1..]).enumerate() {
@@ -882,6 +873,28 @@ impl<S> fmt::Debug for Link<S> {
             LinkKind::Bound(expr) => f.debug_tuple("Link").field(expr).finish(),
         }
     }
+}
+
+/// The value of the literal `ast`, or `None` where `ast` is computed in the browser.
+fn literal(ast: &Value) -> Option<&Value> {
+    match ast.as_array().map(Vec::as_slice) {
+        Some([op, literal]) if op == "lit" => Some(literal),
+        _ => None,
+    }
+}
+
+/// The URL whose path is the literal `parts` with each of `segments` percent-encoded between them, followed by `query`.
+fn fixed_url(parts: &[String], segments: &[String], rest_last: bool, query: &str) -> String {
+    let mut url = parts[0].clone();
+    for (index, (segment, part)) in segments.iter().zip(&parts[1..]).enumerate() {
+        url.push_str(&encode_segment(
+            segment,
+            rest_last && index + 1 == segments.len(),
+        ));
+        url.push_str(part);
+    }
+    url.push_str(query);
+    on_this_host(url)
 }
 
 /// `url`, kept on the site's own host.

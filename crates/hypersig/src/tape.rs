@@ -46,6 +46,13 @@ enum Node {
     },
 }
 
+/// Which of the two compound nodes `Tape::open` pushes.
+#[derive(Clone, Copy)]
+enum Container {
+    Array,
+    Object,
+}
+
 /// The most entries `Tape::close` compares pairwise to find a repeated key.
 /// A larger object is read as if it may repeat one.
 const UNIQUE_CHECK_LIMIT: usize = 16;
@@ -111,15 +118,14 @@ impl Tape {
 
     /// Pushes the head of an array or an object, whose `len` and `end`
     /// `close` fills in.
-    fn open(&mut self, object: bool) -> usize {
-        self.nodes.push(if object {
-            Node::Object {
+    fn open(&mut self, container: Container) -> usize {
+        self.nodes.push(match container {
+            Container::Object => Node::Object {
                 len: 0,
                 end: 0,
                 unique: false,
-            }
-        } else {
-            Node::Array { len: 0, end: 0 }
+            },
+            Container::Array => Node::Array { len: 0, end: 0 },
         });
         self.nodes.len() - 1
     }
@@ -523,13 +529,13 @@ struct Compound<'t> {
 }
 
 impl<'t> Compound<'t> {
-    fn new(tape: &'t mut Tape, object: bool, variant: Option<&'static str>) -> Self {
+    fn new(tape: &'t mut Tape, container: Container, variant: Option<&'static str>) -> Self {
         let variant = variant.map(|name| {
-            let head = tape.open(true);
+            let head = tape.open(Container::Object);
             tape.push_str(name);
             head
         });
-        let head = tape.open(object);
+        let head = tape.open(container);
         Compound {
             tape,
             head,
@@ -648,7 +654,7 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<(), serde_json::Error> {
-        let head = self.tape.open(false);
+        let head = self.tape.open(Container::Array);
         for byte in v {
             self.tape.nodes.push(Node::Number((*byte).into()));
         }
@@ -697,7 +703,7 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
         variant: &'static str,
         value: &T,
     ) -> Result<(), serde_json::Error> {
-        let head = self.tape.open(true);
+        let head = self.tape.open(Container::Object);
         self.tape.push_str(variant);
         value.serialize(TapeSerializer { tape: self.tape })?;
         self.tape.close(head, 1);
@@ -705,11 +711,11 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
     }
 
     fn serialize_seq(self, _len: Option<usize>) -> Result<Compound<'t>, serde_json::Error> {
-        Ok(Compound::new(self.tape, false, None))
+        Ok(Compound::new(self.tape, Container::Array, None))
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Compound<'t>, serde_json::Error> {
-        Ok(Compound::new(self.tape, false, None))
+        Ok(Compound::new(self.tape, Container::Array, None))
     }
 
     fn serialize_tuple_struct(
@@ -717,7 +723,7 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
         _name: &'static str,
         _len: usize,
     ) -> Result<Compound<'t>, serde_json::Error> {
-        Ok(Compound::new(self.tape, false, None))
+        Ok(Compound::new(self.tape, Container::Array, None))
     }
 
     fn serialize_tuple_variant(
@@ -727,11 +733,11 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
         variant: &'static str,
         _len: usize,
     ) -> Result<Compound<'t>, serde_json::Error> {
-        Ok(Compound::new(self.tape, false, Some(variant)))
+        Ok(Compound::new(self.tape, Container::Array, Some(variant)))
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Compound<'t>, serde_json::Error> {
-        Ok(Compound::new(self.tape, true, None))
+        Ok(Compound::new(self.tape, Container::Object, None))
     }
 
     fn serialize_struct(
@@ -739,7 +745,7 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
         _name: &'static str,
         _len: usize,
     ) -> Result<Compound<'t>, serde_json::Error> {
-        Ok(Compound::new(self.tape, true, None))
+        Ok(Compound::new(self.tape, Container::Object, None))
     }
 
     fn serialize_struct_variant(
@@ -749,7 +755,7 @@ impl<'t> ser::Serializer for TapeSerializer<'t> {
         variant: &'static str,
         _len: usize,
     ) -> Result<Compound<'t>, serde_json::Error> {
-        Ok(Compound::new(self.tape, true, Some(variant)))
+        Ok(Compound::new(self.tape, Container::Object, Some(variant)))
     }
 }
 

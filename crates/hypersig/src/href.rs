@@ -200,15 +200,12 @@ impl<S> IntoHref<S> for SafeUrl {
 
 impl<S> IntoHref<S> for Expr<S, SafeUrl> {
     fn into_parts(self) -> Result<String, Expr<S, String>> {
-        match self.into_json() {
-            Value::Array(items)
-                if items.len() == 2 && items[0] == "lit" && items[1].is_string() =>
-            {
-                Ok(items[1].as_str().unwrap_or_default().to_owned())
-            }
+        let ast = self.into_json();
+        match ast.as_array().map(Vec::as_slice) {
+            Some([op, Value::String(url)]) if op == "lit" => Ok(url.clone()),
             // A `SafeUrl` is a string in the page's signals, so the browser
             // reads the same value as text.
-            ast => Err(Expr::from_json(ast)),
+            _ => Err(Expr::from_json(ast)),
         }
     }
 }

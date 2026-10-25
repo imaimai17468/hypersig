@@ -57,7 +57,7 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    match run(&args) {
+    match run(args) {
         Ok(true) => ExitCode::SUCCESS,
         Ok(false) => ExitCode::FAILURE,
         Err(error) => {
@@ -68,10 +68,10 @@ fn main() -> ExitCode {
 }
 
 /// Writes the site and reports whether every link inside it resolves.
-fn run(args: &Args) -> io::Result<bool> {
-    let mut site = Site::new(String::leak(args.base.clone()));
-    if let Some(origin) = &args.origin {
-        let origin = Origin::parse(String::leak(origin.clone()))
+fn run(args: Args) -> io::Result<bool> {
+    let mut site = Site::new(String::leak(args.base));
+    if let Some(origin) = args.origin {
+        let origin = Origin::parse(String::leak(origin))
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
         site = site.with_origin(origin);
     }

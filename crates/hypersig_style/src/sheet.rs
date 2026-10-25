@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 use crate::condition::Conditions;
-use crate::style::{Atom, Prop, Style};
+use crate::style::{Prop, Style, class_name};
 
 /// The cascade layer of the classes from [`Sheet::add`].
 pub const LAYER: &str = "hypersig-atoms";
@@ -236,14 +236,10 @@ impl Key {
     }
 
     fn write_rule(&self, out: &mut String) {
-        let atom = Atom {
-            conditions: self.conditions.clone(),
-            property: self.property,
-            value: self.value.clone(),
-        };
+        let name = class_name(&self.conditions, self.property, &self.value, self.toggled);
         self.conditions.write_selector(out, |out| {
             out.push('.');
-            escape_class(&atom.class_name(self.toggled), out);
+            escape_class(&name, out);
         });
         out.push('{');
         self.property.write_name(out);

@@ -237,7 +237,7 @@ fn write_js_number(out: &mut String, value: f64) {
     }
 }
 
-fn write_into(out: &mut String, args: std::fmt::Arguments<'_>) {
+pub(crate) fn write_into(out: &mut String, args: std::fmt::Arguments<'_>) {
     std::fmt::Write::write_fmt(out, args).expect("writing to a String does not fail");
 }
 

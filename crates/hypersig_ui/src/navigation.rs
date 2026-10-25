@@ -315,7 +315,7 @@ pub fn pagination<S>(
 ) -> El<S> {
     assert!(
         current >= 1 && current <= count,
-        "the current page is between 1 and the number of pages"
+        "the current page is between 1 and the number of pages, not {current} of {count}"
     );
     let square = |variant| {
         button_style(variant, ButtonSize::Default)
