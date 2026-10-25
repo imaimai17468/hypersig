@@ -14,7 +14,7 @@ import { instrument } from "./page.mjs";
 
 const LATENCY_MS = 50;
 const CPU_SLOWDOWN = 4;
-const SESSIONS = 3;
+const SESSIONS = 10;
 const WARMUP = 3;
 const RUNS = 15;
 const DEBUG_PORT = 9333;
@@ -24,6 +24,9 @@ const median = (values) => {
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 };
+
+/** The median of the runs and the smallest and largest of them. */
+const spread = (values) => ({ median: median(values), min: Math.min(...values), max: Math.max(...values) });
 
 /** Lighthouse's mobile run, with its CPU slowdown and request latency but no bandwidth cap. */
 const lighthouseConfig = {
@@ -51,7 +54,7 @@ async function load(name) {
       tbt: audits["total-blocking-time"].numericValue,
     });
   }
-  return { fcp: median(runs.map((r) => r.fcp)), tbt: median(runs.map((r) => r.tbt)) };
+  return { fcp: spread(runs.map((r) => r.fcp)), tbt: spread(runs.map((r) => r.tbt)) };
 }
 
 async function code(browser, name) {
@@ -173,7 +176,7 @@ for (const name of names) {
     results.apps[name] = {
       ...(await code(browser, name)),
       ...(await load(name)),
-      inp: median(sessions.map((s) => s.inp)),
+      inp: spread(sessions.map((s) => s.inp)),
       toggleShown: median(sessions.map((s) => s.shown)),
     };
     console.log(name, JSON.stringify(results.apps[name]));
@@ -190,17 +193,19 @@ writeFileSync(new URL("latest.json", dir), `${JSON.stringify(results, null, 2)}\
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 const ms = (value) => `${Math.round(value)} ms`;
 const inp = (value) => (value < 16 ? "< 16 ms" : ms(value));
+// A median with the range of the runs, such as "186 ms (178–195)".
+const ranged = (format, { median: mid, min, max }) => `${format(mid)} (${format(min).replace(/ ms$/, "")}–${format(max).replace(/ ms$/, "")})`;
 const md = `# TodoMVC-2000 results
 
-${results.date}, commit ${results.commit}, Chrome ${results.chrome}, ${results.machine}. CPU slowed ${CPU_SLOWDOWN}x and ${LATENCY_MS} ms added to every request. Medians of ${SESSIONS} runs.
+${results.date}, commit ${results.commit}, Chrome ${results.chrome}, ${results.machine}. CPU slowed ${CPU_SLOWDOWN}x and ${LATENCY_MS} ms added to every request. Medians of ${SESSIONS} runs, with the smallest and largest run in parentheses.
 
 | | ${names.join(" | ")} |
 |---|${names.map(() => "---").join("|")}|
 | JS (gzip) | ${names.map((n) => kb(results.apps[n].js)).join(" | ")} |
 | Wasm (gzip) | ${names.map((n) => (results.apps[n].wasm === 0 ? "-" : kb(results.apps[n].wasm))).join(" | ")} |
-| FCP | ${names.map((n) => ms(results.apps[n].fcp)).join(" | ")} |
-| TBT | ${names.map((n) => ms(results.apps[n].tbt)).join(" | ")} |
-| INP | ${names.map((n) => inp(results.apps[n].inp)).join(" | ")} |
+| FCP | ${names.map((n) => ranged(ms, results.apps[n].fcp)).join(" | ")} |
+| TBT | ${names.map((n) => ranged(ms, results.apps[n].tbt)).join(" | ")} |
+| INP | ${names.map((n) => ranged(inp, results.apps[n].inp)).join(" | ")} |
 `;
 writeFileSync(new URL("latest.md", dir), md);
 console.log(md);
