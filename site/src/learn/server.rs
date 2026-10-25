@@ -137,6 +137,21 @@ pub fn calls_in_depth(site: Site) -> Part {
                 ja: "`each_keyed` のリストの先頭に項目を加えると、画面に出ていた項目はその位置に残ります。ランタイムがいちばん近いスクロールできる祖先要素を、新しい項目の高さの分だけスクロールします。Chrome のスクロールアンカリングもリストをスクロールした後なら同じことをしますが、いちばん上では働きません。古い項目を読み込むリストは、読み込むときにちょうどいちばん上にあります。ブラウザの中では `Sig::prepend` が同じように動きます。`each` で描いたリストは要素を位置で対応させるので、先頭の要素に新しい最初の項目が表示され、スクロールはしません。",
             },
         ),
+        subheading(
+            site,
+            L {
+                en: "Loading more as the visitor scrolls",
+                ja: "スクロールに合わせて続きを読み込む",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A feed that loads its next page as the visitor reaches the bottom is built from `on_visible`, `patch_append`, and a `page` signal. An element after the items runs `on_visible` when it comes into view, which calls a `GET` action with the `page` signal as its argument. The handler appends the page's items with `patch_append`, so the items already in the browser are not sent again, and patches `page` to the next number and `more` to whether a full page came back. `indicator` sets `loading` while the call runs, and `show` hides the element during the load and once `more` is false. When the new items still leave it in view, showing it again runs `on_visible` again and loads the next page.",
+                ja: "下まで来ると次のページを読み込むフィードは、`on_visible`、`patch_append`、`page` のシグナルで作ります。項目のあとに置いた要素は、見える位置に入ると `on_visible` を実行し、`page` のシグナルを引数にして `GET` のアクションを呼び出します。ハンドラは `patch_append` でそのページの項目を末尾に加えるので、ブラウザにある項目は送り直しません。あわせて `page` を次の番号に、`more` を 1 ページ分そろって返ったかどうかに設定します。呼び出しの間は `indicator` が `loading` を真にし、`show` は読み込み中と `more` が偽になったあとに要素を隠します。新しい項目を加えても要素が見える位置に残っていれば、再び表示されたときに `on_visible` がもう一度実行され、次のページを読み込みます。",
+            },
+        ),
+        show(Snippet::LoadMore),
         calls(site),
         shared_parts(site),
     ])

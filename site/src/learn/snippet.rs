@@ -107,6 +107,7 @@ snippets! {
     SafeUrl => "safe_url.rs";
     StaticFiles => "static_files.rs";
     ErrorPage => "error_page.rs";
+    LoadMore => "load_more.rs";
 }
 
 /// The lines of `snippet` that the page shows.
