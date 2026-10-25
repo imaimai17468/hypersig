@@ -694,7 +694,7 @@ fn toasts() -> El<Gallery> {
                     toasts,
                     Expr::lit(&Toast::new("Name")).with(
                         Toast::body(),
-                        Expr::lit(&"Your name is ".to_owned()).concat(Gallery::name()),
+                        Expr::text("Your name is ").concat(Gallery::name()),
                     ),
                 ))
                 .text("Show the name"),

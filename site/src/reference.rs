@@ -1356,6 +1356,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Expr::text",
+                            "struct.Expr.html#method.text",
+                            L {
+                                en: "A constant string, for the start of a `concat` chain.",
+                                ja: "`concat` の連なりの先頭に置く、定数の文字列",
+                            },
+                        ),
+                        (
                             "if_else",
                             "fn.if_else.html",
                             L {

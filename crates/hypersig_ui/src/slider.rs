@@ -183,7 +183,7 @@ impl<S> Slider<S> {
                         // its own width, as the browser's thumb does.
                         .bind_style(
                             hypersig::style::Property::Left,
-                            Expr::lit(&String::from("calc((100% - 1rem) * "))
+                            Expr::text("calc((100% - 1rem) * ")
                                 .concat(share.to_fixed(4))
                                 .concat(")"),
                         ),

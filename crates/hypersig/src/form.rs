@@ -301,7 +301,7 @@ impl<S, T> Rules<S, T> {
             .rev()
             .filter(|check| check.key == key)
             .fold(None, |rest, check| {
-                let rest = rest.unwrap_or_else(|| Expr::lit(&String::new()));
+                let rest = rest.unwrap_or_else(|| Expr::text(""));
                 Some(if_else(check.ok.clone(), rest, check.message.clone()))
             })
     }
