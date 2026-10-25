@@ -171,14 +171,14 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                                 .on(Media::Md, Style::new().display(Display::Flex)),
                         )
                         .children(library.sections().iter().map(|&(label, target)| {
-                            let current = in_section(doc, target);
+                            let current = Place::current_if(in_section(doc, target));
                             mark_section(a().href(own(target.url(site))), current)
                                 .css(nav_link_style(current))
                                 .text(site.t(label))
                         }))
                         .child(
                             a().href(href(site, library.api()))
-                                .css(nav_link_style(false).merge(wide_only()))
+                                .css(nav_link_style(Place::Other).merge(wide_only()))
                                 .text("API"),
                         ),
                 )
@@ -193,7 +193,7 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                         .child(languages(site, doc))
                         .child(
                             a().href(REPOSITORY)
-                                .css(nav_link_style(false).font_size(rem(0.875)))
+                                .css(nav_link_style(Place::Other).font_size(rem(0.875)))
                                 .text("GitHub"),
                         ),
                 )
@@ -237,7 +237,7 @@ fn other_language(site: Site, doc: Doc) -> Part {
         .attr("hreflang", other.tag())
         .attr("lang", other.tag())
         .css(
-            nav_link_style(false)
+            nav_link_style(Place::Other)
                 .margin_left(raw("auto"))
                 .font_size(rem(0.875))
                 .white_space(WhiteSpace::Nowrap)
@@ -301,7 +301,7 @@ fn switcher(site: Site, current: Library) -> Part {
                 .border_radius(px(8)),
         )
         .children(Library::ALL.into_iter().map(|library| {
-            let here = library == current;
+            let here = Place::current_if(library == current);
             let link = a().href(own(library.home().url(site))).css(
                 Style::new()
                     .padding_block(rem(0.25))
@@ -309,7 +309,7 @@ fn switcher(site: Site, current: Library) -> Part {
                     .border_radius(px(6))
                     .font_size(rem(0.8125))
                     .merge(nav_link_style(here))
-                    .merge(if here {
+                    .merge(if here == Place::Current {
                         Style::new().background_color(token::accent().var())
                     } else {
                         Style::new()
@@ -331,7 +331,7 @@ fn languages(site: Site, doc: Doc) -> Part {
         )
         .css(hstack(rem(0.75)).font_size(rem(0.875)))
         .children(Lang::ALL.iter().map(|&lang| {
-            let here = lang == site.lang();
+            let here = Place::current_if(lang == site.lang());
             let link = a()
                 .href(own(doc.url(site.with_lang(lang))))
                 .attr("hreflang", lang.tag())
@@ -354,22 +354,35 @@ fn in_section(doc: Doc, first: Doc) -> bool {
     )
 }
 
-/// `link` marked as the current page where `current` is true.
-fn mark_current(link: Part, current: bool) -> Part {
-    if current {
-        link.attr("aria-current", "page")
-    } else {
-        link
+/// Whether a link leads to where the reader is: the page, its section, its
+/// library, or its language.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Place {
+    Current,
+    Other,
+}
+
+impl Place {
+    /// [`Place::Current`] where `here` is true.
+    fn current_if(here: bool) -> Self {
+        if here { Self::Current } else { Self::Other }
     }
 }
 
-/// `link` to a section, marked as the section the page is in where
-/// `current` is true. The page itself is marked in the sidebar.
-fn mark_section(link: Part, current: bool) -> Part {
-    if current {
-        link.attr("aria-current", "true")
-    } else {
-        link
+/// `link` marked as the current page where it leads to the current place.
+fn mark_current(link: Part, place: Place) -> Part {
+    match place {
+        Place::Current => link.attr("aria-current", "page"),
+        Place::Other => link,
+    }
+}
+
+/// `link` to a section, marked as the section the page is in where it leads
+/// to the current place. The page itself is marked in the sidebar.
+fn mark_section(link: Part, place: Place) -> Part {
+    match place {
+        Place::Current => link.attr("aria-current", "true"),
+        Place::Other => link,
     }
 }
 
@@ -381,17 +394,16 @@ fn wide_only() -> Style {
         .on(Media::Md, Style::new().display(Display::Inline))
 }
 
-fn nav_link_style(current: bool) -> Style {
+fn nav_link_style(place: Place) -> Style {
     let style = Style::new().on(
         PseudoClass::Hover,
         Style::new().color(token::foreground().var()),
     );
-    if current {
-        style
+    match place {
+        Place::Current => style
             .color(token::foreground().var())
-            .font_weight(FontWeight::Number(500.0))
-    } else {
-        style.color(token::muted_foreground().var())
+            .font_weight(FontWeight::Number(500.0)),
+        Place::Other => style.color(token::muted_foreground().var()),
     }
 }
 
@@ -490,7 +502,7 @@ fn sidebar(site: Site, doc: Doc) -> Part {
                             div()
                                 .css(stack(px(2)))
                                 .children(group.docs.iter().map(|&target| {
-                                    let current = target == doc;
+                                    let current = Place::current_if(target == doc);
                                     mark_current(a().href(own(target.url(site))), current)
                                         .css(sidebar_link_style(current))
                                         .text(target.title(site))
@@ -507,14 +519,14 @@ fn phone_sections(site: Site, doc: Doc) -> Part {
     div()
         .css(stack(px(2)))
         .children(library.sections().iter().map(|&(label, target)| {
-            let current = in_section(doc, target);
+            let current = Place::current_if(in_section(doc, target));
             mark_section(a().href(own(target.url(site))), current)
                 .css(sidebar_link_style(current))
                 .text(site.t(label))
         }))
         .child(
             a().href(href(site, library.api()))
-                .css(sidebar_link_style(false))
+                .css(sidebar_link_style(Place::Other))
                 .text("API"),
         )
         .children(
@@ -523,18 +535,18 @@ fn phone_sections(site: Site, doc: Doc) -> Part {
                 .filter(|&other| other != library)
                 .map(|other| {
                     a().href(own(other.home().url(site)))
-                        .css(sidebar_link_style(false))
+                        .css(sidebar_link_style(Place::Other))
                         .text(other.path())
                 }),
         )
         .child(
             a().href(REPOSITORY)
-                .css(sidebar_link_style(false))
+                .css(sidebar_link_style(Place::Other))
                 .text("GitHub"),
         )
 }
 
-fn sidebar_link_style(current: bool) -> Style {
+fn sidebar_link_style(place: Place) -> Style {
     let style = Style::new()
         .display(Display::Block)
         .padding_block(rem(0.375))
@@ -548,13 +560,12 @@ fn sidebar_link_style(current: bool) -> Style {
                 .background_color(token::accent().var())
                 .color(token::accent_foreground().var()),
         );
-    if current {
-        style
+    match place {
+        Place::Current => style
             .background_color(token::accent().var())
             .color(token::accent_foreground().var())
-            .font_weight(FontWeight::Number(500.0))
-    } else {
-        style.color(token::muted_foreground().var())
+            .font_weight(FontWeight::Number(500.0)),
+        Place::Other => style.color(token::muted_foreground().var()),
     }
 }
 
