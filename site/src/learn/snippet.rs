@@ -105,6 +105,7 @@ snippets! {
     // show one text.
     Listen => "../../crates/hypersig_cli/steps/server.rs";
     SafeUrl => "safe_url.rs";
+    StaticFiles => "static_files.rs";
 }
 
 /// The lines of `snippet` that the page shows.

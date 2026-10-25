@@ -10,7 +10,7 @@ use crate::lang::L;
 use crate::prose::{Part, heading, lead, para, parts, title};
 
 pub fn javascript(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Learn(Learn::JavaScript).title(site)),
         lead(site, Doc::Learn(Learn::JavaScript).leads()),
         heading(
@@ -39,6 +39,33 @@ pub fn javascript(site: Site) -> Part {
             Lang::JavaScript,
             Some("star-rating.js"),
             demo::STAR_RATING_JS,
+        ),
+        heading(
+            site,
+            L {
+                en: "Serving the script",
+                ja: "スクリプトを配信する",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`Page::script`, `Page::stylesheet`, and `Page::icon` write a path into the page and serve nothing, so the router needs a service at each path. tower-http serves files from disk: `ServeFile` one file at one path, and `ServeDir` each file under a directory. Add it with its `fs` feature:",
+                ja: "`Page::script`、`Page::stylesheet`、`Page::icon` はページにパスを書くだけでファイルは配信しないので、ルーターにはそれぞれのパスで配信するサービスが要ります。ディスクのファイルは tower-http で配信します。`ServeFile` は 1 つのファイルを 1 つのパスで、`ServeDir` はディレクトリの下のファイルをそれぞれ配信します。`fs` フィーチャーを有効にして追加してください。",
+            },
+        ),
+        code::block(
+            Lang::Toml,
+            Some("Cargo.toml"),
+            r#"tower-http = { version = "0.6", features = ["fs"] }"#,
+        ),
+        show(Snippet::StaticFiles),
+        para(
+            site,
+            L {
+                en: "The paths given to `ServeFile` and `ServeDir` are read from the directory the server was started in, so the server above expects `assets/` and `static/` there.",
+                ja: "`ServeFile` と `ServeDir` に渡したパスは、サーバーを起動したディレクトリから読みます。上のサーバーは、そこに `assets/` と `static/` があるものとして動きます。",
+            },
         ),
         heading(
             site,
