@@ -64,6 +64,20 @@ pub fn server(site: Site) -> Part {
                 ja: "呼び出しの前に文を置くと、ページがすぐに変わり、そのあとにリクエストが送られます。`count.set(count + 1).then(LIKE.call())` のように書きます。続いて、サーバーが保存したカウントをハンドラの差分が設定します。サーバーがエラーを返した場合、変更はブラウザに残ります。`error` で失敗を表示できますが、値を元に戻す処理はありません。",
             },
         ),
+        subheading(
+            site,
+            L {
+                en: "What actions leave unchecked",
+                ja: "アクションが検査しないこと",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Nothing checks that the router serves an action the page calls. A page whose action was never passed to `RouterExt::action` compiles, and each call gets a 404 with an empty body, which `error` receives as a failed call. A `StreamAction` left out of `RouterExt::stream` fails the same way. A test that sends `LIKE.request(&3)` to the router with `oneshot` and expects a 200, as on [Testing](learn/testing/), fails for an action the router does not serve.",
+                ja: "ページが呼ぶアクションをルーターが配信しているかどうかは検査されません。`RouterExt::action` に渡していないアクションを呼ぶページもコンパイルは通り、呼び出しのたびに本文が空の 404 が返ります。`error` はこれを失敗した呼び出しとして受け取ります。`RouterExt::stream` に渡していない `StreamAction` も同じです。[テストを書く](learn/testing/) の例のように `LIKE.request(&3)` を `oneshot` でルーターに送って 200 を期待するテストは、ルーターが配信しないアクションで失敗します。",
+            },
+        ),
         heading(
             site,
             L {

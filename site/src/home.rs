@@ -82,8 +82,8 @@ pub fn render(site: Site) -> String {
                             ja: "画面からサーバーまで型で検査",
                         }),
                         site.t(L {
-                            en: "Signal names, expressions, actions, and links come from Rust types. A link whose page has no handler, or whose path parameters or query do not fit the page, is a compile error, as is any other mismatch between the page and the server.",
-                            ja: "シグナルの名前、式、アクション、リンクは Rust の型から作られます。ハンドラのないページへのリンクや、パスのパラメータやクエリがページに合わないリンクは、画面とサーバーのほかの食い違いと同じくコンパイルエラーになります。",
+                            en: "Signal names, expressions, actions, and links come from Rust types. A link whose page has no handler, a link whose path parameters or query do not fit the page, and an action call whose arguments do not fit its handler are compile errors. Whether the router serves each action a page calls is left to a test.",
+                            ja: "シグナルの名前、式、アクション、リンクは Rust の型から作られます。ハンドラのないページへのリンク、パスのパラメータやクエリがページに合わないリンク、引数がハンドラに合わないアクションの呼び出しは、コンパイルエラーになります。ページが呼ぶアクションをルーターが配信しているかどうかは、テストで確かめます。",
                         }),
                     ),
                     (
