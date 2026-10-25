@@ -2538,6 +2538,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "items_of",
+                            "struct.Patches.html#method.items_of",
+                            L {
+                                en: "The items the batch adds to or replaces in `list`, for a test of an action.",
+                                ja: "このまとまりが `list` に加える項目と置き換える項目です。アクションのテストで使います。",
+                            },
+                        ),
+                        (
+                            "removed_keys_of",
+                            "struct.Patches.html#method.removed_keys_of",
+                            L {
+                                en: "The keys the batch removes from `list` by `key`, for a test of an action.",
+                                ja: "このまとまりが `key` で `list` から取り除くキーです。アクションのテストで使います。",
+                            },
+                        ),
+                        (
                             "navigates_to",
                             "struct.Patches.html#method.navigates_to",
                             L {

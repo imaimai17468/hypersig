@@ -301,6 +301,17 @@ fn literal<T: Serialize>(values: &[T]) -> Value {
     ])
 }
 
+/// The values of the `["lit", values]` a list statement ends with, as
+/// [`literal`] writes it.
+fn literal_values(statement: &Value) -> &[Value] {
+    statement
+        .as_array()
+        .and_then(|statement| statement.last())
+        .and_then(|literal| literal.get(1))
+        .and_then(Value::as_array)
+        .map_or(&[], Vec::as_slice)
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum PatchEvent {
     Signals(Map<String, Value>),
@@ -642,6 +653,121 @@ impl<S: Signals> Patches<S> {
         })
     }
 
+    /// The items the batch adds to or replaces in `list`, for a test of an action.
+    ///
+    /// They are the items of each [`patch_append`](Sig::patch_append),
+    /// [`patch_prepend`](Sig::patch_prepend), and
+    /// [`patch_upsert`](Sig::patch_upsert) of `list`, in the order the batch
+    /// sends them, which for a prepend is not the order the browser shows.
+    /// A patch that sets the whole list, through [`Patches::signals`] or
+    /// [`Patches::all_signals`], is read by [`Patches::value_of`].
+    ///
+    /// ```
+    /// use hypersig::{Patches, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize, Debug, PartialEq)]
+    /// struct Card {
+    ///     id: i32,
+    ///     title: String,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Board {
+    ///     cards: Vec<Card>,
+    /// }
+    ///
+    /// let card = Card { id: 7, title: "Write docs".into() };
+    /// let patches: Patches<Board> = Board::cards().patch_append(&[card]).into();
+    /// assert_eq!(
+    ///     patches.items_of(Board::cards()),
+    ///     [Card { id: 7, title: "Write docs".into() }],
+    /// );
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if an item the batch holds does not deserialize into `T`,
+    /// which happens where `T`'s serde impls disagree with each other.
+    #[must_use]
+    pub fn items_of<T: DeserializeOwned>(&self, list: Sig<S, Vec<T>>) -> Vec<T> {
+        let path = list.dotted();
+        let mut items = Vec::new();
+        for statement in self.list_statements(&path) {
+            if matches!(statement[0].as_str(), Some("append" | "prepend" | "upsert")) {
+                items.extend(literal_values(statement).iter().map(|item| {
+                    serde_json::from_value(item.clone())
+                        .expect("a patched list item deserializes into the list's item type")
+                }));
+            }
+        }
+        items
+    }
+
+    /// The keys the batch removes from `list` by `key`, for a test of an action.
+    ///
+    /// They are the keys of each [`patch_remove`](Sig::patch_remove) of
+    /// `list` whose key is the expression `key` builds, in the order the
+    /// batch sends them. A removal by another key is left out, so a test
+    /// that passes the closure the handler passes also checks the key the
+    /// browser compares.
+    ///
+    /// ```
+    /// use hypersig::{Patches, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Card {
+    ///     id: i32,
+    ///     title: String,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Board {
+    ///     cards: Vec<Card>,
+    /// }
+    ///
+    /// let patches: Patches<Board> = Board::cards()
+    ///     .patch_remove(&[7], |card| card.at(Card::id()))
+    ///     .into();
+    /// assert_eq!(
+    ///     patches.removed_keys_of(Board::cards(), |card| card.at(Card::id())),
+    ///     [7],
+    /// );
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if a key the batch holds does not deserialize into `K`, which
+    /// happens where `K`'s serde impls disagree with each other.
+    #[must_use]
+    pub fn removed_keys_of<T: Serialize, K: DeserializeOwned, E: IntoExpr<S, K>>(
+        &self,
+        list: Sig<S, Vec<T>>,
+        key: impl FnOnce(Item<S, T>) -> E,
+    ) -> Vec<K> {
+        let path = list.dotted();
+        let (depth, key) = list.key(key);
+        let mut keys = Vec::new();
+        for statement in self.list_statements(&path) {
+            if statement[0] == "remove_keys" && statement[2] == depth && statement[3] == key {
+                keys.extend(literal_values(statement).iter().map(|key| {
+                    serde_json::from_value(key.clone())
+                        .expect("a removed key deserializes into the key's type")
+                }));
+            }
+        }
+        keys
+    }
+
+    /// The list statements of the batch that change the list at the dotted path `path`.
+    fn list_statements<'a>(&'a self, path: &'a str) -> impl Iterator<Item = &'a Value> {
+        self.events.iter().filter_map(move |event| match event {
+            PatchEvent::List(statement) if statement[1] == path => Some(statement),
+            _ => None,
+        })
+    }
+
     /// The URL of the first [`navigate`](Self::navigate) in the batch, for a test.
     ///
     /// The browser leaves the page there, so a later one is never followed.
@@ -852,6 +978,49 @@ mod tests {
         let patches = Patches::new().signals(zip.patch("601".into()));
         assert_eq!(patches.value_of(Shop::address()), None);
         assert_eq!(patches.value_of(Shop::count()), None);
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Debug, PartialEq)]
+    struct Row {
+        id: i32,
+        name: String,
+    }
+
+    #[derive(Signals, Serialize, Deserialize)]
+    struct Table {
+        rows: Vec<Row>,
+        archived: Vec<Row>,
+    }
+
+    fn row(id: i32) -> Row {
+        Row {
+            id,
+            name: format!("row {id}"),
+        }
+    }
+
+    #[test]
+    fn list_items_and_removed_keys_read_in_batch_order() {
+        let by_id = |row: Item<Table, Row>| row.at(Row::id());
+        let by_name = |row: Item<Table, Row>| row.at(Row::name());
+        let patches = Patches::new()
+            .list(Table::rows().patch_append(&[row(1)]))
+            .list(
+                Table::rows()
+                    .patch_prepend(&[row(2)])
+                    .and(Table::rows().patch_upsert(&[row(3)], by_id)),
+            )
+            .list(Table::archived().patch_append(&[row(4)]))
+            .list(Table::rows().patch_remove(&[5, 6], by_id))
+            .list(Table::rows().patch_remove(&["row 7".to_owned()], by_name));
+        assert_eq!(patches.items_of(Table::rows()), [row(1), row(2), row(3)]);
+        assert_eq!(patches.items_of(Table::archived()), [row(4)]);
+        assert_eq!(patches.removed_keys_of(Table::rows(), by_id), [5, 6]);
+        assert_eq!(
+            patches.removed_keys_of(Table::rows(), by_name),
+            ["row 7".to_owned()]
+        );
+        assert_eq!(patches.removed_keys_of(Table::archived(), by_id), [0; 0]);
     }
 
     #[test]
