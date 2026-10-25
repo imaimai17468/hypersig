@@ -6,7 +6,7 @@
 
 **Server-owned state, type-checked strings.**
 
-hypersig is a web framework on axum in which the page, its behavior in the browser, and the server handlers are all written in Rust. The server holds the state and sends the browser patches. Every string the browser acts on (signal names, expressions, action URLs, links) is produced from a Rust type, so a mistake in one is a compile error.
+hypersig is a [hypermedia](https://imaimai17468.github.io/hypersig/learn/why/#hypermedia) web framework on axum in which the page, its behavior in the browser, and the server handlers are all written in Rust. The server holds the state and sends the browser patches. Every string the browser acts on (signal names, expressions, action URLs, links) is produced from a Rust type, so a mistake in one is a compile error.
 
 - `cargo build` builds the whole application. There is no Node or wasm step.
 - A mismatch between the page and the server is a compile error, and so is a link that does not fit a route ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
