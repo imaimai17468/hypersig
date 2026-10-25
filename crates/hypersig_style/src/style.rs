@@ -73,56 +73,65 @@ impl Prop {
 }
 
 impl Atom {
-    /// The class name, from the conditions, the property, and the value, with
-    /// `when:` in front for a toggled declaration.
-    ///
-    /// The value is written out where it uses only letters, digits, `.`, `#`,
-    /// `%`, and `-`. Any other value is replaced by a 64-bit FNV-1a hash of it,
-    /// so two different values never share a name unless their hashes collide.
+    /// The class name of this declaration, as [`class_name`] writes it.
     pub(crate) fn class_name(&self, toggled: bool) -> String {
-        let mut name = String::new();
-        if toggled {
-            name.push_str("when:");
-        }
-        for m in &self.conditions.media {
-            name.push_str(m.name());
-            name.push(':');
-        }
-        for c in &self.conditions.container {
-            name.push_str(c.name());
-            name.push(':');
-        }
-        for (_, p) in &self.conditions.group {
-            name.push_str("group-");
-            name.push_str(p.name());
-            name.push(':');
-        }
-        for (_, p) in &self.conditions.peer {
-            name.push_str("peer-");
-            name.push_str(p.name());
-            name.push(':');
-        }
-        for (_, p) in &self.conditions.pseudo {
-            name.push_str(p.name());
-            name.push(':');
-        }
-        if let Some(e) = self.conditions.element {
-            name.push_str(e.name());
-            name.push(':');
-        }
-        self.property.write_name(&mut name);
-        name.push('_');
-        let readable = self
-            .value
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'#' | b'%' | b'-'));
-        if readable {
-            name.push_str(&self.value);
-        } else {
-            let _ = write!(name, "h{:016x}", fnv1a(self.value.as_bytes()));
-        }
-        name
+        class_name(&self.conditions, self.property, &self.value, toggled)
     }
+}
+
+/// The class name, from the conditions, the property, and the value, with
+/// `when:` in front for a toggled declaration.
+///
+/// The value is written out where it uses only letters, digits, `.`, `#`,
+/// `%`, and `-`. Any other value is replaced by a 64-bit FNV-1a hash of it,
+/// so two different values never share a name unless their hashes collide.
+pub(crate) fn class_name(
+    conditions: &Conditions,
+    property: Prop,
+    value: &str,
+    toggled: bool,
+) -> String {
+    let mut name = String::new();
+    if toggled {
+        name.push_str("when:");
+    }
+    for m in &conditions.media {
+        name.push_str(m.name());
+        name.push(':');
+    }
+    for c in &conditions.container {
+        name.push_str(c.name());
+        name.push(':');
+    }
+    for (_, p) in &conditions.group {
+        name.push_str("group-");
+        name.push_str(p.name());
+        name.push(':');
+    }
+    for (_, p) in &conditions.peer {
+        name.push_str("peer-");
+        name.push_str(p.name());
+        name.push(':');
+    }
+    for (_, p) in &conditions.pseudo {
+        name.push_str(p.name());
+        name.push(':');
+    }
+    if let Some(e) = conditions.element {
+        name.push_str(e.name());
+        name.push(':');
+    }
+    property.write_name(&mut name);
+    name.push('_');
+    let readable = value
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'#' | b'%' | b'-'));
+    if readable {
+        name.push_str(value);
+    } else {
+        let _ = write!(name, "h{:016x}", fnv1a(value.as_bytes()));
+    }
+    name
 }
 
 /// The 64-bit FNV-1a hash, chosen because it is a few lines and stable across
