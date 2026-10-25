@@ -120,6 +120,19 @@ fn drivers(site: Site) -> Part {
                 ja: "ページとアクションのハンドラは、最初の引数でルーターの状態を受け取ります。そこに接続か接続のプールを置き、ハンドラはそれを通して読み書きします。ハンドラが返す `Page` と `Patches` は変わらないので、ページ、アクション、シグナルはそのまま使えます。`Result` を返すハンドラは失敗したクエリを `?` でそのまま返し、応答はエラーの `IntoResponse` が決めます（[リクエスト、Cookie、エラー](learn/requests/) を参照してください）。失敗したアクションの本文はランタイムが `Call::error` に渡したシグナルに書くので、本文には訪問者が次にどうすればよいかを書いてください。データベースが返したメッセージにはクエリや接続文字列が含まれることがあるので、サーバーのログに出します。",
             },
         ),
+        para(
+            site,
+            L {
+                en: "The sample below needs rusqlite, whose `bundled` feature compiles SQLite into the program, so the server does not depend on a SQLite installed on the machine:",
+                ja: "下のサンプルには rusqlite が必要です。`bundled` の feature は SQLite をプログラムに組み込むので、サーバーはマシンにインストールされた SQLite に頼りません。",
+            },
+        ),
+        code::block(
+            Lang::Toml,
+            Some("Cargo.toml"),
+            r#"[dependencies]
+rusqlite = { version = "0.39", features = ["bundled"] }"#,
+        ),
         show(Snippet::Database),
         para(
             site,
@@ -334,17 +347,23 @@ fn checks(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A build reads what the macros need from the crate's `.sqlx` directory, which `cargo sqlx prepare` writes from a database with the migrations applied, so the build itself needs no database. The repository's `.cargo/config.toml` sets `SQLX_OFFLINE=true`, so a `DATABASE_URL` set for the server does not send the build to a database. A query that `.sqlx` does not hold fails to compile with a message to run `cargo sqlx prepare`. After changing a query or a migration, write `.sqlx` again and commit it. CI runs `cargo sqlx prepare --check`, which fails when it was not written again.",
-                ja: "ビルドはマクロが使う情報をクレートの `.sqlx` ディレクトリから読みます。`.sqlx` は、マイグレーションを適用したデータベースから `cargo sqlx prepare` が書き出すので、ビルド自体にデータベースは要りません。リポジトリの `.cargo/config.toml` は `SQLX_OFFLINE=true` を設定しているので、サーバーのために設定した `DATABASE_URL` があっても、ビルドはデータベースに問い合わせません。`.sqlx` にないクエリは、`cargo sqlx prepare` を実行するよう促すメッセージとともにコンパイルエラーになります。クエリかマイグレーションを変えたら `.sqlx` を書き出し直してコミットしてください。CI は `cargo sqlx prepare --check` を実行し、書き出し直していなければ失敗します。",
+                en: "In your own project, `cargo sqlx prepare` writes what the macros need to the crate's `.sqlx` directory from a database with the migrations applied, and a build with `SQLX_OFFLINE=true` reads `.sqlx` in place of asking a database. Set it under `[env]` in the project's `.cargo/config.toml`, so a `DATABASE_URL` set for the server does not send the build to a database and a machine or a CI runner without one still builds. A query that `.sqlx` does not hold then fails to compile with a message to run `cargo sqlx prepare`. After changing a query or a migration, run it again and commit `.sqlx`. In CI, `cargo sqlx prepare --check` fails when `.sqlx` was not written again. [`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) is set up this way.",
+                ja: "自分のプロジェクトでは、マイグレーションを適用したデータベースから `cargo sqlx prepare` がマクロの使う情報をクレートの `.sqlx` ディレクトリに書き出し、`SQLX_OFFLINE=true` を付けたビルドはデータベースに問い合わせる代わりに `.sqlx` を読みます。この変数はプロジェクトの `.cargo/config.toml` の `[env]` に設定してください。サーバーのために `DATABASE_URL` を設定していてもビルドはデータベースに問い合わせず、データベースのないマシンや CI のランナーでもビルドできます。`.sqlx` にないクエリは、`cargo sqlx prepare` を実行するよう促すメッセージとともにコンパイルエラーになります。クエリかマイグレーションを変えたら、もう一度実行して `.sqlx` をコミットしてください。CI で `cargo sqlx prepare --check` を実行すると、`.sqlx` を書き出し直していないときに失敗します。[`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) はこの構成です。",
             },
+        ),
+        code::block(
+            Lang::Toml,
+            Some(".cargo/config.toml"),
+            r#"[env]
+SQLX_OFFLINE = "true""#,
         ),
         code::block(
             Lang::Shell,
             None,
             "cargo install --locked sqlx-cli --no-default-features --features postgres,rustls
 export DATABASE_URL=postgres://postgres:password@localhost/postgres
-cargo sqlx migrate run --source examples/postgres/migrations
-cd examples/postgres && cargo sqlx prepare",
+cargo sqlx migrate run
+cargo sqlx prepare",
         ),
     ])
 }
