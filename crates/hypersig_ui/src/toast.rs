@@ -1,6 +1,6 @@
 //! Toasts: short notices stacked in a corner of the page.
 
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use hypersig::html::{El, div, each_keyed, li, ol, p, section};
@@ -9,7 +9,7 @@ use hypersig::style::value::{
     AlignItems, BorderStyle, Display, FontWeight, Position, ZIndex, pct, px, raw, rem,
 };
 use hypersig::style::{Media, Style};
-use hypersig::{IntoExpr, Sig, Signals, Stmt};
+use hypersig::{Expr, IntoExpr, Sig, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 
 use crate::button::{ButtonVariant, icon_button};
@@ -31,12 +31,15 @@ pub enum ToastVariant {
 ///
 /// The id tells toasts apart while the list changes, and nothing outside
 /// this type sets it. On the server, [`Toast::new`] numbers each toast from
-/// a counter of the process, so toasts made in one process have different
-/// ids until 2³² of them have been made. In the browser, [`Toast::push`] and
-/// [`Toast::push_expr`] give a toast one more than the highest id in the
-/// list. A clone keeps its id, so a list that holds a toast and its clone
-/// repeats one; the runtime then tells the two apart by position and writes
-/// a warning to the console.
+/// a counter of the process, counting down from -1, so toasts made in one
+/// process have different ids until 2³¹ of them have been made. In the
+/// browser, [`Toast::push`] and [`Toast::push_expr`] give a toast one more
+/// than the highest id in the list, and 1 where no id in the list is above 0.
+/// A server id is below 0 and a browser id above it, so a toast the server
+/// appends with [`patch_append`](hypersig::Sig::patch_append) and a toast the
+/// browser pushes never share an id. A clone keeps its id, so a list that
+/// holds a toast and its clone repeats one; the runtime then tells the two
+/// apart by position and writes a warning to the console.
 ///
 /// ```
 /// use hypersig::{Expr, Signals};
@@ -49,8 +52,8 @@ pub enum ToastVariant {
 ///     name: String,
 /// }
 ///
-/// // On the server, in the list a patch sends.
-/// let failed = App::toasts().patch(vec![
+/// // On the server, after the toasts the browser already shows.
+/// let failed = App::toasts().patch_append(&[
 ///     Toast::new("Upload failed").variant(ToastVariant::Destructive),
 /// ]);
 ///
@@ -76,15 +79,15 @@ pub struct Toast {
     pub tone: ToastVariant,
 }
 
-/// The id of the next toast [`Toast::new`] makes.
-static NEXT_KEY: AtomicI32 = AtomicI32::new(1);
+/// How many toasts [`Toast::new`] has made, which gives the next one its id.
+static MADE: AtomicU32 = AtomicU32::new(0);
 
 impl Toast {
     /// A toast titled `title`, with an id no other toast of the process has.
     #[must_use]
     pub fn new(title: impl Into<String>) -> Self {
         Self {
-            key: NEXT_KEY.fetch_add(1, Ordering::Relaxed),
+            key: server_key(MADE.fetch_add(1, Ordering::Relaxed)),
             title: title.into(),
             body: String::new(),
             tone: ToastVariant::Default,
@@ -116,12 +119,27 @@ impl Toast {
     /// Build `toast` from a literal toast with [`Expr::with`](hypersig::Expr::with) on
     /// [`Toast::title`], [`Toast::body`], or [`Toast::tone`], so that its
     /// text can come from a signal. Its id is replaced by one more than the
-    /// highest id in `toasts`.
+    /// highest id in `toasts`, and by 1 where no id there is above 0.
     #[must_use]
     pub fn push_expr<S>(toasts: Sig<S, Vec<Self>>, toast: impl IntoExpr<S, Self>) -> Stmt<S> {
-        let next = toasts.max_of(|toast| toast.at(Self::key())).unwrap_or(0) + 1;
-        toasts.push(toast.into_expr().with(Self::key(), next))
+        toasts.push(toast.into_expr().with(Self::key(), browser_key(toasts)))
     }
+}
+
+/// The id of the toast [`Toast::new`] makes after `made` others: -1, then
+/// -2, staying below 0 when `made` wraps past 2³¹.
+fn server_key(made: u32) -> i32 {
+    !(made & i32::MAX.cast_unsigned()).cast_signed()
+}
+
+/// The id the browser gives a toast it adds to `toasts`: above 0 and above
+/// every id in the list.
+fn browser_key<S>(toasts: Sig<S, Vec<Toast>>) -> Expr<S, i32> {
+    toasts
+        .max_of(|toast| toast.at(Toast::key()))
+        .unwrap_or(0)
+        .max(0)
+        + 1
 }
 
 /// The corner of the page that shows the toasts in the list `toasts`.
@@ -285,4 +303,80 @@ fn toast_style() -> Style {
             "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
         ))
         .pointer_events(hypersig::style::value::PointerEvents::Auto)
+}
+
+#[cfg(test)]
+mod tests {
+    use hypersig::html::span;
+    use hypersig::{Page, Signals};
+    use serde::{Deserialize, Serialize};
+
+    use super::{Toast, browser_key, server_key};
+
+    #[derive(Signals, Serialize, Deserialize)]
+    struct App {
+        toasts: Vec<Toast>,
+    }
+
+    /// The id the browser gives the next toast it pushes onto `toasts`, as
+    /// the first HTML evaluates it.
+    fn next_in_browser(toasts: &[Toast]) -> i32 {
+        let html = Page::new(
+            "Toasts",
+            App {
+                toasts: toasts.to_vec(),
+            },
+        )
+        .child(span().bind_text(browser_key(App::toasts()).to_text()))
+        .render();
+        let end = html.find("</span>").expect("the span is rendered");
+        let start = html[..end].rfind('>').expect("the span has a start tag") + 1;
+        html[start..end].parse().expect("the span holds a number")
+    }
+
+    #[test]
+    fn server_and_browser_toasts_never_share_an_id() {
+        // A page renders the toast its button pushes once, and the button
+        // pushes it on every click without calling `Toast::new` again.
+        let clicked = Toast::new("From the browser");
+        let mut toasts = Vec::new();
+        for round in 0..6 {
+            // The server appends a toast, then the browser pushes one, and
+            // every third round the browser's newest toast is dismissed.
+            toasts.push(Toast::new("From the server"));
+            let mut pushed = clicked.clone();
+            pushed.key = next_in_browser(&toasts);
+            assert!(
+                toasts.iter().all(|toast| toast.key != pushed.key),
+                "{} is already in the list",
+                pushed.key,
+            );
+            toasts.push(pushed);
+            if round % 3 == 2 {
+                toasts.pop();
+            }
+        }
+        let keys: Vec<i32> = toasts.iter().map(|toast| toast.key).collect();
+        for (index, key) in keys.iter().enumerate() {
+            assert!(
+                !keys[index + 1..].contains(key),
+                "{key} repeats in {keys:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_browser_starts_at_one_above_server_toasts() {
+        assert_eq!(next_in_browser(&[]), 1);
+        assert_eq!(next_in_browser(&[Toast::new("a"), Toast::new("b")]), 1);
+    }
+
+    #[test]
+    fn server_ids_stay_below_zero() {
+        assert_eq!(server_key(0), -1);
+        assert_eq!(server_key(1), -2);
+        assert_eq!(server_key(u32::MAX >> 1), i32::MIN);
+        assert_eq!(server_key(1 << 31), -1);
+        assert!(Toast::new("a").key < 0);
+    }
 }
