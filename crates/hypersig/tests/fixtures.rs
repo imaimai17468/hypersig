@@ -14,8 +14,8 @@ use hypersig::html::{
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
-    Action, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment, IntlLocale, NodeRef,
-    Page, Part, Patches, PluralCategory, Rest, Route, Rules, Search, Segment, Sig, Signals, Stmt,
+    Action, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment, IntlLocale, Page,
+    Part, Patches, PluralCategory, Rest, Route, Rules, Search, Segment, Sig, Signals, Stmt,
     StreamAction, TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
@@ -47,7 +47,7 @@ struct TodoApp {
     editing: Option<i32>,
 }
 
-const EDIT: NodeRef<TodoApp> = NodeRef::new("edit");
+hypersig::node_ref!(const EDIT: NodeRef<TodoApp>);
 
 fn todos() -> (El<TodoApp>, TodoApp) {
     let todos = TodoApp::todos();
@@ -672,7 +672,7 @@ struct Roving {
     taken: i32,
 }
 
-const MENU: NodeRef<Roving> = NodeRef::new("menu");
+hypersig::node_ref!(const MENU: NodeRef<Roving>);
 
 /// A tab list whose third tab is disabled and whose last tab takes the right
 /// arrow for itself, and a vertical menu inside it whose items belong to the
@@ -725,7 +725,7 @@ struct Combo {
     downs: i32,
 }
 
-const OPTIONS: NodeRef<Combo> = NodeRef::new("options");
+hypersig::node_ref!(const OPTIONS: NodeRef<Combo>);
 
 /// A text field that tracks the active option of a listbox whose second
 /// option is hidden while the query is empty and whose third is disabled.
@@ -1412,7 +1412,7 @@ struct Widgets {
 const RATE: CustomEvent<i32> = CustomEvent::new("rate");
 const MOVED: CustomEvent<Point> = CustomEvent::new("map-moved");
 const PICK: CustomEvent<()> = CustomEvent::new("pick");
-const MAP: NodeRef<Widgets> = NodeRef::new("map");
+hypersig::node_ref!(const MAP: NodeRef<Widgets>);
 
 /// A fragment holding a map that a script draws into, which a patch replaces around it.
 struct Atlas(&'static str);
@@ -1596,7 +1596,7 @@ struct Uploads {
 const PICTURES: FileInput<Uploads> = FileInput::new("pictures");
 const SEND: Upload<Uploads, String> = Upload::post("/pictures");
 // The same name as the file input, which the browser looks up apart from it.
-const PICTURES_NOTE: NodeRef<Uploads> = NodeRef::new("pictures");
+hypersig::node_ref!(const PICTURES_NOTE: NodeRef<Uploads>);
 
 fn uploads() -> (El<Uploads>, Uploads) {
     let el = main()

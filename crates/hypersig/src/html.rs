@@ -1878,10 +1878,12 @@ impl<S> El<S> {
     ///     zoom: i32,
     /// }
     ///
-    /// const MAP: NodeRef<Place> = NodeRef::new("map");
+    /// hypersig::node_ref!(const MAP: NodeRef<Place>);
     ///
+    /// # fn main() {
     /// let map: El<Place> = div().foreign(MAP).bind_attr(hypersig::attr!("data-zoom"), Place::zoom().to_text());
-    /// assert!(map.render().contains(r#"data-hs-foreign="map""#));
+    /// assert!(map.render().contains(&format!(r#"data-hs-foreign="{}::MAP""#, module_path!())));
+    /// # }
     /// ```
     #[must_use]
     pub fn foreign(mut self, node_ref: NodeRef<S>) -> Self {
@@ -2241,15 +2243,17 @@ impl<S> El<S> {
     ///     active: String,
     /// }
     ///
-    /// const RESULTS: NodeRef<Search> = NodeRef::new("results");
+    /// hypersig::node_ref!(const RESULTS: NodeRef<Search>);
     ///
+    /// # fn main() {
     /// let field = input::<Search>()
     ///     .role(Role::Combobox)
     ///     .bind(Search::query())
     ///     .active_descendant(RESULTS, Search::active());
     /// let results = div::<Search>().role(Role::ListBox).node_ref(RESULTS);
-    /// assert!(field.render().contains(r#"data-hs-active="[&quot;results&quot;"#));
+    /// assert!(field.render().contains(&format!(r#"data-hs-active="[&quot;{}::RESULTS&quot;"#, module_path!())));
     /// # let _ = results;
+    /// # }
     /// ```
     #[must_use]
     pub fn active_descendant(mut self, listbox: NodeRef<S>, active: Sig<S, String>) -> Self {

@@ -1,5 +1,5 @@
 use hypersig::html::{CustomEvent, div};
-use hypersig::{NodeRef, Page, Signals};
+use hypersig::{Page, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -15,8 +15,9 @@ struct Office {
 
 // The script in `/map.js` draws a map into the element named `MAP`, reads
 // `data-lat` and `data-lng`, and dispatches `map-moved` with the new center.
-const MAP: NodeRef<Office> = NodeRef::new("map");
+hypersig::node_ref!(const MAP: NodeRef<Office>);
 const MOVED: CustomEvent<Center> = CustomEvent::new("map-moved");
+# fn main() {
 
 let center = Office::center();
 let page = Page::new("Office", Office { center: Center { lat: 35.68, lng: 139.77 } })
@@ -29,4 +30,5 @@ let page = Page::new("Office", Office { center: Center { lat: 35.68, lng: 139.77
             .bind_attr(hypersig::attr!("data-lng"), center.at(Center::lng()).to_text())
             .on_custom(MOVED, move |moved| center.set(moved)),
     );
-# assert!(page.render().contains(r#"data-hs-foreign="map""#));
+# assert!(page.render().contains(&format!(r#"data-hs-foreign="{}::MAP""#, module_path!())));
+# }

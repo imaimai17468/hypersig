@@ -702,18 +702,21 @@ impl<S> fmt::Debug for StreamCall<S> {
 
 /// A named element on a page whose signals are `S`, for imperative DOM calls.
 ///
-/// Declare one as a `const`, attach it with
+/// Declare one with [`node_ref!`](crate::node_ref), attach it with
 /// [`El::node_ref`](crate::html::El::node_ref), and use its statements in
 /// handlers. Inside a list item the browser looks for the element in the same
 /// item first, so one `NodeRef` serves every item.
 ///
-/// Outside a list, one name sits on one element. [`Page::render`](crate::Page::render)
-/// and [`El::render`](crate::html::El::render) panic when two elements the
-/// browser could both reach carry one name, which a test that renders the
-/// page catches. A [`Fragment`](crate::Fragment) sent again is rendered on
-/// its own, so the server cannot compare it with the rest of the page. The
-/// browser does, and writes a warning to the console when the patch adds a
-/// name or an id that another element it can reach already carries. A
+/// Its name is the path of its `const`, which `node_ref!` writes from
+/// `module_path!()` and the constant's identifier, so two constants never
+/// share a name. One constant attached to two elements the browser could
+/// both reach outside a list template is the mistake left:
+/// [`Page::render`](crate::Page::render) and
+/// [`El::render`](crate::html::El::render) panic on it, which a test that
+/// renders the page catches. A [`Fragment`](crate::Fragment) sent again is
+/// rendered on its own, so the server cannot compare it with the rest of the
+/// page. The browser does, and writes a warning to the console when the patch
+/// adds a name or an id that another element it can reach already carries. A
 /// [`FileInput`](crate::FileInput) name is looked up apart from these, so it
 /// never collides with one.
 ///
@@ -727,10 +730,15 @@ impl<S> fmt::Debug for StreamCall<S> {
 ///     query: String,
 /// }
 ///
-/// const FIELD: NodeRef<Search> = NodeRef::new("search");
-/// let _ = div()
+/// hypersig::node_ref!(const FIELD: NodeRef<Search>);
+///
+/// # fn main() {
+/// let html = div()
 ///     .child(input().node_ref(FIELD).bind(Search::query()))
-///     .child(button().on_click(FIELD.focus()).text("Search"));
+///     .child(button().on_click(FIELD.focus()).text("Search"))
+///     .render();
+/// assert!(html.contains(&format!(r#"data-hs-ref="{}::FIELD""#, module_path!())));
+/// # }
 /// ```
 pub struct NodeRef<S> {
     name: &'static str,
@@ -738,13 +746,13 @@ pub struct NodeRef<S> {
 }
 
 impl<S> NodeRef<S> {
-    /// A reference named `name`.
+    /// A reference named `name`, which [`node_ref!`](crate::node_ref) writes
+    /// from the path of its constant.
     ///
     /// # Panics
     ///
     /// Panics if `name` is empty. In a `const`, that is a compile error.
-    #[must_use]
-    pub const fn new(name: &'static str) -> Self {
+    pub(crate) const fn new(name: &'static str) -> Self {
         assert!(!name.is_empty(), "a node ref name is never empty");
         Self {
             name,
@@ -816,13 +824,15 @@ impl<S> fmt::Debug for NodeRef<S> {
 
 /// A named `<dialog>` on a page whose signals are `S`, which statements open and close.
 ///
+/// Declare one with [`dialog_ref!`](crate::dialog_ref).
 /// [`DialogRef::dialog`] is the only way to attach one, and it builds the
 /// `<dialog>` element itself, so [`show_modal`](DialogRef::show_modal) and
 /// [`close`](DialogRef::close) always name a dialog. A [`NodeRef`] has
 /// neither, since it may sit on any element.
 ///
-/// The name shares one namespace with the names of [`NodeRef`]s, and
-/// rendering panics where two elements the browser can both reach carry one.
+/// Its name is the path of its `const`, as a [`NodeRef`]'s is, in the one
+/// namespace both share. Rendering panics where the dialog of one constant
+/// sits twice where the browser can reach both.
 ///
 /// ```
 /// use hypersig::html::{button, div, input};
@@ -834,7 +844,9 @@ impl<S> fmt::Debug for NodeRef<S> {
 ///     query: String,
 /// }
 ///
-/// const PALETTE: DialogRef<Palette> = DialogRef::new("palette");
+/// hypersig::dialog_ref!(const PALETTE: DialogRef<Palette>);
+///
+/// # fn main() {
 /// let page = div()
 ///     .child(button().on_click(PALETTE.show_modal()).text("Commands"))
 ///     .child(
@@ -843,7 +855,8 @@ impl<S> fmt::Debug for NodeRef<S> {
 ///             .child(input().bind(Palette::query()))
 ///             .child(button().on_click(PALETTE.close()).text("Close")),
 ///     );
-/// assert!(page.render().contains(r#"<dialog data-hs-ref="palette">"#));
+/// assert!(page.render().contains(&format!(r#"<dialog data-hs-ref="{}::PALETTE">"#, module_path!())));
+/// # }
 /// ```
 pub struct DialogRef<S> {
     name: &'static str,
@@ -851,13 +864,13 @@ pub struct DialogRef<S> {
 }
 
 impl<S> DialogRef<S> {
-    /// A reference named `name`.
+    /// A reference named `name`, which [`dialog_ref!`](crate::dialog_ref)
+    /// writes from the path of its constant.
     ///
     /// # Panics
     ///
     /// Panics if `name` is empty. In a `const`, that is a compile error.
-    #[must_use]
-    pub const fn new(name: &'static str) -> Self {
+    pub(crate) const fn new(name: &'static str) -> Self {
         assert!(!name.is_empty(), "a dialog ref name is never empty");
         Self {
             name,

@@ -8,7 +8,7 @@ use hypersig::html::{El, Event, Id, Key, Role, attr, div, input, label, p};
 use hypersig::style::Style;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{Display, FlexDirection, OverflowY, Position, ZIndex, pct, raw, rem};
-use hypersig::{Expr, NodeRef, Sig, Signals, Stmt, if_else};
+use hypersig::{Expr, Sig, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
 
 use crate::field::{field_style, label_style};
@@ -140,8 +140,8 @@ impl<S> Combobox<S> {
         let open = state.at(ComboboxState::open());
         let active = state.at(ComboboxState::active());
         let pointer = state.at(ComboboxState::pointer());
-        let field_ref = NodeRef::new(self.field);
-        let list_ref = NodeRef::new(self.list);
+        let field_ref = hypersig::_private::node_ref(self.field);
+        let list_ref = hypersig::_private::node_ref(self.list);
         let query = text.to_lowercase();
 
         let close: Stmt<S> = open.set(false).then(active.set(""));

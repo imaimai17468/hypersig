@@ -1,5 +1,5 @@
 use hypersig::html::button;
-use hypersig::{NodeRef, Signals};
+use hypersig::Signals;
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -7,7 +7,7 @@ struct Palette {
     query: String,
 }
 
-const PALETTE: NodeRef<Palette> = NodeRef::new("palette");
+hypersig::node_ref!(const PALETTE: NodeRef<Palette>);
 
 fn main() {
     // A `NodeRef` may sit on any element, so only a `DialogRef` opens a dialog.

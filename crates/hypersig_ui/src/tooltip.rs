@@ -78,7 +78,7 @@ impl<S> Tooltip<S> {
     }
 
     fn node_ref(self) -> NodeRef<S> {
-        NodeRef::new(self.name)
+        hypersig::_private::node_ref(self.name)
     }
 
     /// A button described by the tooltip.

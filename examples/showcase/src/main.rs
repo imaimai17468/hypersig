@@ -11,9 +11,8 @@ use hypersig::html::{
     label, li, p, section, select, small, span, textarea, ul,
 };
 use hypersig::{
-    Action, DateFormat, DateStyle, DialogRef, Expr, Fragment, IntlLocale, NodeRef, Page, Patches,
-    PluralCategory, Route, RouterExt, Segment, Sig, Signals, Stmt, TimeStyle, TimeZone, Timestamp,
-    if_else,
+    Action, DateFormat, DateStyle, Expr, Fragment, IntlLocale, Page, Patches, PluralCategory,
+    Route, RouterExt, Segment, Sig, Signals, Stmt, TimeStyle, TimeZone, Timestamp, if_else,
 };
 use serde::{Deserialize, Serialize};
 
@@ -128,7 +127,7 @@ hypersig::routes! {
 
 const SEARCH: Action<Showcase, String> = Action::post("/search");
 const ORDER: Action<Showcase, (i32, Size, bool)> = Action::post("/order");
-const SEARCH_FIELD: NodeRef<Showcase> = NodeRef::new("search");
+hypersig::node_ref!(const SEARCH_FIELD: NodeRef<Showcase>);
 const OLDER: Action<Showcase, i32> = Action::get("/feed/older");
 const NEWER: Action<Showcase, i32> = Action::post("/feed/newer");
 const STAR: Action<Showcase, i32> = Action::post("/feed/star");
@@ -138,7 +137,7 @@ const DISMISS: Action<Showcase, i32> = Action::post("/feed/dismiss");
 const FEED_START: i32 = 41;
 const FEED_PAGE: i32 = 5;
 
-const PALETTE: DialogRef<Showcase> = DialogRef::new("palette");
+hypersig::dialog_ref!(const PALETTE: DialogRef<Showcase>);
 const MORE: Action<Showcase, i32> = Action::get("/more");
 
 /// How many numbers one load adds, and how many there are in all.

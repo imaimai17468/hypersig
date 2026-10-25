@@ -12,9 +12,7 @@ use hypersig::html::{
     El, Id, Key, a, attr, button, each_keyed, footer, h1, header, input, label, li, section, span,
     strong, ul, when,
 };
-use hypersig::{
-    Action, Expr, NodeRef, Page, Patches, Route, RouterExt, SafeUrl, Signals, Stmt, if_else,
-};
+use hypersig::{Action, Expr, Page, Patches, Route, RouterExt, SafeUrl, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
@@ -49,7 +47,7 @@ hypersig::routes! {
 }
 
 const SAVE: Action<TodoMvc, Vec<Todo>> = Action::post("/save");
-const EDIT: NodeRef<TodoMvc> = NodeRef::new("edit");
+hypersig::node_ref!(const EDIT: NodeRef<TodoMvc>);
 const TOGGLE_ALL: Id = Id::new("toggle-all");
 
 #[derive(Clone, Default)]

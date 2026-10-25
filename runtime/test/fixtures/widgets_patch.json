@@ -1,3 +1,3 @@
 {
-  "stream": "event: hs-element\ndata: {\"html\":\"<div id=\\\"atlas\\\"><p>Kyoto</p><div data-hs-attr=\\\"[[&quot;data-stars&quot;,[&quot;str&quot;,[&quot;sig&quot;,&quot;stars&quot;]]]]\\\" data-hs-ref=\\\"map\\\" data-hs-foreign=\\\"map\\\"></div></div>\"}\n\n"
+  "stream": "event: hs-element\ndata: {\"html\":\"<div id=\\\"atlas\\\"><p>Kyoto</p><div data-hs-attr=\\\"[[&quot;data-stars&quot;,[&quot;str&quot;,[&quot;sig&quot;,&quot;stars&quot;]]]]\\\" data-hs-ref=\\\"fixtures::MAP\\\" data-hs-foreign=\\\"fixtures::MAP\\\"></div></div>\"}\n\n"
 }

@@ -8,7 +8,7 @@ use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Cursor, Display, PositionTryFallbacks, TextAlign, px, raw, rem,
 };
 use hypersig::style::{PseudoClass, Style};
-use hypersig::{Expr, IntoExpr, IntoStmt, NodeRef, Stmt};
+use hypersig::{Expr, IntoExpr, IntoStmt, Stmt};
 
 use crate::button::{ButtonSize, ButtonVariant, button};
 use crate::id::check_name;
@@ -98,7 +98,7 @@ impl<S> Menu<S> {
     /// The menu, holding `items` in order.
     #[must_use]
     pub fn menu(self, items: impl IntoIterator<Item = MenuItem<S>>) -> El<S> {
-        let node_ref = NodeRef::new(self.name);
+        let node_ref = hypersig::_private::node_ref(self.name);
         div()
             .id(self.id())
             .attr(attr::POPOVER, "auto")

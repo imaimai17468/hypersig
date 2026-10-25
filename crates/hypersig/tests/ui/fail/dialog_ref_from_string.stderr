@@ -1,0 +1,10 @@
+error[E0624]: associated function `new` is private
+ --> tests/ui/fail/dialog_ref_from_string.rs:5:43
+  |
+5 | const PALETTE: DialogRef<()> = DialogRef::new("palette");
+  |                                           ^^^ private associated function
+  |
+ ::: src/action.rs
+  |
+  |     pub(crate) const fn new(name: &'static str) -> Self {
+  |     --------------------------------------------------- private associated function defined here

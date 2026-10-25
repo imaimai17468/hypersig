@@ -3,13 +3,13 @@
 use std::fmt;
 use std::marker::PhantomData;
 
+use hypersig::Stmt;
 use hypersig::html::{El, Id, Node, Role, attr, button as button_el, div, h2, p};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{
     BorderStyle, Color, FontWeight, JustifyContent, LineHeight, Position, px, raw, rem,
 };
 use hypersig::style::{PseudoElement, Style};
-use hypersig::{DialogRef, Stmt};
 
 use crate::button::{ButtonSize, ButtonVariant, button};
 use crate::id::check_name;
@@ -93,13 +93,13 @@ impl<S> Dialog<S> {
     /// element that had it when the dialog closes.
     #[must_use]
     pub fn open(self) -> Stmt<S> {
-        DialogRef::new(self.name).show_modal()
+        hypersig::_private::dialog_ref(self.name).show_modal()
     }
 
     /// A statement that closes the dialog, as its close button does.
     #[must_use]
     pub fn dismiss(self) -> Stmt<S> {
-        DialogRef::new(self.name).close()
+        hypersig::_private::dialog_ref(self.name).close()
     }
 
     /// A button that closes the dialog. Put it inside the dialog.
@@ -214,7 +214,7 @@ impl<S> Dialog<S> {
     fn frame(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {
         let title_id = self.id().with_key("title");
         let description_id = self.id().with_key("description");
-        DialogRef::new(self.name)
+        hypersig::_private::dialog_ref(self.name)
             .dialog()
             .id(self.id())
             .aria_labelledby(&[&title_id])

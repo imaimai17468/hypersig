@@ -621,13 +621,16 @@ impl<S: Signals> Page<S> {
     ///     query: String,
     /// }
     ///
-    /// const SEARCH: NodeRef<Docs> = NodeRef::new("search");
+    /// hypersig::node_ref!(const SEARCH: NodeRef<Docs>);
+    ///
+    /// # fn main() {
     /// let html = Page::new("Docs", Docs { query: String::new() })
     ///     .on_key(Key::Char('/'), SEARCH.focus())
     ///     .child(input().node_ref(SEARCH).bind(Docs::query()))
     ///     .render();
     /// assert!(html.contains("<body data-hs-signals"));
     /// assert!(html.contains(r#" data-hs-on-key="[[&quot;/&quot;"#));
+    /// # }
     /// ```
     #[must_use]
     pub fn on_key(mut self, shortcut: impl Into<Shortcut>, stmt: impl IntoStmt<S>) -> Self {

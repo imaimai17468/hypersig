@@ -1984,16 +1984,16 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         ja: "NodeRef",
                     },
                     text: L {
-                        en: "Attach one to an element with `El::node_ref`.",
-                        ja: "`El::node_ref` で要素に付けます。",
+                        en: "Declare one with `node_ref!` and attach it to an element with `El::node_ref`.",
+                        ja: "`node_ref!` で宣言し、`El::node_ref` で要素に付けます。",
                     },
                     rows: &[
                         (
-                            "NodeRef::new",
-                            "struct.NodeRef.html#method.new",
+                            "node_ref!",
+                            "macro.node_ref.html",
                             L {
-                                en: "A reference named `name`.",
-                                ja: "`name` という名前の参照",
+                                en: "Declares a `NodeRef` constant named after its own path.",
+                                ja: "定数自身のパスを名前とする `NodeRef` の定数を宣言します。",
                             },
                         ),
                         (
@@ -2057,11 +2057,11 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                     },
                     rows: &[
                         (
-                            "DialogRef::new",
-                            "struct.DialogRef.html#method.new",
+                            "dialog_ref!",
+                            "macro.dialog_ref.html",
                             L {
-                                en: "A reference named `name`.",
-                                ja: "`name` という名前の参照",
+                                en: "Declares a `DialogRef` constant named after its own path.",
+                                ja: "定数自身のパスを名前とする `DialogRef` の定数を宣言します。",
                             },
                         ),
                         (
