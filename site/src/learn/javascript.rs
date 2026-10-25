@@ -57,7 +57,7 @@ pub fn javascript(site: Site) -> Part {
         code::block(
             Lang::Toml,
             Some("Cargo.toml"),
-            r#"tower-http = { version = "0.6", features = ["fs"] }"#,
+            r#"tower-http = { version = "0.7", features = ["fs"] }"#,
         ),
         show(Snippet::StaticFiles),
         para(
