@@ -18,6 +18,7 @@ struct AppState {
     db: Arc<Mutex<Connection>>,
 }
 
+#[derive(Debug)]
 struct DbError(rusqlite::Error);
 
 impl IntoResponse for DbError {

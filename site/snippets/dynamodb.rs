@@ -17,6 +17,7 @@ struct AppState {
     dynamo: Client,
 }
 
+#[derive(Debug)]
 struct DbError(String);
 
 impl IntoResponse for DbError {
