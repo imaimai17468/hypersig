@@ -12,7 +12,10 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
-use hypersig::html::{El, Key, Stylesheet, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong, ul, attr};
+use hypersig::html::{
+    El, Key, Stylesheet, a, attr, button, each_keyed, footer, h1, header, input, label, li,
+    section, span, strong, ul,
+};
 use hypersig::{Action, Expr, Page, Patches, RouterExt, SafeUrl, Signals, Stmt, if_else};
 use serde::{Deserialize, Serialize};
 

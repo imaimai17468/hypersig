@@ -3,7 +3,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Node, Role, attr, button as button_el, div, h2, p};
+use hypersig::html::{El, Id, Node, Role, attr, button as button_el, div, h2, p};
 use hypersig::style::pattern::{hstack, stack};
 use hypersig::style::value::{
     BorderStyle, Color, FontWeight, JustifyContent, LineHeight, Position, px, raw, rem,
@@ -78,8 +78,12 @@ impl<S> Dialog<S> {
     pub fn trigger(self, variant: ButtonVariant, size: ButtonSize) -> El<S> {
         button(variant, size)
             .attr(attr::ARIA_HASPOPUP, "dialog")
-            .attr(attr::COMMANDFOR, self.name)
+            .command_for(&self.id())
             .attr(attr::COMMAND, "show-modal")
+    }
+
+    fn id(self) -> Id {
+        Id::new(self.name)
     }
 
     /// A statement that opens the dialog, as its trigger button does.
@@ -102,7 +106,7 @@ impl<S> Dialog<S> {
     #[must_use]
     pub fn close(self, variant: ButtonVariant, size: ButtonSize) -> El<S> {
         button(variant, size)
-            .attr(attr::COMMANDFOR, self.name)
+            .command_for(&self.id())
             .attr(attr::COMMAND, "close")
     }
 
@@ -178,7 +182,7 @@ impl<S> Dialog<S> {
                 button_el()
                     .attr(attr::TYPE, "button")
                     .attr(attr::ARIA_LABEL, "Close")
-                    .attr(attr::COMMANDFOR, self.name)
+                    .command_for(&self.id())
                     .attr(attr::COMMAND, "close")
                     .css(corner_style())
                     .child(icon(look::icon::X, rem(1))),
@@ -208,13 +212,13 @@ impl<S> Dialog<S> {
     }
 
     fn frame(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {
-        let title_id = format!("{}-title", self.name);
-        let description_id = format!("{}-description", self.name);
+        let title_id = self.id().with_key("title");
+        let description_id = self.id().with_key("description");
         DialogRef::new(self.name)
             .dialog()
-            .id(self.name)
-            .attr(attr::ARIA_LABELLEDBY, title_id.clone())
-            .attr(attr::ARIA_DESCRIBEDBY, description_id.clone())
+            .id(self.id())
+            .aria_labelledby(&[&title_id])
+            .aria_describedby(&[&description_id])
             .css(style)
             .child(
                 div()

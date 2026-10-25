@@ -17,7 +17,7 @@ use axum::extract::FromRequestParts;
 use axum::http::StatusCode;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
-use hypersig::html::{El, Role, a, attr, div, each, form, h1, label, li, p, span, ul};
+use hypersig::html::{El, Id, Role, a, attr, div, each, form, h1, label, li, p, span, ul};
 use hypersig::style::Style;
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::rem;
@@ -91,6 +91,7 @@ const SIGN_OUT: Action<Home> = Action::post("/sign-out");
 const ADD_NOTE: Action<Home, String> = Action::post("/notes");
 const PICTURE_FILE: FileInput<Home> = FileInput::new("picture");
 const UPLOAD_PICTURE: Upload<Home> = Upload::post("/picture").max_bytes(64 * 1024);
+const PICTURE_FIELD: Id = Id::new("picture-file");
 
 #[derive(Clone)]
 struct AppState {
@@ -260,7 +261,7 @@ async fn missing(_state: AppState, unserved: Unserved) -> Page<Missing> {
             card().child(
                 card_content()
                     .css(stack(rem(1)))
-                    .child(p().id("missing").text("There is no page here."))
+                    .child(p().id(Id::new("missing")).text("There is no page here."))
                     .child(
                         p().css(Style::new().color(token::muted_foreground().var()))
                             .bind_text(Missing::problem()),
@@ -333,7 +334,7 @@ fn home_card() -> El<Home> {
                     div()
                         .css(hstack(rem(0.75)))
                         .child(
-                            p().id("member")
+                            p().id(Id::new("member"))
                                 .css(muted.clone())
                                 .text("Signed in as ")
                                 .child(span().bind_text(Home::name())),
@@ -349,7 +350,7 @@ fn home_card() -> El<Home> {
                 card_content()
                     .css(stack(rem(1)))
                     .child(
-                        ul().id("notes")
+                        ul().id(Id::new("notes"))
                             .css(stack(rem(0.5)))
                             .child(each(Home::notes(), |note| li().bind_text(note.value()))),
                     )
@@ -375,13 +376,13 @@ fn home_card() -> El<Home> {
                                     .text("Add note"),
                             )
                             .child(
-                                p().id("problem")
+                                p().id(Id::new("problem"))
                                     .role(Role::Alert)
                                     .css(Style::new().color(token::destructive().var()))
                                     .bind_text(Home::problem()),
                             )
                             .child(
-                                a().id("sign-in-again")
+                                a().id(Id::new("sign-in-again"))
                                     .show(signed_out())
                                     .href(LOGIN.link())
                                     .text("Sign in again"),
@@ -404,15 +405,15 @@ fn picture_form() -> El<Home> {
     let muted = Style::new().color(token::muted_foreground().var());
     div()
         .css(stack(rem(0.75)))
-        .child(label().attr(attr::FOR, "picture-file").text("Picture"))
+        .child(label().label_for(&PICTURE_FIELD).text("Picture"))
         .child(
             PICTURE_FILE
                 .input()
-                .id("picture-file")
+                .id(PICTURE_FIELD)
                 .attr(attr::ACCEPT, "image/png,image/jpeg"),
         )
         .child(
-            p().id("picture")
+            p().id(Id::new("picture"))
                 .css(muted.clone())
                 .show(!picture.is_empty())
                 .text("Your picture: ")
@@ -431,7 +432,7 @@ fn picture_form() -> El<Home> {
                 .bind_text(if_else(uploading, "Uploading…", "Upload picture")),
         )
         .child(
-            p().id("picture-problem")
+            p().id(Id::new("picture-problem"))
                 .role(Role::Alert)
                 .css(Style::new().color(token::destructive().var()))
                 .bind_text(Home::picture_problem()),

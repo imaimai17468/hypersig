@@ -151,12 +151,7 @@ impl<S> Slider<S> {
                         .align_items(AlignItems::Center)
                         .justify_content(JustifyContent::SpaceBetween),
                 )
-                .child(
-                    label()
-                        .attr(attr::FOR, id)
-                        .css(label_style())
-                        .text(self.label),
-                )
+                .child(label().label_for(&id).css(label_style()).text(self.label))
                 .child(
                     span()
                         .attr(attr::ARIA_HIDDEN, "true")

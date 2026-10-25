@@ -82,15 +82,15 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
             .css(list_style());
         let mut panels = Vec::with_capacity(self.entries.len());
         for (index, (value, title, panel)) in self.entries.into_iter().enumerate() {
-            let tab_id = crate::id::of(selected, &format!("tab-{index}"));
-            let panel_id = crate::id::of(selected, &format!("panel-{index}"));
+            let tab_id = crate::id::of(selected, "tab").with_key(index);
+            let panel_id = crate::id::of(selected, "panel").with_key(index);
             let active = selected.equals(&value);
             list = list.child(
                 button()
                     .attr(attr::TYPE, "button")
                     .role(Role::Tab)
                     .id(tab_id.clone())
-                    .attr(attr::ARIA_CONTROLS, panel_id.clone())
+                    .aria_controls(&[&panel_id])
                     .bind_attr(
                         attr::ARIA_SELECTED,
                         if_else(active.clone(), "true", "false"),
@@ -106,7 +106,7 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
                 div()
                     .role(Role::TabPanel)
                     .id(panel_id)
-                    .attr(attr::ARIA_LABELLEDBY, tab_id)
+                    .aria_labelledby(&[&tab_id])
                     .attr(attr::TABINDEX, "0")
                     .show(active)
                     .css(Style::new().margin_top(rem(0.5)).merge(look::focus_ring()))

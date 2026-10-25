@@ -11,7 +11,7 @@ use axum::http::{HeaderValue, header};
 use axum::middleware::{self, Next};
 use axum::response::Response;
 use axum::{Extension, Router};
-use hypersig::html::{El, attr, button, div, h1, h2, input, label, p, section, span};
+use hypersig::html::{El, Id, attr, button, div, h1, h2, input, label, p, section, span};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, if_else};
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +40,7 @@ hypersig::routes! {
 }
 
 const MORE: Action<Gallery> = Action::post("/more");
+const DETAILS_TOGGLE: Id = Id::new("details-toggle");
 
 /// Cards the server sends on request. Their widths use the `md` breakpoint,
 /// which nothing on the first page uses, so their rules arrive in the patch.
@@ -47,7 +48,7 @@ struct More;
 
 impl Fragment for More {
     type Signals = Gallery;
-    const ID: &'static str = "more";
+    const ID: Id = Id::new("more");
 
     fn render(&self) -> El<Gallery> {
         div().css(look::loaded_row()).children(
@@ -61,13 +62,13 @@ impl Fragment for More {
 fn theme_section() -> El<Gallery> {
     let dark = Gallery::dark();
     section()
-        .id("theme")
+        .id(Id::new("theme"))
         .css(look::panel())
         .child(h2().text("Theme"))
         .child(p().text("The button switches the tokens this page reads its colors from."))
         .child(
             button()
-                .id("switch-theme")
+                .id(Id::new("switch-theme"))
                 .css(look::button())
                 .css_match(
                     Gallery::size(),
@@ -85,7 +86,7 @@ fn theme_section() -> El<Gallery> {
         )
         .child(
             div()
-                .id("dark-note")
+                .id(Id::new("dark-note"))
                 .css(look::row())
                 .show(dark)
                 .child(span().text("Dark tokens are on.")),
@@ -95,9 +96,10 @@ fn theme_section() -> El<Gallery> {
 fn recipe_section() -> El<Gallery> {
     let size = Gallery::size();
     let tone = Gallery::tone();
-    let choice = |id: &'static str, text: &str| button().id(id).css(look::chip()).text(text);
+    let choice =
+        |id: &'static str, text: &str| button().id(Id::new(id)).css(look::chip()).text(text);
     section()
-        .id("recipe")
+        .id(Id::new("recipe"))
         .css(look::panel())
         .child(h2().text("Recipe"))
         .child(p().text("The theme button above takes its size and tone from these."))
@@ -113,10 +115,10 @@ fn recipe_section() -> El<Gallery> {
 
 fn grid_section() -> El<Gallery> {
     section()
-        .id("grid")
+        .id(Id::new("grid"))
         .css(look::panel())
         .child(h2().text("Grid, group, and peer"))
-        .child(div().id("cards").css(look::cards()).children(
+        .child(div().id(Id::new("cards")).css(look::cards()).children(
             ["Tea", "Coffee", "Cocoa"].into_iter().map(|name| {
                 div()
                     .css(look::card())
@@ -129,17 +131,13 @@ fn grid_section() -> El<Gallery> {
                 .css(look::row())
                 .child(
                     input()
-                        .id("details-toggle")
+                        .id(DETAILS_TOGGLE)
                         .attr(attr::TYPE, "checkbox")
                         .css(look::peer()),
                 )
+                .child(label().label_for(&DETAILS_TOGGLE).text("Show details"))
                 .child(
-                    label()
-                        .attr(attr::FOR, "details-toggle")
-                        .text("Show details"),
-                )
-                .child(
-                    p().id("details")
+                    p().id(Id::new("details"))
                         .css(look::details())
                         .text("Each card shows Order on hover."),
                 ),
@@ -148,22 +146,22 @@ fn grid_section() -> El<Gallery> {
 
 fn motion_section() -> El<Gallery> {
     section()
-        .id("motion")
+        .id(Id::new("motion"))
         .css(look::panel())
         .child(h2().text("Animation and patches"))
         .child(
             div()
                 .css(look::row())
-                .child(div().id("spinner").css(look::spinner()))
+                .child(div().id(Id::new("spinner")).css(look::spinner()))
                 .child(
                     button()
-                        .id("load")
+                        .id(Id::new("load"))
                         .css(look::chip())
                         .on_click(MORE.call())
                         .text("Load cards"),
                 ),
         )
-        .child(div().id("more"))
+        .child(div().id(Id::new("more")))
 }
 
 async fn index((): (), Extension(nonce): Extension<Nonce>, (): ()) -> Page<Gallery> {
@@ -180,7 +178,7 @@ async fn index((): (), Extension(nonce): Extension<Nonce>, (): ()) -> Page<Galle
     .theme(look::theme())
     .child(
         div()
-            .id("app")
+            .id(Id::new("app"))
             .css(look::app())
             .css_when(look::dark(), Gallery::dark())
             .child(h1().text("Typed styles"))

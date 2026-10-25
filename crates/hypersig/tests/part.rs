@@ -6,7 +6,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use futures::{StreamExt as _, stream};
 use http_body_util::BodyExt as _;
-use hypersig::html::{El, button, div, input, p, part, span};
+use hypersig::html::{El, Id, button, div, input, p, part, span};
 use hypersig::{Action, Fragment, Page, Part, Patches, RouterExt, Signals, StreamAction};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
@@ -37,7 +37,7 @@ struct Joined {
 
 impl Fragment for Joined {
     type Signals = Newsletter;
-    const ID: &'static str = "joined";
+    const ID: Id = Id::new("joined");
 
     fn render(&self) -> El<Newsletter> {
         p().text(format!("{} readers. ", self.readers))

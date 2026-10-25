@@ -4,7 +4,7 @@
 use std::time::Duration;
 
 use axum::Router;
-use hypersig::html::{El, Event, attr, input, li, ul};
+use hypersig::html::{El, Event, Id, attr, input, li, ul};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals, fragment};
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +23,7 @@ struct Results {
 
 impl Fragment for Results {
     type Signals = Search;
-    const ID: &'static str = "results";
+    const ID: Id = Id::new("results");
 
     fn render(&self) -> El<Search> {
         ul().children(

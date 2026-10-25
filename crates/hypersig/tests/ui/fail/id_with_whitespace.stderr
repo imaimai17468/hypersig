@@ -1,0 +1,22 @@
+error[E0080]: evaluation panicked: an id holds no whitespace
+ --> tests/ui/fail/id_with_whitespace.rs:3:19
+  |
+3 | const EMAIL: Id = Id::new("e mail");
+  |                   ^^^^^^^^^^^^^^^^^ evaluation of `EMAIL` failed inside this call
+  |
+note: inside `Id::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/html/id.rs
+  |
+  |             assert!(!bytes[i].is_ascii_whitespace(), "an id holds no whitespace");
+  |             --------------------------------------------------------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/id_with_whitespace.rs:6:13
+  |
+6 |     let _ = EMAIL;
+  |             ^^^^^

@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/ui/fail/id_from_string.rs:4:30
+  |
+4 |     let _ = input::<()>().id("email");
+  |                           -- ^^^^^^^ expected `Id`, found `&str`
+  |                           |
+  |                           arguments to this method are incorrect
+  |
+note: method defined here
+ --> src/html.rs
+  |
+  |     pub fn id(mut self, id: Id) -> Self {
+  |            ^^

@@ -13,7 +13,10 @@ use std::path::Path;
 use std::time::Instant;
 
 use hypersig::IntoExpr;
-use hypersig::html::{Class, El, a, button, each_keyed, footer, h1, header, input, label, li, section, span, strong, ul, attr};
+use hypersig::html::{
+    Class, El, a, attr, button, each_keyed, footer, h1, header, input, label, li, section, span,
+    strong, ul,
+};
 use hypersig::{Page, SafeUrl, Signals, if_else};
 use serde::{Deserialize, Serialize};
 

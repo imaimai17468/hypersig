@@ -4,7 +4,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use hypersig::html::{El, Event, Key, Role, attr, div, input, label, p};
+use hypersig::html::{El, Event, Id, Key, Role, attr, div, input, label, p};
 use hypersig::style::Style;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::{Display, FlexDirection, OverflowY, Position, ZIndex, pct, raw, rem};
@@ -149,10 +149,10 @@ impl<S> Combobox<S> {
         let mut items = Vec::new();
         for (index, title) in options.into_iter().enumerate() {
             let title: String = title.into();
-            let id = format!("{}-{index}", self.list);
+            let id = Id::new(self.list).with_key(index);
             let shown = Expr::lit(&title.to_lowercase()).contains(query.clone());
             none_shown = none_shown.and(!shown.clone());
-            let reached = active.equals(id.clone());
+            let reached = active.equals(id.to_string());
             items.push(
                 div()
                     .role(Role::Option)
@@ -177,13 +177,12 @@ impl<S> Combobox<S> {
 
         let field = input()
             .attr(attr::TYPE, "text")
-            .id(self.field)
+            .id(Id::new(self.field))
             .role(Role::Combobox)
             .attr(attr::ARIA_AUTOCOMPLETE, "list")
-            .attr(attr::ARIA_CONTROLS, self.list)
+            .aria_controls(&[&Id::new(self.list)])
             .attr(attr::AUTOCOMPLETE, "off")
             .bind_attr(attr::ARIA_EXPANDED, if_else(open, "true", "false"))
-            .bind_attr(attr::ARIA_ACTIVEDESCENDANT, active)
             .bind(text)
             .node_ref(field_ref)
             .active_descendant(list_ref, active)
@@ -205,7 +204,7 @@ impl<S> Combobox<S> {
             .css(drop_down_style())
             .child(
                 div()
-                    .id(self.list)
+                    .id(Id::new(self.list))
                     .role(Role::ListBox)
                     .attr(attr::ARIA_LABEL, "Suggestions")
                     .node_ref(list_ref)
@@ -232,7 +231,7 @@ impl<S> Combobox<S> {
             .css(stack(rem(0.5)))
             .child(
                 label()
-                    .attr(attr::FOR, self.field)
+                    .label_for(&Id::new(self.field))
                     .css(label_style())
                     .text(label_text),
             )

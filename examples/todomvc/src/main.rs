@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use hypersig::html::{
-    El, Key, a, attr, button, each_keyed, footer, h1, header, input, label, li, section, span,
+    El, Id, Key, a, attr, button, each_keyed, footer, h1, header, input, label, li, section, span,
     strong, ul, when,
 };
 use hypersig::{
@@ -50,6 +50,7 @@ hypersig::routes! {
 
 const SAVE: Action<TodoMvc, Vec<Todo>> = Action::post("/save");
 const EDIT: NodeRef<TodoMvc> = NodeRef::new("edit");
+const TOGGLE_ALL: Id = Id::new("toggle-all");
 
 #[derive(Clone, Default)]
 struct AppState {
@@ -89,70 +90,72 @@ fn todo_list() -> El<TodoMvc> {
     let filter = TodoMvc::filter();
     let editing = TodoMvc::editing();
     let edit_text = TodoMvc::edit_text();
-    ul().id("todo-list").css(styles::list()).child(each_keyed(
-        todos,
-        |todo| todo.at(Todo::id()),
-        |todo| {
-            let id = todo.at(Todo::id());
-            let title = todo.at(Todo::title());
-            let done = todo.at(Todo::done());
-            let is_editing = editing.equals(id.some());
-            let visible = filter
-                .equals(&Filter::All)
-                .or(filter.equals(&Filter::Active).and(!done))
-                .or(filter.equals(&Filter::Completed).and(done));
-            let commit = Stmt::when(
-                is_editing.clone(),
-                Stmt::if_else(
-                    edit_text.trim().is_empty(),
-                    todo.remove(),
-                    title.set(edit_text.trim()),
-                )
-                .then(editing.set(&None)),
-            );
-            li().show(visible)
-                .css(styles::item())
-                .child(
-                    input()
-                        .css(styles::toggle())
-                        .css_when(styles::hidden(), is_editing.clone())
-                        .attr(attr::TYPE, "checkbox")
-                        .attr(attr::ARIA_LABEL, "Toggle")
-                        .bind(done),
-                )
-                .child(
-                    label()
-                        .css(styles::title())
-                        .css_when(styles::completed_title(), done)
-                        .css_when(styles::hidden(), is_editing.clone())
-                        .bind_text(title)
-                        .on_double_click(
-                            edit_text
-                                .set(title)
-                                .then(editing.set(id.some()))
-                                .then(EDIT.focus()),
-                        ),
-                )
-                .child(
-                    button()
-                        .css(styles::destroy())
-                        .css_when(styles::hidden(), is_editing)
-                        .attr(attr::ARIA_LABEL, "Delete")
-                        .on_click(todo.remove()),
-                )
-                .child(when(
-                    editing.equals(id.some()),
-                    input()
-                        .css(styles::edit())
-                        .attr(attr::ARIA_LABEL, "Edit")
-                        .node_ref(EDIT)
-                        .bind(edit_text)
-                        .on_key(Key::Enter, commit.clone())
-                        .on_key(Key::Escape, editing.set(&None))
-                        .on_blur(commit),
-                ))
-        },
-    ))
+    ul().id(Id::new("todo-list"))
+        .css(styles::list())
+        .child(each_keyed(
+            todos,
+            |todo| todo.at(Todo::id()),
+            |todo| {
+                let id = todo.at(Todo::id());
+                let title = todo.at(Todo::title());
+                let done = todo.at(Todo::done());
+                let is_editing = editing.equals(id.some());
+                let visible = filter
+                    .equals(&Filter::All)
+                    .or(filter.equals(&Filter::Active).and(!done))
+                    .or(filter.equals(&Filter::Completed).and(done));
+                let commit = Stmt::when(
+                    is_editing.clone(),
+                    Stmt::if_else(
+                        edit_text.trim().is_empty(),
+                        todo.remove(),
+                        title.set(edit_text.trim()),
+                    )
+                    .then(editing.set(&None)),
+                );
+                li().show(visible)
+                    .css(styles::item())
+                    .child(
+                        input()
+                            .css(styles::toggle())
+                            .css_when(styles::hidden(), is_editing.clone())
+                            .attr(attr::TYPE, "checkbox")
+                            .attr(attr::ARIA_LABEL, "Toggle")
+                            .bind(done),
+                    )
+                    .child(
+                        label()
+                            .css(styles::title())
+                            .css_when(styles::completed_title(), done)
+                            .css_when(styles::hidden(), is_editing.clone())
+                            .bind_text(title)
+                            .on_double_click(
+                                edit_text
+                                    .set(title)
+                                    .then(editing.set(id.some()))
+                                    .then(EDIT.focus()),
+                            ),
+                    )
+                    .child(
+                        button()
+                            .css(styles::destroy())
+                            .css_when(styles::hidden(), is_editing)
+                            .attr(attr::ARIA_LABEL, "Delete")
+                            .on_click(todo.remove()),
+                    )
+                    .child(when(
+                        editing.equals(id.some()),
+                        input()
+                            .css(styles::edit())
+                            .attr(attr::ARIA_LABEL, "Edit")
+                            .node_ref(EDIT)
+                            .bind(edit_text)
+                            .on_key(Key::Enter, commit.clone())
+                            .on_key(Key::Escape, editing.set(&None))
+                            .on_blur(commit),
+                    ))
+            },
+        ))
 }
 
 fn filter_link(filter: Filter, text: &str) -> El<TodoMvc> {
@@ -195,12 +198,12 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                 )
                 .child(
                     section()
-                        .id("main")
+                        .id(Id::new("main"))
                         .css(styles::main())
                         .show(!list.is_empty())
                         .child(
                             input()
-                                .id("toggle-all")
+                                .id(TOGGLE_ALL)
                                 .css(styles::toggle_all())
                                 .attr(attr::TYPE, "checkbox")
                                 .bind_checked(left.equals(0))
@@ -209,7 +212,7 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                         .child(
                             label()
                                 .css(styles::toggle_all_label())
-                                .attr(attr::FOR, "toggle-all")
+                                .label_for(&TOGGLE_ALL)
                                 .text("Mark all as complete"),
                         )
                         .child(todo_list()),
@@ -220,7 +223,7 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                         .show(!list.is_empty())
                         .child(
                             span()
-                                .id("todo-count")
+                                .id(Id::new("todo-count"))
                                 .child(strong().bind_text(left.to_text()))
                                 .child(span().bind_text(if_else(
                                     left.equals(1),
@@ -229,7 +232,7 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                                 ))),
                         )
                         .child(
-                            ul().id("filters")
+                            ul().id(Id::new("filters"))
                                 .css(styles::filters())
                                 .child(filter_link(Filter::All, "All"))
                                 .child(filter_link(Filter::Active, "Active"))
@@ -237,7 +240,7 @@ fn page(todos: Vec<Todo>) -> Page<TodoMvc> {
                         )
                         .child(
                             button()
-                                .id("clear-completed")
+                                .id(Id::new("clear-completed"))
                                 .css(styles::plain_button())
                                 .show(completed.gt(0))
                                 .on_click(list.retain(|todo| !todo.at(Todo::done())))

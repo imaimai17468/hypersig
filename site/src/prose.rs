@@ -11,7 +11,7 @@
 use std::iter;
 
 use hypersig::html::{
-    El, Node, Role, a, code, div, h1, h2, h3, li, p, strong, table, td, th, tr, ul,
+    El, Id, Node, Role, a, code, div, h1, h2, h3, li, p, strong, table, td, th, tr, ul,
 };
 use hypersig::style::value::{
     BorderBottomStyle, BorderCollapse, BorderStyle, FontWeight, LineHeight, OverflowWrap,
@@ -64,7 +64,7 @@ pub fn lead<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
 /// linked to, and so the same section has the same id in every language.
 pub fn heading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
     let text = text.into();
-    h2().id(anchor(text.english()))
+    h2().id(Id::from_text(anchor(text.english())))
         .css(
             Style::new()
                 .margin_top(rem(2.5))
@@ -83,7 +83,7 @@ pub fn heading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
 /// A heading inside a section, with an id made from its English text.
 pub fn subheading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
     let text = text.into();
-    h3().id(anchor(text.english()))
+    h3().id(Id::from_text(anchor(text.english())))
         .css(
             Style::new()
                 .margin_top(rem(2))

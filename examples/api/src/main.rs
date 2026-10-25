@@ -12,7 +12,7 @@
 use axum::Router;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use hypersig::html::{El, Role, attr, button, div, form, h1, input, li, p, ul};
+use hypersig::html::{El, Id, Role, attr, button, div, form, h1, input, li, p, ul};
 use hypersig::{Action, Fragment, Page, Patches, Route, RouterExt, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +28,7 @@ hypersig::routes! {
 }
 
 const ADD: Action<NotesPage, String> = Action::post("/notes");
+const NOTE_ROW: Id = Id::new("note");
 
 /// A note as the service's JSON has it.
 #[derive(Deserialize)]
@@ -126,12 +127,12 @@ struct NoteList {
 
 impl Fragment for NoteList {
     type Signals = NotesPage;
-    const ID: &'static str = "note-list";
+    const ID: Id = Id::new("note-list");
 
     fn render(&self) -> El<NotesPage> {
         ul().css(styles::list())
             .children(self.notes.iter().map(|note| {
-                li().id(format!("note-{}", note.id))
+                li().id(NOTE_ROW.with_key(note.id))
                     .css(styles::item())
                     .text(note.text.as_str())
             }))
@@ -215,7 +216,7 @@ async fn index(state: AppState, (): ()) -> Result<Page<NotesPage>, ApiError> {
                     .child(button().css(styles::button()).text("Add")),
             )
             .child(
-                p().id("problem")
+                p().id(Id::new("problem"))
                     .role(Role::Alert)
                     .css(styles::problem())
                     .show(!problem.is_empty())
