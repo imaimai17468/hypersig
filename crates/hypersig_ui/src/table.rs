@@ -600,9 +600,7 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
                 row.index()
             };
             let start = page * size;
-            matches(row)
-                .and(rank.clone().ge(start.clone()))
-                .and(rank.lt(start + size))
+            matches(row).and(rank.ge(&start)).and(rank.lt(start + size))
         };
         let body = each(Box::new(move |row| body.row(row, Some(row_shown(row)))));
 
@@ -616,15 +614,15 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
             grouped,
             head,
             body,
-            empty_row(shown.clone().equals(0), width, text.empty.clone()),
+            empty_row(shown.equals(0), width, text.empty.clone()),
         ));
         if let Some(size) = page_size {
             // The list can shrink from outside the table, through a patch or
             // a statement of the page, and leave the page past its last row.
-            let past_end = page.gt(0).and((page * size).ge(shown.clone()));
+            let past_end = page.gt(0).and((page * size).ge(&shown));
             out = out
                 .effect(Stmt::when(page.lt(0).or(past_end), page.set(0)))
-                .child(pager(page, shown, size, None, &text));
+                .child(pager(page, &shown, size, None, &text));
         }
         out
     }
@@ -947,7 +945,7 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
             empty_row(rows.is_empty(), width, text.empty.clone()),
         ));
         if let Some((size, total)) = pages {
-            out = out.child(pager(page, total.into_expr(), size, Some(&load), &text));
+            out = out.child(pager(page, &total.into_expr(), size, Some(&load), &text));
         }
         out
     }
@@ -1097,7 +1095,7 @@ fn sort_header<S>(
     let column = state.at(TableState::sort());
     let descending = state.at(TableState::descending());
     let on = column.equals(sort.id.clone());
-    let up = on.clone().and(!descending);
+    let up = on.and(!descending);
     let down = on.and(descending);
     let toggle = Stmt::if_else(
         up.clone(),
@@ -1291,14 +1289,14 @@ fn lead_heads<S, T>(
 /// selected already.
 fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>, label: &str) -> El<S> {
     let count = rows.count(|row| (selection.keys.has)(row));
-    let all = count.clone().equals(rows.len()).and(rows.len().gt(0));
+    let all = count.equals(rows.len()).and(rows.len().gt(0));
     let some = count.gt(0);
     let mark = span()
         .attr(attr::ARIA_HIDDEN, "true")
         .css(check_box())
         .css_when(check_box_checked(), some.clone())
         .child(icon(icon::CHECK, rem(0.875)).show(all.clone()))
-        .child(icon(icon::MINUS, rem(0.875)).show(some.clone().and(!all.clone())));
+        .child(icon(icon::MINUS, rem(0.875)).show(some.and(!&all)));
     button()
         .attr(attr::TYPE, "button")
         .role(Role::Checkbox)
@@ -1329,15 +1327,15 @@ fn select_all<S, T>(rows: Sig<S, Vec<T>>, selection: &Selection<S, T>, label: &s
 /// between pages and then run `then`.
 fn pager<S>(
     page: Sig<S, i32>,
-    shown: Expr<S, i32>,
+    shown: &Expr<S, i32>,
     size: i32,
     then: Option<&Stmt<S>>,
     text: &TableText,
 ) -> El<S> {
     let start = page * size;
-    let end = (start.clone() + size).min(shown.clone());
-    let first = if_else(shown.clone().equals(0), Expr::lit(&0), start.clone() + 1);
-    let has_next = (start.clone() + size).lt(shown.clone());
+    let end = (&start + size).min(shown);
+    let first = if_else(shown.equals(0), Expr::lit(&0), &start + 1);
+    let has_next = (&start + size).lt(shown);
     let go = |to: Expr<S, i32>| match then {
         Some(then) => page.set(to).then(then.clone()),
         None => page.set(to),
@@ -1376,7 +1374,7 @@ fn pager<S>(
         )
         .child(
             icon_button(ButtonVariant::Outline, text.next_page.clone())
-                .disabled(!has_next.clone())
+                .disabled(!&has_next)
                 .on_click(Stmt::when(has_next, go(page + 1)))
                 .child(icon(icon::CHEVRON_RIGHT, rem(1))),
         )

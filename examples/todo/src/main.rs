@@ -240,8 +240,8 @@ async fn index(state: AppState, (): ()) -> Page<TodoPage> {
             .child(
                 p().id(Id::new("summary-left"))
                     .css(styles::summary())
-                    .show(remaining.clone().gt(0))
-                    .bind_text(remaining.clone().to_text().concat(" left")),
+                    .show(remaining.gt(0))
+                    .bind_text(remaining.to_text().concat(" left")),
             )
             .child(
                 p().id(Id::new("summary-done"))

@@ -105,7 +105,7 @@ fn todo_list() -> El<TodoMvc> {
                     .or(filter.equals(&Filter::Active).and(!done))
                     .or(filter.equals(&Filter::Completed).and(done));
                 let commit = Stmt::when(
-                    is_editing.clone(),
+                    &is_editing,
                     Stmt::if_else(
                         edit_text.trim().is_empty(),
                         todo.remove(),
@@ -118,7 +118,7 @@ fn todo_list() -> El<TodoMvc> {
                     .child(
                         input()
                             .css(styles::toggle())
-                            .css_when(styles::hidden(), is_editing.clone())
+                            .css_when(styles::hidden(), &is_editing)
                             .attr(attr::TYPE, "checkbox")
                             .attr(attr::ARIA_LABEL, "Toggle")
                             .bind(done),
@@ -127,7 +127,7 @@ fn todo_list() -> El<TodoMvc> {
                         label()
                             .css(styles::title())
                             .css_when(styles::completed_title(), done)
-                            .css_when(styles::hidden(), is_editing.clone())
+                            .css_when(styles::hidden(), &is_editing)
                             .bind_text(title)
                             .on_double_click(
                                 edit_text

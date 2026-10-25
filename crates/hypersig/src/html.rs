@@ -1832,7 +1832,7 @@ impl<S> El<S> {
     ) -> Self {
         let value = value.into_expr();
         for (case, style) in cases {
-            self = self.css_when(style, value.clone().equals(&case));
+            self = self.css_when(style, value.equals(&case));
         }
         self
     }

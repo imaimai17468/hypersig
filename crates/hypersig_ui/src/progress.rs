@@ -37,7 +37,7 @@ pub fn progress<S>(label: impl Into<String>, percent: impl IntoExpr<S, i32>) -> 
         .attr(attr::ARIA_LABEL, label)
         .attr(attr::ARIA_VALUEMIN, "0")
         .attr(attr::ARIA_VALUEMAX, "100")
-        .bind_attr(attr::ARIA_VALUENOW, percent.clone().to_text())
+        .bind_attr(attr::ARIA_VALUENOW, percent.to_text())
         .css(
             Style::new()
                 .position(hypersig::style::value::Position::Relative)

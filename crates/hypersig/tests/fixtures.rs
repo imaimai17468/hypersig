@@ -344,7 +344,7 @@ fn outbox() -> (El<Outbox>, Outbox) {
     let send = next.let_in_stmt(|id| {
         let mark = |state: Expr<Outbox, String>| {
             letters.update_where(
-                |line| line.at(Letter::id()).equals(id.clone()),
+                |line| line.at(Letter::id()).equals(&id),
                 Letter::state(),
                 |_| state,
             )
@@ -624,9 +624,9 @@ fn table() -> (El<Table>, Table) {
                 lines
                     .clear()
                     .then(lines.extend(3, |i| {
-                        blank.clone().with(Line::id(), next_id + i).with(
+                        blank.with(Line::id(), next_id + i).with(
                             Line::label(),
-                            words.clone().nth(Expr::random_below(2)).unwrap_or("?"),
+                            words.nth(Expr::random_below(2)).unwrap_or("?"),
                         )
                     }))
                     .then(next_id.set(next_id + 3)),
@@ -1445,7 +1445,7 @@ fn widgets() -> (El<Widgets>, Widgets) {
                 .on_custom(MOVED, |point| {
                     center
                         .at(Point::lat())
-                        .set(point.clone().at(Point::lat()))
+                        .set(point.at(Point::lat()))
                         .then(center.at(Point::lng()).set(point.at(Point::lng())))
                 }),
         )

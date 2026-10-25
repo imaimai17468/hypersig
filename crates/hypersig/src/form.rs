@@ -302,7 +302,7 @@ impl<S, T> Rules<S, T> {
             .filter(|check| check.key == key)
             .fold(None, |rest, check| {
                 let rest = rest.unwrap_or_else(|| Expr::text(""));
-                Some(if_else(check.ok.clone(), rest, check.message.clone()))
+                Some(if_else(&check.ok, rest, check.message.clone()))
             })
     }
 
@@ -310,7 +310,7 @@ impl<S, T> Rules<S, T> {
         self.checks
             .iter()
             .map(|check| check.ok.clone())
-            .reduce(Expr::and)
+            .reduce(|all, next| all.and(next))
             .unwrap_or_else(|| Expr::lit(&true))
     }
 }
@@ -533,7 +533,7 @@ impl<S, T: Validate> Sig<S, Form<T>> {
         match self.rules().message(&key) {
             None => server,
             Some(client) => if_else(self.is_touched(field), client, "")
-                .let_in(|shown| if_else(shown.clone().is_empty(), server, shown)),
+                .let_in(|shown| if_else(shown.is_empty(), server, shown)),
         }
     }
 

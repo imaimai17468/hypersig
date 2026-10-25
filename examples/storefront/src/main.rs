@@ -277,7 +277,7 @@ fn wish_form() -> El<Home> {
     let add = next_id.let_in_stmt(|id| {
         let mark = |state: Expr<Home, String>| {
             wishes.update_where(
-                |wish| wish.at(Wish::id()).equals(id.clone()),
+                |wish| wish.at(Wish::id()).equals(&id),
                 Wish::state(),
                 |_| state,
             )
@@ -288,11 +288,7 @@ fn wish_form() -> El<Home> {
             state: "saving".to_owned(),
         });
         wishes
-            .push(
-                blank
-                    .with(Wish::id(), id.clone())
-                    .with(Wish::name(), draft.trim()),
-            )
+            .push(blank.with(Wish::id(), &id).with(Wish::name(), draft.trim()))
             .then(
                 WISH.call_with(draft.trim())
                     .on_error(mark)

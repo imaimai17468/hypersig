@@ -77,6 +77,28 @@ use crate::exact;
 use crate::signal::Sig;
 
 /// An expression over the signals of `S` that evaluates to a `T` in the browser.
+///
+/// Its methods, such as [`gt`](Expr::gt) and [`to_text`](Expr::to_text),
+/// borrow it, and the arithmetic operators and `!` also take `&Expr`, so one
+/// expression serves several uses without a `clone`:
+///
+/// ```
+/// use hypersig::html::p;
+/// use hypersig::{Expr, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Todos {
+///     total: i32,
+///     done: i32,
+/// }
+///
+/// let remaining: Expr<Todos, i32> = Todos::total() - Todos::done();
+/// let summary = p::<Todos>()
+///     .show(remaining.gt(0))
+///     .bind_text(remaining.to_text().concat(" left"));
+/// # let _ = summary;
+/// ```
 pub struct Expr<S, T> {
     ast: Value,
     marker: PhantomData<fn() -> (S, T)>,
@@ -155,10 +177,16 @@ impl<S, T> Expr<S, T> {
         Expr::from_json(self.ast)
     }
 
+    /// A copy of this expression, which the methods `operations!` writes on
+    /// `&self` put inside the tree they build.
+    pub(crate) fn operand(&self) -> Self {
+        self.clone()
+    }
+
     /// The field `field` of the struct this expression evaluates to.
     #[must_use]
-    pub fn at<U>(self, field: Sig<T, U>) -> Expr<S, U> {
-        Expr::from_json(json!(["get", self.ast, field.raw_path().dotted()]))
+    pub fn at<U>(&self, field: Sig<T, U>) -> Expr<S, U> {
+        Expr::from_json(json!(["get", self.ast.clone(), field.raw_path().dotted()]))
     }
 
     /// The expression `body` builds from this value, which is evaluated once however often `body` uses it.
@@ -181,7 +209,7 @@ impl<S, T> Expr<S, T> {
     ///
     /// let best = Scores::scores().max_of(|score| score.value()).unwrap_or(0);
     /// let _label: Expr<Scores, String> =
-    ///     best.let_in(|best| if_else(best.clone().gt(90), "top", best.to_text()));
+    ///     best.let_in(|best| if_else(best.gt(90), "top", best.to_text()));
     /// ```
     #[must_use]
     pub fn let_in<U>(self, body: impl FnOnce(Expr<S, T>) -> Expr<S, U>) -> Expr<S, U> {
@@ -212,7 +240,7 @@ impl<S, T> Expr<S, T> {
     /// const SAVE: Action<Notes, i32> = Action::post("/save");
     /// let next = Notes::next();
     /// let _save = next.let_in_stmt(|sent| {
-    ///     SAVE.call_with(sent.clone())
+    ///     SAVE.call_with(&sent)
     ///         .on_error(|_| Notes::failed().push(sent))
     ///         .then(next.set(next + 1))
     /// });
@@ -275,7 +303,8 @@ impl<S, T> fmt::Debug for Expr<S, T> {
 
 /// Conversion into an [`Expr`] over `S` of type `T`.
 ///
-/// Implemented for [`Expr`] itself, for [`Sig`] and [`Item`](crate::Item), for literals of
+/// Implemented for [`Expr`] itself and a reference to one, which copies the
+/// expression, for [`Sig`] and [`Item`](crate::Item), for literals of
 /// `i32`, `i64`, `f64`, `bool`, `String`, and `&str`, and for a reference to any
 /// `Serialize` value, so an operand can be any of them.
 #[diagnostic::on_unimplemented(
@@ -290,6 +319,12 @@ pub trait IntoExpr<S, T> {
 impl<S, T> IntoExpr<S, T> for Expr<S, T> {
     fn into_expr(self) -> Expr<S, T> {
         self
+    }
+}
+
+impl<S, T> IntoExpr<S, T> for &Expr<S, T> {
+    fn into_expr(self) -> Expr<S, T> {
+        self.clone()
     }
 }
 
@@ -468,14 +503,14 @@ macro_rules! operations {
         impl<S, T: Number $(, $r)?> $ty<S, T $(, $r)?> {
             /// The smaller of this value and `rhs`.
             #[must_use]
-            pub fn min(self, rhs: impl IntoExpr<S, T>) -> Expr<S, T> {
-                Expr::binary("min", self.into_expr(), rhs.into_expr())
+            pub fn min(&self, rhs: impl IntoExpr<S, T>) -> Expr<S, T> {
+                Expr::binary("min", self.operand(), rhs.into_expr())
             }
 
             /// The larger of this value and `rhs`.
             #[must_use]
-            pub fn max(self, rhs: impl IntoExpr<S, T>) -> Expr<S, T> {
-                Expr::binary("max", self.into_expr(), rhs.into_expr())
+            pub fn max(&self, rhs: impl IntoExpr<S, T>) -> Expr<S, T> {
+                Expr::binary("max", self.operand(), rhs.into_expr())
             }
 
             /// This number as text in `format`, with its digits grouped and its affixes.
@@ -493,10 +528,10 @@ macro_rules! operations {
             /// let _label = Cart::total().format(&YEN);
             /// ```
             #[must_use]
-            pub fn format(self, format: &NumberFormat) -> Expr<S, String> {
+            pub fn format(&self, format: &NumberFormat) -> Expr<S, String> {
                 Expr::from_json(json!([
                     "format",
-                    self.into_expr().ast,
+                    self.operand().ast,
                     format.digits,
                     format.group,
                     format.point,
@@ -511,22 +546,22 @@ macro_rules! operations {
             /// is unchanged. Code generic over [`Number`] uses it to do
             /// division, which only `f64` has.
             #[must_use]
-            pub fn to_f64(self) -> Expr<S, f64> {
-                self.into_expr().retype()
+            pub fn to_f64(&self) -> Expr<S, f64> {
+                self.operand().retype()
             }
         }
 
         impl<S $(, $r)?> $ty<S, f64 $(, $r)?> {
             /// The largest whole number at or below this one.
             #[must_use]
-            pub fn floor(self) -> Expr<S, f64> {
-                Expr::unary("floor", self.into_expr())
+            pub fn floor(&self) -> Expr<S, f64> {
+                Expr::unary("floor", self.operand())
             }
 
             /// The smallest whole number at or above this one.
             #[must_use]
-            pub fn ceil(self) -> Expr<S, f64> {
-                Expr::unary("ceil", self.into_expr())
+            pub fn ceil(&self) -> Expr<S, f64> {
+                Expr::unary("ceil", self.operand())
             }
 
             /// The nearest whole number, with a halfway value rounded up.
@@ -534,8 +569,8 @@ macro_rules! operations {
             /// It is JavaScript's `Math.round`, so `-2.5` rounds to `-2`,
             /// where Rust's `f64::round` gives `-3`.
             #[must_use]
-            pub fn round(self) -> Expr<S, f64> {
-                Expr::unary("round", self.into_expr())
+            pub fn round(&self) -> Expr<S, f64> {
+                Expr::unary("round", self.operand())
             }
 
             /// The base 10 logarithm of this number.
@@ -543,8 +578,8 @@ macro_rules! operations {
             /// The browser and the server each use their platform's math
             /// library, which can differ in the last bit of the result.
             #[must_use]
-            pub fn log10(self) -> Expr<S, f64> {
-                Expr::unary("log10", self.into_expr())
+            pub fn log10(&self) -> Expr<S, f64> {
+                Expr::unary("log10", self.operand())
             }
 
             /// This number raised to the power `exponent`.
@@ -552,8 +587,8 @@ macro_rules! operations {
             /// The browser and the server each use their platform's math
             /// library, which can differ in the last bit of the result.
             #[must_use]
-            pub fn pow(self, exponent: impl IntoExpr<S, f64>) -> Expr<S, f64> {
-                Expr::binary("pow", self.into_expr(), exponent.into_expr())
+            pub fn pow(&self, exponent: impl IntoExpr<S, f64>) -> Expr<S, f64> {
+                Expr::binary("pow", self.operand(), exponent.into_expr())
             }
 
             /// This number as text with `digits` digits after the point.
@@ -562,58 +597,58 @@ macro_rules! operations {
             /// halfway value away from zero where Rust's `format!("{:.n}")`
             /// rounds it to even. The first HTML follows the runtime.
             #[must_use]
-            pub fn to_fixed(self, digits: u8) -> Expr<S, String> {
-                Expr::from_json(json!(["fixed", self.into_expr().ast, digits]))
+            pub fn to_fixed(&self, digits: u8) -> Expr<S, String> {
+                Expr::from_json(json!(["fixed", self.operand().ast, digits]))
             }
         }
 
         impl<S $(, $r)?> $ty<S, String $(, $r)?> {
             /// This string with `rhs` appended.
             #[must_use]
-            pub fn concat(self, rhs: impl IntoExpr<S, String>) -> Expr<S, String> {
-                Expr::binary("concat", self.into_expr(), rhs.into_expr())
+            pub fn concat(&self, rhs: impl IntoExpr<S, String>) -> Expr<S, String> {
+                Expr::binary("concat", self.operand(), rhs.into_expr())
             }
 
             /// Whether this string is empty.
             #[must_use]
-            pub fn is_empty(self) -> Expr<S, bool> {
+            pub fn is_empty(&self) -> Expr<S, bool> {
                 self.equals("")
             }
 
             /// The number of Unicode scalar values, as Rust's `chars().count()`.
             #[must_use]
-            pub fn char_count(self) -> Expr<S, i32> {
-                Expr::unary("chars", self.into_expr())
+            pub fn char_count(&self) -> Expr<S, i32> {
+                Expr::unary("chars", self.operand())
             }
 
             /// This string without leading and trailing whitespace.
             #[must_use]
-            pub fn trim(self) -> Expr<S, String> {
-                Expr::unary("trim", self.into_expr())
+            pub fn trim(&self) -> Expr<S, String> {
+                Expr::unary("trim", self.operand())
             }
 
             /// This string in lowercase.
             #[must_use]
-            pub fn to_lowercase(self) -> Expr<S, String> {
-                Expr::unary("lower", self.into_expr())
+            pub fn to_lowercase(&self) -> Expr<S, String> {
+                Expr::unary("lower", self.operand())
             }
 
             /// This string in uppercase.
             #[must_use]
-            pub fn to_uppercase(self) -> Expr<S, String> {
-                Expr::unary("upper", self.into_expr())
+            pub fn to_uppercase(&self) -> Expr<S, String> {
+                Expr::unary("upper", self.operand())
             }
 
             /// Whether `needle` occurs in this string.
             #[must_use]
-            pub fn contains(self, needle: impl IntoExpr<S, String>) -> Expr<S, bool> {
-                Expr::binary("contains", self.into_expr(), needle.into_expr())
+            pub fn contains(&self, needle: impl IntoExpr<S, String>) -> Expr<S, bool> {
+                Expr::binary("contains", self.operand(), needle.into_expr())
             }
 
             /// Whether this string starts with `prefix`.
             #[must_use]
-            pub fn starts_with(self, prefix: impl IntoExpr<S, String>) -> Expr<S, bool> {
-                Expr::binary("starts", self.into_expr(), prefix.into_expr())
+            pub fn starts_with(&self, prefix: impl IntoExpr<S, String>) -> Expr<S, bool> {
+                Expr::binary("starts", self.operand(), prefix.into_expr())
             }
 
             /// Whether every character of this string is in `class`, true for an empty string.
@@ -631,33 +666,33 @@ macro_rules! operations {
             /// let _valid = zip.char_count().equals(7).and(zip.all_chars(CharClass::AsciiDigit));
             /// ```
             #[must_use]
-            pub fn all_chars(self, class: CharClass) -> Expr<S, bool> {
-                Expr::from_json(json!(["chars_all", self.into_expr().ast, class.name()]))
+            pub fn all_chars(&self, class: CharClass) -> Expr<S, bool> {
+                Expr::from_json(json!(["chars_all", self.operand().ast, class.name()]))
             }
 
             /// Whether some character of this string is in `class`, false for an empty string.
             #[must_use]
-            pub fn any_char(self, class: CharClass) -> Expr<S, bool> {
-                Expr::from_json(json!(["chars_any", self.into_expr().ast, class.name()]))
+            pub fn any_char(&self, class: CharClass) -> Expr<S, bool> {
+                Expr::from_json(json!(["chars_any", self.operand().ast, class.name()]))
             }
         }
 
         impl<S, T $(, $r)?> $ty<S, Vec<T> $(, $r)?> {
             /// The number of items.
             #[must_use]
-            pub fn len(self) -> Expr<S, i32> {
-                Expr::unary("len", self.into_expr())
+            pub fn len(&self) -> Expr<S, i32> {
+                Expr::unary("len", self.operand())
             }
 
             /// The item at `index`, or `None` past either end.
             #[must_use]
-            pub fn nth(self, index: impl IntoExpr<S, i32>) -> Expr<S, Option<T>> {
-                Expr::from_json(json!(["nth", self.into_expr().ast, index.into_expr().ast]))
+            pub fn nth(&self, index: impl IntoExpr<S, i32>) -> Expr<S, Option<T>> {
+                Expr::from_json(json!(["nth", self.operand().ast, index.into_expr().ast]))
             }
 
             /// Whether the list has no items.
             #[must_use]
-            pub fn is_empty(self) -> Expr<S, bool> {
+            pub fn is_empty(&self) -> Expr<S, bool> {
                 self.len().equals(0)
             }
         }
@@ -665,46 +700,46 @@ macro_rules! operations {
         impl<S, T $(, $r)?> $ty<S, Option<T> $(, $r)?> {
             /// Whether this option holds a value.
             #[must_use]
-            pub fn is_some(self) -> Expr<S, bool> {
-                Expr::binary("ne", self.into_expr(), Expr::from_json(json!(["lit", null])))
+            pub fn is_some(&self) -> Expr<S, bool> {
+                Expr::binary("ne", self.operand(), Expr::from_json(json!(["lit", null])))
             }
 
             /// Whether this option is `None`.
             #[must_use]
-            pub fn is_none(self) -> Expr<S, bool> {
-                Expr::binary("eq", self.into_expr(), Expr::from_json(json!(["lit", null])))
+            pub fn is_none(&self) -> Expr<S, bool> {
+                Expr::binary("eq", self.operand(), Expr::from_json(json!(["lit", null])))
             }
 
             /// The held value, or `default` for `None`.
             #[must_use]
-            pub fn unwrap_or(self, default: impl IntoExpr<S, T>) -> Expr<S, T> {
-                Expr::from_json(json!(["or_else", self.into_expr().ast, default.into_expr().ast]))
+            pub fn unwrap_or(&self, default: impl IntoExpr<S, T>) -> Expr<S, T> {
+                Expr::from_json(json!(["or_else", self.operand().ast, default.into_expr().ast]))
             }
         }
 
         impl<S, T: Comparable $(, $r)?> $ty<S, T $(, $r)?> {
             /// Whether this value is strictly greater than `rhs`.
             #[must_use]
-            pub fn gt(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
-                Expr::binary("gt", self.into_expr(), rhs.into_expr())
+            pub fn gt(&self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
+                Expr::binary("gt", self.operand(), rhs.into_expr())
             }
 
             /// Whether this value is greater than or equal to `rhs`.
             #[must_use]
-            pub fn ge(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
-                Expr::binary("ge", self.into_expr(), rhs.into_expr())
+            pub fn ge(&self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
+                Expr::binary("ge", self.operand(), rhs.into_expr())
             }
 
             /// Whether this value is strictly less than `rhs`.
             #[must_use]
-            pub fn lt(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
-                Expr::binary("lt", self.into_expr(), rhs.into_expr())
+            pub fn lt(&self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
+                Expr::binary("lt", self.operand(), rhs.into_expr())
             }
 
             /// Whether this value is less than or equal to `rhs`.
             #[must_use]
-            pub fn le(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
-                Expr::binary("le", self.into_expr(), rhs.into_expr())
+            pub fn le(&self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
+                Expr::binary("le", self.operand(), rhs.into_expr())
             }
         }
 
@@ -714,52 +749,52 @@ macro_rules! operations {
             /// The runtime compares the JSON forms structurally, which agrees
             /// with a derived `PartialEq` and may disagree with a hand-written one.
             #[must_use]
-            pub fn equals(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
-                Expr::binary("eq", self.into_expr(), rhs.into_expr())
+            pub fn equals(&self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
+                Expr::binary("eq", self.operand(), rhs.into_expr())
             }
 
             /// Whether this value differs from `rhs`, comparing JSON forms.
             #[must_use]
-            pub fn not_equals(self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
-                Expr::binary("ne", self.into_expr(), rhs.into_expr())
+            pub fn not_equals(&self, rhs: impl IntoExpr<S, T>) -> Expr<S, bool> {
+                Expr::binary("ne", self.operand(), rhs.into_expr())
             }
         }
 
         impl<S $(, $r)?> $ty<S, bool $(, $r)?> {
             /// Whether both this value and `rhs` are true.
             #[must_use]
-            pub fn and(self, rhs: impl IntoExpr<S, bool>) -> Expr<S, bool> {
-                Expr::binary("and", self.into_expr(), rhs.into_expr())
+            pub fn and(&self, rhs: impl IntoExpr<S, bool>) -> Expr<S, bool> {
+                Expr::binary("and", self.operand(), rhs.into_expr())
             }
 
             /// Whether this value or `rhs` is true.
             #[must_use]
-            pub fn or(self, rhs: impl IntoExpr<S, bool>) -> Expr<S, bool> {
-                Expr::binary("or", self.into_expr(), rhs.into_expr())
+            pub fn or(&self, rhs: impl IntoExpr<S, bool>) -> Expr<S, bool> {
+                Expr::binary("or", self.operand(), rhs.into_expr())
             }
         }
 
         impl<S, T: Textual $(, $r)?> $ty<S, T $(, $r)?> {
             /// This value as display text, as JavaScript's `String` writes it.
             #[must_use]
-            pub fn to_text(self) -> Expr<S, String> {
-                Expr::unary("str", self.into_expr())
+            pub fn to_text(&self) -> Expr<S, String> {
+                Expr::unary("str", self.operand())
             }
         }
 
         impl<S, T $(, $r)?> $ty<S, T $(, $r)?> {
             /// This value wrapped in `Some`.
             #[must_use]
-            pub fn some(self) -> Expr<S, Option<T>> {
-                self.into_expr().retype()
+            pub fn some(&self) -> Expr<S, Option<T>> {
+                self.operand().retype()
             }
 
             /// A copy of this struct with `field` replaced by `value`.
             #[must_use]
-            pub fn with<U>(self, field: Sig<T, U>, value: impl IntoExpr<S, U>) -> Expr<S, T> {
+            pub fn with<U>(&self, field: Sig<T, U>, value: impl IntoExpr<S, U>) -> Expr<S, T> {
                 Expr::from_json(json!([
                     "with",
-                    self.into_expr().ast,
+                    self.operand().ast,
                     field.raw_path().dotted(),
                     value.into_expr().ast
                 ]))
@@ -770,6 +805,38 @@ macro_rules! operations {
 
 operations!(Expr);
 operations!(Sig, R);
+
+/// Defines an arithmetic operator on `&Expr`, which reads the expression
+/// without taking it, as the methods `operations!` writes on `&self` do.
+macro_rules! borrowed_operator {
+    ($trait:ident, $method:ident, $op:literal) => {
+        impl<S, T: Number, Rhs: IntoExpr<S, T>> ops::$trait<Rhs> for &Expr<S, T> {
+            type Output = Expr<S, T>;
+            fn $method(self, rhs: Rhs) -> Expr<S, T> {
+                Expr::binary($op, self.operand(), rhs.into_expr())
+            }
+        }
+    };
+}
+
+borrowed_operator!(Add, add, "add");
+borrowed_operator!(Sub, sub, "sub");
+borrowed_operator!(Mul, mul, "mul");
+borrowed_operator!(Rem, rem, "rem");
+
+impl<S, Rhs: IntoExpr<S, f64>> ops::Div<Rhs> for &Expr<S, f64> {
+    type Output = Expr<S, f64>;
+    fn div(self, rhs: Rhs) -> Expr<S, f64> {
+        Expr::binary("div", self.operand(), rhs.into_expr())
+    }
+}
+
+impl<S> ops::Not for &Expr<S, bool> {
+    type Output = Expr<S, bool>;
+    fn not(self) -> Expr<S, bool> {
+        Expr::unary("not", self.operand())
+    }
+}
 
 /// How [`format`](Expr::format) writes a number: decimals, separators, and affixes.
 ///
