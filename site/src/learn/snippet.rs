@@ -78,6 +78,7 @@ snippets! {
     StaticPage => "static_page.rs";
     UiSetup => "ui_setup.rs";
     UiTheme => "ui_theme.rs";
+    ToastServer => "toast_server.rs";
     StyleBasics => "style_basics.rs";
     StyleValues => "style_values.rs";
     WrongValue => "wrong_value.rs", "compile_fail,E0277";
