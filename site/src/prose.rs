@@ -10,8 +10,8 @@
 
 use hypersig::html::{El, Node, a, code, div, h1, h2, h3, li, p, strong, table, td, th, tr, ul};
 use hypersig::style::value::{
-    BorderBottomStyle, BorderCollapse, BorderStyle, FontWeight, LineHeight, OverflowX,
-    TextDecorationLine, pct, px, rem,
+    BorderBottomStyle, BorderCollapse, BorderStyle, FontWeight, LineHeight, OverflowWrap,
+    OverflowX, TextAlign, TextDecorationLine, VerticalAlign, pct, px, raw, rem,
 };
 use hypersig::style::{PseudoClass, Style};
 use hypersig::{SafeUrl, Signals, html};
@@ -103,7 +103,7 @@ pub fn bullets<'a, I: Into<Text<'a, str>> + Copy>(site: Site, items: &[I]) -> Pa
         body_text()
             .margin_top(rem(1.25))
             .padding_left(rem(1.5))
-            .list_style_type(hypersig::style::value::raw("disc")),
+            .list_style_type(raw("disc")),
     )
     .children(items.iter().map(|&item| {
         li().css(Style::new().margin_top(rem(0.5)))
@@ -126,8 +126,8 @@ pub fn table_of<'a, R: AsRef<[&'a str]> + 'a>(
             .border_width(px(1))
             .border_style(BorderStyle::Solid)
             .border_color(token::border().var())
-            .text_align(hypersig::style::value::TextAlign::Left)
-            .vertical_align(hypersig::style::value::VerticalAlign::Top)
+            .text_align(TextAlign::Left)
+            .vertical_align(VerticalAlign::Top)
     };
     div()
         .css(
@@ -296,7 +296,7 @@ pub fn inline_code(text: &str) -> Part {
                 .border_radius(px(4))
                 .background_color(token::muted().var())
                 .font_size(pct(87.5))
-                .overflow_wrap(hypersig::style::value::OverflowWrap::BreakWord),
+                .overflow_wrap(OverflowWrap::BreakWord),
         )
         .text(text)
 }

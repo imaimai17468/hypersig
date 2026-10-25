@@ -9,7 +9,9 @@ use std::cell::Cell;
 use hypersig::Page;
 use hypersig::Signals;
 use hypersig::html::{div, el, p};
-use hypersig::style::value::{BorderBottomStyle, BorderStyle, FontWeight, px, rem};
+use hypersig::style::value::{
+    BorderBottomStyle, BorderStyle, Display, FontWeight, OverflowX, pct, px, raw, rem,
+};
 use hypersig::style::{Element, Global, Style};
 use hypersig_ui::token;
 
@@ -175,7 +177,7 @@ pub fn show(site: Site, demo: Demo) -> Part {
                     .border_style(BorderStyle::Solid)
                     .border_color(token::border().var())
                     .border_radius(token::radius().var())
-                    .overflow_x(hypersig::style::value::OverflowX::Hidden),
+                    .overflow_x(OverflowX::Hidden),
             )
             .child(
                 p().css(
@@ -207,9 +209,9 @@ pub fn show(site: Site, demo: Demo) -> Part {
                     .attr("loading", "lazy")
                     .css(
                         Style::new()
-                            .display(hypersig::style::value::Display::Block)
-                            .width(hypersig::style::value::pct(100))
-                            .height(hypersig::style::value::raw(demo.height()))
+                            .display(Display::Block)
+                            .width(pct(100))
+                            .height(raw(demo.height()))
                             .border_width(px(0)),
                     ),
             ),

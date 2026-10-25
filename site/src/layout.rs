@@ -4,8 +4,9 @@
 use hypersig::html::{a, div, el, footer, header, img, main, nav, p, span};
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::{
-    AlignItems, BorderBottomStyle, BorderStyle, BorderTopStyle, Display, FontWeight,
-    JustifyContent, LineHeight, OverflowY, Position, TextDecorationLine, ZIndex, px, raw, rem,
+    AlignItems, BorderBottomStyle, BorderStyle, BorderTopStyle, Color, Display, FlexWrap,
+    FontWeight, JustifyContent, LineHeight, OverflowY, Position, TextAlign, TextDecorationLine,
+    WhiteSpace, ZIndex, px, raw, rem,
 };
 use hypersig::style::{Element, Global, Media, PseudoClass, Style};
 use hypersig::{OpenGraph, OpenGraphType, Page, SafeUrl, if_else};
@@ -84,7 +85,7 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
             Global::new().rule(
                 Element::A,
                 Style::new()
-                    .color(hypersig::style::value::Color::CURRENT_COLOR)
+                    .color(Color::CURRENT_COLOR)
                     .text_decoration_line(TextDecorationLine::None),
             ),
         )
@@ -163,7 +164,7 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                         .css(
                             hstack(rem(1.25))
                                 .font_size(rem(0.875))
-                                .white_space(hypersig::style::value::WhiteSpace::Nowrap)
+                                .white_space(WhiteSpace::Nowrap)
                                 // On a phone, the menu lists the sections
                                 // instead.
                                 .display(Display::None)
@@ -239,7 +240,7 @@ fn other_language(site: Site, doc: Doc) -> Part {
             nav_link_style(false)
                 .margin_left(raw("auto"))
                 .font_size(rem(0.875))
-                .white_space(hypersig::style::value::WhiteSpace::Nowrap)
+                .white_space(WhiteSpace::Nowrap)
                 .on(Media::Md, Style::new().display(Display::None)),
         )
         .text(other.name())
@@ -252,7 +253,7 @@ fn brand(site: Site, library: Library) -> Part {
     let name = Style::new()
         .font_weight(FontWeight::Number(700.0))
         .letter_spacing(rem(-0.025))
-        .white_space(hypersig::style::value::WhiteSpace::Nowrap);
+        .white_space(WhiteSpace::Nowrap);
     div()
         .css(hstack(rem(0.5)))
         .child(
@@ -573,9 +574,9 @@ fn pager(site: Site, before: Option<Doc>, after: Option<Doc>) -> Part {
                         Style::new().background_color(token::accent().var()),
                     )
                     .text_align(if end {
-                        hypersig::style::value::TextAlign::Right
+                        TextAlign::Right
                     } else {
-                        hypersig::style::value::TextAlign::Left
+                        TextAlign::Left
                     })
                     .grid_column(raw(if end { "2" } else { "1" })),
             )
@@ -639,7 +640,7 @@ pub fn page_footer(site: Site) -> Part {
             Style::new()
                 .display(Display::Flex)
                 .justify_content(JustifyContent::SpaceBetween)
-                .flex_wrap(hypersig::style::value::FlexWrap::Wrap)
+                .flex_wrap(FlexWrap::Wrap)
                 .gap(rem(0.5))
                 .margin_top(rem(3))
                 .padding_top(rem(1.5))
