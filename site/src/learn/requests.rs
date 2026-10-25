@@ -112,16 +112,16 @@ fn uploads(site: Site) -> Part {
         para(
             site,
             L {
-                en: "An [`Upload<S, A>`](api:hypersig/struct.Upload.html) is an action that also receives the files picked in a [`FileInput<S>`](api:hypersig/struct.FileInput.html). Put `FileInput::input` on the page and pass the same constant to `call` or `call_with`. `RouterExt::upload` serves it, and its handler receives an `Uploaded<A>` with the arguments and each file's name, media type, and bytes. It answers as an action's handler does, so it can return a `Result` and take an extractor.",
-                ja: "[`Upload<S, A>`](api:hypersig/struct.Upload.html) は、[`FileInput<S>`](api:hypersig/struct.FileInput.html) で選んだファイルも受け取るアクションです。ページに `FileInput::input` を置き、同じ定数を `call` か `call_with` に渡します。`RouterExt::upload` で配信し、そのハンドラは引数と、ファイルごとの名前、メディアタイプ、中身を持つ `Uploaded<A>` を受け取ります。応答はアクションのハンドラと同じなので、`Result` を返したり extractor を受け取ったりできます。",
+                en: "An [`Upload<S, A>`](api:hypersig/struct.Upload.html) is an action that also receives the files picked in a [`FileInput<S>`](api:hypersig/struct.FileInput.html). Declare it on an `upload` line of `routes!` with its handler, put `FileInput::input` on the page, and pass the same constant to `call` or `call_with`. Its handler receives an `Uploaded<A>` with the arguments and each file's name, media type, and bytes. It answers as an action's handler does, so it can return a `Result` and take an extractor.",
+                ja: "[`Upload<S, A>`](api:hypersig/struct.Upload.html) は、[`FileInput<S>`](api:hypersig/struct.FileInput.html) で選んだファイルも受け取るアクションです。`routes!` の `upload` の行にハンドラと一緒に宣言し、ページに `FileInput::input` を置き、同じ定数を `call` か `call_with` に渡します。ハンドラは引数と、ファイルごとの名前、メディアタイプ、中身を持つ `Uploaded<A>` を受け取ります。応答はアクションのハンドラと同じなので、`Result` を返したり extractor を受け取ったりできます。",
             },
         ),
         show(Snippet::Uploads),
         para(
             site,
             L {
-                en: "A body longer than `Upload::DEFAULT_MAX_BYTES` (8 MiB), or the limit `max_bytes` sets, gets a 413, before it is read when its `Content-Length` says so.",
-                ja: "`Upload::DEFAULT_MAX_BYTES`（8 MiB）か、`max_bytes` で決めた上限を超える本文には 413 を返します。`Content-Length` が上限を超えていれば、本文を読む前に返します。",
+                en: "A body longer than `Upload::DEFAULT_MAX_BYTES` (8 MiB), or the limit that `max_bytes` after the path sets, gets a 413, before it is read when its `Content-Length` says so.",
+                ja: "`Upload::DEFAULT_MAX_BYTES`（8 MiB）か、パスのあとの `max_bytes` で決めた上限を超える本文には 413 を返します。`Content-Length` が上限を超えていれば、本文を読む前に返します。",
             },
         ),
         note(
@@ -141,8 +141,8 @@ fn uploads(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`RouterExt::upload` reads every file into memory before its handler runs, so keep its limit near the largest file you accept. For larger files, serve the same `Upload` with `RouterExt::upload_stream`. Its handler receives an [`UploadStream<A>`](api:hypersig/struct.UploadStream.html): the arguments, already read because the runtime sends them first, and `next_file`, which yields each file for the handler to read with `chunk` as its bytes arrive. Once the body passes the limit, `next_file` or `chunk` returns a `RequestError` with status 413, which the handler can return with `?`. Both routes refuse a body whose first part is not the arguments with a 400, and skip parts other than the arguments and the files. A handler's extractor runs before the body is read, so an upload from a visitor who is not signed in is refused before its files arrive.",
-                ja: "`RouterExt::upload` は、ハンドラが動く前にすべてのファイルをメモリに読み込みます。そのため、上限は受け付ける最大のファイルに近い値にしてください。それより大きなファイルには、同じ `Upload` を `RouterExt::upload_stream` で配信します。ハンドラは [`UploadStream<A>`](api:hypersig/struct.UploadStream.html) を受け取ります。引数はランタイムが先頭で送るので読み終えてあり、`next_file` がファイルを 1 つずつ返します。ハンドラはファイルの中身を、届いた分ずつ `chunk` で読みます。本文が上限を超えると、`next_file` か `chunk` がステータス 413 の `RequestError` を返すので、ハンドラは `?` でそのまま返せます。どちらの配信も、先頭の部分が引数でない本文には 400 を返し、引数とファイル以外の部分は読み飛ばします。ハンドラの extractor は本文を読む前に動くので、ログインしていない訪問者のアップロードは、ファイルが届く前に拒否されます。",
+                en: "An `upload` line reads every file into memory before its handler runs, so keep its limit near the largest file you accept. For larger files, write `stream` before the path: `upload VIDEO: Upload<Library> = stream \"/video\" max_bytes 512 * 1024 * 1024 => receive;`. Its handler receives an [`UploadStream<A>`](api:hypersig/struct.UploadStream.html): the arguments, already read because the runtime sends them first, and `next_file`, which yields each file for the handler to read with `chunk` as its bytes arrive. Once the body passes the limit, `next_file` or `chunk` returns a `RequestError` with status 413, which the handler can return with `?`. Both kinds of line refuse a body whose first part is not the arguments with a 400, and skip parts other than the arguments and the files. A handler's extractor runs before the body is read, so an upload from a visitor who is not signed in is refused before its files arrive.",
+                ja: "`upload` の行は、ハンドラが動く前にすべてのファイルをメモリに読み込みます。そのため、上限は受け付ける最大のファイルに近い値にしてください。それより大きなファイルには、パスの前に `stream` を書きます。`upload VIDEO: Upload<Library> = stream \"/video\" max_bytes 512 * 1024 * 1024 => receive;` のように書くと、ハンドラは [`UploadStream<A>`](api:hypersig/struct.UploadStream.html) を受け取ります。引数はランタイムが先頭で送るので読み終えてあり、`next_file` がファイルを 1 つずつ返します。ハンドラはファイルの中身を、届いた分ずつ `chunk` で読みます。本文が上限を超えると、`next_file` か `chunk` がステータス 413 の `RequestError` を返すので、ハンドラは `?` でそのまま返せます。どちらの行も、先頭の部分が引数でない本文には 400 を返し、引数とファイル以外の部分は読み飛ばします。ハンドラの extractor は本文を読む前に動くので、ログインしていない訪問者のアップロードは、ファイルが届く前に拒否されます。",
             },
         ),
     ])
