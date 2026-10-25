@@ -66,6 +66,23 @@ it("closes a stream it has held for two seconds and asks again", async () => {
   expect(reload).not.toHaveBeenCalled();
 });
 
+it("asks less often once no server has answered for three seconds", async () => {
+  vi.useFakeTimers();
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockRejectedValue(new TypeError("Failed to fetch"));
+  vi.stubGlobal("fetch", fetch);
+
+  reloadOnRestart("/_hypersig/dev?since=a1", new Navigation());
+  await vi.advanceTimersByTimeAsync(3000);
+  const fast = fetch.mock.calls.length;
+  await vi.advanceTimersByTimeAsync(3000);
+
+  // Every 50 ms for the first three seconds, then once a second.
+  expect(fast).toBeGreaterThanOrEqual(55);
+  expect(fetch.mock.calls.length - fast).toBeLessThanOrEqual(4);
+});
+
 it("stops asking a server that serves no stream", async () => {
   vi.useFakeTimers();
   const reload = vi.spyOn(location, "reload").mockImplementation(() => {});

@@ -16,11 +16,13 @@ use serde_json::Value;
 
 use crate::Error;
 
-/// How often the files are read for a change.
-const POLL: Duration = Duration::from_millis(300);
+/// How often the files are read for a change. Reading them costs one
+/// `stat` per file, so a short interval costs little next to a build.
+const POLL: Duration = Duration::from_millis(50);
 
-/// How long to wait after a change for the rest of an editor's writes.
-const SETTLE: Duration = Duration::from_millis(100);
+/// How long to wait after a change for the rest of an editor's writes. A
+/// write that comes later still starts another build, as any change does.
+const SETTLE: Duration = Duration::from_millis(50);
 
 /// Builds with `cargo build` and `build_args`, runs the binary with
 /// `program_args`, and repeats both after each change until interrupted.
@@ -35,12 +37,13 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
             "warning: only a debug build serves the stream a page reloads from, so pages will not reload"
         );
     }
+    let before = snapshot(&dir, None);
     let mut built = build(build_args)?;
     let mut server = match &built {
         Some(built) => Some(start(&built.binary, program_args)?),
         None => None,
     };
-    let mut seen = snapshot(&dir, built.as_ref());
+    let mut seen = as_built(&before, snapshot(&dir, built.as_ref()));
     loop {
         std::thread::sleep(POLL);
         if let Some(child) = &mut server
@@ -53,6 +56,7 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
             continue;
         }
         std::thread::sleep(SETTLE);
+        let before = snapshot(&dir, built.as_ref());
         // A build that fails leaves the server of the last build running
         // until the next change, after Cargo has printed the errors.
         if let Some(next) = build(build_args)? {
@@ -70,7 +74,7 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
             }
             built = Some(next);
         }
-        seen = snapshot(&dir, built.as_ref());
+        seen = as_built(&before, snapshot(&dir, built.as_ref()));
     }
 }
 
@@ -215,12 +219,15 @@ fn cargo_home() -> Option<PathBuf> {
         .or_else(|| std::env::home_dir().map(|home| home.join(".cargo")))
 }
 
+/// The modification time of each file, or `None` where it cannot be read.
+type Snapshot = BTreeMap<PathBuf, Option<SystemTime>>;
+
 /// The modification time of each file the next build may read: each file
 /// the last build was built from, and each Rust file and manifest under
 /// `dir`, which covers a file added since and a build that has not yet
 /// succeeded.
-fn snapshot(dir: &Path, built: Option<&Built>) -> BTreeMap<PathBuf, Option<SystemTime>> {
-    let mut files: BTreeMap<PathBuf, Option<SystemTime>> = built
+fn snapshot(dir: &Path, built: Option<&Built>) -> Snapshot {
+    let mut files: Snapshot = built
         .iter()
         .flat_map(|built| &built.sources)
         .map(|path| (path.clone(), modified(path)))
@@ -229,9 +236,22 @@ fn snapshot(dir: &Path, built: Option<&Built>) -> BTreeMap<PathBuf, Option<Syste
     files
 }
 
+/// The files of `after`, each at the time `before` read for it where
+/// `before` holds it, which is the state the build read. A file saved while
+/// the build ran then differs from this, and starts the next build.
+fn as_built(before: &Snapshot, after: Snapshot) -> Snapshot {
+    after
+        .into_iter()
+        .map(|(path, time)| {
+            let time = before.get(&path).copied().unwrap_or(time);
+            (path, time)
+        })
+        .collect()
+}
+
 /// Adds each Rust file and manifest under `dir` to `files`, skipping build
 /// output, hidden directories, and `node_modules`.
-fn walk(dir: &Path, files: &mut BTreeMap<PathBuf, Option<SystemTime>>) {
+fn walk(dir: &Path, files: &mut Snapshot) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -289,6 +309,24 @@ mod tests {
         assert_eq!(binary_of(lib), None);
         assert_eq!(binary_of(done), None);
         assert_eq!(binary_of("not json"), None);
+    }
+
+    #[test]
+    fn keeps_the_time_a_build_read_for_a_file_saved_during_it() {
+        let read = Some(SystemTime::UNIX_EPOCH);
+        let saved = Some(SystemTime::UNIX_EPOCH + Duration::from_secs(1));
+        let before = Snapshot::from([(PathBuf::from("src/main.rs"), read)]);
+        let after = Snapshot::from([
+            (PathBuf::from("src/main.rs"), saved),
+            (PathBuf::from("assets/a.js"), read),
+        ]);
+        assert_eq!(
+            as_built(&before, after),
+            Snapshot::from([
+                (PathBuf::from("assets/a.js"), read),
+                (PathBuf::from("src/main.rs"), read),
+            ])
+        );
     }
 
     #[test]
