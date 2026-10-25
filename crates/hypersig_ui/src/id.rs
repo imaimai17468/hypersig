@@ -18,9 +18,19 @@ pub(crate) fn of<S, T>(signal: Sig<S, T>, part: impl Display) -> Id {
     base(signal).with_key(part)
 }
 
+/// The CSS anchor name `--<id>` for the element `id` names, with each `::`
+/// as `--`.
+///
+/// A dashed ident holds no unescaped `:`. The id comes from a node ref's
+/// name, a Rust path whose identifiers hold no `-`, so two names stay apart
+/// after the replacement.
+pub(crate) fn anchor(id: &Id) -> String {
+    format!("--{}", id.as_str().replace("::", "--"))
+}
+
 /// Panics unless `name` is non-empty ASCII letters, digits, `-`, and `_`,
-/// which an id, an anchor name, and a node ref can hold unescaped. In a
-/// `const`, the panic is a compile error.
+/// the characters an accordion's group name keeps to. In a `const`, the
+/// panic is a compile error.
 pub(crate) const fn check_name(name: &str) {
     let bytes = name.as_bytes();
     assert!(!bytes.is_empty(), "a component name is never empty");
@@ -33,20 +43,4 @@ pub(crate) const fn check_name(name: &str) {
         );
         i += 1;
     }
-}
-
-/// Whether `a` and `b` hold the same bytes, for a `const` check.
-pub(crate) const fn same(a: &str, b: &str) -> bool {
-    let (a, b) = (a.as_bytes(), b.as_bytes());
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut i = 0;
-    while i < a.len() {
-        if a[i] != b[i] {
-            return false;
-        }
-        i += 1;
-    }
-    true
 }

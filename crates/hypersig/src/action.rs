@@ -7,7 +7,7 @@ use std::sync::Arc;
 use serde_json::{Map, Value, json};
 
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
-use crate::html::El;
+use crate::html::{El, Id};
 use crate::route::Base;
 use crate::signal::{Sig, current_part};
 
@@ -760,8 +760,28 @@ impl<S> NodeRef<S> {
         }
     }
 
-    pub(crate) fn name(self) -> &'static str {
+    pub(crate) const fn name(self) -> &'static str {
         self.name
+    }
+
+    /// An element id spelled as this reference's name.
+    ///
+    /// Two constants never share a name, so their ids differ too. A
+    /// component that names its element by a `NodeRef` uses it for the
+    /// `id` that `aria-*` attributes point at.
+    ///
+    /// ```
+    /// use hypersig::NodeRef;
+    ///
+    /// hypersig::node_ref!(const FIELD: NodeRef<()>);
+    ///
+    /// # fn main() {
+    /// assert_eq!(FIELD.id().as_str(), format!("{}::FIELD", module_path!()));
+    /// # }
+    /// ```
+    #[must_use]
+    pub const fn id(self) -> Id {
+        Id::new(self.name)
     }
 
     fn dom(self, op: &str) -> Stmt<S> {
@@ -876,6 +896,12 @@ impl<S> DialogRef<S> {
             name,
             marker: PhantomData,
         }
+    }
+
+    /// An element id spelled as this reference's name, as [`NodeRef::id`] is.
+    #[must_use]
+    pub const fn id(self) -> Id {
+        Id::new(self.name)
     }
 
     /// An empty `<dialog>` that this reference names.

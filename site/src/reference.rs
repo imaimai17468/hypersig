@@ -1997,6 +1997,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "id",
+                            "struct.NodeRef.html#method.id",
+                            L {
+                                en: "An element id spelled as this reference's name.",
+                                ja: "この参照の名前と同じ綴りの要素の id",
+                            },
+                        ),
+                        (
                             "focus",
                             "struct.NodeRef.html#method.focus",
                             L {
@@ -2062,6 +2070,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "Declares a `DialogRef` constant named after its own path.",
                                 ja: "定数自身のパスを名前とする `DialogRef` の定数を宣言します。",
+                            },
+                        ),
+                        (
+                            "id",
+                            "struct.DialogRef.html#method.id",
+                            L {
+                                en: "An element id spelled as this reference's name, as `NodeRef::id` is.",
+                                ja: "`NodeRef::id` と同じく、この参照の名前と同じ綴りの要素の id",
                             },
                         ),
                         (

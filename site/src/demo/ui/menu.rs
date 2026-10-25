@@ -16,7 +16,8 @@ pub struct Project {
     status: String,
 }
 
-const ACTIONS: Menu<Project> = Menu::new("actions");
+hypersig::node_ref!(const PROJECT_ACTIONS: NodeRef<Project>);
+const ACTIONS: Menu<Project> = Menu::new(PROJECT_ACTIONS);
 
 pub fn page(site: Site) -> Page<Project> {
     let archived = Project::archived();

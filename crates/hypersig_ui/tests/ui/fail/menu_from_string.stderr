@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/menu_from_string.rs:10:38
+   |
+10 | const ACTIONS: Menu<Doc> = Menu::new("doc-actions");
+   |                            --------- ^^^^^^^^^^^^^ expected `NodeRef<Doc>`, found `&str`
+   |                            |
+   |                            arguments to this function are incorrect
+   |
+   = note: expected struct `NodeRef<Doc>`
+           found reference `&'static str`
+note: associated function defined here
+  --> src/menu.rs
+   |
+   |     pub const fn new(menu: NodeRef<S>) -> Self {
+   |                  ^^^

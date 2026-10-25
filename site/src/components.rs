@@ -191,8 +191,8 @@ hypersig_ui = "0.5""#,
                     ja: "スクリーンリーダーやキーボードでの操作に必要な振る舞いは、ブラウザに備わっていればブラウザのものを使います。ネイティブの `<button>`、`<input>`、`<select>`、`<details>`、`<dialog>`、`popover` です。ブラウザに備わっていない振る舞いは、コンポーネントが WAI-ARIA Authoring Practices に従って作り、キーボード操作は `El::roving_focus` と `El::active_descendant` で扱います。",
                 },
                 L {
-                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox keep their names in a `const` handle that their parts share. A handle declared as a `const`, as the component pages do, turns a name that cannot be used in an id into a compile error, and a handle made outside a `const` panics on it when the line runs.",
-                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ツールチップ、コンボボックスは名前を `const` のハンドルに持ち、部品どうしでそのハンドルを共有します。各コンポーネントのページのようにハンドルを `const` で宣言すると、id に使えない名前はコンパイルエラーになります。`const` の外で作ったハンドルは、その行を実行したときにパニックします。",
+                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox are `const` handles built from a `NodeRef` that `node_ref!` declares, or a `DialogRef` from `dialog_ref!`, and their parts share the handle. The macro names the reference after its module and constant, so two handles never share an id.",
+                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ツールチップ、コンボボックスは、`node_ref!` で宣言した `NodeRef` か `dialog_ref!` で宣言した `DialogRef` から作る `const` のハンドルで、部品どうしでそのハンドルを共有します。マクロはモジュールと定数の名前から参照の名前を作るので、2 つのハンドルが同じ id になることはありません。",
                 },
                 L {
                     en: "The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 AA: a control's border has 3:1 contrast or more, secondary text keeps 4.5:1 on the muted background, and focus is a solid outline, which forced-colors mode still draws.",
@@ -863,8 +863,8 @@ fn component_page(page: Component) -> Page {
                     ja: "WAI-ARIA combobox パターンのうち、list autocomplete の形に従います。テキストフィールドは `role=\"combobox\"`、`aria-expanded`、`aria-controls`、`aria-activedescendant` を持ちます。`El::active_descendant` を使うので、矢印キーで表示中の選択肢をたどる間も、フォーカスはテキストフィールドに残ります。文字を入力すると、大文字と小文字を区別せずに、その文字列を含む選択肢が表示されます。",
                 },
                 L {
-                    en: "Declare the combobox as a `const` naming its text field and its list, and keep its state in a `ComboboxState` field of the page's signals. The chosen text is `ComboboxState::text`. The visitor can leave text that matches no option, which the page checks where it needs one of the options.",
-                    ja: "コンボボックスはテキストフィールドと一覧の名前を持つ `const` として宣言し、状態はページのシグナルにある `ComboboxState` のフィールドに持たせます。選ばれたテキストは `ComboboxState::text` です。訪問者はどの選択肢にも合わないテキストを残せるので、選択肢のどれかが必要なところでは、ページの側で確かめます。",
+                    en: "Declare the combobox as a `const` from two node refs, one for its text field and one for its list, and keep its state in a `ComboboxState` field of the page's signals. The chosen text is `ComboboxState::text`. The visitor can leave text that matches no option, which the page checks where it needs one of the options.",
+                    ja: "コンボボックスはテキストフィールド用と一覧用の 2 つのノード参照から `const` として宣言し、状態はページのシグナルにある `ComboboxState` のフィールドに持たせます。選ばれたテキストは `ComboboxState::text` です。訪問者はどの選択肢にも合わないテキストを残せるので、選択肢のどれかが必要なところでは、ページの側で確かめます。",
                 },
             ],
             keys: &[
@@ -924,8 +924,8 @@ fn component_page(page: Component) -> Page {
                     "Combobox::new",
                     "hypersig_ui/struct.Combobox.html#method.new",
                     L {
-                        en: "A combobox whose text field has the id `field` and whose list has the id `list`.",
-                        ja: "テキストフィールドの id が `field`、一覧の id が `list` のコンボボックス",
+                        en: "A combobox whose text field `field` names and whose list `list` names.",
+                        ja: "テキストフィールドに `field`、一覧に `list` の名前を付けたコンボボックス",
                     },
                 ),
                 (
@@ -1602,8 +1602,8 @@ fn component_page(page: Component) -> Page {
                     "Dialog::new",
                     "hypersig_ui/struct.Dialog.html#method.new",
                     L {
-                        en: "A dialog whose id is `name`.",
-                        ja: "id が `name` のダイアログ",
+                        en: "A dialog that `dialog` names, whose id is the name of `dialog`.",
+                        ja: "`dialog` が名前を付け、`dialog` の名前を id とするダイアログ",
                     },
                 ),
                 (
@@ -1753,8 +1753,8 @@ fn component_page(page: Component) -> Page {
                     "Menu::new",
                     "hypersig_ui/struct.Menu.html#method.new",
                     L {
-                        en: "A menu whose id is `name`.",
-                        ja: "id が `name` のメニュー",
+                        en: "A menu that `menu` names, whose id is the name of `menu`.",
+                        ja: "`menu` が名前を付け、`menu` の名前を id とするメニュー",
                     },
                 ),
                 (
@@ -1842,8 +1842,8 @@ fn component_page(page: Component) -> Page {
                     "Tooltip::new",
                     "hypersig_ui/struct.Tooltip.html#method.new",
                     L {
-                        en: "A tooltip whose id is `name`.",
-                        ja: "id が `name` のツールチップ",
+                        en: "A tooltip that `tip` names, whose id is the name of `tip`.",
+                        ja: "`tip` が名前を付け、`tip` の名前を id とするツールチップ",
                     },
                 ),
                 (

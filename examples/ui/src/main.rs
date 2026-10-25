@@ -232,12 +232,19 @@ const SAVE: Action<Gallery, (String, String)> = Action::post("/save");
 const NEXT_HALF: Action<Gallery> = Action::post("/next-half");
 const ORDERS: Action<Gallery, TableState> = Action::post("/orders");
 const DOLLARS: NumberFormat = NumberFormat::new().digits(2).prefix("$");
-const EDIT: Dialog<Gallery> = Dialog::new("edit-profile");
-const DELETE: Dialog<Gallery> = Dialog::new("delete-project");
-const FILTERS: Dialog<Gallery> = Dialog::new("filters");
-const ACTIONS: Menu<Gallery> = Menu::new("project-actions");
-const ADD_TIP: Tooltip<Gallery> = Tooltip::new("add-item-tip");
-const COUNTRY: Combobox<Gallery> = Combobox::new("country", "country-options");
+hypersig::dialog_ref!(const EDIT_PROFILE: DialogRef<Gallery>);
+hypersig::dialog_ref!(const DELETE_PROJECT: DialogRef<Gallery>);
+hypersig::dialog_ref!(const FILTER_SHEET: DialogRef<Gallery>);
+hypersig::node_ref!(const PROJECT_ACTIONS: NodeRef<Gallery>);
+hypersig::node_ref!(const ADD_ITEM_TIP: NodeRef<Gallery>);
+hypersig::node_ref!(const COUNTRY_FIELD: NodeRef<Gallery>);
+hypersig::node_ref!(const COUNTRY_OPTIONS: NodeRef<Gallery>);
+const EDIT: Dialog<Gallery> = Dialog::new(EDIT_PROFILE);
+const DELETE: Dialog<Gallery> = Dialog::new(DELETE_PROJECT);
+const FILTERS: Dialog<Gallery> = Dialog::new(FILTER_SHEET);
+const ACTIONS: Menu<Gallery> = Menu::new(PROJECT_ACTIONS);
+const ADD_TIP: Tooltip<Gallery> = Tooltip::new(ADD_ITEM_TIP);
+const COUNTRY: Combobox<Gallery> = Combobox::new(COUNTRY_FIELD, COUNTRY_OPTIONS);
 
 /// Checks on the server what the browser cannot: whether the address is
 /// taken. The browser has already checked that it is an email address.

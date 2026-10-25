@@ -227,18 +227,34 @@ pub mod _private {
         crate::html::Tag::new(name)
     }
 
-    /// Called by `node_ref!` with the path of its constant, and by
-    /// `hypersig_ui` with the name of a component, which holds no `:`.
+    /// Called by `node_ref!` with the path of its constant.
     #[must_use]
     pub const fn node_ref<S>(name: &'static str) -> crate::NodeRef<S> {
         crate::NodeRef::new(name)
     }
 
-    /// Called by `dialog_ref!` with the path of its constant, and by
-    /// `hypersig_ui` with the name of a component, which holds no `:`.
+    /// Called by `dialog_ref!` with the path of its constant.
     #[must_use]
     pub const fn dialog_ref<S>(name: &'static str) -> crate::DialogRef<S> {
         crate::DialogRef::new(name)
+    }
+
+    /// Whether `a` and `b` carry one name, for a check in a `const`, such as
+    /// `hypersig_ui`'s refusal of one constant as both parts of a combobox.
+    #[must_use]
+    pub const fn same_node_ref<S>(a: crate::NodeRef<S>, b: crate::NodeRef<S>) -> bool {
+        let (a, b) = (a.name().as_bytes(), b.name().as_bytes());
+        if a.len() != b.len() {
+            return false;
+        }
+        let mut i = 0;
+        while i < a.len() {
+            if a[i] != b[i] {
+                return false;
+            }
+            i += 1;
+        }
+        true
     }
 }
 
