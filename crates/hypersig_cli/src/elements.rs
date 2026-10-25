@@ -504,9 +504,9 @@ fn elements(manifest: &Value) -> Result<Vec<Element>, Error> {
         .ok_or_else(|| Error::new("the manifest has no `modules` list"))?;
     let mut classes: HashMap<(String, String), &Value> = HashMap::new();
     for module in modules {
-        let path = module_path(module.get("path").and_then(Value::as_str).unwrap_or(""));
+        let path = module_path(string(module, "path").unwrap_or(""));
         for declaration in array(module, "declarations") {
-            if let Some(name) = declaration.get("name").and_then(Value::as_str) {
+            if let Some(name) = string(declaration, "name") {
                 classes.insert((path.clone(), name.to_owned()), declaration);
             }
         }
@@ -514,32 +514,27 @@ fn elements(manifest: &Value) -> Result<Vec<Element>, Error> {
 
     let mut found: Vec<(String, String, String)> = Vec::new();
     for module in modules {
-        let path = module_path(module.get("path").and_then(Value::as_str).unwrap_or(""));
+        let path = module_path(string(module, "path").unwrap_or(""));
         for declaration in array(module, "declarations") {
-            if let (Some(tag), Some(name)) = (
-                declaration.get("tagName").and_then(Value::as_str),
-                declaration.get("name").and_then(Value::as_str),
-            ) {
+            if let (Some(tag), Some(name)) =
+                (string(declaration, "tagName"), string(declaration, "name"))
+            {
                 found.push((tag.to_owned(), path.clone(), name.to_owned()));
             }
         }
         for export in array(module, "exports") {
-            if export.get("kind").and_then(Value::as_str) != Some("custom-element-definition") {
+            if string(export, "kind") != Some("custom-element-definition") {
                 continue;
             }
-            let (Some(tag), Some(declaration)) = (
-                export.get("name").and_then(Value::as_str),
-                export.get("declaration"),
-            ) else {
+            let (Some(tag), Some(declaration)) =
+                (string(export, "name"), export.get("declaration"))
+            else {
                 continue;
             };
-            let Some(name) = declaration.get("name").and_then(Value::as_str) else {
+            let Some(name) = string(declaration, "name") else {
                 continue;
             };
-            let module = declaration
-                .get("module")
-                .and_then(Value::as_str)
-                .map_or_else(|| path.clone(), module_path);
+            let module = string(declaration, "module").map_or_else(|| path.clone(), module_path);
             found.push((tag.to_owned(), module, name.to_owned()));
         }
     }
@@ -595,7 +590,7 @@ fn collect(
     }
     for (list, into) in [("attributes", &mut *attributes), ("events", &mut *events)] {
         for member in array(class, list) {
-            let Some(name) = member.get("name").and_then(Value::as_str) else {
+            let Some(name) = string(member, "name") else {
                 continue;
             };
             if into.iter().any(|known| known.name == name) {
@@ -605,8 +600,7 @@ fn collect(
                 name: name.to_owned(),
                 ty: member
                     .get("type")
-                    .and_then(|ty| ty.get("text"))
-                    .and_then(Value::as_str)
+                    .and_then(|ty| string(ty, "text"))
                     .map(str::to_owned),
             });
         }
@@ -616,13 +610,10 @@ fn collect(
         .into_iter()
         .chain(array(class, "mixins"));
     for parent in parents {
-        let Some(name) = parent.get("name").and_then(Value::as_str) else {
+        let Some(name) = string(parent, "name") else {
             continue;
         };
-        let module = parent
-            .get("module")
-            .and_then(Value::as_str)
-            .map_or_else(|| key.0.clone(), module_path);
+        let module = string(parent, "module").map_or_else(|| key.0.clone(), module_path);
         collect(
             classes,
             &(module, name.to_owned()),
@@ -631,6 +622,10 @@ fn collect(
             events,
         );
     }
+}
+
+fn string<'a>(value: &'a Value, key: &str) -> Option<&'a str> {
+    value.get(key).and_then(Value::as_str)
 }
 
 fn array<'a>(value: &'a Value, key: &str) -> impl Iterator<Item = &'a Value> {

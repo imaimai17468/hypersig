@@ -402,19 +402,10 @@ fn set(dependency: &mut Item, key: &str, value: Value) {
 }
 
 fn add_feature(dependency: &mut Item, feature: &str) {
-    let has = dependency
-        .get("features")
-        .and_then(Item::as_array)
-        .is_some_and(|features| features.iter().any(|have| have.as_str() == Some(feature)));
-    if has {
-        return;
-    }
-    if dependency
-        .get("features")
-        .and_then(Item::as_array)
-        .is_none()
-    {
-        set(dependency, "features", Value::Array(Array::new()));
+    match dependency.get("features").and_then(Item::as_array) {
+        Some(features) if features.iter().any(|have| have.as_str() == Some(feature)) => return,
+        Some(_) => {}
+        None => set(dependency, "features", Value::Array(Array::new())),
     }
     if let Some(features) = dependency.get_mut("features").and_then(Item::as_array_mut) {
         features.push(feature);
