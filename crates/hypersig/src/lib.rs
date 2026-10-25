@@ -169,7 +169,7 @@ const RUNTIME_PREFIX: &[u8] = b"/_hypersig/runtime.";
 /// What [`RUNTIME_PATH`] holds after the hash.
 const RUNTIME_SUFFIX: &[u8] = b".js";
 
-/// The hex digits of a 64-bit hash, most significant first.
+/// The number of hex digits that write a 64-bit hash.
 const HASH_DIGITS: usize = 16;
 
 /// The 64-bit offset basis of FNV-1a, from the FNV specification.
