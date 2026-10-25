@@ -1,30 +1,14 @@
-error[E0277]: the trait bound `Node<Inbox>: From<El<Account>>` is not satisfied
-  --> tests/ui/fail/part_action_outside_part.rs:29:16
+error[E0277]: `El<Account>` is not a child of an element on the page whose signals are `Inbox`
+  --> tests/ui/fail/part_action_outside_part.rs:29:10
    |
 29 |         .child(button().on_click(SIGN_OUT.call()));
-   |          ----- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<El<Account>>` is not implemented for `Node<Inbox>`
+   |          ^^^^^ ---------------------------------- `El<Account>` doesn't satisfy the trait bound
    |          |
-   |          required by a bound introduced by this call
+   |          the trait `IntoNode<Inbox>` is not implemented for `El<Account>`
    |
-help: `Node<S>` implements trait `From<T>`
-  --> src/html.rs
-   |
-   | impl<S> From<El<S>> for Node<S> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<El<S>>`
-...
-   | impl<S> From<&str> for Node<S> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<&str>`
-...
-   | impl<S> From<String> for Node<S> {
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `From<String>`
-   = note: required for `El<Account>` to implement `Into<Node<Inbox>>`
+   = note: a child is an `El<Inbox>`, a `Node<Inbox>`, or text; an element built for another page's signals cannot sit inside this page
 note: required by a bound in `El::<S>::child`
   --> src/html.rs
    |
-   |     pub fn child(mut self, child: impl Into<Node<S>>) -> Self {
-   |                                        ^^^^^^^^^^^^^ required by this bound in `El::<S>::child`
-help: consider removing this method call, as the receiver has type `El<_>` and `El<_>: From<El<Account>>` trivially holds
-   |
-29 -         .child(button().on_click(SIGN_OUT.call()));
-29 +         .child(button());
-   |
+   |     pub fn child(mut self, child: impl IntoNode<S>) -> Self {
+   |                                        ^^^^^^^^^^^ required by this bound in `El::<S>::child`

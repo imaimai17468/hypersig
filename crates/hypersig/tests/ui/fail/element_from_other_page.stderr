@@ -1,0 +1,14 @@
+error[E0277]: `El<Shelf>` is not a child of an element on the page whose signals are `Detail`
+  --> tests/ui/fail/element_from_other_page.rs:22:29
+   |
+22 |     let _ = div::<Detail>().child(badge());
+   |                             ^^^^^ ------- `El<Shelf>` doesn't satisfy the trait bound
+   |                             |
+   |                             the trait `IntoNode<Detail>` is not implemented for `El<Shelf>`
+   |
+   = note: a child is an `El<Detail>`, a `Node<Detail>`, or text; an element built for another page's signals cannot sit inside this page
+note: required by a bound in `El::<S>::child`
+  --> src/html.rs
+   |
+   |     pub fn child(mut self, child: impl IntoNode<S>) -> Self {
+   |                                        ^^^^^^^^^^^ required by this bound in `El::<S>::child`

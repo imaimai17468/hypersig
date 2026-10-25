@@ -910,6 +910,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "IntoNode",
+                            "html/trait.IntoNode.html",
+                            L {
+                                en: "A value `El::child` takes as a child on the page whose signals are `S`.",
+                                ja: "シグナルが `S` のページで `El::child` が子として受け取る値",
+                            },
+                        ),
+                        (
                             "Event",
                             "html/enum.Event.html",
                             L {

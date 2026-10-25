@@ -287,6 +287,32 @@ impl<S> From<String> for Node<S> {
     }
 }
 
+/// A value [`El::child`] takes as a child on the page whose signals are `S`.
+///
+/// [`El::children`] and [`Page::child`](crate::Page::child) take it too.
+/// It is implemented for every type that converts into a [`Node<S>`]: an
+/// [`El<S>`], a `Node<S>` such as [`each`] and [`when`] return, and text as
+/// a `&str` or a `String`. An element of another page carries that page's
+/// signals, so it does not convert.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a child of an element on the page whose signals are `{S}`",
+    note = "a child is an `El<{S}>`, a `Node<{S}>`, or text; an element built for another page's signals cannot sit inside this page"
+)]
+pub trait IntoNode<S> {
+    /// Converts `self` into a node.
+    fn into_node(self) -> Node<S>;
+}
+
+// Without `do_not_recommend`, rustc reports the failed `From` bound below
+// this impl and lists every `From` impl of `Node`, in place of the message
+// above.
+#[diagnostic::do_not_recommend]
+impl<S, N: Into<Node<S>>> IntoNode<S> for N {
+    fn into_node(self) -> Node<S> {
+        self.into()
+    }
+}
+
 /// Renders `render` once per item of `list` in the browser, and updates the
 /// rendered elements when the list changes.
 ///
@@ -1641,15 +1667,16 @@ impl<S> El<S> {
 
     /// Appends a child element, text, or template.
     #[must_use]
-    pub fn child(mut self, child: impl Into<Node<S>>) -> Self {
-        self.children.push(child.into());
+    pub fn child(mut self, child: impl IntoNode<S>) -> Self {
+        self.children.push(child.into_node());
         self
     }
 
     /// Appends several children. An `Option` counts as zero or one child.
     #[must_use]
-    pub fn children<N: Into<Node<S>>>(mut self, children: impl IntoIterator<Item = N>) -> Self {
-        self.children.extend(children.into_iter().map(Into::into));
+    pub fn children<N: IntoNode<S>>(mut self, children: impl IntoIterator<Item = N>) -> Self {
+        self.children
+            .extend(children.into_iter().map(IntoNode::into_node));
         self
     }
 
