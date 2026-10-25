@@ -1,12 +1,13 @@
 //! The page on testing an application: calling its handlers in a test,
 //! sending requests to its router, and what only a browser runs.
 
+use super::snippet::{Snippet, show};
 use super::{Program, program};
 use crate::Site;
 use crate::code::{self, Lang};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
-use crate::prose::{Part, heading, lead, para, parts, title};
+use crate::prose::{Part, heading, lead, para, parts, subheading, title};
 
 pub fn testing(site: Site) -> Part {
     parts([
@@ -31,8 +32,8 @@ fn handlers(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A handler is an `async fn` that takes the router's state and the arguments, so a test calls it as a function and reads what it returned. The tests below need three crates the server does not, added to `Cargo.toml`:",
-                ja: "ハンドラはルーターの状態と引数を受け取る `async fn` なので、テストは関数として呼び出して戻り値を読めます。下のテストは、サーバーが使わないクレートを 3 つ使います。`Cargo.toml` に次の節を足してください。",
+                en: "A handler is an `async fn` that takes the router's state and the arguments, so a test calls it as a function and reads what it returned. The tests below need two crates the server does not, added to `Cargo.toml`:",
+                ja: "ハンドラはルーターの状態と引数を受け取る `async fn` なので、テストは関数として呼び出して戻り値を読めます。下のテストは、サーバーが使わないクレートを 2 つ使います。`Cargo.toml` に次の節を足してください。",
             },
         ),
         code::block(
@@ -40,7 +41,6 @@ fn handlers(site: Site) -> Part {
             Some("Cargo.toml"),
             r#"[dev-dependencies]
 http-body-util = "0.1"
-serde_json = "1"
 tower = { version = "0.5", features = ["util"] }"#,
         ),
         program(Program::Testing),
@@ -85,6 +85,21 @@ fn router(site: Site) -> Part {
                 ja: "[`Action::request`](api:hypersig/struct.Action.html#method.request) はランタイムが送るリクエストを、[`StreamAction::request`](api:hypersig/struct.StreamAction.html#method.request) はストリームを開くリクエストを作ります。そのため、テストはパスやヘッダーを書かずにアクションの名前で書けます。どちらにも `Accept: text/event-stream` が付き、[`RequestKind::of`](api:hypersig/enum.RequestKind.html#method.of) はこのヘッダーで呼び出しとページの読み込みを見分けます。`POST` は引数を JSON の本文で送り、`Content-Type: application/json` を付けます。`GET` は引数を `args` のクエリパラメータに JSON で入れます。ルーターは、その `Content-Type` のない `POST`、その `Accept` のない `GET`、`same-origin` 以外の `Sec-Fetch-Site` を拒否し、`Sec-Fetch-Site` のないリクエストは通します。応答したアクションの本文は差分を Server-Sent Events にしたもので、[`Patches::to_event_stream`](api:hypersig/struct.Patches.html#method.to_event_stream) が同じ形式で書くので、テストは手で書いた文字列の代わりに、期待する差分と比べます。",
             },
         ),
+        subheading(
+            site,
+            L {
+                en: "A handler that takes an extractor",
+                ja: "エクストラクタを受け取るハンドラ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A handler that takes an extractor, such as the `Session` of [Signing in](learn/sessions/), is called with a value the test builds, as the tests below do for that page's `sign_in`. `Session::new(None, Arc::new(MemoryStore::default()), None)` makes an empty session with a store of its own, and the test reads what the handler wrote with `Session::get`. What the layer adds, the cookie in the answer, shows only through the router, so a second test sends the action through `oneshot` on the router with its `SessionManagerLayer`.",
+                ja: "[サインインとセッション](learn/sessions/) の `Session` のようなエクストラクタを受け取るハンドラは、テストが作った値を渡して呼び出します。下のテストはそのページの `sign_in` をこうして呼びます。`Session::new(None, Arc::new(MemoryStore::default()), None)` は自分専用のストアを持つ空のセッションを作り、テストはハンドラが書いた値を `Session::get` で読みます。レイヤーが足すもの（応答の Cookie）はルーターを通さないと現れないので、2 つ目のテストは `SessionManagerLayer` を付けたルーターに `oneshot` でアクションを送ります。",
+            },
+        ),
+        show(Snippet::TestingSessions),
     ])
 }
 

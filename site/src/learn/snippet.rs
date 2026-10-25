@@ -61,6 +61,7 @@ snippets! {
     HandlerErrors => "handler_errors.rs";
     Uploads => "uploads.rs";
     Sessions => "sessions.rs";
+    TestingSessions => "testing_sessions.rs";
     Database => "database.rs", "no_run";
     DynamoDb => "dynamodb.rs", "no_run";
     Api => "api.rs", "no_run";
