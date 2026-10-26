@@ -82,8 +82,7 @@ fn clock((): (), (): ()) -> impl Stream<Item = Patches<Counter>> {
 
 #[tokio::main]
 async fn main() -> Result<(), vercel_runtime::Error> {
-    let app = pages(Router::new())
-        .hypersig_runtime();
+    let app = pages(Router::new()).hypersig_runtime();
     // Outside Vercel, `run` listens on 127.0.0.1 at the port in
     // `VERCEL_DEV_PORT`, or 3000.
     vercel_runtime::run(ServiceBuilder::new().layer(VercelLayer::new()).service(app)).await

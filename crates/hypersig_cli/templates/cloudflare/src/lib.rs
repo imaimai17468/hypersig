@@ -303,8 +303,6 @@ async fn fetch(
         db: SendWrapper::new(Rc::new(env.d1("DB")?)),
         hub: Arc::new(env.durable_object("HUB")?.get_by_name(HUB)?),
     };
-    let mut app = pages(Router::new())
-        .hypersig_runtime()
-        .with_state(state);
+    let mut app = pages(Router::new()).hypersig_runtime().with_state(state);
     Ok(app.call(request).await?)
 }
