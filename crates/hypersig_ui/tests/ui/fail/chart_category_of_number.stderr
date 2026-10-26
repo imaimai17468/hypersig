@@ -11,5 +11,5 @@ error[E0308]: mismatched types
 note: associated function defined here
   --> src/chart.rs
    |
-   |     pub fn bar(label: impl Into<String>, rows: Sig<S, Vec<T>>, category: Sig<T, String>) -> Self {
+   |     pub fn bar(
    |            ^^^
