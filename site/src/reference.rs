@@ -1115,7 +1115,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "trait.Writable.html",
                             L {
                                 en: "The markers of a `Sig` the browser may write: `Root` and `Local`.",
-                                ja: "ブラウザが書き込める `Sig` の印で、`Root` と `Local` が実装します",
+                                ja: "ブラウザが書き込める `Sig` の印（`Root` と `Local`）",
                             },
                         ),
                         (
@@ -1123,7 +1123,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "trait.FromPage.html",
                             L {
                                 en: "The markers of a `Sig` whose path starts at the page's signal struct: `Root` and `Computed`.",
-                                ja: "パスがページのシグナル構造体から始まる `Sig` の印で、`Root` と `Computed` が実装します",
+                                ja: "パスがページのシグナル構造体から始まる `Sig` の印（`Root` と `Computed`）",
                             },
                         ),
                         (
@@ -1131,7 +1131,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "trait.IsComputed.html",
                             L {
                                 en: "The marker of a `Sig` that `Page::computed` accepts: `Computed` alone.",
-                                ja: "`Page::computed` が受け取る `Sig` の印で、`Computed` だけが実装します",
+                                ja: "`Page::computed` が受け取る `Sig` の印（`Computed` だけ）",
                             },
                         ),
                         (
