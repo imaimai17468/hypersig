@@ -74,7 +74,10 @@ export class Events {
     const target = event.target;
     if (!(target instanceof Element)) return;
     this.#rt.lists.adoption.around(target);
-    if (type === "input" || type === "change") this.#rt.bindings.controls.read(target, type);
+    const { controls } = this.#rt.bindings;
+    if (type === "input" || type === "change") controls.read(target, type);
+    if (type === "focusout") controls.left(target);
+    if (type === "submit") controls.submitted(target);
     if (type === "keydown" && event instanceof KeyboardEvent) {
       activate(this.#rt, target, event);
       onKey(this.#rt, target, event);

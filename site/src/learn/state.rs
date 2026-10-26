@@ -231,8 +231,8 @@ pub fn expressions(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`bind` ties a text field, a checkbox, or a number field to a signal in both directions. `bind_radio` and `bind_select` do the same for radio buttons and a `<select>`.",
-                ja: "`bind` はテキスト欄、チェックボックス、数値の欄をシグナルと双方向に結び付けます。ラジオボタンと `<select>` には `bind_radio` と `bind_select` で同じことをします。",
+                en: "`bind` ties a text field, a checkbox, or a number field to a signal in both directions. `bind_radio` and `bind_select` do the same for radio buttons and a `<select>`. While the visitor is typing in a bound field, a change to its signal does not rewrite the field. Where an action's answer sends back text the field held since the typing began, such as the text an autosave sent before the visitor typed on, the field's text goes back into the signal. Any other value stays in the signal, where a call made in the meantime sends it, and shows in the field when the typing ends: when the visitor presses Enter, submits the form, or moves focus away. Typing on before that puts the field's text in its place. A change after the typing ends shows at once, so a draft the server empties after a submit empties while the field still has focus.",
+                ja: "`bind` はテキスト欄、チェックボックス、数値の欄をシグナルと双方向に結び付けます。ラジオボタンと `<select>` には `bind_radio` と `bind_select` で同じことをします。訪問者が入力している途中の欄は、シグナルが変わっても書き換えません。自動保存が送ったあとに訪問者が入力を続けた場合のように、入力を始めてから欄が持っていた文字をアクションの応答が送り返したときは、欄の文字をシグナルに戻します。それ以外の値はシグナルに入り、その間に呼んだアクションにはその値が送られます。欄には、訪問者が Enter キーを押すか、フォームを送信するか、フォーカスを移して入力を終えたときに表示されます。それより前に入力を続けると、欄の文字がシグナルに入ります。入力を終えたあとの変更はすぐに表示されるので、送信のあとにサーバーが下書きを空にすると、フォーカスが欄にあるままでも欄は空になります。",
             },
         ),
         show(Snippet::Events),
