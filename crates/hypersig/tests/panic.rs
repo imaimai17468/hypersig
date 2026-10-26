@@ -61,6 +61,7 @@ async fn an_action_whose_handler_panics_answers_500() {
 async fn a_stream_whose_handler_panics_answers_500() {
     let request = Request::get("/fail-stream?args=3")
         .header(header::ACCEPT, "text/event-stream")
+        .header("hypersig-call", "1")
         .body(Body::empty())
         .expect("request");
     assert_eq!(status(request).await, StatusCode::INTERNAL_SERVER_ERROR);

@@ -81,6 +81,7 @@ async fn an_action_and_its_refusal_are_not_sniffed() {
 async fn a_stream_asks_a_proxy_not_to_buffer_it() {
     let request = Request::get("/ticks?args=1")
         .header(header::ACCEPT, "text/event-stream")
+        .header("hypersig-call", "1")
         .body(Body::empty())
         .expect("request");
     let headers = headers(request).await;

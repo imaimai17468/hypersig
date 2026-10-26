@@ -13,7 +13,9 @@ note: inside `Asset::new`
  ::: src/asset.rs
   |
   | /         assert!(
-  | |             href::check(url.as_bytes()).is_ok() && !href::has_scheme(url.as_bytes(), b"mailto"),
+  | |             !url.is_empty()
+  | |                 && href::check(url.as_bytes()).is_ok()
+  | |                 && !href::has_scheme(url.as_bytes(), b"mailto"),
   | |             "an asset is a path or an `http` or `https` URL, with no space or control character"
   | |         );
   | |_________- in this macro invocation
