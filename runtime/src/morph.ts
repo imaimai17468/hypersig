@@ -25,7 +25,8 @@ export type Drawn = (template: HTMLTemplateElement) => ReadonlySet<Element> | un
  * are matched by id, those `El::foreign` names by that name, and the rest by
  * position. A `<template>` whose content changed is replaced whole, because
  * its content is not among its children. One that stays keeps the elements
- * `drawn` names for it, which `to` does not hold. Each element it takes out
+ * `drawn` names for it, which `to` does not hold. A `<details>` or a
+ * `<dialog>` keeps its `open` as the visitor or a script left it. Each element it takes out
  * of the document is pushed onto `removed`. One of them can be back in the
  * document by the time `morph` returns, where a later child with the same id
  * or foreign name moved it there.
@@ -49,13 +50,27 @@ export function morph(from: Element, to: Element, removed: Element[] = [], drawn
   return from;
 }
 
+/**
+ * Whether the browser owns attribute `name` of `element`: `open` on a
+ * `<details>` the visitor toggles and on a `<dialog>` that `show`,
+ * `showModal`, and `close` set. Taking `open` off a modal dialog hides it
+ * without `close`, which leaves the rest of the page inert.
+ */
+function browserOwned(element: Element, name: string): boolean {
+  return (
+    name === "open" &&
+    (element instanceof HTMLDetailsElement || element instanceof HTMLDialogElement)
+  );
+}
+
 function syncAttributes(from: Element, to: Element): void {
   // A copy, because removing an attribute changes `from.attributes` while it is walked.
   for (const { name } of Array.from(from.attributes)) {
-    if (!to.hasAttribute(name)) from.removeAttribute(name);
+    if (!to.hasAttribute(name) && !browserOwned(from, name)) from.removeAttribute(name);
   }
   for (const { name, value } of to.attributes) {
-    if (from.getAttribute(name) !== value) from.setAttribute(name, value);
+    if (from.getAttribute(name) !== value && !browserOwned(from, name))
+      from.setAttribute(name, value);
   }
 }
 

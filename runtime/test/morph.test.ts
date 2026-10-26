@@ -107,3 +107,33 @@ it("replaces a foreign element with one of another name", () => {
   );
   expect(document.body.innerHTML).toBe('<div id="root"><div data-hs-foreign="chart"></div></div>');
 });
+
+it("keeps a details element open or closed as the visitor left it", () => {
+  document.body.innerHTML =
+    '<div id="root"><details id="a"><summary>A</summary></details><details id="b" open><summary>B</summary></details></div>';
+  const [a, b] = [...document.querySelectorAll("details")];
+  a!.open = true;
+  b!.open = false;
+  morph(
+    document.querySelector("#root")!,
+    element(
+      '<div id="root"><details id="a" class="x"><summary>A2</summary></details><details id="b" open><summary>B</summary></details></div>',
+    ),
+  );
+  expect(a!.open).toBe(true);
+  expect(a!.className).toBe("x");
+  expect(a!.textContent).toBe("A2");
+  expect(b!.open).toBe(false);
+});
+
+it("keeps a modal dialog open", () => {
+  document.body.innerHTML = '<div id="root"><dialog id="d"><p>1</p></dialog></div>';
+  const dialog = document.querySelector("dialog")!;
+  dialog.showModal();
+  morph(
+    document.querySelector("#root")!,
+    element('<div id="root"><dialog id="d"><p>2</p></dialog></div>'),
+  );
+  expect(dialog.open).toBe(true);
+  expect(dialog.textContent).toBe("2");
+});
