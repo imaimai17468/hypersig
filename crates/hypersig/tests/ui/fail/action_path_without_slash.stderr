@@ -5,40 +5,6 @@ error[E0080]: evaluation panicked: an action path starts with `/`
 19 | |     fn actions(Router<()>);
 20 | |     action BAD: Action<Counter> = post "reset" => |(), ()| async { Patches::<Counter>::new() };
 21 | | }
-   | |_^ evaluation of `BAD` failed inside this call
+   | |_^ evaluation of `_` failed here
    |
-note: inside `hypersig::_private::action::<Counter, ()>`
-  --> src/lib.rs
-   |
-   |         crate::Action::at(method, base, path)
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: inside `Action::<Counter>::at`
-  --> $RUST/core/src/panic.rs
-   |
-   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
-   |
-  ::: src/action.rs
-   |
-   | /         assert!(
-   | |             !path.is_empty() && path.as_bytes()[0] == b'/',
-   | |             "an action path starts with `/`"
-   | |         );
-   | |_________- in this macro invocation
-
-note: erroneous constant encountered
-  --> tests/ui/fail/action_path_without_slash.rs:18:1
-   |
-18 | / hypersig::routes! {
-19 | |     fn actions(Router<()>);
-20 | |     action BAD: Action<Counter> = post "reset" => |(), ()| async { Patches::<Counter>::new() };
-21 | | }
-   | |_^
-   |
-   = note: this note originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-note: erroneous constant encountered
-  --> tests/ui/fail/action_path_without_slash.rs:24:13
-   |
-24 |     let _ = BAD.call();
-   |             ^^^
+   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

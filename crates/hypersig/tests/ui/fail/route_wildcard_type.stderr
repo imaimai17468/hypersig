@@ -5,34 +5,6 @@ error[E0080]: evaluation panicked: a `{*name}` segment and a last parameter of t
 10 | |     fn pages(Router<()>);
 11 | |     const FILE: Route<String> = "/files/{*path}" => no_page;
 12 | | }
-   | |_^ evaluation of `FILE` failed inside this call
+   | |_^ evaluation of `_` failed here
    |
-note: inside `hypersig::_private::route::<String, ()>`
-  --> src/lib.rs
-   |
-   |         Route::new(path).under(base)
-   |         ^^^^^^^^^^^^^^^^
-note: inside `Route::<String>::new`
-  --> $RUST/core/src/panic.rs
-   |
-   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
-   |
-  ::: src/route.rs
-   |
-   | /         assert!(
-   | |             ends_in_wildcard(path) == P::REST_LAST,
-   | |             "a `{{*name}}` segment and a last parameter of type `Rest` go together"
-   | |         );
-   | |_________- in this macro invocation
-
-note: erroneous constant encountered
-  --> tests/ui/fail/route_wildcard_type.rs:9:1
-   |
- 9 | / hypersig::routes! {
-10 | |     fn pages(Router<()>);
-11 | |     const FILE: Route<String> = "/files/{*path}" => no_page;
-12 | | }
-   | |_^
-   |
-   = note: this note originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

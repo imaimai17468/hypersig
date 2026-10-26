@@ -105,70 +105,80 @@ impl Attr {
     /// Panics for a name that breaks them. In a `const`, the panic is a
     /// compile error.
     pub(crate) const fn new(name: &'static str) -> Self {
+        match Self::check(name) {
+            Ok(attr) => attr,
+            Err(reason) => panic!("{}", reason),
+        }
+    }
+
+    /// `name` as an `Attr`, or the rule of [`Attr`] it breaks.
+    ///
+    /// `attr!` panics on the reason in its own `const` block, so the
+    /// compiler's message points at the macro call and not into this function.
+    pub(crate) const fn check(name: &'static str) -> Result<Self, &'static str> {
         let bytes = name.as_bytes();
         // A space, a quote, `=`, or `>` would end the name and start another
         // attribute.
-        assert!(
-            !bytes.is_empty(),
-            "an attribute name is letters, digits, `-`, `_`, `.`, and `:`"
-        );
+        if bytes.is_empty() {
+            return Err("an attribute name is letters, digits, `-`, `_`, `.`, and `:`");
+        }
         let mut i = 0;
         while i < bytes.len() {
             let b = bytes[i];
-            assert!(
-                b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':'),
-                "an attribute name is letters, digits, `-`, `_`, `.`, and `:`"
-            );
+            if !(b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':')) {
+                return Err("an attribute name is letters, digits, `-`, `_`, `.`, and `:`");
+            }
             i += 1;
         }
-        assert!(
-            !starts_with(bytes, RESERVED_PREFIX),
-            "hypersig's typed methods write the `data-hs-` attributes"
-        );
-        assert!(
-            !is(bytes, "id") && !is(bytes, "class"),
-            "`El::id` and `El::class` set `id` and `class`"
-        );
-        assert!(!is(bytes, "role"), "`El::role` sets `role` from a `Role`");
-        assert!(
-            !points_at_an_element(bytes),
-            "this attribute names an element; set it with the `El` method that takes an `Id`"
-        );
-        assert!(
-            !is(bytes, "href") && !is(bytes, "src") && !is(bytes, "poster"),
-            "`El::href`, `El::src`, and `El::poster` set `href`, `src`, and `poster` from a `Link` or a `SafeUrl`"
-        );
-        assert!(
-            !is(bytes, "srcset"),
-            "`El::srcset` sets `srcset` from `SafeUrl`s"
-        );
-        assert!(
-            !is(bytes, "style"),
-            "`El::css` and `El::bind_style` write the element's CSS"
-        );
-        assert!(
-            !starts_with(bytes, "on"),
-            "an `on*` attribute runs a script; attach a handler with the `on_*` methods"
-        );
-        assert!(
-            !is(bytes, "srcdoc")
-                && !is(bytes, "action")
-                && !is(bytes, "formaction")
-                && !is(bytes, "xlink:href")
-                && !is(bytes, "data")
-                && !is(bytes, "http-equiv")
-                && !is(bytes, "attributename")
-                && !is(bytes, "ping")
-                && !is(bytes, "imagesrcset")
-                && !is(bytes, "background")
-                && !is(bytes, "manifest")
-                && !is(bytes, "codebase")
-                && !is(bytes, "archive")
-                && !is(bytes, "classid")
-                && !is(bytes, "longdesc"),
-            "the value of this attribute can run a script or load a URL"
-        );
-        Self(name)
+        if starts_with(bytes, RESERVED_PREFIX) {
+            return Err("hypersig's typed methods write the `data-hs-` attributes");
+        }
+        if is(bytes, "id") || is(bytes, "class") {
+            return Err("`El::id` and `El::class` set `id` and `class`");
+        }
+        if is(bytes, "role") {
+            return Err("`El::role` sets `role` from a `Role`");
+        }
+        if points_at_an_element(bytes) {
+            return Err(
+                "this attribute names an element; set it with the `El` method that takes an `Id`",
+            );
+        }
+        if is(bytes, "href") || is(bytes, "src") || is(bytes, "poster") {
+            return Err(
+                "`El::href`, `El::src`, and `El::poster` set `href`, `src`, and `poster` from a `Link` or a `SafeUrl`",
+            );
+        }
+        if is(bytes, "srcset") {
+            return Err("`El::srcset` sets `srcset` from `SafeUrl`s");
+        }
+        if is(bytes, "style") {
+            return Err("`El::css` and `El::bind_style` write the element's CSS");
+        }
+        if starts_with(bytes, "on") {
+            return Err(
+                "an `on*` attribute runs a script; attach a handler with the `on_*` methods",
+            );
+        }
+        if is(bytes, "srcdoc")
+            || is(bytes, "action")
+            || is(bytes, "formaction")
+            || is(bytes, "xlink:href")
+            || is(bytes, "data")
+            || is(bytes, "http-equiv")
+            || is(bytes, "attributename")
+            || is(bytes, "ping")
+            || is(bytes, "imagesrcset")
+            || is(bytes, "background")
+            || is(bytes, "manifest")
+            || is(bytes, "codebase")
+            || is(bytes, "archive")
+            || is(bytes, "classid")
+            || is(bytes, "longdesc")
+        {
+            return Err("the value of this attribute can run a script or load a URL");
+        }
+        Ok(Self(name))
     }
 
     /// The attribute's name, as the HTML holds it.
@@ -1505,36 +1515,34 @@ pub fn el<S>(tag: Tag) -> El<S> {
 pub struct Tag(&'static str);
 
 impl Tag {
-    /// Checks `name` against the rules of [`Tag`].
+    /// `name` as a `Tag`, or the rule of [`Tag`] it breaks.
     ///
-    /// # Panics
-    ///
-    /// Panics for a name that breaks them. In a `const`, the panic is a
-    /// compile error.
-    pub(crate) const fn new(name: &'static str) -> Self {
+    /// `tag!` panics on the reason in its own `const` block, so the
+    /// compiler's message points at the macro call and not into this function.
+    pub(crate) const fn check(name: &'static str) -> Result<Self, &'static str> {
         let bytes = name.as_bytes();
-        assert!(
-            !bytes.is_empty() && bytes[0].is_ascii_alphabetic(),
-            "a tag starts with a letter"
-        );
+        if bytes.is_empty() || !bytes[0].is_ascii_alphabetic() {
+            return Err("a tag starts with a letter");
+        }
         let mut i = 0;
         while i < bytes.len() {
             let b = bytes[i];
-            assert!(
-                b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':'),
-                "a tag is letters, digits, `-`, `_`, `.`, and `:`"
-            );
+            if !(b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':')) {
+                return Err("a tag is letters, digits, `-`, `_`, `.`, and `:`");
+            }
             i += 1;
         }
-        assert!(
-            !is(bytes, "script") && !is(bytes, "style") && !is(bytes, "base"),
-            "`script` and `style` run their text as code, and `base` moves the page's URLs"
-        );
-        assert!(
-            !is(bytes, "link"),
-            "`link` loads from the host its `href` names; `Page::stylesheet` and `Page::icon` write the page's `<link>`s"
-        );
-        Self(name)
+        if is(bytes, "script") || is(bytes, "style") || is(bytes, "base") {
+            return Err(
+                "`script` and `style` run their text as code, and `base` moves the page's URLs",
+            );
+        }
+        if is(bytes, "link") {
+            return Err(
+                "`link` loads from the host its `href` names; `Page::stylesheet` and `Page::icon` write the page's `<link>`s",
+            );
+        }
+        Ok(Self(name))
     }
 
     /// The tag's name, as the HTML holds it.

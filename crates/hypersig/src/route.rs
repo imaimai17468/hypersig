@@ -180,42 +180,24 @@ impl Base {
     }
 }
 
-impl<P: Params, Q: Search> Route<P, Q> {
-    /// A page served at `path`, whose `{name}` segments take the values of `P`.
+impl<P, Q> Route<P, Q> {
+    /// A page served at `path` under `base`, without the checks of [`Route::check`].
     ///
-    /// Panics if `path` does not start with `/`, if a `{` or `}` does not
-    /// enclose a whole segment with a name, or if the number of such segments
-    /// differs from the number of values in `P`. `routes!` calls it in a
-    /// `const`, where each of these is a compile error.
+    /// `routes!` calls it for each line and checks the path in a `const _`
+    /// of its own, so the constant itself never fails to evaluate.
     #[must_use]
-    pub(crate) const fn new(path: &'static str) -> Self {
-        assert!(
-            !path.is_empty() && path.as_bytes()[0] == b'/',
-            "a route path starts with `/`"
-        );
-        assert!(
-            count_params(path) == P::COUNT,
-            "the route's `{{name}}` segments differ in number from the values of its parameter type"
-        );
-        assert!(
-            P::REST_COUNT == P::REST_LAST as usize,
-            "only the last value of a route's parameters can be `Rest`"
-        );
-        assert!(
-            ends_in_wildcard(path) == P::REST_LAST,
-            "a `{{*name}}` segment and a last parameter of type `Rest` go together"
-        );
+    pub(crate) const fn unchecked(base: Base, path: &'static str) -> Self {
         Self {
-            base: Base::ROOT,
+            base,
             path,
             marker: PhantomData,
         }
     }
 
-    /// The same page, served under `base`.
+    /// A page at `path` under this one's base, without the checks of [`Route::check_child`].
     #[must_use]
-    pub(crate) const fn under(self, base: Base) -> Self {
-        Self { base, ..self }
+    pub(crate) const fn unchecked_child<C, R>(&self, path: &'static str) -> Route<C, R> {
+        Route::unchecked(self.base, path)
     }
 
     /// The path as axum matches it, with each parameter still written `{name}`.
@@ -232,6 +214,72 @@ impl<P: Params, Q: Search> Route<P, Q> {
     pub(crate) fn base(&self) -> Base {
         self.base
     }
+}
+
+impl<P: Params, Q: Search> Route<P, Q> {
+    /// A page served at `path`, whose `{name}` segments take the values of `P`.
+    ///
+    /// # Panics
+    ///
+    /// Panics for every reason [`Route::check`] gives. In a `const`, the
+    /// panic is a compile error.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "the tests build routes outside `routes!` with it")
+    )]
+    #[must_use]
+    pub(crate) const fn new(path: &'static str) -> Self {
+        match Self::check(path) {
+            Ok(()) => Self::unchecked(Base::ROOT, path),
+            Err(reason) => panic!("{}", reason),
+        }
+    }
+
+    /// Why `path` cannot be the path of a route with parameters `P`, if it cannot.
+    ///
+    /// It cannot where it does not start with `/`, where a `{` or `}` does
+    /// not enclose a whole segment with a name, where the number of such
+    /// segments differs from the number of values in `P`, or where a `Rest`
+    /// and a `{*name}` segment are not both last.
+    pub(crate) const fn check(path: &'static str) -> Result<(), &'static str> {
+        if path.is_empty() || path.as_bytes()[0] != b'/' {
+            return Err("a route path starts with `/`");
+        }
+        match count_params(path) {
+            Ok(count) if count == P::COUNT => {}
+            Ok(_) => {
+                return Err(
+                    "the route's `{name}` segments differ in number from the values of its parameter type",
+                );
+            }
+            Err(reason) => return Err(reason),
+        }
+        if P::REST_COUNT != P::REST_LAST as usize {
+            return Err("only the last value of a route's parameters can be `Rest`");
+        }
+        if ends_in_wildcard(path) != P::REST_LAST {
+            return Err("a `{*name}` segment and a last parameter of type `Rest` go together");
+        }
+        Ok(())
+    }
+
+    /// Why `path` cannot be the path of a page under this one, if it cannot.
+    ///
+    /// `path` repeats this route's path and continues it after a `/`, and
+    /// `C` repeats this route's parameters and may add more after them, so a
+    /// link to the child needs every value its path holds. The child's
+    /// search parameters `R` are its own. `check` gives the other reasons.
+    pub(crate) const fn check_child<C: Params + Extends<P>, R: Search>(
+        &self,
+        path: &'static str,
+    ) -> Result<(), &'static str> {
+        if !continues(path, self.path) {
+            return Err(
+                "a child route's path is its parent's path followed by `/` and more segments",
+            );
+        }
+        Route::<C, R>::check(path)
+    }
 
     /// The literal parts of the path around its parameters, the first one under the base.
     fn parts(&self) -> Vec<String> {
@@ -245,25 +293,6 @@ impl<P: Params, Q: Search> Route<P, Q> {
             format!("{}{}", self.base.as_str(), parts[0])
         };
         parts
-    }
-
-    /// A page under this one, served at the whole path `path`.
-    ///
-    /// `path` repeats this route's path and continues it after a `/`, and
-    /// `C` repeats this route's parameters and may add more after them, so a
-    /// link to the child needs every value its path holds. The child's
-    /// search parameters `R` are its own. Panics where either does not hold,
-    /// and for every reason `new` does.
-    #[must_use]
-    pub(crate) const fn child<C: Params + Extends<P>, R: Search>(
-        &self,
-        path: &'static str,
-    ) -> Route<C, R> {
-        assert!(
-            continues(path, self.path),
-            "a child route's path is its parent's path followed by `/` and more segments"
-        );
-        Route::new(path).under(self.base)
     }
 
     /// A link to this page with the arguments `args`.
@@ -550,7 +579,8 @@ impl Route<(), ()> {
 /// to the console and to the signal a call names with
 /// [`Call::error`](crate::Call::error), so a call without one changes
 /// nothing on the page. rustc's `dead_code` lint does not report the
-/// function, because it comes from the macro, but it does report a handler
+/// function, because it skips every item a macro from another crate
+/// writes, even one named by the caller's own tokens, but it does report a handler
 /// `fn` that only the function names as never used. A closure written as
 /// the handler gets no such warning. Each `routes!` block is its own
 /// function, so declare every page and action of the application in one
@@ -586,9 +616,21 @@ impl Route<(), ()> {
 #[cfg(feature = "axum")]
 #[macro_export]
 macro_rules! routes {
+    // Each constant is built without a check, and a `const _` beside it
+    // checks the line, so a mistake is one error at the check and every use
+    // of the constant still compiles. The check panics in the `const _`
+    // itself, which keeps the panicking function's frames out of the error.
+    (@check [$(#[$attr:meta])*] $check:expr) => {
+        $(#[$attr])*
+        const _: () = match $check {
+            ::core::result::Result::Ok(()) => (),
+            ::core::result::Result::Err(reason) => ::core::panic!("{}", reason),
+        };
+    };
     (@decl [$base:expr] $(#[$attr:meta])* $vis:vis const $name:ident: $ty:ty = $path:literal) => {
         $(#[$attr])*
         $vis const $name: $ty = $crate::_private::route($base, $path);
+        $crate::routes!(@check [$(#[$attr])*] $crate::_private::check_route::<$ty>($path));
     };
     (
         @decl [$base:expr] $(#[$attr:meta])* $vis:vis const $name:ident: $ty:ty = $path:literal
@@ -596,18 +638,24 @@ macro_rules! routes {
     ) => {
         $(#[$attr])*
         $vis const $name: $ty = $crate::_private::child(&$parent, $path);
+        $crate::routes!(
+            @check [$(#[$attr])*] $crate::_private::check_child::<$ty, _, _>(&$parent, $path)
+        );
     };
     (@decl [$base:expr] $(#[$attr:meta])* $vis:vis action $name:ident: $ty:ty = post $path:literal) => {
         $(#[$attr])*
         $vis const $name: $ty = $crate::_private::action($base, $crate::Method::Post, $path);
+        $crate::routes!(@check [$(#[$attr])*] $crate::_private::check_action($path));
     };
     (@decl [$base:expr] $(#[$attr:meta])* $vis:vis action $name:ident: $ty:ty = get $path:literal) => {
         $(#[$attr])*
         $vis const $name: $ty = $crate::_private::action($base, $crate::Method::Get, $path);
+        $crate::routes!(@check [$(#[$attr])*] $crate::_private::check_action($path));
     };
     (@decl [$base:expr] $(#[$attr:meta])* $vis:vis stream $name:ident: $ty:ty = $path:literal) => {
         $(#[$attr])*
         $vis const $name: $ty = $crate::_private::stream($base, $path);
+        $crate::routes!(@check [$(#[$attr])*] $crate::_private::check_stream($path));
     };
     (
         @decl [$base:expr] $(#[$attr:meta])* $vis:vis upload $name:ident: $ty:ty =
@@ -616,6 +664,7 @@ macro_rules! routes {
         $(#[$attr])*
         $vis const $name: $ty =
             $crate::_private::upload($base, $path, $crate::_private::UPLOAD_MAX_BYTES);
+        $crate::routes!(@check [$(#[$attr])*] $crate::_private::check_upload($path));
     };
     (
         @decl [$base:expr] $(#[$attr:meta])* $vis:vis upload $name:ident: $ty:ty =
@@ -623,6 +672,7 @@ macro_rules! routes {
     ) => {
         $(#[$attr])*
         $vis const $name: $ty = $crate::_private::upload($base, $path, $bytes);
+        $crate::routes!(@check [$(#[$attr])*] $crate::_private::check_upload($path));
     };
     (@decl [$base:expr] $($line:tt)*) => {
         ::core::compile_error!(::core::concat!(
@@ -779,49 +829,49 @@ impl<P, Q> fmt::Debug for Route<P, Q> {
     }
 }
 
-/// The number of `{name}` segments in `path`.
-///
-/// Panics where a brace does not enclose a whole, named segment, so that
-/// `Route::new` in a `const` fails to compile on it.
-const fn count_params(path: &str) -> usize {
+/// The number of `{name}` segments in `path`, or why a brace does not
+/// enclose a whole, named segment.
+const fn count_params(path: &str) -> Result<usize, &'static str> {
     let bytes = path.as_bytes();
     let mut count = 0;
     let mut i = 0;
     while i < bytes.len() {
         match bytes[i] {
             b'{' => {
-                assert!(
-                    bytes[i - 1] == b'/',
-                    "a route parameter is a whole segment, so `{{` follows `/`"
-                );
+                if i == 0 || bytes[i - 1] != b'/' {
+                    return Err("a route parameter is a whole segment, so `{` follows `/`");
+                }
                 let wildcard = i + 1 < bytes.len() && bytes[i + 1] == b'*';
                 let start = if wildcard { i + 2 } else { i + 1 };
                 i = start;
                 while i < bytes.len() && bytes[i] != b'}' {
-                    assert!(
-                        bytes[i] != b'{' && bytes[i] != b'/' && bytes[i] != b'*',
-                        "a route parameter is `{{name}}` or `{{*name}}`, with no `{{`, `/`, or `*` inside the name"
-                    );
+                    if matches!(bytes[i], b'{' | b'/' | b'*') {
+                        return Err(
+                            "a route parameter is `{name}` or `{*name}`, with no `{`, `/`, or `*` inside the name",
+                        );
+                    }
                     i += 1;
                 }
-                assert!(i < bytes.len(), "a route parameter's `{{` has no `}}`");
-                assert!(i > start, "a route parameter has a name between its braces");
-                assert!(
-                    i + 1 == bytes.len() || bytes[i + 1] == b'/',
-                    "a route parameter is a whole segment, so `}}` ends it"
-                );
-                assert!(
-                    !wildcard || i + 1 == bytes.len(),
-                    "a `{{*name}}` parameter is the last segment of the path"
-                );
+                if i == bytes.len() {
+                    return Err("a route parameter's `{` has no `}`");
+                }
+                if i == start {
+                    return Err("a route parameter has a name between its braces");
+                }
+                if i + 1 != bytes.len() && bytes[i + 1] != b'/' {
+                    return Err("a route parameter is a whole segment, so `}` ends it");
+                }
+                if wildcard && i + 1 != bytes.len() {
+                    return Err("a `{*name}` parameter is the last segment of the path");
+                }
                 count += 1;
             }
-            b'}' => panic!("a route path has a `}}` with no `{{`"),
+            b'}' => return Err("a route path has a `}` with no `{`"),
             _ => {}
         }
         i += 1;
     }
-    count
+    Ok(count)
 }
 
 /// Whether the last segment of `path` is a `{*name}` parameter.
@@ -858,7 +908,7 @@ fn literal_parts(path: &str) -> Vec<&str> {
         parts.push(&rest[..open]);
         let close = rest[open..]
             .find('}')
-            .expect("`Route::new` checked that every `{` has a `}`");
+            .expect("`Route::check` found a `}` after every `{`");
         rest = &rest[open + close + 1..];
     }
     parts.push(rest);
@@ -1185,6 +1235,10 @@ pub(crate) fn query_string(value: &Value) -> String {
 /// assert_eq!(TAB.url(("red".to_owned(), Tab::TeamSettings)).as_str(), "/teams/red/team-settings");
 /// # let _ = pages;
 /// ```
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` cannot be one segment of a URL's path",
+    note = "a segment is an integer, a `String`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six"
+)]
 pub trait Segment: sealed::Sealed + Sized {
     /// Reads the value from a percent-decoded segment, or `None` if it is not one.
     #[doc(hidden)]
@@ -1514,30 +1568,28 @@ impl Search for () {
     }
 }
 
-impl<Q: SearchFields> Search for Q {
-    const TYPED: bool = true;
-    type Args<P: Params> = P::With<Q>;
-
-    fn join<P: Params>(params: P, search: Q) -> P::With<Q> {
-        params.join(search)
-    }
-
-    fn split<P: Params>(args: P::With<Q>) -> (P, Q) {
-        P::split(args)
-    }
-
-    fn unit() -> Option<Self> {
-        None
-    }
-
-    fn query(&self) -> String {
-        query_string(&serde_json::to_value(self).expect("a Signals struct serializes to JSON"))
-    }
+/// A [`Route`] whose parameters are [`Params`] and whose search parameters are [`Search`].
+///
+/// `routes!` writes a line's type as the type argument of a function bounded
+/// by it, so that the compiler's message for parameters that cannot be a
+/// route's points at that type.
+#[doc(hidden)]
+pub trait RouteType {
+    /// The route's parameters.
+    type Params: Params;
+    /// The route's search parameters.
+    type Search: Search;
 }
 
-/// A struct whose fields are each a [`SearchValue`], implemented by `#[derive(Search)]`.
-#[doc(hidden)]
-pub trait SearchFields: Signals {}
+impl<P: Params, Q: Search> RouteType for Route<P, Q> {
+    type Params = P;
+    type Search = Q;
+}
+
+/// The query string of `search`, with its `?`, or empty, for the `impl Search` of `#[derive(Search)]`.
+pub(crate) fn search_query<Q: Signals>(search: &Q) -> String {
+    query_string(&serde_json::to_value(search).expect("a Signals struct serializes to JSON"))
+}
 
 /// A [`Search`] field type: a [`SearchScalar`], or an `Option` or `Vec` of one.
 ///
@@ -1608,7 +1660,6 @@ extends!((A, B, C, D, E, F); [A, B, C, D, E, F] => (), A, (A, B), (A, B, C), (A,
 pub(crate) mod sealed {
     pub trait SealedSearch {}
     impl SealedSearch for () {}
-    impl<Q: super::SearchFields> SealedSearch for Q {}
 
     pub trait Sealed {}
     impl Sealed for () {}
@@ -1626,28 +1677,39 @@ mod tests {
 
     #[test]
     fn counts_whole_segment_parameters() {
-        assert_eq!(count_params("/"), 0);
-        assert_eq!(count_params("/users/{id}"), 1);
-        assert_eq!(count_params("/a/{x}/b/{y}/{z}"), 3);
+        assert_eq!(count_params("/"), Ok(0));
+        assert_eq!(count_params("/users/{id}"), Ok(1));
+        assert_eq!(count_params("/a/{x}/b/{y}/{z}"), Ok(3));
     }
 
     #[test]
-    #[should_panic(expected = "`{` follows `/`")]
     fn rejects_a_parameter_inside_a_segment() {
-        let _ = count_params("/user-{id}");
+        let reason = count_params("/user-{id}").expect_err("a brace inside a segment");
+        assert!(reason.contains("`{` follows `/`"), "{reason}");
     }
 
     #[test]
     fn counts_a_wildcard_at_the_end() {
-        assert_eq!(count_params("/files/{*rest}"), 1);
+        assert_eq!(count_params("/files/{*rest}"), Ok(1));
         assert!(ends_in_wildcard("/files/{*rest}"));
         assert!(!ends_in_wildcard("/files/{rest}"));
     }
 
     #[test]
-    #[should_panic(expected = "the last segment of the path")]
     fn rejects_a_wildcard_before_the_end() {
-        let _ = count_params("/files/{*rest}/raw");
+        let reason = count_params("/files/{*rest}/raw").expect_err("a wildcard before the end");
+        assert!(reason.contains("the last segment of the path"), "{reason}");
+    }
+
+    #[test]
+    fn checks_a_path_against_the_parameters() {
+        assert_eq!(Route::<(String, i32)>::check("/blog/{slug}/{id}"), Ok(()));
+        let reason = Route::<i32>::check("/blog/{slug}/{id}").expect_err("two segments, one value");
+        assert!(reason.contains("differ in number"), "{reason}");
+        let reason = Route::<()>::check("blog").expect_err("no leading slash");
+        assert!(reason.contains("starts with `/`"), "{reason}");
+        let reason = Route::<(Rest, i32)>::check("/files/{*rest}/{id}").expect_err("a rest first");
+        assert!(reason.contains("`{*name}`"), "{reason}");
     }
 
     #[test]

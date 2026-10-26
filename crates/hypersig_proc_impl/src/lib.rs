@@ -150,8 +150,8 @@ impl Errors {
 
 /// Expands `#[derive(Search)]` for the struct in `input`.
 ///
-/// The expansion implements `hypersig::_private::SearchFields` for the
-/// struct, with one bound per field that the field's type implements
+/// The expansion implements `hypersig::Search` and its seal for the struct,
+/// with one bound per field that the field's type implements
 /// `hypersig::SearchValue`. A field of any other type fails that bound at the
 /// field's type. It defines no other item.
 ///
@@ -179,7 +179,33 @@ fn expand_search(input: TokenStream) -> syn::Result<TokenStream> {
     let name = &input.ident;
     Ok(quote! {
         #[automatically_derived]
-        impl ::hypersig::_private::SearchFields for #name where #(#bounds,)* {}
+        impl ::hypersig::_private::SealedSearch for #name {}
+
+        #[automatically_derived]
+        impl ::hypersig::Search for #name
+        where
+            #name: ::hypersig::Signals,
+            #(#bounds,)*
+        {
+            const TYPED: bool = true;
+            type Args<P: ::hypersig::Params> = <P as ::hypersig::Params>::With<Self>;
+
+            fn join<P: ::hypersig::Params>(params: P, search: Self) -> Self::Args<P> {
+                <P as ::hypersig::Params>::join(params, search)
+            }
+
+            fn split<P: ::hypersig::Params>(args: Self::Args<P>) -> (P, Self) {
+                <P as ::hypersig::Params>::split(args)
+            }
+
+            fn unit() -> ::core::option::Option<Self> {
+                ::core::option::Option::None
+            }
+
+            fn query(&self) -> ::std::string::String {
+                ::hypersig::_private::search_query(self)
+            }
+        }
     })
 }
 
