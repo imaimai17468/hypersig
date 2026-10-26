@@ -22,7 +22,7 @@ Rust だけで書く[ハイパーメディア](https://imaimai17468.github.io/hy
 
 ```toml
 [dependencies]
-hypersig = "0.5"
+hypersig = "0.6"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
@@ -122,6 +122,7 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 - `Base` の下で配信するページが、その `Base` のない `routes!` ブロックのアクションを呼んでいる。呼び出しは接頭辞のないパスに送られ、プロキシか `Router::nest` が 404 を返します。
 - 1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けている。ページの描画が panic します。
 - `label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指している。ブラウザはその参照を無視するので、入力欄にラベルが付きません。
+- hypersig の外のスクリプトは、`El::foreign` を付けた要素を `data-hs-foreign` の値で探します。この値は `office::MAP` のような定数の完全なパスなので、モジュールや定数の名前を変えたり移したりすると値が変わり、スクリプトは要素を見つけられなくなります。
 
 ## 向かないアプリ
 
