@@ -83,3 +83,61 @@ it("runs an on-visible statement each time the element comes into view, and stop
   report([{ target: end, isIntersecting: false }]);
   expect(unobserved).toEqual([end]);
 });
+
+/** The statement that adds `by` to the signal `name`. */
+const add = (name: string, by: number) =>
+  `["set","${name}",["add",["sig","${name}"],["lit",${by}]]]`;
+
+/** The element `#ticker` with an interval of `ms` that adds `by` to `ticks`. */
+const ticker = (ms: number, by: number, extra = "") =>
+  `<p id="ticker" data-hs-on-interval='[${ms},["set","ticks",["add",["sig","ticks"],["lit",${by}]]]]'${extra}></p>`;
+
+it("runs the interval, the timeout, and the custom event a patch left on an element it kept", async () => {
+  vi.useFakeTimers();
+  try {
+    const runtime = mount(
+      ticker(
+        100,
+        1,
+        ` data-hs-on-timeout='[500,${add("late", 1)}]' data-hs-on-custom='[["ping",0,${add("pings", 1)}]]'`,
+      ),
+      { ticks: 0, late: 0, pings: 0, pongs: 0 },
+    );
+    await vi.advanceTimersByTimeAsync(100);
+    expect(runtime.store.get("ticks")).toBe(1);
+    const ticking = $("#ticker");
+    runtime.apply({
+      event: "hs-element",
+      data: JSON.stringify({
+        html: ticker(
+          200,
+          10,
+          ` data-hs-on-timeout='[500,${add("late", 10)}]' data-hs-on-custom='[["ping",0,${add("pings", 10)}],["pong",0,${add("pongs", 1)}]]'`,
+        ),
+      }),
+    });
+    expect($("#ticker")).toBe(ticking);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(runtime.store.get("ticks")).toBe(11);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(runtime.store.get("late")).toBe(10);
+    ticking.dispatchEvent(new CustomEvent("ping"));
+    ticking.dispatchEvent(new CustomEvent("pong"));
+    expect([runtime.store.get("pings"), runtime.store.get("pongs")]).toEqual([10, 1]);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it("stops the interval of an element a patch took it from", async () => {
+  vi.useFakeTimers();
+  try {
+    const runtime = mount(ticker(100, 1), { ticks: 0 });
+    await vi.advanceTimersByTimeAsync(100);
+    runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<p id="ticker"></p>` }) });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(runtime.store.get("ticks")).toBe(1);
+  } finally {
+    vi.useRealTimers();
+  }
+});

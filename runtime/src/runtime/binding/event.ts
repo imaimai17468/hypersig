@@ -3,7 +3,7 @@ import { attr } from "../element.ts";
 import { activate } from "./event/active.ts";
 import { onKey } from "./event/key.ts";
 import { rove } from "./event/rove.ts";
-import { BUBBLING, DIRECT } from "../spec.ts";
+import { BUBBLING, DIRECT, parse } from "../spec.ts";
 
 /** Whether `node` is `element` or inside it. */
 function within(element: Element, node: EventTarget | null): boolean {
@@ -13,6 +13,8 @@ function within(element: Element, node: EventTarget | null): boolean {
 /** The DOM events the page's handlers listen for, caught on the root. */
 export class Events {
   readonly #rt: Runtime;
+  /** The custom event types each element listens for. */
+  readonly #listened = new WeakMap<Element, Set<string>>();
 
   constructor(rt: Runtime) {
     this.#rt = rt;
@@ -35,21 +37,35 @@ export class Events {
   }
 
   /**
-   * Listens on `element` for the custom events of `handlers`, the entries of
-   * its `data-hs-on-custom`: an event's type, the depth its `detail` takes
-   * among the statement's variables, and the statement.
+   * Listens on `element` for the custom events its `data-hs-on-custom` names.
+   * Each entry is an event's type, the depth its `detail` takes among the
+   * statement's variables, and the statement. An event runs the entries the
+   * attribute holds when it arrives, so calling this again after a patch
+   * changed the attribute only adds the types it did not name before.
    */
-  custom(element: Element, handlers: readonly [string, number, unknown][]): void {
+  custom(element: Element): void {
+    let listened = this.#listened.get(element);
+    if (listened === undefined) {
+      listened = new Set();
+      this.#listened.set(element, listened);
+    }
+    for (const [type] of customHandlers(element)) {
+      if (listened.has(type)) continue;
+      listened.add(type);
+      element.addEventListener(type, (event) => this.#customEvent(element, type, event));
+    }
+  }
+
+  #customEvent(element: Element, type: string, event: Event): void {
     const { statements } = this.#rt.bindings;
-    for (const [type, depth, stmt] of handlers) {
-      element.addEventListener(type, (event) => {
-        this.#rt.lists.adoption.around(element);
-        const ctx = statements.context(element);
-        const detail = event instanceof CustomEvent ? (event.detail as unknown) : null;
-        statements.run(stmt, {
-          ...ctx,
-          vars: [...(ctx.vars ?? []).slice(0, depth), detail ?? null],
-        });
+    this.#rt.lists.adoption.around(element);
+    const detail = event instanceof CustomEvent ? (event.detail as unknown) : null;
+    for (const [named, depth, stmt] of customHandlers(element)) {
+      if (named !== type) continue;
+      const ctx = statements.context(element);
+      statements.run(stmt, {
+        ...ctx,
+        vars: [...(ctx.vars ?? []).slice(0, depth), detail ?? null],
       });
     }
   }
@@ -84,6 +100,12 @@ export class Events {
     const stmt = attr(target, handlerKey(type));
     if (stmt !== undefined) this.#rt.bindings.statements.runAttribute(stmt, target);
   }
+}
+
+/** The entries of `element`'s `data-hs-on-custom`. */
+function customHandlers(element: Element): readonly [string, number, unknown][] {
+  const handlers = parse(attr(element, "hsOnCustom"));
+  return Array.isArray(handlers) ? (handlers as [string, number, unknown][]) : [];
 }
 
 /** The `dataset` name of the handler attribute for events of `type`: `hsOnClick` for `data-hs-on-click`. */
