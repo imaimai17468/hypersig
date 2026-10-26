@@ -125,6 +125,16 @@ async fn a_segment_that_does_not_parse_gets_the_page() {
 }
 
 #[tokio::test]
+async fn a_segment_or_a_query_value_that_is_not_utf_8_gets_the_page() {
+    let (status, body) = get(pages(Router::new()), page("/en/orders/%FF")).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert!(body.contains(">No such page.</p>"), "{body}");
+    let (status, body) = get(pages(Router::new()), page("/en/products?by=%FF")).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body.contains("does not decode to UTF-8"), "{body}");
+}
+
+#[tokio::test]
 async fn a_handler_that_answers_none_gets_the_page() {
     let (status, body) = get(pages(Router::new()), page("/ja/orders/12")).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
