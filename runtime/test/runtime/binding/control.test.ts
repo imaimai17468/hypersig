@@ -43,13 +43,6 @@ it("leaves a JSON-bound signal as it was when the control holds text that is not
   expect(runtime.store.get("choice")).toBe(2);
 });
 
-/** Moves focus out of the edited field `input`, which fires `change` first, as the browser does. */
-function leave(input: HTMLInputElement): void {
-  input.dispatchEvent(new Event("change", { bubbles: true }));
-  input.blur();
-  input.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
-}
-
 /** A form with a text field bound to `title`, focused, after the visitor typed `typed` into it. */
 function typing(typed: string[]): [ReturnType<typeof mount>, HTMLInputElement] {
   const runtime = mount(`<form id="f"><input id="i" data-hs-bind='["title","text"]'></form>`, {
@@ -71,16 +64,15 @@ it("keeps the text being typed when an answer repeats an older value of it", asy
   expect([input.selectionStart, input.selectionEnd]).toEqual([5, 5]);
 });
 
-it("keeps the text being typed when an answer repeats the value shown before the first keystroke", async () => {
-  const runtime = mount(`<input id="i" data-hs-bind='["title","text"]'>`, { title: "Hel" });
-  const input = $<HTMLInputElement>("#i");
-  input.focus();
-  type(input, "Hell");
-  type(input, "Hello");
-  runtime.store.merge({ title: "Hel" });
+it("shows a value the visitor did not type at once, while the visitor is typing", async () => {
+  const [runtime, input] = typing(["w", "wr", "write"]);
+  runtime.store.merge({ title: "" });
   await tick();
-  expect(input.value).toBe("Hello");
-  expect(runtime.store.get("title")).toBe("Hello");
+  expect(input.value).toBe("");
+  runtime.store.merge({ title: "Japan" });
+  await tick();
+  expect(input.value).toBe("Japan");
+  expect(document.activeElement).toBe(input);
 });
 
 it("clears a field at once after a change event commits its text", async () => {
@@ -90,39 +82,6 @@ it("clears a field at once after a change event commits its text", async () => {
   await tick();
   expect(input.value).toBe("");
   expect(document.activeElement).toBe(input);
-});
-
-it("keeps a JSON-bound control's text until its change event commits it", async () => {
-  const runtime = mount(`<input id="i" data-hs-bind='["choice","json"]'>`, { choice: 1 });
-  const input = $<HTMLInputElement>("#i");
-  input.focus();
-  type(input, "3");
-  runtime.store.merge({ choice: 2 });
-  await tick();
-  expect(input.value).toBe("3");
-  type(input, "3", "change");
-  expect(runtime.store.get("choice")).toBe(3);
-});
-
-it("shows a new value from the server once focus leaves the control being typed in", async () => {
-  const [runtime, input] = typing(["H", "Hi"]);
-  runtime.store.merge({ title: "Renamed" });
-  await tick();
-  expect(input.value).toBe("Hi");
-  expect(runtime.store.get("title")).toBe("Renamed");
-  leave(input);
-  expect(input.value).toBe("Renamed");
-});
-
-it("lets the visitor's next input replace a value the control did not show yet", async () => {
-  const [runtime, input] = typing(["H", "Hi"]);
-  runtime.store.merge({ title: "Renamed" });
-  await tick();
-  type(input, "Hi!");
-  await tick();
-  expect(runtime.store.get("title")).toBe("Hi!");
-  leave(input);
-  expect(input.value).toBe("Hi!");
 });
 
 it("clears a field the visitor submitted at once, while it keeps focus", async () => {
