@@ -297,11 +297,17 @@ impl<S> Call<S> {
     ///
     /// Emptying it on each send lets a handler of
     /// [`El::on_signal_change`](crate::html::El::on_signal_change) see a
-    /// failure that repeats the last one. The text is the body of an answer whose status is outside 2xx, so a
-    /// handler that fails writes the sentence the page shows. When that body
-    /// is empty, it is the status and its reason, such as `502 Bad Gateway`,
-    /// and when no answer arrives, it is the browser's message. The status
-    /// also goes to the console and to the `hs-error` event.
+    /// failure that repeats the last one. The text is the `text/plain` body
+    /// of an answer whose status is outside 2xx, which axum sends for a
+    /// `String`, so a handler that fails writes the sentence the page shows.
+    /// When that body is empty or of another type, such as a proxy's HTML
+    /// error page, it is the status and its reason, such as `502 Bad
+    /// Gateway`, and when no answer arrives, it is the browser's message. A
+    /// 2xx answer fails too, with a message of the runtime's own, when it
+    /// was redirected, is not an event stream, or closes before the event
+    /// `hs-end` that ends every answer of the router, as does a call whose
+    /// [`Call::timeout`] passed. The status also goes to the console and to
+    /// the `hs-error` event.
     #[must_use]
     pub fn error(mut self, message: Sig<S, String>) -> Self {
         self.error = Value::from(message.path());
@@ -310,8 +316,10 @@ impl<S> Call<S> {
 
     /// Sets `status` to the HTTP status of a failed answer, and to `0` when the call is sent.
     ///
-    /// It stays `0` when no answer arrives, such as when the connection
-    /// fails. A page compares it with a status the server answers with,
+    /// It stays `0` when no answer the runtime can read arrives: the
+    /// connection fails, the answer was redirected, is not an event stream,
+    /// or closes before the server ended it, or the [`Call::timeout`]
+    /// passed. A page compares it with a status the server answers with,
     /// written from `StatusCode` rather than as a number, to tell one
     /// failure from another without reading the text [`Call::error`] holds.
     ///

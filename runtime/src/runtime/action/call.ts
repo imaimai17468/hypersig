@@ -37,7 +37,7 @@ interface Pending {
 /** The action calls statements make, and the indicators that count the ones awaiting an answer. */
 export class Calls {
   readonly #rt: Runtime;
-  /** The unfinished call sent with `latest`, by method and action path. */
+  /** The unfinished call sent with `latest`, by the key `call` builds from the action and the part. */
   readonly #latest = new Map<string, AbortController>();
   /** The number of calls awaiting an answer, by the indicator signal they set. */
   readonly #waiting = new Map<string, number>();
@@ -69,8 +69,6 @@ export class Calls {
     const key = `${method} ${path} ${options.part ?? ""}`;
     if (options.exclusive && this.#flights.busy(key)) return;
     const pending = this.#pending(method, path, key, args, error, options, indicator);
-    // The first request is built before the call returns, so a statement after it can change what the arguments read.
-    const url = pending.request();
     // The store notifies only a change, so a failure that repeats the last message would go unnoticed if the signal kept it.
     if (error !== null) this.#rt.store.set(error, "");
     if (options.status !== undefined) this.#rt.store.set(options.status, 0);
@@ -87,6 +85,10 @@ export class Calls {
         : setTimeout(() => pending.controller.abort(TIMED_OUT), options.timeout);
     let complete = false;
     try {
+      // The first request is built before the call returns, so a statement
+      // after it can change what the arguments read. Arguments that fail to
+      // evaluate still reach the `finally`, which ends the call's records.
+      const url = pending.request();
       complete = await this.#attempt(pending, url, FIRST_RETRY_MS);
     } finally {
       clearTimeout(timer);
