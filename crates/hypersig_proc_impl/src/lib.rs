@@ -16,7 +16,8 @@ use syn::{Data, DeriveInput, Fields, FieldsNamed};
 /// function per field, named after the field, returning a typed
 /// `hypersig::Sig` for it. A field marked `#[signals(computed)]` gets a
 /// `Sig<Self, T, hypersig::Computed>`, and every other field a
-/// `Sig<Self, T>`. It defines no other item.
+/// `Sig<Self, T>`. Where a field is marked, the impl also sets `COMPUTED`
+/// to the names of the marked fields. It defines no other item.
 ///
 /// Rejected inputs, each with a compile error at the offending span: enums,
 /// unions, tuple and unit structs, generic structs, and any `#[serde(...)]`
@@ -65,6 +66,7 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
 
     let mut accessors = Vec::with_capacity(named.named.len());
     let mut shape = Vec::with_capacity(named.named.len());
+    let mut computed_fields = Vec::new();
     for field in &named.named {
         errors.push(reject_serde_attributes(&field.attrs));
         let computed = match is_computed(&field.attrs) {
@@ -82,6 +84,9 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
         let ty = &field.ty;
         shape.push(format!("{path}:{}", quote!(#ty)));
         let doc = format!("Typed reference to the `{path}` signal.");
+        if computed {
+            computed_fields.push(path.clone());
+        }
         let accessor = if computed {
             quote! {
                 #vis fn #ident() -> ::hypersig::Sig<Self, #ty, ::hypersig::Computed> {
@@ -105,12 +110,16 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
 
     let errors = errors.into_compile_error();
     let shape = shape.join(",");
+    let computed_const = (!computed_fields.is_empty()).then(|| {
+        quote! { const COMPUTED: &'static [&'static str] = &[#(#computed_fields),*]; }
+    });
     quote! {
         #errors
 
         #[automatically_derived]
         impl ::hypersig::Signals for #name {
             const SHAPE: &'static str = #shape;
+            #computed_const
         }
 
         #[automatically_derived]

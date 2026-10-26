@@ -6,7 +6,7 @@ use divan::{AllocProfiler, Bencher};
 use hypersig::html::{Class, El, Node, attr, each_keyed, input, li, span, ul};
 use hypersig::style::value::{Color, Display, rem};
 use hypersig::style::{Media, PseudoClass, Style};
-use hypersig::{Page, Signals};
+use hypersig::{Page, Sig, Signals};
 use serde::{Deserialize, Serialize};
 
 #[global_allocator]
@@ -25,32 +25,42 @@ struct Todo {
 struct Todos {
     items: Vec<Todo>,
     filter: String,
+}
+
+/// The signals of `count_computed_once`, whose `left` a `Page::computed` keeps.
+#[derive(Signals, Serialize, Deserialize)]
+struct Counted {
+    items: Vec<Todo>,
+    filter: String,
     #[signals(computed)]
     left: i32,
 }
 
+fn items(len: i32) -> Vec<Todo> {
+    (0..len)
+        .map(|id| Todo {
+            id,
+            title: format!("todo {id}"),
+            done: id % 3 == 0,
+        })
+        .collect()
+}
+
 fn signals(len: i32) -> Todos {
     Todos {
-        items: (0..len)
-            .map(|id| Todo {
-                id,
-                title: format!("todo {id}"),
-                done: id % 3 == 0,
-            })
-            .collect(),
+        items: items(len),
         filter: "all".to_owned(),
-        left: 0,
     }
 }
 
 /// Each item carries a class, a visibility condition, a checkbox, and a text binding.
-fn list(left: impl Fn() -> El<Todos>) -> Node<Todos> {
+fn list<S>(items: Sig<S, Vec<Todo>>, filter: Sig<S, String>, left: impl Fn() -> El<S>) -> Node<S> {
     each_keyed(
-        Todos::items(),
+        items,
         |todo| todo.at(Todo::id()),
         |todo| {
             li().class_when(DONE, todo.at(Todo::done()))
-                .show(Todos::filter().equals("all").or(!todo.at(Todo::done())))
+                .show(filter.equals("all").or(!todo.at(Todo::done())))
                 .child(
                     input()
                         .attr(attr::TYPE, "checkbox")
@@ -68,7 +78,11 @@ fn main() {
 
 #[divan::bench(args = [100, 1_000, 10_000])]
 fn list_items(bencher: Bencher, len: i32) {
-    let page = Page::new("bench", signals(len)).child(ul().child(list(span)));
+    let page = Page::new("bench", signals(len)).child(ul().child(list(
+        Todos::items(),
+        Todos::filter(),
+        span,
+    )));
     bencher.bench_local(|| page.render());
 }
 
@@ -97,24 +111,35 @@ fn list_items_styled(bencher: Bencher, len: i32) {
 /// Every item counts the whole list, so the work grows with the square of the length.
 #[divan::bench(args = [100, 1_000])]
 fn count_in_each_item(bencher: Bencher, len: i32) {
-    let page = Page::new("bench", signals(len)).child(ul().child(list(|| {
-        span().bind_text(
-            Todos::items()
-                .count(|todo| !todo.at(Todo::done()))
-                .to_text(),
-        )
-    })));
+    let page = Page::new("bench", signals(len)).child(ul().child(list(
+        Todos::items(),
+        Todos::filter(),
+        || {
+            span().bind_text(
+                Todos::items()
+                    .count(|todo| !todo.at(Todo::done()))
+                    .to_text(),
+            )
+        },
+    )));
     bencher.bench_local(|| page.render());
 }
 
 /// The same count as `count_in_each_item`, computed once by `Page::computed`.
 #[divan::bench(args = [100, 1_000])]
 fn count_computed_once(bencher: Bencher, len: i32) {
-    let page = Page::new("bench", signals(len))
+    let signals = Counted {
+        items: items(len),
+        filter: "all".to_owned(),
+        left: 0,
+    };
+    let page = Page::new("bench", signals)
         .computed(
-            Todos::left(),
-            Todos::items().count(|todo| !todo.at(Todo::done())),
+            Counted::left(),
+            Counted::items().count(|todo| !todo.at(Todo::done())),
         )
-        .child(ul().child(list(|| span().bind_text(Todos::left().to_text()))));
+        .child(ul().child(list(Counted::items(), Counted::filter(), || {
+            span().bind_text(Counted::left().to_text())
+        })));
     bencher.bench_local(|| page.render());
 }
