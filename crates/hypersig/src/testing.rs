@@ -20,7 +20,9 @@
 //!   `swap`, `extend`, `retain`, `update_where`, `set_all`, `sort_by`, and
 //!   `sort_by_desc`;
 //! - a statement given to [`El::on_debounced`](crate::html::El::on_debounced),
-//!   once [`Simulation::pause`] says the visitor stopped.
+//!   once [`Simulation::pause`] says the visitor stopped. Two elements
+//!   outside a list that debounce one statement share one wait here, where
+//!   the browser keeps one per element.
 //!
 //! It records these in the [`Effects`] the event returns, and runs nothing
 //! for them, because they need the server or the browser:
@@ -48,6 +50,9 @@
 //! [`El::on_load`](crate::html::El::on_load),
 //! [`El::on_visible`](crate::html::El::on_visible), or a key shortcut, even
 //! where the browser would run one after a click changed a signal it reads.
+//! It fires no event apart from the four above, so a statement on a double
+//! click, on focus or blur, on the pointer entering or leaving, on a key,
+//! or on an [`El::on_custom`](crate::html::El::on_custom) event never runs.
 //! It applies no patch of the server's answer. A test reaches those through
 //! a browser.
 
