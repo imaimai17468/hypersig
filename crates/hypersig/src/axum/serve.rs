@@ -13,7 +13,7 @@ use tokio::net::TcpListener;
 ///
 /// A stream that a page holds open never finishes on its own, so without a
 /// limit one open tab would keep the server from stopping. Five seconds is
-/// within the grace period of Docker (10 seconds) and Fly.io (5 seconds).
+/// within the 10 seconds `docker stop` waits before it kills the container.
 const GRACE: Duration = Duration::from_secs(5);
 
 /// Serves `app` on the address in `ADDR` or `PORT` until Ctrl+C or SIGTERM.
