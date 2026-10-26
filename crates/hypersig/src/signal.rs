@@ -54,6 +54,14 @@ pub trait Signals: Serialize + DeserializeOwned + Send + 'static {
     /// An impl written by hand leaves it empty, and its page restores
     /// nothing.
     const SHAPE: &'static str = "";
+
+    /// The fields marked `#[signals(computed)]`, which `#[derive(Signals)]` writes.
+    ///
+    /// [`Page::render`](crate::Page::render) panics when one of them is
+    /// named by no [`Page::computed`](crate::Page::computed) call, since
+    /// nothing would then keep it up to date. Only the struct's own fields
+    /// are listed, so a marked field of a nested struct goes unchecked.
+    const COMPUTED: &'static [&'static str] = &[];
 }
 
 /// A piece of page written once against its own signals, which any page can embed.

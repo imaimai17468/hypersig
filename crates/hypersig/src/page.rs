@@ -652,7 +652,20 @@ impl<S: Signals> Page<S> {
     }
 
     /// The signals as JSON, with each computed signal set from the others.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a field of `S` marked `#[signals(computed)]` is named by no
+    /// [`Page::computed`] call, or if the signals fail to serialize.
     fn initial_values(&self) -> Tape {
+        for field in S::COMPUTED {
+            assert!(
+                self.computed.iter().any(|(path, _)| path == field),
+                "the field `{field}` of `{}` is marked `#[signals(computed)]`, and no \
+                 `Page::computed` call names it, so nothing would keep it up to date",
+                std::any::type_name::<S>()
+            );
+        }
         let mut root = Tape::new(&self.signals)
             .unwrap_or_else(|error| panic!("the page's signals do not serialize to JSON: {error}"));
         for (path, value) in &self.computed {
@@ -1044,6 +1057,32 @@ mod tests {
             .find(r#"<script type="module" src="/editor.js" nonce="n0nce"></script>"#)
             .expect("the editor script");
         assert!(runtime < map && map < editor && editor < html.find("</head>").unwrap());
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Cart {
+        price: f64,
+        #[signals(computed)]
+        total: f64,
+    }
+
+    #[test]
+    #[should_panic(expected = "the field `total` of `hypersig::page::tests::Cart` is marked")]
+    fn a_computed_field_no_page_computed_names_panics() {
+        let _ = Page::new("Cart", Cart::default()).render();
+    }
+
+    #[test]
+    fn a_computed_field_page_computed_names_renders() {
+        let page = Page::new(
+            "Cart",
+            Cart {
+                price: 2.0,
+                total: 0.0,
+            },
+        )
+        .computed(Cart::total(), Cart::price() * 2.0);
+        assert_eq!(page.value_of(Cart::total()), 4.0);
     }
 
     #[test]

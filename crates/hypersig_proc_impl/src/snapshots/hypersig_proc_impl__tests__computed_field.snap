@@ -5,6 +5,7 @@ expression: "expand(quote! { struct Cart { price: f64, #[signals(computed)] tota
 #[automatically_derived]
 impl ::hypersig::Signals for Cart {
     const SHAPE: &'static str = "price:f64,total:f64";
+    const COMPUTED: &'static [&'static str] = &["total"];
 }
 #[automatically_derived]
 impl Cart {
