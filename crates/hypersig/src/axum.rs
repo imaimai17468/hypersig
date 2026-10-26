@@ -24,6 +24,7 @@ use futures::{Stream, StreamExt as _, stream};
 use serde::de::DeserializeOwned;
 
 use crate::action::{Action, Method, StreamAction};
+use crate::exact;
 use crate::page::{Framing, Page};
 use crate::patch::{ListPatch, PartMismatch, PatchEvent, Patches, SignalPatch};
 use crate::route::{Base, Params, Route, Search, Url};
@@ -1157,7 +1158,7 @@ fn read_args<A: DeserializeOwned>(
             if !json {
                 return Err(RequestError::new(Refusal::NotJson));
             }
-            serde_json::from_slice(if body.is_empty() { b"null" } else { body })
+            exact::from_slice(if body.is_empty() { b"null" } else { body })
         }
         // An `<img>`, a link, or a form sends a GET with another `Accept`, so
         // they cannot call the action from a browser without
@@ -1166,7 +1167,9 @@ fn read_args<A: DeserializeOwned>(
         Method::Get if !from_runtime(headers) => {
             return Err(RequestError::new(Refusal::NotFromRuntime));
         }
-        Method::Get => serde_json::from_str(query.get("args").map_or("null", String::as_str)),
+        Method::Get => {
+            exact::from_slice(query.get("args").map_or("null", String::as_str).as_bytes())
+        }
     }
     .map_err(|source| RequestError::new(Refusal::Arguments(source)))
 }
@@ -1298,7 +1301,7 @@ async fn read_args_part<A: DeserializeOwned>(
         return Err(RequestError::unexpected_part());
     }
     let args = field.bytes().await.map_err(RequestError::from_multer)?;
-    serde_json::from_slice(&args).map_err(|source| RequestError::new(Refusal::Arguments(source)))
+    exact::from_slice(&args).map_err(|source| RequestError::new(Refusal::Arguments(source)))
 }
 
 /// Refuses an upload from another site, one without [`UPLOAD_HEADER`], one
