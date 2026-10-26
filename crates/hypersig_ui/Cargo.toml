@@ -13,7 +13,7 @@ readme = "../../README.md"
 include = ["src/**/*.rs"]
 
 [dependencies]
-hypersig = { path = "../hypersig", version = "=0.7.1", default-features = false }
+hypersig = { path = "../hypersig", version = "=0.8.0", default-features = false }
 serde.workspace = true
 
 [dev-dependencies]
