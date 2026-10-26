@@ -6,7 +6,7 @@
 
 **Server-owned state, type-checked strings.**
 
-hypersig is a [hypermedia](https://imaimai17468.github.io/hypersig/learn/why/#hypermedia) web framework on axum in which the page, its behavior in the browser, and the server handlers are all written in Rust. The server holds the state and sends the browser patches. Every string the browser acts on (signal names, expressions, action URLs, links) is produced from a Rust type, so a mistake in one is a compile error.
+hypersig is a [hypermedia](https://imaimai17468.github.io/hypersig/learn/why/#hypermedia) web framework on axum in which the page, its behavior in the browser, and the server handlers are all written in Rust. The server holds the state and sends the browser patches. Every string the browser acts on (signal names, expressions, action URLs, links) is produced from a Rust type, so a mistake in one is a compile error. The few mistakes the compiler cannot see are listed under [What the compiler does not check](#what-the-compiler-does-not-check).
 
 - `cargo build` builds the whole application. There is no Node or wasm step.
 - A mismatch between the page and the server is a compile error, and so is a link that does not fit a route ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
@@ -113,6 +113,15 @@ The same page styled with `hypersig::style`, Tailwind CSS, Panda CSS, StyleX, an
 ## Security
 
 [Security](https://imaimai17468.github.io/hypersig/learn/security/) lists what hypersig checks: escaping, the attributes and URLs a page may write, the requests an action refuses, and why a request cannot name code to run on the server. It also lists what each application checks itself, starting with who may call each action.
+
+## What the compiler does not check
+
+These mistakes compile, and each one shows up when the program runs ([What the compiler does not check](https://imaimai17468.github.io/hypersig/learn/why/#what-the-compiler-does-not-check)):
+
+- The function `routes!` generates is never called on the router. Its pages and actions then answer 404. rustc's `dead_code` lint reports a handler `fn` that only that function names, but not a closure.
+- A page served under a `Base` calls an action from a `routes!` block without it. The call goes to the path without the prefix, which a proxy or `Router::nest` answers with 404.
+- One `node_ref!` or `dialog_ref!` constant sits on two elements outside a list template. Rendering the page panics.
+- A reference such as `label_for(&EMAIL)` names an `Id` that no element on the page carries. The browser ignores it, so the control has no label.
 
 ## What it does not suit
 
