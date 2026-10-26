@@ -48,13 +48,12 @@ esac
 
 [[ ${#kinds[@]} -eq 0 ]] && exit 0
 
-checklist_rust='Rust checklist (.claude/rules/rust.md, sent in full earlier in this context):
-- No public parameter that takes &str or String for a signal path, an element id, a URL, an expression, an event name, or CSS. No compile error turned into a runtime check.
-- No unsafe. Override a lint with #[expect(..., reason = "...")], never #[allow].
-- A broken invariant panics; bad input returns Result.
+checklist_rust='Rust checklist (.claude/rules/rust.md, sent in full earlier in this context). clippy, missing_docs, and the public API test catch unsafe, #[allow], missing docs, redundant clones, wrappers and third-party types in the public API, a third type parameter, and a second public path; what is left needs judgment:
+- A string the browser acts on (a signal path, an element id, a URL, an expression, an event name, CSS) comes from a type, never a public &str or String parameter. No compile error turned into a runtime check.
+- A broken invariant panics; bad input returns Result. A library error is a struct with Display, Error, and source.
 - No trait with one implementor and no generic caller. No function that only forwards its arguments. Borrow before cloning.
 - A comment gives the reason for the code directly below it, or a fact that code cannot show. No history, no restating the line.
-- A new public item has a summary under 15 words and # Examples / # Errors / # Panics where they apply. A promised compile error gets a trybuild case in the same commit.'
+- A promised compile error gets a trybuild case in the same commit.'
 
 checklist_prose='Prose checklist (.claude/rules/prose.md, sent in full earlier in this context):
 - Japanese: yomiyasu lint runs after each edit (lint-prose.py); fix what applies. Polite です/ます, no dash, no i-adjective + です, no two adversative connectives in a row.
