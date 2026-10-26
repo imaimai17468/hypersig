@@ -152,9 +152,10 @@ impl Theme {
         self.declarations.is_empty()
     }
 
-    /// The theme as a stylesheet in [`TOKEN_LAYER`]: the unconditioned values
-    /// first, then one block per set of media conditions, in the order
-    /// [`Media`] lists them.
+    /// The theme as a stylesheet in [`TOKEN_LAYER`].
+    ///
+    /// The unconditioned values come first, then one block per set of media
+    /// conditions, in the order [`Media`] lists them.
     #[must_use]
     pub fn to_css(&self) -> String {
         let mut groups: Vec<&Vec<Media>> = self.declarations.iter().map(|(m, _, _)| m).collect();

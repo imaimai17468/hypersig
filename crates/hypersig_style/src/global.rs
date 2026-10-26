@@ -96,8 +96,10 @@ pub struct FontFace {
 }
 
 impl FontFace {
-    /// The font `family` loaded from `src`, a WOFF2 file or any format the
-    /// browser recognizes from the file.
+    /// The font `family` loaded from `src`.
+    ///
+    /// `src` is a WOFF2 file or any format the browser recognizes from the
+    /// file.
     #[must_use]
     pub fn new(family: &'static str, src: Url) -> Self {
         Self {
@@ -108,8 +110,10 @@ impl FontFace {
         }
     }
 
-    /// The weights the file covers, from `min` to `max`, as a variable font
-    /// declares them. One weight is `weights(400, 400)`.
+    /// The weights the file covers, from `min` to `max`.
+    ///
+    /// This is how a variable font declares them. One weight is `weights(400,
+    /// 400)`.
     #[must_use]
     pub fn weights(mut self, min: u16, max: u16) -> Self {
         self.weight = Some((min, max));
@@ -180,8 +184,10 @@ impl Global {
         Self::default()
     }
 
-    /// A small reset: `border-box` sizing everywhere, no default margins,
-    /// form controls in the page's font, and media that shrinks to its box.
+    /// A small reset.
+    ///
+    /// It sets `border-box` sizing everywhere, removes default margins, puts
+    /// form controls in the page's font, and makes media shrink to its box.
     #[must_use]
     pub fn preflight() -> Self {
         Self::new()
