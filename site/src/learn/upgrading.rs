@@ -14,14 +14,71 @@ pub fn upgrading(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The releases that changed a public signature, 0.5 through 0.8, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
-                ja: "公開しているシグネチャを変えた 0.5 から 0.8 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
+                en: "The releases that changed a public signature, 0.5 through 0.9, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
+                ja: "公開しているシグネチャを変えた 0.5 から 0.9 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
             },
         ),
+        to_0_9(site),
         to_0_8(site),
         to_0_7(site),
         to_0_6(site),
         to_0_5(site),
+    ])
+}
+
+fn to_0_9(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "From 0.8 to 0.9",
+                ja: "0.8 から 0.9 へ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The URLs a page loads and its language are typed values now. [`Page::script`](api:hypersig/struct.Page.html#method.script), `stylesheet`, `icon`, and `runtime_src` take an [`Asset`](api:hypersig/struct.Asset.html), and [`Page::lang`](api:hypersig/struct.Page.html#method.lang) and the `hreflang` of `Page::alternate` take a [`LanguageTag`](api:hypersig/struct.LanguageTag.html). Both check their text when the constant is built, and an `Asset` path starting with `/` is written under the page's `Base`.",
+                ja: "ページが読み込む URL とページの言語は、型の付いた値で渡すようになりました。[`Page::script`](api:hypersig/struct.Page.html#method.script)、`stylesheet`、`icon`、`runtime_src` は [`Asset`](api:hypersig/struct.Asset.html) を、[`Page::lang`](api:hypersig/struct.Page.html#method.lang) と `Page::alternate` の `hreflang` は [`LanguageTag`](api:hypersig/struct.LanguageTag.html) を受け取ります。どちらも定数を作るときに文字列を検査し、`/` で始まる `Asset` のパスはページの `Base` の下に書かれます。",
+            },
+        ),
+        show_change(Snippet::Upgrade09),
+        para(
+            site,
+            L {
+                en: "The other changes that need an edit:",
+                ja: "ほかに書き換えが必要な変更は次のとおりです。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "`Locale::ALL` is gone. `Locale` requires `Variants`, which `#[derive(Segment)]` already writes, and the first variant is the default.",
+                    ja: "`Locale::ALL` はなくなりました。`Locale` は `Variants` を求めます。`Variants` は `#[derive(Segment)]` が書くもので、最初のバリアントが既定のロケールです。",
+                },
+                L {
+                    en: "`hypersig_ui::Tabs::new` and `Listbox::new` take one closure over every variant in place of `.tab(..)` and `.option(..)`, and `Accordion::exclusive` takes an `Id`.",
+                    ja: "`hypersig_ui::Tabs::new` と `Listbox::new` は `.tab(..)` と `.option(..)` の代わりに全バリアントを受け取るクロージャを 1 つ受け取り、`Accordion::exclusive` は `Id` を受け取ります。",
+                },
+                L {
+                    en: "`UploadedFile::file_name` and `StreamedFile::file_name` return `Option<FileName>`. Call `base_name` for a name to store a file under.",
+                    ja: "`UploadedFile::file_name` と `StreamedFile::file_name` は `Option<FileName>` を返します。ファイルを保存するときの名前には `base_name` を使ってください。",
+                },
+                L {
+                    en: "`hypersig_ui::Chart` has two type parameters. Code that named the third drops it.",
+                    ja: "`hypersig_ui::Chart` の型引数は 2 つになりました。3 つ目を書いていたコードはそれを消してください。",
+                },
+                L {
+                    en: "A test that builds a GET action request by hand adds the `hypersig-call` header, or uses `Action::request`, which adds it.",
+                    ja: "GET のアクションのリクエストをテストで手作りしている場合は、`hypersig-call` のヘッダーを付けるか、ヘッダーを付ける `Action::request` を使ってください。",
+                },
+                L {
+                    en: "Two elements with one `Id::with_key` id, a `Page::computed` signal named twice or read before it is computed, a form rule that reads `Expr::now`, and a list item read outside its list now panic while the page is built.",
+                    ja: "同じ `Id::with_key` の id を持つ 2 つの要素、2 回指定したか計算前に読んだ `Page::computed` のシグナル、`Expr::now` を読むフォームの規則、リストの外で読んだリストの項目は、ページを組み立てるときにパニックするようになりました。",
+                },
+            ],
+        ),
     ])
 }
 

@@ -39,7 +39,7 @@ pub fn quick_start(site: Site) -> Part {
             Lang::Toml,
             Some("Cargo.toml"),
             r#"[dependencies]
-hypersig = "0.8"
+hypersig = "0.9"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
@@ -157,8 +157,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "The counter below runs the browser side of the program on this page. Its code uses two crates the program above does not: the buttons come from `hypersig_ui`, the component crate in the same repository, and the layout from `hypersig::style`, which comes with hypersig. To run the code of a demo on this site in your own project, add `hypersig_ui = \"0.8\"` under `[dependencies]`, as [Installation](components/installation/) shows. [Styling](learn/styling/) covers `hypersig::style`.",
-                ja: "下のカウンターはこのプログラムのブラウザ側をこのページで動かしています。このコードは上のプログラムにないものを 2 つ使っています。ボタンは同じリポジトリにあるコンポーネントのクレート `hypersig_ui` のもので、レイアウトは hypersig に含まれる `hypersig::style` で書いています。このサイトのデモのコードを自分のプロジェクトで動かすときは、[インストール](components/installation/) のとおり `[dependencies]` に `hypersig_ui = \"0.8\"` を加えてください。`hypersig::style` は [スタイル](learn/styling/) で説明します。",
+                en: "The counter below runs the browser side of the program on this page. Its code uses two crates the program above does not: the buttons come from `hypersig_ui`, the component crate in the same repository, and the layout from `hypersig::style`, which comes with hypersig. To run the code of a demo on this site in your own project, add `hypersig_ui = \"0.9\"` under `[dependencies]`, as [Installation](components/installation/) shows. [Styling](learn/styling/) covers `hypersig::style`.",
+                ja: "下のカウンターはこのプログラムのブラウザ側をこのページで動かしています。このコードは上のプログラムにないものを 2 つ使っています。ボタンは同じリポジトリにあるコンポーネントのクレート `hypersig_ui` のもので、レイアウトは hypersig に含まれる `hypersig::style` で書いています。このサイトのデモのコードを自分のプロジェクトで動かすときは、[インストール](components/installation/) のとおり `[dependencies]` に `hypersig_ui = \"0.9\"` を加えてください。`hypersig::style` は [スタイル](learn/styling/) で説明します。",
             },
         ),
         demo::show(site, Demo::Counter),
