@@ -273,7 +273,7 @@ impl Path {
     pub(crate) fn expr_json(&self) -> Value {
         match self.item {
             None => json!(["sig", self.rooted()]),
-            Some(depth) => json!(["item", depth, self.dotted()]),
+            Some(depth) => json!(["item", in_scope(depth), self.dotted()]),
         }
     }
 
@@ -281,7 +281,7 @@ impl Path {
     pub(crate) fn place_json(&self) -> Value {
         match self.item {
             None => Value::from(self.rooted()),
-            Some(depth) => json!(["item", depth, self.dotted()]),
+            Some(depth) => json!(["item", in_scope(depth), self.dotted()]),
         }
     }
 }
@@ -323,6 +323,25 @@ impl fmt::Debug for Path {
 
 thread_local! {
     static ITEM_DEPTH: Cell<u8> = const { Cell::new(0) };
+}
+
+/// `depth`, after checking that the closure of the list item at `depth` is still running.
+///
+/// An [`Item`] or a signal reached from one names its item by depth, so one
+/// used after its closure returned would name an item no list provides.
+/// The check sees only the depth, so an item used inside another list at
+/// the same depth passes it, and so does an expression built inside the
+/// closure and used outside, since it was written while the closure ran.
+///
+/// # Panics
+///
+/// Panics if no item scope at `depth` is open.
+fn in_scope(depth: u8) -> u8 {
+    assert!(
+        depth < ITEM_DEPTH.get(),
+        "a list item is used outside the closure it was passed to"
+    );
+    depth
 }
 
 /// Runs `body` with the depth of a new item scope, one deeper than the
@@ -789,6 +808,11 @@ impl<S, T> Item<S, T> {
     }
 
     /// The field `field` of the item.
+    ///
+    /// `field` is one the browser may write. A field marked
+    /// `#[signals(computed)]` is refused, because
+    /// [`Page::computed`](crate::Page::computed) names a path from the page's
+    /// struct and cannot keep a field of each item.
     #[must_use]
     pub fn at<U>(self, field: Sig<T, U>) -> Sig<S, U, Local> {
         self.value().at(field)
@@ -797,7 +821,7 @@ impl<S, T> Item<S, T> {
     /// The item's position in its list, starting at 0.
     #[must_use]
     pub fn index(self) -> Expr<S, i32> {
-        Expr::from_json(json!(["index", self.depth]))
+        Expr::from_json(json!(["index", in_scope(self.depth)]))
     }
 
     /// A statement that removes this item from its list.
@@ -827,5 +851,29 @@ impl<S, T> fmt::Debug for Item<S, T> {
 impl<S, T> IntoExpr<S, T> for Item<S, T> {
     fn into_expr(self) -> Expr<S, T> {
         self.value().expr()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::_private::sig;
+    use crate::html::{each, span};
+
+    enum Board {}
+    enum Task {}
+
+    #[test]
+    #[should_panic(expected = "a list item is used outside the closure it was passed to")]
+    fn an_item_used_after_its_closure_returned_panics() {
+        let tasks: Sig<Board, Vec<Task>> = sig("tasks");
+        let title: Sig<Task, String> = sig("title");
+        let mut kept = None;
+        let _list = each(tasks, |task| {
+            kept = Some(task);
+            span()
+        });
+        let task = kept.expect("`each` runs its closure before it returns");
+        let _ = task.at(title).set("");
     }
 }

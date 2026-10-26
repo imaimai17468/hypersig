@@ -12,7 +12,7 @@ use hypersig::style::value::{
     ZIndex, pct, px, raw, rem,
 };
 use hypersig::style::{Condition, Property, PseudoClass, Style, Token};
-use hypersig::{Expr, IntoExpr, Item, Number, NumberFormat, Sig, Textual, if_else};
+use hypersig::{Expr, FromPage, IntoExpr, Item, Number, NumberFormat, Root, Sig, Textual, if_else};
 
 use crate::look;
 use crate::token;
@@ -109,22 +109,31 @@ const TICKS: i32 = 6;
 /// assert!(html.contains("<caption>Visitors</caption>"));
 /// assert!(html.contains(">400</span>"));
 /// ```
-pub struct Chart<S, T> {
+///
+/// `R` is the marker of the rows' signal: [`Root`] for a field of the page's
+/// struct, and [`Computed`](hypersig::Computed) for one that
+/// [`Page::computed`](hypersig::Page::computed) keeps, such as the rows a
+/// filter leaves.
+pub struct Chart<S, T, R = Root> {
     kind: Kind,
     label: String,
-    rows: Sig<S, Vec<T>>,
+    rows: Sig<S, Vec<T>, R>,
     category: Sig<T, String>,
     series: Vec<Series<S, T>>,
     format: Option<NumberFormat>,
     max_labels: u32,
 }
 
-impl<S: 'static, T: 'static> Chart<S, T> {
+impl<S: 'static, T: 'static, R: FromPage> Chart<S, T, R> {
     /// A bar chart named `label` of `rows`, labeled by `category`.
     ///
     /// Each row has a group of bars, one per series.
     #[must_use]
-    pub fn bar(label: impl Into<String>, rows: Sig<S, Vec<T>>, category: Sig<T, String>) -> Self {
+    pub fn bar(
+        label: impl Into<String>,
+        rows: Sig<S, Vec<T>, R>,
+        category: Sig<T, String>,
+    ) -> Self {
         Self::new(Kind::Bar, label.into(), rows, category)
     }
 
@@ -137,7 +146,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     #[must_use]
     pub fn stacked_bar(
         label: impl Into<String>,
-        rows: Sig<S, Vec<T>>,
+        rows: Sig<S, Vec<T>, R>,
         category: Sig<T, String>,
     ) -> Self {
         Self::new(Kind::StackedBar, label.into(), rows, category)
@@ -151,7 +160,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     #[must_use]
     pub fn horizontal_bar(
         label: impl Into<String>,
-        rows: Sig<S, Vec<T>>,
+        rows: Sig<S, Vec<T>, R>,
         category: Sig<T, String>,
     ) -> Self {
         Self::new(Kind::HorizontalBar, label.into(), rows, category)
@@ -161,7 +170,11 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     ///
     /// Each row is a point on the line of each series.
     #[must_use]
-    pub fn line(label: impl Into<String>, rows: Sig<S, Vec<T>>, category: Sig<T, String>) -> Self {
+    pub fn line(
+        label: impl Into<String>,
+        rows: Sig<S, Vec<T>, R>,
+        category: Sig<T, String>,
+    ) -> Self {
         Self::new(Kind::Line, label.into(), rows, category)
     }
 
@@ -169,11 +182,15 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     ///
     /// It is a line chart with the area between each line and 0 filled.
     #[must_use]
-    pub fn area(label: impl Into<String>, rows: Sig<S, Vec<T>>, category: Sig<T, String>) -> Self {
+    pub fn area(
+        label: impl Into<String>,
+        rows: Sig<S, Vec<T>, R>,
+        category: Sig<T, String>,
+    ) -> Self {
         Self::new(Kind::Area, label.into(), rows, category)
     }
 
-    fn new(kind: Kind, label: String, rows: Sig<S, Vec<T>>, category: Sig<T, String>) -> Self {
+    fn new(kind: Kind, label: String, rows: Sig<S, Vec<T>, R>, category: Sig<T, String>) -> Self {
         Self {
             kind,
             label,
@@ -740,7 +757,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
     }
 }
 
-impl<S, T> fmt::Debug for Chart<S, T> {
+impl<S, T, R> fmt::Debug for Chart<S, T, R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Chart")
             .field("kind", &self.kind)
@@ -761,14 +778,14 @@ impl<S, T> fmt::Debug for Chart<S, T> {
     }
 }
 
-impl<S: 'static, T: 'static> From<Chart<S, T>> for El<S> {
-    fn from(chart: Chart<S, T>) -> Self {
+impl<S: 'static, T: 'static, R: FromPage> From<Chart<S, T, R>> for El<S> {
+    fn from(chart: Chart<S, T, R>) -> Self {
         chart.render()
     }
 }
 
-impl<S: 'static, T: 'static> From<Chart<S, T>> for Node<S> {
-    fn from(chart: Chart<S, T>) -> Self {
+impl<S: 'static, T: 'static, R: FromPage> From<Chart<S, T, R>> for Node<S> {
+    fn from(chart: Chart<S, T, R>) -> Self {
         chart.render().into()
     }
 }
@@ -908,6 +925,37 @@ mod tests {
         assert_eq!(fit(&[7.0]), "0 8 2");
         assert_eq!(fit(&[400.0]), "0 400 100");
         assert_eq!(fit(&[1000.0]), "0 1000 250");
+    }
+
+    #[derive(Signals, Serialize, Deserialize)]
+    struct Filtered {
+        points: Vec<Point>,
+        #[signals(computed)]
+        shown: Vec<Point>,
+    }
+
+    #[test]
+    fn draws_the_rows_of_a_computed_list() {
+        let chart = Chart::bar("Points", Filtered::shown(), Point::name()).series(
+            "Value",
+            Point::value(),
+            token::chart_1(),
+        );
+        let points = vec![Point {
+            name: "Kenya".to_owned(),
+            value: 3.0,
+        }];
+        let html = Page::new(
+            "Points",
+            Filtered {
+                points,
+                shown: Vec::new(),
+            },
+        )
+        .computed(Filtered::shown(), Filtered::points())
+        .child(chart)
+        .render();
+        assert!(html.contains(">Kenya<"));
     }
 
     #[test]
