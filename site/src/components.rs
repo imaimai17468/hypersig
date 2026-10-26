@@ -1204,6 +1204,50 @@ fn component_page(page: Component) -> Page {
                 ),
             ],
         },
+        Component::Avatar => Page {
+            lead: L {
+                en: "A round picture of a person, with their initials where there is no picture.",
+                ja: "人物を表す丸い画像です。画像がない場合はイニシャルを表示します。",
+            },
+            demo: Demo::Avatar,
+            built_on: &[
+                L {
+                    en: "The avatar is a `role=\"img\"` named after the person through `aria-label`, so a screen reader reads the name once and nothing inside it. The picture comes from a `SafeUrl`, a `Url`, or a signal of one, as the `src` of an `<img>` does.",
+                    ja: "アバターは `aria-label` で人物の名前を付けた `role=\"img\"` です。そのため、スクリーンリーダーは名前を一度だけ読み上げ、中身は読み上げません。画像の URL は `<img>` の `src` と同じく `SafeUrl` か `Url`、またはそのシグナルから渡します。",
+                },
+                L {
+                    en: "The initials are the picture's `alt`, and where the picture fails to load, the broken `<img>`'s `::after` draws them over it, as the second avatar of the demo shows. Chrome draws that `::after`. A browser that draws none on a broken image shows its own marker for one there instead.",
+                    ja: "イニシャルは画像の `alt` で、画像を読み込めなかった場合は、壊れた `<img>` の `::after` が画像の上にイニシャルを描きます。デモの 2 つ目のアバターがこの場合です。Chrome はこの `::after` を描きます。壊れた画像に `::after` を描かないブラウザでは、代わりにそのブラウザの壊れた画像の印が表示されます。",
+                },
+            ],
+            keys: &[],
+            items: &[
+                (
+                    "Avatar::new",
+                    "hypersig_ui/struct.Avatar.html#method.new",
+                    L {
+                        en: "An avatar of `name` that shows `initials`.",
+                        ja: "`initials` を表示する、`name` のアバター",
+                    },
+                ),
+                (
+                    "picture",
+                    "hypersig_ui/struct.Avatar.html#method.picture",
+                    L {
+                        en: "Shows the picture at `url` in place of the initials.",
+                        ja: "イニシャルの代わりに `url` の画像を表示します。",
+                    },
+                ),
+                (
+                    "render",
+                    "hypersig_ui/struct.Avatar.html#method.render",
+                    L {
+                        en: "The avatar, as a `<span>`.",
+                        ja: "`<span>` としてのアバター",
+                    },
+                ),
+            ],
+        },
         Component::Card => Page {
             lead: L {
                 en: "A bordered box with a header, content, and a footer.",

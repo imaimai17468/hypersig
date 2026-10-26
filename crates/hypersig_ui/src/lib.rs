@@ -37,6 +37,7 @@
 //! | [`Popover`] | a `popover` with `role="dialog"`, named by the button that opens it |
 //! | [`Tooltip`] | the tooltip pattern on a `popover="hint"` |
 //! | [`Toaster`] | a landmark region holding an `aria-live` list |
+//! | [`Avatar`] | `role="img"` named after the person, over an `<img>` or their initials |
 //! | [`progress`] | `role="progressbar"` |
 //!
 //! The ids that tie a label to its control, or a tab to its panel, are
@@ -75,6 +76,7 @@
 
 mod accordion;
 mod alert;
+mod avatar;
 mod badge;
 mod button;
 mod card;
@@ -106,6 +108,7 @@ mod tooltip;
 
 pub use accordion::Accordion;
 pub use alert::{AlertVariant, alert, alert_description, alert_title};
+pub use avatar::Avatar;
 pub use badge::{BadgeVariant, badge};
 pub use button::{ButtonSize, ButtonVariant, button, button_style, icon_button, submit_button};
 pub use card::{Level, card, card_content, card_description, card_footer, card_header, card_title};

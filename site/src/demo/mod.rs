@@ -102,6 +102,7 @@ demos! {
     Alert => alert, "ui/alert.rs", "16rem";
     Badge => badge, "ui/badge.rs", "8rem";
     Progress => progress, "ui/progress.rs", "10.5rem";
+    Avatar => avatar, "ui/avatar.rs", "5rem";
     Separator => separator, "ui/separator.rs", "12.5rem";
     Navigation => navigation, "ui/navigation.rs", "15rem";
     DataTable => data_table, "ui/data_table.rs", "25rem";

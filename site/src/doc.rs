@@ -105,6 +105,7 @@ pub enum Component {
     Alert,
     Badge,
     Progress,
+    Avatar,
 }
 
 /// The pages of the Style section.
@@ -445,6 +446,13 @@ pub const COMPONENTS: &[Group] = &[
     },
     Group {
         title: L {
+            en: "Display",
+            ja: "表示",
+        },
+        docs: &[Doc::Components(Component::Avatar)],
+    },
+    Group {
+        title: L {
             en: "Feedback",
             ja: "フィードバック",
         },
@@ -585,6 +593,7 @@ impl Doc {
         Self::Components(Component::Alert),
         Self::Components(Component::Badge),
         Self::Components(Component::Progress),
+        Self::Components(Component::Avatar),
         Self::Style(StylePage::Overview),
         Self::Style(StylePage::Values),
         Self::Style(StylePage::Conditions),
@@ -716,6 +725,7 @@ impl Doc {
                 Component::Alert => ("Alert", "アラート"),
                 Component::Badge => ("Badge", "バッジ"),
                 Component::Progress => ("Progress and skeleton", "プログレスとスケルトン"),
+                Component::Avatar => ("Avatar", "アバター"),
             },
             Self::Style(page) => match page {
                 StylePage::Overview => ("Overview", "概要"),
@@ -1073,6 +1083,7 @@ impl Component {
             Self::Alert => "alert",
             Self::Badge => "badge",
             Self::Progress => "progress",
+            Self::Avatar => "avatar",
         }
     }
 }
