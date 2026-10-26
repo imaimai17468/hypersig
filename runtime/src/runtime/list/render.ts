@@ -5,7 +5,7 @@ import type { Runtime } from "../../runtime.ts";
 import { appended, replaced } from "./change.ts";
 import { adoptItems, type Instance, type Origin } from "./item.ts";
 import { Matcher } from "./match.ts";
-import { arrange, filling, prepended } from "./order.ts";
+import { arrange, filling, move, prepended } from "./order.ts";
 import type { Row } from "./row.ts";
 import { shapeOf } from "./shape.ts";
 
@@ -116,7 +116,7 @@ export class ListRender {
       const { element } = order[index]!;
       const before = index + 1 < order.length ? order[index + 1]!.element : end;
       if (element.parentNode !== pass.parent || element.nextSibling !== before)
-        pass.parent.insertBefore(element, before);
+        move(pass.parent, element, before);
     }
     return next;
   }
