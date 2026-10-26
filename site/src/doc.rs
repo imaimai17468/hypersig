@@ -49,6 +49,8 @@ pub enum Learn {
     JavaScript,
     Security,
     Testing,
+    Troubleshooting,
+    Upgrading,
     CallsInDepth,
     RoutesInDepth,
     Deploying,
@@ -287,6 +289,8 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::JavaScript),
             Doc::Learn(Learn::Security),
             Doc::Learn(Learn::Testing),
+            Doc::Learn(Learn::Troubleshooting),
+            Doc::Learn(Learn::Upgrading),
         ],
     },
     Group {
@@ -533,6 +537,8 @@ impl Doc {
         Self::Learn(Learn::JavaScript),
         Self::Learn(Learn::Security),
         Self::Learn(Learn::Testing),
+        Self::Learn(Learn::Troubleshooting),
+        Self::Learn(Learn::Upgrading),
         Self::Learn(Learn::CallsInDepth),
         Self::Learn(Learn::RoutesInDepth),
         Self::Learn(Learn::Deploying),
@@ -661,6 +667,8 @@ impl Doc {
                 Learn::DeployVercel => ("Vercel", "Vercel"),
                 Learn::Security => ("Security", "セキュリティ"),
                 Learn::Testing => ("Testing", "テストを書く"),
+                Learn::Troubleshooting => ("Troubleshooting", "うまく動かないとき"),
+                Learn::Upgrading => ("Upgrading", "新しいリリースに上げる"),
                 Learn::CallsInDepth => ("Calls in depth", "呼び出しの詳細"),
                 Learn::RoutesInDepth => ("Routes in depth", "ルートの詳細"),
             },
@@ -804,6 +812,14 @@ impl Doc {
                 Learn::Testing => L {
                     en: "Tests that call a page's and an action's handler as functions and read the signals with their types, tests that send a request through the router, and what only a browser test reaches.",
                     ja: "ページとアクションのハンドラを関数として呼び、シグナルの値を型で読むテスト、ルーターにリクエストを送るテスト、ブラウザのテストでしか確かめられないことを扱います。",
+                },
+                Learn::Troubleshooting => L {
+                    en: "How to read the compile errors hypersig's types and constants produce, and where a running page reports a panic, a failed call, or a problem the runtime meets.",
+                    ja: "hypersig の型と定数が出すコンパイルエラーの読み方と、動いているページがパニック、失敗した呼び出し、ランタイムが見つけた問題をどこに報告するかを扱います。",
+                },
+                Learn::Upgrading => L {
+                    en: "Each change of a public signature from 0.4 to 0.8, shown as the code before and after it.",
+                    ja: "0.4 から 0.8 までに公開のシグネチャが変わった箇所を、変更前と変更後のコードで示します。",
                 },
                 Learn::CallsInDepth => L {
                     en: "Patches that send only the items of a list that change, calls that overlap, streams that reconnect, and parts that several pages share.",
@@ -1005,6 +1021,8 @@ impl Learn {
             Self::DeployVercel => "deploying/vercel",
             Self::Security => "security",
             Self::Testing => "testing",
+            Self::Troubleshooting => "troubleshooting",
+            Self::Upgrading => "upgrading",
             Self::CallsInDepth => "calls",
             Self::RoutesInDepth => "routes",
         }
