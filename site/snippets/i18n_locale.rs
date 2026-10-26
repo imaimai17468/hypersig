@@ -29,7 +29,7 @@ impl Locale for Lang {
 
 let greeting = ByLang { en: "Hello", ja: "こんにちは" };
 assert_eq!(Lang::Ja.pick(greeting), "こんにちは");
-assert_eq!(Lang::Ja.tag(), "ja");
+assert_eq!(Lang::Ja.tag().as_str(), "ja");
 
 // A message that takes a value is a function per language.
 let items: ByLang<fn(u32) -> String> = ByLang {

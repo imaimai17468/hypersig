@@ -9,6 +9,26 @@ use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
 #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+enum Underscored {
+    #[serde(rename = "en_US")]
+    EnUs,
+}
+
+impl Locale for Underscored {
+    type Text<T> = T;
+
+    fn pick<T>(self, text: T) -> T {
+        text
+    }
+}
+
+#[test]
+#[should_panic(expected = "`en_US` is not a BCP 47 language tag")]
+fn a_segment_that_is_not_a_language_tag_panics_when_its_tag_is_read() {
+    let _ = Underscored::EnUs.tag();
+}
+
+#[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 enum Lang {
     #[serde(rename = "en")]
     En,

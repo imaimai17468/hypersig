@@ -145,8 +145,8 @@ fn pages(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) writes the tag into `<html lang>`. The browser uses it to decide hyphenation, the voice a screen reader uses, and the fonts, so Japanese text set with `lang=\"ja\"` gets Japanese glyphs.",
-                ja: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) はタグを `<html lang>` に書きます。ブラウザはこの属性を見て、ハイフネーション、スクリーンリーダーの読み上げの声、使うフォントを決めます。そのため、`lang=\"ja\"` の付いた日本語の文は日本語の字形で表示されます。",
+                en: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) writes the tag into `<html lang>`, and `Page::alternate` writes it into `hreflang`. Both take a [`LanguageTag`](api:hypersig/struct.LanguageTag.html), which `tag` returns, so a segment such as `en_US` that is not shaped as a language tag panics when `tag` reads it. The browser uses it to decide hyphenation, the voice a screen reader uses, and the fonts, so Japanese text set with `lang=\"ja\"` gets Japanese glyphs.",
+                ja: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) はタグを `<html lang>` に書き、`Page::alternate` は `hreflang` に書きます。どちらも `tag` が返す [`LanguageTag`](api:hypersig/struct.LanguageTag.html) を受け取ります。そのため、`en_US` のように言語タグの形をしていないセグメントは、`tag` が読んだときにパニックします。ブラウザはこの属性を見て、ハイフネーション、スクリーンリーダーの読み上げの声、使うフォントを決めます。そのため、`lang=\"ja\"` の付いた日本語の文は日本語の字形で表示されます。",
             },
         ),
         para(

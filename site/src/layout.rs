@@ -237,8 +237,8 @@ fn other_language(site: Site, doc: Doc) -> Part {
         Lang::En
     };
     a().href(own(doc.url(site.with_lang(other))))
-        .attr(attr::HREFLANG, other.tag())
-        .attr(attr::LANG, other.tag())
+        .attr(attr::HREFLANG, other.tag().as_str())
+        .attr(attr::LANG, other.tag().as_str())
         .css(
             nav_link_style(Place::Other)
                 .margin_left(raw("auto"))
@@ -337,8 +337,8 @@ fn languages(site: Site, doc: Doc) -> Part {
             let here = Place::current_if(lang == site.lang());
             let link = a()
                 .href(own(doc.url(site.with_lang(lang))))
-                .attr(attr::HREFLANG, lang.tag())
-                .attr(attr::LANG, lang.tag())
+                .attr(attr::HREFLANG, lang.tag().as_str())
+                .attr(attr::LANG, lang.tag().as_str())
                 .css(nav_link_style(here));
             mark_current(link, here).text(lang.name())
         }))

@@ -76,7 +76,7 @@ mod axum;
 #[cfg(feature = "axum")]
 pub use axum::LocaleRouterExt;
 
-use hypersig::{Origin, Page, Signals, Url, Variants};
+use hypersig::{LanguageTag, Origin, Page, Signals, Url, Variants};
 use serde::Serialize;
 
 /// The locales of an application: an enum with `#[derive(Segment)]` whose segments are BCP 47 tags.
@@ -95,14 +95,18 @@ pub trait Locale: Variants + Serialize + Copy + Eq {
 
     /// The BCP 47 tag of this locale, the string serde writes for it.
     ///
+    /// [`Page::lang`] and [`Page::alternate`] take it.
+    ///
     /// # Panics
     ///
     /// Panics if serde does not write the locale as a string, which an enum
-    /// with `#[derive(Segment)]` always does.
+    /// with `#[derive(Segment)]` always does, or if the string is not shaped
+    /// as a BCP 47 tag, as `en_US` from `#[serde(rename = "en_US")]` is not.
     #[must_use]
-    fn tag(self) -> String {
+    fn tag(self) -> LanguageTag {
         match serde_json::to_value(self) {
-            Ok(serde_json::Value::String(tag)) => tag,
+            Ok(serde_json::Value::String(tag)) => LanguageTag::parse(tag)
+                .unwrap_or_else(|error| panic!("a locale's segment is its language tag: {error}")),
             other => panic!("a `Segment` enum serializes to a string, not {other:?}"),
         }
     }
@@ -177,7 +181,7 @@ pub fn negotiate<L: Locale>(accept_language: &str) -> L {
         .collect();
     // A stable sort keeps the written order between ranges of the same weight.
     ranges.sort_by(|a, b| b.1.total_cmp(&a.1));
-    let tags: Vec<(L, String)> = locales::<L>()
+    let tags: Vec<(L, LanguageTag)> = locales::<L>()
         .iter()
         .map(|&locale| (locale, locale.tag()))
         .collect();
@@ -189,7 +193,7 @@ pub fn negotiate<L: Locale>(accept_language: &str) -> L {
         loop {
             if let Some((locale, _)) = tags
                 .iter()
-                .find(|(_, tag)| tag.eq_ignore_ascii_case(prefix))
+                .find(|(_, tag)| tag.as_str().eq_ignore_ascii_case(prefix))
             {
                 return *locale;
             }
@@ -199,6 +203,7 @@ pub fn negotiate<L: Locale>(accept_language: &str) -> L {
             }
         }
         if let Some((locale, _)) = tags.iter().find(|(_, tag)| {
+            let tag = tag.as_str();
             tag.len() > range.len()
                 && tag.as_bytes()[range.len()] == b'-'
                 && tag[..range.len()].eq_ignore_ascii_case(range)

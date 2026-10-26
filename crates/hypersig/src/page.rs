@@ -8,7 +8,7 @@ use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
-use crate::head::{OpenGraph, Origin, meta};
+use crate::head::{LanguageTag, OpenGraph, Origin, meta};
 use crate::html::{
     Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, check_names, escape_into,
     keys_json, write_attr, write_json_attr,
@@ -42,7 +42,7 @@ pub struct Page<S> {
     keys: Vec<(Shortcut, Stmt<S>)>,
     /// The path given to [`Page::runtime_src`], if any.
     runtime: Option<&'static str>,
-    lang: Option<String>,
+    lang: Option<LanguageTag>,
     description: Option<String>,
     canonical: Option<String>,
     icon: Option<&'static str>,
@@ -50,7 +50,7 @@ pub struct Page<S> {
     noindex: bool,
     nofollow: bool,
     /// Each `hreflang` with its absolute URL, where `None` is `x-default`.
-    alternates: Vec<(Option<String>, String)>,
+    alternates: Vec<(Option<LanguageTag>, String)>,
     /// Each JSON-LD block, serialized with `<` escaped.
     json_ld: Vec<String>,
     nonce: Option<String>,
@@ -191,7 +191,7 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Names `url` on `origin` as the same page in the language `hreflang`, a BCP 47 tag.
+    /// Names `url` on `origin` as the same page in the language `hreflang`.
     ///
     /// Search engines show the visitor the version in their language. Each
     /// version lists every version, itself included, and
@@ -199,7 +199,7 @@ impl<S: Signals> Page<S> {
     /// application.
     ///
     /// ```
-    /// use hypersig::{Origin, Page, Route, Signals};
+    /// use hypersig::{IntlLocale, Origin, Page, Route, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
@@ -216,8 +216,8 @@ impl<S: Signals> Page<S> {
     /// const SITE: Origin = Origin::new("https://example.com");
     ///
     /// let html = Page::new("Home", Home {})
-    ///     .alternate(SITE, &EN.url(()), "en")
-    ///     .alternate(SITE, &JA.url(()), "ja")
+    ///     .alternate(SITE, &EN.url(()), IntlLocale::En)
+    ///     .alternate(SITE, &JA.url(()), IntlLocale::Ja)
     ///     .alternate_default(SITE, &EN.url(()))
     ///     .render();
     /// assert!(html.contains(r#"<link rel="alternate" hreflang="ja" href="https://example.com/ja">"#));
@@ -225,7 +225,12 @@ impl<S: Signals> Page<S> {
     /// # let _ = pages;
     /// ```
     #[must_use]
-    pub fn alternate(mut self, origin: Origin, url: &Url, hreflang: impl Into<String>) -> Self {
+    pub fn alternate(
+        mut self,
+        origin: Origin,
+        url: &Url,
+        hreflang: impl Into<LanguageTag>,
+    ) -> Self {
         self.alternates
             .push((Some(hreflang.into()), origin.join(url.as_str())));
         self
@@ -399,23 +404,29 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.
+    /// Sets the language of the page, the `lang` attribute of `<html>`, to `tag`.
     ///
     /// The browser reads it for hyphenation, the voice of a screen reader,
     /// and the fonts it picks for the text. A page without it has no `lang`.
+    /// `tag` is a [`LanguageTag`], or the [`IntlLocale`](crate::IntlLocale)
+    /// the page's numbers and dates are written in.
     ///
     /// ```
-    /// use hypersig::{Page, Signals};
+    /// use hypersig::{IntlLocale, LanguageTag, Page, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
     /// struct Note {}
     ///
-    /// let html = Page::new("ノート", Note {}).lang("ja").render();
+    /// let html = Page::new("ノート", Note {}).lang(IntlLocale::Ja).render();
     /// assert!(html.starts_with(r#"<!doctype html><html lang="ja">"#));
+    ///
+    /// const PT_BR: LanguageTag = LanguageTag::new("pt-BR");
+    /// let html = Page::new("Nota", Note {}).lang(PT_BR).render();
+    /// assert!(html.starts_with(r#"<!doctype html><html lang="pt-BR">"#));
     /// ```
     #[must_use]
-    pub fn lang(mut self, tag: impl Into<String>) -> Self {
+    pub fn lang(mut self, tag: impl Into<LanguageTag>) -> Self {
         self.lang = Some(tag.into());
         self
     }
@@ -687,7 +698,11 @@ impl<S: Signals> Page<S> {
         }
         for (hreflang, url) in &self.alternates {
             out.push_str("<link rel=\"alternate\"");
-            write_attr(out, "hreflang", hreflang.as_deref().unwrap_or("x-default"));
+            write_attr(
+                out,
+                "hreflang",
+                hreflang.as_ref().map_or("x-default", LanguageTag::as_str),
+            );
             write_attr(out, "href", url);
             out.push('>');
         }
@@ -770,7 +785,7 @@ impl<S: Signals> Page<S> {
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
         if let Some(lang) = &self.lang {
-            write_attr(&mut out, "lang", lang);
+            write_attr(&mut out, "lang", lang.as_str());
         }
         out.push_str("><head><meta charset=\"utf-8\">");
         out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");

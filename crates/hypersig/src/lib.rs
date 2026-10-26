@@ -96,7 +96,9 @@ pub use expr::{
     CharClass, Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };
 pub use form::{FieldErrors, Form, Rules, Validate};
-pub use head::{OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError};
+pub use head::{
+    LanguageTag, LanguageTagError, OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError,
+};
 pub use href::{IntoHref, SafeUrl, UnsafeUrl};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use intl::{IntlLocale, PluralCategory};
