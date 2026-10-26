@@ -1,0 +1,68 @@
+error[E0080]: evaluation panicked: `El::srcset` sets `srcset` from `SafeUrl`s
+ --> tests/ui/fail/attr_url_list.rs:4:30
+  |
+4 |     let _ = img::<()>().attr(hypersig::attr!("srcset"), "javascript:alert(1) 1x");
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed inside this call
+  |
+note: inside `hypersig::_private::attr`
+ --> src/lib.rs
+  |
+  |         crate::html::Attr::new(name)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: inside `Attr::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/html.rs
+  |
+  | /         assert!(
+  | |             !is(bytes, "srcset"),
+  | |             "`El::srcset` sets `srcset` from `SafeUrl`s"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/attr_url_list.rs:4:30
+  |
+4 |     let _ = img::<()>().attr(hypersig::attr!("srcset"), "javascript:alert(1) 1x");
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this note originates in the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0080]: evaluation panicked: the value of this attribute can run a script or load a URL
+ --> tests/ui/fail/attr_url_list.rs:5:30
+  |
+5 |     let _ = img::<()>().attr(hypersig::attr!("ping"), "https://tracker.example");
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#1}` failed inside this call
+  |
+note: inside `hypersig::_private::attr`
+ --> src/lib.rs
+  |
+  |         crate::html::Attr::new(name)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: inside `Attr::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/html.rs
+  |
+  | /         assert!(
+  | |             !is(bytes, "srcdoc")
+  | |                 && !is(bytes, "action")
+  | |                 && !is(bytes, "formaction")
+... |
+  | |             "the value of this attribute can run a script or load a URL"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/attr_url_list.rs:5:30
+  |
+5 |     let _ = img::<()>().attr(hypersig::attr!("ping"), "https://tracker.example");
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this note originates in the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -499,6 +499,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "poster",
+                            "html/struct.El.html#method.poster",
+                            L {
+                                en: "Sets the image a `<video>` shows before it plays, as `El::src` sets `src`.",
+                                ja: "`<video>` が再生前に表示する画像を、`El::src` と同じように設定します。",
+                            },
+                        ),
+                        (
+                            "srcset",
+                            "html/struct.El.html#method.srcset",
+                            L {
+                                en: "Sets the images the browser picks from for an `<img>` or a `<source>`.",
+                                ja: "`<img>` や `<source>` でブラウザが選ぶ画像の候補を設定します。",
+                            },
+                        ),
+                        (
+                            "Candidate",
+                            "html/enum.Candidate.html",
+                            L {
+                                en: "What an image of `El::srcset` is drawn for.",
+                                ja: "`El::srcset` の画像が想定する幅か画素密度です。",
+                            },
+                        ),
+                        (
                             "id",
                             "html/struct.El.html#method.id",
                             L {

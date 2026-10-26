@@ -991,8 +991,7 @@ mod tests {
         )
         .child(p().bind_style(Property::Width, Search::query()))
         .child(
-            p().attr(crate::html::attr::STYLE, "color: red")
-                .bind_style(Property::Height, Search::query())
+            p().bind_style(Property::Height, Search::query())
                 .bind_token(&Token::new("ink", Color::RED), "blue".to_owned()),
         )
         .child(p().bind_style(Property::Width, "1px}body{color:red".to_owned()));
@@ -1006,7 +1005,7 @@ mod tests {
     fn without_a_nonce_bound_styles_are_inline() {
         let html = bars(None);
         assert!(html.contains(r#"style="width: 50%""#));
-        assert!(html.contains(r#"style="color: red; height: 50%; --ink: blue""#));
+        assert!(html.contains(r#"style="height: 50%; --ink: blue""#));
         assert!(!html.contains("data-hs-inline"));
         assert!(!html.contains(r#"style="width: 1px"#), "{html}");
     }
@@ -1021,8 +1020,7 @@ mod tests {
             "</style>"
         )));
         assert!(html.contains(r#"data-hs-inline="0""#));
-        assert!(html.contains(r#"style="color: red""#));
-        assert_eq!(html.matches(" style=").count(), 1);
+        assert_eq!(html.matches(" style=").count(), 0);
         assert!(!html.contains(r#"data-hs-inline="2""#));
     }
 

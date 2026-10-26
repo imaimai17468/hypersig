@@ -15,8 +15,8 @@ use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
     Action, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment, IntlLocale, Page,
-    Part, Patches, PluralCategory, Rest, Route, Rules, Search, Segment, Sig, Signals, Stmt,
-    StreamAction, TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
+    Part, Patches, PluralCategory, Rest, Route, Rules, SafeUrl, Search, Segment, Sig, Signals,
+    Stmt, StreamAction, TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -1445,11 +1445,13 @@ struct Widgets {
     stars: i32,
     center: Point,
     pins: Vec<Pin>,
+    site: SafeUrl,
 }
 
 const RATE: CustomEvent<i32> = CustomEvent::new("rate");
 const MOVED: CustomEvent<Point> = CustomEvent::new("map-moved");
 const PICK: CustomEvent<()> = CustomEvent::new("pick");
+const LINKED: CustomEvent<SafeUrl> = CustomEvent::new("linked");
 hypersig::node_ref!(const MAP: NodeRef<Widgets>);
 
 /// A fragment holding a map that a script draws into, which a patch replaces around it.
@@ -1488,6 +1490,11 @@ fn widgets() -> (El<Widgets>, Widgets) {
                 }),
         )
         .child(Atlas("Tokyo").render().id(Atlas::ID))
+        .child(
+            a().id(Id::new("site"))
+                .on_custom(LINKED, |url| Widgets::site().set(url))
+                .href(Widgets::site()),
+        )
         .child(ul().id(Id::new("pins")).child(each(Widgets::pins(), |pin| {
             li().child(
                 el(hypersig::tag!("x-pin"))
@@ -1508,6 +1515,7 @@ fn widgets() -> (El<Widgets>, Widgets) {
                 picked: false,
             },
         ],
+        site: SafeUrl::new("https://example.com"),
     };
     (el, signals)
 }

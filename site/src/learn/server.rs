@@ -674,8 +674,8 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The host is not checked, so `https://evil.example/a.js` is a `SafeUrl` too. A visitor's URL suits a link the visitor follows, and not the `src` of a `<script>`, which would load whatever the host serves.",
-                ja: "ホストは検査しないので、`https://evil.example/a.js` も `SafeUrl` です。訪問者の URL は訪問者自身がたどるリンクには使えますが、`<script>` の `src` には使えません。そのホストが配信するものをそのまま読み込むからです。",
+                en: "The host is not checked, so `https://evil.example/a.js` is a `SafeUrl` too. A visitor's URL suits a link the visitor follows, and not the `src` of an `<iframe>`, which would show whatever page the host serves inside this one.",
+                ja: "ホストは検査しないので、`https://evil.example/a.js` も `SafeUrl` です。訪問者の URL は訪問者自身がたどるリンクには使えますが、`<iframe>` の `src` には使えません。そのホストが配信するページを、このページの中にそのまま表示するからです。",
             },
         ),
         heading(

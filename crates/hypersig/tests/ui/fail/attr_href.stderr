@@ -1,4 +1,4 @@
-error[E0080]: evaluation panicked: `El::href` and `El::src` set `href` and `src` from a `Link` or a `SafeUrl`
+error[E0080]: evaluation panicked: `El::href`, `El::src`, and `El::poster` set `href`, `src`, and `poster` from a `Link` or a `SafeUrl`
  --> tests/ui/fail/attr_href.rs:4:28
   |
 4 |     let _ = a::<()>().attr(hypersig::attr!("HREF"), "javascript:alert(1)");
@@ -18,8 +18,8 @@ note: inside `Attr::new`
  ::: src/html.rs
   |
   | /         assert!(
-  | |             !is(bytes, "href") && !is(bytes, "src"),
-  | |             "`El::href` and `El::src` set `href` and `src` from a `Link` or a `SafeUrl`"
+  | |             !is(bytes, "href") && !is(bytes, "src") && !is(bytes, "poster"),
+  | |             "`El::href`, `El::src`, and `El::poster` set `href`, `src`, and `poster` from a `Link` or a `SafeUrl`"
   | |         );
   | |_________- in this macro invocation
 
