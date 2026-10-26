@@ -1,0 +1,13 @@
+error[E0599]: the method `set` exists for struct `Sig<Cart, f64, hypersig::Read>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/read_set.rs:12:34
+   |
+12 |     let _ = Cart::price().read().set(0.0);
+   |                                  ^^^ method cannot be called on `Sig<Cart, f64, hypersig::Read>` due to unsatisfied trait bounds
+   |
+  ::: src/signal.rs
+   |
+   | pub enum Read {}
+   | ------------- doesn't satisfy `hypersig::Read: Writable`
+   |
+   = note: the following trait bounds were not satisfied:
+           `hypersig::Read: Writable`

@@ -16,8 +16,8 @@ help: the following other types implement trait `hypersig::Number`
    | ^^^^^^^^^^^^^^^^^^^ `i64`
    | impl Number for f64 {}
    | ^^^^^^^^^^^^^^^^^^^ `f64`
-note: required by a bound in `Chart::<S, T, R>::series`
+note: required by a bound in `Chart::<S, T>::series`
   --> src/chart.rs
    |
    |     pub fn series<U: Number + Textual + 'static>(
-   |                      ^^^^^^ required by this bound in `Chart::<S, T, R>::series`
+   |                      ^^^^^^ required by this bound in `Chart::<S, T>::series`

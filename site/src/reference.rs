@@ -1175,6 +1175,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Read",
+                            "enum.Read.html",
+                            L {
+                                en: "Marks a read-only view of a page-rooted `Sig`, which `Sig::read` returns.",
+                                ja: "`Sig::read` が返す、ページから始まる `Sig` を読み取り専用で指す参照を表す型",
+                            },
+                        ),
+                        (
                             "Writable",
                             "trait.Writable.html",
                             L {
@@ -1186,8 +1194,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "FromPage",
                             "trait.FromPage.html",
                             L {
-                                en: "The markers of a `Sig` whose path starts at the page's signal struct: `Root` and `Computed`.",
-                                ja: "パスがページのシグナル構造体から始まる `Sig` の印（`Root` と `Computed`）",
+                                en: "The markers of a `Sig` whose path starts at the page's signal struct.",
+                                ja: "パスがページのシグナル構造体から始まる `Sig` の印",
                             },
                         ),
                         (
@@ -1280,6 +1288,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The dotted field path this signal is stored under.",
                                 ja: "このシグナルの格納先を表す、ドットで区切ったフィールドのパス",
+                            },
+                        ),
+                        (
+                            "read",
+                            "struct.Sig.html#method.read",
+                            L {
+                                en: "A read-only view of this signal, with the same path.",
+                                ja: "同じパスを持つ、このシグナルを読み取り専用で指す参照",
                             },
                         ),
                         (

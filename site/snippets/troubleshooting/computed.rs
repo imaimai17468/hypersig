@@ -10,5 +10,5 @@ struct Cart {
     total: f64,
 }
 
-// error[E0277]: a computed signal cannot be written
+// error[E0277]: a signal marked `Computed` cannot be written
 let field = input::<Cart>().bind(Cart::total());

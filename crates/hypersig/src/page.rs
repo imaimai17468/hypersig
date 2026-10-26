@@ -1107,11 +1107,11 @@ fn reads_path(ast: &Value, path: &str) -> bool {
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use crate::html::{Stylesheet, input, p};
+    use crate::html::{Stylesheet, input, p, span};
     use crate::route::Base;
     use crate::style::value::Color;
     use crate::style::{Global, Property, Style, Theme, Token};
-    use crate::{Asset, NodeRef, Page, Signals};
+    use crate::{Asset, Expr, NodeRef, Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize, Default)]
     struct Search {
@@ -1360,6 +1360,78 @@ mod tests {
             .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
             .render();
         assert!(html.contains("line.total"), "{html}");
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Booth {
+        line: Line,
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Kiosk {
+        line: Line,
+    }
+
+    #[test]
+    #[should_panic(expected = "the page reads `line.total`, a field of a nested struct")]
+    fn a_read_view_of_a_nested_computed_field_no_page_computed_names_panics() {
+        let total = Booth::line().at_computed(Line::total()).read();
+        let _ = Page::new("Booth", Booth::default())
+            .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
+            .render();
+    }
+
+    #[test]
+    fn a_read_view_of_a_nested_computed_field_page_computed_names_renders() {
+        let line = Kiosk::line();
+        let total = line.at_computed(Line::total());
+        let kiosk = Kiosk {
+            line: Line {
+                price: 3.0,
+                total: 0.0,
+            },
+        };
+        let page = Page::new("Kiosk", kiosk)
+            .computed(total, line.at(Line::price()) * 2.0)
+            .child(input().bind_attr(crate::html::attr::VALUE, total.read().to_text()));
+        assert_eq!(page.value_of(total.read()), 6.0);
+        assert!(page.render().contains("line.total"));
+    }
+
+    #[test]
+    #[should_panic(expected = "the field `total` of")]
+    fn a_read_view_of_a_computed_field_no_page_computed_names_panics() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .child(span().bind_text(Order::total().read().to_text()))
+            .render();
+    }
+
+    #[test]
+    fn a_read_view_reads_the_computed_value() {
+        let page = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::subtotal().read() + 1.0);
+        assert_eq!(page.value_of(Order::total().read()), 41.0);
+    }
+
+    #[test]
+    fn a_read_view_of_a_field_renders_as_the_field() {
+        let page = |text: Expr<Order, String>| {
+            order()
+                .computed(Order::subtotal(), Order::price() * 2.0)
+                .computed(Order::total(), Order::subtotal() + 1.0)
+                .child(span().bind_text(text))
+                .render()
+        };
+        assert_eq!(
+            page(Order::price().read().to_text()),
+            page(Order::price().to_text())
+        );
+        assert_eq!(
+            page(Order::total().read().to_text()),
+            page(Order::total().to_text())
+        );
     }
 
     #[test]

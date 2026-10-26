@@ -4,12 +4,18 @@ The release notes on GitHub list the titles of the merged pull requests. This fi
 
 ## [Unreleased]
 
+### Breaking
+
+- `hypersig_ui::Chart<S, T, R>` is now `Chart<S, T>`. Its constructors still take the rows of a plain field or of a computed one, and code that named the third parameter drops it.
+
 ### Added
 
+- `Sig::read()` on a page-rooted signal returns a `Sig<S, T, Read>`, a read-only view with the same path. The view reads like the signal it came from, because `Read` implements `FromPage`, and it has no `set`, list statement, `bind`, or `patch`. `Page::computed` refuses it.
 - `hypersig::serve(router, port)` serves an axum `Router`. It listens on the address in `ADDR` where that is set, otherwise on every interface at the port in `PORT`, otherwise on `127.0.0.1:port`. On Ctrl+C or SIGTERM it waits for the requests in progress, for at most 5 seconds or until a second signal. It needs the `axum` feature and is not built for `wasm32-unknown-unknown`.
 
 ### Changed
 
+- Writing a signal that cannot be written reports ``a signal marked `Computed` cannot be written``, with `hypersig::Read` in place of `Computed` for a view, where it used to report `a computed signal cannot be written`.
 - `cargo hypersig new <path>` without `--host` writes the `server` template, where it used to stop with a list of hosts.
 - The server template depends on `hypersig_ui`, uses its `button`, and starts with `hypersig::serve`. The examples start with `hypersig::serve` too.
 - `cargo hypersig add server` leaves `Cargo.toml` as it is, because the step it prints calls `hypersig::serve` and needs no tokio `signal` feature.
