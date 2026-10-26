@@ -729,8 +729,8 @@ impl Doc {
                 self.library().descriptions()
             }
             Self::UseCases => L {
-                en: "Applications that hypersig suits. For a request each one gets, the page shows the change it makes in hypersig and in Next.js.",
-                ja: "hypersig に向くアプリと、そこに来る依頼ごとに、hypersig と Next.js でコードがどう変わるかを並べます。",
+                en: "Applications that hypersig suits. For each feature added to one of them, the page shows the change in hypersig and in Next.js.",
+                ja: "hypersig に向くアプリと、そのアプリに仕様を 1 つ足すごとに、hypersig と Next.js でコードがどう変わるかを並べます。",
             },
             Self::Learn(page) => match page {
                 Learn::QuickStart => L {
