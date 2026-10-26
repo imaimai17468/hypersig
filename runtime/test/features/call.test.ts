@@ -53,7 +53,12 @@ it("sets the status signal to the status of a failed answer and back to 0 when t
   $("#save").click();
   await tick();
   expect(runtime.store.get("failure")).toBe(0);
-  answers[1]!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+  answers[1]!(
+    new Response("event: hs-signals\ndata: {}\n\nevent: hs-end\ndata: {}\n\n", {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
   await vi.waitFor(() => expect(runtime.store.get("saving")).toBe(false));
   expect(runtime.store.get("failure")).toBe(0);
 });
@@ -90,8 +95,18 @@ it("aborts the earlier latest call and applies only the newer answer", async () 
   await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
   expect(fetch.mock.calls.map(([url]) => url.searchParams.get("args"))).toEqual(['"t"', '"te"']);
   expect(fetch.mock.calls[0]![1].signal!.aborted).toBe(true);
-  answers[1]!(new Response('event: hs-signals\ndata: {"found":"te"}\n\n', { status: 200 }));
-  answers[0]!(new Response('event: hs-signals\ndata: {"found":"t"}\n\n', { status: 200 }));
+  answers[1]!(
+    new Response('event: hs-signals\ndata: {"found":"te"}\n\nevent: hs-end\ndata: {}\n\n', {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
+  answers[0]!(
+    new Response('event: hs-signals\ndata: {"found":"t"}\n\nevent: hs-end\ndata: {}\n\n', {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
   await vi.waitFor(() => expect(runtime.store.get("finding")).toBe(false));
   expect(runtime.store.get("found")).toBe("te");
 });
@@ -105,6 +120,7 @@ it("sends a reconnect call again after the connection fails", async () => {
     .mockResolvedValueOnce(
       new Response('event: hs-signals\ndata: {"found":"back"}\n\nevent: hs-end\ndata: {}\n\n', {
         status: 200,
+        headers: { "content-type": "text/event-stream" },
       }),
     );
   vi.stubGlobal("fetch", fetch);
@@ -143,13 +159,23 @@ it("marks only the line whose call failed, with the values named when it was sen
   expect(states()).toEqual(["sending", "sending"]);
 
   answers.get("1")!(new Response("The outbox is full.", { status: 409 }));
-  answers.get("2")!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+  answers.get("2")!(
+    new Response("event: hs-signals\ndata: {}\n\nevent: hs-end\ndata: {}\n\n", {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
   await vi.waitFor(() => expect(states()).toEqual(["The outbox is full.", "sent"]));
 
   answers.clear();
   $$("#letters .edit")[0]!.click();
   expect(states()).toEqual(["sending", "sent"]);
   await vi.waitFor(() => expect(answers.size).toBe(1));
-  answers.get("1")!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+  answers.get("1")!(
+    new Response("event: hs-signals\ndata: {}\n\nevent: hs-end\ndata: {}\n\n", {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
   await vi.waitFor(() => expect(states()).toEqual(["sent", "sent"]));
 });

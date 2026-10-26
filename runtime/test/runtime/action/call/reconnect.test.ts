@@ -31,7 +31,7 @@ function droppedResponse(body: string): Response {
       sent = true;
     },
   });
-  return new Response(stream, { status: 200 });
+  return new Response(stream, { status: 200, headers: { "content-type": "text/event-stream" } });
 }
 
 it("sends the request again after a dropped stream and a refused connection, waiting longer each time", async () => {
@@ -67,7 +67,7 @@ it("opens a stream again once 1 second after the host closes it before the serve
   const runtime = mount(feed, { results: "", problem: "" });
   await vi.advanceTimersByTimeAsync(0);
   expect(runtime.store.get("results")).toBe("one");
-  expect(runtime.store.get("problem")).toBe("the stream closed before the server ended it");
+  expect(runtime.store.get("problem")).toBe("the answer closed before the server ended it");
   await vi.advanceTimersByTimeAsync(1000);
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(runtime.store.get("results")).toBe("two");
@@ -89,7 +89,7 @@ it("applies no part of an event the host cut off in the middle", async () => {
   const runtime = mount(feed, { results: "", problem: "" });
   await vi.advanceTimersByTimeAsync(0);
   expect(runtime.store.get("results")).toBe("one");
-  expect(runtime.store.get("problem")).toBe("the stream closed before the server ended it");
+  expect(runtime.store.get("problem")).toBe("the answer closed before the server ended it");
 });
 
 it("evaluates the arguments again for each attempt, so the stream can start after what the page holds", async () => {
@@ -134,7 +134,7 @@ it("sets a connected flag only while the stream's answer is open", async () => {
   await vi.advanceTimersByTimeAsync(0);
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(runtime.store.get("live")).toBe(false);
-  connect(new Response(open, { status: 200 }));
+  connect(new Response(open, { status: 200, headers: { "content-type": "text/event-stream" } }));
   await vi.advanceTimersByTimeAsync(0);
   expect(runtime.store.get("live")).toBe(true);
   drop();
@@ -170,7 +170,11 @@ const closed = () =>
   });
 
 it("waits longer each time a stream closes before it sends anything", async () => {
-  const fetch = vi.fn<Fetch>(() => Promise.resolve(new Response(closed(), { status: 200 })));
+  const fetch = vi.fn<Fetch>(() =>
+    Promise.resolve(
+      new Response(closed(), { status: 200, headers: { "content-type": "text/event-stream" } }),
+    ),
+  );
   vi.stubGlobal("fetch", fetch);
   mount(feed, { results: "", problem: "" });
   await vi.advanceTimersByTimeAsync(0);

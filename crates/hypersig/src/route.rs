@@ -483,7 +483,7 @@ impl Route<(), ()> {
 ///
 /// A [`RequestError`](crate::RequestError) refuses a call before its
 /// handler runs: a request from another site, a `POST` whose body is not
-/// JSON, a `GET` without the `Accept: text/event-stream` the runtime sends,
+/// JSON, a `GET` without the `hypersig-call` header the runtime adds,
 /// or arguments that do not deserialize. An upload is also refused without
 /// the header the runtime adds, with a body that is not
 /// `multipart/form-data`, one longer than its limit, or one whose first part

@@ -990,8 +990,9 @@ impl<St: Sync> FromRequestParts<St> for RequestKind {
 /// [`IntoResponse`] answers with the error, so a handler can use `?`. The
 /// runtime treats a status outside 2xx as a failure and writes the status
 /// and the body to the signal the page gave
-/// [`Call::error`](crate::Call::error). An error response with a 2xx status
-/// reaches the page as an answer with no patches.
+/// [`Call::error`](crate::Call::error). The patches end with the event
+/// `hs-end`, so an error response with a 2xx status, which lacks it, counts
+/// as a failure too.
 ///
 /// ```
 /// use axum::http::StatusCode;
@@ -1048,7 +1049,9 @@ impl<S: Signals> From<Patches<S>> for ActionResponse<S> {
         let events: Result<Vec<_>, _> = patches
             .into_events()
             .iter()
-            .map(|event| to_sse(event).map(Ok::<_, Infallible>))
+            .map(to_sse)
+            .chain([Ok(end_of_stream())])
+            .map(|event| event.map(Ok::<_, Infallible>))
             .collect();
         Self::new(match events {
             Ok(events) => Sse::new(stream::iter(events)).into_response(),
@@ -1166,11 +1169,11 @@ fn read_args<A: DeserializeOwned>(
             }
             exact::from_slice(if body.is_empty() { b"null" } else { body })
         }
-        // An `<img>`, a link, or a form sends a GET with another `Accept`, so
-        // they cannot call the action from a browser without
-        // `Sec-Fetch-Site`. An `EventSource` on another site still sends this
-        // one, which is why a GET action changes nothing.
-        Method::Get if !from_runtime(headers) => {
+        // An `<img>`, a link, a form, an `EventSource`, and a `no-cors`
+        // `fetch` cannot add a header, and a `fetch` from another origin that
+        // adds one sends a preflight this server does not answer. That holds
+        // in a browser that sends no `Sec-Fetch-Site` too.
+        Method::Get if !headers.contains_key(CALL_HEADER) => {
             return Err(RequestError::new(Refusal::NotFromRuntime));
         }
         Method::Get => {
@@ -1193,6 +1196,10 @@ fn refuse_cross_site(headers: &HeaderMap) -> Result<(), RequestError> {
 
 /// The header the runtime adds to an upload. Its value is not read.
 const UPLOAD_HEADER: &str = "hypersig-upload";
+
+/// The header the runtime adds to every call, which a GET action or stream
+/// requires. Its value is not read.
+pub(crate) const CALL_HEADER: &str = "hypersig-call";
 
 /// The header the runtime adds to a call made inside a [`Part`](crate::Part),
 /// holding the dotted path of the page field the part sits at.
@@ -1465,7 +1472,7 @@ impl fmt::Display for RequestError {
             Refusal::CrossSite => f.write_str("the action was called from another site"),
             Refusal::NotJson => f.write_str("the action's body is not `application/json`"),
             Refusal::NotFromRuntime => {
-                f.write_str("the call lacks the `Accept` header the hypersig runtime sends")
+                f.write_str("the call lacks the `hypersig-call` header the hypersig runtime adds")
             }
             Refusal::NotFromPage => {
                 f.write_str("the upload lacks the header the hypersig runtime adds")

@@ -9,6 +9,12 @@ const LAST_RETRY_MS = 30_000;
 
 /** The header an upload carries, which `crates/hypersig/src/axum.rs` requires. */
 const UPLOAD_HEADER = "hypersig-upload";
+/**
+ * The header every call carries, which `crates/hypersig/src/axum.rs` requires
+ * of a GET. A page on another site cannot send it without a preflight, which
+ * the server does not answer.
+ */
+const CALL_HEADER = "hypersig-call";
 /** The header that tells the server which page field the part that made a call sits at. */
 const PART_HEADER = "hypersig-part";
 /** The event `crates/hypersig/src/axum.rs` sends last on a stream whose handler finished. */
@@ -35,6 +41,22 @@ interface Pending {
 interface Failure {
   readonly message: string;
   readonly status: number;
+}
+
+/** The media type of `response`, lowercase and without its parameters, or `""` without one. */
+function mediaType(response: Response): string {
+  return (response.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+}
+
+/**
+ * The text the error signal shows for an answer outside 2xx. A handler that
+ * fails writes the sentence for the visitor as `text/plain`, which axum gives
+ * a `String`, while a proxy's error page is HTML, so only a plain text body
+ * is kept, and the status and its reason stand in for any other.
+ */
+async function failureText(response: Response): Promise<string> {
+  const body = mediaType(response) === "text/plain" ? (await response.text()).trim() : "";
+  return body === "" ? `${response.status} ${response.statusText}`.trim() : body;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -70,7 +92,7 @@ export class Calls {
     error: string | null,
     options: CallOptions,
   ): Promise<void> {
-    const init: RequestInit = { method, headers: { accept: "text/event-stream" } };
+    const init: RequestInit = { method };
     const request = (): URL => this.#request(method, path, args(), init, options);
     // The first request is built before the call returns, so a statement after it can change what the arguments read.
     const url = request();
@@ -143,18 +165,19 @@ export class Calls {
   ): URL {
     const url = new URL(path, document.baseURI);
     const body = JSON.stringify(value ?? null);
+    const headers: Record<string, string> = { accept: "text/event-stream", [CALL_HEADER]: "1" };
     if (options.files !== undefined) {
       // The server refuses an upload without this header, which a form on another site cannot add.
-      init.headers = { accept: "text/event-stream", [UPLOAD_HEADER]: "1" };
+      headers[UPLOAD_HEADER] = "1";
       init.body = this.#uploadBody(body, options.files, options.origin);
     } else if (method === "GET") {
       if (value !== null && value !== undefined) url.searchParams.set("args", body);
     } else {
-      init.headers = { accept: "text/event-stream", "content-type": "application/json" };
+      headers["content-type"] = "application/json";
       init.body = body;
     }
-    if (options.part !== undefined)
-      init.headers = { ...(init.headers as Record<string, string>), [PART_HEADER]: options.part };
+    if (options.part !== undefined) headers[PART_HEADER] = options.part;
+    init.headers = headers;
     return url;
   }
 
@@ -200,25 +223,30 @@ export class Calls {
 
   /**
    * Sends one request and hands each event of its answer to `received` until
-   * the call is aborted. Returns `null` once the server ends the stream, or the
-   * failure. With `reconnect`, an answer that closes before `hs-end` is a
-   * failure, which is how a host that cuts a response at a time limit ends
-   * it. `connected` runs when the server answers with a 2xx status.
+   * the call is aborted. Returns `null` once the server ends the stream with
+   * `hs-end`, or the failure. An answer that closes before `hs-end` is a
+   * failure, which is how a connection that drops in the middle, or a host
+   * that cuts a response at a time limit, ends it. `connected` runs when the
+   * server answers with a 2xx event stream.
    */
   async #send(
     url: URL,
-    { init, error, options, controller }: Pending,
+    { init, error, controller }: Pending,
     connected: () => void,
     received: (event: ServerEvent) => void,
   ): Promise<Failure | null> {
     try {
       const response = await fetch(url, init);
-      if (!response.ok || response.body === null) {
-        // The error signal is text a page shows, so it holds the body the server wrote for the visitor, and the status only when there is no body.
-        const body = (await response.text()).trim();
-        const message = body === "" ? `${response.status} ${response.statusText}`.trim() : body;
-        return { message, status: response.status };
-      }
+      if (!response.ok) return { message: await failureText(response), status: response.status };
+      // A proxy that sends a signed-out visitor to its sign-in page answers
+      // the redirected `fetch` with a 200 HTML page, which carries no patches.
+      if (response.redirected)
+        return { message: `the answer was redirected to ${response.url}`, status: 0 };
+      if (mediaType(response) !== "text/event-stream" || response.body === null)
+        return {
+          message: `the answer is ${mediaType(response) || "empty"}, not an event stream`,
+          status: 0,
+        };
       connected();
       if (error !== null) this.#rt.store.set(error, "");
       let ended = false;
@@ -227,8 +255,7 @@ export class Calls {
         if (event.event === END_EVENT) ended = true;
         else received(event);
       });
-      if (options.reconnect && !ended)
-        return { message: "the stream closed before the server ended it", status: 0 };
+      if (!ended) return { message: "the answer closed before the server ended it", status: 0 };
       return null;
     } catch (cause) {
       return { message: String(cause), status: 0 };

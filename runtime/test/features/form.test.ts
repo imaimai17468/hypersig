@@ -42,7 +42,14 @@ it("shows a rule's message once the field is left, and tracks whether the values
 });
 
 it("touches every field on submit and calls the action only once every rule passes", async () => {
-  const fetch = vi.fn<Fetch>(() => Promise.resolve(new Response("", { status: 200 })));
+  const fetch = vi.fn<Fetch>(() =>
+    Promise.resolve(
+      new Response("event: hs-end\ndata: {}\n\n", {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      }),
+    ),
+  );
   vi.stubGlobal("fetch", fetch);
   const runtime = mount("join");
   submit();
@@ -68,7 +75,14 @@ it("touches every field on submit and calls the action only once every rule pass
 it("shows a message the server sent until the next submit, and reset puts the starting values back", async () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn<Fetch>(() => Promise.resolve(new Response("", { status: 200 }))),
+    vi.fn<Fetch>(() =>
+      Promise.resolve(
+        new Response("event: hs-end\ndata: {}\n\n", {
+          status: 200,
+          headers: { "content-type": "text/event-stream" },
+        }),
+      ),
+    ),
   );
   const runtime = mount("join");
   runtime.store.set("signup.errors", { email: "That address is taken." });

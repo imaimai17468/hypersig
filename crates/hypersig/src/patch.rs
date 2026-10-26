@@ -11,10 +11,10 @@
 //! | `hs-navigate` | `{"url": "..."}`, the page the browser loads next |
 //! | `hs-history` | `{"url": "...", "replace": bool}`, the URL the address bar shows, without loading it |
 //!
-//! A stream that a `stream` line of `routes!` serves sends one more event
-//! last, once its handler's stream finishes: `hs-end` with the data `{}`. It patches
-//! nothing. The runtime, in `runtime/src/runtime/action/call.ts`, opens a
-//! stream called with `reconnect` again when the response closes before it.
+//! Every answer to a call sends one more event last, once its handler has
+//! finished: `hs-end` with the data `{}`. It patches nothing. The runtime, in
+//! `runtime/src/runtime/action/call.ts`, counts an answer that closes before
+//! it as a failure, and opens a stream called with `reconnect` again.
 //!
 //! The stream a debug build serves for reloading the page, which
 //! `src/axum/dev.rs` writes and `runtime/src/dev.ts` reads, carries one
@@ -151,7 +151,8 @@ impl<S> fmt::Debug for SignalPatch<S> {
 /// let patches: Patches<Room> = Room::messages().patch_append(&[hello]).into();
 /// assert_eq!(
 ///     patches.to_event_stream(),
-///     "event: hs-list\ndata: [\"append\",\"messages\",[\"lit\",[{\"body\":\"hello\"}]]]\n\n",
+///     "event: hs-list\ndata: [\"append\",\"messages\",[\"lit\",[{\"body\":\"hello\"}]]]\n\n\
+///      event: hs-end\ndata: {}\n\n",
 /// );
 /// ```
 pub struct ListPatch<S> {
@@ -579,7 +580,7 @@ impl<S: Signals> Patches<S> {
     /// let q = "app".to_owned();
     /// let patches = Patches::from(Fruit::matches().patch(vec!["apple".to_owned()]))
     ///     .push_url(FRUIT.url(Filter { q }));
-    /// assert!(patches.to_event_stream().ends_with(
+    /// assert!(patches.to_event_stream().contains(
     ///     "event: hs-history\ndata: {\"replace\":false,\"url\":\"/fruit?q=app\"}\n\n"
     /// ));
     /// # let _ = pages;
@@ -789,6 +790,9 @@ impl<S: Signals> Patches<S> {
 
     /// The batch as a Server-Sent Events body, for use without the axum feature.
     ///
+    /// The body ends with the event `hs-end`, without which the runtime
+    /// counts the answer as cut off and the call as failed.
+    ///
     /// # Panics
     ///
     /// Panics if the batch holds a fragment rendered under another part than
@@ -803,6 +807,7 @@ impl<S: Signals> Patches<S> {
             out.push_str(&event.data());
             out.push_str("\n\n");
         }
+        out.push_str("event: hs-end\ndata: {}\n\n");
         out
     }
 
@@ -925,7 +930,8 @@ mod tests {
         let stream = in_part(Some("header.badge".into()), || patches.to_event_stream());
         assert_eq!(
             stream,
-            "event: hs-signals\ndata: {\"header.badge.count\":3}\n\n"
+            "event: hs-signals\ndata: {\"header.badge.count\":3}\n\n\
+             event: hs-end\ndata: {}\n\n"
         );
     }
 
@@ -943,7 +949,8 @@ mod tests {
         let stream = in_part(Some("footer".into()), || patches.to_event_stream());
         assert_eq!(
             stream,
-            "event: hs-list\ndata: [\"append\",\"footer.items\",[\"lit\",[4]]]\n\n"
+            "event: hs-list\ndata: [\"append\",\"footer.items\",[\"lit\",[4]]]\n\n\
+             event: hs-end\ndata: {}\n\n"
         );
     }
 

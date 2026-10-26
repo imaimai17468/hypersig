@@ -121,8 +121,9 @@ impl<S, A: serde::Serialize> Action<S, A> {
     ///
     /// A test hands it to the router with `tower::ServiceExt::oneshot`. It
     /// carries `Accept: text/event-stream`, which the runtime sends with
-    /// every call and [`RequestKind::of`](crate::RequestKind::of) reads. A
-    /// `POST` sends `args` as its JSON body with `Content-Type:
+    /// every call and [`RequestKind::of`](crate::RequestKind::of) reads, and
+    /// the `hypersig-call` header the runtime adds, which the router requires
+    /// of a `GET`. A `POST` sends `args` as its JSON body with `Content-Type:
     /// application/json`, and a `GET` sends them as JSON in the `args` query
     /// parameter. The path is [`Action::path`], without the [`Base`], as the
     /// router registers it.
@@ -562,7 +563,8 @@ impl<S, A> StreamAction<S, A> {
     /// The request the runtime sends to open this stream with `args`.
     ///
     /// It is the `GET` that [`Action::request`] builds: `Accept:
-    /// text/event-stream`, with `args` as JSON in the `args` query parameter.
+    /// text/event-stream` and the `hypersig-call` header, with `args` as JSON
+    /// in the `args` query parameter.
     ///
     /// # Panics
     ///
@@ -966,7 +968,8 @@ fn runtime_request(
     let json = serde_json::to_string(args).expect("the arguments serialize to JSON");
     let request = Request::builder()
         .method(method.as_str())
-        .header(header::ACCEPT, "text/event-stream");
+        .header(header::ACCEPT, "text/event-stream")
+        .header(crate::axum::CALL_HEADER, "1");
     let request = match method {
         // The runtime leaves the parameter out for arguments that are `null`,
         // such as `()`.
