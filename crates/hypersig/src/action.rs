@@ -3,6 +3,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::Duration;
 
 use serde_json::{Map, Value, json};
 
@@ -121,8 +122,9 @@ impl<S, A: serde::Serialize> Action<S, A> {
     ///
     /// A test hands it to the router with `tower::ServiceExt::oneshot`. It
     /// carries `Accept: text/event-stream`, which the runtime sends with
-    /// every call and [`RequestKind::of`](crate::RequestKind::of) reads. A
-    /// `POST` sends `args` as its JSON body with `Content-Type:
+    /// every call and [`RequestKind::of`](crate::RequestKind::of) reads, and
+    /// the `hypersig-call` header the runtime adds, which the router requires
+    /// of a `GET`. A `POST` sends `args` as its JSON body with `Content-Type:
     /// application/json`, and a `GET` sends them as JSON in the `args` query
     /// parameter. The path is [`Action::path`], without the [`Base`], as the
     /// router registers it.
@@ -219,6 +221,10 @@ impl<S, A> fmt::Debug for Action<S, A> {
 /// # async fn save((): (), (): ()) -> hypersig::Patches<Form> { hypersig::Patches::new() }
 /// let _click = SAVE.call().indicator(Form::saving()).error(Form::error());
 /// ```
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "each bool is one independent flag of the call's wire form, which the runtime reads by name"
+)]
 pub struct Call<S> {
     method: Method,
     base: Base,
@@ -230,6 +236,9 @@ pub struct Call<S> {
     resends: bool,
     /// Whether `indicator` says that a stream's answer is open, rather than that an answer is awaited.
     connected: bool,
+    exclusive: bool,
+    /// The milliseconds after which an answer that has not ended counts as failed.
+    timeout: Option<u32>,
     /// The name of the [`FileInput`](crate::FileInput) whose files an upload sends.
     files: Option<&'static str>,
     /// The path of the signal that holds the status of a failed answer.
@@ -254,6 +263,8 @@ impl<S> Call<S> {
             latest: false,
             resends: false,
             connected: false,
+            exclusive: false,
+            timeout: None,
             files: None,
             status: None,
             on_error: None,
@@ -286,11 +297,17 @@ impl<S> Call<S> {
     ///
     /// Emptying it on each send lets a handler of
     /// [`El::on_signal_change`](crate::html::El::on_signal_change) see a
-    /// failure that repeats the last one. The text is the body of an answer whose status is outside 2xx, so a
-    /// handler that fails writes the sentence the page shows. When that body
-    /// is empty, it is the status and its reason, such as `502 Bad Gateway`,
-    /// and when no answer arrives, it is the browser's message. The status
-    /// also goes to the console and to the `hs-error` event.
+    /// failure that repeats the last one. The text is the `text/plain` body
+    /// of an answer whose status is outside 2xx, which axum sends for a
+    /// `String`, so a handler that fails writes the sentence the page shows.
+    /// When that body is empty or of another type, such as a proxy's HTML
+    /// error page, it is the status and its reason, such as `502 Bad
+    /// Gateway`, and when no answer arrives, it is the browser's message. A
+    /// 2xx answer fails too, with a message of the runtime's own, when it
+    /// was redirected, is not an event stream, or closes before the event
+    /// `hs-end` that ends every answer of the router, as does a call whose
+    /// [`Call::timeout`] passed. The status also goes to the console and to
+    /// the `hs-error` event.
     #[must_use]
     pub fn error(mut self, message: Sig<S, String>) -> Self {
         self.error = Value::from(message.path());
@@ -299,8 +316,10 @@ impl<S> Call<S> {
 
     /// Sets `status` to the HTTP status of a failed answer, and to `0` when the call is sent.
     ///
-    /// It stays `0` when no answer arrives, such as when the connection
-    /// fails. A page compares it with a status the server answers with,
+    /// It stays `0` when no answer the runtime can read arrives: the
+    /// connection fails, the answer was redirected, is not an event stream,
+    /// or closes before the server ended it, or the [`Call::timeout`]
+    /// passed. A page compares it with a status the server answers with,
     /// written from `StatusCode` rather than as a number, to tell one
     /// failure from another without reading the text [`Call::error`] holds.
     ///
@@ -337,13 +356,17 @@ impl<S> Call<S> {
     ///
     /// A slow answer to an earlier call then cannot overwrite the answer to
     /// this one. The calls of every element to the action share the one
-    /// latest call, because the handler decides which signals they patch.
+    /// latest call, because the handler decides which signals they patch. A
+    /// call made inside a [`Part`](crate::Part) shares it with the calls of
+    /// that part only.
     ///
     /// Use it for a read whose answer replaces the previous one, such as a
     /// search that runs as the visitor types. The patches of the aborted call
     /// that have not arrived are dropped, and the server may stop its handler
-    /// at an `.await`, so leave it off a call that changes data. A call
-    /// without `latest` is never aborted.
+    /// at an `.await`, so leave it off a call that changes data. A later call
+    /// never aborts a call without `latest`. For a `POST`, the runtime drops
+    /// the events of an earlier call that arrive after a later call to the
+    /// same action has had its complete answer, with or without `latest`.
     ///
     /// ```
     /// use hypersig::html::input;
@@ -367,6 +390,84 @@ impl<S> Call<S> {
     #[must_use]
     pub fn latest(mut self) -> Self {
         self.latest = true;
+        self
+    }
+
+    /// Skips this call while another call to the same action awaits its answer.
+    ///
+    /// A second click on a button that places an order then sends nothing
+    /// while the first order is on its way. The skipped call sets no
+    /// indicator and no error, and runs neither [`Call::on_error`] nor
+    /// [`Call::on_success`]. A call made inside a [`Part`](crate::Part)
+    /// waits only for the calls of that part.
+    ///
+    /// While a `POST` awaits its answer, with or without `exclusive`, the
+    /// runtime sets `aria-busy="true"` on the element whose handler sent it,
+    /// unless the page gave that element an `aria-busy` of its own.
+    ///
+    /// ```
+    /// use hypersig::html::button;
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Cart {
+    ///     ordering: bool,
+    /// }
+    ///
+    /// hypersig::routes! {
+    ///     fn actions(Router<()>);
+    ///     action ORDER: Action<Cart> = post "/order" => order;
+    /// }
+    /// # async fn order((): (), (): ()) -> hypersig::Patches<Cart> { hypersig::Patches::new() }
+    /// let _order = button()
+    ///     .on_click(ORDER.call().indicator(Cart::ordering()).exclusive())
+    ///     .text("Order");
+    /// ```
+    #[must_use]
+    pub fn exclusive(mut self) -> Self {
+        self.exclusive = true;
+        self
+    }
+
+    /// Fails this call when its answer has not ended `limit` after it was sent.
+    ///
+    /// The runtime then aborts the request, drops the events still to come,
+    /// sets the [`Call::status`] signal to `0`, and writes the text the
+    /// [`Call::error`] signal shows, as for a connection that failed. Without
+    /// it a call waits for as long as the server takes, which suits an
+    /// upload of a large file. A [`StreamCall`] has no timeout, because a
+    /// stream stays open until its handler ends it.
+    ///
+    /// The server may still finish the handler after the browser stopped
+    /// waiting, so a call that changes data can have taken effect.
+    ///
+    /// ```
+    /// use std::time::Duration;
+    ///
+    /// use hypersig::html::button;
+    /// use hypersig::{Action, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Report {
+    ///     problem: String,
+    /// }
+    ///
+    /// hypersig::routes! {
+    ///     fn actions(Router<()>);
+    ///     action BUILD: Action<Report> = post "/build" => build;
+    /// }
+    /// # async fn build((): (), (): ()) -> hypersig::Patches<Report> { hypersig::Patches::new() }
+    /// let call = BUILD.call().error(Report::problem()).timeout(Duration::from_secs(20));
+    /// let _build = button().on_click(call).text("Build the report");
+    /// ```
+    #[must_use]
+    pub fn timeout(mut self, limit: Duration) -> Self {
+        // A browser fires a timer of more than `i32::MAX` milliseconds at
+        // once, so a longer limit is held at that, a little under 25 days.
+        let millis = limit.as_millis().min(i32::MAX.unsigned_abs().into());
+        self.timeout = Some(u32::try_from(millis).unwrap_or(u32::MAX));
         self
     }
 
@@ -460,11 +561,15 @@ impl<S> IntoStmt<S> for Call<S> {
             ("latest", call.latest),
             ("reconnect", call.resends),
             ("connected", call.connected),
+            ("exclusive", call.exclusive),
         ]
         .into_iter()
         .filter_map(|(flag, on)| on.then_some(flag))
         .collect();
         let mut outcomes = Map::new();
+        if let Some(timeout) = call.timeout {
+            outcomes.insert("timeout".to_owned(), Value::from(timeout));
+        }
         if let Some((depth, stmt)) = call.on_error {
             outcomes.insert("error".to_owned(), json!([depth, stmt]));
         }
@@ -562,7 +667,8 @@ impl<S, A> StreamAction<S, A> {
     /// The request the runtime sends to open this stream with `args`.
     ///
     /// It is the `GET` that [`Action::request`] builds: `Accept:
-    /// text/event-stream`, with `args` as JSON in the `args` query parameter.
+    /// text/event-stream` and the `hypersig-call` header, with `args` as JSON
+    /// in the `args` query parameter.
     ///
     /// # Panics
     ///
@@ -648,11 +754,15 @@ impl<S> StreamCall<S> {
 
     /// Opens the stream again when its connection fails, breaks off, or answers 5xx.
     ///
-    /// The first attempt waits 1 second, and each later one twice as long,
-    /// up to 30 seconds. A stream that delivers an event starts the wait
-    /// over, so a server that answers 2xx and closes before sending anything
-    /// is asked again less often each time. While the stream is failing, the
-    /// [`error`](StreamCall::error) signal holds the last failure.
+    /// The first attempt waits up to 1 second, and each later one up to twice
+    /// as long, up to 30 seconds. Each wait is at least half its length, at a
+    /// random point, so pages that lost the server together do not all
+    /// return at the same moment. The wait ends early when the browser comes
+    /// back online or the page becomes visible. A stream that delivers an
+    /// event starts the wait over, so a server that answers 2xx and closes
+    /// before sending anything is asked again less often each time. While
+    /// the stream is failing, the [`error`](StreamCall::error) signal holds
+    /// the last failure.
     ///
     /// The server sends the event `hs-end` last once the handler's stream
     /// finishes, and a stream that ended with it is not opened again. A
@@ -966,7 +1076,8 @@ fn runtime_request(
     let json = serde_json::to_string(args).expect("the arguments serialize to JSON");
     let request = Request::builder()
         .method(method.as_str())
-        .header(header::ACCEPT, "text/event-stream");
+        .header(header::ACCEPT, "text/event-stream")
+        .header(crate::axum::CALL_HEADER, "1");
     let request = match method {
         // The runtime leaves the parameter out for arguments that are `null`,
         // such as `()`.
@@ -1053,6 +1164,33 @@ mod tests {
                 }
             ])
         );
+    }
+
+    #[test]
+    fn an_exclusive_call_with_a_timeout_writes_a_flag_and_the_milliseconds() {
+        assert_eq!(
+            SAVE.call()
+                .exclusive()
+                .timeout(Duration::from_secs(5))
+                .into_stmt()
+                .as_json(),
+            &json!([
+                "call",
+                "POST",
+                "/save",
+                null,
+                null,
+                null,
+                ["exclusive"],
+                { "timeout": 5000 }
+            ])
+        );
+    }
+
+    #[test]
+    fn a_timeout_longer_than_a_browser_timer_holds_is_cut_to_it() {
+        let stmt = SAVE.call().timeout(Duration::MAX).into_stmt();
+        assert_eq!(stmt.as_json()[7]["timeout"], json!(2_147_483_647));
     }
 
     #[test]

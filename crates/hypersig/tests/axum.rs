@@ -131,6 +131,7 @@ async fn a_stream_ends_with_hs_end_once_its_handler_finishes() {
     let (status, body) = send(
         Request::get("/ticks?args=4")
             .header("accept", "text/event-stream")
+            .header("hypersig-call", "1")
             .body(Body::empty())
             .expect("request"),
     )
@@ -154,7 +155,10 @@ async fn post_reads_the_arguments_from_the_body() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, "event: hs-signals\ndata: {\"count\":7}\n\n");
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":7}\n\nevent: hs-end\ndata: {}\n\n"
+    );
 }
 
 #[tokio::test]
@@ -162,25 +166,35 @@ async fn get_reads_the_arguments_from_the_query() {
     let (status, body) = send(
         Request::get("/peek?args=5")
             .header("accept", "text/event-stream")
+            .header("hypersig-call", "1")
             .body(Body::empty())
             .expect("request"),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, "event: hs-signals\ndata: {\"count\":5}\n\n");
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":5}\n\nevent: hs-end\ndata: {}\n\n"
+    );
 }
 
 #[tokio::test]
 async fn the_requests_actions_build_reach_their_handlers_with_the_arguments() {
     let (status, body) = send(ADD.request(&(4, 3))).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, "event: hs-signals\ndata: {\"count\":7}\n\n");
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":7}\n\nevent: hs-end\ndata: {}\n\n"
+    );
 
     // A text the query has to escape: a space, `&`, `=`, `/`, `?`, `#`, and
     // a character outside ASCII.
     let (status, body) = send(LENGTH.request(&"a b&c=d/e?f#gé".to_owned())).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, "event: hs-signals\ndata: {\"count\":14}\n\n");
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":14}\n\nevent: hs-end\ndata: {}\n\n"
+    );
 
     let (status, body) = send(TICKS.request(&4)).await;
     assert_eq!(status, StatusCode::OK);
@@ -481,7 +495,7 @@ async fn an_action_sends_the_browser_to_another_page_after_its_patches() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(
         body,
-        "event: hs-signals\ndata: {\"count\":5}\n\nevent: hs-navigate\ndata: {\"url\":\"/orgs/acme/members/5\"}\n\n"
+        "event: hs-signals\ndata: {\"count\":5}\n\nevent: hs-navigate\ndata: {\"url\":\"/orgs/acme/members/5\"}\n\nevent: hs-end\ndata: {}\n\n"
     );
 }
 
@@ -771,8 +785,18 @@ async fn a_get_the_runtime_did_not_send_gets_403() {
     assert_eq!(status, StatusCode::FORBIDDEN);
     assert_eq!(
         body,
-        "the call lacks the `Accept` header the hypersig runtime sends"
+        "the call lacks the `hypersig-call` header the hypersig runtime adds"
     );
+    // What a `no-cors` `fetch` or an `EventSource` on another site sends:
+    // the `Accept` the runtime sends, and no header of its own.
+    let (status, _) = send(
+        Request::get("/peek?args=5")
+            .header("accept", "text/event-stream")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
 #[tokio::test]
@@ -784,7 +808,10 @@ async fn a_call_from_the_same_origin_is_served() {
     ))
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, "event: hs-signals\ndata: {\"count\":7}\n\n");
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":7}\n\nevent: hs-end\ndata: {}\n\n"
+    );
 }
 
 #[tokio::test]
@@ -792,7 +819,10 @@ async fn an_action_reads_the_request_through_its_extractor() {
     let (status, _, body) =
         send_guarded(post_json("/greet", &[("x-visitor", "Ada")], "null")).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, "event: hs-signals\ndata: {\"count\":3}\n\n");
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":3}\n\nevent: hs-end\ndata: {}\n\n"
+    );
 }
 
 #[tokio::test]
@@ -807,14 +837,20 @@ async fn an_action_sets_a_cookie_beside_its_patches() {
     let (status, headers, body) = send_guarded(post_json("/sign-in", &[], "null")).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(headers[header::SET_COOKIE], "session=abc; HttpOnly; Path=/");
-    assert_eq!(body, "event: hs-signals\ndata: {\"count\":1}\n\n");
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":1}\n\nevent: hs-end\ndata: {}\n\n"
+    );
 }
 
 #[tokio::test]
 async fn an_action_that_returns_an_error_answers_with_it() {
     let (status, _, body) = send_guarded(post_json("/fail", &[], "2")).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, "event: hs-signals\ndata: {\"count\":3}\n\n");
+    assert_eq!(
+        body,
+        "event: hs-signals\ndata: {\"count\":3}\n\nevent: hs-end\ndata: {}\n\n"
+    );
     let (status, _, body) = send_guarded(post_json("/fail", &[], "3")).await;
     assert_eq!(status, StatusCode::CONFLICT);
     assert_eq!(body, "the count is full");

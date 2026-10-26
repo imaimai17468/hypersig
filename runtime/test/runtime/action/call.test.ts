@@ -10,6 +10,9 @@ afterEach(() => {
 
 const signals = (results: string) => `event: hs-signals\ndata: {"results":"${results}"}\n\n`;
 
+/** The event the server sends last on every answer. */
+const end = "event: hs-end\ndata: {}\n\n";
+
 /** A fetch whose answers the test settles one by one, which rejects once its request is aborted. */
 function pendingFetch() {
   const answers: ((body: string) => void)[] = [];
@@ -147,7 +150,11 @@ function openStream() {
       push = (text) => controller.enqueue(new TextEncoder().encode(text));
     },
   });
-  const fetch = vi.fn<Fetch>(() => Promise.resolve(new Response(body, { status: 200 })));
+  const fetch = vi.fn<Fetch>(() =>
+    Promise.resolve(
+      new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } }),
+    ),
+  );
   vi.stubGlobal("fetch", fetch);
   return { fetch, push: (text: string) => push(text) };
 }
@@ -185,4 +192,78 @@ it("keeps applying the answer of a POST whose element left the page", async () =
   $("button").remove();
   answers[0]!(signals("saved"));
   await vi.waitFor(() => expect(runtime.store.get("results")).toBe("saved"));
+});
+
+const save = `<button data-hs-on-click='["call","POST","/save",null,"busy","problem",[],{"status":"failure","ok":["set","saved",["lit",true]]}]'>save</button>`;
+
+/** Mounts the save button, answers its call with `response`, and waits for the call to end. */
+async function answerSave(response: Response): Promise<Runtime> {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<Fetch>(() => Promise.resolve(response)),
+  );
+  const runtime = mount(save, {
+    busy: false,
+    problem: "",
+    failure: -1,
+    saved: false,
+    results: "",
+  });
+  $("button").click();
+  await vi.waitFor(() => expect(runtime.store.get("problem")).not.toBe(""));
+  expect(runtime.store.get("busy")).toBe(false);
+  return runtime;
+}
+
+it("counts a POST answer that closes before hs-end as a failure with status 0", async () => {
+  const runtime = await answerSave(sseResponse(signals("half")));
+  expect(runtime.store.get("results")).toBe("half");
+  expect(runtime.store.get("problem")).toBe("the answer closed before the server ended it");
+  expect(runtime.store.get("failure")).toBe(0);
+  expect(runtime.store.get("saved")).toBe(false);
+});
+
+it("counts a 2xx answer that is not an event stream as a failure", async () => {
+  const login = new Response("<html>Sign in</html>", {
+    status: 200,
+    headers: { "content-type": "text/html; charset=utf-8" },
+  });
+  const runtime = await answerSave(login);
+  expect(runtime.store.get("problem")).toBe("the answer is text/html, not an event stream");
+  expect(runtime.store.get("failure")).toBe(0);
+  expect(runtime.store.get("saved")).toBe(false);
+});
+
+it("counts a redirected answer as a failure, even one that is an event stream", async () => {
+  const redirected = sseResponse(end);
+  Object.defineProperty(redirected, "redirected", { value: true });
+  Object.defineProperty(redirected, "url", { value: "https://sso.example/login" });
+  const runtime = await answerSave(redirected);
+  expect(runtime.store.get("problem")).toBe(
+    "the answer was redirected to https://sso.example/login",
+  );
+  expect(runtime.store.get("saved")).toBe(false);
+});
+
+it("shows the status line for a failed answer whose body is not plain text", async () => {
+  const gateway = new Response("<html><h1>502 Bad Gateway</h1></html>", {
+    status: 502,
+    statusText: "Bad Gateway",
+    headers: { "content-type": "text/html" },
+  });
+  const runtime = await answerSave(gateway);
+  expect(runtime.store.get("problem")).toBe("502 Bad Gateway");
+  expect(runtime.store.get("failure")).toBe(502);
+});
+
+it("sends the call header with every call, a GET included", async () => {
+  const fetch = vi.fn<Fetch>(() => Promise.resolve(sseResponse(end)));
+  vi.stubGlobal("fetch", fetch);
+  mount(`<p data-hs-on-load='["call","GET","/feed",null,null,null]'></p>`, {});
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+  expect(fetch.mock.calls[0]![1].headers).toEqual({
+    accept: "text/event-stream",
+    "hypersig-call": "1",
+  });
 });

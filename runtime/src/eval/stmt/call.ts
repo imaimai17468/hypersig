@@ -21,7 +21,7 @@ function runLater(stmt: unknown, ctx: Context, host: Host): void {
 }
 
 /**
- * What a call's `{"error": [depth, statement], "ok": statement, "status": path, "part": path}`
+ * What a call's `{"error": [depth, statement], "ok": statement, "status": path, "part": path, "timeout": ms}`
  * element asks for. The statements run when the call fails or succeeds, in
  * the context of the statement that made the call, so they reach its list
  * items and `let` values, and the error statement reads the error text as
@@ -32,18 +32,20 @@ function outcomes(
   spec: unknown,
   ctx: Context,
   host: Host,
-): Pick<CallOptions, "failed" | "succeeded" | "status" | "part"> {
+): Pick<CallOptions, "failed" | "succeeded" | "status" | "part" | "timeout"> {
   if (spec === null || typeof spec !== "object") return {};
-  const { error, ok, status, part } = spec as {
+  const { error, ok, status, part, timeout } = spec as {
     error?: [number, unknown];
     ok?: unknown;
     status?: string;
     part?: string;
+    timeout?: number;
   };
   const found: {
-    -readonly [K in "failed" | "succeeded" | "status" | "part"]?: CallOptions[K];
+    -readonly [K in "failed" | "succeeded" | "status" | "part" | "timeout"]?: CallOptions[K];
   } = {};
   if (part !== undefined) found.part = part;
+  if (timeout !== undefined) found.timeout = timeout;
   if (status !== undefined) found.status = status;
   if (error !== undefined) {
     const [depth, stmt] = error;
@@ -64,6 +66,7 @@ export const calls: Record<string, Statement> = {
       latest: flags.includes("latest"),
       reconnect: flags.includes("reconnect"),
       connected: flags.includes("connected"),
+      exclusive: flags.includes("exclusive"),
       origin: ctx.origin,
       ...outcomes(spec, ctx, host),
     };
@@ -84,6 +87,7 @@ export const calls: Record<string, Statement> = {
       latest: flags.includes("latest"),
       reconnect: false,
       connected: false,
+      exclusive: flags.includes("exclusive"),
       origin: ctx.origin,
       files: files as string,
       ...outcomes(spec, ctx, host),

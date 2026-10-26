@@ -276,6 +276,16 @@ fn timers() -> (El<Timers>, Timers) {
             ),
         )
         .child(
+            button().id(Id::new("once")).on_click(
+                SEARCH
+                    .call()
+                    .indicator(Timers::saving())
+                    .error(Timers::error())
+                    .exclusive()
+                    .timeout(Duration::from_secs(5)),
+            ),
+        )
+        .child(
             input().id(Id::new("find")).bind(Timers::find()).on_input(
                 LOOKUP
                     .call_with(Timers::find())

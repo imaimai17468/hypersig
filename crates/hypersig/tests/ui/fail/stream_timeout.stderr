@@ -1,0 +1,5 @@
+error[E0599]: no method named `timeout` found for struct `StreamCall<S>` in the current scope
+  --> tests/ui/fail/stream_timeout.rs:19:50
+   |
+19 |     let _ = div::<Feed>().on_load(UPDATES.call().timeout(Duration::from_secs(5)));
+   |                                                  ^^^^^^^ method not found in `StreamCall<Feed>`

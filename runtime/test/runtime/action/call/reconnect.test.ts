@@ -5,6 +5,8 @@ import { type Fetch, mount, sseResponse } from "../../mount.ts";
 beforeEach(() => {
   vi.useFakeTimers();
   vi.spyOn(console, "error").mockImplementation(() => {});
+  // The wait falls between half its length and all of it, and the tests time the longest.
+  vi.spyOn(Math, "random").mockReturnValue(1);
 });
 
 afterEach(() => {
@@ -31,7 +33,7 @@ function droppedResponse(body: string): Response {
       sent = true;
     },
   });
-  return new Response(stream, { status: 200 });
+  return new Response(stream, { status: 200, headers: { "content-type": "text/event-stream" } });
 }
 
 it("sends the request again after a dropped stream and a refused connection, waiting longer each time", async () => {
@@ -67,7 +69,7 @@ it("opens a stream again once 1 second after the host closes it before the serve
   const runtime = mount(feed, { results: "", problem: "" });
   await vi.advanceTimersByTimeAsync(0);
   expect(runtime.store.get("results")).toBe("one");
-  expect(runtime.store.get("problem")).toBe("the stream closed before the server ended it");
+  expect(runtime.store.get("problem")).toBe("the answer closed before the server ended it");
   await vi.advanceTimersByTimeAsync(1000);
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(runtime.store.get("results")).toBe("two");
@@ -89,7 +91,7 @@ it("applies no part of an event the host cut off in the middle", async () => {
   const runtime = mount(feed, { results: "", problem: "" });
   await vi.advanceTimersByTimeAsync(0);
   expect(runtime.store.get("results")).toBe("one");
-  expect(runtime.store.get("problem")).toBe("the stream closed before the server ended it");
+  expect(runtime.store.get("problem")).toBe("the answer closed before the server ended it");
 });
 
 it("evaluates the arguments again for each attempt, so the stream can start after what the page holds", async () => {
@@ -134,7 +136,7 @@ it("sets a connected flag only while the stream's answer is open", async () => {
   await vi.advanceTimersByTimeAsync(0);
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(runtime.store.get("live")).toBe(false);
-  connect(new Response(open, { status: 200 }));
+  connect(new Response(open, { status: 200, headers: { "content-type": "text/event-stream" } }));
   await vi.advanceTimersByTimeAsync(0);
   expect(runtime.store.get("live")).toBe(true);
   drop();
@@ -170,7 +172,11 @@ const closed = () =>
   });
 
 it("waits longer each time a stream closes before it sends anything", async () => {
-  const fetch = vi.fn<Fetch>(() => Promise.resolve(new Response(closed(), { status: 200 })));
+  const fetch = vi.fn<Fetch>(() =>
+    Promise.resolve(
+      new Response(closed(), { status: 200, headers: { "content-type": "text/event-stream" } }),
+    ),
+  );
   vi.stubGlobal("fetch", fetch);
   mount(feed, { results: "", problem: "" });
   await vi.advanceTimersByTimeAsync(0);
@@ -183,4 +189,36 @@ it("waits longer each time a stream closes before it sends anything", async () =
   expect(fetch).toHaveBeenCalledTimes(3);
   await vi.advanceTimersByTimeAsync(4000);
   expect(fetch).toHaveBeenCalledTimes(4);
+});
+
+it("waits at least half of each wait, so pages that lost a server together spread their retries", async () => {
+  vi.spyOn(Math, "random").mockReturnValue(0);
+  const fetch = vi.fn<Fetch>().mockRejectedValue(new TypeError("Failed to fetch"));
+  vi.stubGlobal("fetch", fetch);
+  mount(feed, { results: "", problem: "" });
+  await vi.advanceTimersByTimeAsync(0);
+  await vi.advanceTimersByTimeAsync(499);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(fetch).toHaveBeenCalledTimes(3);
+});
+
+it("tries again at once when the browser comes back online or the page becomes visible", async () => {
+  const fetch = vi.fn<Fetch>().mockRejectedValue(new TypeError("Failed to fetch"));
+  vi.stubGlobal("fetch", fetch);
+  mount(feed, { results: "", problem: "" });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  dispatchEvent(new Event("online"));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  document.dispatchEvent(new Event("visibilitychange"));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledTimes(3);
+  $("p").remove();
+  dispatchEvent(new Event("online"));
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(fetch).toHaveBeenCalledTimes(3);
 });

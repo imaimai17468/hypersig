@@ -53,7 +53,12 @@ it("sets the status signal to the status of a failed answer and back to 0 when t
   $("#save").click();
   await tick();
   expect(runtime.store.get("failure")).toBe(0);
-  answers[1]!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+  answers[1]!(
+    new Response("event: hs-signals\ndata: {}\n\nevent: hs-end\ndata: {}\n\n", {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
   await vi.waitFor(() => expect(runtime.store.get("saving")).toBe(false));
   expect(runtime.store.get("failure")).toBe(0);
 });
@@ -70,6 +75,30 @@ it("writes the status and its reason to the error when the failed answer has no 
   $("#save").click();
   await vi.waitFor(() => expect(runtime.store.get("error")).toBe("502 Bad Gateway"));
   expect(console.error).toHaveBeenCalledWith("hypersig: POST /search failed with 502 Bad Gateway");
+});
+
+it("skips an exclusive call while one is on its way, and fails it once its timeout passes", async () => {
+  vi.useFakeTimers();
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const fetch = vi.fn<Fetch>(
+    (_url, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const runtime = mount("timers");
+  $("#once").click();
+  $("#once").click();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledOnce();
+  expect($("#once").getAttribute("aria-busy")).toBe("true");
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(runtime.store.get("saving")).toBe(false);
+  expect(runtime.store.get("error")).toBe("the answer took longer than 5000 ms");
+  expect($("#once").hasAttribute("aria-busy")).toBe(false);
 });
 
 it("aborts the earlier latest call and applies only the newer answer", async () => {
@@ -90,14 +119,25 @@ it("aborts the earlier latest call and applies only the newer answer", async () 
   await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
   expect(fetch.mock.calls.map(([url]) => url.searchParams.get("args"))).toEqual(['"t"', '"te"']);
   expect(fetch.mock.calls[0]![1].signal!.aborted).toBe(true);
-  answers[1]!(new Response('event: hs-signals\ndata: {"found":"te"}\n\n', { status: 200 }));
-  answers[0]!(new Response('event: hs-signals\ndata: {"found":"t"}\n\n', { status: 200 }));
+  answers[1]!(
+    new Response('event: hs-signals\ndata: {"found":"te"}\n\nevent: hs-end\ndata: {}\n\n', {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
+  answers[0]!(
+    new Response('event: hs-signals\ndata: {"found":"t"}\n\nevent: hs-end\ndata: {}\n\n', {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
   await vi.waitFor(() => expect(runtime.store.get("finding")).toBe(false));
   expect(runtime.store.get("found")).toBe("te");
 });
 
 it("sends a reconnect call again after the connection fails", async () => {
   vi.useFakeTimers();
+  vi.spyOn(Math, "random").mockReturnValue(1);
   vi.spyOn(console, "error").mockImplementation(() => {});
   const fetch = vi
     .fn<Fetch>()
@@ -105,6 +145,7 @@ it("sends a reconnect call again after the connection fails", async () => {
     .mockResolvedValueOnce(
       new Response('event: hs-signals\ndata: {"found":"back"}\n\nevent: hs-end\ndata: {}\n\n', {
         status: 200,
+        headers: { "content-type": "text/event-stream" },
       }),
     );
   vi.stubGlobal("fetch", fetch);
@@ -143,13 +184,23 @@ it("marks only the line whose call failed, with the values named when it was sen
   expect(states()).toEqual(["sending", "sending"]);
 
   answers.get("1")!(new Response("The outbox is full.", { status: 409 }));
-  answers.get("2")!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+  answers.get("2")!(
+    new Response("event: hs-signals\ndata: {}\n\nevent: hs-end\ndata: {}\n\n", {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
   await vi.waitFor(() => expect(states()).toEqual(["The outbox is full.", "sent"]));
 
   answers.clear();
   $$("#letters .edit")[0]!.click();
   expect(states()).toEqual(["sending", "sent"]);
   await vi.waitFor(() => expect(answers.size).toBe(1));
-  answers.get("1")!(new Response("event: hs-signals\ndata: {}\n\n", { status: 200 }));
+  answers.get("1")!(
+    new Response("event: hs-signals\ndata: {}\n\nevent: hs-end\ndata: {}\n\n", {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    }),
+  );
   await vi.waitFor(() => expect(states()).toEqual(["sent", "sent"]));
 });

@@ -10,9 +10,13 @@ afterEach(() => {
 it("reads and writes a part's signals under its field, and tells the server the field", async () => {
   const fetch = vi.fn<Fetch>(() =>
     Promise.resolve(
-      new Response('event: hs-signals\ndata: {"footer.status":"Subscribed"}\n\n', {
-        status: 200,
-      }),
+      new Response(
+        'event: hs-signals\ndata: {"footer.status":"Subscribed"}\n\nevent: hs-end\ndata: {}\n\n',
+        {
+          status: 200,
+          headers: { "content-type": "text/event-stream" },
+        },
+      ),
     ),
   );
   vi.stubGlobal("fetch", fetch);

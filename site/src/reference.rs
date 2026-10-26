@@ -2289,6 +2289,22 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "exclusive",
+                            "struct.Call.html#method.exclusive",
+                            L {
+                                en: "Skips this call while another call to the same action awaits its answer.",
+                                ja: "同じアクションへの別の呼び出しが応答を待っている間は、この呼び出しを送りません。",
+                            },
+                        ),
+                        (
+                            "timeout",
+                            "struct.Call.html#method.timeout",
+                            L {
+                                en: "Fails this call when its answer has not ended `limit` after it was sent.",
+                                ja: "送ってから `limit` が過ぎても応答が終わっていなければ、この呼び出しを失敗にします。",
+                            },
+                        ),
+                        (
                             "on_error",
                             "struct.Call.html#method.on_error",
                             L {
