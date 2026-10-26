@@ -2757,9 +2757,11 @@ impl<S> El<S> {
     /// # Panics
     ///
     /// Panics if two elements carry one [`NodeRef`] name, one
-    /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
-    /// the runtime can reach both, or if an element inside a list template has
-    /// an id set with [`El::id`]. Each item of a list may carry the same name.
+    /// [`FileInput`](crate::FileInput) name, or one id from [`Id::new`], with
+    /// or without keys, where the runtime can reach both, or if an element
+    /// inside a list template has an id set with [`El::id`]. Each item of a
+    /// list may carry the same name. It also panics if an expression or
+    /// statement reads a list item outside every list that renders it.
     #[must_use]
     pub fn render(&self) -> String {
         let mut names = Names::default();

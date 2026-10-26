@@ -438,7 +438,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                         "Rendering the page or building the patch panics. One that an action's arguments bring in gets 400",
                     ],
                     &[
-                        "A `String` segment of a route is empty, `.`, or `..`",
+                        "A `String` segment of a route, or a part of a `Rest`, is empty, `.`, or `..`",
                         "The link answers 404, or the browser resolves the dots and asks for another page",
                     ],
                     &[
@@ -473,7 +473,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "`#[signals(computed)]` を付けたフィールドを `Page::computed` に渡し忘れる",
-                        "ページの描画が panic します。入れ子の構造体のフィールドでは、ページがそのフィールドを読む場合に限ります",
+                        "ページの描画が panic します。入れ子の構造体のフィールドで panic するのは、ページがそのフィールドを読む場合だけです",
                     ],
                     &[
                         "リストの項目を、渡されたクロージャの外で使う",
@@ -484,7 +484,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                         "ページの描画か差分の作成が panic します。アクションの引数から入る値は 400 になります",
                     ],
                     &[
-                        "`String` のルートの区間が空、`.`、`..` になる",
+                        "`String` のルートの区間か `Rest` の一部が空、`.`、`..` になる",
                         "リンクが 404 を返すか、ブラウザがドットを解決して別のページを求めます",
                     ],
                     &[

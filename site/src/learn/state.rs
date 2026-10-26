@@ -103,8 +103,8 @@ pub fn signals(site: Site) -> Part {
         note(
             site,
             L {
-                en: "The accessor of a field marked `#[signals(computed)]` returns a `Sig<S, T, Computed>`, which has no `set`, `toggle`, list statement, or `patch`, and which `bind` refuses. A statement that writes it or a patch that sets it is a compile error, because the browser would overwrite that value the next time a field the expression reads changes. A field of a nested struct with the mark is reached with `at_computed` instead of `at`.",
-                ja: "`#[signals(computed)]` を付けたフィールドのアクセサーは `Sig<S, T, Computed>` を返します。この型には `set`、`toggle`、リストの文、`patch` がなく、`bind` にも渡せません。書き込む文や設定する差分を書くとコンパイルエラーになります。書き込んだ値は、式が読むフィールドが次に変わったときにブラウザが上書きするからです。入れ子の構造体にある印の付いたフィールドには、`at` の代わりに `at_computed` でたどり着きます。",
+                en: "The accessor of a field marked `#[signals(computed)]` returns a `Sig<S, T, Computed>`, which has no `set`, `toggle`, list statement, or `patch`, and which `bind` refuses. A statement that writes it or a patch that sets it is a compile error, because the browser would overwrite that value the next time a field the expression reads changes. A field of a nested struct with the mark is reached with `at_computed` instead of `at`, and rendering the page panics when the page reads such a field and no `Page::computed` call names it.",
+                ja: "`#[signals(computed)]` を付けたフィールドのアクセサーは `Sig<S, T, Computed>` を返します。この型には `set`、`toggle`、リストの文、`patch` がなく、`bind` にも渡せません。書き込む文や設定する差分を書くとコンパイルエラーになります。書き込んだ値は、式が読むフィールドが次に変わったときにブラウザが上書きするからです。入れ子の構造体にある印の付いたフィールドには、`at` の代わりに `at_computed` でたどり着きます。そのフィールドをページが読むのに、どの `Page::computed` の呼び出しも指していないと、ページの描画が panic します。",
             },
         ),
     ])

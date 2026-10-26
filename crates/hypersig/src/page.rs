@@ -796,7 +796,10 @@ impl<S: Signals> Page<S> {
     ///
     /// Panics if the signal struct fails to serialize to JSON, or if the value
     /// does not deserialize into `T`, which happens where a `Serialize` impl
-    /// skips the field or disagrees with its `Deserialize` impl.
+    /// skips the field or disagrees with its `Deserialize` impl. It also
+    /// panics where [`Page::render`] would for the computed signals: two calls
+    /// naming one signal, a computed signal reading itself or one declared
+    /// after it, or one reading a list item.
     #[must_use]
     pub fn value_of<T: DeserializeOwned, M: FromPage>(&self, signal: Sig<S, T, M>) -> T {
         let root = self.initial_values();
@@ -816,12 +819,16 @@ impl<S: Signals> Page<S> {
     /// happens for a `Serialize` impl that returns an error, or if it holds an
     /// integer outside -2^53 to 2^53, which the browser would round, or if two
     /// elements carry one [`NodeRef`](crate::NodeRef) name, one
-    /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
+    /// [`FileInput`](crate::FileInput) name, or one id from
+    /// [`Id::new`](crate::html::Id::new), with or without keys, where
     /// the runtime can reach both, or if an element inside a list template has an id set with
     /// [`El::id`](crate::html::El::id). Each item of a list may carry the same
     /// name. It also panics if a field marked `#[signals(computed)]` is named
     /// by no [`Page::computed`] call, if two calls name one signal, or if a
-    /// computed signal reads itself or one declared after it.
+    /// computed signal reads itself or one declared after it, or if the page
+    /// reads a computed field of a nested struct that no call names, or if an
+    /// expression or statement reads a list item outside every list that
+    /// renders it.
     #[must_use]
     pub fn render(&self) -> String {
         self.render_under(Base::ROOT, None)

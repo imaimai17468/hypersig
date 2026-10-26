@@ -1221,7 +1221,9 @@ pub trait Variants: Segment + 'static {
 /// It is the last value of a route's parameters, and only there, as axum's
 /// wildcard is the last segment. Each `/`-separated part is percent-encoded
 /// in a link, and the `/`s between them stay as they are. axum does not
-/// match a wildcard against an empty rest, so `"/files/"` answers 404.
+/// match a wildcard against an empty rest, so `"/files/"` answers 404, and
+/// the browser resolves a part that is `.` or `..` before it sends the
+/// request, as it does for a [`Segment`] of `String`.
 ///
 /// ```
 /// use hypersig::{Page, Rest, Route, Signals};
