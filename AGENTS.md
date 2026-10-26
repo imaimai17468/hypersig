@@ -66,7 +66,8 @@ Your training data goes stale. `syn` is at 3.x here and `axum` at 0.8.x, and bot
 ## Commits
 
 - One commit has one purpose. Stage explicit paths, never `git add -A` or `git add .`.
-- The first line starts with `feat` / `fix` / `refactor` / `test` / `docs` / `chore` and states what improves. The body is in Japanese, and a `fix` or `refactor` says why.
+- The first line starts with `feat` / `fix` / `refactor` / `test` / `docs` / `chore` and states what improves. The body says why for a `fix` or `refactor`.
+- Commit messages, pull request titles and bodies, and review comments are in English, because a user who follows a change from a release reads them, and most users do not read Japanese. The release notes are the titles of the merged pull requests, so a Japanese title reaches them unchanged. Commits made before this rule stay as they are.
 - End with a `Co-Authored-By:` trailer crediting the current model.
 
 ## Code Practices
