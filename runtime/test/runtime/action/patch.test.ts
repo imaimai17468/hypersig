@@ -78,3 +78,12 @@ it("re-registers effects inside a patched fragment", async () => {
   await tick();
   expect($("#x").style.display).toBe("");
 });
+
+it("applies the events after one whose data does not parse", async () => {
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  const runtime = mount(`<p data-hs-text='["sig","label"]'></p>`, { label: "a" });
+  for (const data of ["{not json", '{"label":"b"}']) runtime.apply({ event: "hs-signals", data });
+  await tick();
+  expect($("p").textContent).toBe("b");
+  expect(error).toHaveBeenCalledTimes(1);
+});

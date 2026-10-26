@@ -74,6 +74,7 @@ export class Sweep {
     this.#removed = [];
     for (const effect of this.#stale) if (!effect.element.isConnected) this.#forget(effect.element);
     this.#stale = new Set();
+    this.#rt.actions.calls.prune();
   }
 
   /** Takes out the slots of the items a patch removed, which it removes without unmounting them. */

@@ -160,3 +160,27 @@ it("does not send the request again after a 4xx answer or once its element has l
   await vi.advanceTimersByTimeAsync(5000);
   expect(fetch).toHaveBeenCalledTimes(2);
 });
+
+/** A body that ends before it holds anything. */
+const closed = () =>
+  new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.close();
+    },
+  });
+
+it("waits longer each time a stream closes before it sends anything", async () => {
+  const fetch = vi.fn<Fetch>(() => Promise.resolve(new Response(closed(), { status: 200 })));
+  vi.stubGlobal("fetch", fetch);
+  mount(feed, { results: "", problem: "" });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(1999);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(fetch).toHaveBeenCalledTimes(3);
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(fetch).toHaveBeenCalledTimes(4);
+});

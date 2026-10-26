@@ -1,5 +1,5 @@
 import type { CallOptions } from "../../eval.ts";
-import { readEventStream } from "../../sse.ts";
+import { readEventStream, type ServerEvent } from "../../sse.ts";
 import type { Runtime } from "../../runtime.ts";
 import { FILES } from "../binding/ref.ts";
 
@@ -23,7 +23,8 @@ interface Pending {
   readonly request: () => URL;
   readonly error: string | null;
   readonly options: CallOptions;
-  readonly latest: AbortController | undefined;
+  /** Aborts the request, for `latest`, for a GET whose element left the document, or when the page leaves. */
+  readonly controller: AbortController;
   /** The indicator that is true while the server's answer is open, for a call sent with `connected`. */
   readonly open: string | null;
   /** Whether nothing waits for the call any more. */
@@ -49,6 +50,8 @@ export class Calls {
   readonly #latest = new Map<string, AbortController>();
   /** The number of calls awaiting an answer, by the indicator signal they set. */
   readonly #waiting = new Map<string, number>();
+  /** The unfinished GET calls made by an element's statement, which end once the element leaves the document. */
+  readonly #owned = new Set<Pending>();
 
   constructor(rt: Runtime) {
     this.#rt = rt;
@@ -73,16 +76,11 @@ export class Calls {
     const url = request();
     // The handler decides which signals an action patches, so two call sites of one action write the same signals, and the key is the action.
     const key = `${method} ${path}`;
-    let latest: AbortController | undefined;
-    if (options.latest) {
-      this.#latest.get(key)?.abort();
-      latest = new AbortController();
-      this.#latest.set(key, latest);
-      init.signal = latest.signal;
-    }
+    const controller = this.#controller(key, options.latest);
+    init.signal = controller.signal;
     const abandoned = (): boolean =>
       this.#rt.navigation.leaving ||
-      latest?.signal.aborted === true ||
+      controller.signal.aborted ||
       options.origin?.isConnected === false;
     // The store notifies only a change, so a failure that repeats the last message would go unnoticed if the signal kept it.
     if (error !== null) this.#rt.store.set(error, "");
@@ -98,16 +96,41 @@ export class Calls {
       request,
       error,
       options,
-      latest,
+      controller,
       open,
       abandoned,
     };
+    // A GET changes nothing on the server, so the patches of one whose element
+    // is gone have nothing to update, and a statement that runs again, such as
+    // on load of the element that replaced it, opens its own.
+    if (method === "GET" && options.origin !== undefined) this.#owned.add(pending);
     try {
       await this.#attempt(pending, url, FIRST_RETRY_MS);
     } finally {
-      if (latest !== undefined && this.#latest.get(key) === latest) this.#latest.delete(key);
+      this.#owned.delete(pending);
+      if (this.#latest.get(key) === controller) this.#latest.delete(key);
       if (busy !== null) this.#busy(busy, -1);
     }
+  }
+
+  /** The controller of a new call of the action `key`, which aborts the earlier one sent with `latest` where this one is too. */
+  #controller(key: string, latest: boolean): AbortController {
+    const controller = new AbortController();
+    if (latest) {
+      this.#latest.get(key)?.abort();
+      this.#latest.set(key, controller);
+    }
+    return controller;
+  }
+
+  /** Aborts the unfinished GET calls whose element has left the document. */
+  prune(): void {
+    for (const call of this.#owned) if (call.options.origin?.isConnected === false) this.#end(call);
+  }
+
+  #end(call: Pending): void {
+    this.#owned.delete(call);
+    call.controller.abort();
   }
 
   /** The URL of a call with the arguments `value`, setting the body and headers of `init` to match. */
@@ -139,15 +162,26 @@ export class Calls {
   async #attempt(call: Pending, url: URL, delay: number): Promise<void> {
     let opened = false;
     let wait = delay;
-    const failure = await this.#send(url, call.init, call.error, call.options.reconnect, () => {
-      wait = FIRST_RETRY_MS;
+    const connected = (): void => {
       if (call.options.status !== undefined) this.#rt.store.set(call.options.status, 0);
       if (call.open === null) return;
       opened = true;
       this.#busy(call.open, 1);
-    });
+    };
+    const received = (event: ServerEvent): void => {
+      if (this.#owned.has(call) && call.options.origin?.isConnected === false) {
+        this.#end(call);
+        return;
+      }
+      // An answer that closes before it sends anything is retried later each
+      // time, so a server that closes every stream at once is not asked again
+      // every second.
+      wait = FIRST_RETRY_MS;
+      this.#rt.actions.patches.apply(event);
+    };
+    const failure = await this.#send(url, call, connected, received);
     if (opened) this.#busy(call.open!, -1);
-    if (call.latest?.signal.aborted === true) return;
+    if (call.controller.signal.aborted) return;
     if (failure === null) {
       if (!this.#rt.navigation.leaving) call.options.succeeded?.();
       return;
@@ -165,18 +199,17 @@ export class Calls {
   }
 
   /**
-   * Sends one request and applies the events of its answer. Returns `null`
-   * once the server ends the stream, or the failure. With `ends`, an answer
-   * that closes before `hs-end` is a failure, which is how a host that cuts
-   * a response at a time limit ends it. `connected` runs when the server
-   * answers with a 2xx status.
+   * Sends one request and hands each event of its answer to `received` until
+   * the call is aborted. Returns `null` once the server ends the stream, or the
+   * failure. With `reconnect`, an answer that closes before `hs-end` is a
+   * failure, which is how a host that cuts a response at a time limit ends
+   * it. `connected` runs when the server answers with a 2xx status.
    */
   async #send(
     url: URL,
-    init: RequestInit,
-    error: string | null,
-    ends: boolean,
+    { init, error, options, controller }: Pending,
     connected: () => void,
+    received: (event: ServerEvent) => void,
   ): Promise<Failure | null> {
     try {
       const response = await fetch(url, init);
@@ -190,10 +223,11 @@ export class Calls {
       if (error !== null) this.#rt.store.set(error, "");
       let ended = false;
       await readEventStream(response.body, (event) => {
+        if (controller.signal.aborted) return;
         if (event.event === END_EVENT) ended = true;
-        else this.#rt.actions.patches.apply(event);
+        else received(event);
       });
-      if (ends && !ended)
+      if (options.reconnect && !ended)
         return { message: "the stream closed before the server ended it", status: 0 };
       return null;
     } catch (cause) {

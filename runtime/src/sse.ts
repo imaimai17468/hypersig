@@ -46,5 +46,11 @@ export async function readEventStream(
   const chunks: AsyncIterable<Uint8Array> = {
     [Symbol.asyncIterator]: () => ({ next: () => reader.read() }),
   };
-  for await (const chunk of chunks) take(chunk);
+  try {
+    for await (const chunk of chunks) take(chunk);
+  } finally {
+    // An `onEvent` that throws leaves the loop with the body still open, and
+    // the connection stays open until the reader cancels it.
+    reader.cancel().catch(() => null);
+  }
 }
