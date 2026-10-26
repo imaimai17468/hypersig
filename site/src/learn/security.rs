@@ -118,7 +118,7 @@ fn requests(site: Site) -> Part {
                         "415",
                     ],
                     &[
-                        "A GET without the `Accept: text/event-stream` the runtime sends, as from an `<img>` or a link",
+                        "A GET without the `hypersig-call` header the runtime adds, as from an `<img>`, a link, an `EventSource`, or a `no-cors` `fetch`, none of which can add a header",
                         "403",
                     ],
                     &[
@@ -144,7 +144,7 @@ fn requests(site: Site) -> Part {
                         "415",
                     ],
                     &[
-                        "`<img>` やリンクからの GET のように、ランタイムが送る `Accept: text/event-stream` のない GET",
+                        "ランタイムが付ける `hypersig-call` のヘッダーのない GET。`<img>`、リンク、`EventSource`、`no-cors` の `fetch` は、どれもこのヘッダーを付けられません",
                         "403",
                     ],
                     &[
@@ -162,8 +162,8 @@ fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A script on another site can still send that `Accept` header with a GET, and a browser that sends no `Sec-Fetch-Site` lets it through, so a GET action should change nothing.",
-                ja: "別のサイトのスクリプトは GET にこの `Accept` を付けて送れます。`Sec-Fetch-Site` を送らないブラウザではそれが通るので、GET のアクションでは何も変更しないでください。",
+                en: "A script on another site that adds `hypersig-call` to its `fetch` makes the browser send a preflight first, which this server does not answer, so the GET is not sent, in a browser without `Sec-Fetch-Site` too. A GET action should still change nothing, because the runtime aborts a GET once the element that sent it leaves the page, and the server may then stop its handler at an `.await`.",
+                ja: "別のサイトのスクリプトが `fetch` に `hypersig-call` を付けると、ブラウザは先にプリフライトを送ります。このサーバーはプリフライトに応答しないので、`Sec-Fetch-Site` を送らないブラウザでも GET は送られません。それでも GET のアクションでは何も変更しないでください。ランタイムは、GET を送った要素がページから外れるとその GET を取り消し、サーバーはそのときハンドラを `.await` の時点で止めることがあるためです。",
             },
         ),
         para(

@@ -31,8 +31,8 @@ pub fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "An extractor that guards actions answers a signed-out request with a status such as 401. The browser's `fetch` follows a redirect, so an action answered with one receives the sign-in page's HTML and the page shows nothing. The `Accept` header tells the two apart: the runtime asks for `text/event-stream`. The cookie in this sample is read by hand to show the extractor, and [Signing in](learn/sessions/) keeps the session with `tower-sessions`.",
-                ja: "アクションを守る extractor は、サインインしていないリクエストに 401 などのステータスで応答します。ブラウザの `fetch` はリダイレクトをたどるので、リダイレクトで応答したアクションはサインインのページの HTML を受け取り、ページには何も表示されません。2 つは `Accept` ヘッダーで見分けられます。ランタイムは `text/event-stream` を求めます。このサンプルはエクストラクタを示すために Cookie を手で読んでいます。セッションを `tower-sessions` で持つ方法は [サインインとセッション](learn/sessions/) にあります。",
+                en: "An extractor that guards actions answers a signed-out request with a status such as 401, which the page reads through `Call::status`. The browser's `fetch` follows a redirect, so an action answered with one receives the sign-in page's HTML. The runtime counts that answer as a failure with status 0, which the page cannot tell from a dropped connection. The `Accept` header tells a call from a page load: the runtime asks for `text/event-stream`. The cookie in this sample is read by hand to show the extractor, and [Signing in](learn/sessions/) keeps the session with `tower-sessions`.",
+                ja: "アクションを守る extractor は、サインインしていないリクエストに 401 などのステータスで応答します。ページはこのステータスを `Call::status` で読めます。ブラウザの `fetch` はリダイレクトをたどるので、リダイレクトで応答したアクションはサインインのページの HTML を受け取ります。ランタイムはこの応答をステータス 0 の失敗として扱うので、ページからは接続が切れた場合と見分けられません。呼び出しとページの読み込みは `Accept` ヘッダーで見分けられます。ランタイムは `text/event-stream` を求めます。このサンプルはエクストラクタを示すために Cookie を手で読んでいます。セッションを `tower-sessions` で持つ方法は [サインインとセッション](learn/sessions/) にあります。",
             },
         ),
         heading(
@@ -45,8 +45,8 @@ pub fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A handler may return `Result<_, E>` where `E` implements `IntoResponse`, so `?` works. An action whose response has a status outside 2xx fails on the page: the runtime writes the body to the signal given to `Call::error`, so the error's response text is what the visitor reads. An empty body writes the status and its reason, such as `502 Bad Gateway`.",
-                ja: "ハンドラは、`E` が `IntoResponse` を実装する `Result<_, E>` を返せるので、`?` が使えます。応答のステータスが 2xx 以外のアクションは、ページでは失敗になります。ランタイムは、`Call::error` に渡したシグナルに応答の本文を書くので、エラーの応答の文言がそのまま訪問者に見えます。本文が空のときは、`502 Bad Gateway` のようにステータスとその理由を書きます。",
+                en: "A handler may return `Result<_, E>` where `E` implements `IntoResponse`, so `?` works. An action whose response has a status outside 2xx fails on the page: the runtime writes a `text/plain` body, which axum sends for a `String`, to the signal given to `Call::error`, so the error's response text is what the visitor reads. Any other body, such as a proxy's HTML error page, and an empty one write the status and its reason, such as `502 Bad Gateway`. An answer with a 2xx status fails too, with status 0, when it is not an event stream that ends with the event `hs-end`, which every answer of the router ends with.",
+                ja: "ハンドラは、`E` が `IntoResponse` を実装する `Result<_, E>` を返せるので、`?` が使えます。応答のステータスが 2xx 以外のアクションは、ページでは失敗になります。ランタイムは、本文が `text/plain`（axum は `String` をこの形式で送ります）のとき、`Call::error` に渡したシグナルに本文を書くので、エラーの応答の文言がそのまま訪問者に見えます。プロキシの HTML のエラーページのようにほかの形式の本文や、空の本文のときは、`502 Bad Gateway` のようにステータスとその理由を書きます。2xx の応答でも、`hs-end` のイベントで終わるイベントストリームでなければ、ステータス 0 の失敗になります。ルーターの応答は、どれも最後に `hs-end` を送ります。",
             },
         ),
         show(Snippet::HandlerErrors),
