@@ -4,7 +4,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt as _;
-use hypersig::{Patches, Signals, Upload, Uploaded};
+use hypersig::{FileName, Patches, Signals, Upload, Uploaded};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -25,7 +25,9 @@ async fn summarize((): (), uploaded: Uploaded<String>) -> Patches<Gallery> {
         .map(|file| {
             format!(
                 "{}:{}:{}",
-                file.file_name().unwrap_or("?"),
+                file.file_name()
+                    .and_then(FileName::base_name)
+                    .unwrap_or("?"),
                 file.content_type().unwrap_or("?"),
                 String::from_utf8_lossy(file.bytes())
             )
@@ -99,6 +101,17 @@ async fn the_handler_receives_the_arguments_and_the_files() {
     assert_eq!(status, StatusCode::OK);
     assert!(
         text.contains(r#""summary":"beach a.png:image/png:one,b.txt:text/plain:two""#),
+        "{text}"
+    );
+}
+
+#[tokio::test]
+async fn a_file_name_that_names_directories_reaches_the_handler_as_its_base_name() {
+    let body = multipart("\"x\"", &[("../../etc/passwd", "text/plain", "one")]);
+    let (status, text) = send(upload(&[FROM_PAGE], body)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        text.contains(r#""summary":"x passwd:text/plain:one""#),
         "{text}"
     );
 }
@@ -201,8 +214,12 @@ async fn an_upload_longer_than_its_limit_without_a_length_gets_413() {
 
 #[tokio::test]
 async fn arguments_that_do_not_deserialize_get_400() {
-    let (status, _) = send(upload(&[FROM_PAGE], multipart("7", &[]))).await;
+    let (status, body) = send(upload(&[FROM_PAGE], multipart("7", &[]))).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body,
+        "the action's arguments did not deserialize into its argument type"
+    );
 }
 
 #[tokio::test]
@@ -269,7 +286,7 @@ mod streaming {
     use axum::http::{Request, StatusCode, header};
     use futures::StreamExt as _;
     use http_body_util::BodyExt as _;
-    use hypersig::{Patches, RequestError, Upload, UploadStream};
+    use hypersig::{FileName, Patches, RequestError, Upload, UploadStream};
     use tower::ServiceExt as _;
 
     use super::{BOUNDARY, FROM_PAGE, Gallery, multipart};
@@ -291,7 +308,11 @@ mod streaming {
     ) -> Result<Patches<Gallery>, RequestError> {
         let mut files = Vec::new();
         while let Some(mut file) = upload.next_file().await? {
-            let name = file.file_name().unwrap_or("?").to_owned();
+            let name = file
+                .file_name()
+                .and_then(FileName::base_name)
+                .unwrap_or("?")
+                .to_owned();
             let (mut length, mut chunks) = (0, 0);
             while let Some(chunk) = file.chunk().await? {
                 READ_A_CHUNK.store(true, Ordering::SeqCst);

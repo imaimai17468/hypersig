@@ -3221,6 +3221,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "FileName",
+                            "struct.FileName.html",
+                            L {
+                                en: "The name a browser sent for an uploaded file, which the visitor chooses.",
+                                ja: "アップロードしたファイルについてブラウザが送った名前です。訪問者が決めます。",
+                            },
+                        ),
+                        (
                             "UploadStream",
                             "struct.UploadStream.html",
                             L {

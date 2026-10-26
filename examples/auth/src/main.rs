@@ -22,8 +22,9 @@ use hypersig::style::Style;
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::rem;
 use hypersig::{
-    Action, ActionResponse, FieldErrors, FileInput, Form, Page, PageResponse, Patches, RequestKind,
-    Route, RouterExt, Rules, Sig, Signals, Unserved, Upload, Uploaded, Validate, if_else,
+    Action, ActionResponse, FieldErrors, FileInput, FileName, Form, Page, PageResponse, Patches,
+    RequestKind, Route, RouterExt, Rules, Sig, Signals, Unserved, Upload, Uploaded, Validate,
+    if_else,
 };
 use hypersig_ui::{
     Autocomplete, ButtonSize, ButtonVariant, InputKind, Level, TextField, button, card,
@@ -516,7 +517,9 @@ async fn upload_picture(
     }
     let described = format!(
         "{}, {} bytes",
-        file.file_name().unwrap_or("picture"),
+        file.file_name()
+            .and_then(FileName::base_name)
+            .unwrap_or("picture"),
         file.bytes().len()
     );
     state.pictures().insert(member.name, described.clone());

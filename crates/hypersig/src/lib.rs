@@ -116,7 +116,7 @@ pub use signal::{
 };
 pub use upload::{FileInput, Upload};
 #[cfg(feature = "axum")]
-pub use upload::{StreamedFile, UploadStream, Uploaded, UploadedFile};
+pub use upload::{FileName, StreamedFile, UploadStream, Uploaded, UploadedFile};
 
 /// Typed atomic CSS, from the `hypersig_style` crate.
 ///
