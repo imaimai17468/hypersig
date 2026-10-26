@@ -137,3 +137,79 @@ it("keeps a modal dialog open", () => {
   expect(dialog.open).toBe(true);
   expect(dialog.textContent).toBe("2");
 });
+
+it("keeps an input with no id when an element is inserted before it", () => {
+  document.body.innerHTML = '<form id="root"><input name="title"><button>Save</button></form>';
+  const input = document.querySelector("input")!;
+  input.focus();
+  input.value = "Hello";
+  input.setSelectionRange(2, 4);
+  morph(
+    document.querySelector("#root")!,
+    element(
+      '<form id="root"><p class="error">Too short</p><input name="title"><button>Save</button></form>',
+    ),
+  );
+  expect(document.body.innerHTML).toBe(
+    '<form id="root"><p class="error">Too short</p><input name="title"><button>Save</button></form>',
+  );
+  expect(document.querySelector("input")).toBe(input);
+  expect(input.value).toBe("Hello");
+  expect(document.activeElement).toBe(input);
+  expect([input.selectionStart, input.selectionEnd]).toEqual([2, 4]);
+});
+
+it("keeps an input with no id when the element before it is removed", () => {
+  document.body.innerHTML =
+    '<form id="root"><p class="error">Too short</p><input name="title"><button>Save</button></form>';
+  const input = document.querySelector("input")!;
+  const removed: Element[] = [];
+  morph(
+    document.querySelector("#root")!,
+    element('<form id="root"><input name="title"><button>Save</button></form>'),
+    removed,
+  );
+  expect(document.body.innerHTML).toBe(
+    '<form id="root"><input name="title"><button>Save</button></form>',
+  );
+  expect(document.querySelector("input")).toBe(input);
+  expect(removed.map((el) => el.tagName)).toEqual(["P"]);
+});
+
+it("matches inputs with no id by name rather than by position", () => {
+  document.body.innerHTML = '<form id="root"><input name="a"><input name="b"></form>';
+  const b = document.querySelector('[name="b"]');
+  morph(document.querySelector("#root")!, element('<form id="root"><input name="b"></form>'));
+  expect(document.querySelector('[name="b"]')).toBe(b);
+  expect(document.querySelector('[name="a"]')).toBe(null);
+});
+
+it("focuses the element with the same id and keeps its selection, where moving it took focus away", () => {
+  document.body.innerHTML = '<div id="root"><input id="a"><input id="b"></div>';
+  const b = document.querySelector<HTMLInputElement>("#b")!;
+  b.focus();
+  b.value = "Hello";
+  b.setSelectionRange(1, 3);
+  morph(
+    document.querySelector("#root")!,
+    element('<div id="root"><input id="b"><input id="a"></div>'),
+  );
+  expect(document.activeElement).toBe(b);
+  expect([b.selectionStart, b.selectionEnd]).toEqual([1, 3]);
+});
+
+it("focuses the input with the same name, where the focused one was replaced", () => {
+  document.body.innerHTML = '<div id="root"><p><input name="q"></p></div>';
+  const old = document.querySelector<HTMLInputElement>("input")!;
+  old.focus();
+  old.value = "ab";
+  old.setSelectionRange(1, 1);
+  morph(
+    document.querySelector("#root")!,
+    element('<div id="root"><section><input name="q" value="ab"></section></div>'),
+  );
+  const now = document.querySelector<HTMLInputElement>("input")!;
+  expect(now).not.toBe(old);
+  expect(document.activeElement).toBe(now);
+  expect([now.selectionStart, now.selectionEnd]).toEqual([1, 1]);
+});
