@@ -55,6 +55,7 @@
 extern crate self as hypersig;
 
 mod action;
+mod asset;
 #[cfg(feature = "axum")]
 mod axum;
 mod date;
@@ -86,6 +87,7 @@ struct Readme;
 struct ReadmeJa;
 
 pub use action::{Action, Call, DialogRef, Method, NodeRef, StreamAction, StreamCall};
+pub use asset::Asset;
 #[cfg(all(
     feature = "axum",
     not(all(target_arch = "wasm32", target_os = "unknown"))
@@ -101,7 +103,9 @@ pub use expr::{
     CharClass, Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };
 pub use form::{FieldErrors, Form, Rules, Validate};
-pub use head::{OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError};
+pub use head::{
+    LanguageTag, LanguageTagError, OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError,
+};
 pub use href::{IntoHref, SafeUrl, UnsafeUrl};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use intl::{IntlLocale, PluralCategory};

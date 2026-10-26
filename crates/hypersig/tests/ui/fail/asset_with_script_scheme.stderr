@@ -1,0 +1,25 @@
+error[E0080]: evaluation panicked: an asset is a path or an `http` or `https` URL, with no space or control character
+ --> tests/ui/fail/asset_with_script_scheme.rs:4:24
+  |
+4 | const PAYLOAD: Asset = Asset::new("javascript:alert(1)");
+  |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `PAYLOAD` failed inside this call
+  |
+note: inside `Asset::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/asset.rs
+  |
+  | /         assert!(
+  | |             href::check(url.as_bytes()).is_ok() && !href::has_scheme(url.as_bytes(), b"mailto"),
+  | |             "an asset is a path or an `http` or `https` URL, with no space or control character"
+  | |         );
+  | |_________- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/asset_with_script_scheme.rs:7:13
+  |
+7 |     let _ = PAYLOAD;
+  |             ^^^^^^^

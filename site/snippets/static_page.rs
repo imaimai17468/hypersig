@@ -1,5 +1,5 @@
 use hypersig::html::{button, span};
-use hypersig::{Page, RUNTIME_JS, Signals};
+use hypersig::{Asset, Page, RUNTIME_JS, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -10,7 +10,7 @@ struct Counter {
 let count = Counter::count();
 let html = Page::new("Counter", Counter { count: 0 })
     // Load the runtime from a file next to the page.
-    .runtime_src("./hypersig.js")
+    .runtime_src(Asset::new("./hypersig.js"))
     .child(button().on_click(count.set(count + 1)).text("+1"))
     .child(span().bind_text(count.to_text()))
     .render();

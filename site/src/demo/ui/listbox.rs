@@ -3,14 +3,14 @@
 use hypersig::html::div;
 use hypersig::style::Style;
 use hypersig::style::value::rem;
-use hypersig::{Page, Signals};
+use hypersig::{Page, Segment, Signals};
 use hypersig_ui::Listbox;
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
 use crate::lang::L;
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Font {
     Sans,
     Serif,
@@ -38,27 +38,20 @@ pub fn page(site: Site) -> Page<Editor> {
                     ja: "フォント",
                 }),
                 Editor::font(),
-            )
-            .option(
-                Font::Sans,
-                site.t(L {
-                    en: "Sans serif",
-                    ja: "サンセリフ",
-                }),
-            )
-            .option(
-                Font::Serif,
-                site.t(L {
-                    en: "Serif",
-                    ja: "セリフ",
-                }),
-            )
-            .option(
-                Font::Mono,
-                site.t(L {
-                    en: "Monospace",
-                    ja: "等幅",
-                }),
+                |font| match font {
+                    Font::Sans => site.t(L {
+                        en: "Sans serif",
+                        ja: "サンセリフ",
+                    }),
+                    Font::Serif => site.t(L {
+                        en: "Serif",
+                        ja: "セリフ",
+                    }),
+                    Font::Mono => site.t(L {
+                        en: "Monospace",
+                        ja: "等幅",
+                    }),
+                },
             ),
         ),
     )

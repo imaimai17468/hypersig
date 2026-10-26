@@ -7,8 +7,9 @@ use std::fmt;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
+use crate::asset::Asset;
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
-use crate::head::{OpenGraph, Origin, meta};
+use crate::head::{LanguageTag, OpenGraph, Origin, meta};
 use crate::html::{
     Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, assert_items_open,
     check_item_reads, check_names, escape_into, keys_json, visit_trees, write_attr,
@@ -33,8 +34,8 @@ pub struct Page<S> {
     title: String,
     bound_title: Option<Value>,
     signals: S,
-    stylesheets: Vec<&'static str>,
-    scripts: Vec<&'static str>,
+    stylesheets: Vec<Asset>,
+    scripts: Vec<Asset>,
     styles: Vec<&'static str>,
     theme: Theme,
     global: Global,
@@ -42,16 +43,16 @@ pub struct Page<S> {
     body: Vec<Node<S>>,
     keys: Vec<(Shortcut, Stmt<S>)>,
     /// The path given to [`Page::runtime_src`], if any.
-    runtime: Option<&'static str>,
-    lang: Option<String>,
+    runtime: Option<Asset>,
+    lang: Option<LanguageTag>,
     description: Option<String>,
     canonical: Option<String>,
-    icon: Option<&'static str>,
+    icon: Option<Asset>,
     open_graph: Option<OpenGraph>,
     noindex: bool,
     nofollow: bool,
     /// Each `hreflang` with its absolute URL, where `None` is `x-default`.
-    alternates: Vec<(Option<String>, String)>,
+    alternates: Vec<(Option<LanguageTag>, String)>,
     /// Each JSON-LD block, serialized with `<` escaped.
     json_ld: Vec<String>,
     nonce: Option<String>,
@@ -192,7 +193,7 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Names `url` on `origin` as the same page in the language `hreflang`, a BCP 47 tag.
+    /// Names `url` on `origin` as the same page in the language `hreflang`.
     ///
     /// Search engines show the visitor the version in their language. Each
     /// version lists every version, itself included, and
@@ -200,7 +201,7 @@ impl<S: Signals> Page<S> {
     /// application.
     ///
     /// ```
-    /// use hypersig::{Origin, Page, Route, Signals};
+    /// use hypersig::{IntlLocale, Origin, Page, Route, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
@@ -217,8 +218,8 @@ impl<S: Signals> Page<S> {
     /// const SITE: Origin = Origin::new("https://example.com");
     ///
     /// let html = Page::new("Home", Home {})
-    ///     .alternate(SITE, &EN.url(()), "en")
-    ///     .alternate(SITE, &JA.url(()), "ja")
+    ///     .alternate(SITE, &EN.url(()), IntlLocale::En)
+    ///     .alternate(SITE, &JA.url(()), IntlLocale::Ja)
     ///     .alternate_default(SITE, &EN.url(()))
     ///     .render();
     /// assert!(html.contains(r#"<link rel="alternate" hreflang="ja" href="https://example.com/ja">"#));
@@ -226,7 +227,12 @@ impl<S: Signals> Page<S> {
     /// # let _ = pages;
     /// ```
     #[must_use]
-    pub fn alternate(mut self, origin: Origin, url: &Url, hreflang: impl Into<String>) -> Self {
+    pub fn alternate(
+        mut self,
+        origin: Origin,
+        url: &Url,
+        hreflang: impl Into<LanguageTag>,
+    ) -> Self {
         self.alternates
             .push((Some(hreflang.into()), origin.join(url.as_str())));
         self
@@ -386,9 +392,10 @@ impl<S: Signals> Page<S> {
     /// Uses the file at `href` as the page's icon in tabs and bookmarks.
     ///
     /// A page without it declares an empty icon, so the browser does not
-    /// request `/favicon.ico`.
+    /// request `/favicon.ico`. A path the application serves goes under the
+    /// [`Base`] of the route that serves the page, as [`Asset`] describes.
     #[must_use]
-    pub fn icon(mut self, href: &'static str) -> Self {
+    pub fn icon(mut self, href: Asset) -> Self {
         self.icon = Some(href);
         self
     }
@@ -400,23 +407,29 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.
+    /// Sets the language of the page, the `lang` attribute of `<html>`, to `tag`.
     ///
     /// The browser reads it for hyphenation, the voice of a screen reader,
     /// and the fonts it picks for the text. A page without it has no `lang`.
+    /// `tag` is a [`LanguageTag`], or the [`IntlLocale`](crate::IntlLocale)
+    /// the page's numbers and dates are written in.
     ///
     /// ```
-    /// use hypersig::{Page, Signals};
+    /// use hypersig::{IntlLocale, LanguageTag, Page, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
     /// struct Note {}
     ///
-    /// let html = Page::new("ノート", Note {}).lang("ja").render();
+    /// let html = Page::new("ノート", Note {}).lang(IntlLocale::Ja).render();
     /// assert!(html.starts_with(r#"<!doctype html><html lang="ja">"#));
+    ///
+    /// const PT_BR: LanguageTag = LanguageTag::new("pt-BR");
+    /// let html = Page::new("Nota", Note {}).lang(PT_BR).render();
+    /// assert!(html.starts_with(r#"<!doctype html><html lang="pt-BR">"#));
     /// ```
     #[must_use]
-    pub fn lang(mut self, tag: impl Into<String>) -> Self {
+    pub fn lang(mut self, tag: impl Into<LanguageTag>) -> Self {
         self.lang = Some(tag.into());
         self
     }
@@ -499,15 +512,21 @@ impl<S: Signals> Page<S> {
     /// Loads the runtime from `src` instead of [`RUNTIME_PATH`](crate::RUNTIME_PATH),
     /// for a page served as a static file next to a copy of
     /// [`RUNTIME_JS`](crate::RUNTIME_JS).
+    ///
+    /// A path the application serves goes under the [`Base`] of the route
+    /// that serves the page, as [`Asset`] describes.
     #[must_use]
-    pub fn runtime_src(mut self, src: &'static str) -> Self {
+    pub fn runtime_src(mut self, src: Asset) -> Self {
         self.runtime = Some(src);
         self
     }
 
     /// Adds a `<link rel="stylesheet">` for the file at `href` to `<head>`.
+    ///
+    /// A path the application serves goes under the [`Base`] of the route
+    /// that serves the page, as [`Asset`] describes.
     #[must_use]
-    pub fn stylesheet(mut self, href: &'static str) -> Self {
+    pub fn stylesheet(mut self, href: Asset) -> Self {
         self.stylesheets.push(href);
         self
     }
@@ -518,20 +537,26 @@ impl<S: Signals> Page<S> {
     /// a custom element. The scripts run after the runtime, in the order they
     /// were added. A custom element defined then is upgraded in place, so it
     /// keeps the attributes and the listeners the runtime gave it. It carries
-    /// the page's [`csp_nonce`](Page::csp_nonce), if there is one.
+    /// the page's [`csp_nonce`](Page::csp_nonce), if there is one. A path
+    /// the application serves goes under the [`Base`] of the route that
+    /// serves the page, as [`Asset`] describes.
     ///
     /// ```
-    /// use hypersig::{Page, Signals};
+    /// use hypersig::{Asset, Base, Page, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
     /// struct Place {}
     ///
-    /// let html = Page::new("Place", Place {}).script("/map.js").render();
-    /// assert!(html.contains(r#"<script type="module" src="/map.js"></script>"#));
+    /// const MAP: Asset = Asset::new("/map.js");
+    /// const APP: Base = Base::new("/app");
+    ///
+    /// let page = Page::new("Place", Place {}).script(MAP);
+    /// assert!(page.render().contains(r#"<script type="module" src="/map.js"></script>"#));
+    /// assert!(page.render_under(APP).contains(r#"<script type="module" src="/app/map.js"></script>"#));
     /// ```
     #[must_use]
-    pub fn script(mut self, src: &'static str) -> Self {
+    pub fn script(mut self, src: Asset) -> Self {
         self.scripts.push(src);
         self
     }
@@ -750,7 +775,11 @@ impl<S: Signals> Page<S> {
         }
         for (hreflang, url) in &self.alternates {
             out.push_str("<link rel=\"alternate\"");
-            write_attr(out, "hreflang", hreflang.as_deref().unwrap_or("x-default"));
+            write_attr(
+                out,
+                "hreflang",
+                hreflang.as_ref().map_or("x-default", LanguageTag::as_str),
+            );
             write_attr(out, "href", url);
             out.push('>');
         }
@@ -831,13 +860,26 @@ impl<S: Signals> Page<S> {
     /// renders it.
     #[must_use]
     pub fn render(&self) -> String {
-        self.render_under(Base::ROOT, None)
+        self.render_with(Base::ROOT, None)
+    }
+
+    /// Renders the document for a site served under `base`, such as a static site at `/docs`.
+    ///
+    /// The runtime's path and each [`Asset`] path the application serves
+    /// start with `base`, as they do for a page a route under `base` serves.
+    ///
+    /// # Panics
+    ///
+    /// Panics where [`Page::render`] does.
+    #[must_use]
+    pub fn render_under(&self, base: Base) -> String {
+        self.render_with(base, None)
     }
 
     /// Renders the document for a route under `base`, which the runtime's
-    /// path starts with, and gives `<body>` the URL of the stream that tells
-    /// the page to reload, where `dev` holds one.
-    pub(crate) fn render_under(&self, base: Base, dev: Option<&str>) -> String {
+    /// path and the assets' paths start with, and gives `<body>` the URL of
+    /// the stream that tells the page to reload, where `dev` holds one.
+    pub(crate) fn render_with(&self, base: Base, dev: Option<&str>) -> String {
         check_names(&self.body);
         check_item_reads(&self.body);
         let page = self
@@ -853,12 +895,15 @@ impl<S: Signals> Page<S> {
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
         if let Some(lang) = &self.lang {
-            write_attr(&mut out, "lang", lang);
+            write_attr(&mut out, "lang", lang.as_str());
         }
         out.push_str("><head><meta charset=\"utf-8\">");
         out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
         out.push_str("<link rel=\"icon\"");
-        write_attr(&mut out, "href", self.icon.unwrap_or("data:,"));
+        let icon = self
+            .icon
+            .map_or(Cow::Borrowed("data:,"), |icon| icon.under(base));
+        write_attr(&mut out, "href", &icon);
         out.push('>');
         let rules = RefCell::new(Vec::new());
         let ctx = Ctx {
@@ -880,10 +925,10 @@ impl<S: Signals> Page<S> {
         out.push_str("</title>");
         self.write_metadata(&mut out);
         let styles_at = out.len();
-        self.write_styles(&mut out);
+        self.write_styles(&mut out, base);
         out.push_str("<script type=\"module\"");
         let runtime: Cow<'_, str> = match self.runtime {
-            Some(src) => Cow::Borrowed(src),
+            Some(src) => src.under(base),
             None if base == Base::ROOT => Cow::Borrowed(crate::RUNTIME_PATH),
             None => Cow::Owned(base.join(crate::RUNTIME_PATH)),
         };
@@ -892,7 +937,7 @@ impl<S: Signals> Page<S> {
         out.push_str("></script>");
         for src in &self.scripts {
             out.push_str("<script type=\"module\"");
-            write_attr(&mut out, "src", src);
+            write_attr(&mut out, "src", &src.under(base));
             self.write_nonce(&mut out);
             out.push_str("></script>");
         }
@@ -970,7 +1015,7 @@ impl<S: Signals> Page<S> {
 
     /// Writes the global rules, the theme, the atomic classes of the body,
     /// and the page's stylesheets into `<head>`.
-    fn write_styles(&self, out: &mut String) {
+    fn write_styles(&self, out: &mut String, base: Base) {
         if !self.global.is_empty() {
             out.push_str("<style data-hs-global");
             self.write_nonce(out);
@@ -999,7 +1044,7 @@ impl<S: Signals> Page<S> {
         }
         for href in &self.stylesheets {
             out.push_str("<link rel=\"stylesheet\"");
-            write_attr(out, "href", href);
+            write_attr(out, "href", &href.under(base));
             out.push('>');
         }
         for css in &self.styles {
@@ -1050,9 +1095,10 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     use crate::html::{Stylesheet, input, p};
+    use crate::route::Base;
     use crate::style::value::Color;
     use crate::style::{Global, Property, Style, Theme, Token};
-    use crate::{NodeRef, Page, Signals};
+    use crate::{Asset, NodeRef, Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize, Default)]
     struct Search {
@@ -1146,8 +1192,8 @@ mod tests {
     fn scripts_follow_the_runtime_in_order_with_the_nonce() {
         let html = Page::new("Search", Search::default())
             .csp_nonce("n0nce")
-            .script("/map.js")
-            .script("/editor.js")
+            .script(Asset::new("/map.js"))
+            .script(Asset::new("/editor.js"))
             .render();
         let runtime = html.find(crate::RUNTIME_PATH).expect("the runtime script");
         let map = html
@@ -1157,6 +1203,23 @@ mod tests {
             .find(r#"<script type="module" src="/editor.js" nonce="n0nce"></script>"#)
             .expect("the editor script");
         assert!(runtime < map && map < editor && editor < html.find("</head>").unwrap());
+    }
+
+    #[test]
+    fn assets_the_application_serves_go_under_the_base() {
+        const APP: Base = Base::new("/app");
+        let html = Page::new("Search", Search::default())
+            .icon(Asset::new("/icon.svg"))
+            .stylesheet(Asset::new("/site.css"))
+            .stylesheet(Asset::new("https://cdn.example/a.css"))
+            .script(Asset::new("/map.js"))
+            .runtime_src(Asset::new("/hypersig.js"))
+            .render_under(APP);
+        assert!(html.contains(r#"<link rel="icon" href="/app/icon.svg">"#));
+        assert!(html.contains(r#"<link rel="stylesheet" href="/app/site.css">"#));
+        assert!(html.contains(r#"<link rel="stylesheet" href="https://cdn.example/a.css">"#));
+        assert!(html.contains(r#"<script type="module" src="/app/hypersig.js"></script>"#));
+        assert!(html.contains(r#"<script type="module" src="/app/map.js"></script>"#));
     }
 
     #[derive(Signals, Serialize, Deserialize, Default)]

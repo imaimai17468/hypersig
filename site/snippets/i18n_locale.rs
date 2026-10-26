@@ -17,7 +17,6 @@ struct ByLang<T> {
 }
 
 impl Locale for Lang {
-    const ALL: &'static [Self] = &[Self::En, Self::Ja];
     type Text<T> = ByLang<T>;
 
     fn pick<T>(self, text: ByLang<T>) -> T {
@@ -30,7 +29,7 @@ impl Locale for Lang {
 
 let greeting = ByLang { en: "Hello", ja: "こんにちは" };
 assert_eq!(Lang::Ja.pick(greeting), "こんにちは");
-assert_eq!(Lang::Ja.tag(), "ja");
+assert_eq!(Lang::Ja.tag().as_str(), "ja");
 
 // A message that takes a value is a function per language.
 let items: ByLang<fn(u32) -> String> = ByLang {

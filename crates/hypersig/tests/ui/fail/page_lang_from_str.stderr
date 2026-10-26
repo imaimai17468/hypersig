@@ -1,0 +1,21 @@
+error[E0277]: the trait bound `LanguageTag: From<&str>` is not satisfied
+ --> tests/ui/fail/page_lang_from_str.rs:9:45
+  |
+9 |     let _ = Page::new("Note", Note {}).lang("en_US");
+  |                                        ---- ^^^^^^^ the trait `From<&str>` is not implemented for `LanguageTag`
+  |                                        |
+  |                                        required by a bound introduced by this call
+  |
+help: the trait `From<&str>` is not implemented for `LanguageTag`
+      but trait `From<IntlLocale>` is implemented for it
+ --> src/head.rs
+  |
+  | impl From<IntlLocale> for LanguageTag {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = help: for that trait implementation, expected `IntlLocale`, found `&str`
+  = note: required for `&str` to implement `Into<LanguageTag>`
+note: required by a bound in `hypersig::Page::<S>::lang`
+ --> src/page.rs
+  |
+  |     pub fn lang(mut self, tag: impl Into<LanguageTag>) -> Self {
+  |                                     ^^^^^^^^^^^^^^^^^ required by this bound in `Page::<S>::lang`

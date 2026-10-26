@@ -1,13 +1,12 @@
 //! Accordions: a stack of sections that each open and close.
 
-use hypersig::html::{El, Node, attr, details, div, summary};
+use hypersig::html::{El, Id, Node, attr, details, div, summary};
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, Cursor, Display, FontWeight, JustifyContent, ListStyleType, px,
     raw, rem,
 };
 use hypersig::style::{Condition, PseudoClass, Style};
 
-use crate::id::check_name;
 use crate::look::{self, icon};
 use crate::token;
 
@@ -21,21 +20,25 @@ use crate::token;
 ///
 /// ```
 /// use hypersig::Signals;
-/// use hypersig::html::p;
+/// use hypersig::html::{Id, p};
 /// use hypersig_ui::Accordion;
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
 /// struct Faq {}
 ///
-/// let faq = Accordion::<Faq>::exclusive("faq")
+/// const FAQ: Id = Id::new("faq");
+///
+/// let faq = Accordion::<Faq>::exclusive(FAQ)
 ///     .item("Is it accessible?", p().text("It follows the WAI-ARIA patterns."))
 ///     .item("Is it styled?", p().text("It looks like shadcn/ui."));
-/// assert!(faq.render().render().contains(r#"name="faq""#));
+/// let html = faq.render().render();
+/// assert!(html.starts_with(r#"<div id="faq">"#));
+/// assert_eq!(html.matches(r#" name="faq""#).count(), 2);
 /// ```
 #[derive(Debug)]
 pub struct Accordion<S> {
-    name: Option<&'static str>,
+    group: Option<Id>,
     items: Vec<(String, Node<S>)>,
 }
 
@@ -44,26 +47,24 @@ impl<S> Accordion<S> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            name: None,
+            group: None,
             items: Vec::new(),
         }
     }
 
-    /// An accordion that keeps at most one section open, grouped by `name`.
+    /// An accordion that keeps at most one section open, its `<div>` carrying the id `group`.
     ///
-    /// Sections with the same `name` close each other wherever they are on
-    /// the page, as radio buttons with one name do, and nothing checks that
-    /// each name is used once.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `name` is empty or holds a character other than an ASCII
-    /// letter, digit, `-`, or `_`.
+    /// The sections share `group` as their `name`, and sections with one
+    /// `name` close each other wherever they are on the page. The `<div>`
+    /// carries `group` as its id, so two accordions given one [`Id::new`]
+    /// are two elements with one id, which
+    /// [`Page::render`](hypersig::Page::render) panics on. An id built with
+    /// [`Id::with_key`] or [`Id::from_text`] is not checked, and two
+    /// accordions given one such id close each other's sections.
     #[must_use]
-    pub fn exclusive(name: &'static str) -> Self {
-        check_name(name);
+    pub fn exclusive(group: Id) -> Self {
         Self {
-            name: Some(name),
+            group: Some(group),
             items: Vec::new(),
         }
     }
@@ -78,8 +79,12 @@ impl<S> Accordion<S> {
     /// The sections, in a `<div>`.
     #[must_use]
     pub fn render(self) -> El<S> {
-        let name = self.name;
-        div().children(self.items.into_iter().map(|(title, content)| {
+        let name = self.group.as_ref().map(|group| group.as_str().to_owned());
+        let list = match self.group {
+            Some(group) => div().id(group),
+            None => div(),
+        };
+        list.children(self.items.into_iter().map(|(title, content)| {
             let section = details().css(
                 Style::new()
                     .border_bottom_width(px(1))
@@ -87,8 +92,8 @@ impl<S> Accordion<S> {
                     .border_bottom_color(token::border().var())
                     .group(),
             );
-            let section = match name {
-                Some(name) => section.attr(attr::NAME, name),
+            let section = match &name {
+                Some(name) => section.attr(attr::NAME, name.clone()),
                 None => section,
             };
             section
@@ -151,4 +156,30 @@ fn summary_style() -> Style {
             Style::new()
                 .text_decoration_line(hypersig::style::value::TextDecorationLine::Underline),
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use hypersig::html::{Id, div, p};
+
+    use super::Accordion;
+
+    const FAQ: Id = Id::new("faq");
+
+    #[test]
+    #[should_panic(expected = "two elements carry the id `faq`")]
+    fn two_exclusive_accordions_of_one_group_panic_when_rendered() {
+        let faq = || Accordion::<()>::exclusive(FAQ).item("Why?", p().text("Because."));
+        let _ = div::<()>().child(faq()).child(faq()).render();
+    }
+
+    #[test]
+    fn each_section_of_an_exclusive_accordion_carries_its_group_as_name() {
+        let html = Accordion::<()>::exclusive(FAQ)
+            .item("One", p())
+            .item("Two", p())
+            .render()
+            .render();
+        assert_eq!(html.matches(r#" name="faq""#).count(), 2);
+    }
 }

@@ -667,7 +667,7 @@ impl PageResponse {
     fn page<S: Signals + Send + 'static>(page: Page<S>, status: Option<StatusCode>) -> Self {
         Self::new(Reply::Page {
             framing: page.frame_policy().clone(),
-            render: Box::new(move |base, dev| page.render_under(base, dev)),
+            render: Box::new(move |base, dev| page.render_with(base, dev)),
             status,
         })
     }
@@ -876,7 +876,7 @@ impl Unserved {
     ///
     /// ```
     /// use hypersig::html::p;
-    /// use hypersig::{Page, Route, Signals, Unserved};
+    /// use hypersig::{IntlLocale, Page, Route, Signals, Unserved};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
@@ -890,8 +890,12 @@ impl Unserved {
     ///
     /// async fn missing((): (), unserved: Unserved) -> Page<Missing> {
     ///     let lang = unserved.within(HOME).unwrap_or_else(|| "en".to_owned());
-    ///     let text = if lang == "ja" { "ページが見つかりません。" } else { "No such page." };
-    ///     Page::new(text, Missing {}).lang(lang).child(p().text(text))
+    ///     let (locale, text) = if lang == "ja" {
+    ///         (IntlLocale::Ja, "ページが見つかりません。")
+    ///     } else {
+    ///         (IntlLocale::En, "No such page.")
+    ///     };
+    ///     Page::new(text, Missing {}).lang(locale).child(p().text(text))
     /// }
     /// # let _ = pages;
     /// ```

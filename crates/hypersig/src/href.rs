@@ -114,7 +114,7 @@ impl fmt::Display for UnsafeUrl {
 impl std::error::Error for UnsafeUrl {}
 
 /// Whether `url` is one [`SafeUrl`] holds.
-const fn check(url: &[u8]) -> Result<(), &'static str> {
+pub(crate) const fn check(url: &[u8]) -> Result<(), &'static str> {
     // The browser drops spaces and control characters around and inside the
     // scheme before reading it, so `java\tscript:` runs as `javascript:`.
     let mut i = 0;
@@ -140,6 +140,11 @@ const fn check(url: &[u8]) -> Result<(), &'static str> {
     } else {
         Err("its scheme is not `http`, `https`, or `mailto`")
     }
+}
+
+/// Whether `url` starts with the scheme `scheme` and a `:`, ignoring case.
+pub(crate) const fn has_scheme(url: &[u8], scheme: &[u8]) -> bool {
+    url.len() > scheme.len() && url[scheme.len()] == b':' && same_ascii(url, scheme.len(), scheme)
 }
 
 /// Whether `byte` may sit in a URL scheme, whose first character is a letter.

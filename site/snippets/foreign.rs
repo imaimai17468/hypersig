@@ -1,5 +1,5 @@
 use hypersig::html::{CustomEvent, Id, div};
-use hypersig::{Page, Signals};
+use hypersig::{Asset, Page, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -19,11 +19,12 @@ struct Office {
 hypersig::node_ref!(const MAP: NodeRef<Office>);
 const MAP_ID: Id = Id::new("map");
 const MOVED: CustomEvent<Center> = CustomEvent::new("map-moved");
+const MAP_JS: Asset = Asset::new("/map.js");
 # fn main() {
 
 let center = Office::center();
 let page = Page::new("Office", Office { center: Center { lat: 35.68, lng: 139.77 } })
-    .script("/map.js")
+    .script(MAP_JS)
     .child(
         div()
             // A patch keeps the tiles and classes the script added.

@@ -214,11 +214,19 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Asset",
+                            "struct.Asset.html",
+                            L {
+                                en: "The URL of a file a page loads, which `script`, `stylesheet`, `icon`, and `runtime_src` take.",
+                                ja: "ページが読み込むファイルの URL です。`script`、`stylesheet`、`icon`、`runtime_src` が受け取ります。",
+                            },
+                        ),
+                        (
                             "lang",
                             "struct.Page.html#method.lang",
                             L {
-                                en: "Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.",
-                                ja: "ページの言語（`<html>` の `lang` 属性）を BCP 47 のタグ `tag` に設定します。",
+                                en: "Sets the language of the page, the `lang` attribute of `<html>`, to `tag`.",
+                                ja: "ページの言語（`<html>` の `lang` 属性）を `tag` に設定します。",
                             },
                         ),
                         (
@@ -243,6 +251,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "Renders the document.",
                                 ja: "文書を描画します。",
+                            },
+                        ),
+                        (
+                            "render_under",
+                            "struct.Page.html#method.render_under",
+                            L {
+                                en: "Renders the document for a site served under `base`, such as a static site at `/docs`.",
+                                ja: "`/docs` にある静的サイトのように、`base` の下で配信するサイトに向けて文書を描画します。",
                             },
                         ),
                         (
@@ -415,6 +431,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "What a page shows, the `og:type` of its `OpenGraph` card.",
                                 ja: "ページが何を見せるかを表す、`OpenGraph` のカードの `og:type` です。",
+                            },
+                        ),
+                        (
+                            "LanguageTag",
+                            "struct.LanguageTag.html",
+                            L {
+                                en: "A BCP 47 language tag, such as `ja` or `en-US`, for `lang` and `hreflang`.",
+                                ja: "`lang` と `hreflang` に書く、`ja` や `en-US` のような BCP 47 の言語タグです。",
+                            },
+                        ),
+                        (
+                            "LanguageTag::parse",
+                            "struct.LanguageTag.html#method.parse",
+                            L {
+                                en: "Reads a tag built at run time, such as the name serde gives a locale enum's variant.",
+                                ja: "ロケールの列挙型のバリアントに serde が付ける名前のような、実行時に作ったタグを読みます。",
+                            },
+                        ),
+                        (
+                            "LanguageTagError",
+                            "struct.LanguageTagError.html",
+                            L {
+                                en: "Text that `LanguageTag::parse` refused, with the rule it broke.",
+                                ja: "`LanguageTag::parse` が受け付けなかった文字列と、違反していた規則です。",
                             },
                         ),
                         (

@@ -50,8 +50,8 @@ pub fn javascript(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Page::script`, `Page::stylesheet`, and `Page::icon` write a path into the page and serve nothing, so the router needs a service at each path. tower-http serves files from disk: `ServeFile` one file at one path, and `ServeDir` each file under a directory. Add it with its `fs` feature:",
-                ja: "`Page::script`、`Page::stylesheet`、`Page::icon` はページにパスを書くだけでファイルは配信しないので、ルーターにはそれぞれのパスで配信するサービスが要ります。ディスクのファイルは tower-http で配信します。`ServeFile` は 1 つのファイルを 1 つのパスで、`ServeDir` はディレクトリの下のファイルをそれぞれ配信します。`fs` フィーチャーを有効にして追加してください。",
+                en: "`Page::script`, `Page::stylesheet`, and `Page::icon` take an [`Asset`](api:hypersig/struct.Asset.html), a constant such as `Asset::new(\"/star-rating.js\")`, and write its path into the page under the routes' `Base`. They serve nothing, so the router needs a service at each path. tower-http serves files from disk: `ServeFile` one file at one path, and `ServeDir` each file under a directory. Add it with its `fs` feature:",
+                ja: "`Page::script`、`Page::stylesheet`、`Page::icon` は `Asset::new(\"/star-rating.js\")` のような定数の [`Asset`](api:hypersig/struct.Asset.html) を受け取り、そのパスをルートの `Base` の下に付けてページに書きます。ページにパスを書くだけでファイルは配信しないので、ルーターにはそれぞれのパスで配信するサービスが要ります。ディスクのファイルは tower-http で配信します。`ServeFile` は 1 つのファイルを 1 つのパスで、`ServeDir` はディレクトリの下のファイルをそれぞれ配信します。`fs` フィーチャーを有効にして追加してください。",
             },
         ),
         code::block(

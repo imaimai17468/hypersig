@@ -1,0 +1,22 @@
+error[E0277]: `Section` does not list its variants
+  --> tests/ui/fail/tabs_of_enum_without_segment.rs:20:35
+   |
+20 |     let _ = Tabs::new("Settings", Settings::section(), |section| match section {
+   |             ---------             ^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+   |             |
+   |             required by a bound introduced by this call
+   |
+help: the trait `Variants` is not implemented for `Section`
+  --> tests/ui/fail/tabs_of_enum_without_segment.rs:9:1
+   |
+ 9 | enum Section {
+   | ^^^^^^^^^^^^
+   = note: a function called once per variant, such as `label`, takes an enum with `#[derive(Segment)]`, which lists every variant
+note: required by a bound in `Tabs::<S, T>::new`
+  --> src/tabs.rs
+   |
+   | impl<S, T: Variants + Serialize + PartialEq> Tabs<S, T> {
+   |            ^^^^^^^^ required by this bound in `Tabs::<S, T>::new`
+...
+   |     pub fn new<L: Into<String>>(
+   |            --- required by a bound in this associated function

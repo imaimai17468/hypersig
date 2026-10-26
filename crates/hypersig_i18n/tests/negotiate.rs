@@ -4,9 +4,29 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use hypersig::{Page, Route, Segment, Signals};
-use hypersig_i18n::{Locale, LocaleRouterExt, negotiate};
+use hypersig_i18n::{Locale, LocaleRouterExt, locales, negotiate};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
+
+#[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+enum Underscored {
+    #[serde(rename = "en_US")]
+    EnUs,
+}
+
+impl Locale for Underscored {
+    type Text<T> = T;
+
+    fn pick<T>(self, text: T) -> T {
+        text
+    }
+}
+
+#[test]
+#[should_panic(expected = "`en_US` is not a BCP 47 language tag")]
+fn a_segment_that_is_not_a_language_tag_panics_when_its_tag_is_read() {
+    let _ = Underscored::EnUs.tag();
+}
 
 #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 enum Lang {
@@ -25,7 +45,6 @@ struct ByLang<T> {
 }
 
 impl Locale for Lang {
-    const ALL: &'static [Self] = &[Self::En, Self::EnGb, Self::Ja];
     type Text<T> = ByLang<T>;
 
     fn pick<T>(self, text: ByLang<T>) -> T {
@@ -48,6 +67,11 @@ hypersig::routes! {
         Page::new(lang.pick(ByLang { en: "Color", en_gb: "Colour", ja: "色" }), Home { visits: 0 })
             .lang(lang.tag())
     };
+}
+
+#[test]
+fn every_variant_is_a_locale_in_declaration_order() {
+    assert_eq!(locales::<Lang>(), [Lang::En, Lang::EnGb, Lang::Ja]);
 }
 
 #[test]
