@@ -598,8 +598,14 @@ macro_rules! operations {
             /// The runtime uses `Number.prototype.toFixed`, which rounds a
             /// halfway value away from zero where Rust's `format!("{:.n}")`
             /// rounds it to even. The first HTML follows the runtime.
+            ///
+            /// # Panics
+            ///
+            /// Panics if `digits` is above 100, the most `toFixed` takes,
+            /// which throws above that.
             #[must_use]
             pub fn to_fixed(&self, digits: u8) -> Expr<S, String> {
+                assert!(digits <= 100, "toFixed takes at most 100 digits, not {digits}");
                 Expr::from_json(json!(["fixed", self.operand().ast, digits]))
             }
         }
@@ -1128,6 +1134,22 @@ mod tests {
 
     fn name() -> Sig<Page, String> {
         sig("name")
+    }
+
+    #[test]
+    fn to_fixed_writes_up_to_100_digits() {
+        let price: Sig<Page, f64> = sig("price");
+        assert_eq!(
+            price.to_fixed(100).as_json(),
+            &serde_json::json!(["fixed", ["sig", "price"], 100])
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "toFixed takes at most 100 digits, not 101")]
+    fn to_fixed_refuses_more_digits_than_to_fixed_takes() {
+        let price: Sig<Page, f64> = sig("price");
+        let _ = price.to_fixed(101);
     }
 
     fn todos() -> Sig<Page, Vec<Todo>> {
