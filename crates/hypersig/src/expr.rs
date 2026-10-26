@@ -415,10 +415,8 @@ impl Number for f64 {}
 
 /// A type the runtime can order with `<` and friends.
 ///
-/// The runtime orders strings by UTF-16 code unit and the server by code point, so
-/// two strings holding characters outside the Basic Multilingual Plane can
-/// order differently in the first HTML. The runtime's result replaces the
-/// server's once the page loads.
+/// Strings are ordered by UTF-16 code unit, as JavaScript orders them, on the
+/// server as in the browser.
 pub trait Comparable: sealed::Sealed {}
 impl Comparable for i32 {}
 impl Comparable for i64 {}
@@ -626,6 +624,9 @@ macro_rules! operations {
             }
 
             /// This string without leading and trailing whitespace.
+            ///
+            /// Whitespace is what JavaScript's `trim` removes, on the server
+            /// as in the browser: U+FEFF counts, and U+0085 does not.
             #[must_use]
             pub fn trim(&self) -> Expr<S, String> {
                 Expr::unary("trim", self.operand())

@@ -520,7 +520,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Val<'a>> {
         "ceil" => number(f(&eval(1)?)?.ceil())?,
         "round" => number(js_round(f(&eval(1)?)?))?,
         "log10" => number(f(&eval(1)?)?.log10())?,
-        "trim" => Value::from(s(&eval(1)?)?.trim()),
+        "trim" => Value::from(s(&eval(1)?)?.trim_matches(js_whitespace)),
         "lower" => Value::from(s(&eval(1)?)?.to_lowercase()),
         "upper" => Value::from(s(&eval(1)?)?.to_uppercase()),
         "chars" => Value::from(s(&eval(1)?)?.chars().count()),
@@ -643,11 +643,19 @@ fn fold<'a>(op: &str, parts: &'a [Value], ctx: &Ctx<'a>) -> Option<Value> {
     })
 }
 
-/// `a < b` and friends: strings in code point order, anything else as numbers.
+/// Whether JavaScript's `String.prototype.trim` removes `c`: the Unicode
+/// `White_Space` characters `char::is_whitespace` tests, apart from U+0085,
+/// and U+FEFF as well.
+fn js_whitespace(c: char) -> bool {
+    (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}'
+}
+
+/// `a < b` and friends: strings in UTF-16 code unit order, as JavaScript
+/// compares them, and anything else as numbers.
 fn compare<'b, 'c>(op: &str, a: impl Into<Ref<'b>>, b: impl Into<Ref<'c>>) -> Option<Value> {
     let (a, b) = (a.into(), b.into());
     let order = match (a.view(), b.view()) {
-        (View::Str(a), View::Str(b)) => a.cmp(b),
+        (View::Str(a), View::Str(b)) => a.encode_utf16().cmp(b.encode_utf16()),
         _ => f(a)?.partial_cmp(&f(b)?)?,
     };
     Some(Value::Bool(match op {
@@ -690,6 +698,24 @@ mod tests {
         )
         .expect("evaluates")
         .into_value()
+    }
+
+    #[test]
+    fn trims_and_orders_strings_as_javascript_does() {
+        let root = json!({});
+        assert_eq!(
+            eval(&json!(["trim", ["lit", "\u{feff} a\u{85}"]]), &root),
+            json!("a\u{85}")
+        );
+        // U+FF61 sorts after the surrogate pair that holds U+1F600 in UTF-16,
+        // and before U+1F600 in code point order.
+        assert_eq!(
+            eval(
+                &json!(["gt", ["lit", "\u{ff61}"], ["lit", "\u{1f600}"]]),
+                &root
+            ),
+            json!(true)
+        );
     }
 
     #[test]
