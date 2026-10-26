@@ -21,6 +21,7 @@ it("sets signals in order and awaits calls", async () => {
     latest: false,
     reconnect: false,
     connected: false,
+    exclusive: false,
     origin: undefined,
   });
   expect(h.call.mock.calls[0]![2]()).toBe(5);

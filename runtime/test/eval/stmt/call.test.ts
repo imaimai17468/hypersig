@@ -5,7 +5,16 @@ import { context, host } from "../context.ts";
 it("passes the flags after the error signal to the call", async () => {
   const h = host();
   await run(
-    ["call", "GET", "/find", ["lit", "tea"], null, null, ["latest", "reconnect", "connected"]],
+    [
+      "call",
+      "GET",
+      "/find",
+      ["lit", "tea"],
+      null,
+      null,
+      ["latest", "reconnect", "connected", "exclusive"],
+      { timeout: 5000 },
+    ],
     context({}),
     h,
   );
@@ -13,6 +22,8 @@ it("passes the flags after the error signal to the call", async () => {
     latest: true,
     reconnect: true,
     connected: true,
+    exclusive: true,
+    timeout: 5000,
     origin: undefined,
   });
 });

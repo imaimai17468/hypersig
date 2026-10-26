@@ -77,6 +77,30 @@ it("writes the status and its reason to the error when the failed answer has no 
   expect(console.error).toHaveBeenCalledWith("hypersig: POST /search failed with 502 Bad Gateway");
 });
 
+it("skips an exclusive call while one is on its way, and fails it once its timeout passes", async () => {
+  vi.useFakeTimers();
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const fetch = vi.fn<Fetch>(
+    (_url, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () =>
+          reject(new DOMException("aborted", "AbortError")),
+        );
+      }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const runtime = mount("timers");
+  $("#once").click();
+  $("#once").click();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledOnce();
+  expect($("#once").getAttribute("aria-busy")).toBe("true");
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(runtime.store.get("saving")).toBe(false);
+  expect(runtime.store.get("error")).toBe("the answer took longer than 5000 ms");
+  expect($("#once").hasAttribute("aria-busy")).toBe(false);
+});
+
 it("aborts the earlier latest call and applies only the newer answer", async () => {
   const answers: ((response: Response) => void)[] = [];
   const fetch = vi.fn<Fetch>(

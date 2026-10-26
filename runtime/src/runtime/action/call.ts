@@ -1,31 +1,32 @@
 import type { CallOptions } from "../../eval.ts";
 import { readEventStream, type ServerEvent } from "../../sse.ts";
 import type { Runtime } from "../../runtime.ts";
-import { FILES } from "../binding/ref.ts";
 import { END_EVENT, type Failure, refused } from "./answer.ts";
+import { Flights } from "./flight.ts";
+import { buildRequest } from "./request.ts";
 import { backoff, FIRST_RETRY_MS, LAST_RETRY_MS } from "./retry.ts";
 
-/** The header an upload carries, which `crates/hypersig/src/axum.rs` requires. */
-const UPLOAD_HEADER = "hypersig-upload";
-/**
- * The header every call carries, which `crates/hypersig/src/axum.rs` requires
- * of a GET. A page on another site cannot send it without a preflight, which
- * the server does not answer.
- */
-const CALL_HEADER = "hypersig-call";
-/** The header that tells the server which page field the part that made a call sits at. */
-const PART_HEADER = "hypersig-part";
+/** The reason a call's controller aborts with once its `timeout` has passed. */
+const TIMED_OUT = Symbol("timed out");
 
 /** A call in progress: what it sends, and what it reports to while it waits. */
 interface Pending {
   readonly method: string;
   readonly path: string;
+  /** The action and the part the call was made in, which `latest`, `exclusive`, and the order of answers group calls by. */
+  readonly key: string;
+  /** The number `Flights` gave the call when it was sent. */
+  readonly sent: number;
+  /** Whether the call changes data, so that its answer can overtake an earlier one, as `#attempt` describes. */
+  readonly ordered: boolean;
+  /** The element whose `aria-busy` `Flights` sets while the call is awaited. */
+  readonly marked: Element | undefined;
   readonly init: RequestInit;
   /** Builds the URL and the body again from the arguments as they are now. */
   readonly request: () => URL;
   readonly error: string | null;
   readonly options: CallOptions;
-  /** Aborts the request, for `latest`, for a GET whose element left the document, or when the page leaves. */
+  /** Aborts the request, for `latest`, for a GET whose element left the document, or once `timeout` has passed. */
   readonly controller: AbortController;
   /** The indicator that is true while the server's answer is open, for a call sent with `connected`. */
   readonly open: string | null;
@@ -40,6 +41,7 @@ export class Calls {
   readonly #latest = new Map<string, AbortController>();
   /** The number of calls awaiting an answer, by the indicator signal they set. */
   readonly #waiting = new Map<string, number>();
+  readonly #flights = new Flights();
   /** The unfinished GET calls made by an element's statement, which end once the element leaves the document. */
   readonly #owned = new Set<Pending>();
 
@@ -60,47 +62,77 @@ export class Calls {
     error: string | null,
     options: CallOptions,
   ): Promise<void> {
-    const init: RequestInit = { method };
-    const request = (): URL => this.#request(method, path, args(), init, options);
+    // The handler decides which signals an action patches, so two call sites
+    // of one action write the same signals, and the key is the action. A
+    // call made in a part writes them under the part's field, so the part
+    // is in the key too.
+    const key = `${method} ${path} ${options.part ?? ""}`;
+    if (options.exclusive && this.#flights.busy(key)) return;
+    const pending = this.#pending(method, path, key, args, error, options, indicator);
     // The first request is built before the call returns, so a statement after it can change what the arguments read.
-    const url = request();
-    // The handler decides which signals an action patches, so two call sites of one action write the same signals, and the key is the action.
-    const key = `${method} ${path}`;
-    const controller = this.#controller(key, options.latest);
-    init.signal = controller.signal;
-    const abandoned = (): boolean =>
-      this.#rt.navigation.leaving ||
-      controller.signal.aborted ||
-      options.origin?.isConnected === false;
+    const url = pending.request();
     // The store notifies only a change, so a failure that repeats the last message would go unnoticed if the signal kept it.
     if (error !== null) this.#rt.store.set(error, "");
     if (options.status !== undefined) this.#rt.store.set(options.status, 0);
     // A stream's indicator says whether its answer is open, so it is false while the stream connects and while it waits to reconnect.
     const busy = options.connected ? null : indicator;
-    const open = options.connected ? indicator : null;
     if (busy !== null) this.#busy(busy, 1);
-    const pending: Pending = {
-      method,
-      path,
-      init,
-      request,
-      error,
-      options,
-      controller,
-      open,
-      abandoned,
-    };
     // A GET changes nothing on the server, so the patches of one whose element
     // is gone have nothing to update, and a statement that runs again, such as
     // on load of the element that replaced it, opens its own.
     if (method === "GET" && options.origin !== undefined) this.#owned.add(pending);
+    const timer =
+      options.timeout === undefined
+        ? undefined
+        : setTimeout(() => pending.controller.abort(TIMED_OUT), options.timeout);
+    let complete = false;
     try {
-      await this.#attempt(pending, url, FIRST_RETRY_MS);
+      complete = await this.#attempt(pending, url, FIRST_RETRY_MS);
     } finally {
+      clearTimeout(timer);
+      this.#flights.finish(key, pending.sent, pending.marked, complete && pending.ordered);
       this.#owned.delete(pending);
-      if (this.#latest.get(key) === controller) this.#latest.delete(key);
+      if (this.#latest.get(key) === pending.controller) this.#latest.delete(key);
       if (busy !== null) this.#busy(busy, -1);
     }
+  }
+
+  /** The record of a new call to `path`, which `Flights` counts as sent from now on. */
+  #pending(
+    method: string,
+    path: string,
+    key: string,
+    args: () => unknown,
+    error: string | null,
+    options: CallOptions,
+    indicator: string | null,
+  ): Pending {
+    const init: RequestInit = { method };
+    const controller = this.#controller(key, options.latest);
+    init.signal = controller.signal;
+    const ordered = method !== "GET";
+    // A GET may be a stream that stays open, and `aria-busy` on its element
+    // would hold back what assistive technology announces inside it for as
+    // long as it does.
+    const marked = ordered ? options.origin : undefined;
+    return {
+      method,
+      path,
+      key,
+      sent: this.#flights.start(key, marked),
+      ordered,
+      marked,
+      init,
+      request: () => buildRequest(this.#rt, method, path, args(), init, options),
+      error,
+      options,
+      controller,
+      open: options.connected ? indicator : null,
+      abandoned: () =>
+        this.#rt.navigation.leaving ||
+        controller.signal.aborted ||
+        options.origin?.isConnected === false,
+    };
   }
 
   /** The controller of a new call of the action `key`, which aborts the earlier one sent with `latest` where this one is too. */
@@ -123,34 +155,19 @@ export class Calls {
     call.controller.abort();
   }
 
-  /** The URL of a call with the arguments `value`, setting the body and headers of `init` to match. */
-  #request(
-    method: string,
-    path: string,
-    value: unknown,
-    init: RequestInit,
-    options: CallOptions,
-  ): URL {
-    const url = new URL(path, document.baseURI);
-    const body = JSON.stringify(value ?? null);
-    const headers: Record<string, string> = { accept: "text/event-stream", [CALL_HEADER]: "1" };
-    if (options.files !== undefined) {
-      // The server refuses an upload without this header, which a form on another site cannot add.
-      headers[UPLOAD_HEADER] = "1";
-      init.body = this.#uploadBody(body, options.files, options.origin);
-    } else if (method === "GET") {
-      if (value !== null && value !== undefined) url.searchParams.set("args", body);
-    } else {
-      headers["content-type"] = "application/json";
-      init.body = body;
-    }
-    if (options.part !== undefined) headers[PART_HEADER] = options.part;
-    init.headers = headers;
-    return url;
-  }
-
-  /** Sends `url`, and sends it again after `delay` while the call asks to reconnect and nothing abandoned it. */
-  async #attempt(call: Pending, url: URL, delay: number): Promise<void> {
+  /**
+   * Sends `url`, and sends it again after `delay` while the call asks to
+   * reconnect and nothing abandoned it. Resolves to whether the server's
+   * answer arrived complete.
+   *
+   * The events of a POST that arrive after the complete answer to a POST
+   * of the same action sent later are dropped, since the later answer was
+   * written from newer data. A GET is left out of that order: two elements
+   * that each open a stream on load send the same request, and the first
+   * stream to end would otherwise silence the other. A GET that replaces
+   * an earlier answer is sent with `latest` instead.
+   */
+  async #attempt(call: Pending, url: URL, delay: number): Promise<boolean> {
     let opened = false;
     let wait = delay;
     const connected = (): void => {
@@ -164,18 +181,23 @@ export class Calls {
         this.#end(call);
         return;
       }
+      if (call.ordered && this.#flights.overtaken(call.key, call.sent)) return;
       // An answer that closes before it sends anything is retried later each
       // time, so a server that closes every stream at once is not asked again
       // every second.
       wait = FIRST_RETRY_MS;
       this.#rt.actions.patches.apply(event);
     };
-    const failure = await this.#send(url, call, connected, received);
+    const sent = await this.#send(url, call, connected, received);
     if (opened) this.#busy(call.open!, -1);
-    if (call.controller.signal.aborted) return;
+    const { signal } = call.controller;
+    if (signal.aborted && signal.reason !== TIMED_OUT) return false;
+    const failure = signal.aborted
+      ? { message: `the answer took longer than ${call.options.timeout} ms`, status: 0 }
+      : sent;
     if (failure === null) {
       if (!this.#rt.navigation.leaving) call.options.succeeded?.();
-      return;
+      return true;
     }
     this.#fail(call, failure);
     call.options.failed?.(failure.message);
@@ -183,10 +205,10 @@ export class Calls {
       call.options.reconnect &&
       call.method === "GET" &&
       (failure.status === 0 || failure.status >= 500);
-    if (!again || call.abandoned()) return;
+    if (!again || call.abandoned()) return false;
     await backoff(wait);
-    if (call.abandoned()) return;
-    await this.#attempt(call, call.request(), Math.min(wait * 2, LAST_RETRY_MS));
+    if (call.abandoned()) return false;
+    return this.#attempt(call, call.request(), Math.min(wait * 2, LAST_RETRY_MS));
   }
 
   /**
@@ -210,32 +232,20 @@ export class Calls {
       connected();
       if (error !== null) this.#rt.store.set(error, "");
       let ended = false;
-      await readEventStream(response.body!, (event) => {
-        if (controller.signal.aborted) return;
-        if (event.event === END_EVENT) ended = true;
-        else received(event);
-      });
+      await readEventStream(
+        response.body!,
+        (event) => {
+          if (controller.signal.aborted) return;
+          if (event.event === END_EVENT) ended = true;
+          else received(event);
+        },
+        controller.signal,
+      );
       if (!ended) return { message: "the answer closed before the server ended it", status: 0 };
       return null;
     } catch (cause) {
       return { message: String(cause), status: 0 };
     }
-  }
-
-  /**
-   * The body of an upload: the arguments as JSON in the `args` part, then
-   * each file picked in the file input named `files` in a `files` part.
-   */
-  #uploadBody(args: string, files: string, origin: Element | undefined): FormData {
-    const data = new FormData();
-    data.append("args", new Blob([args], { type: "application/json" }));
-    const input = this.#rt.bindings.refs.find(FILES, files, origin);
-    if (input instanceof HTMLInputElement && input.files !== null) {
-      for (const file of input.files) data.append("files", file, file.name);
-    } else if (!(input instanceof HTMLInputElement)) {
-      console.warn(`hypersig: no file input named "${files}"`);
-    }
-    return data;
   }
 
   /** Counts the calls awaiting an answer under `indicator`, which is true while any of them is. */
