@@ -25,9 +25,23 @@
         "source": "github",
         "repo": "morganlinton/BeautifulRust"
       }
+    },
+    "yomiyasu": {
+      "source": {
+        "source": "github",
+        "repo": "nanaism/yomiyasu"
+      }
+    },
+    "humanizer": {
+      "source": {
+        "source": "github",
+        "repo": "blader/humanizer"
+      }
     }
   },
   "enabledPlugins": {
-    "beautiful-rust@beautiful-rust": true
+    "beautiful-rust@beautiful-rust": true,
+    "yomiyasu@yomiyasu": true,
+    "humanizer@humanizer": true
   }
 }

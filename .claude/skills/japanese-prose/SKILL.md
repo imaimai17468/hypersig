@@ -62,3 +62,5 @@ rg -n 'いです|ことができ|において|に関して|によって|を行[�
 ```
 
 Then read the file once from the top for the register: every sentence ends in `です` or `ます`, and no paragraph reads as a translation of an English paragraph.
+
+Run the `yomiyasu` plugin's check on the old and the new text (`run`, then `verify`), as `AGENTS.md` describes. Its lint does not report metaphors, so read the text once more for a thing written as a person, such as a function that 「名指しする」 a handler or an action that 「断る」 a request, and write what happens instead.
