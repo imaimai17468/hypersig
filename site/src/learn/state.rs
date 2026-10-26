@@ -59,6 +59,14 @@ pub fn signals(site: Site) -> Part {
         para(
             site,
             L {
+                en: "A component of `hypersig_ui` that keeps state of its own, such as `Combobox` or `DataTable`, takes it as a `Sig` of its state struct, so that state is a field of the page's struct too. Gather those fields into one struct that derives `Default`, and the page's struct gains one field, set with `Default::default()`. Adding a component then adds a field to that struct and leaves the page's initializer as it is. `ComboboxState` and `TableState`, the state structs of `hypersig_ui`, implement `Default`, which gives an empty, closed combobox and an unfiltered, unsorted table on its first page.",
+                ja: "`Combobox` や `DataTable` のように自分の状態を持つ `hypersig_ui` の部品は、その状態を状態用の構造体の `Sig` で受け取るので、その状態もページの構造体のフィールドになります。こうしたフィールドを `Default` を実装する 1 つの構造体にまとめると、ページの構造体に増えるフィールドは 1 つで、初期化は `Default::default()` で済みます。部品を足すときはその構造体にフィールドを足すだけで、ページの初期化は変わりません。`hypersig_ui` の状態用の構造体である `ComboboxState` と `TableState` は `Default` を実装しています。その値は、空で閉じたコンボボックスと、絞り込みも並べ替えもない 1 ページ目の表です。",
+            },
+        ),
+        show(Snippet::ComponentState),
+        para(
+            site,
+            L {
                 en: "A `Vec` of values or of structs is a list, which [Lists](learn/lists/) covers. An `Option` field has `is_some`, `is_none`, and `unwrap_or`.",
                 ja: "値や構造体の `Vec` はリストで、[リスト](learn/lists/) で説明します。`Option` のフィールドには `is_some`、`is_none`、`unwrap_or` があります。",
             },
