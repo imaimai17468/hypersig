@@ -75,6 +75,7 @@ pub(crate) mod icon {
     pub(crate) const CHEVRON_DOWN: &[&str] = &["m6 9 6 6 6-6"];
     pub(crate) const CHEVRON_LEFT: &[&str] = &["m15 18-6-6 6-6"];
     pub(crate) const CHEVRON_RIGHT: &[&str] = &["m9 18 6-6-6-6"];
+    pub(crate) const LOADER_CIRCLE: &[&str] = &["M21 12a9 9 0 1 1-6.219-8.56"];
     pub(crate) const MINUS: &[&str] = &["M5 12h14"];
     pub(crate) const X: &[&str] = &["M18 6 6 18", "m6 6 12 12"];
 }

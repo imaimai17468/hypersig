@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/toggle_on_text.rs:12:20
+   |
+12 |     let _ = toggle(Editor::title());
+   |             ------ ^^^^^^^^^^^^^^^ expected `Sig<_, bool, _>`, found `Sig<Editor, String>`
+   |             |
+   |             arguments to this function are incorrect
+   |
+   = note: expected struct `Sig<_, bool, _>`
+              found struct `Sig<Editor, String, hypersig::Root>`
+note: function defined here
+  --> src/toggle.rs
+   |
+   | pub fn toggle<S, R: Writable>(pressed: Sig<S, bool, R>) -> El<S> {
+   |        ^^^^^^

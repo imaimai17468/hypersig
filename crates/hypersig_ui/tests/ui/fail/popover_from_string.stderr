@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/popover_from_string.rs:10:48
+   |
+10 | const DETAILS: Popover<Profile> = Popover::new("profile-details");
+   |                                   ------------ ^^^^^^^^^^^^^^^^^ expected `NodeRef<Profile>`, found `&str`
+   |                                   |
+   |                                   arguments to this function are incorrect
+   |
+   = note: expected struct `NodeRef<Profile>`
+           found reference `&'static str`
+note: associated function defined here
+  --> src/popover.rs
+   |
+   |     pub const fn new(panel: NodeRef<S>) -> Self {
+   |                  ^^^

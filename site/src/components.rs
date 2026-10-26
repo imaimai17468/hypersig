@@ -191,8 +191,8 @@ hypersig_ui = "0.8""#,
                     ja: "スクリーンリーダーやキーボードでの操作に必要な振る舞いは、ブラウザに備わっていればブラウザのものを使います。ネイティブの `<button>`、`<input>`、`<select>`、`<details>`、`<dialog>`、`popover` です。ブラウザに備わっていない振る舞いは、コンポーネントが WAI-ARIA Authoring Practices に従って作り、キーボード操作は `El::roving_focus` と `El::active_descendant` で扱います。",
                 },
                 L {
-                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox are `const` handles built from a `NodeRef` that `node_ref!` declares, or a `DialogRef` from `dialog_ref!`, and their parts share the handle. The macro names the reference after its module and constant, so two handles never share an id.",
-                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ツールチップ、コンボボックスは、`node_ref!` で宣言した `NodeRef` か `dialog_ref!` で宣言した `DialogRef` から作る `const` のハンドルで、部品どうしでそのハンドルを共有します。マクロはモジュールと定数の名前から参照の名前を作るので、2 つのハンドルが同じ id になることはありません。",
+                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a popover, a tooltip, and a combobox are `const` handles built from a `NodeRef` that `node_ref!` declares, or a `DialogRef` from `dialog_ref!`, and their parts share the handle. The macro names the reference after its module and constant, so two handles never share an id.",
+                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ポップオーバー、ツールチップ、コンボボックスは、`node_ref!` で宣言した `NodeRef` か `dialog_ref!` で宣言した `DialogRef` から作る `const` のハンドルで、部品どうしでそのハンドルを共有します。マクロはモジュールと定数の名前から参照の名前を作るので、2 つのハンドルが同じ id になることはありません。",
                 },
                 L {
                     en: "The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 AA: a control's border has 3:1 contrast or more, secondary text keeps 4.5:1 on the muted background, and focus is a solid outline, which forced-colors mode still draws.",
@@ -790,6 +790,89 @@ fn component_page(page: Component) -> Page {
                 ),
             ],
         },
+        Component::Toggle => Page {
+            lead: L {
+                en: "A button that stays pressed, alone or in a group that picks one value or several.",
+                ja: "押した状態が続くボタンです。単独でも、1 つか複数の値を選ぶグループとしても使えます。",
+            },
+            demo: Demo::Toggle,
+            built_on: &[
+                L {
+                    en: "A toggle is a native `<button>` with `aria-pressed` bound to a `bool` signal, so a screen reader announces it as a toggle button that is pressed or not pressed. Keep its text the same in both states, since the state is announced on its own. `icon_toggle` takes the label that names it as an argument.",
+                    ja: "トグルは `bool` のシグナルに `aria-pressed` を束縛したネイティブの `<button>` です。そのため、スクリーンリーダーは押された状態か押されていない状態のトグルボタンとして読み上げます。状態は別に読み上げられるので、テキストはどちらの状態でも同じにしてください。`icon_toggle` は名前になるラベルを引数に取ります。",
+                },
+                L {
+                    en: "`ToggleGroup` picks one value of a signal and follows the WAI-ARIA radio group pattern: the group has `role=\"radiogroup\"`, each toggle `role=\"radio\"` with `aria-checked`, and Tab enters the group at the toggle that is on. `MultiToggleGroup` holds one `bool` signal per toggle in a `role=\"group\"`, and Tab enters it at its first toggle. In both, the arrow keys move between the toggles through `El::roving_focus`.",
+                    ja: "`ToggleGroup` はシグナルの値を 1 つ選び、WAI-ARIA radio group パターンに従います。グループは `role=\"radiogroup\"`、各トグルは `aria-checked` 付きの `role=\"radio\"` を持ち、Tab ではオンのトグルからグループに入ります。`MultiToggleGroup` は `role=\"group\"` の中にトグルごとの `bool` シグナルを持ち、Tab では最初のトグルからグループに入ります。どちらのグループでも、矢印キーは `El::roving_focus` によってトグルの間でフォーカスを移します。",
+                },
+            ],
+            keys: &[
+                (
+                    L {
+                        en: "Enter, Space",
+                        ja: "Enter、Space",
+                    },
+                    L {
+                        en: "Turns the focused toggle on or off.",
+                        ja: "フォーカスのあるトグルをオンかオフにします。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Left, Right",
+                        ja: "左、右",
+                    },
+                    L {
+                        en: "Move to the previous or the next toggle of a group, wrapping at either end. In a `ToggleGroup`, the toggle reached turns on.",
+                        ja: "グループの前か次のトグルに移り、端では反対の端に戻ります。`ToggleGroup` では、移った先のトグルがオンになります。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Home, End",
+                        ja: "Home、End",
+                    },
+                    L {
+                        en: "Move to the first or the last toggle of a group.",
+                        ja: "グループの最初か最後のトグルに移ります。",
+                    },
+                ),
+            ],
+            items: &[
+                (
+                    "toggle",
+                    "hypersig_ui/fn.toggle.html",
+                    L {
+                        en: "A button that is pressed while `pressed` is true, and flips it when clicked.",
+                        ja: "`pressed` が true の間は押された状態になり、クリックで `pressed` を反転するボタン",
+                    },
+                ),
+                (
+                    "icon_toggle",
+                    "hypersig_ui/fn.icon_toggle.html",
+                    L {
+                        en: "A toggle that shows only an icon, named `label` for assistive technology.",
+                        ja: "アイコンだけを表示し、支援技術向けに `label` を名前に持つトグル",
+                    },
+                ),
+                (
+                    "ToggleGroup",
+                    "hypersig_ui/struct.ToggleGroup.html",
+                    L {
+                        en: "A group of toggles named `label` that picks one value of `selected`.",
+                        ja: "`label` を名前に持ち、`selected` の値を 1 つ選ぶトグルのグループ",
+                    },
+                ),
+                (
+                    "MultiToggleGroup",
+                    "hypersig_ui/struct.MultiToggleGroup.html",
+                    L {
+                        en: "A group of toggles named `label`, each bound to a flag of its own.",
+                        ja: "`label` を名前に持ち、トグルごとに別のフラグを束縛するグループ",
+                    },
+                ),
+            ],
+        },
         Component::Listbox => Page {
             lead: L {
                 en: "A list of options of which one is selected, kept in a signal.",
@@ -1067,6 +1150,149 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
             ],
+        },
+        Component::Collapsible => Page {
+            lead: L {
+                en: "A button that shows and hides one region, bound to a `bool` signal.",
+                ja: "1 つの領域を表示したり隠したりするボタンです。`bool` のシグナルに束縛します。",
+            },
+            demo: Demo::Collapsible,
+            built_on: &[
+                L {
+                    en: "It follows the WAI-ARIA disclosure pattern. The button is a native `<button>` with `aria-expanded` bound to the signal and `aria-controls` pointing at the region, so a screen reader announces it as expanded or collapsed. The region's id is derived from the signal's path.",
+                    ja: "WAI-ARIA disclosure パターンに従います。ボタンはネイティブの `<button>` で、`aria-expanded` をシグナルに束縛し、`aria-controls` で領域を指します。そのため、スクリーンリーダーは展開されているか折りたたまれているかを読み上げます。領域の id はシグナルのパスから作られます。",
+                },
+                L {
+                    en: "The button and the region are separate elements, so the button can sit in a heading or a toolbar away from the region. An `Accordion` is built on `<details>` instead, and no signal holds which of its sections is open.",
+                    ja: "ボタンと領域は別の要素なので、ボタンを領域から離れた見出しやツールバーに置けます。`Accordion` は代わりに `<details>` の上に作られていて、どのセクションが開いているかはシグナルに入りません。",
+                },
+            ],
+            keys: &[(
+                L {
+                    en: "Enter, Space",
+                    ja: "Enter、Space",
+                },
+                L {
+                    en: "Shows or hides the region.",
+                    ja: "領域を表示するか隠します。",
+                },
+            )],
+            items: &[
+                (
+                    "Collapsible::new",
+                    "hypersig_ui/struct.Collapsible.html#method.new",
+                    L {
+                        en: "A collapsible whose region is shown while `open` is true.",
+                        ja: "`open` が true の間、領域を表示する折りたたみ",
+                    },
+                ),
+                (
+                    "trigger",
+                    "hypersig_ui/struct.Collapsible.html#method.trigger",
+                    L {
+                        en: "The button that shows and hides the region.",
+                        ja: "領域を表示したり隠したりするボタン",
+                    },
+                ),
+                (
+                    "content",
+                    "hypersig_ui/struct.Collapsible.html#method.content",
+                    L {
+                        en: "The region, empty, for the content added with `El::child`.",
+                        ja: "`El::child` で内容を加える、空の領域",
+                    },
+                ),
+            ],
+        },
+        Component::Avatar => Page {
+            lead: L {
+                en: "A round picture of a person, with their initials where there is no picture.",
+                ja: "人物を表す丸い画像です。画像がない場合はイニシャルを表示します。",
+            },
+            demo: Demo::Avatar,
+            built_on: &[
+                L {
+                    en: "The avatar is a `role=\"img\"` named after the person through `aria-label`, so a screen reader reads the name once and nothing inside it. The picture comes from a `SafeUrl`, a `Url`, or a signal of one, as the `src` of an `<img>` does.",
+                    ja: "アバターは `aria-label` で人物の名前を付けた `role=\"img\"` です。そのため、スクリーンリーダーは名前を一度だけ読み上げ、中身は読み上げません。画像の URL は `<img>` の `src` と同じく `SafeUrl` か `Url`、またはそのシグナルから渡します。",
+                },
+                L {
+                    en: "The initials are the picture's `alt`, and where the picture fails to load, the broken `<img>`'s `::after` draws them over it, as the second avatar of the demo shows. Chrome draws that `::after`. A browser that draws none on a broken image shows its own marker for one there instead.",
+                    ja: "イニシャルは画像の `alt` で、画像を読み込めなかった場合は、壊れた `<img>` の `::after` が画像の上にイニシャルを描きます。デモの 2 つ目のアバターがこの場合です。Chrome はこの `::after` を描きます。壊れた画像に `::after` を描かないブラウザでは、代わりにそのブラウザの壊れた画像の印が表示されます。",
+                },
+            ],
+            keys: &[],
+            items: &[
+                (
+                    "Avatar::new",
+                    "hypersig_ui/struct.Avatar.html#method.new",
+                    L {
+                        en: "An avatar of `name` that shows `initials`.",
+                        ja: "`initials` を表示する、`name` のアバター",
+                    },
+                ),
+                (
+                    "picture",
+                    "hypersig_ui/struct.Avatar.html#method.picture",
+                    L {
+                        en: "Shows the picture at `url` in place of the initials.",
+                        ja: "イニシャルの代わりに `url` の画像を表示します。",
+                    },
+                ),
+                (
+                    "render",
+                    "hypersig_ui/struct.Avatar.html#method.render",
+                    L {
+                        en: "The avatar, as a `<span>`.",
+                        ja: "`<span>` としてのアバター",
+                    },
+                ),
+            ],
+        },
+        Component::Kbd => Page {
+            lead: L {
+                en: "A key or a shortcut the visitor presses, drawn as a small cap in running text.",
+                ja: "訪問者が押すキーやショートカットを、文中に小さなキーの形で表示します。",
+            },
+            demo: Demo::Kbd,
+            built_on: &[L {
+                en: "It is a native `<kbd>`, and a screen reader reads its text as it stands, so write the key's name in words where a symbol would be read as something else, such as \"Ctrl\" rather than \"^\". For a shortcut, place one `kbd` per key side by side.",
+                ja: "ネイティブの `<kbd>` で、スクリーンリーダーはテキストをそのまま読み上げます。そのため、記号が別のものとして読まれる場合は、「^」ではなく「Ctrl」のように、キーの名前を言葉で書いてください。ショートカットはキーごとに 1 つの `kbd` を並べて書きます。",
+            }],
+            keys: &[],
+            items: &[(
+                "kbd",
+                "hypersig_ui/fn.kbd.html",
+                L {
+                    en: "A `<kbd>` that shows a key or a shortcut the visitor presses.",
+                    ja: "訪問者が押すキーやショートカットを表示する `<kbd>`",
+                },
+            )],
+        },
+        Component::Spinner => Page {
+            lead: L {
+                en: "A turning ring that marks work whose length is not known.",
+                ja: "どれだけかかるかわからない処理の途中であることを示す、回転する輪です。",
+            },
+            demo: Demo::Loading,
+            built_on: &[
+                L {
+                    en: "The spinner is a `role=\"status\"` named by its label through `aria-label`, and the ring inside it is hidden from assistive technology. A screen reader reads the label where it reaches the spinner. Whether it also reads the label as the spinner appears differs between screen readers, so say in text when the work finishes, such as in a toast.",
+                    ja: "スピナーは `aria-label` でラベルを名前にした `role=\"status\"` で、中の輪は支援技術から隠されています。スクリーンリーダーはスピナーまで読み進めたときにラベルを読み上げます。スピナーが現れたときにも読み上げるかどうかはスクリーンリーダーによって違うので、処理が終わったことはトーストなどのテキストで伝えてください。",
+                },
+                L {
+                    en: "The ring turns in the current text color, and four times slower for a visitor who asks for reduced motion. Use `progress` where the share of the work done is known.",
+                    ja: "輪は現在の文字色で回り、動きを減らす設定の訪問者には 4 倍遅く回ります。処理の進み具合がわかる場合は `progress` を使ってください。",
+                },
+            ],
+            keys: &[],
+            items: &[(
+                "spinner",
+                "hypersig_ui/fn.spinner.html",
+                L {
+                    en: "A turning ring named `label`, which marks work that has no known length.",
+                    ja: "`label` を名前に持ち、長さのわからない処理を示す回転する輪",
+                },
+            )],
         },
         Component::Card => Page {
             lead: L {
@@ -1868,6 +2094,71 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "The tooltip, holding `text`.",
                         ja: "`text` を入れたツールチップ",
+                    },
+                ),
+            ],
+        },
+        Component::Popover => Page {
+            lead: L {
+                en: "A panel of content that a button opens beside itself.",
+                ja: "ボタンの横に開く、内容を入れるパネルです。",
+            },
+            demo: Demo::Popover,
+            built_on: &[
+                L {
+                    en: "The panel is a `popover=\"auto\"` with `role=\"dialog\"`, named by its button through `aria-labelledby`. The button has `aria-haspopup=\"dialog\"` and opens and closes it with `commandfor` and `command`, so the browser puts the panel above the page, closes it on Escape or on a click outside, and returns focus to the button when focus was inside the panel.",
+                    ja: "パネルは `role=\"dialog\"` を持つ `popover=\"auto\"` で、`aria-labelledby` によってボタンのテキストがパネルの名前になります。ボタンは `aria-haspopup=\"dialog\"` を持ち、`commandfor` と `command` でパネルを開け閉めします。そのため、ブラウザがパネルをページの上に表示し、Escape かパネルの外のクリックで閉じ、フォーカスがパネルの中にあった場合はボタンに戻します。",
+                },
+                L {
+                    en: "Focus stays on the button as the panel opens, so place the panel right after its button, where Tab moves from the button into it. A statement closes it with `NodeRef::hide_popover` on the node ref the popover is built from.",
+                    ja: "パネルが開いてもフォーカスはボタンに残ります。パネルはボタンの直後に置いてください。そうすると、ボタンから Tab でパネルの中に移れます。ステートメントから閉じるには、ポップオーバーを作った node ref の `NodeRef::hide_popover` を使います。",
+                },
+            ],
+            keys: &[
+                (
+                    L {
+                        en: "Enter, Space",
+                        ja: "Enter、Space",
+                    },
+                    L {
+                        en: "On the button, opens or closes the panel.",
+                        ja: "ボタンの上で押すと、パネルを開くか閉じます。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Escape",
+                        ja: "Escape",
+                    },
+                    L {
+                        en: "Closes the panel.",
+                        ja: "パネルを閉じます。",
+                    },
+                ),
+            ],
+            items: &[
+                (
+                    "Popover::new",
+                    "hypersig_ui/struct.Popover.html#method.new",
+                    L {
+                        en: "A popover that `panel` names, whose id is the name of `panel`.",
+                        ja: "`panel` が名前を付け、`panel` の名前を id とするポップオーバー",
+                    },
+                ),
+                (
+                    "trigger",
+                    "hypersig_ui/struct.Popover.html#method.trigger",
+                    L {
+                        en: "The button that opens and closes the panel.",
+                        ja: "パネルを開け閉めするボタン",
+                    },
+                ),
+                (
+                    "popover",
+                    "hypersig_ui/struct.Popover.html#method.popover",
+                    L {
+                        en: "The panel, empty, for the content added with `El::child`.",
+                        ja: "`El::child` で内容を加える、空のパネル",
                     },
                 ),
             ],
