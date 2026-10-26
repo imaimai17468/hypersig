@@ -53,7 +53,9 @@ pub struct Slider<S> {
 }
 
 impl<S> Slider<S> {
-    /// A slider from 0 to 100 in steps of 1, labeled `label`, bound to `value`.
+    /// A slider from 0 to 100 in steps of 1, bound to `value`.
+    ///
+    /// `label` names it.
     #[must_use]
     pub fn new(label: impl Into<String>, value: Sig<S, i32>) -> Self {
         Self {
@@ -95,8 +97,10 @@ impl<S> Slider<S> {
         self
     }
 
-    /// Shows `text` beside the label and gives it to assistive technology as
-    /// `aria-valuetext`, for a value that needs a unit, such as "40 %".
+    /// Shows `text` beside the label and gives it to assistive technology.
+    ///
+    /// It goes in `aria-valuetext`, for a value that needs a unit, such as "40
+    /// %".
     #[must_use]
     pub fn value_text(mut self, text: impl IntoExpr<S, String>) -> Self {
         self.value_text = Some(text.into_expr());

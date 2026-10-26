@@ -33,7 +33,9 @@ fn palette() -> [Token<Color>; 5] {
     ]
 }
 
-/// A donut chart of the rows of a list signal, each an arc as long as its share of the total.
+/// A donut chart of the rows of a list signal.
+///
+/// Each row is an arc as long as its share of the total.
 ///
 /// Each row is a slice labeled by the text field `category`, and its
 /// length is the number field `value` over the sum of `value` across the
@@ -115,7 +117,9 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
         self
     }
 
-    /// The ring, its total, its legend, and the table a screen reader reads, in a `<figure>`.
+    /// The ring, its total, its legend, and the table a screen reader reads.
+    ///
+    /// They sit in a `<figure>`.
     #[must_use]
     pub fn render(self) -> El<S> {
         let ring = el(hypersig::tag!("svg"))

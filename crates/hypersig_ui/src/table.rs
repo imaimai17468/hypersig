@@ -90,7 +90,9 @@ pub struct TableText {
     pub previous_page: String,
     /// The name of the button that goes forward a page, "Next page".
     pub next_page: String,
-    /// The name of the button that shows or hides a row's details, "Show row details".
+    /// The name of the button that shows or hides a row's details.
+    ///
+    /// The default is "Show row details".
     pub expand_row: String,
 }
 
@@ -323,7 +325,9 @@ impl<S, T> fmt::Debug for Entry<S, T> {
     }
 }
 
-/// A table of the rows of a list signal, sorted, filtered, and paged in the browser.
+/// A table of the rows of a list signal.
+///
+/// The browser sorts, filters, and pages it.
 ///
 /// Each row is keyed by `key`, as in
 /// [`each_keyed`](hypersig::html::each_keyed), so a row keeps its element,
@@ -433,7 +437,9 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Adds `column`, whose header sorts the rows by `key`, after the columns added so far.
+    /// Adds `column`, whose header sorts the rows by `key`.
+    ///
+    /// It goes after the columns added so far.
     ///
     /// The compiler requires the key to be a number or a string, because
     /// the runtime orders only those. The first press on the header sorts
@@ -465,7 +471,9 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.
+    /// Adds a first column of checkboxes that keep selected rows in `selected`.
+    ///
+    /// `selected` holds the `key` of each selected row.
     ///
     /// The keys live in a signal of the page, apart from the rows, so a
     /// selection needs no field in the row type and outlasts a patch of the
@@ -484,7 +492,9 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Adds a first column of buttons that show `details` of a row under it, keeping the `key` of each open row in `expanded`.
+    /// Adds a first column of buttons that show `details` of a row under it.
+    ///
+    /// `expanded` keeps the `key` of each open row.
     ///
     /// The button carries `aria-expanded`, as the WAI-ARIA disclosure
     /// pattern asks, and the details fill a row of their own under the row,
@@ -539,7 +549,9 @@ impl<S: 'static, T: 'static> DataTable<S, T> {
         self
     }
 
-    /// Keeps the table at most `height` high, scrolling its rows under a header that stays in place.
+    /// Keeps the table at most `height` high.
+    ///
+    /// Its rows scroll under a header that stays in place.
     #[must_use]
     pub fn max_height(mut self, height: Length) -> Self {
         self.max_height = Some(height);
@@ -656,7 +668,9 @@ impl<S: 'static, T: 'static> From<DataTable<S, T>> for Node<S> {
     }
 }
 
-/// A table whose rows the server filters, sorts, and pages, one page at a time.
+/// A table whose rows the server filters, sorts, and pages.
+///
+/// It shows one page at a time.
 ///
 /// The list signal holds only the rows shown. The filter field, a sortable
 /// header, and the page buttons write the [`TableState`] and then run
@@ -765,7 +779,9 @@ pub struct ServerTable<S, T> {
 }
 
 impl<S: 'static, T: 'static> ServerTable<S, T> {
-    /// An empty table named `label`, listing `rows` by `key`, which runs `load` to fetch rows.
+    /// An empty table named `label`, listing `rows` by `key`.
+    ///
+    /// It runs `load` to fetch rows.
     ///
     /// `state` holds the filter text, the page, and the sort, and `load`
     /// runs after the visitor changes one of them.
@@ -800,7 +816,9 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         self
     }
 
-    /// Adds `column`, whose header asks the server to sort by `key`, after the columns added so far.
+    /// Adds `column`, whose header asks the server to sort by `key`.
+    ///
+    /// It goes after the columns added so far.
     ///
     /// The header writes `key` into the [`TableState`], returns to the
     /// first page, and runs `load`. The server reads the key back with
@@ -821,7 +839,9 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         self
     }
 
-    /// Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.
+    /// Adds a first column of checkboxes that keep selected rows in `selected`.
+    ///
+    /// `selected` holds the `key` of each selected row.
     ///
     /// The keys live in a signal of the page, so a row selected on one page
     /// stays selected while the visitor moves to another, and the server
@@ -841,7 +861,9 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         self
     }
 
-    /// Adds a first column of buttons that show `details` of a row under it, keeping the `key` of each open row in `expanded`.
+    /// Adds a first column of buttons that show `details` of a row under it.
+    ///
+    /// `expanded` keeps the `key` of each open row.
     ///
     /// The button carries `aria-expanded`, as the WAI-ARIA disclosure
     /// pattern asks, and the details fill a row of their own under the row,
@@ -871,7 +893,9 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         self
     }
 
-    /// Shows pages of `size` rows out of `total`, with buttons for the previous and next page.
+    /// Shows pages of `size` rows out of `total`.
+    ///
+    /// Buttons move to the previous and next page.
     ///
     /// The server answers each `load` with at most `size` rows and writes
     /// `total`, the number of rows that pass the filter. Below the table,
@@ -894,7 +918,9 @@ impl<S: 'static, T: 'static> ServerTable<S, T> {
         self
     }
 
-    /// Keeps the table at most `height` high, scrolling its rows under a header that stays in place.
+    /// Keeps the table at most `height` high.
+    ///
+    /// Its rows scroll under a header that stays in place.
     #[must_use]
     pub fn max_height(mut self, height: Length) -> Self {
         self.max_height = Some(height);

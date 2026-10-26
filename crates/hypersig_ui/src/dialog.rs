@@ -127,8 +127,10 @@ impl<S> Dialog<S> {
         )
     }
 
-    /// A sheet: a dialog along the `side` edge of the viewport, with
-    /// `title`, `description`, `content`, and a close button in its corner.
+    /// A sheet: a dialog along the `side` edge of the viewport.
+    ///
+    /// It holds `title`, `description`, `content`, and a close button in its
+    /// corner.
     ///
     /// It is the same modal `<dialog>` as [`Dialog::dialog`], opened by
     /// [`Dialog::trigger`], with the same focus, Escape, and backdrop
@@ -189,7 +191,9 @@ impl<S> Dialog<S> {
     }
 
     /// An alert dialog, which asks the visitor to confirm or cancel before
-    /// going on, with `title`, `description`, and `content`.
+    /// going on.
+    ///
+    /// It holds `title`, `description`, and `content`.
     ///
     /// It has `role="alertdialog"`, no corner button, and stays open on a
     /// click on the backdrop, so that the visitor answers with one of the

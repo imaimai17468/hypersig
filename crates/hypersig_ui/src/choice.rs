@@ -314,8 +314,9 @@ fn switch_with<S, R: Writable>(text: String, on: Sig<S, bool, R>, input: El<S>) 
         .child(text)
 }
 
-/// A group of radio buttons with `title` in its `<legend>`, one per option,
-/// that sets `selected` to the option's value.
+/// A group of radio buttons, one per option, with `title` in its `<legend>`.
+///
+/// Choosing one sets `selected` to the option's value.
 ///
 /// The radios share a `name` derived from the signal's path, so the browser
 /// gives the group one Tab stop and moves between its radios with the arrow
@@ -349,8 +350,9 @@ pub fn radio_group<S, T: Serialize + PartialEq, L: Into<String>>(
     radio_with(title.into(), selected, options, None)
 }
 
-/// A group of radio buttons with `title` in its `<legend>`, bound to `field`
-/// of `form`.
+/// A group of radio buttons bound to `field` of `form`.
+///
+/// Its `<legend>` holds `title`.
 ///
 /// It is [`radio_group`] with the form's [`error`](Sig::error) for `field`
 /// under it. ARIA allows `aria-invalid` on a radio group but not on a plain

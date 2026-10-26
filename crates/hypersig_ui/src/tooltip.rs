@@ -13,8 +13,9 @@ use crate::button::{ButtonSize, ButtonVariant, button, icon_button};
 use crate::id::anchor;
 use crate::token;
 
-/// A tooltip on a page whose signals are `S`, describing the button it is
-/// attached to.
+/// A tooltip describing the button it is attached to.
+///
+/// It sits on a page whose signals are `S`.
 ///
 /// Declare one as a `const` from a [`NodeRef`] that
 /// [`node_ref!`](hypersig::node_ref) declares, and use the same value for

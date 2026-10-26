@@ -15,9 +15,10 @@ use crate::listbox::{list_style, option_style};
 use crate::look::{self, icon};
 use crate::token;
 
-/// The signals a [`Combobox`] keeps: the text, whether its list is open,
-/// which option the arrow keys reached, and whether the pointer is on the
-/// list.
+/// The signals a [`Combobox`] keeps.
+///
+/// They hold the text, whether its list is open, which option the arrow keys
+/// reached, and whether the pointer is on the list.
 ///
 /// Put one in the page's signals for each combobox and read the chosen text
 /// from [`ComboboxState::text`].
@@ -56,8 +57,9 @@ impl ComboboxState {
     }
 }
 
-/// A combobox on a page whose signals are `S`: a text field with a list of
-/// options that the text filters.
+/// A combobox: a text field with a list of options that the text filters.
+///
+/// It sits on a page whose signals are `S`.
 ///
 /// Declare one as a `const` from two [`NodeRef`]s that
 /// [`node_ref!`](hypersig::node_ref) declares, one for its text field and
@@ -124,8 +126,9 @@ impl<S> Combobox<S> {
         Self { field, list }
     }
 
-    /// The label, the text field, and the list of `options`, in a `<div>`,
-    /// keeping their state in `state`.
+    /// The label, the text field, and the list of `options`, in a `<div>`.
+    ///
+    /// It keeps their state in `state`.
     #[must_use]
     pub fn render<L: Into<String>>(
         self,

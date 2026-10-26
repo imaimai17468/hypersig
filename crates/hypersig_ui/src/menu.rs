@@ -14,7 +14,9 @@ use crate::id::anchor;
 use crate::look;
 use crate::token;
 
-/// A menu of actions on a page whose signals are `S`, opened by a button.
+/// A menu of actions opened by a button.
+///
+/// It sits on a page whose signals are `S`.
 ///
 /// Declare one as a `const` from a [`NodeRef`] that
 /// [`node_ref!`](hypersig::node_ref) declares, and use the same value for
