@@ -201,8 +201,12 @@ async fn an_upload_longer_than_its_limit_without_a_length_gets_413() {
 
 #[tokio::test]
 async fn arguments_that_do_not_deserialize_get_400() {
-    let (status, _) = send(upload(&[FROM_PAGE], multipart("7", &[]))).await;
+    let (status, body) = send(upload(&[FROM_PAGE], multipart("7", &[]))).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body,
+        "the action's arguments did not deserialize into its argument type"
+    );
 }
 
 #[tokio::test]

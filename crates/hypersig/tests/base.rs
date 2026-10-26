@@ -155,7 +155,11 @@ async fn a_list_search_field_repeats_its_key_after_the_base_and_reads_back() {
 
     let (status, body, _) = get(served(), "/app/find?q=x&q=y").await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(body.contains("duplicate field `q`"), "{body}");
+    assert!(
+        body.contains("the query string of `/find` does not deserialize"),
+        "{body}"
+    );
+    assert!(!body.contains("duplicate"), "{body}");
 }
 
 #[tokio::test]

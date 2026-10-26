@@ -200,7 +200,7 @@ fn the_request_of_a_call_carries_the_headers_the_runtime_sends() {
 }
 
 #[tokio::test]
-async fn arguments_of_the_wrong_type_get_400() {
+async fn arguments_of_the_wrong_type_get_400_with_a_body_that_quotes_nothing() {
     let (status, body) = send(
         Request::post("/add")
             .header("content-type", "application/json")
@@ -209,9 +209,9 @@ async fn arguments_of_the_wrong_type_get_400() {
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(
-        body.starts_with("the action's arguments did not deserialize"),
-        "{body}"
+    assert_eq!(
+        body,
+        "the action's arguments did not deserialize into its argument type"
     );
 }
 
@@ -229,9 +229,9 @@ async fn an_argument_the_browser_would_round_gets_400() {
     assert_eq!(status, StatusCode::OK);
     let (status, body) = ledger("[1, 9007199254740993]").await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(
-        body.contains("the integer 9007199254740993 is outside -2^53 to 2^53"),
-        "{body}"
+    assert_eq!(
+        body,
+        "the action's arguments did not deserialize into its argument type"
     );
 }
 
@@ -531,6 +531,13 @@ async fn a_query_string_that_does_not_deserialize_gets_400() {
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (_, body) = send(
+        Request::get("/teams/red?page=three&q=a")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert!(!body.contains("three"), "{body}");
 }
 
 #[tokio::test]

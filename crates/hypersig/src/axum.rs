@@ -232,9 +232,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 }
                 let refused = match (params, search) {
                     (None, _) => Err(Reason::Segments),
-                    (Some(_), Err(rejection)) => Err(Reason::Query(format!(
-                        "Failed to deserialize query string: {rejection}"
-                    ))),
+                    (Some(_), Err(rejection)) => Err(Reason::Query(rejection)),
                     (Some(params), Ok(search)) => Ok(Q::join(params, search)),
                 };
                 let args = match (refused, &unserved) {
@@ -243,8 +241,15 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                         let unserved = Unserved::new(reason, &request);
                         return page.answer(state, request, unserved).await;
                     }
-                    (Err(Reason::Query(text)), None) => {
-                        return (StatusCode::BAD_REQUEST, text).into_response();
+                    // The rejection quotes the query and names the fields'
+                    // types, so it stays in the `Unserved` an `else` page
+                    // receives.
+                    (Err(Reason::Query(_)), None) => {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            "the query string does not deserialize into the page's search parameters",
+                        )
+                            .into_response();
                     }
                     (Err(_), None) => return StatusCode::NOT_FOUND.into_response(),
                 };
@@ -784,6 +789,11 @@ impl IntoResponse for PageResponse {
 /// a query string that does not deserialize into the route's search
 /// parameters. A page the handler returns is sent with that status, unless
 /// it comes from [`PageResponse::with_status`].
+///
+/// Its `Display` is one fixed sentence per reason, naming the path, which a
+/// page can show the visitor. For a query string, the reader's message,
+/// which quotes the query and names the types of the search parameters, is
+/// its [`source`](std::error::Error::source), for a log.
 #[derive(Debug)]
 pub struct Unserved {
     reason: Reason,
@@ -795,7 +805,7 @@ enum Reason {
     NoRoute,
     Segments,
     NoPage,
-    Query(String),
+    Query(serde::de::value::Error),
 }
 
 impl Unserved {
@@ -858,7 +868,19 @@ impl fmt::Display for Unserved {
                 "a segment of `{path}` does not parse into its route's parameters"
             ),
             Reason::NoPage => write!(f, "the handler of `{path}` answered with no page"),
-            Reason::Query(rejection) => f.write_str(rejection),
+            Reason::Query(_) => write!(
+                f,
+                "the query string of `{path}` does not deserialize into its route's search parameters"
+            ),
+        }
+    }
+}
+
+impl StdError for Unserved {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match &self.reason {
+            Reason::Query(rejection) => Some(rejection),
+            Reason::NoRoute | Reason::Segments | Reason::NoPage => None,
         }
     }
 }
@@ -1411,7 +1433,13 @@ fn to_sse(event: &PatchEvent) -> Result<SseEvent, PartMismatch> {
 /// [`Upload::limit`], and `400 Bad Request` for a malformed multipart body,
 /// an upload whose first part is not the arguments, a call whose
 /// `hypersig-part` header is not a dotted field path,
-/// or arguments that do not deserialize, with the serde message.
+/// or arguments that do not deserialize.
+///
+/// The body of the response is one fixed sentence per refusal, the error's
+/// `Display`. What the parser said about a malformed body or arguments,
+/// which names the argument type's fields and quotes the visitor's input,
+/// is the error's [`source`](std::error::Error::source), for a handler of a
+/// streaming upload to log.
 #[derive(Debug)]
 pub struct RequestError {
     refusal: Refusal,
@@ -1492,10 +1520,10 @@ impl fmt::Display for RequestError {
                 f.write_str("the upload's body is not `multipart/form-data`")
             }
             Refusal::TooLarge => f.write_str("the upload is longer than its limit"),
-            Refusal::Multipart(source) => write!(f, "the upload's body is malformed: {source}"),
+            Refusal::Multipart(_) => f.write_str("the upload's body is malformed"),
             Refusal::PartOrder => f.write_str("the upload's first part is not the arguments"),
-            Refusal::Arguments(source) => {
-                write!(f, "the action's arguments did not deserialize: {source}")
+            Refusal::Arguments(_) => {
+                f.write_str("the action's arguments did not deserialize into its argument type")
             }
             Refusal::Part => f.write_str("the call's part header is not a dotted field path"),
         }

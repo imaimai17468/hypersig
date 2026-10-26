@@ -162,6 +162,13 @@ fn requests(site: Site) -> Part {
         para(
             site,
             L {
+                en: "The body of each refusal is one fixed sentence. What the parser said about the arguments or a page's query string names the fields of the type and quotes what the visitor sent, so it stays in the `source` of the `RequestError` or the `Unserved` and is not sent back.",
+                ja: "拒否の本文はどれも決まった一文です。引数やページのクエリ文字列についてパーサーが出すメッセージには、型のフィールドと訪問者が送った値が含まれます。そのためこのメッセージは送り返さず、`RequestError` や `Unserved` の `source` に残します。",
+            },
+        ),
+        para(
+            site,
+            L {
                 en: "A script on another site can still send that `Accept` header with a GET, and a browser that sends no `Sec-Fetch-Site` lets it through, so a GET action should change nothing.",
                 ja: "別のサイトのスクリプトは GET にこの `Accept` を付けて送れます。`Sec-Fetch-Site` を送らないブラウザではそれが通るので、GET のアクションでは何も変更しないでください。",
             },
