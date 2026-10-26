@@ -151,8 +151,10 @@ pub const MAX_DEPTH: usize = 8;
 #[derive(Debug, Clone, Copy)]
 pub enum Root {}
 
-/// Marks a [`Sig`] whose path starts at the current item of an
-/// [`each`](crate::html::each) or a list predicate. Its path is resolved in the browser per item.
+/// Marks a [`Sig`] whose path starts at the current list item.
+///
+/// The item is the one an [`each`](crate::html::each) or a list predicate is
+/// at, so the path is resolved in the browser per item.
 #[derive(Debug, Clone, Copy)]
 pub enum Local {}
 
@@ -799,8 +801,10 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
         ]))
     }
 
-    /// A statement that appends `count` items, building each from its position
-    /// `i`, which runs from 0 up to `count`.
+    /// A statement that appends `count` items built from their positions.
+    ///
+    /// The closure builds each item from its position `i`, which runs from 0
+    /// up to `count`.
     #[must_use]
     pub fn extend<E: IntoExpr<S, T>>(
         self,
@@ -820,7 +824,9 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
         ]))
     }
 
-    /// A statement that sets `field` to `value` on the items for which `when` is true.
+    /// A statement that sets `field` to `value` on each item `when` accepts.
+    ///
+    /// The items it changes are those for which `when` is true.
     ///
     /// Both closures receive the item being updated, so `value` can read it.
     #[must_use]
@@ -859,8 +865,9 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
         ]))
     }
 
-    /// A statement that orders the items by `key`, ascending, keeping the
-    /// order of items with equal keys.
+    /// A statement that sorts the items by `key`, ascending.
+    ///
+    /// Items with equal keys keep their order.
     #[must_use]
     pub fn sort_by<K: Comparable, E: IntoExpr<S, K>>(
         self,
@@ -869,8 +876,9 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
         self.sort(key, false)
     }
 
-    /// A statement that orders the items by `key`, descending, keeping the
-    /// order of items with equal keys.
+    /// A statement that sorts the items by `key`, descending.
+    ///
+    /// Items with equal keys keep their order.
     #[must_use]
     pub fn sort_by_desc<K: Comparable, E: IntoExpr<S, K>>(
         self,

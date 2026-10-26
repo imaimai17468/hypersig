@@ -1162,8 +1162,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "Local",
                             "enum.Local.html",
                             L {
-                                en: "Marks a `Sig` whose path starts at the current item of an `each` or a list predicate.",
-                                ja: "`Sig` のパスが `each` やリストの述語でいま扱っている項目から始まることを表す型",
+                                en: "Marks a `Sig` whose path starts at the current list item.",
+                                ja: "`Sig` のパスがリストのいまの項目から始まることを表す型",
                             },
                         ),
                         (
@@ -1378,8 +1378,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "extend",
                             "struct.Sig.html#method.extend",
                             L {
-                                en: "A statement that appends `count` items, building each from its position `i`.",
-                                ja: "各項目を位置 `i` から作り、`count` 個の項目を追加する文",
+                                en: "A statement that appends `count` items built from their positions.",
+                                ja: "位置から作った `count` 個の項目を追加する文",
                             },
                         ),
                         (
@@ -1418,7 +1418,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "update_where",
                             "struct.Sig.html#method.update_where",
                             L {
-                                en: "A statement that sets `field` to `value` on the items for which `when` is true.",
+                                en: "A statement that sets `field` to `value` on each item `when` accepts.",
                                 ja: "`when` が真になる項目で `field` を `value` にする文",
                             },
                         ),
@@ -1434,16 +1434,16 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "sort_by",
                             "struct.Sig.html#method.sort_by",
                             L {
-                                en: "A statement that orders the items by `key`, ascending, keeping the order of equal keys.",
-                                ja: "キーが等しい項目の順序を保ったまま、項目を `key` の昇順に並べる文",
+                                en: "A statement that sorts the items by `key`, ascending.",
+                                ja: "項目を `key` の昇順に並べる文",
                             },
                         ),
                         (
                             "sort_by_desc",
                             "struct.Sig.html#method.sort_by_desc",
                             L {
-                                en: "A statement that orders the items by `key`, descending, keeping the order of equal keys.",
-                                ja: "キーが等しい項目の順序を保ったまま、項目を `key` の降順に並べる文",
+                                en: "A statement that sorts the items by `key`, descending.",
+                                ja: "項目を `key` の降順に並べる文",
                             },
                         ),
                         (

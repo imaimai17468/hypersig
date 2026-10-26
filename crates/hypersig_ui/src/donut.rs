@@ -10,7 +10,7 @@ use hypersig::style::value::{
     Position, px, raw, rem,
 };
 use hypersig::style::{Style, Token};
-use hypersig::{Expr, Item, Number, NumberFormat, Sig, Textual, if_else};
+use hypersig::{Expr, FromPage, Item, Number, NumberFormat, Read, Sig, Textual, if_else};
 
 use crate::chart::visually_hidden;
 use crate::look;
@@ -79,7 +79,7 @@ fn palette() -> [Token<Color>; 5] {
 /// ```
 pub struct DonutChart<S, T> {
     label: String,
-    rows: Sig<S, Vec<T>>,
+    rows: Sig<S, Vec<T>, Read>,
     category: Sig<T, String>,
     value: RowValue<S, T>,
     text: RowText<S, T>,
@@ -89,15 +89,15 @@ pub struct DonutChart<S, T> {
 impl<S: 'static, T: 'static> DonutChart<S, T> {
     /// A donut chart named `label` of `rows`, with slices of `value` labeled by `category`.
     #[must_use]
-    pub fn new<U: Number + Textual + 'static>(
+    pub fn new<U: Number + Textual + 'static, R: FromPage>(
         label: impl Into<String>,
-        rows: Sig<S, Vec<T>>,
+        rows: Sig<S, Vec<T>, R>,
         category: Sig<T, String>,
         value: Sig<T, U>,
     ) -> Self {
         Self {
             label: label.into(),
-            rows,
+            rows: rows.read(),
             category,
             value: Box::new(move |row| row.at(value).to_f64()),
             text: Box::new(move |row, format| match format {

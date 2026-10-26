@@ -15,6 +15,7 @@ The release notes on GitHub list the titles of the merged pull requests. This fi
 
 ### Changed
 
+- `hypersig_ui::DonutChart::new` takes the rows of a computed field as well as a plain one.
 - Writing a signal that cannot be written reports ``a signal marked `Computed` cannot be written``, with `hypersig::Read` in place of `Computed` for a view, where it used to report `a computed signal cannot be written`.
 - `cargo hypersig new <path>` without `--host` writes the `server` template, where it used to stop with a list of hosts.
 - The server template depends on `hypersig_ui`, uses its `button`, and starts with `hypersig::serve`. The examples start with `hypersig::serve` too.

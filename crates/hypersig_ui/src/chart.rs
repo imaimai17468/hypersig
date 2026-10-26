@@ -58,7 +58,7 @@ type RowText<S, T> = Box<dyn Fn(Item<S, T>, Option<&NumberFormat>) -> Expr<S, St
 /// than two more, so a scale spans at most five steps.
 const TICKS: i32 = 6;
 
-/// A chart of the rows of a list signal, drawn as bars, lines, or areas.
+/// A chart of a list signal's rows, drawn as bars, lines, or areas.
 ///
 /// Each row is one point along the axis of the categories, labeled by the
 /// text field `category`, and each [`Chart::series`] reads a number field
