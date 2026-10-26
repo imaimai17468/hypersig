@@ -1,5 +1,6 @@
 //! The page on testing an application: calling its handlers in a test,
-//! sending requests to its router, and what only a browser runs.
+//! sending requests to its router, clicking and typing on a page without a
+//! browser, and what only a browser runs.
 
 use super::snippet::{Snippet, show};
 use super::{Program, program};
@@ -15,6 +16,7 @@ pub fn testing(site: Site) -> Part {
         lead(site, Doc::Learn(Learn::Testing).leads()),
         handlers(site),
         router(site),
+        simulation(site),
         browser(site),
     ])
 }
@@ -62,8 +64,8 @@ tower = { version = "0.5", features = ["util"] }"#,
         para(
             site,
             L {
-                en: "[`Page::render`](api:hypersig/struct.Page.html#method.render) returns the document the server sends, with each bound text and attribute written from the initial values, so a test can look for a text in it. It panics where two elements share an id or a `NodeRef` name, so a test that renders each page finds those before a visitor does.",
-                ja: "[`Page::render`](api:hypersig/struct.Page.html#method.render) はサーバーが送る文書を返します。束縛したテキストと属性は初期値で書かれているので、テストはその中から文字列を探せます。2 つの要素が同じ id や `NodeRef` の名前を持つと `render` はパニックするので、ページごとに描画するテストを書いておくと、訪問者が開く前にそれがわかります。",
+                en: "[`Page::render`](api:hypersig/struct.Page.html#method.render) returns the document the server sends, with each bound text and attribute written from the initial values, so a test can look for a text in it, or read one element with `Simulation::element` below. It panics where two elements share an id or a `NodeRef` name, so a test that renders each page finds those before a visitor does.",
+                ja: "[`Page::render`](api:hypersig/struct.Page.html#method.render) はサーバーが送る文書を返します。束縛したテキストと属性は初期値で書かれているので、テストはその中から文字列を探せます。要素を 1 つ読むなら、下の節の `Simulation::element` を使います。2 つの要素が同じ id や `NodeRef` の名前を持つと `render` はパニックするので、ページごとに描画するテストを書いておくと、訪問者が開く前にそれがわかります。",
             },
         ),
     ])
@@ -111,6 +113,41 @@ fn router(site: Site) -> Part {
     ])
 }
 
+/// Tests that click and type on a page with `Page::simulate`.
+fn simulation(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Clicking and typing without a browser",
+                ja: "ブラウザなしでクリックと入力を試す",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "[`Page::simulate`](api:hypersig/struct.Page.html#method.simulate) returns a [`Simulation`](api:hypersig/testing/struct.Simulation.html) that starts from the page's initial values. Its `click`, `input`, `change`, and `submit` run the statements the page attached to that event, such as `count.set(count + 1)`, on the server's evaluator, and recompute each `Page::computed` signal where the runtime does. A test names the element by the `NodeRef`, `DialogRef`, `FileInput`, or `Id` the page put on it, so a renamed handle fails to compile in the test too. [`testing::nth`](api:hypersig/testing/fn.nth.html) picks one item of a list, whose template carries the same `NodeRef` on every item.",
+                ja: "[`Page::simulate`](api:hypersig/struct.Page.html#method.simulate) は、ページの初期値から始まる [`Simulation`](api:hypersig/testing/struct.Simulation.html) を返します。その `click`、`input`、`change`、`submit` は、ページがそのイベントに付けた文（`count.set(count + 1)` など）をサーバーの評価器で実行し、ランタイムと同じ時点で `Page::computed` のシグナルを計算し直します。テストは、ページが要素に付けた `NodeRef`、`DialogRef`、`FileInput`、`Id` で要素を指すので、名前を変えるとテストのほうもコンパイルが通らなくなります。リストのテンプレートはどの項目にも同じ `NodeRef` を付けるので、項目を 1 つ選ぶには [`testing::nth`](api:hypersig/testing/fn.nth.html) を使います。",
+            },
+        ),
+        show(Snippet::TestingSimulation),
+        para(
+            site,
+            L {
+                en: "[`Simulation::value_of`](api:hypersig/testing/struct.Simulation.html#method.value_of) reads a signal as `Page::value_of` does, after the events. [`Simulation::element`](api:hypersig/testing/struct.Simulation.html#method.element) returns the element as the page shows it now: its text, an attribute named by an `Attr`, and whether a `show` on it or around it hides it. It panics where no element or several carry the handle, and [`Simulation::count`](api:hypersig/testing/struct.Simulation.html#method.count) returns how many do, 0 for an element inside a `when` that is false.",
+                ja: "[`Simulation::value_of`](api:hypersig/testing/struct.Simulation.html#method.value_of) は、イベントのあとのシグナルの値を `Page::value_of` と同じように読みます。[`Simulation::element`](api:hypersig/testing/struct.Simulation.html#method.element) は、いまページに表示されている要素を返します。テキスト、`Attr` で指定した属性、その要素か外側の要素の `show` で隠れているかどうかを読めます。ハンドルを持つ要素がないときや複数あるときはパニックします。[`Simulation::count`](api:hypersig/testing/struct.Simulation.html#method.count) はその数を返し、条件が偽の `when` の中にある要素は 0 個と数えます。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A statement that needs the server or the browser is recorded in the [`Effects`](api:hypersig/testing/struct.Effects.html) the event returns, and not run. `calls(&SAVE)` returns the arguments of each call to `SAVE`, `navigates_to`, `pushes_url`, and `replaces_url` the URL of a link statement, and `runs_in_browser(FIELD.focus())` whether the event asked the browser to focus `FIELD`. The simulation makes the writes the runtime makes when it sends a call, so the indicator turns `true` and the error signal `\"\"`, and it never answers the call. A test that needs the answer calls the handler as above. A statement that reads `Expr::now`, `Expr::random_below`, or a date in the visitor's zone makes the simulation panic, because only the browser has that value.",
+                ja: "サーバーかブラウザが必要な文は実行せず、イベントが返す [`Effects`](api:hypersig/testing/struct.Effects.html) に記録します。`calls(&SAVE)` は `SAVE` の呼び出しごとの引数を、`navigates_to`、`pushes_url`、`replaces_url` はリンクの文の URL を返します。`runs_in_browser(FIELD.focus())` は、イベントがブラウザに `FIELD` へのフォーカスを求めたかどうかを返します。シミュレーションは、ランタイムが呼び出しを送るときと同じ書き込みをするので、インジケーターは `true` に、エラーのシグナルは `\"\"` になります。呼び出しに答えは返りません。答えが必要なテストは、上の節のようにハンドラを呼びます。`Expr::now`、`Expr::random_below`、訪問者のタイムゾーンでの日付を読む文では、シミュレーションはパニックします。その値はブラウザにしかないからです。",
+            },
+        ),
+    ])
+}
+
 /// What a Rust test does not run, and the browser tests that do.
 fn browser(site: Site) -> Part {
     parts([
@@ -124,8 +161,8 @@ fn browser(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A Rust test runs no JavaScript, so a statement such as `count.set(count + 1)`, a binding that changes after the page loads, and the runtime applying a batch are outside its reach. Drive those in a browser. The repository's [`e2e`](https://github.com/imaimai17468/hypersig/tree/main/e2e) directory starts each example and clicks through it in Chrome with Playwright, and a test of your application can follow its layout.",
-                ja: "Rust のテストは JavaScript を実行しないので、`count.set(count + 1)` のような文、ページを読み込んだあとに変わる束縛、ランタイムが差分を当てる処理は確かめられません。これらはブラウザで動かして確かめます。リポジトリの [`e2e`](https://github.com/imaimai17468/hypersig/tree/main/e2e) ディレクトリは、例を 1 つずつ起動し、Playwright で Chrome を操作します。アプリのブラウザのテストも同じ構成で書けます。",
+                en: "A simulation runs only the statement of the event it fires. The statements of `effect`, `on_signal_change`, `on_load`, `on_visible`, a timer, and a key shortcut do not run, even where the browser would run one after a click changed a signal it reads. The runtime applying a server's answer, focus, and the page's layout are outside a Rust test too. Drive those in a browser. The repository's [`e2e`](https://github.com/imaimai17468/hypersig/tree/main/e2e) directory starts each example and clicks through it in Chrome with Playwright, and a test of your application can follow its layout.",
+                ja: "シミュレーションが実行するのは、発生させたイベントの文だけです。`effect`、`on_signal_change`、`on_load`、`on_visible`、タイマー、キーボードショートカットの文は実行しません。ブラウザでは、クリックでそれらが読むシグナルが変わると実行される文も含みます。ランタイムがサーバーの答えを当てる処理、フォーカス、ページのレイアウトも Rust のテストでは確かめられません。これらはブラウザで動かして確かめます。リポジトリの [`e2e`](https://github.com/imaimai17468/hypersig/tree/main/e2e) ディレクトリは、例を 1 つずつ起動し、Playwright で Chrome を操作します。アプリのブラウザのテストも同じ構成で書けます。",
             },
         ),
     ])
