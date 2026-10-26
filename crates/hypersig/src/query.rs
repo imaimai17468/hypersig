@@ -16,21 +16,28 @@ use crate::route::percent_escape;
 ///
 /// A field whose key is absent reads as an empty group, so a `Vec` is empty,
 /// an `Option` is `None`, and any other field is missing. A key the struct
-/// does not have is ignored.
+/// does not have is ignored, and so is a key that does not decode to UTF-8,
+/// which no field's name can match.
 pub(crate) fn parse_query<T: DeserializeOwned>(query: &str) -> Result<T, Error> {
-    let pairs: Vec<(String, String)> = query
+    let pairs = query
         .split('&')
         .filter(|pair| !pair.is_empty())
-        .map(|pair| {
+        .filter_map(|pair| {
             let (name, value) = pair.split_once('=').unwrap_or((pair, ""));
-            (decode(name), decode(value))
+            let name = decode(name).ok()?;
+            Some(decode(value).map(|value| (name, value)))
         })
-        .collect();
+        .collect::<Result<Vec<(String, String)>, Error>>()?;
     T::deserialize(Query { pairs: &pairs })
 }
 
 /// Percent-decodes `text` as a form does, with `+` standing for a space.
-fn decode(text: &str) -> String {
+///
+/// # Errors
+///
+/// Returns an error where the bytes are not UTF-8, which a browser never
+/// sends for text a visitor typed.
+fn decode(text: &str) -> Result<String, Error> {
     let bytes = text.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
     let mut index = 0;
@@ -50,7 +57,9 @@ fn decode(text: &str) -> String {
             }
         }
     }
-    String::from_utf8_lossy(&out).into_owned()
+    String::from_utf8(out).map_err(|error| {
+        de::Error::custom(format_args!("`{text}` does not decode to UTF-8: {error}"))
+    })
 }
 
 struct Query<'q> {
@@ -260,6 +269,22 @@ macro_rules! parse_integer_as {
     )*};
 }
 
+macro_rules! parse_float_as {
+    ($($method:ident => $visit:ident),* $(,)?) => {$(
+        fn $method<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Error> {
+            match self.0.parse() {
+                // A signal that is not a finite number is written as `null`
+                // in JSON, so the page would not hold what the URL says.
+                Ok(value) if !f64::from(value).is_finite() => {
+                    Err(de::Error::custom(format_args!("`{}` is not a finite number", self.0)))
+                }
+                Ok(value) => visitor.$visit(value),
+                Err(error) => Err(de::Error::custom(format_args!("`{}`: {error}", self.0))),
+            }
+        }
+    )*};
+}
+
 macro_rules! parse_as {
     ($($method:ident => $visit:ident),* $(,)?) => {$(
         fn $method<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Error> {
@@ -286,9 +311,12 @@ impl<'de> Deserializer<'de> for Part<'_> {
         deserialize_u8 => visit_u8,
         deserialize_u16 => visit_u16,
         deserialize_u32 => visit_u32,
+        deserialize_char => visit_char,
+    );
+
+    parse_float_as!(
         deserialize_f32 => visit_f32,
         deserialize_f64 => visit_f64,
-        deserialize_char => visit_char,
     );
 
     parse_integer_as!(
@@ -379,6 +407,38 @@ mod tests {
         parse_query::<Filter>("q=a&open=true&size=1.5").expect_err("rejected");
     }
 
+    #[derive(Deserialize, Debug)]
+    struct Price {
+        max: f64,
+    }
+
+    #[test]
+    fn ignores_a_key_that_is_not_utf_8_and_refuses_such_a_value() {
+        assert_eq!(
+            parse_query::<Price>("%FF=1&max=2")
+                .expect("key ignored")
+                .max,
+            2.0
+        );
+        let error = parse_query::<Price>("max=%FF").expect_err("value refused");
+        assert!(
+            error.to_string().contains("does not decode to UTF-8"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn rejects_a_number_that_is_not_finite() {
+        assert_eq!(parse_query::<Price>("max=1.5").expect("finite").max, 1.5);
+        for max in ["NaN", "inf", "-inf", "infinity"] {
+            let error = parse_query::<Price>(&format!("max={max}")).expect_err(max);
+            assert!(
+                error.to_string().contains("is not a finite number"),
+                "{error}"
+            );
+        }
+    }
+
     #[test]
     fn rejects_an_integer_the_browser_would_round() {
         let filter: Filter =
@@ -394,6 +454,6 @@ mod tests {
 
     #[test]
     fn decodes_percent_escapes_and_plus_signs() {
-        assert_eq!(decode("%E3%81%82+%2B%zz%4"), "あ +%zz%4");
+        assert_eq!(decode("%E3%81%82+%2B%zz%4").expect("UTF-8"), "あ +%zz%4");
     }
 }

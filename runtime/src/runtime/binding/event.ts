@@ -80,6 +80,9 @@ export class Events {
       onKey(this.#rt, target, event);
       if (!event.defaultPrevented) rove(this, target, event);
     }
+    // A page sets no `action`, so a form the browser submitted itself would
+    // load the page's own URL again. Only a form's `on_submit` calls an action.
+    if (type === "submit") event.preventDefault();
     const found = this.closest(target, handlerKey(type));
     if (found === null) return;
     // Focus moving between two elements inside the handler's element neither enters nor leaves it.
@@ -89,7 +92,6 @@ export class Events {
       within(found[0], event.relatedTarget)
     )
       return;
-    if (type === "submit") event.preventDefault();
     this.#rt.bindings.statements.runAttribute(found[1], found[0]);
   }
 

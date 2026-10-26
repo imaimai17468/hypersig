@@ -21,6 +21,12 @@ it("matches the operators expr.rs writes", () => {
   expect(evaluate(["or_else", ["lit", null], ["lit", 4]], ctx)).toBe(4);
 });
 
+// The same cases as `trims_and_orders_strings_as_javascript_does` in ssr.rs.
+it("trims and orders strings as ssr.rs does", () => {
+  expect(evaluate(["trim", ["lit", "\uFEFF a\u0085"]], ctx)).toBe("a\u0085");
+  expect(evaluate(["gt", ["lit", "\uFF61"], ["lit", "\u{1F600}"]], ctx)).toBe(true);
+});
+
 it("rounds as ssr.rs does", () => {
   expect(evaluate(["floor", ["lit", -2.5]], ctx)).toBe(-3);
   expect(evaluate(["ceil", ["lit", 2.1]], ctx)).toBe(3);

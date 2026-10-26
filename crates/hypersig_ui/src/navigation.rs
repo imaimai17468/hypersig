@@ -303,9 +303,12 @@ impl Default for PaginationText {
 /// # let _ = pages;
 /// ```
 ///
+/// A `count` of 0, as for a search that found nothing, shows one page.
+///
 /// # Panics
 ///
-/// Panics if `current` is 0 or above `count`.
+/// Panics if `current` is 0 or above `count`, where a `count` of 0 counts
+/// as 1.
 #[must_use]
 pub fn pagination<S>(
     current: u32,
@@ -313,6 +316,7 @@ pub fn pagination<S>(
     link: impl Fn(u32) -> Link<S>,
     text: &PaginationText,
 ) -> El<S> {
+    let count = count.max(1);
     assert!(
         current >= 1 && current <= count,
         "the current page is between 1 and the number of pages, not {current} of {count}"
@@ -459,6 +463,11 @@ mod tests {
         assert_eq!(shown(5, 10), [1, 0, 4, 5, 6, 0, 10]);
         assert_eq!(shown(7, 10), [1, 0, 6, 7, 8, 9, 10]);
         assert_eq!(shown(10, 10), [1, 0, 9, 10]);
+    }
+
+    #[test]
+    fn no_pages_show_as_one() {
+        assert_eq!(shown(1, 0), [1]);
     }
 
     #[test]

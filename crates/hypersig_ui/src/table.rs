@@ -721,7 +721,8 @@ impl<S: 'static, T: 'static> From<DataTable<S, T>> for Node<S> {
 ///         }
 ///     }
 ///     let total = i32::try_from(rows.len()).unwrap_or(i32::MAX);
-///     let start = usize::try_from(state.page * 10).unwrap_or(0);
+///     // `page` comes from the browser, so a large one must not overflow.
+///     let start = usize::try_from(state.page).unwrap_or(0).saturating_mul(10);
 ///     (rows.into_iter().skip(start).take(10).collect(), total)
 /// }
 ///

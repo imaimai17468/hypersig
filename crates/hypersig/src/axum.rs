@@ -14,6 +14,7 @@ use std::task::{Context, Poll};
 
 use axum::Router;
 use axum::body::{Body, Bytes};
+use axum::extract::rejection::RawPathParamsRejection;
 use axum::extract::{FromRequestParts, MatchedPath, Query, RawPathParams, Request, State};
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
@@ -202,13 +203,18 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         let under_base = base.join(path);
         let route_handler = move |State(state): State<St>,
                                   matched: MatchedPath,
-                                  params: RawPathParams,
+                                  params: Result<RawPathParams, RawPathParamsRejection>,
                                   request: Parts| {
             let handler = handler.clone();
             let unserved = unserved.clone();
             let nested = matched.as_str() != path && matched.as_str() != under_base;
-            let segments: Vec<&str> = params.iter().map(|(_, value)| value).collect();
-            let params = P::from_segments(&segments);
+            // A segment that does not decode to UTF-8 names no page, so the
+            // router's page for a 404 answers it, as it answers a segment
+            // that does not parse.
+            let params = params.ok().and_then(|params| {
+                let segments: Vec<&str> = params.iter().map(|(_, value)| value).collect();
+                P::from_segments(&segments)
+            });
             let search = Q::unit().map_or_else(
                 || crate::query::parse_query::<Q>(request.uri.query().unwrap_or_default()),
                 Ok,

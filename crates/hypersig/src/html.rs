@@ -692,8 +692,8 @@ pub struct El<S> {
     file_input: Option<&'static str>,
     effects: Vec<Stmt<S>>,
     watches: Vec<(Value, Stmt<S>)>,
-    interval: Option<(u128, Stmt<S>)>,
-    timeout: Option<(u128, Stmt<S>)>,
+    interval: Option<(u32, Stmt<S>)>,
+    timeout: Option<(u32, Stmt<S>)>,
     on: BTreeMap<Event, Stmt<S>>,
     custom: Vec<(&'static str, u8, Stmt<S>)>,
     keys: Vec<(Shortcut, Stmt<S>)>,
@@ -1421,6 +1421,20 @@ pub enum Candidate {
     Density(f64),
 }
 
+/// `duration` in whole milliseconds for a browser timer, which `method` sets.
+///
+/// A browser runs a timer longer than 2^31 - 1 milliseconds at once, as if
+/// it had no delay.
+fn timer_millis(duration: Duration, method: &str) -> u32 {
+    const LONGEST: u32 = (1 << 31) - 1;
+    u32::try_from(duration.as_millis())
+        .ok()
+        .filter(|millis| *millis <= LONGEST)
+        .unwrap_or_else(|| {
+            panic!("the time `{method}` waits is at most 2^31 - 1 milliseconds, about 24.8 days")
+        })
+}
+
 /// The tags the HTML standard defines as void elements, which take no
 /// children or closing tag.
 const VOID: [&str; 13] = [
@@ -1499,9 +1513,15 @@ impl<S> El<S> {
     /// `name` is a constant of [`attr`] or a name built with
     /// [`attr!`](crate::attr!), neither of which can name an attribute whose
     /// value runs a script.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the element already has the attribute `name`, from this
+    /// method or from one that sets it, such as [`El::role`]. The browser
+    /// reads the first of two and ignores the second.
     #[must_use]
     pub fn attr(mut self, name: Attr, value: impl Into<String>) -> Self {
-        self.attrs.push((name.0, value.into()));
+        self.set_attr(name.0, value.into());
         self
     }
 
@@ -1515,7 +1535,7 @@ impl<S> El<S> {
     /// ```
     #[must_use]
     pub fn role(mut self, role: Role) -> Self {
-        self.attrs.push(("role", role.name().to_owned()));
+        self.set_attr("role", role.name().to_owned());
         self
     }
 
@@ -1671,13 +1691,31 @@ impl<S> El<S> {
                 }
             })
             .collect();
-        self.attrs.push(("srcset", set.join(", ")));
+        self.set_attr("srcset", set.join(", "));
         self
+    }
+
+    /// Adds the static attribute `name`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the element already has `name`, because the browser reads
+    /// only the first of two.
+    fn set_attr(&mut self, name: &'static str, value: String) {
+        assert!(
+            !self
+                .attrs
+                .iter()
+                .any(|(set, _)| set.eq_ignore_ascii_case(name)),
+            "the attribute `{name}` is set twice on one `<{}>`, and the browser keeps only the first",
+            self.tag
+        );
+        self.attrs.push((name, value));
     }
 
     fn url_attr(mut self, name: &'static str, url: impl IntoHref<S>) -> Self {
         match url.into_parts() {
-            Ok(url) => self.attrs.push((name, url)),
+            Ok(url) => self.set_attr(name, url),
             Err(expr) => {
                 assert!(
                     !["iframe", "embed", "frame"]
@@ -1705,8 +1743,17 @@ impl<S> El<S> {
     /// `for`, an `aria-*` reference, or a fragment's patch to that id then
     /// reaches the first of them, so a key from stored data is made unique by
     /// the program, such as the record's own key.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the element already has an id from an earlier call.
     #[must_use]
     pub fn id(mut self, id: Id) -> Self {
+        assert!(
+            self.id.is_none(),
+            "`El::id` is called twice on one `<{}>`, which holds one id",
+            self.tag
+        );
         self.id = Some(id.0);
         self
     }
@@ -1714,14 +1761,14 @@ impl<S> El<S> {
     /// Points a `<label>` or an `<output>` at the control it names, through `for`.
     #[must_use]
     pub fn label_for(mut self, control: &Id) -> Self {
-        self.attrs.push(("for", control.as_str().to_owned()));
+        self.set_attr("for", control.as_str().to_owned());
         self
     }
 
     /// Names the elements whose text labels this one, through `aria-labelledby`.
     #[must_use]
     pub fn aria_labelledby(mut self, labels: &[&Id]) -> Self {
-        self.attrs.push(("aria-labelledby", id::list(labels)));
+        self.set_attr("aria-labelledby", id::list(labels));
         self
     }
 
@@ -1736,28 +1783,28 @@ impl<S> El<S> {
     /// Names the elements this one shows, hides, or changes, through `aria-controls`.
     #[must_use]
     pub fn aria_controls(mut self, controlled: &[&Id]) -> Self {
-        self.attrs.push(("aria-controls", id::list(controlled)));
+        self.set_attr("aria-controls", id::list(controlled));
         self
     }
 
     /// Names elements outside this one that belong to it, through `aria-owns`.
     #[must_use]
     pub fn aria_owns(mut self, owned: &[&Id]) -> Self {
-        self.attrs.push(("aria-owns", id::list(owned)));
+        self.set_attr("aria-owns", id::list(owned));
         self
     }
 
     /// Names the elements that hold more detail on this one, through `aria-details`.
     #[must_use]
     pub fn aria_details(mut self, details: &[&Id]) -> Self {
-        self.attrs.push(("aria-details", id::list(details)));
+        self.set_attr("aria-details", id::list(details));
         self
     }
 
     /// Names the elements a reader goes to next, through `aria-flowto`.
     #[must_use]
     pub fn aria_flowto(mut self, next: &[&Id]) -> Self {
-        self.attrs.push(("aria-flowto", id::list(next)));
+        self.set_attr("aria-flowto", id::list(next));
         self
     }
 
@@ -1766,7 +1813,7 @@ impl<S> El<S> {
     /// A screen reader reads them while `aria-invalid` is `true`.
     #[must_use]
     pub fn aria_errormessage(mut self, messages: &[&Id]) -> Self {
-        self.attrs.push(("aria-errormessage", id::list(messages)));
+        self.set_attr("aria-errormessage", id::list(messages));
         self
     }
 
@@ -1783,7 +1830,7 @@ impl<S> El<S> {
     /// Names the element a `command` of this button acts on, through `commandfor`.
     #[must_use]
     pub fn command_for(mut self, target: &Id) -> Self {
-        self.attrs.push(("commandfor", target.as_str().to_owned()));
+        self.set_attr("commandfor", target.as_str().to_owned());
         self
     }
 
@@ -1798,28 +1845,28 @@ impl<S> El<S> {
     /// Names the `<datalist>` whose options this `<input>` suggests, through `list`.
     #[must_use]
     pub fn datalist(mut self, options: &Id) -> Self {
-        self.attrs.push(("list", options.as_str().to_owned()));
+        self.set_attr("list", options.as_str().to_owned());
         self
     }
 
     /// Names the `<form>` this control belongs to from outside it, through `form`.
     #[must_use]
     pub fn form_owner(mut self, form: &Id) -> Self {
-        self.attrs.push(("form", form.as_str().to_owned()));
+        self.set_attr("form", form.as_str().to_owned());
         self
     }
 
     /// Names the header cells of this table cell, through `headers`.
     #[must_use]
     pub fn headers(mut self, cells: &[&Id]) -> Self {
-        self.attrs.push(("headers", id::list(cells)));
+        self.set_attr("headers", id::list(cells));
         self
     }
 
     /// Names the elements whose microdata properties this item adds, through `itemref`.
     #[must_use]
     pub fn itemref(mut self, elements: &[&Id]) -> Self {
-        self.attrs.push(("itemref", id::list(elements)));
+        self.set_attr("itemref", id::list(elements));
         self
     }
 
@@ -1953,10 +2000,24 @@ impl<S> El<S> {
     }
 
     /// Attaches `node_ref`, so its statements act on this element.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the element already has a node ref from this method or
+    /// [`El::foreign`].
     #[must_use]
     pub fn node_ref(mut self, node_ref: NodeRef<S>) -> Self {
-        self.node_ref = Some(node_ref.name());
+        self.set_node_ref(node_ref);
         self
+    }
+
+    fn set_node_ref(&mut self, node_ref: NodeRef<S>) {
+        assert!(
+            self.node_ref.is_none(),
+            "a `<{}>` gets a node ref twice, from `El::node_ref` or `El::foreign`, and holds one",
+            self.tag
+        );
+        self.node_ref = Some(node_ref.name());
     }
 
     /// Leaves this element's attributes and children to a script, and names it `node_ref`.
@@ -1991,9 +2052,13 @@ impl<S> El<S> {
     /// assert!(map.render().contains(&format!(r#"data-hs-foreign="{}::MAP""#, module_path!())));
     /// # }
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the element already has a node ref.
     #[must_use]
     pub fn foreign(mut self, node_ref: NodeRef<S>) -> Self {
-        self.node_ref = Some(node_ref.name());
+        self.set_node_ref(node_ref);
         self.foreign = true;
         self
     }
@@ -2026,15 +2091,34 @@ impl<S> El<S> {
     }
 
     /// Shows the element only while `when` is true.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the element already has a condition from an earlier call.
+    /// Join two conditions with `and` into one.
     #[must_use]
     pub fn show(mut self, when: impl IntoExpr<S, bool>) -> Self {
+        assert!(
+            self.show.is_none(),
+            "`El::show` is called twice on one `<{}>`; join the conditions with `and`",
+            self.tag
+        );
         self.show = Some(when.into_expr());
         self
     }
 
     /// Replaces the element's text with `text`, kept up to date as signals change.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the element already has its text bound by an earlier call.
     #[must_use]
     pub fn bind_text(mut self, text: impl IntoExpr<S, String>) -> Self {
+        assert!(
+            self.text.is_none(),
+            "`El::bind_text` is called twice on one `<{}>`, whose text is one expression",
+            self.tag
+        );
         self.text = Some(text.into_expr());
         self
     }
@@ -2043,8 +2127,18 @@ impl<S> El<S> {
     ///
     /// Use it for a checkbox whose state is derived, such as "all done".
     /// A checkbox that edits a signal uses [`El::bind`] instead.
+    ///
+    /// # Panics
+    ///
+    /// Panics on an element other than `<input>`, whose `checked` the
+    /// runtime cannot write, or if `checked` is already bound.
     #[must_use]
     pub fn bind_checked(mut self, when: impl IntoExpr<S, bool>) -> Self {
+        self.check_control("bind_checked", &["input"]);
+        assert!(
+            self.checked.is_none(),
+            "`El::bind_checked` is called twice on one `<input>`"
+        );
         self.checked = Some(when.into_expr());
         self
     }
@@ -2052,10 +2146,53 @@ impl<S> El<S> {
     /// Binds a form control to a signal in both directions.
     ///
     /// The signal can be a page signal or a field of a list item.
+    ///
+    /// # Panics
+    ///
+    /// Panics on an element other than `<input>`, `<textarea>`, and
+    /// `<select>`, which the runtime cannot bind, or if the element is
+    /// already bound by this method, [`El::bind_radio`], or
+    /// [`El::bind_select`].
     #[must_use]
     pub fn bind<T: Bindable, R: Writable>(mut self, signal: Sig<S, T, R>) -> Self {
-        self.bind = Some(json!([signal.raw_path().place_json(), T::KIND]));
+        self.set_bind(
+            "bind",
+            &["input", "textarea", "select"],
+            json!([signal.raw_path().place_json(), T::KIND]),
+        );
         self
+    }
+
+    /// Binds the control to `bind`, which `method` writes.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the element is none of `controls`, or is already bound.
+    fn set_bind(&mut self, method: &str, controls: &[&str], bind: Value) {
+        self.check_control(method, controls);
+        assert!(
+            self.bind.is_none(),
+            "a `<{}>` is bound twice, by `El::{method}` and an earlier `bind` method, and binds one signal",
+            self.tag
+        );
+        self.bind = Some(bind);
+    }
+
+    /// Panics unless the element is one of `controls`, the elements the
+    /// runtime binds for `method`.
+    fn check_control(&self, method: &str, controls: &[&str]) {
+        assert!(
+            controls
+                .iter()
+                .any(|tag| self.tag.eq_ignore_ascii_case(tag)),
+            "`El::{method}` binds {}, not a `<{}>`, which the runtime cannot bind",
+            controls
+                .iter()
+                .map(|tag| format!("`<{tag}>`"))
+                .collect::<Vec<_>>()
+                .join(" or "),
+            self.tag
+        );
     }
 
     /// Makes this radio button set `signal` to `value` when checked, and
@@ -2065,7 +2202,8 @@ impl<S> El<S> {
     ///
     /// Panics if `value` fails to serialize to JSON, which only happens for a
     /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
-    /// which the browser would round.
+    /// which the browser would round. Panics on an element other than
+    /// `<input>`, or one already bound or given a `type`.
     #[must_use]
     pub fn bind_radio<T: Serialize + PartialEq, R: Writable>(
         mut self,
@@ -2073,8 +2211,12 @@ impl<S> El<S> {
         value: &T,
     ) -> Self {
         let value = exact::to_value(value, "a radio value does not serialize to JSON");
-        self.attrs.push(("type", "radio".to_owned()));
-        self.bind = Some(json!([signal.raw_path().place_json(), "radio", value]));
+        self.set_attr("type", "radio".to_owned());
+        self.set_bind(
+            "bind_radio",
+            &["input"],
+            json!([signal.raw_path().place_json(), "radio", value]),
+        );
         self
     }
 
@@ -2087,7 +2229,8 @@ impl<S> El<S> {
     ///
     /// Panics if a value fails to serialize to JSON, which only happens for a
     /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
-    /// which the browser would round.
+    /// which the browser would round. Panics on an element other than
+    /// `<select>`, or one already bound.
     #[must_use]
     pub fn bind_select<T: Serialize + PartialEq, R: Writable, L: Into<String>>(
         mut self,
@@ -2100,7 +2243,11 @@ impl<S> El<S> {
             self.children
                 .push(option().attr(attr::VALUE, value).text(label).into());
         }
-        self.bind = Some(json!([signal.raw_path().place_json(), "json"]));
+        self.set_bind(
+            "bind_select",
+            &["select"],
+            json!([signal.raw_path().place_json(), "json"]),
+        );
         self
     }
 
@@ -2120,11 +2267,16 @@ impl<S> El<S> {
     ///
     /// Use it for search-as-you-type, so a server action runs once per pause
     /// rather than once per keystroke.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `quiet` is longer than 2^31 - 1 milliseconds, about 24.8
+    /// days, which the browser's timer cannot wait.
     #[must_use]
     pub fn on_debounced(self, event: Event, quiet: Duration, stmt: impl IntoStmt<S>) -> Self {
         let wrapped = Stmt::new(json!([
             "debounce",
-            quiet.as_millis(),
+            timer_millis(quiet, "on_debounced"),
             stmt.into_stmt().into_json()
         ]));
         self.on(event, wrapped)
@@ -2376,9 +2528,20 @@ impl<S> El<S> {
     /// Runs `stmt` every `period` while the element is in the document.
     ///
     /// A second call replaces the first.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `period` is under 1 millisecond, which would run `stmt` as
+    /// often as the browser lets a timer run, or longer than 2^31 - 1
+    /// milliseconds, about 24.8 days, which the browser's timer cannot wait.
     #[must_use]
     pub fn on_interval(mut self, period: Duration, stmt: impl IntoStmt<S>) -> Self {
-        self.interval = Some((period.as_millis(), stmt.into_stmt()));
+        let millis = timer_millis(period, "on_interval");
+        assert!(
+            millis >= 1,
+            "the period of `on_interval` is at least 1 millisecond"
+        );
+        self.interval = Some((millis, stmt.into_stmt()));
         self
     }
 
@@ -2415,9 +2578,14 @@ impl<S> El<S> {
     /// ));
     /// assert!(list.render().contains("data-hs-on-timeout"));
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `delay` is longer than 2^31 - 1 milliseconds, about 24.8
+    /// days, which the browser's timer cannot wait.
     #[must_use]
     pub fn on_timeout(mut self, delay: Duration, stmt: impl IntoStmt<S>) -> Self {
-        self.timeout = Some((delay.as_millis(), stmt.into_stmt()));
+        self.timeout = Some((timer_millis(delay, "on_timeout"), stmt.into_stmt()));
         self
     }
 
@@ -2724,7 +2892,6 @@ impl<S> El<S> {
             write_attr(out, "data-hs-on-signal", &json_text(&watches));
         }
         if let Some((period, stmt)) = &self.interval {
-            let period = u64::try_from(*period).unwrap_or(u64::MAX);
             write_attr(
                 out,
                 "data-hs-on-interval",
@@ -2732,7 +2899,6 @@ impl<S> El<S> {
             );
         }
         if let Some((delay, stmt)) = &self.timeout {
-            let delay = u64::try_from(*delay).unwrap_or(u64::MAX);
             write_attr(
                 out,
                 "data-hs-on-timeout",
@@ -2894,6 +3060,8 @@ mod tests {
     use super::{Attr, Candidate, Class, attr, button, div, el, img, input, picture, source, span};
     use crate::_private::sig;
     use crate::style::Token;
+    use std::time::Duration;
+
     use crate::{SafeUrl, Sig, Stmt};
 
     struct Page;
@@ -2904,6 +3072,87 @@ mod tests {
 
     fn site() -> Sig<Page, SafeUrl> {
         sig("site")
+    }
+
+    #[test]
+    #[should_panic(expected = "the attribute `title` is set twice on one `<div>`")]
+    fn an_attribute_set_twice_panics() {
+        let _ = div::<Page>().attr(attr::TITLE, "a").attr(attr::TITLE, "b");
+    }
+
+    #[test]
+    #[should_panic(expected = "`El::show` is called twice on one `<div>`")]
+    fn a_second_show_panics() {
+        let _ = div::<Page>().show(true).show(false);
+    }
+
+    #[test]
+    #[should_panic(expected = "`El::bind_text` is called twice on one `<p>`")]
+    fn a_second_text_binding_panics() {
+        let _ = super::p::<Page>().bind_text(name()).bind_text(name());
+    }
+
+    #[test]
+    #[should_panic(expected = "`El::id` is called twice on one `<div>`")]
+    fn a_second_id_panics() {
+        let _ = div::<Page>()
+            .id(super::Id::new("a"))
+            .id(super::Id::new("b"));
+    }
+
+    #[test]
+    #[should_panic(expected = "a `<input>` is bound twice, by `El::bind`")]
+    fn a_second_binding_panics() {
+        let _ = input::<Page>().bind(name()).bind(name());
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "`El::bind` binds `<input>` or `<textarea>` or `<select>`, not a `<div>`"
+    )]
+    fn a_binding_on_an_element_the_runtime_cannot_bind_panics() {
+        let _ = div::<Page>().bind(name());
+    }
+
+    #[test]
+    fn a_control_built_by_its_tag_binds() {
+        let html = el::<Page>(crate::tag!("TEXTAREA")).bind(name()).render();
+        assert!(html.contains("data-hs-bind"), "{html}");
+    }
+
+    #[test]
+    fn a_timer_waits_up_to_2_to_the_31_milliseconds() {
+        let longest = Duration::from_millis((1 << 31) - 1);
+        let html = div::<Page>()
+            .on_timeout(longest, Stmt::new(serde_json::json!(["seq", []])))
+            .render();
+        assert!(html.contains("2147483647"), "{html}");
+    }
+
+    #[test]
+    #[should_panic(expected = "the time `on_timeout` waits is at most 2^31 - 1 milliseconds")]
+    fn a_timeout_the_browser_would_run_at_once_is_refused() {
+        let _ = div::<Page>().on_timeout(
+            Duration::from_millis(1 << 31),
+            Stmt::new(serde_json::json!(["seq", []])),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "the time `on_debounced` waits is at most 2^31 - 1 milliseconds")]
+    fn a_debounce_past_any_timer_is_refused() {
+        let _ = div::<Page>().on_debounced(
+            super::Event::Input,
+            Duration::MAX,
+            Stmt::new(serde_json::json!(["seq", []])),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "the period of `on_interval` is at least 1 millisecond")]
+    fn an_interval_of_no_time_is_refused() {
+        let _ =
+            div::<Page>().on_interval(Duration::ZERO, Stmt::new(serde_json::json!(["seq", []])));
     }
 
     #[test]

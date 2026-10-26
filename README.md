@@ -144,7 +144,7 @@ Without the server, the browser can run only the operations and statements hyper
 
 - An application whose main work runs inside a JavaScript library, such as a drawing tool or a spreadsheet
 - An application that works without a connection to the server
-- A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so only the runtime sends a form, and a browser that does not run it shows the first HTML and sends nothing.
+- A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so a form calls an action only through the runtime, which keeps the browser from submitting any form itself. A browser that does not run the runtime shows the first HTML, and submitting a form there loads the page's own URL again with the form's named fields in the query, which runs no action.
 
 ## Development
 

@@ -53,19 +53,31 @@ impl Id {
     /// This id followed by `-` and `key`, for one of several elements, such
     /// as a row of a list.
     ///
-    /// ASCII whitespace in `key` becomes `_`, because an id holds none.
+    /// An id holds no whitespace, so each ASCII whitespace character of
+    /// `key` is written as `%` and its two hex digits, as in a URL, and `%`
+    /// itself as `%25`. Two different keys therefore give two different ids.
     ///
     /// ```
     /// use hypersig::html::Id;
     ///
     /// const ROW: Id = Id::new("row");
     /// assert_eq!(ROW.with_key(7).as_str(), "row-7");
-    /// assert_eq!(ROW.with_key("a b").as_str(), "row-a_b");
+    /// assert_eq!(ROW.with_key("a b").as_str(), "row-a%20b");
+    /// assert_eq!(ROW.with_key("a_b").as_str(), "row-a_b");
     /// ```
     #[must_use]
     pub fn with_key(&self, key: impl fmt::Display) -> Self {
         let mut id = format!("{}-", self.0);
-        push_text(&mut id, key);
+        let start = id.len();
+        let _ = write!(id, "{key}");
+        let key = id.split_off(start);
+        for c in key.chars() {
+            if c == '%' || c.is_ascii_whitespace() {
+                let _ = write!(id, "%{:02X}", u32::from(c));
+            } else {
+                id.push(c);
+            }
+        }
         Self(Cow::Owned(id))
     }
 
