@@ -31,3 +31,14 @@ it("binds an input inside a list item in both directions", async () => {
   await tick();
   expect(inputs().map((input) => input.value)).toEqual(["set", "typed"]);
 });
+
+it("leaves a JSON-bound signal as it was when the control holds text that is not JSON", () => {
+  const runtime = mount(`<input id="i" data-hs-bind='["choice","json"]'>`, { choice: 1 });
+  const input = $<HTMLInputElement>("#i");
+  input.value = "two";
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  expect(runtime.store.get("choice")).toBe(1);
+  input.value = "2";
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  expect(runtime.store.get("choice")).toBe(2);
+});

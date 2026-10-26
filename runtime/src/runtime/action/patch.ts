@@ -16,20 +16,27 @@ export class Patches {
     this.#rt = rt;
   }
 
-  /** Applies one server event. */
+  /**
+   * Applies one server event. An event whose data does not parse, or whose
+   * patch fails, is reported and skipped, so the events after it still apply.
+   */
   apply(event: ServerEvent): void {
+    if (this.#rt.navigation.leaving) return;
+    try {
+      this.#apply(event);
+    } catch (error) {
+      console.error(`hypersig: the server event "${event.event}" failed:`, error);
+    }
+  }
+
+  #apply(event: ServerEvent): void {
     const rt = this.#rt;
-    if (rt.navigation.leaving) return;
     switch (event.event) {
       case "hs-signals":
         rt.store.merge(JSON.parse(event.data) as Values);
         return;
       case "hs-list":
-        try {
-          run(JSON.parse(event.data), { store: rt.store, scope: [] }, rt);
-        } catch (error) {
-          console.error("hypersig:", error);
-        }
+        run(JSON.parse(event.data), { store: rt.store, scope: [] }, rt);
         return;
       case "hs-element":
         this.#element(JSON.parse(event.data) as { html: string; css?: [string, string][] });

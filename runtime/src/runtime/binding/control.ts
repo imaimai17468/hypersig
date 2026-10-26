@@ -84,12 +84,27 @@ export class Controls {
         if (type === "input" || element instanceof HTMLSelectElement) set(raw === "" ? null : raw);
         return;
       case "json":
-        if (type === "change") set(JSON.parse(raw));
+        if (type === "change") readJson(raw, set);
         return;
       default:
         if (type === "input" || element instanceof HTMLSelectElement) set(raw);
     }
   }
+}
+
+/**
+ * Sets the value `raw` holds as JSON, where it holds one. The server writes
+ * each option of a bound `<select>` as JSON, so other text comes from a
+ * control whose value the visitor typed, and leaves the signal as it was.
+ */
+function readJson(raw: string, set: (value: unknown) => void): void {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  set(value);
 }
 
 /** Sets the number `raw` holds, read as `kind` says, where it holds one. */

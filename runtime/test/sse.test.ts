@@ -34,3 +34,21 @@ it("drops an event the body ends inside, before its blank line", async () => {
   );
   expect(events).toEqual([{ event: "hs-signals", data: '{"a":1}' }]);
 });
+
+it("cancels the body when a handler throws, so the connection closes", async () => {
+  let cancelled = false;
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("data: 1\n\n"));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  await expect(
+    readEventStream(body, () => {
+      throw new Error("handler failed");
+    }),
+  ).rejects.toThrow("handler failed");
+  expect(cancelled).toBe(true);
+});

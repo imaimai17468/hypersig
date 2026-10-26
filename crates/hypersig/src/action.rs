@@ -508,6 +508,11 @@ impl<S> fmt::Debug for Call<S> {
 /// [`Action`] cannot, because sending a `POST` again could repeat a change
 /// the server already made.
 ///
+/// A stream that an element's statement opened closes once the element
+/// leaves the page, and the runtime applies none of its later events. A
+/// patch that replaces the element then leaves one stream open, the one the
+/// new element's statement opens.
+///
 /// ```
 /// use hypersig::html::div;
 /// use hypersig::{Signals, StreamAction};
@@ -644,8 +649,9 @@ impl<S> StreamCall<S> {
     /// Opens the stream again when its connection fails, breaks off, or answers 5xx.
     ///
     /// The first attempt waits 1 second, and each later one twice as long,
-    /// up to 30 seconds. A connection that the server answered with a 2xx
-    /// status starts the wait over. While the stream is failing, the
+    /// up to 30 seconds. A stream that delivers an event starts the wait
+    /// over, so a server that answers 2xx and closes before sending anything
+    /// is asked again less often each time. While the stream is failing, the
     /// [`error`](StreamCall::error) signal holds the last failure.
     ///
     /// The server sends the event `hs-end` last once the handler's stream

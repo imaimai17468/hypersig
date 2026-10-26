@@ -26,9 +26,9 @@ function pendingFetch() {
   return { fetch, answers };
 }
 
-/** The abort signal a request was sent with, or null for none. */
-function signalOf(init: RequestInit): AbortSignal | null {
-  return init.signal ?? null;
+/** Whether the request sent with `init` was aborted. */
+function aborted(init: RequestInit): boolean {
+  return init.signal?.aborted === true;
 }
 
 /** The values the signal at `path` takes, one for each render that changes it. */
@@ -111,7 +111,7 @@ it("aborts no call sent without latest, and keeps the indicator on until every c
   button.click();
   button.click();
   await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-  expect(fetch.mock.calls.map(([, init]) => signalOf(init))).toEqual([null, null]);
+  expect(fetch.mock.calls.map(([, init]) => aborted(init))).toEqual([false, false]);
   answers[0]!(signals("first"));
   await vi.waitFor(() => expect(runtime.store.get("results")).toBe("first"));
   expect(runtime.store.get("busy")).toBe(true);
@@ -137,4 +137,52 @@ it("empties the error signal when a call is sent, so the same failure twice chan
   await vi.waitFor(() => expect(seen).toEqual(["Name taken"]));
   button.click();
   await vi.waitFor(() => expect(seen).toEqual(["Name taken", "", "Name taken"]));
+});
+
+/** A fetch whose one answer is a stream the test writes events to. */
+function openStream() {
+  let push!: (text: string) => void;
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      push = (text) => controller.enqueue(new TextEncoder().encode(text));
+    },
+  });
+  const fetch = vi.fn<Fetch>(() => Promise.resolve(new Response(body, { status: 200 })));
+  vi.stubGlobal("fetch", fetch);
+  return { fetch, push: (text: string) => push(text) };
+}
+
+const feed = `<p data-hs-on-load='["call","GET","/feed",null,null,null]'></p>`;
+
+it("ends a GET stream whose element left the page, and applies none of its later events", async () => {
+  const { fetch, push } = openStream();
+  const runtime = mount(feed, { results: "" });
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+  push(signals("one"));
+  await vi.waitFor(() => expect(runtime.store.get("results")).toBe("one"));
+  $("p").remove();
+  push(signals("two"));
+  await vi.waitFor(() => expect(aborted(fetch.mock.calls[0]![1])).toBe(true));
+  expect(runtime.store.get("results")).toBe("one");
+});
+
+it("ends a quiet GET stream once a patch has taken its element out of the page", async () => {
+  const { fetch } = openStream();
+  const runtime = mount(`<div id="box">${feed}</div>`, { results: "" });
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+  runtime.apply({ event: "hs-element", data: JSON.stringify({ html: `<div id="box"></div>` }) });
+  await vi.waitFor(() => expect(aborted(fetch.mock.calls[0]![1])).toBe(true));
+});
+
+it("keeps applying the answer of a POST whose element left the page", async () => {
+  const { fetch, answers } = pendingFetch();
+  const runtime = mount(
+    `<button data-hs-on-click='["call","POST","/save",null,null,null]'>save</button>`,
+    { results: "" },
+  );
+  $("button").click();
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+  $("button").remove();
+  answers[0]!(signals("saved"));
+  await vi.waitFor(() => expect(runtime.store.get("results")).toBe("saved"));
 });

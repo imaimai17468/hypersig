@@ -6,7 +6,7 @@ import { attr, own, state } from "../element.ts";
 import type { Row } from "../list/row.ts";
 import { locate, planOf } from "../plan.ts";
 import { NAMES } from "./ref.ts";
-import { parse, REACTIVE, readSpec, type Spec, specOf } from "../spec.ts";
+import { REACTIVE, readSpec, type Spec, specOf } from "../spec.ts";
 import { CONDITIONS, writable, write, writes } from "../write.ts";
 
 /** Registers the `data-hs-*` attributes of elements as bindings, which the render runs. */
@@ -27,9 +27,9 @@ export class Attributes {
         : new IntersectionObserver((entries, observer) => {
             for (const { target, isIntersecting } of entries) {
               // An element leaves the viewport as it leaves the document, so it is reported once more then.
-              if (!target.isConnected) observer.unobserve(target);
-              else if (isIntersecting)
-                rt.bindings.statements.runAttribute(attr(target, "hsOnVisible")!, target);
+              const stmt = attr(target, "hsOnVisible");
+              if (!target.isConnected || stmt === undefined) observer.unobserve(target);
+              else if (isIntersecting) rt.bindings.statements.runAttribute(stmt, target);
             }
           });
   }
@@ -83,23 +83,29 @@ export class Attributes {
     const effects = this.#effectsFor(element, scope);
     bound.effects = effects;
     this.#rt.render.queue(effects);
-    if (bound.started) return;
+    if (bound.started) {
+      this.#follow(element);
+      return;
+    }
     bound.started = true;
-    this.#start(element);
-  }
-
-  /** Starts the statements of `element` that run on their own: on load, on a timer, on becoming visible, and on a custom event. */
-  #start(element: Element): void {
-    const { statements, timers, events } = this.#rt.bindings;
+    const { statements, timers } = this.#rt.bindings;
     const load = attr(element, "hsOnLoad");
     if (load !== undefined) statements.runAttribute(load, element);
-    const interval = parse(attr(element, "hsOnInterval"));
-    if (Array.isArray(interval)) timers.interval(element, interval[0] as number, interval[1]);
-    const timeout = parse(attr(element, "hsOnTimeout"));
-    if (Array.isArray(timeout)) timers.timeout(element, timeout[0] as number, timeout[1]);
+    timers.timeout(element);
+    this.#follow(element);
+  }
+
+  /**
+   * Starts the statements of `element` that run on their own and outlive a
+   * patch of the element: on an interval, on becoming visible, and on a
+   * custom event. A patch that keeps the element registers it again, and
+   * each of them then runs from the attribute the patch left.
+   */
+  #follow(element: Element): void {
+    const { timers, events } = this.#rt.bindings;
+    timers.interval(element);
     if (attr(element, "hsOnVisible") !== undefined) this.#visibility?.observe(element);
-    const custom = parse(attr(element, "hsOnCustom"));
-    if (Array.isArray(custom)) events.custom(element, custom as [string, number, unknown][]);
+    events.custom(element);
   }
 
   #effectsFor(element: Element, scope: readonly Slot[]): Effect[] {

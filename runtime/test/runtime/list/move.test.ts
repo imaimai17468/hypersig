@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { $$, tick } from "../../dom.ts";
 import { mount, spyReads } from "../mount.ts";
 
@@ -108,4 +108,77 @@ it("reaches the items of every list over one signal through a write at an item's
   await tick();
   expect(labels("a")).toEqual(["x", "r3"]);
   expect(labels("b")).toEqual(["x", "r3"]);
+});
+
+const insertBefore = Node.prototype.insertBefore;
+
+/**
+ * Makes `insertBefore` blur a focused element inside the node it moves. A
+ * browser takes a moved element out of the document first, which blurs it,
+ * where the test DOM keeps the focus.
+ */
+function blurOnMove() {
+  return vi.spyOn(Node.prototype, "insertBefore").mockImplementation(function <T extends Node>(
+    this: Node,
+    node: T,
+    child: Node | null,
+  ): T {
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && node.contains(focused)) focused.blur();
+    return insertBefore.call(this, node, child) as T;
+  });
+}
+
+const reorderable = () =>
+  mount(
+    `<ul id="l"><template data-hs-each='["rows",0]'><li data-hs-key='["item",0,"id"]'><input></li></template></ul>`,
+    { rows: [1, 2, 3].map((id) => ({ id })) },
+  );
+
+it("focuses a field again with its caret where a reorder moved its item with insertBefore", async () => {
+  const spy = blurOnMove();
+  try {
+    const runtime = reorderable();
+    await tick();
+    // The reorder keeps the item with id 1 in place and moves the other two around it.
+    const field = items()[2]!.querySelector("input")!;
+    field.value = "hello";
+    field.focus();
+    field.setSelectionRange(2, 4);
+    runtime.store.set(
+      "rows",
+      [3, 2, 1].map((id) => ({ id })),
+    );
+    await tick();
+    expect(items()[0]!.querySelector("input")).toBe(field);
+    expect(document.activeElement).toBe(field);
+    expect([field.selectionStart, field.selectionEnd]).toEqual([2, 4]);
+  } finally {
+    spy.mockRestore();
+  }
+});
+
+it("moves a reordered item with moveBefore where the browser has it", async () => {
+  const moved: Node[] = [];
+  Object.defineProperty(Element.prototype, "moveBefore", {
+    configurable: true,
+    value(this: Element, node: Node, child: Node | null): void {
+      moved.push(node);
+      this.insertBefore(node, child);
+    },
+  });
+  try {
+    const runtime = reorderable();
+    await tick();
+    const first = items()[0]!;
+    runtime.store.set(
+      "rows",
+      [3, 2, 1].map((id) => ({ id })),
+    );
+    await tick();
+    expect(items().at(-1)).toBe(first);
+    expect(moved.length).toBeGreaterThan(0);
+  } finally {
+    Reflect.deleteProperty(Element.prototype, "moveBefore");
+  }
 });
