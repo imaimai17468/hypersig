@@ -83,6 +83,21 @@ it("keeps a foreign element's attributes and children, and finds it by its name"
   expect(document.querySelector("[data-hs-foreign]")).toBe(map);
 });
 
+it("keeps a foreign element's id, so a script finds the same element by it after a patch", () => {
+  document.body.innerHTML =
+    '<div id="root"><p>1</p><div data-hs-foreign="office::MAP" data-hs-ref="office::MAP" id="map"></div></div>';
+  const map = document.querySelector("#map")!;
+  map.classList.add("leaflet-container");
+  morph(
+    document.querySelector("#root")!,
+    element(
+      '<div id="root"><p>0</p><p>1</p><div data-hs-foreign="office::MAP" data-hs-ref="office::MAP" id="map"></div></div>',
+    ),
+  );
+  expect(document.querySelector("#map")).toBe(map);
+  expect(map.classList.contains("leaflet-container")).toBe(true);
+});
+
 it("replaces a foreign element with one of another name", () => {
   document.body.innerHTML =
     '<div id="root"><div data-hs-foreign="map"><canvas></canvas></div></div>';
