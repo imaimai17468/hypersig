@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Creates the project of the host named by $1 at target/templates/$1 with
-# `cargo hypersig new`, as a reader would get it, and points its hypersig at
-# this repository's crate, so the tests build a template against the code
-# they test rather than crates.io.
+# `cargo hypersig new`, as a reader would get it, and points its hypersig and
+# hypersig_ui at this repository's crates, so the tests build a template
+# against the code they test rather than crates.io. Cargo warns that the
+# hypersig_ui patch goes unused in a template that does not depend on it.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -23,5 +24,6 @@ mkdir -p "$dest/.cargo"
 cat > "$dest/.cargo/config.toml" <<CONFIG
 [patch.crates-io]
 hypersig = { path = "$root/crates/hypersig" }
+hypersig_ui = { path = "$root/crates/hypersig_ui" }
 CONFIG
 echo "$dest"

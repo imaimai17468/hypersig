@@ -1,6 +1,8 @@
 //! Serving actions and the runtime from an axum [`Router`].
 
 mod dev;
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+mod serve;
 
 use std::backtrace::Backtrace;
 use std::collections::HashMap;
@@ -31,6 +33,9 @@ use crate::patch::{ListPatch, PartMismatch, PatchEvent, Patches, SignalPatch};
 use crate::route::{Base, Params, Route, Search, Url};
 use crate::signal::{Signals, current_part, in_part};
 use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
+
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+pub use serve::serve;
 
 /// Adds the browser runtime to an axum [`Router`].
 ///

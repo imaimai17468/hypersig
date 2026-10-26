@@ -564,8 +564,5 @@ async fn main() -> std::io::Result<()> {
         .hypersig_runtime()
         .with_state(state)
         .layer(sessions());
-    let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3007".to_owned());
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("listening on http://{addr}");
-    axum::serve(listener, app).await
+    hypersig::serve(app, 3007).await
 }

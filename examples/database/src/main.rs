@@ -450,8 +450,6 @@ async fn main() -> std::io::Result<()> {
     let (changed, _) = broadcast::channel(16);
     let state = AppState { db, changed };
     let app = pages(Router::new()).hypersig_runtime().with_state(state);
-    let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3010".to_owned());
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("listening on http://{addr}, todos in {path}");
-    axum::serve(listener, app).await
+    println!("Todos in {path}");
+    hypersig::serve(app, 3010).await
 }

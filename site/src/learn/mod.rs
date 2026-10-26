@@ -13,6 +13,8 @@ mod sessions;
 pub mod snippet;
 mod state;
 mod testing;
+mod troubleshooting;
+mod upgrading;
 mod why;
 
 use crate::Site;
@@ -47,6 +49,8 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::DeployVercel => deploying::vercel::page(site),
         Learn::Security => security::security(site),
         Learn::Testing => testing::testing(site),
+        Learn::Troubleshooting => troubleshooting::troubleshooting(site),
+        Learn::Upgrading => upgrading::upgrading(site),
     }
 }
 

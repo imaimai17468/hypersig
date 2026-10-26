@@ -476,9 +476,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = AppState { db, changed };
     let app = pages(Router::new()).hypersig_runtime().with_state(state);
-    let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3014".to_owned());
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("listening on http://{addr}");
-    axum::serve(listener, app).await?;
+    hypersig::serve(app, 3014).await?;
     Ok(())
 }
