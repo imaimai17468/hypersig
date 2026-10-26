@@ -92,6 +92,7 @@ demos! {
     Combobox => combobox, "ui/combobox.rs", "22rem";
     Tabs => tabs, "ui/tabs.rs", "8rem";
     Accordion => accordion, "ui/accordion.rs", "19rem";
+    Collapsible => collapsible, "ui/collapsible.rs", "10rem";
     Dialog => dialog, "ui/dialog.rs", "24rem";
     Menu => menu, "ui/menu.rs", "17rem";
     Tooltip => tooltip, "ui/tooltip.rs", "8rem";

@@ -1151,6 +1151,59 @@ fn component_page(page: Component) -> Page {
                 ),
             ],
         },
+        Component::Collapsible => Page {
+            lead: L {
+                en: "A button that shows and hides one region, bound to a `bool` signal.",
+                ja: "1 つの領域を表示したり隠したりするボタンです。`bool` のシグナルに束縛します。",
+            },
+            demo: Demo::Collapsible,
+            built_on: &[
+                L {
+                    en: "It follows the WAI-ARIA disclosure pattern. The button is a native `<button>` with `aria-expanded` bound to the signal and `aria-controls` pointing at the region, so a screen reader announces it as expanded or collapsed. The region's id is derived from the signal's path.",
+                    ja: "WAI-ARIA disclosure パターンに従います。ボタンはネイティブの `<button>` で、`aria-expanded` をシグナルに束縛し、`aria-controls` で領域を指します。そのため、スクリーンリーダーは展開されているか折りたたまれているかを読み上げます。領域の id はシグナルのパスから作られます。",
+                },
+                L {
+                    en: "The button and the region are separate elements, so the button can sit in a heading or a toolbar away from the region. An `Accordion` is built on `<details>` instead, and no signal holds which of its sections is open.",
+                    ja: "ボタンと領域は別の要素なので、ボタンを領域から離れた見出しやツールバーに置けます。`Accordion` は代わりに `<details>` の上に作られていて、どのセクションが開いているかはシグナルに入りません。",
+                },
+            ],
+            keys: &[(
+                L {
+                    en: "Enter, Space",
+                    ja: "Enter、Space",
+                },
+                L {
+                    en: "Shows or hides the region.",
+                    ja: "領域を表示するか隠します。",
+                },
+            )],
+            items: &[
+                (
+                    "Collapsible::new",
+                    "hypersig_ui/struct.Collapsible.html#method.new",
+                    L {
+                        en: "A collapsible whose region is shown while `open` is true.",
+                        ja: "`open` が true の間、領域を表示する折りたたみ",
+                    },
+                ),
+                (
+                    "trigger",
+                    "hypersig_ui/struct.Collapsible.html#method.trigger",
+                    L {
+                        en: "The button that shows and hides the region.",
+                        ja: "領域を表示したり隠したりするボタン",
+                    },
+                ),
+                (
+                    "content",
+                    "hypersig_ui/struct.Collapsible.html#method.content",
+                    L {
+                        en: "The region, empty, for the content added with `El::child`.",
+                        ja: "`El::child` で内容を加える、空の領域",
+                    },
+                ),
+            ],
+        },
         Component::Card => Page {
             lead: L {
                 en: "A bordered box with a header, content, and a footer.",

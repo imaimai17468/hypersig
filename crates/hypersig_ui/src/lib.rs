@@ -30,6 +30,7 @@
 //! | [`DataTable`] | `<table>` with `<th scope="col">` and `aria-sort`, and a tri-state checkbox for selecting rows |
 //! | [`ServerTable`] | the same `<table>`, whose rows an action sends one page at a time |
 //! | [`Accordion`] | `<details>` and `<summary>` |
+//! | [`Collapsible`] | the disclosure pattern on a `<button>` with `aria-expanded` and `aria-controls` |
 //! | [`Dialog`] | `<dialog>` opened by invoker commands, centered or along an edge as a sheet |
 //! | [`NavList`], [`Breadcrumb`], [`pagination`] | `<nav>` holding a list of links, with `aria-current` on the link to the page shown |
 //! | [`Menu`] | the menu button pattern on a `popover` |
@@ -79,6 +80,7 @@ mod button;
 mod card;
 mod chart;
 mod choice;
+mod collapsible;
 mod combobox;
 mod dialog;
 mod donut;
@@ -111,6 +113,7 @@ pub use chart::Chart;
 pub use choice::{
     checkbox, checkbox_in_form, radio_group, radio_group_in_form, switch, switch_in_form,
 };
+pub use collapsible::Collapsible;
 pub use combobox::{Combobox, ComboboxState};
 pub use dialog::{Dialog, Side, dialog_footer};
 pub use donut::DonutChart;
