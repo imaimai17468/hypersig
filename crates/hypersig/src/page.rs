@@ -14,7 +14,7 @@ use crate::html::{
     keys_json, write_attr, write_json_attr,
 };
 use crate::route::{Base, Url};
-use crate::signal::{Sig, Signals};
+use crate::signal::{FromPage, IsComputed, Sig, Signals};
 use crate::ssr::{self, Ctx, Val};
 use crate::style::{Global, Sheet, Theme};
 use crate::tape::{Ref, Tape};
@@ -443,9 +443,10 @@ impl<S: Signals> Page<S> {
     /// Computed signals are evaluated in the order they are declared, so one
     /// may read an earlier one.
     ///
-    /// The type system does not stop a statement from setting `signal` or the
-    /// server from patching it. Either value lasts until a signal `value` reads
-    /// changes.
+    /// `signal` is a field marked `#[signals(computed)]`, whose
+    /// [`Sig`] has no statement that writes it and no `patch`. The value the
+    /// struct holds for that field reaches the browser only where the server
+    /// cannot evaluate `value`, and the runtime replaces it on load.
     ///
     /// ```
     /// use hypersig::html::span;
@@ -456,6 +457,7 @@ impl<S: Signals> Page<S> {
     /// struct Cart {
     ///     price: f64,
     ///     quantity: i32,
+    ///     #[signals(computed)]
     ///     total: f64,
     /// }
     ///
@@ -466,9 +468,13 @@ impl<S: Signals> Page<S> {
     /// assert!(html.contains("<span data-hs-text=") && html.contains(">7.5</span>"));
     /// ```
     #[must_use]
-    pub fn computed<T>(mut self, signal: Sig<S, T>, value: impl IntoExpr<S, T>) -> Self {
+    pub fn computed<T, M: IsComputed>(
+        mut self,
+        signal: Sig<S, T, M>,
+        value: impl IntoExpr<S, T>,
+    ) -> Self {
         self.computed
-            .push((signal.path(), value.into_expr().into_json()));
+            .push((signal.raw_path().rooted(), value.into_expr().into_json()));
         self
     }
 
@@ -714,6 +720,7 @@ impl<S: Signals> Page<S> {
     /// struct Cart {
     ///     price: f64,
     ///     quantity: i32,
+    ///     #[signals(computed)]
     ///     total: f64,
     /// }
     ///
@@ -729,11 +736,11 @@ impl<S: Signals> Page<S> {
     /// does not deserialize into `T`, which happens where a `Serialize` impl
     /// skips the field or disagrees with its `Deserialize` impl.
     #[must_use]
-    pub fn value_of<T: DeserializeOwned>(&self, signal: Sig<S, T>) -> T {
+    pub fn value_of<T: DeserializeOwned, M: FromPage>(&self, signal: Sig<S, T, M>) -> T {
         let root = self.initial_values();
         let value = root
             .root()
-            .get_path(&signal.dotted())
+            .get_path(&signal.raw_path().dotted())
             .map_or(Value::Null, Ref::to_value);
         serde_json::from_value(value)
             .expect("a signal's initial value deserializes into the signal's type")

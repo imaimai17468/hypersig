@@ -1,0 +1,5 @@
+error: `#[signals(...)]` takes only `computed`
+ --> tests/ui/fail/computed_misspelled.rs:8:15
+  |
+8 |     #[signals(derived)]
+  |               ^^^^^^^

@@ -1,0 +1,29 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand(quote!\n{\n    #[signals(computed)] struct R\n    { #[signals(derived)] name: String, count: i32 }\n})"
+---
+::core::compile_error! {
+    "`#[signals(computed)]` goes on a field, not on the struct"
+}
+::core::compile_error! {
+    "`#[signals(...)]` takes only `computed`"
+}
+#[automatically_derived]
+impl ::hypersig::Signals for R {
+    const SHAPE: &'static str = "name:String,count:i32";
+}
+#[automatically_derived]
+impl R {
+    ///Typed reference to the `name` signal.
+    #[must_use]
+    #[allow(dead_code, reason = "an accessor is generated for every field, used or not")]
+    fn name() -> ::hypersig::Sig<Self, String> {
+        ::hypersig::_private::sig("name")
+    }
+    ///Typed reference to the `count` signal.
+    #[must_use]
+    #[allow(dead_code, reason = "an accessor is generated for every field, used or not")]
+    fn count() -> ::hypersig::Sig<Self, i32> {
+        ::hypersig::_private::sig("count")
+    }
+}

@@ -9,7 +9,7 @@ use proc_macro::TokenStream;
 /// Implements `hypersig::Signals` and adds a typed accessor per field.
 ///
 /// See `hypersig::Signals` for what the expansion contains.
-#[proc_macro_derive(Signals)]
+#[proc_macro_derive(Signals, attributes(signals))]
 pub fn derive_signals(input: TokenStream) -> TokenStream {
     hypersig_proc_impl::derive_signals(input.into()).into()
 }

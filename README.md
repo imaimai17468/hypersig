@@ -130,6 +130,7 @@ These mistakes compile, and each one shows up when the program runs ([What the c
 - The function `routes!` generates is never called on the router. Its pages and actions then answer 404. rustc's `dead_code` lint reports a handler `fn` that only that function names, but not a closure.
 - A page served under a `Base` calls an action from a `routes!` block without it. The call goes to the path without the prefix, which a proxy or `Router::nest` answers with 404.
 - One `node_ref!` or `dialog_ref!` constant sits on two elements outside a list template. Rendering the page panics.
+- A field marked `#[signals(computed)]` is named by no `Page::computed` call on its page. Nothing recomputes it, so it keeps the value the page's struct gave it.
 - A reference such as `label_for(&EMAIL)` names an `Id` that no element on the page carries. The browser ignores it, so the control has no label.
 - A script outside hypersig finds an element marked with `El::foreign` by its `data-hs-foreign` value, which is the constant's full path, such as `office::MAP`. Renaming or moving the module or the constant changes that value, and the script then finds no element. Give the element an `Id` and look it up by id instead ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)).
 

@@ -1,0 +1,11 @@
+error[E0599]: no method named `patch` found for struct `Sig<Cart, f64, Computed>` in the current scope
+  --> tests/ui/fail/computed_patch.rs:19:27
+   |
+19 |     let _ = Cart::total().patch(0.0);
+   |                           ^^^^^
+   |
+help: there is a method `path` with a similar name, but with different arguments
+  --> src/signal.rs
+   |
+   |     pub fn path(self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^

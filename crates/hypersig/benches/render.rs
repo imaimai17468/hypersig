@@ -25,6 +25,7 @@ struct Todo {
 struct Todos {
     items: Vec<Todo>,
     filter: String,
+    #[signals(computed)]
     left: i32,
 }
 

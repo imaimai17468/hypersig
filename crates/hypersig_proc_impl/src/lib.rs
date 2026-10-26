@@ -14,12 +14,16 @@ use syn::{Data, DeriveInput, Fields, FieldsNamed};
 /// The expansion implements `hypersig::Signals` for the struct, with
 /// `SHAPE` set to each field's name and type, and adds one associated
 /// function per field, named after the field, returning a typed
-/// `hypersig::Sig` for it. It defines no other item.
+/// `hypersig::Sig` for it. A field marked `#[signals(computed)]` gets a
+/// `Sig<Self, T, hypersig::Computed>`, and every other field a
+/// `Sig<Self, T>`. It defines no other item.
 ///
 /// Rejected inputs, each with a compile error at the offending span: enums,
 /// unions, tuple and unit structs, generic structs, and any `#[serde(...)]`
 /// attribute on the struct or a field, because a rename or a skip would make
-/// the signal path disagree with the JSON the runtime sends.
+/// the signal path disagree with the JSON the runtime sends, a `#[signals]`
+/// attribute on the struct, and a `#[signals(...)]` on a field that holds
+/// anything other than `computed`.
 ///
 /// The error comes with the items a valid input would get, as far as the
 /// input allows: the impl and the field functions for a struct with a serde
@@ -36,6 +40,7 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
     };
     let mut errors = Errors::default();
     errors.push(reject_serde_attributes(&input.attrs));
+    errors.push(reject_struct_signals_attribute(&input.attrs));
     let name = &input.ident;
     let named = match named_fields(
         &input,
@@ -62,6 +67,13 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
     let mut shape = Vec::with_capacity(named.named.len());
     for field in &named.named {
         errors.push(reject_serde_attributes(&field.attrs));
+        let computed = match is_computed(&field.attrs) {
+            Ok(computed) => computed,
+            Err(error) => {
+                errors.push(Err(error));
+                false
+            }
+        };
         let Some(ident) = &field.ident else {
             unreachable!("fields of a named struct always have an identifier");
         };
@@ -70,13 +82,24 @@ pub fn derive_signals(input: TokenStream) -> TokenStream {
         let ty = &field.ty;
         shape.push(format!("{path}:{}", quote!(#ty)));
         let doc = format!("Typed reference to the `{path}` signal.");
+        let accessor = if computed {
+            quote! {
+                #vis fn #ident() -> ::hypersig::Sig<Self, #ty, ::hypersig::Computed> {
+                    ::hypersig::_private::computed_sig(#path)
+                }
+            }
+        } else {
+            quote! {
+                #vis fn #ident() -> ::hypersig::Sig<Self, #ty> {
+                    ::hypersig::_private::sig(#path)
+                }
+            }
+        };
         accessors.push(quote! {
             #[doc = #doc]
             #[must_use]
             #[allow(dead_code, reason = "an accessor is generated for every field, used or not")]
-            #vis fn #ident() -> ::hypersig::Sig<Self, #ty> {
-                ::hypersig::_private::sig(#path)
-            }
+            #accessor
         });
     }
 
@@ -324,6 +347,33 @@ fn named_fields<'input>(
     }
 }
 
+/// Whether `attrs` holds `#[signals(computed)]`, the one `signals` attribute a field takes.
+fn is_computed(attrs: &[syn::Attribute]) -> syn::Result<bool> {
+    let mut computed = false;
+    for attr in attrs.iter().filter(|attr| attr.path().is_ident("signals")) {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("computed") {
+                computed = true;
+                Ok(())
+            } else {
+                Err(meta.error("`#[signals(...)]` takes only `computed`"))
+            }
+        })?;
+    }
+    Ok(computed)
+}
+
+/// Rejects `#[signals]` on the struct, since it marks a single field.
+fn reject_struct_signals_attribute(attrs: &[syn::Attribute]) -> syn::Result<()> {
+    match attrs.iter().find(|attr| attr.path().is_ident("signals")) {
+        Some(attr) => Err(syn::Error::new_spanned(
+            attr,
+            "`#[signals(computed)]` goes on a field, not on the struct",
+        )),
+        None => Ok(()),
+    }
+}
+
 fn reject_serde_attributes(attrs: &[syn::Attribute]) -> syn::Result<()> {
     match attrs.iter().find(|attr| attr.path().is_ident("serde")) {
         Some(attr) => Err(syn::Error::new_spanned(
@@ -446,6 +496,21 @@ mod tests {
     fn rejects_serde_rename() {
         insta::assert_snapshot!(expand(quote! {
             struct R { #[serde(rename = "n")] name: String }
+        }));
+    }
+
+    #[test]
+    fn computed_field() {
+        insta::assert_snapshot!(expand(quote! {
+            struct Cart { price: f64, #[signals(computed)] total: f64 }
+        }));
+    }
+
+    #[test]
+    fn rejects_misplaced_signals_attribute() {
+        insta::assert_snapshot!(expand(quote! {
+            #[signals(computed)]
+            struct R { #[signals(derived)] name: String, count: i32 }
         }));
     }
 

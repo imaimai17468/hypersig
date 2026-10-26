@@ -39,6 +39,7 @@ struct TodoMvc {
     next_id: i32,
     draft: String,
     filter: Filter,
+    #[signals(computed)]
     left: i32,
 }
 

@@ -25,5 +25,5 @@ help: the trait `Bindable` is not implemented for `Size`
 note: required by a bound in `El::<S>::bind`
   --> src/html.rs
    |
-   |     pub fn bind<T: Bindable, R>(mut self, signal: Sig<S, T, R>) -> Self {
+   |     pub fn bind<T: Bindable, R: Writable>(mut self, signal: Sig<S, T, R>) -> Self {
    |                    ^^^^^^^^ required by this bound in `El::<S>::bind`

@@ -1,0 +1,13 @@
+error[E0599]: the method `set` exists for struct `Sig<Cart, f64, Computed>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/computed_set.rs:19:27
+   |
+19 |     let _ = Cart::total().set(0.0);
+   |                           ^^^ method cannot be called on `Sig<Cart, f64, Computed>` due to unsatisfied trait bounds
+   |
+  ::: src/signal.rs
+   |
+   | pub enum Computed {}
+   | ----------------- doesn't satisfy `Computed: Writable`
+   |
+   = note: the following trait bounds were not satisfied:
+           `Computed: Writable`

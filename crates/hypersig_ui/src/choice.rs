@@ -11,7 +11,7 @@ use hypersig::style::value::{
     Appearance, BorderStyle, Color, Cursor, Display, Opacity, Position, TextAlign, px, rem,
 };
 use hypersig::style::{Condition, PseudoClass, Style};
-use hypersig::{Form, Sig, Validate};
+use hypersig::{Form, Sig, Validate, Writable};
 use serde::Serialize;
 
 use crate::field::{Feedback, label_style};
@@ -83,7 +83,7 @@ fn row<S>(text: String) -> (El<S>, El<S>) {
 /// assert!(accept.render().contains(r#"type="checkbox""#));
 /// ```
 #[must_use]
-pub fn checkbox<S, R>(text: impl Into<String>, checked: Sig<S, bool, R>) -> El<S> {
+pub fn checkbox<S, R: Writable>(text: impl Into<String>, checked: Sig<S, bool, R>) -> El<S> {
     let (wrapper, text) = row(text.into());
     wrapper.child(check_control(input(), checked)).child(text)
 }
@@ -146,7 +146,7 @@ fn with_message<S>(control: El<S>, feedback: Feedback<S>) -> El<S> {
 /// The box of a checkbox with `input` laid over it, bound to `checked`.
 ///
 /// `input` comes from the caller, which names it where no `<label>` holds it.
-pub(crate) fn check_control<S, R>(input: El<S>, checked: Sig<S, bool, R>) -> El<S> {
+pub(crate) fn check_control<S, R: Writable>(input: El<S>, checked: Sig<S, bool, R>) -> El<S> {
     check_mark(input.bind(checked))
 }
 
@@ -208,7 +208,7 @@ pub(crate) fn check_box_checked() -> Style {
 /// assert!(airplane.render().contains(r#"role="switch""#));
 /// ```
 #[must_use]
-pub fn switch<S, R>(text: impl Into<String>, on: Sig<S, bool, R>) -> El<S> {
+pub fn switch<S, R: Writable>(text: impl Into<String>, on: Sig<S, bool, R>) -> El<S> {
     switch_with(text.into(), on, input())
 }
 
@@ -257,7 +257,7 @@ pub fn switch_in_form<S, T: Validate>(
 }
 
 /// A switch labeled `text` with `input` as its checkbox, bound to `on`.
-fn switch_with<S, R>(text: String, on: Sig<S, bool, R>, input: El<S>) -> El<S> {
+fn switch_with<S, R: Writable>(text: String, on: Sig<S, bool, R>, input: El<S>) -> El<S> {
     let (wrapper, text) = row(text);
     let track = span().attr(attr::ARIA_HIDDEN, "true").css(
         Style::new()

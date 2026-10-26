@@ -87,16 +87,16 @@ pub fn signals(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Page::computed(signal, value)` keeps a field equal to an expression over other fields. Bindings read it like any field and run again only when its value changes, so no binding evaluates the expression itself. Computed signals are evaluated in the order they are declared, so one may read an earlier one.",
-                ja: "`Page::computed(signal, value)` は、フィールドをほかのフィールドを使った式の値に合わせ続けます。束縛はそれぞれ式を評価する代わりに、ほかのフィールドと同じようにこの値を読み、値が変わったときだけ評価し直します。計算されるシグナルは宣言した順に評価されるので、先に宣言したものを読めます。",
+                en: "`Page::computed(signal, value)` keeps a field equal to an expression over other fields. Bindings read it like any field and run again only when its value changes, so no binding evaluates the expression itself. Computed signals are evaluated in the order they are declared, so one may read an earlier one. The field is marked `#[signals(computed)]` in the struct, and `Page::computed` accepts only a field with that mark.",
+                ja: "`Page::computed(signal, value)` は、フィールドをほかのフィールドを使った式の値に合わせ続けます。束縛はそれぞれ式を評価する代わりに、ほかのフィールドと同じようにこの値を読み、値が変わったときだけ評価し直します。計算されるシグナルは宣言した順に評価されるので、先に宣言したものを読めます。構造体ではそのフィールドに `#[signals(computed)]` を付けます。`Page::computed` が受け取るのは、この印の付いたフィールドだけです。",
             },
         ),
         demo::show(site, Demo::Cart),
         note(
             site,
             L {
-                en: "Nothing stops a statement or the server from setting a computed field. The value it sets lasts until a field the expression reads changes.",
-                ja: "文やサーバーが計算されるフィールドに値を設定しても、それを止めるものはありません。設定した値は、式が読むフィールドが変わるまで残ります。",
+                en: "The accessor of a field marked `#[signals(computed)]` returns a `Sig<S, T, Computed>`, which has no `set`, `toggle`, list statement, or `patch`, and which `bind` refuses. A statement that writes it or a patch that sets it is a compile error, because the browser would overwrite that value the next time a field the expression reads changes. A field of a nested struct with the mark is reached with `at_computed` instead of `at`.",
+                ja: "`#[signals(computed)]` を付けたフィールドのアクセサーは `Sig<S, T, Computed>` を返します。この型には `set`、`toggle`、リストの文、`patch` がなく、`bind` にも渡せません。書き込む文や設定する差分を書くとコンパイルエラーになります。書き込んだ値は、式が読むフィールドが次に変わったときにブラウザが上書きするからです。入れ子の構造体にある印の付いたフィールドには、`at` の代わりに `at_computed` でたどり着きます。",
             },
         ),
     ])
