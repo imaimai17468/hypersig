@@ -5,7 +5,7 @@
 //! struct with a field per locale, so a text without its translation into
 //! one of the locales fails to compile, and a locale added to the enum fails
 //! to compile until every text has it. The locale itself is a
-//! [`Segment`], so it is the first segment of a page's
+//! [`Segment`](hypersig::Segment), so it is the first segment of a page's
 //! [`Route`](hypersig::Route), and a link to the same page in another
 //! language is a link with another locale.
 //!
