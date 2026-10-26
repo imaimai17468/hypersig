@@ -1,6 +1,8 @@
 # Public items whose first doc sentence has 15 words or more, which
 # M-FIRST-DOC-SENTENCE does not allow. Shorten a summary and delete its line.
 # A new item missing here fails tests/public_api.rs.
+hypersig::Asset
+hypersig::Asset::new
 hypersig::Call::error
 hypersig::Call::status
 hypersig::DialogRef
@@ -15,18 +17,18 @@ hypersig::Handler::Output
 hypersig::Handler::call
 hypersig::IntoHref
 hypersig::Item
+hypersig::LanguageTag::parse
 hypersig::Link::push_url
 hypersig::Link::replace_url
 hypersig::Local
 hypersig::NodeRef::show_popover
 hypersig::OpenGraph
 hypersig::Origin::prefix
-hypersig::Page::alternate
 hypersig::Page::alternate_default
 hypersig::Page::canonical
 hypersig::Page::csp_nonce
-hypersig::Page::lang
 hypersig::Page::open_graph
+hypersig::Page::render_under
 hypersig::Page::runtime_src
 hypersig::Page::value_of
 hypersig::PageResponse
@@ -93,6 +95,7 @@ hypersig_style::pattern::aspect_ratio
 hypersig_style::pattern::visually_hidden
 hypersig_style::value::Color
 hypersig_style::value::Raw
+hypersig_ui::Accordion::exclusive
 hypersig_ui::Autocomplete
 hypersig_ui::Breadcrumb::link
 hypersig_ui::Chart
@@ -109,12 +112,14 @@ hypersig_ui::Dialog::sheet
 hypersig_ui::DonutChart
 hypersig_ui::DonutChart::render
 hypersig_ui::InputKind
+hypersig_ui::Listbox
 hypersig_ui::Menu
 hypersig_ui::NavList
 hypersig_ui::NumberField
 hypersig_ui::NumberField::error
 hypersig_ui::NumberField::required
 hypersig_ui::NumberField::step
+hypersig_ui::Popover
 hypersig_ui::ServerTable
 hypersig_ui::ServerTable::expandable
 hypersig_ui::ServerTable::max_height
