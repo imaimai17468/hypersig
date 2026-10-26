@@ -2,20 +2,39 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
-## [Unreleased]
+## [0.9.0] - 2026-10-27
 
 ### Breaking
 
+- `Page::script`, `stylesheet`, `icon`, and `runtime_src` take an `Asset`, a URL checked when the constant is built. A root path such as `/map.js` is written under the page's `Base`.
+- `Page::lang` and the `hreflang` of `Page::alternate` take a `LanguageTag`, which refuses a tag such as `en_US`. `Locale::tag` returns one.
+- `Locale::ALL` is gone. `Locale` requires `Variants`, `hypersig_i18n::locales::<L>()` lists the enum's variants in declaration order, and the first is the default.
+- `hypersig_ui::Tabs::new` and `Listbox::new` take one closure over every variant of their enum, in place of `.tab(..)` and `.option(..)`, so a missing variant is a compile error. `Accordion::exclusive` takes an `Id`.
+- `UploadedFile::file_name` and `StreamedFile::file_name` return `Option<FileName>`, whose `base_name` gives a name safe to use as a file's last segment.
+- Every action answer ends with `hs-end`, and the router refuses a GET action or stream without the `hypersig-call` header the runtime sends (403). `Action::request` and `StreamAction::request` add the header.
+- These now panic while the page is built: two elements carrying one id from `Id::with_key`; a `Page::computed` signal named twice, reading itself, or reading one declared after it; a form rule that reads `Expr::now` or `random_below`; a list item read outside any list; and a nested computed field the page reads without a `Page::computed`.
+- `#[derive(Search)]` writes `impl Search` directly, so the hidden `SearchFields` trait is gone.
 - `hypersig_ui::Chart<S, T, R>` is now `Chart<S, T>`. Its constructors still take the rows of a plain field or of a computed one, and code that named the third parameter drops it.
 
 ### Added
 
+- `Call::timeout(Duration)` fails a call whose answer takes longer, and `Call::exclusive()` skips a call while another to the same action is in flight.
+- `hypersig::Asset`, `hypersig::LanguageTag`, `hypersig::FileName`, and `Page::render_under(base)` for a static site under a prefix.
+- `hypersig_ui` components: `Popover`, `toggle`, `icon_toggle`, `ToggleGroup`, `MultiToggleGroup`, `Collapsible`, `Avatar`, `kbd`, and `spinner`.
 - `Sig::read()` on a page-rooted signal returns a `Sig<S, T, Read>`, a read-only view with the same path. The view reads like the signal it came from, because `Read` implements `FromPage`, and it has no `set`, list statement, `bind`, or `patch`. `Page::computed` refuses it.
 - `hypersig::serve(router, port)` serves an axum `Router`. It listens on the address in `ADDR` where that is set, otherwise on every interface at the port in `PORT`, otherwise on `127.0.0.1:port`. On Ctrl+C or SIGTERM it waits for the requests in progress, for at most 5 seconds or until a second signal. It needs the `axum` feature and is not built for `wasm32-unknown-unknown`.
 - `Page::simulate` returns a `hypersig::testing::Simulation`, which clicks, types, and submits on a page in a test without a browser. It runs the statements of the event on the server's evaluator, finds elements by their `NodeRef`, `DialogRef`, `FileInput`, or `Id`, and reads their text, attributes, and visibility. Calls, links, and element statements such as `focus` come back in an `Effects`, typed by the `Action` or `Route` they came from. It panics on a statement that reads a value only the browser has, such as `Expr::now`.
 
 ### Changed
 
+- The runtime fails a call (status 0) when its answer closes before `hs-end`, was redirected, or is not an event stream, and the error signal takes the body only when it is `text/plain`.
+- The older answer of a POST or upload no longer overwrites the answer of a newer call to the same action. The element that sent a POST or upload carries `aria-busy="true"` while it is in flight.
+- Reconnect waits are spread at random and end early when the browser comes back online or the page becomes visible. A navigation to a URL that keeps the page, such as a download, no longer stops the patches that follow.
+- An element patch keeps an input without an id when a sibling is inserted before it, restores focus and the selection, and keeps `<details>` and `<dialog>` open. An answer that repeats text the visitor typed into a focused field leaves what they typed since.
+- The server keeps its `frame-ancestors` policy when a handler sends its own `Content-Security-Policy`, answers a handler's panic with 500, sends a fixed sentence for each refusal (the parser's message stays in `source`), and parses action arguments without building a `serde_json::Value` first.
+- Pages carry `Cache-Control: private, no-cache`, hypersig's responses carry `X-Content-Type-Options: nosniff`, and streams carry `X-Accel-Buffering: no`.
+- Route segments and query values take every integer `url()` writes, past 2^53 included.
+- Errors from `routes!`, `attr!`, and `tag!` point at the line that is wrong, without the standard library's panic frames.
 - `hypersig_ui::DonutChart::new` takes the rows of a computed field as well as a plain one.
 - Writing a signal that cannot be written reports ``a signal marked `Computed` cannot be written``, with `hypersig::Read` in place of `Computed` for a view, where it used to report `a computed signal cannot be written`.
 - `cargo hypersig new <path>` without `--host` writes the `server` template, where it used to stop with a list of hosts.
