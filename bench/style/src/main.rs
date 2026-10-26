@@ -17,7 +17,7 @@ use hypersig::html::{
     Class, El, a, attr, button, each_keyed, footer, h1, header, input, label, li, section, span,
     strong, ul,
 };
-use hypersig::{Page, SafeUrl, Signals, if_else};
+use hypersig::{Asset, Page, SafeUrl, Signals, if_else};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
@@ -203,7 +203,7 @@ fn page(look: &Look) -> Page<TodoMvc> {
     let page = Page::new("TodoMVC", signals);
     let page = match look {
         Look::Atoms => page.global(styles::global()),
-        Look::Classes(_) => page.stylesheet("style.css"),
+        Look::Classes(_) => page.stylesheet(Asset::new("style.css")),
     };
     page.computed(left, list.count(|todo| !todo.at(Todo::done())))
         .child(

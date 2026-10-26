@@ -153,8 +153,8 @@ impl Demo {
 /// A demo is shown inside a page of the docs, so search engines are asked
 /// not to list it on its own.
 fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
-    page.runtime_src(site.runtime())
-        .icon(site.icon())
+    page.runtime_src(crate::RUNTIME)
+        .icon(crate::ICON)
         .noindex()
         .global(hypersig_ui::global())
         .global(
@@ -163,7 +163,7 @@ fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
                 .rule(Element::Ul, Style::new().padding_left(px(0))),
         )
         .theme(hypersig_ui::theme())
-        .render()
+        .render_under(site.base())
 }
 
 /// `demo` running in a frame, above its source.
@@ -257,12 +257,7 @@ fn shown_source(source: &str, lang: crate::Lang) -> String {
                 "use crate::Site;" | "use crate::lang::L;" | "let site = Site::rendering();"
             )
         })
-        .map(|line| {
-            line.replace("(site: Site)", "()").replace(
-                "site.star_rating()",
-                &format!("\"/{}\"", crate::STAR_RATING_FILE),
-            )
-        })
+        .map(|line| line.replace("(site: Site)", "()"))
         .collect::<Vec<_>>()
         .join("\n")
         .replace("\n\n\n", "\n\n")
@@ -339,12 +334,6 @@ mod tests {
             shown_source(source, crate::Lang::Ja)
                 .contains("p().text(format!(\"{}、こんにちは\", x))")
         );
-    }
-
-    #[test]
-    fn the_shown_source_names_the_script_by_its_path() {
-        let shown = shown_source("    .script(site.star_rating())\n", crate::Lang::En);
-        assert_eq!(shown, "    .script(\"/star-rating.js\")");
     }
 
     #[test]

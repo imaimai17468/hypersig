@@ -593,7 +593,7 @@ mod tests {
     fn the_card_reads_the_title_and_description_of_the_page() {
         let html = Page::new("Tom & Jerry", note())
             .description("A \"cat\"")
-            .icon("/icon.svg")
+            .icon(crate::Asset::new("/icon.svg"))
             .open_graph(OpenGraph::new())
             .render();
         assert!(html.contains(r#"<link rel="icon" href="/icon.svg">"#));

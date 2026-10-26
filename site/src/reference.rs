@@ -214,6 +214,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Asset",
+                            "struct.Asset.html",
+                            L {
+                                en: "The URL of a file a page loads, which `script`, `stylesheet`, `icon`, and `runtime_src` take.",
+                                ja: "ページが読み込むファイルの URL です。`script`、`stylesheet`、`icon`、`runtime_src` が受け取ります。",
+                            },
+                        ),
+                        (
                             "lang",
                             "struct.Page.html#method.lang",
                             L {
@@ -243,6 +251,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "Renders the document.",
                                 ja: "文書を描画します。",
+                            },
+                        ),
+                        (
+                            "render_under",
+                            "struct.Page.html#method.render_under",
+                            L {
+                                en: "Renders the document for a site served under `base`, such as a static site at `/docs`.",
+                                ja: "`/docs` にある静的サイトのように、`base` の下で配信するサイトに向けて文書を描画します。",
                             },
                         ),
                         (

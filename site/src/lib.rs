@@ -29,7 +29,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::Path;
 
-use hypersig::{Origin, PageResponse, Rest, Route, SafeUrl, Url};
+use hypersig::{Asset, Base, Origin, PageResponse, Rest, Route, SafeUrl, Url};
 use hypersig_i18n::{Locale as _, locales};
 
 pub use doc::Doc;
@@ -39,10 +39,7 @@ use lang::{L, Text};
 /// Where the site is served from.
 #[derive(Debug, Clone, Copy)]
 pub struct Site {
-    base: &'static str,
-    runtime: &'static str,
-    icon: &'static str,
-    star_rating: &'static str,
+    base: Base,
     lang: Lang,
     origin: Option<Origin>,
 }
@@ -83,16 +80,12 @@ impl Site {
             base.is_empty() || (base.starts_with('/') && !base.ends_with('/')),
             "a base path is empty or starts with `/` and does not end with one"
         );
-        // `Page::runtime_src` keeps the URL for as long as the page lives,
-        // and the generator builds one `Site` per run.
-        let runtime = String::leak(format!("{base}/{RUNTIME_FILE}"));
-        let icon = String::leak(format!("{base}/{ICON_FILE}"));
-        let star_rating = String::leak(format!("{base}/{STAR_RATING_FILE}"));
         Self {
-            base,
-            runtime,
-            icon,
-            star_rating,
+            base: if base.is_empty() {
+                Base::ROOT
+            } else {
+                Base::new(base)
+            },
             lang: Lang::En,
             origin: None,
         }
@@ -103,10 +96,10 @@ impl Site {
     /// canonical URL. The site's base path goes under `origin`.
     #[must_use]
     pub fn with_origin(self, origin: Origin) -> Self {
-        let origin = if self.base.is_empty() {
+        let origin = if self.base == Base::ROOT {
             origin
         } else {
-            origin.under(self.base)
+            origin.under(self.base.as_str())
         };
         Self {
             origin: Some(origin),
@@ -148,28 +141,18 @@ impl Site {
     /// The URL of `path`, a file inside the site without a leading `/` that
     /// every language shares, such as the runtime or the rustdoc output.
     fn url(self, path: &str) -> String {
-        format!("{}/{path}", self.base)
+        format!("{}/{path}", self.base.as_str())
     }
 
     /// The URL of the page at `path`, a page's directory inside the site, in
     /// the language the pages are rendered in.
     fn page_url(self, path: &str) -> String {
-        format!("{}/{}{path}", self.base, self.lang.dir())
+        format!("{}/{}{path}", self.base.as_str(), self.lang.dir())
     }
 
-    /// The URL the pages load the runtime from.
-    fn runtime(self) -> &'static str {
-        self.runtime
-    }
-
-    /// The URL of the hypersig icon, which the pages use as their tab icon.
-    fn icon(self) -> &'static str {
-        self.icon
-    }
-
-    /// The URL of the script that defines the custom element of the rating demo.
-    fn star_rating(self) -> &'static str {
-        self.star_rating
+    /// The path the site is served under, which each page is rendered under.
+    fn base(self) -> Base {
+        self.base
     }
 }
 
@@ -185,8 +168,14 @@ pub struct File {
 /// The file the pages load the runtime from.
 const RUNTIME_FILE: &str = "hypersig.js";
 
+/// The runtime as the pages load it, under the site's base.
+const RUNTIME: Asset = Asset::new("/hypersig.js");
+
 /// The file of the hypersig icon.
 const ICON_FILE: &str = "icon.svg";
+
+/// The hypersig icon, which the pages use as their tab icon, under the site's base.
+const ICON: Asset = Asset::new("/icon.svg");
 
 /// The script that defines `<star-rating>`, which the rating demo loads.
 const STAR_RATING_FILE: &str = "star-rating.js";
@@ -414,7 +403,7 @@ pub fn check_links(
         let html = str::from_utf8(&file.contents).expect("a page is UTF-8");
         for target in links(html) {
             let Some(inside) = target
-                .strip_prefix(site.base)
+                .strip_prefix(site.base.as_str())
                 .and_then(|t| t.strip_prefix('/'))
             else {
                 continue;

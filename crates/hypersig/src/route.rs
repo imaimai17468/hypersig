@@ -122,10 +122,9 @@ pub struct Route<P = (), Q = ()> {
 /// prefix, which a proxy answers with its own 404, and which the router
 /// answers with 404 inside `nest`.
 /// A page served by a router nested at a path other than its base answers
-/// with a 500 that names both. The paths given to
-/// [`Page::stylesheet`](crate::Page::stylesheet),
-/// [`Page::icon`](crate::Page::icon), and
-/// [`Page::runtime_src`](crate::Page::runtime_src) are written as given.
+/// with a 500 that names both. An [`Asset`](crate::Asset) path the
+/// application serves goes under the page's base, and nothing checks that
+/// the router serves it.
 /// A [`Url`] already starts with the base, so a canonical URL takes an
 /// [`Origin`](crate::Origin) without [`Origin::under`](crate::Origin::under).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

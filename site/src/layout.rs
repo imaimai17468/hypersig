@@ -81,8 +81,8 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
         card = card.alternate_locale(lang.og_locale());
     }
     page.open_graph(card)
-        .runtime_src(site.runtime())
-        .icon(site.icon())
+        .runtime_src(crate::RUNTIME)
+        .icon(crate::ICON)
         .global(hypersig_ui::global())
         .global(
             Global::new().rule(
@@ -96,7 +96,7 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
         .theme(code::theme())
         .child(top_bar(site, doc))
         .child(body)
-        .render()
+        .render_under(site.base())
 }
 
 /// A page of `doc` with the sidebar of its section and `content` as an
@@ -264,7 +264,7 @@ fn brand(site: Site, library: Library) -> Part {
                 .css(name.clone().merge(hstack(rem(0.5))))
                 .child(
                     img()
-                        .src(own(site.icon()))
+                        .src(own(site.url(crate::ICON_FILE)))
                         .attr(attr::ALT, "")
                         .attr(attr::WIDTH, "24")
                         .attr(attr::HEIGHT, "24"),

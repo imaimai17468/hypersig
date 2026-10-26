@@ -55,6 +55,7 @@
 extern crate self as hypersig;
 
 mod action;
+mod asset;
 #[cfg(feature = "axum")]
 mod axum;
 mod date;
@@ -86,6 +87,7 @@ struct Readme;
 struct ReadmeJa;
 
 pub use action::{Action, Call, DialogRef, Method, NodeRef, StreamAction, StreamCall};
+pub use asset::Asset;
 #[cfg(feature = "axum")]
 pub use axum::{
     ActionResponse, Handler, IntoActionResponse, PageResponse, PatchStream, RequestError,

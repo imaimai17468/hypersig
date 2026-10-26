@@ -10,7 +10,7 @@ use std::fs;
 use hypersig::html::{
     El, Id, Node, a, attr, button, div, each_keyed, h1, span, table, tbody, td, tr,
 };
-use hypersig::{Expr, Page, Signals, Stmt};
+use hypersig::{Asset, Expr, Page, Signals, Stmt};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -199,8 +199,8 @@ fn page() -> Page<Bench> {
         selected: 0,
     };
     Page::new("hypersig-\"keyed\"", signals)
-        .stylesheet("/css/currentStyle.css")
-        .runtime_src("bundled-dist/hypersig.js")
+        .stylesheet(Asset::new("/css/currentStyle.css"))
+        .runtime_src(Asset::new("bundled-dist/hypersig.js"))
         .child(
             div().id(Id::new("main")).child(
                 div()

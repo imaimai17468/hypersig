@@ -1,7 +1,7 @@
 # use hypersig::Signals;
 # use serde::{Deserialize, Serialize};
 use axum::Router;
-use hypersig::{Page, Route, RouterExt};
+use hypersig::{Asset, Page, Route, RouterExt};
 use tower_http::services::{ServeDir, ServeFile};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -14,10 +14,13 @@ hypersig::routes! {
     const INDEX: Route = "/" => index;
 }
 
+const ICON: Asset = Asset::new("/assets/icon.svg");
+const STAR_RATING: Asset = Asset::new("/star-rating.js");
+
 async fn index((): (), (): ()) -> Page<Review> {
     Page::new("Rating", Review { stars: 3 })
-        .icon("/assets/icon.svg")
-        .script("/star-rating.js")
+        .icon(ICON)
+        .script(STAR_RATING)
 }
 
 let app: Router = pages(Router::new())

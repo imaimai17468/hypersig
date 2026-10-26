@@ -1358,7 +1358,7 @@ fn filter() -> Filter {
 
 /// The runtime's path in a page fixture, fixed so that a change to the
 /// runtime, which changes `RUNTIME_PATH`, leaves the fixtures as they are.
-const RUNTIME_SRC: &str = "/_hypersig/runtime.js";
+const RUNTIME_SRC: hypersig::Asset = hypersig::Asset::new("/_hypersig/runtime.js");
 
 /// Writes the page as `Page::render` serves it, with the server-side values applied.
 fn check_page<S: Signals>(name: &str, el: El<S>, signals: S) {
