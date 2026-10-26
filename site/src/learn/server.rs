@@ -719,8 +719,8 @@ pub fn escape_hatches(site: Site) -> Part {
                     ja: "オフラインで使うものなど、サーバーにつながらなくても動くアプリケーション。",
                 },
                 L {
-                    en: "A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so only the runtime sends a form, and a browser that does not run it shows the first HTML and sends nothing.",
-                    ja: "JavaScript を切っても、ボタンやフォームが動く必要のあるページ。ページには `action` 属性も `formaction` 属性も書けないので、フォームを送るのはランタイムだけです。ランタイムを実行しないブラウザは最初の HTML を表示しますが、何も送りません。",
+                    en: "A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so a form calls an action only through the runtime, which keeps the browser from submitting any form itself. A browser that does not run the runtime shows the first HTML, and submitting a form there loads the page's own URL again with the form's named fields in the query, which runs no action.",
+                    ja: "JavaScript を切っても、ボタンやフォームが動く必要のあるページ。ページには `action` 属性も `formaction` 属性も書けないので、フォームからアクションを呼べるのはランタイムだけです。ランタイムは、ブラウザがフォームを自分で送ることも止めます。ランタイムを実行しないブラウザは最初の HTML を表示します。そこでフォームを送ると、名前の付いたフィールドをクエリに入れて同じページの URL を読み込み直すだけで、アクションは実行されません。",
                 },
             ],
         ),

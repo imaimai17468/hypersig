@@ -43,3 +43,10 @@ it("records in an effect the reads of every step of a sequence", async () => {
   await tick();
   expect(runtime.store.get("b")).toBe(3);
 });
+
+it("keeps the browser from submitting a form that has no submit statement", () => {
+  mount(`<form id="f"><input name="q"></form>`, {});
+  const submit = new Event("submit", { bubbles: true, cancelable: true });
+  $("#f").dispatchEvent(submit);
+  expect(submit.defaultPrevented).toBe(true);
+});
