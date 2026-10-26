@@ -1141,8 +1141,18 @@ pub(crate) fn query_string(value: &Value) -> String {
 /// A type one `{name}` segment of a [`Route`] holds.
 ///
 /// It is implemented for `String` and the integer types, whose text the
-/// browser's `String` and the server write the same way. An `i64` or `u64`
-/// past 2^53 loses precision in the browser, as it does in any signal.
+/// browser's `String` and the server write the same way. A route parses
+/// every value of the integer type that [`Route::url`] can write, so the
+/// handler receives an `i64` or `u64` past 2^53 exactly. A page whose
+/// signals hold such a value panics while rendering, as it does for any
+/// signal, because the browser would round it.
+///
+/// A `String` that is empty, `.`, or `..` writes a link no route serves.
+/// An empty segment leaves `/users/`, which `/users/{name}` does not match,
+/// and the browser resolves a `.` or `..` segment before it sends the
+/// request, as it does `%2E`, so no encoding keeps one. Nothing checks
+/// the value, so a route whose value can be one of these takes it in the
+/// query, or prefixes it in the path.
 ///
 /// `#[derive(Segment)]` implements it for an enum whose variants have no
 /// fields. The segment is the string serde writes for the variant, so a link
@@ -1268,11 +1278,8 @@ impl Segment for Rest {
 macro_rules! integer_segment {
     ($($ty:ty),*) => {$(
         impl Segment for $ty {
-            // A page whose signals hold an integer the browser would round
-            // does not render, so the URL of one names no page.
             fn parse(segment: &str) -> Option<Self> {
-                let v: $ty = segment.parse().ok()?;
-                crate::exact::holds_i128(i128::from(v)).then_some(v)
+                segment.parse().ok()
             }
 
             fn write(&self) -> String {
@@ -1761,13 +1768,11 @@ mod tests {
     }
 
     #[test]
-    fn an_integer_segment_the_browser_would_round_names_no_page() {
-        assert_eq!(<u64>::from_segments(&["9007199254740992"]), Some(1 << 53));
-        assert_eq!(
-            <i64>::from_segments(&["-9007199254740992"]),
-            Some(-(1 << 53))
-        );
-        assert_eq!(<u64>::from_segments(&["9007199254740993"]), None);
-        assert_eq!(<i64>::from_segments(&["-9007199254740993"]), None);
+    fn an_integer_segment_reads_back_every_value_the_url_writes() {
+        for value in [i64::MIN, -(1 << 53) - 1, 0, (1 << 53) + 1, i64::MAX] {
+            assert_eq!(<i64>::from_segments(&[&value.write()]), Some(value));
+        }
+        assert_eq!(<u64>::from_segments(&[&u64::MAX.write()]), Some(u64::MAX));
+        assert_eq!(<u64>::from_segments(&["-1"]), None);
     }
 }

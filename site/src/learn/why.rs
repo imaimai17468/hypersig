@@ -435,7 +435,11 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "A signal holds an integer beyond ±2^53",
-                        "Rendering the page or building the patch panics. One that an action's arguments or a query brings in gets 400, and one in a route segment 404",
+                        "Rendering the page or building the patch panics. One that an action's arguments bring in gets 400",
+                    ],
+                    &[
+                        "A `String` segment of a route is empty, `.`, or `..`",
+                        "The link answers 404, or the browser resolves the dots and asks for another page",
                     ],
                     &[
                         "One element gets `show`, `bind_text`, `id`, a node ref, or a binding twice, or one attribute twice",
@@ -477,7 +481,11 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "シグナルに ±2^53 を超える整数を入れる",
-                        "ページの描画か差分の作成が panic します。アクションの引数やクエリから入る値は 400、ルートの区間から入る値は 404 になります",
+                        "ページの描画か差分の作成が panic します。アクションの引数から入る値は 400 になります",
+                    ],
+                    &[
+                        "`String` のルートの区間が空、`.`、`..` になる",
+                        "リンクが 404 を返すか、ブラウザがドットを解決して別のページを求めます",
                     ],
                     &[
                         "1 つの要素に `show`、`bind_text`、`id`、ノード参照、束縛を 2 回付ける。同じ属性を 2 回付ける",
