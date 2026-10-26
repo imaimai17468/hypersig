@@ -25,6 +25,11 @@ pub(crate) fn holds_u64(v: u64) -> bool {
     v <= LIMIT
 }
 
+/// Whether the browser reads `v` back as `v`.
+pub(crate) fn holds_i128(v: i128) -> bool {
+    v.unsigned_abs() <= u128::from(LIMIT)
+}
+
 /// The message of the panic for `v`, which the browser would round.
 pub(crate) fn message(v: impl std::fmt::Display) -> String {
     format!(
