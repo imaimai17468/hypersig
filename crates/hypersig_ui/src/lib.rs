@@ -71,6 +71,8 @@
 //!     .render();
 //! assert!(html.contains(r#"for="ui-name-input""#));
 //! ```
+// A library's caller owns standard output and standard error, so the library writes to neither.
+#![warn(clippy::print_stdout, clippy::print_stderr)]
 #![doc(
     html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
     html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"

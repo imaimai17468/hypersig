@@ -3,6 +3,9 @@
 //! This crate is a regular library so the expansion can be unit tested. The
 //! `hypersig_proc` crate forwards to it, and users reach both through `hypersig`.
 
+// A library's caller owns standard output and standard error, so the library writes to neither.
+#![warn(clippy::print_stdout, clippy::print_stderr)]
+
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::ext::IdentExt as _;

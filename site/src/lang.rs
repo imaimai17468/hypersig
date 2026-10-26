@@ -12,7 +12,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Segment, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Lang {
+    /// English, written at the root of the site.
     En,
+    /// Japanese, written under `ja/`.
     Ja,
 }
 

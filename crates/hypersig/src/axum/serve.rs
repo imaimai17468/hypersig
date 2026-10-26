@@ -61,6 +61,10 @@ const GRACE: Duration = Duration::from_secs(5);
 ///     hypersig::serve(pages(Router::new()).hypersig_runtime(), 3000).await
 /// }
 /// ```
+#[expect(
+    clippy::print_stdout,
+    reason = "an application calls `serve` from `main`, where the address it listens on is what the person starting it reads"
+)]
 pub async fn serve(app: Router, port: u16) -> io::Result<()> {
     let addr = address(
         std::env::var("ADDR").ok().as_deref(),

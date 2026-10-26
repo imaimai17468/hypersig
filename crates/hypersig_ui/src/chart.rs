@@ -340,7 +340,7 @@ impl<S: 'static, T: 'static, R: FromPage> Chart<S, T, R> {
             let top = if_else(top.gt(&bottom), top, &bottom + 1.0);
             top.let_in(|top| {
                 ((&top - &bottom) / 4.0).let_in(|rough| {
-                    let guess = Expr::lit(&10.0).pow(rough.clone().log10().floor());
+                    let guess = Expr::lit(&10.0).pow(rough.log10().floor());
                     guess.let_in(|guess| {
                         // A last-bit error in `log10` at a power of ten puts the
                         // guess one power off, and the ratio brings it back.

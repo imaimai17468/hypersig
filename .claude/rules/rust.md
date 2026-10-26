@@ -31,6 +31,14 @@ The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, wi
 
 **Third-party types in the public API are limited to `serde`'s traits, the `Stream` trait of `futures`, and, behind the `axum` feature, axum's `Router` and the traits and types a handler reads the request and writes the response with: `FromRequestParts`, `IntoResponse`, `IntoResponseParts`, `Parts`, `Response`, `StatusCode`, the `Bytes` a streaming upload yields, and the `Request<Body>` that `Action::request` builds** (M-DONT-LEAK-TYPES). A handler that reads a cookie or answers with its own error is written against axum's own traits, so wrapping them would only make the reader translate between two names for one thing. A chunk of an uploaded file is `axum::body::Bytes` because that is what the multipart parser hands over, and copying it into a `Vec<u8>` would cost a copy per chunk of a file read in chunks to save memory. `Action::request` returns `axum::http::Request<axum::body::Body>` because a test hands it to `tower::ServiceExt::oneshot` on the `Router`, which takes exactly that type. A stream's handler returns a `Stream` of `Patches`, and `PatchStream` names that bound, because `Stream` is the trait every async stream crate implements, so a wrapper would only make each handler convert its stream.
 
+## Shape
+
+**A trait needs a second implementor or a caller that is generic over it.** A trait with one implementation and no generic caller makes the reader follow an indirection to code that could have been an inherent method. Write the method on the type, and introduce the trait in the commit that adds the second implementor.
+
+**A function does work its caller would otherwise repeat.** One that forwards its own arguments unchanged to another function, or wraps a single call without adding a check, a conversion, or a name the caller needs, is deleted and its callers call the target.
+
+**Borrow before cloning.** A `.clone()` added so that the borrow checker accepts the code means the ownership is still wrong: take `&T`, return a borrow, or move the value where it is last used. A clone stays where the value is used again after a move, or where the copy is the point, and the call site then shows which.
+
 ## Performance
 
 **Rendering reads the signals and the expression trees by reference** (M-HOTPATH). `Page::render` runs once per request and writes each `each` template once per list item, so it borrows what it reads (`Ctx::get`, `Expr::as_json`, the `Cow` from `ssr::evaluate`) and allocates only for a value it produces. A claim that a change is faster carries the medians from `cargo bench -p hypersig --bench render` before and after, which report allocations alongside time.
