@@ -410,6 +410,10 @@ fn unchecked(site: Site) -> [Part; 3] {
                         "Its pages and actions answer 404",
                     ],
                     &[
+                        "A block `under` a `Base` is served neither inside `Router::nest` at that base nor behind a proxy that strips it",
+                        "Its pages and actions answer 404, since its links start with the base and its routes do not",
+                    ],
+                    &[
                         "A page under a `Base` calls an action of a `routes!` block without it",
                         "The call answers 404",
                     ],
@@ -454,6 +458,10 @@ fn unchecked(site: Site) -> [Part; 3] {
                     &[
                         "`routes!` が生成する関数をルーターに渡し忘れる",
                         "そのページとアクションが 404 を返します",
+                    ],
+                    &[
+                        "`Base` の下の `routes!` ブロックを、その接頭辞で `Router::nest` せず、接頭辞を取り除くプロキシの裏にも置かない",
+                        "リンクは接頭辞から始まるのにルートには接頭辞がないので、そのページとアクションが 404 を返します",
                     ],
                     &[
                         "`Base` の下のページが、`Base` のない `routes!` ブロックのアクションを呼ぶ",
