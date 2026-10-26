@@ -57,11 +57,12 @@ checklist_rust='Rust checklist (.claude/rules/rust.md, sent in full earlier in t
 - A new public item has a summary under 15 words and # Examples / # Errors / # Panics where they apply. A promised compile error gets a trybuild case in the same commit.'
 
 checklist_prose='Prose checklist (.claude/rules/prose.md, sent in full earlier in this context):
-- Plain verb, named actor, the specific fact. Cut a sentence about the document itself.
-- No "not X but Y", no colon or question set up as a reveal, no closing aphorism, two items rather than three.
-- Em dashes at most 5 per 1000 English words; none in Japanese. State an effect rather than its importance.
-- Open with what was decided. Keep a hedge that carries real uncertainty.
-- Japanese: です/ます throughout, no い-adjective + です, no adversatives back to back.
+- Japanese: yomiyasu lint runs after each edit (lint-prose.py); fix what applies. Polite です/ます, no dash, no i-adjective + です, no two adversative connectives in a row.
+- English: apply the humanizer skill before committing. Em dashes at most 5 per 1000 words (prose.md wins over humanizer here).
+- Delete-to-test: an evaluative modifier or intensifying adverb whose deletion leaves the same checkable fact goes. A copula substitute or light verb becomes the plain verb.
+- Named actor, the action with its object, the specific fact. Cut metadiscourse (a sentence about the document itself).
+- Claim first, no negated alternative before it, no reveal, no closing aphorism, two items rather than three.
+- Open with what was decided. Keep a hedge that carries real uncertainty; give a guarantee its condition.
 - Commit messages and pull requests are in English, start with feat/fix/refactor/test/docs/chore, and say why for a fix or refactor.'
 
 context=""
