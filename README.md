@@ -6,15 +6,11 @@
 
 **Server-owned state, type-checked strings.**
 
-hypersig is a [hypermedia](https://imaimai17468.github.io/hypersig/learn/why/#hypermedia) web framework on axum in which the page, its behavior in the browser, and the server handlers are all written in Rust. The server holds the state and sends the browser patches. Every string the browser acts on (signal names, expressions, action URLs, links) is produced from a Rust type, so a mistake in one is a compile error. The few mistakes the compiler cannot see are listed under [What the compiler does not check](#what-the-compiler-does-not-check).
+hypersig is a [hypermedia](https://imaimai17468.github.io/hypersig/learn/why/#hypermedia) web framework on axum in which the page, its behavior in the browser, and the server handlers are all written in Rust. The server holds the state and sends the browser patches. Every string the browser acts on (signal names, expressions, action URLs, links) is produced from a Rust type, so a mistake in one is a compile error.
 
-- `cargo build` builds the whole application. There is no Node or wasm step.
-- A mismatch between the page and the server is a compile error, and so is a link that does not fit a route ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
-- The first HTML already holds the page's state. An action answers with only the values that changed, and the browser rewrites only what shows them ([Talking to the server](https://imaimai17468.github.io/hypersig/learn/server/)).
-- The page needs no hydration. On load, the runtime reads the state the server wrote into the HTML and runs no component again ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
-- You write a form's rules once, and the browser and the server both check them ([Forms](https://imaimai17468.github.io/hypersig/learn/forms/)).
-- CSS properties and values are type-checked too ([Styling](https://imaimai17468.github.io/hypersig/style/)).
-- A component set that looks like shadcn/ui, and a translation crate that makes a missing translation a compile error ([Components](https://imaimai17468.github.io/hypersig/components/), [Translations](https://imaimai17468.github.io/hypersig/i18n/)).
+- `cargo build` builds the whole application, with no Node or wasm step.
+- The first HTML already holds the page's state, so the page needs no hydration, and an action answers with only the values that changed ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
+- A form's rules, CSS, and translations are checked by the compiler as well, and a component set styled after shadcn/ui comes with it ([Forms](https://imaimai17468.github.io/hypersig/learn/forms/), [Styling](https://imaimai17468.github.io/hypersig/style/), [Translations](https://imaimai17468.github.io/hypersig/i18n/), [Components](https://imaimai17468.github.io/hypersig/components/)).
 
 ## Quick start
 
@@ -69,17 +65,11 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request. The reset button calls `/reset`, and the handler's patch sets `count` back to 0. Misspelling `count`, or adding a string to it, stops `cargo build`. For a faster loop, install the CLI with `cargo install --locked hypersig_cli` and run `cargo hypersig dev`: it rebuilds and restarts the server after each change, and the open tab reloads from the new one. The [documentation](https://imaimai17468.github.io/hypersig/learn/) continues from here.
+Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request, and the reset button calls `/reset`, whose patch sets `count` back to 0. Misspelling `count`, or adding a string to it, stops `cargo build`. With the CLI (`cargo install --locked hypersig_cli`), `cargo hypersig new my-app` starts a project and `cargo hypersig dev` rebuilds and reloads it after each change. The [documentation](https://imaimai17468.github.io/hypersig/learn/) continues from here.
 
 ## Framework comparison
 
-Topcoat and Datastar come closest to hypersig. Both keep signals in the browser and update the page from the server with no browser build, and Topcoat writes the browser's expressions in Rust too. Leptos and Dioxus write the page and the server in Rust as well, but compile the page to WebAssembly, which hydrates the server's HTML in the browser.
-
-|  | Topcoat and Datastar | hypersig |
-|---|---|---|
-| Signal names and URLs (Datastar) | Strings in HTML attributes. A typo shows up when the browser runs it | Written from Rust values. A typo stops `cargo build` |
-| Link parameters (Topcoat) | `href!` checks only the handler. A missing or extra path parameter panics when the page renders, and the request answers 500 | `Route` takes its parameters as a typed value. A wrong one is a compile error |
-| Adding to a list (Topcoat) | Expressions cannot add an item, so the list changes once the server answers and renders it again | The list is a signal, so the browser shows the change before the server answers |
+[Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/) compares hypersig with Topcoat and Datastar, which come closest, in more detail.
 
 | | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar | Leptos | Dioxus |
 |---|---|---|---|---|---|---|---|---|---|
@@ -102,26 +92,11 @@ The test app is a 2000-item TodoMVC that stores every add, toggle, and delete on
 | Total Blocking Time | 3 ms (0–37) | 318 ms (311–351) | 16 ms (11–23) | 14 ms (9–16) | 0 ms (0–0) | 36 ms (29–42) | 20 ms (17–23) | 47 ms (42–57) | 122 ms (114–126) |
 | Interaction to Next Paint | 24 ms (24–24) | 24 ms (24–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (24–24) | 16 ms (16–16) | 24 ms (16–24) | 72 ms (72–80) |
 
-The apps and the harness are in [`bench/compare`](bench/compare). Every app was measured at commit 7d031d0. Leptos and Dioxus load most of their code as WebAssembly, which the Wasm row counts apart from the JS row. Results of [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), which compares list operations in the browser alone, are in [`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md).
+The apps and the harness are in [`bench/compare`](bench/compare), measured at commit 7d031d0. Leptos and Dioxus load most of their code as WebAssembly, which the Wasm row counts. [`bench/js-framework-benchmark`](bench/js-framework-benchmark/results.md) has the results of js-framework-benchmark, and the [`hypersig_style` README](crates/hypersig_style/README.md#benchmarks) compares the styling crates. On the same machine, [`examples/todomvc`](examples/todomvc) (485 lines) builds from an empty target directory in 13.4 s and rebuilds after a one-line change in 1.3 s (`cargo build`, Rust 1.99.0).
 
-The same page styled with `hypersig::style`, Tailwind CSS, Panda CSS, StyleX, and vanilla-extract is measured in the [`hypersig_style` README](crates/hypersig_style/README.md#benchmarks).
+## Deploying and security
 
-Compile times were measured with `cargo build` (the `dev` profile) on the same machine with Rust 1.99.0. Each number is a median, of 3 runs for a build from an empty target directory and of 5 runs for a rebuild after one line of the application changes.
-
-| | Lines of Rust | From empty | After a one-line change |
-|---|---|---|---|
-| [`examples/todomvc`](examples/todomvc) | 485 | 13.4 s (11.0–13.7) | 1.3 s (1.1–1.4) |
-| [`site`](site), the documentation site | 19,484 | - | 2.5 s (2.5–3.6) |
-
-The rebuild compiles only the application's crate. In the build of `site`, `cargo build --timings` gave 2.1 s to the `hypersig` crate and 5.6 s to the `site` library.
-
-## Deploying
-
-[Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) goes from a new project to a running application in a few commands, using `cargo hypersig` (install it with `cargo install --locked hypersig_cli`). `cargo hypersig new my-app --host server` creates a project that builds a container image with Docker, for a host such as Fly.io, Cloud Run, or Render. With `--host cloudflare`, the same pages, actions, and streams run on Cloudflare Workers, and the worker hands each request to the axum `Router`. With `--host vercel`, they run as a Vercel Function, and `vercel_runtime`'s `VercelLayer` hands over the requests. The templates in [`crates/hypersig_cli/templates/`](crates/hypersig_cli/templates) are compiled into the command, so every project made with one version gets the same files, including the commands they run at build time. The Workers and Vercel projects also need Node.js, because Cloudflare and Vercel publish their command-line tools (`wrangler` and `vercel`) on npm. For an existing project, `cargo hypersig add <host>` edits `Cargo.toml`, writes the host's files, and prints the change you need to make to the Rust code.
-
-## Security
-
-[Security](https://imaimai17468.github.io/hypersig/learn/security/) lists what hypersig checks: escaping, the attributes and URLs a page may write, the requests an action refuses, and why a request cannot name code to run on the server. It also lists what each application checks itself, starting with who may call each action.
+`cargo hypersig new my-app --host server|cloudflare|vercel` writes a project for a container host, Cloudflare Workers, or a Vercel Function, and `cargo hypersig add <host>` adds one to an existing project ([Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/)). [Security](https://imaimai17468.github.io/hypersig/learn/security/) lists what hypersig checks on each request and what each application checks itself, starting with who may call each action.
 
 ## What the compiler does not check
 
@@ -141,11 +116,11 @@ The compiler checks that names, types, and links match. These mistakes still com
 
 ## What it does not suit
 
-Without the server, the browser can run only the operations and statements hypersig provides, plus the scripts a page loads. A JavaScript library such as a map or a rich text editor can run inside a custom element: the page passes it values through attributes and receives typed events from it ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)). For a library that ships a Custom Elements Manifest (`custom-elements.json`), `cargo hypersig elements` writes its tags, attribute names, and event names as Rust items, so a misspelled one is a compile error. Everything else goes through the server, which makes hypersig a poor fit for these applications:
+Without the server, the browser runs only the operations hypersig provides and the scripts a page loads. A JavaScript library such as a map or an editor runs inside a custom element, and `cargo hypersig elements` writes the names from its `custom-elements.json` as Rust items ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)). hypersig is a poor fit for:
 
 - An application whose main work runs inside a JavaScript library, such as a drawing tool or a spreadsheet
 - An application that works without a connection to the server
-- A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so a form calls an action only through the runtime, which keeps the browser from submitting any form itself. A browser that does not run the runtime shows the first HTML, and submitting a form there loads the page's own URL again with the form's named fields in the query, which runs no action.
+- A page whose forms must work with JavaScript turned off, since a form calls an action only through the runtime
 
 ## Development
 
