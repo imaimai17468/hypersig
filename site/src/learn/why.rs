@@ -427,11 +427,11 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "A `#[signals(computed)]` field is never passed to `Page::computed`",
-                        "The field keeps its first value",
+                        "Rendering the page panics. A field of a nested struct is not caught and keeps its first value",
                     ],
                     &[
                         "A list item is used outside the closure it was passed to",
-                        "Building the page usually panics. Some uses slip past and read the wrong item or fail in the browser",
+                        "Building the page panics. An expression built from the item inside the closure is not caught, and reads another list's item or fails in the browser",
                     ],
                     &[
                         "A signal holds an integer beyond ±2^53",
@@ -461,11 +461,11 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "`#[signals(computed)]` を付けたフィールドを `Page::computed` に渡し忘れる",
-                        "値が最初のまま変わりません",
+                        "ページの描画が panic します。入れ子の構造体のフィールドは検出されず、値が最初のまま変わりません",
                     ],
                     &[
                         "リストの項目を、渡されたクロージャの外で使う",
-                        "たいていはページを組み立てるときに panic します。一部は検出されず、別の項目を読むか、ブラウザでエラーになります",
+                        "ページを組み立てるときに panic します。ただし、クロージャの中で項目から作った式は検出されず、別のリストの項目を読むか、ブラウザでエラーになります",
                     ],
                     &[
                         "シグナルに ±2^53 を超える整数を入れる",
