@@ -472,11 +472,14 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
     note = "a handler is `fn(state, args)` or `fn(state, extractor, args)`, where the state is the router's and the extractor implements `FromRequestParts` for it"
 )]
 pub trait Handler<St, A, M>: Clone + Send + Sync + 'static + sealed::Sealed<St, A, M> {
-    /// What the function returns: a future for a page or an action, a stream for a stream.
+    /// What the function returns.
+    ///
+    /// It is a future for a page or an action, and a stream for a stream.
     type Output;
 
-    /// Runs the extractor, if the function takes one, then awaits `args` and
-    /// runs the function.
+    /// Runs the extractor, then awaits `args` and runs the function.
+    ///
+    /// The extractor runs only where the function takes one.
     ///
     /// `args` is awaited after the extractor, so an upload whose extractor
     /// refuses the request is answered before its body is read.
@@ -544,7 +547,9 @@ where
     }
 }
 
-/// What a page handler returns: a page, a page with a status, a redirect, or a 404.
+/// What a page handler returns.
+///
+/// It is a page, a page with a status, a redirect, or a 404.
 ///
 /// A handler that only ever renders returns `Page` or `Option<Page>`, which
 /// convert into this. One that sometimes sends the browser elsewhere returns
@@ -1008,7 +1013,9 @@ impl<St: Clone + Send + Sync + 'static> UnservedPage<St> {
     }
 }
 
-/// What sent a request: the browser loading a page, or the runtime calling an action.
+/// Whether a request loads a page or calls an action.
+///
+/// The browser sends the first kind, and the runtime the second.
 ///
 /// The runtime asks for `text/event-stream` when it calls an action, a
 /// stream, or an upload, and a browser loading a page asks for HTML. An
@@ -1498,8 +1505,10 @@ fn to_sse(event: &PatchEvent) -> Result<SseEvent, PartMismatch> {
         .data(event.try_data()?))
 }
 
-/// A request to an action or an upload that was refused, before its handler
-/// ran or while a streaming upload's handler read the files.
+/// A request to an action or an upload that was refused.
+///
+/// The router refuses it before its handler runs, or while a streaming upload's
+/// handler reads the files.
 ///
 /// Its response is `403 Forbidden` for a request from another site, a GET
 /// action call or an upload without the header the runtime adds, `415 Unsupported Media Type`

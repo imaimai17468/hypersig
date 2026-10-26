@@ -40,8 +40,10 @@ pub enum ButtonSize {
     Lg,
 }
 
-/// The style of a button of `variant` and `size`, for an element that is not
-/// a `<button>`, such as a link that leads to a form.
+/// The style of a button of `variant` and `size`.
+///
+/// It is for an element that is not a `<button>`, such as a link that leads to
+/// a form.
 ///
 /// ```
 /// use hypersig::html::a;

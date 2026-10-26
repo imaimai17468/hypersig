@@ -11,8 +11,9 @@ use hypersig::{Expr, Form, IntoExpr, Sig, Stmt, Validate, if_else};
 use crate::look;
 use crate::token;
 
-/// The `type` of a single-line [`TextField`], which picks the on-screen
-/// keyboard and what the browser checks.
+/// The `type` of a single-line [`TextField`].
+///
+/// It picks the on-screen keyboard and what the browser checks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum InputKind {
@@ -83,8 +84,9 @@ impl InputMode {
     }
 }
 
-/// What a [`TextField`] holds, as `autocomplete` names it for the browser
-/// and for WCAG 1.3.5.
+/// What a [`TextField`] holds, as `autocomplete` names it.
+///
+/// The browser reads the name, and WCAG 1.3.5 asks for it.
 ///
 /// The variants are the WHATWG autofill field names a sign-up form and a
 /// checkout ask for. A form that asks for a shipping and a billing address
@@ -232,8 +234,9 @@ impl Autocomplete {
     }
 }
 
-/// A text field bound to a `String` signal, with its label and, where given,
-/// a description and an error message tied to it.
+/// A text field bound to a `String` signal, with its label.
+///
+/// Where given, a description and an error message are tied to it.
 ///
 /// The ids that tie them together are derived from the signal's path, so a
 /// label always names its own field. `aria-describedby` points at the
@@ -420,8 +423,9 @@ impl<S> TextField<S> {
         self
     }
 
-    /// Shows `message` under the field and marks the field invalid while
-    /// `message` is not empty.
+    /// Shows `message` under the field.
+    ///
+    /// It marks the field invalid while `message` is not empty.
     ///
     /// A signal that an action call fills with
     /// [`Call::error`](hypersig::Call::error) works here, as does an
@@ -432,8 +436,10 @@ impl<S> TextField<S> {
         self
     }
 
-    /// Marks the field `required`, which the label shows with an asterisk
-    /// that a screen reader skips, since it reads "required" from the field.
+    /// Marks the field `required`.
+    ///
+    /// The label shows it with an asterisk that a screen reader skips, since it
+    /// reads "required" from the field.
     #[must_use]
     pub fn required(mut self) -> Self {
         self.frame.required = true;

@@ -109,7 +109,9 @@ impl Origin {
         self.origin
     }
 
-    /// The path the site is served under, or `""` at the root of the host.
+    /// The path the site is served under.
+    ///
+    /// It is `""` at the root of the host.
     #[must_use]
     pub fn prefix(self) -> &'static str {
         self.prefix
@@ -256,7 +258,9 @@ impl LanguageTag {
         Self(Cow::Borrowed(tag))
     }
 
-    /// Reads a tag built at run time, such as the name serde gives a locale enum's variant.
+    /// Reads a tag built at run time.
+    ///
+    /// An example is the name serde gives a locale enum's variant.
     ///
     /// # Errors
     ///
@@ -334,7 +338,9 @@ const fn check_language_tag(tag: &[u8]) -> Result<(), &'static str> {
     Ok(())
 }
 
-/// The card a chat app or a social site shows for a link to the page.
+/// The card a chat app shows for a link to the page.
+///
+/// Social sites show it too.
 ///
 /// It is written as Open Graph tags, which X also reads, plus the
 /// `twitter:card` tag that picks the card's size. The card takes its title

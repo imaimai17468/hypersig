@@ -993,7 +993,9 @@ impl<S> Link<S> {
         Stmt::new(json!(["navigate", self.into_json()]))
     }
 
-    /// A statement that shows the linked URL in the address bar as a new history entry.
+    /// A statement that shows the linked URL as a new history entry.
+    ///
+    /// The URL appears in the address bar.
     ///
     /// The page stays loaded, with its signals, its focus, and its scroll
     /// position, so the statement goes with the ones that bring the page in
@@ -1041,7 +1043,9 @@ impl<S> Link<S> {
         Stmt::new(json!(["history", "push", self.into_json()]))
     }
 
-    /// A statement that shows the linked URL in the address bar in place of the current one.
+    /// A statement that shows the linked URL in place of the current one.
+    ///
+    /// The URL appears in the address bar.
     ///
     /// It is [`Link::push_url`] without the new history entry, for a change
     /// the Back button should skip, such as each letter typed into a search
@@ -1269,7 +1273,9 @@ pub trait Variants: Segment + 'static {
     const VARIANTS: &'static [Self];
 }
 
-/// The rest of a path, from a `{*name}` segment at its end, which may hold `/`.
+/// The rest of a path, from a `{*name}` segment at its end.
+///
+/// It may hold `/`.
 ///
 /// It is the last value of a route's parameters, and only there, as axum's
 /// wildcard is the last segment. Each `/`-separated part is percent-encoded
@@ -1356,7 +1362,9 @@ impl Segment for String {
     }
 }
 
-/// The parameters of a [`Route`]: `()`, one [`Segment`], or a tuple of two to six.
+/// The parameters of a [`Route`].
+///
+/// They are `()`, one [`Segment`], or a tuple of two to six.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` cannot be the parameters of a route",
     note = "a route takes `()`, one `Segment` (an integer, `String`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them"

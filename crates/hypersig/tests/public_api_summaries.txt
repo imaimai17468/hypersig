@@ -1,0 +1,3 @@
+# Public items whose first doc sentence has 15 words or more, which
+# M-FIRST-DOC-SENTENCE does not allow. Shorten a summary and delete its line.
+# A new item missing here fails tests/public_api.rs.

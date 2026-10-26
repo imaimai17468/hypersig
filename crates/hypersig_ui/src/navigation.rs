@@ -60,7 +60,9 @@ impl<S> Breadcrumb<S> {
         }
     }
 
-    /// Adds a link to a page above the current one, after the links before it.
+    /// Adds a link to a page above the current one.
+    ///
+    /// It goes after the links added so far.
     #[must_use]
     pub fn link(mut self, text: impl Into<String>, link: Link<S>) -> Self {
         self.links.push((text.into(), link));
@@ -113,8 +115,9 @@ impl<S> Breadcrumb<S> {
     }
 }
 
-/// A list of links to the sections of an application, marking the one the
-/// page is in.
+/// A list of links to the sections of an application.
+///
+/// It marks the one the page is in.
 ///
 /// It is a `<nav>` named by its label, holding a list of links. The page
 /// passes its own [`Url`], which the server writes with [`Route::url`], and

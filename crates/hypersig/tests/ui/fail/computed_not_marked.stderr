@@ -2,12 +2,13 @@ error[E0277]: `Page::computed` takes a field marked `#[signals(computed)]`
   --> tests/ui/fail/computed_not_marked.rs:20:46
    |
 20 |     let _ = Page::new("Cart", cart).computed(Cart::price(), Cart::price() * 2.0);
-   |                                     -------- ^^^^^^^^^^^^^ this signal can be written, so a computed value would not stay in it
+   |                                     -------- ^^^^^^^^^^^^^ this signal is marked `hypersig::Root`, and `Page::computed` takes only `Computed`
    |                                     |
    |                                     required by a bound introduced by this call
    |
    = help: the trait `IsComputed` is not implemented for `hypersig::Root`
-   = note: add `#[signals(computed)]` to the field in the struct's definition
+   = note: for a field without the mark, add `#[signals(computed)]` to it in the struct's definition
+   = note: for a view from `Sig::read`, pass the field's accessor itself
 help: the trait `IsComputed` is implemented for `Computed`
   --> src/signal.rs
    |

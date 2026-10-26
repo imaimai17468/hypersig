@@ -81,7 +81,10 @@ pub use axum::LocaleRouterExt;
 use hypersig::{LanguageTag, Origin, Page, Signals, Url, Variants};
 use serde::Serialize;
 
-/// The locales of an application: an enum with `#[derive(Segment)]` whose segments are BCP 47 tags.
+/// The locales of an application.
+///
+/// They are the variants of an enum with `#[derive(Segment)]`, whose segments
+/// are BCP 47 tags.
 ///
 /// The compiler checks that each text has every locale, through
 /// [`Locale::Text`], and that [`Locale::pick`] handles every locale, through
@@ -218,7 +221,9 @@ pub fn negotiate<L: Locale>(accept_language: &str) -> L {
 
 /// Adds the alternate of each locale to a [`Page`].
 pub trait LocalePage: Sized {
-    /// Names the page's address in each locale of `L`, where `url` gives the address in one.
+    /// Names the page's address in each locale of `L`.
+    ///
+    /// `url` gives the address in one locale.
     ///
     /// It adds one [`Page::alternate`] per locale of [`locales`], tagged
     /// with [`Locale::tag`], and a [`Page::alternate_default`] at the first

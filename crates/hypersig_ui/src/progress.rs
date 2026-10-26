@@ -10,7 +10,9 @@ use hypersig::{Expr, IntoExpr};
 use crate::look;
 use crate::token;
 
-/// A bar filled up to `percent`, a value from 0 to 100, named by `label`.
+/// A bar filled up to `percent`, named by `label`.
+///
+/// `percent` is a value from 0 to 100.
 ///
 /// It is a `role="progressbar"` with `aria-valuenow` kept equal to the value,
 /// so a screen reader reads the label and the percentage. A value below 0 or
@@ -60,8 +62,9 @@ pub fn progress<S>(label: impl Into<String>, percent: impl IntoExpr<S, i32>) -> 
         )
 }
 
-/// A pulsing block in [`token::accent`] that stands in for content still
-/// loading, hidden from assistive technology.
+/// A pulsing block in [`token::accent`] that stands in for loading content.
+///
+/// It is hidden from assistive technology.
 ///
 /// Size it with `.css`. Tell a screen reader that the content is loading
 /// elsewhere, such as with `aria-busy` on the region it fills.

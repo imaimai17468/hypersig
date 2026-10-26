@@ -118,7 +118,8 @@ pub use route::{
     Variants,
 };
 pub use signal::{
-    Computed, FromPage, IsComputed, Item, Local, MAX_DEPTH, Part, Root, Sig, Signals, Writable,
+    Computed, FromPage, IsComputed, Item, Local, MAX_DEPTH, Part, Read, Root, Sig, Signals,
+    Writable,
 };
 pub use upload::{FileInput, Upload};
 #[cfg(feature = "axum")]

@@ -159,8 +159,10 @@ impl Style {
         &self.keyframes
     }
 
-    /// Animates the element with `keyframes`: sets `animation-name` to its
-    /// name, and carries the `@keyframes` rule to the page.
+    /// Animates the element with `keyframes`.
+    ///
+    /// It sets `animation-name` to its name, and carries the `@keyframes` rule
+    /// to the page.
     #[must_use]
     pub fn keyframes(mut self, keyframes: &Keyframes) -> Self {
         if !self.keyframes.iter().any(|k| k.name() == keyframes.name()) {
@@ -190,8 +192,10 @@ impl Style {
         self
     }
 
-    /// Sets `token` to `value` on the element and everything inside it, in
-    /// place of the default and the page's [`Theme`](crate::Theme).
+    /// Sets `token` to `value` on the element and everything inside it.
+    ///
+    /// It takes the place of the default and the page's
+    /// [`Theme`](crate::Theme).
     #[must_use]
     pub fn token<T: TokenValue>(mut self, token: &Token<T>, value: impl Into<T>) -> Self {
         self.insert(Atom {
@@ -293,10 +297,11 @@ impl Style {
             .chain(self.atoms.iter().map(|a| a.class_name(false)))
     }
 
-    /// The class names for this style when it is switched on and off at run
-    /// time. Their rules sit in a later cascade layer than those of
-    /// [`Style::class_names`], so while switched on they override the
-    /// element's own declarations for the same property.
+    /// The class names for this style when it is toggled at run time.
+    ///
+    /// Their rules sit in a later cascade layer than those of
+    /// [`Style::class_names`], so while switched on they override the element's
+    /// own declarations for the same property.
     pub fn toggled_class_names(&self) -> impl Iterator<Item = String> + '_ {
         self.markers
             .iter()

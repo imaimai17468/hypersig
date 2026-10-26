@@ -12,8 +12,9 @@ use serde::Serialize;
 use crate::look;
 use crate::token;
 
-/// A tab list named `label` whose selection is the signal `selected`, with
-/// one tab and one panel per variant of its enum.
+/// A tab list named `label` whose selection is the signal `selected`.
+///
+/// It has one tab and one panel per variant of its enum.
 ///
 /// It follows the WAI-ARIA tabs pattern. The list has `role="tablist"`, each
 /// tab `role="tab"` with `aria-selected` and `aria-controls`, and each panel

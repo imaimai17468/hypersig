@@ -11,5 +11,5 @@ error[E0308]: mismatched types
 note: associated function defined here
   --> src/chart.rs
    |
-   |     pub fn bar(
+   |     pub fn bar<R: FromPage>(
    |            ^^^

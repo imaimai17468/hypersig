@@ -53,8 +53,9 @@ mod sealed {
     }
 }
 
-/// A number field bound to an `i32` or `f64` signal, with its label and,
-/// where given, a description and an error message tied to it.
+/// A number field bound to an `i32` or `f64` signal, with its label.
+///
+/// Where given, a description and an error message are tied to it.
 ///
 /// It is an `<input type="number">` with the ids, `aria-describedby`, and
 /// `aria-invalid` of a [`TextField`](crate::TextField). `min`, `max`, and
@@ -159,8 +160,10 @@ impl<S, T: Numeric> NumberField<S, T> {
         self
     }
 
-    /// Sets how far the arrow keys move the value, and which values the
-    /// browser accepts: the minimum plus a whole number of steps.
+    /// Sets how far the arrow keys move the value.
+    ///
+    /// It also sets which values the browser accepts: the minimum plus a whole
+    /// number of steps.
     ///
     /// # Panics
     ///
@@ -182,16 +185,18 @@ impl<S, T: Numeric> NumberField<S, T> {
         self
     }
 
-    /// Shows `message` under the field and marks the field invalid while
-    /// `message` is not empty.
+    /// Shows `message` under the field.
+    ///
+    /// It marks the field invalid while `message` is not empty.
     #[must_use]
     pub fn error(mut self, message: impl IntoExpr<S, String>) -> Self {
         self.frame.error = Some(message.into_expr());
         self
     }
 
-    /// Marks the field `required`, which the label shows with an asterisk
-    /// that a screen reader skips.
+    /// Marks the field `required`.
+    ///
+    /// The label shows it with an asterisk that a screen reader skips.
     #[must_use]
     pub fn required(mut self) -> Self {
         self.frame.required = true;

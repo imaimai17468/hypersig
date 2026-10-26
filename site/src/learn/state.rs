@@ -85,6 +85,12 @@ pub fn signals(site: Site) -> Part {
                 ja: "`Page::new` が初期値を受け取り、`Page::render` がその値ですべての束縛を評価します。テキスト、表示と非表示、クラス、属性、フォームの値、リストの項目は、ランタイムを読み込む前から HTML に入っています。ランタイムはそれらの要素を作り直さず、そのまま使います。データは `<body>` に置いたシグナル構造体の JSON なので、ブラウザはページを表示するために何も取得しません。",
             },
         ),
+        computed(site),
+    ])
+}
+
+fn computed(site: Site) -> Part {
+    parts([
         heading(
             site,
             L {
@@ -105,6 +111,13 @@ pub fn signals(site: Site) -> Part {
             L {
                 en: "The accessor of a field marked `#[signals(computed)]` returns a `Sig<S, T, Computed>`, which has no `set`, `toggle`, list statement, or `patch`, and which `bind` refuses. A statement that writes it or a patch that sets it is a compile error, because the browser would overwrite that value the next time a field the expression reads changes. A field of a nested struct with the mark is reached with `at_computed` instead of `at`, and rendering the page panics when the page reads such a field and no `Page::computed` call names it.",
                 ja: "`#[signals(computed)]` を付けたフィールドのアクセサーは `Sig<S, T, Computed>` を返します。この型には `set`、`toggle`、リストの文、`patch` がなく、`bind` にも渡せません。書き込む文や設定する差分を書くとコンパイルエラーになります。書き込んだ値は、式が読むフィールドが次に変わったときにブラウザが上書きするからです。入れ子の構造体にある印の付いたフィールドには、`at` の代わりに `at_computed` でたどり着きます。そのフィールドをページが読むのに、どの `Page::computed` の呼び出しも指していないと、ページの描画が panic します。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A function that only reads a signal can take a plain field and a computed one alike, as `hypersig_ui::Chart` does with its rows. It takes a `Sig<S, T, R>` with `R: FromPage` and calls `read()` on it, which gives a `Sig<S, T, Read>` with the same path. That type reads like the signal it came from, has no statement that writes it, and is refused by `Page::computed`. A view of a computed field is checked as the field is, so rendering the page still panics when the page reads it and no `Page::computed` call names the field.",
+                ja: "シグナルを読むだけの関数は、印のないフィールドと計算されるフィールドのどちらも受け取れます。`hypersig_ui::Chart` は行をこの方法で受け取ります。`R: FromPage` の `Sig<S, T, R>` を受け取って `read()` を呼ぶと、同じパスを持つ `Sig<S, T, Read>` が得られます。この型でも値は元のシグナルと同じように読めますが、書き込む文はなく、`Page::computed` にも渡せません。計算されるフィールドから作った `Read` も元のフィールドと同じように検査されるので、ページがそれを読むのに、どの `Page::computed` の呼び出しもそのフィールドを指していなければ、ページの描画が panic します。",
             },
         ),
     ])

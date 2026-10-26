@@ -9,15 +9,19 @@ use crate::style::{Prop, Style, class_name};
 /// The cascade layer of the classes from [`Sheet::add`].
 pub const LAYER: &str = "hypersig-atoms";
 
-/// The cascade layer of the classes from [`Sheet::add_toggled`], which comes
-/// after [`LAYER`], so a toggled declaration overrides an element's own.
+/// The cascade layer of the classes from [`Sheet::add_toggled`].
+///
+/// It comes after [`LAYER`], so a toggled declaration overrides an element's
+/// own.
 pub const TOGGLED_LAYER: &str = "hypersig-toggled";
 
 /// The cascade layer of a [`Theme`](crate::Theme)'s values, before [`LAYER`].
 pub const TOKEN_LAYER: &str = "hypersig-tokens";
 
-/// The cascade layer of a [`Global`](crate::Global)'s rules, after
-/// [`TOKEN_LAYER`] and before [`LAYER`], so an element's classes override them.
+/// The cascade layer of a [`Global`](crate::Global)'s rules.
+///
+/// It comes after [`TOKEN_LAYER`] and before [`LAYER`], so an element's classes
+/// override them.
 pub const BASE_LAYER: &str = "hypersig-base";
 
 /// The statement that puts [`TOKEN_LAYER`], [`BASE_LAYER`], [`LAYER`], and
@@ -69,8 +73,10 @@ struct Key {
     value: String,
 }
 
-/// The rules of one place in the order: one cascade layer, one set of
-/// conditions, and one shorthand rank, or one `@keyframes` rule.
+/// The rules of one place in the cascade order.
+///
+/// A place is one cascade layer, one set of conditions, and one shorthand rank,
+/// or one `@keyframes` rule.
 ///
 /// Rules in one bucket never set the same property on the same element, so
 /// their order among themselves does not matter. A page writes each bucket as
@@ -83,17 +89,21 @@ pub struct Bucket {
 }
 
 impl Bucket {
-    /// A string that sorts the way buckets are ordered: `0` for [`LAYER`] or
-    /// `1` for [`TOGGLED_LAYER`], a space, and the sublayer name, whose fixed
-    /// fields compare as strings the way the buckets do. A `@keyframes` rule,
-    /// which no order affects, is `2`, a space, and its name.
+    /// A string that sorts the way buckets are ordered.
+    ///
+    /// It is `0` for [`LAYER`] or `1` for [`TOGGLED_LAYER`], a space, and the
+    /// sublayer name, whose fixed fields compare as strings the way the buckets
+    /// do. A `@keyframes` rule, which no order affects, is `2`, a space, and
+    /// its name.
     #[must_use]
     pub fn sort_key(&self) -> &str {
         &self.sort_key
     }
 
-    /// The bucket's rules as a stylesheet of their own: the order of the
-    /// layers, then the rules inside `@layer <layer>.<sublayer>{...}`.
+    /// The bucket's rules as a stylesheet of their own.
+    ///
+    /// It holds the order of the layers, then the rules inside `@layer
+    /// <layer>.<sublayer>{...}`.
     #[must_use]
     pub fn css(&self) -> &str {
         &self.css
@@ -148,8 +158,9 @@ impl Sheet {
         self.rules.is_empty() && self.keyframes.is_empty()
     }
 
-    /// The rules grouped into buckets, in the order they apply, then one
-    /// bucket per `@keyframes` rule.
+    /// The rules grouped into buckets, in the order they apply.
+    ///
+    /// One bucket per `@keyframes` rule follows them.
     pub fn buckets(&self) -> impl Iterator<Item = Bucket> + '_ {
         let mut rules = self.rules.iter().peekable();
         let atoms = std::iter::from_fn(move || {

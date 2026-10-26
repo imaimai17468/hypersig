@@ -165,8 +165,10 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Names `url` on `origin` as the page's one address, for a page that
-    /// several URLs serve, such as with and without search parameters.
+    /// Names `url` on `origin` as the page's one address.
+    ///
+    /// Use it for a page that several URLs serve, such as with and without
+    /// search parameters.
     ///
     /// ```
     /// use hypersig::{Origin, Page, Route, Signals};
@@ -238,8 +240,10 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Names `url` on `origin` as the version for a visitor whose language no
-    /// [`Page::alternate`] matches, the `x-default` alternate.
+    /// Names `url` on `origin` as the page's `x-default` alternate.
+    ///
+    /// It is the version for a visitor whose language no [`Page::alternate`]
+    /// matches.
     #[must_use]
     pub fn alternate_default(mut self, origin: Origin, url: &Url) -> Self {
         self.alternates.push((None, origin.join(url.as_str())));
@@ -338,8 +342,9 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Puts `nonce` on the page's `<style>` and `<script>` elements, for a
-    /// Content-Security-Policy that allows styles by nonce.
+    /// Puts `nonce` on the page's `<style>` and `<script>` elements.
+    ///
+    /// It is for a Content-Security-Policy that allows styles by nonce.
     ///
     /// With it, a page runs under `style-src 'nonce-…'` and `script-src
     /// 'self'` without `'unsafe-inline'`. The runtime puts the same nonce on
@@ -400,7 +405,9 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Adds the card a link to the page shows in chat apps and social sites.
+    /// Adds the card a link to the page shows in chat apps.
+    ///
+    /// Social sites show the card too.
     #[must_use]
     pub fn open_graph(mut self, card: OpenGraph) -> Self {
         self.open_graph = Some(card);
@@ -509,8 +516,10 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Loads the runtime from `src` instead of [`RUNTIME_PATH`](crate::RUNTIME_PATH),
-    /// for a page served as a static file next to a copy of
+    /// Loads the runtime from `src` instead of
+    /// [`RUNTIME_PATH`](crate::RUNTIME_PATH).
+    ///
+    /// It is for a page served as a static file next to a copy of
     /// [`RUNTIME_JS`](crate::RUNTIME_JS).
     ///
     /// A path the application serves goes under the [`Base`] of the route
@@ -798,7 +807,9 @@ impl<S: Signals> Page<S> {
         }
     }
 
-    /// The value `signal` starts at in the browser, for a test of a page handler.
+    /// The value `signal` starts at in the browser.
+    ///
+    /// A test of a page handler reads it.
     ///
     /// It is the value the page was built with, or for a
     /// [`computed`](Self::computed) signal, the value computed from the others.
@@ -863,7 +874,9 @@ impl<S: Signals> Page<S> {
         self.render_with(Base::ROOT, None)
     }
 
-    /// Renders the document for a site served under `base`, such as a static site at `/docs`.
+    /// Renders the document for a site served under `base`.
+    ///
+    /// An example is a static site at `/docs`.
     ///
     /// The runtime's path and each [`Asset`] path the application serves
     /// start with `base`, as they do for a page a route under `base` serves.
@@ -1094,11 +1107,11 @@ fn reads_path(ast: &Value, path: &str) -> bool {
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use crate::html::{Stylesheet, input, p};
+    use crate::html::{Stylesheet, input, p, span};
     use crate::route::Base;
     use crate::style::value::Color;
     use crate::style::{Global, Property, Style, Theme, Token};
-    use crate::{Asset, NodeRef, Page, Signals};
+    use crate::{Asset, Expr, NodeRef, Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize, Default)]
     struct Search {
@@ -1347,6 +1360,78 @@ mod tests {
             .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
             .render();
         assert!(html.contains("line.total"), "{html}");
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Booth {
+        line: Line,
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Kiosk {
+        line: Line,
+    }
+
+    #[test]
+    #[should_panic(expected = "the page reads `line.total`, a field of a nested struct")]
+    fn a_read_view_of_a_nested_computed_field_no_page_computed_names_panics() {
+        let total = Booth::line().at_computed(Line::total()).read();
+        let _ = Page::new("Booth", Booth::default())
+            .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
+            .render();
+    }
+
+    #[test]
+    fn a_read_view_of_a_nested_computed_field_page_computed_names_renders() {
+        let line = Kiosk::line();
+        let total = line.at_computed(Line::total());
+        let kiosk = Kiosk {
+            line: Line {
+                price: 3.0,
+                total: 0.0,
+            },
+        };
+        let page = Page::new("Kiosk", kiosk)
+            .computed(total, line.at(Line::price()) * 2.0)
+            .child(input().bind_attr(crate::html::attr::VALUE, total.read().to_text()));
+        assert_eq!(page.value_of(total.read()), 6.0);
+        assert!(page.render().contains("line.total"));
+    }
+
+    #[test]
+    #[should_panic(expected = "the field `total` of")]
+    fn a_read_view_of_a_computed_field_no_page_computed_names_panics() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .child(span().bind_text(Order::total().read().to_text()))
+            .render();
+    }
+
+    #[test]
+    fn a_read_view_reads_the_computed_value() {
+        let page = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::subtotal().read() + 1.0);
+        assert_eq!(page.value_of(Order::total().read()), 41.0);
+    }
+
+    #[test]
+    fn a_read_view_of_a_field_renders_as_the_field() {
+        let page = |text: Expr<Order, String>| {
+            order()
+                .computed(Order::subtotal(), Order::price() * 2.0)
+                .computed(Order::total(), Order::subtotal() + 1.0)
+                .child(span().bind_text(text))
+                .render()
+        };
+        assert_eq!(
+            page(Order::price().read().to_text()),
+            page(Order::price().to_text())
+        );
+        assert_eq!(
+            page(Order::total().read().to_text()),
+            page(Order::total().to_text())
+        );
     }
 
     #[test]

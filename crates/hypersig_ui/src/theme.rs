@@ -5,8 +5,9 @@ use hypersig::style::{Element, Global, Media, Selector, Style, Theme};
 
 use crate::token;
 
-/// The rules every page with these components needs: a reset, the font,
-/// and the page colors.
+/// The rules every page with these components needs.
+///
+/// They are a reset, the font, and the page colors.
 ///
 /// `color-scheme` follows the theme, so a scrollbar or a native picker is
 /// drawn dark beside the dark tokens.

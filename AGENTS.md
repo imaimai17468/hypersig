@@ -48,6 +48,8 @@ A trybuild `.stderr` file records the compiler's message. Regenerate it with `TR
 
 CI also runs `cargo udeps --workspace --all-targets` and `cargo miri test -p hypersig --lib` on the nightly pinned in `.github/workflows/ci.yml`. Run them locally with `cargo +nightly-2026-10-14 ...` when a change adds a dependency or touches `ssr.rs`, `signal.rs`, or `expr.rs`. `hypersig_proc_impl` is left out of miri because insta spawns a process to find the workspace, which miri cannot do.
 
+The same nightly job checks the public API against `.claude/rules/rust.md` (`crates/hypersig/tests/public_api.rs`). Run it when a change adds or changes a public item: write the rustdoc JSON of each library crate with `cargo +nightly-2026-10-14 rustdoc -p <crate> --all-features -- -Z unstable-options --output-format json` for `hypersig`, `hypersig_ui`, `hypersig_style` and `hypersig_i18n`, then `cargo +nightly-2026-10-14 test -p hypersig --test public_api -- --ignored`. A new string parameter or a long first doc sentence fails it until `tests/public_api_strings.txt` or `tests/public_api_summaries.txt` lists it. `HYPERSIG_PUBLIC_API=overwrite` rewrites both lists; read the diff, because each new string parameter is either checked when it is built or a place where a hand-written string reaches the browser.
+
 Report a step you could not run as "not run", never as "passed".
 
 ## Rules

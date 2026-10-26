@@ -110,8 +110,9 @@ pub fn circle(size: Length) -> Style {
     square(size).border_radius(pct(50))
 }
 
-/// A box whose height follows its width at `ratio` (width over height), with
-/// its content clipped to it.
+/// A box whose height follows its width at `ratio`.
+///
+/// `ratio` is width over height, and the box clips its content.
 #[must_use]
 pub fn aspect_ratio(ratio: f64) -> Style {
     Style::new()
@@ -129,8 +130,10 @@ pub fn divider(width: Length, color: Color) -> Style {
         .border_top_color(color)
 }
 
-/// Hidden from sight but read by screen readers, as the `sr-only` utility of
-/// Tailwind CSS and Panda CSS's `visuallyHidden` pattern write it.
+/// Hidden from sight but read by screen readers.
+///
+/// It writes the rules that the `sr-only` utility of Tailwind CSS and Panda
+/// CSS's `visuallyHidden` pattern write.
 #[must_use]
 pub fn visually_hidden() -> Style {
     Style::new()

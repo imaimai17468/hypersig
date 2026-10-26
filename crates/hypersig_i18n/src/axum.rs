@@ -8,9 +8,11 @@ use hypersig::Route;
 
 use crate::{Locale, negotiate};
 
-/// Adds the redirect from `/` to the page in the visitor's language to an axum [`Router`].
+/// Adds the redirect from `/` to the page in the visitor's language.
+///
+/// It extends an axum [`Router`].
 pub trait LocaleRouterExt<St>: Sized {
-    /// Answers `GET /` with a redirect to `home` in the locale the visitor's browser asks for.
+    /// Answers `GET /` with a redirect to `home` in the visitor's locale.
     ///
     /// The locale comes from [`negotiate`] over the `Accept-Language` header.
     /// The redirect is a `307 Temporary Redirect` with `Vary: Accept-Language`,

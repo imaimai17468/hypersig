@@ -3,9 +3,10 @@
 use std::borrow::Cow;
 use std::fmt::{self, Write as _};
 
-/// The id of an element, which [`El::id`](super::El::id) writes and the
-/// methods that point at an element read, such as
-/// [`El::label_for`](super::El::label_for) and
+/// The id of an element.
+///
+/// [`El::id`](super::El::id) writes it, and the methods that point at an
+/// element read it, such as [`El::label_for`](super::El::label_for) and
 /// [`El::aria_describedby`](super::El::aria_describedby).
 ///
 /// Declare an id once, as a `const` or a value both ends share, so that the
@@ -73,8 +74,9 @@ impl Id {
         }
     }
 
-    /// This id followed by `-` and `key`, for one of several elements, such
-    /// as a row of a list.
+    /// This id followed by `-` and `key`.
+    ///
+    /// It names one of several elements, such as a row of a list.
     ///
     /// An id holds no whitespace, so each ASCII whitespace character of
     /// `key` is written as `%` and its two hex digits, as in a URL, and `%`
@@ -112,8 +114,9 @@ impl Id {
         }
     }
 
-    /// An id built at run time from `text`, such as the anchor of a heading
-    /// made from its words.
+    /// An id built at run time from `text`.
+    ///
+    /// An example is the anchor of a heading made from its words.
     ///
     /// ASCII whitespace in `text` becomes `_`, and an empty `text` gives
     /// `_`, because an id holds neither. Prefer [`Id::new`] for an id written

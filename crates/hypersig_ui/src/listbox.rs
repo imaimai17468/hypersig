@@ -11,7 +11,9 @@ use serde::Serialize;
 use crate::look::{self, icon};
 use crate::token;
 
-/// A list named `label` whose selected option is the signal `selected`, one option per variant.
+/// A list named `label` whose selected option is the signal `selected`.
+///
+/// It has one option per variant.
 ///
 /// It follows the WAI-ARIA listbox pattern for a single selection. The list
 /// has `role="listbox"` and each option `role="option"` with

@@ -320,8 +320,8 @@ fn component_page(page: Component) -> Page {
                     "button_style",
                     "hypersig_ui/fn.button_style.html",
                     L {
-                        en: "The style of a button of `variant` and `size`, for an element that is not a `<button>`.",
-                        ja: "`<button>` 以外の要素に使う、`variant` と `size` を指定したボタンのスタイル",
+                        en: "The style of a button of `variant` and `size`.",
+                        ja: "`variant` と `size` を指定したボタンのスタイル",
                     },
                 ),
                 (
@@ -448,16 +448,16 @@ fn component_page(page: Component) -> Page {
                     "error",
                     "hypersig_ui/struct.TextField.html#method.error",
                     L {
-                        en: "Shows `message` under the field and marks the field invalid while `message` is not empty.",
-                        ja: "フィールドの下に `message` を表示し、`message` が空でない間はフィールドを無効な入力として示します。",
+                        en: "Shows `message` under the field.",
+                        ja: "フィールドの下に `message` を表示します。",
                     },
                 ),
                 (
                     "required",
                     "hypersig_ui/struct.TextField.html#method.required",
                     L {
-                        en: "Marks the field `required`, which the label shows with an asterisk.",
-                        ja: "フィールドを `required` にします。ラベルにはアスタリスクが付きます。",
+                        en: "Marks the field `required`.",
+                        ja: "フィールドを `required` にします。",
                     },
                 ),
                 (
@@ -520,8 +520,8 @@ fn component_page(page: Component) -> Page {
                     "step",
                     "hypersig_ui/struct.NumberField.html#method.step",
                     L {
-                        en: "Sets how far the arrow keys move the value, and which values the browser accepts.",
-                        ja: "矢印キーで値が動く幅と、ブラウザが受け付ける値を設定します。",
+                        en: "Sets how far the arrow keys move the value.",
+                        ja: "矢印キーで値が動く幅を設定します。",
                     },
                 ),
                 (
@@ -640,16 +640,16 @@ fn component_page(page: Component) -> Page {
                     "radio_group",
                     "hypersig_ui/fn.radio_group.html",
                     L {
-                        en: "A group of radio buttons with `title` in its `<legend>`, one per option, that sets `selected` to the option's value.",
-                        ja: "`title` を `<legend>` に表示し、選択肢ごとに 1 つのラジオボタンを並べて、選んだ選択肢の値を `selected` に入れるグループ",
+                        en: "A group of radio buttons, one per option, with `title` in its `<legend>`.",
+                        ja: "選択肢ごとに 1 つのラジオボタンを並べ、`title` を `<legend>` に表示するグループ",
                     },
                 ),
                 (
                     "radio_group_in_form",
                     "hypersig_ui/fn.radio_group_in_form.html",
                     L {
-                        en: "A group of radio buttons with `title` in its `<legend>`, bound to `field` of `form`.",
-                        ja: "`title` を `<legend>` に表示し、`form` の `field` に束縛したラジオボタンのグループ",
+                        en: "A group of radio buttons bound to `field` of `form`.",
+                        ja: "`form` の `field` に束縛したラジオボタンのグループ",
                     },
                 ),
             ],
@@ -752,8 +752,8 @@ fn component_page(page: Component) -> Page {
                     "Slider::new",
                     "hypersig_ui/struct.Slider.html#method.new",
                     L {
-                        en: "A slider from 0 to 100 in steps of 1, labeled `label`, bound to `value`.",
-                        ja: "`value` に束縛し、`label` をラベルに持つ、0 から 100 まで 1 刻みのスライダー",
+                        en: "A slider from 0 to 100 in steps of 1, bound to `value`.",
+                        ja: "`value` に束縛した、0 から 100 まで 1 刻みのスライダー",
                     },
                 ),
                 (
@@ -776,8 +776,8 @@ fn component_page(page: Component) -> Page {
                     "value_text",
                     "hypersig_ui/struct.Slider.html#method.value_text",
                     L {
-                        en: "Shows `text` beside the label and gives it to assistive technology as `aria-valuetext`.",
-                        ja: "ラベルの横に `text` を表示し、支援技術には `aria-valuetext` として渡します。",
+                        en: "Shows `text` beside the label and gives it to assistive technology.",
+                        ja: "ラベルの横に `text` を表示し、支援技術にも渡します。",
                     },
                 ),
                 (
@@ -1005,8 +1005,8 @@ fn component_page(page: Component) -> Page {
                     "render",
                     "hypersig_ui/struct.Combobox.html#method.render",
                     L {
-                        en: "The label, the text field, and the list of `options`, keeping their state in `state`.",
-                        ja: "状態を `state` に持つ、ラベルとテキストフィールドと `options` の一覧",
+                        en: "The label, the text field, and the list of `options`, in a `<div>`.",
+                        ja: "`<div>` に入れた、ラベルとテキストフィールドと `options` の一覧",
                     },
                 ),
                 (
@@ -1117,8 +1117,8 @@ fn component_page(page: Component) -> Page {
                     "Accordion::exclusive",
                     "hypersig_ui/struct.Accordion.html#method.exclusive",
                     L {
-                        en: "An accordion that keeps at most one section open, its `<div>` carrying the id `group`.",
-                        ja: "開いているセクションを多くても 1 つにし、`<div>` に id `group` を持つアコーディオン",
+                        en: "An accordion that keeps at most one section open.",
+                        ja: "開いているセクションを多くても 1 つにするアコーディオン",
                     },
                 ),
                 (
@@ -1410,8 +1410,8 @@ fn component_page(page: Component) -> Page {
                     "link",
                     "hypersig_ui/struct.Breadcrumb.html#method.link",
                     L {
-                        en: "Adds a link to a page above the current one, after the links before it.",
-                        ja: "今のページより上のページへのリンクを、それまでのリンクのあとに追加します。",
+                        en: "Adds a link to a page above the current one.",
+                        ja: "今のページより上のページへのリンクを追加します。",
                     },
                 ),
                 (
@@ -1507,24 +1507,24 @@ fn component_page(page: Component) -> Page {
                     "sortable_column",
                     "hypersig_ui/struct.DataTable.html#method.sortable_column",
                     L {
-                        en: "Adds `column`, whose header sorts the rows by `key`, after the columns added so far.",
-                        ja: "見出しで行を `key` の順に並べ替える列 `column` を、それまでに追加した列の後ろに追加します。",
+                        en: "Adds `column`, whose header sorts the rows by `key`.",
+                        ja: "見出しで行を `key` の順に並べ替える列 `column` を追加します。",
                     },
                 ),
                 (
                     "selectable",
                     "hypersig_ui/struct.DataTable.html#method.selectable",
                     L {
-                        en: "Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.",
-                        ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に追加します。",
+                        en: "Adds a first column of checkboxes that keep selected rows in `selected`.",
+                        ja: "選んだ行を `selected` に持つチェックボックスの列を先頭に追加します。",
                     },
                 ),
                 (
                     "expandable",
                     "hypersig_ui/struct.DataTable.html#method.expandable",
                     L {
-                        en: "Adds a first column of buttons that show `details` of a row under it, keeping the `key` of each open row in `expanded`.",
-                        ja: "行の下に `details` を開閉するボタンの列を先頭に追加し、開いている行の `key` を `expanded` に持ちます。",
+                        en: "Adds a first column of buttons that show `details` of a row under it.",
+                        ja: "行の下に `details` を開閉するボタンの列を先頭に追加します。",
                     },
                 ),
                 (
@@ -1547,8 +1547,8 @@ fn component_page(page: Component) -> Page {
                     "max_height",
                     "hypersig_ui/struct.DataTable.html#method.max_height",
                     L {
-                        en: "Keeps the table at most `height` high, scrolling its rows under a header that stays in place.",
-                        ja: "表の高さを `height` までに抑え、見出しを固定したまま行をスクロールさせます。",
+                        en: "Keeps the table at most `height` high.",
+                        ja: "表の高さを `height` までに抑えます。",
                     },
                 ),
                 (
@@ -1611,24 +1611,24 @@ fn component_page(page: Component) -> Page {
                     "ServerTable::new",
                     "hypersig_ui/struct.ServerTable.html#method.new",
                     L {
-                        en: "An empty table named `label`, listing `rows` by `key`, which runs `load` to fetch rows.",
-                        ja: "`label` を名前に持ち、`rows` を `key` で並べ、行を取りに `load` を実行する空の表",
+                        en: "An empty table named `label`, listing `rows` by `key`.",
+                        ja: "`label` を名前に持ち、`rows` を `key` で並べる空の表",
                     },
                 ),
                 (
                     "ServerTable::sortable_column",
                     "hypersig_ui/struct.ServerTable.html#method.sortable_column",
                     L {
-                        en: "Adds `column`, whose header asks the server to sort by `key`, after the columns added so far.",
-                        ja: "見出しでサーバーに `key` での並べ替えを求める列 `column` を、それまでに追加した列の後ろに追加します。",
+                        en: "Adds `column`, whose header asks the server to sort by `key`.",
+                        ja: "見出しでサーバーに `key` での並べ替えを求める列 `column` を追加します。",
                     },
                 ),
                 (
                     "ServerTable::selectable",
                     "hypersig_ui/struct.ServerTable.html#method.selectable",
                     L {
-                        en: "Adds a first column of checkboxes that keep the `key` of each selected row in `selected`.",
-                        ja: "選んだ行の `key` を `selected` に持つチェックボックスの列を先頭に追加します。",
+                        en: "Adds a first column of checkboxes that keep selected rows in `selected`.",
+                        ja: "選んだ行を `selected` に持つチェックボックスの列を先頭に追加します。",
                     },
                 ),
                 (
@@ -1643,8 +1643,8 @@ fn component_page(page: Component) -> Page {
                     "ServerTable::paginate",
                     "hypersig_ui/struct.ServerTable.html#method.paginate",
                     L {
-                        en: "Shows pages of `size` rows out of `total`, with buttons for the previous and next page.",
-                        ja: "`total` 行のうち `size` 行ずつのページを表示し、前と次のページに移るボタンを置きます。",
+                        en: "Shows pages of `size` rows out of `total`.",
+                        ja: "`total` 行のうち `size` 行ずつのページを表示します。",
                     },
                 ),
                 (
@@ -2342,15 +2342,15 @@ fn component_page(page: Component) -> Page {
                     "progress",
                     "hypersig_ui/fn.progress.html",
                     L {
-                        en: "A bar filled up to `percent`, a value from 0 to 100, named by `label`.",
-                        ja: "`label` を名前に持ち、0 から 100 の値 `percent` の分だけ塗りつぶされるバー",
+                        en: "A bar filled up to `percent`, named by `label`.",
+                        ja: "`label` を名前に持ち、`percent` の分だけ塗りつぶされるバー",
                     },
                 ),
                 (
                     "skeleton",
                     "hypersig_ui/fn.skeleton.html",
                     L {
-                        en: "A pulsing block in `token::accent` that stands in for content still loading.",
+                        en: "A pulsing block in `token::accent` that stands in for loading content.",
                         ja: "読み込み中の内容の代わりに置く、`token::accent` の色で明滅するブロック",
                     },
                 ),

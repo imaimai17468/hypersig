@@ -11,7 +11,9 @@ use crate::button::{ButtonSize, ButtonVariant, button};
 use crate::id::anchor;
 use crate::token;
 
-/// A panel on a page whose signals are `S`, opened by a button beside it.
+/// A panel opened by a button beside it.
+///
+/// It sits on a page whose signals are `S`.
 ///
 /// Declare one as a `const` from a [`NodeRef`] that
 /// [`node_ref!`](hypersig::node_ref) declares, and use the same value for

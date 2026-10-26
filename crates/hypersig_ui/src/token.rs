@@ -67,8 +67,10 @@ colors! {
     secondary_foreground => "secondary-foreground", 0x0018_181b, 0x00fa_fafa;
     /// A quiet fill, such as the track of a tab list.
     muted => "muted", 0x00f4_f4f5, 0x0027_272a;
-    /// Secondary text, such as a description, at 4.8:1 or more on
-    /// [`background`] and on [`muted`] in both themes.
+    /// Secondary text, such as a description.
+    ///
+    /// It has 4.8:1 contrast or more on [`background`] and on [`muted`] in both
+    /// themes.
     muted_foreground => "muted-foreground", 0x006b_6b74, 0x00a1_a1aa;
     /// The fill under the pointer in a menu or a ghost button.
     accent => "accent", 0x00f4_f4f5, 0x003f_3f46;
@@ -80,8 +82,10 @@ colors! {
     destructive_foreground => "destructive-foreground", 0x00ff_ffff, 0x0009_090b;
     /// The border of a card, a menu, and a separator, which mark no control.
     border => "border", 0x00e4_e4e7, 0x0027_272a;
-    /// The border of a text field, a checkbox, a radio, and an off switch,
-    /// at 3.3:1 or more on [`background`] and on [`card`] in both themes.
+    /// The border of a text field, a checkbox, a radio, and an off switch.
+    ///
+    /// It has 3.3:1 contrast or more on [`background`] and on [`card`] in both
+    /// themes.
     input => "input", 0x008b_8b94, 0x0070_707a;
     /// The focus outline.
     ring => "ring", 0x0018_181b, 0x00d4_d4d8;

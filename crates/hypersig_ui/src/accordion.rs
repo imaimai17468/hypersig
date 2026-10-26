@@ -52,7 +52,9 @@ impl<S> Accordion<S> {
         }
     }
 
-    /// An accordion that keeps at most one section open, its `<div>` carrying the id `group`.
+    /// An accordion that keeps at most one section open.
+    ///
+    /// Its `<div>` carries the id `group`.
     ///
     /// The sections share `group` as their `name`, and sections with one
     /// `name` close each other wherever they are on the page. The `<div>`

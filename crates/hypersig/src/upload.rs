@@ -13,8 +13,10 @@ use crate::route::Base;
 /// The value of [`Upload::DEFAULT_MAX_BYTES`], which `routes!` names without a type.
 pub(crate) const DEFAULT_MAX_BYTES: usize = 8 * 1024 * 1024;
 
-/// A server endpoint on the page whose signals are `S`, which receives
-/// arguments `A` and the files picked in a [`FileInput`].
+/// A server endpoint that receives the files picked in a [`FileInput`].
+///
+/// It belongs to the page whose signals are `S`, and also receives arguments
+/// `A`.
 ///
 /// Declare one on an `upload` line of [`routes!`](crate::routes), which
 /// names its handler, as with an [`Action`](crate::Action), and call it from
@@ -63,7 +65,9 @@ pub struct Upload<S, A = ()> {
 }
 
 impl<S, A> Upload<S, A> {
-    /// The longest body an upload accepts unless its line in `routes!` says otherwise: 8 MiB.
+    /// The longest body an upload accepts by default: 8 MiB.
+    ///
+    /// Its line in `routes!` can set another limit.
     pub const DEFAULT_MAX_BYTES: usize = DEFAULT_MAX_BYTES;
 
     /// An upload served on `POST path` under `base`, accepting a body of at
@@ -119,7 +123,9 @@ impl<S, A> Upload<S, A> {
 }
 
 impl<S> Upload<S, ()> {
-    /// A call that sends the files picked in `files`, for an upload that takes no arguments.
+    /// A call that sends the files picked in `files`.
+    ///
+    /// It is for an upload that takes no arguments.
     #[must_use]
     pub fn call(&self, files: FileInput<S>) -> Call<S> {
         Call::upload(self.base, self.path, serde_json::Value::Null, files.name)
@@ -144,7 +150,9 @@ impl<S, A> fmt::Debug for Upload<S, A> {
     }
 }
 
-/// A file input on a page whose signals are `S`, whose files an [`Upload`] sends.
+/// A file input on a page whose signals are `S`.
+///
+/// An [`Upload`] sends its files.
 ///
 /// Declare one as a `const`, put [`FileInput::input`] on the page, and pass
 /// the same value to the call. Inside a list item the browser looks for the
@@ -338,8 +346,10 @@ impl<'a> FileName<'a> {
     }
 }
 
-/// What a streaming upload's handler receives: the arguments, then the files
-/// one at a time, each in chunks as they arrive.
+/// What a streaming upload's handler receives.
+///
+/// It holds the arguments, then the files one at a time, each in chunks as they
+/// arrive.
 ///
 /// An `upload` line of [`routes!`](crate::routes) that writes `stream`
 /// before its path hands one to its handler, which keeps no file
@@ -401,8 +411,9 @@ impl<A> UploadStream<A> {
         &self.args
     }
 
-    /// The next file, in the order the visitor picked them, or `None` after
-    /// the last one.
+    /// The next file, in the order the visitor picked them.
+    ///
+    /// It is `None` after the last one.
     ///
     /// The part of the previous file that was not read is skipped, and so is
     /// a part other than a file, as an `upload` line without `stream` skips it.

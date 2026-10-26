@@ -173,8 +173,10 @@ pub fn turn(value: impl Into<f64>) -> Angle {
     Angle(Amount::Unit(value.into(), "turn"))
 }
 
-/// A color: a named color such as [`Color::CRIMSON`], a hex or RGB value, a
-/// mix of two colors, or a [`Token`](crate::Token) that holds one.
+/// A color.
+///
+/// It is a named color such as [`Color::CRIMSON`], a hex or RGB value, a mix of
+/// two colors, or a [`Token`](crate::Token) that holds one.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Color(Cow<'static, str>);
 
@@ -286,8 +288,10 @@ pub fn url(href: impl Into<String>) -> Url {
     Url(href.into())
 }
 
-/// A value written into the stylesheet as given, for the forms a property's
-/// generated type leaves out, such as `margin: 0 auto`.
+/// A value written into the stylesheet as given.
+///
+/// It is for the forms a property's generated type leaves out, such as `margin:
+/// 0 auto`.
 ///
 /// Nothing checks that the browser accepts it. A value it rejects drops the
 /// declaration, and the element renders as if the property were not set.
