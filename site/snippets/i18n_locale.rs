@@ -17,7 +17,6 @@ struct ByLang<T> {
 }
 
 impl Locale for Lang {
-    const ALL: &'static [Self] = &[Self::En, Self::Ja];
     type Text<T> = ByLang<T>;
 
     fn pick<T>(self, text: ByLang<T>) -> T {

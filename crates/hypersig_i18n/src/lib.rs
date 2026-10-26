@@ -29,7 +29,6 @@
 //! }
 //!
 //! impl Locale for Lang {
-//!     const ALL: &'static [Self] = &[Self::En, Self::Ja];
 //!     type Text<T> = ByLang<T>;
 //!
 //!     fn pick<T>(self, text: ByLang<T>) -> T {
@@ -77,19 +76,17 @@ mod axum;
 #[cfg(feature = "axum")]
 pub use axum::LocaleRouterExt;
 
-use hypersig::{Origin, Page, Segment, Signals, Url};
+use hypersig::{Origin, Page, Signals, Url, Variants};
 use serde::Serialize;
 
 /// The locales of an application: an enum with `#[derive(Segment)]` whose segments are BCP 47 tags.
 ///
 /// The compiler checks that each text has every locale, through
 /// [`Locale::Text`], and that [`Locale::pick`] handles every locale, through
-/// its `match`. It does not check that [`Locale::ALL`] lists every variant;
-/// a variant left out of it is never chosen by [`negotiate`].
-pub trait Locale: Segment + Serialize + Copy + Eq + 'static {
-    /// Every locale the application serves, the default first.
-    const ALL: &'static [Self];
-
+/// its `match`. The locales the application serves are the enum's variants,
+/// which [`locales`] lists in declaration order, so the first variant is
+/// the default that [`negotiate`] falls back to.
+pub trait Locale: Variants + Serialize + Copy + Eq {
     /// One value per locale, usually a struct with a field per locale.
     type Text<T>;
 
@@ -111,6 +108,27 @@ pub trait Locale: Segment + Serialize + Copy + Eq + 'static {
     }
 }
 
+/// Every locale of `L`, its variants in declaration order, the default first.
+///
+/// ```
+/// # use hypersig::Segment;
+/// # use hypersig_i18n::{Locale, locales};
+/// # use serde::{Deserialize, Serialize};
+/// # #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+/// # #[serde(rename_all = "lowercase")]
+/// # enum Lang { En, Ja }
+/// # struct ByLang<T> { en: T, ja: T }
+/// # impl Locale for Lang {
+/// #     type Text<T> = ByLang<T>;
+/// #     fn pick<T>(self, t: ByLang<T>) -> T { match self { Self::En => t.en, Self::Ja => t.ja } }
+/// # }
+/// assert_eq!(locales::<Lang>(), [Lang::En, Lang::Ja]);
+/// ```
+#[must_use]
+pub fn locales<L: Locale>() -> &'static [L] {
+    L::VARIANTS
+}
+
 /// The locale of `L` that best matches an `Accept-Language` header value, or the default.
 ///
 /// The ranges in `accept_language` are tried from the highest `q` to the
@@ -119,7 +137,7 @@ pub trait Locale: Segment + Serialize + Copy + Eq + 'static {
 /// `-subtag` of the range is removed one at a time, so `ja-JP` matches `ja`.
 /// A locale whose tag starts with the range and a `-` matches too, so `en`
 /// matches `en-US`. `*`, a header with no match, and an empty header give
-/// the first locale of [`Locale::ALL`].
+/// the first locale of [`locales`].
 ///
 /// ```
 /// # use hypersig::Segment;
@@ -130,7 +148,6 @@ pub trait Locale: Segment + Serialize + Copy + Eq + 'static {
 /// # enum Lang { En, Ja }
 /// # struct ByLang<T> { en: T, ja: T }
 /// # impl Locale for Lang {
-/// #     const ALL: &'static [Self] = &[Self::En, Self::Ja];
 /// #     type Text<T> = ByLang<T>;
 /// #     fn pick<T>(self, t: ByLang<T>) -> T { match self { Self::En => t.en, Self::Ja => t.ja } }
 /// # }
@@ -141,12 +158,12 @@ pub trait Locale: Segment + Serialize + Copy + Eq + 'static {
 ///
 /// # Panics
 ///
-/// Panics if [`Locale::ALL`] is empty.
+/// Panics if `L` has no variant.
 #[must_use]
 pub fn negotiate<L: Locale>(accept_language: &str) -> L {
-    let default = *L::ALL
+    let default = *locales::<L>()
         .first()
-        .expect("`Locale::ALL` lists at least one locale");
+        .expect("a locale enum has at least one variant");
     let mut ranges: Vec<(&str, f32)> = accept_language
         .split(',')
         .filter_map(|item| {
@@ -160,7 +177,7 @@ pub fn negotiate<L: Locale>(accept_language: &str) -> L {
         .collect();
     // A stable sort keeps the written order between ranges of the same weight.
     ranges.sort_by(|a, b| b.1.total_cmp(&a.1));
-    let tags: Vec<(L, String)> = L::ALL
+    let tags: Vec<(L, String)> = locales::<L>()
         .iter()
         .map(|&locale| (locale, locale.tag()))
         .collect();
@@ -196,7 +213,7 @@ pub fn negotiate<L: Locale>(accept_language: &str) -> L {
 pub trait LocalePage: Sized {
     /// Names the page's address in each locale of `L`, where `url` gives the address in one.
     ///
-    /// It adds one [`Page::alternate`] per locale of [`Locale::ALL`], tagged
+    /// It adds one [`Page::alternate`] per locale of [`locales`], tagged
     /// with [`Locale::tag`], and a [`Page::alternate_default`] at the first
     /// locale, the default that [`negotiate`] falls back to.
     ///
@@ -209,7 +226,6 @@ pub trait LocalePage: Sized {
     /// # enum Lang { En, Ja }
     /// # struct ByLang<T> { en: T, ja: T }
     /// # impl Locale for Lang {
-    /// #     const ALL: &'static [Self] = &[Self::En, Self::Ja];
     /// #     type Text<T> = ByLang<T>;
     /// #     fn pick<T>(self, t: ByLang<T>) -> T { match self { Self::En => t.en, Self::Ja => t.ja } }
     /// # }
@@ -238,10 +254,10 @@ pub trait LocalePage: Sized {
 impl<S: Signals> LocalePage for Page<S> {
     fn alternates<L: Locale>(self, origin: Origin, url: impl Fn(L) -> Url) -> Self {
         let mut page = self;
-        for &locale in L::ALL {
+        for &locale in locales::<L>() {
             page = page.alternate(origin, &url(locale), locale.tag());
         }
-        match L::ALL.first() {
+        match locales::<L>().first() {
             Some(&default) => page.alternate_default(origin, &url(default)),
             None => page,
         }

@@ -24,7 +24,6 @@ pub struct L<T> {
 }
 
 impl Locale for Lang {
-    const ALL: &'static [Self] = &[Self::En, Self::Ja];
     type Text<T> = L<T>;
 
     fn pick<T>(self, text: L<T>) -> T {

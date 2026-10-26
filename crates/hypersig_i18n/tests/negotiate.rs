@@ -4,7 +4,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use hypersig::{Page, Route, Segment, Signals};
-use hypersig_i18n::{Locale, LocaleRouterExt, negotiate};
+use hypersig_i18n::{Locale, LocaleRouterExt, locales, negotiate};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -25,7 +25,6 @@ struct ByLang<T> {
 }
 
 impl Locale for Lang {
-    const ALL: &'static [Self] = &[Self::En, Self::EnGb, Self::Ja];
     type Text<T> = ByLang<T>;
 
     fn pick<T>(self, text: ByLang<T>) -> T {
@@ -48,6 +47,11 @@ hypersig::routes! {
         Page::new(lang.pick(ByLang { en: "Color", en_gb: "Colour", ja: "色" }), Home { visits: 0 })
             .lang(lang.tag())
     };
+}
+
+#[test]
+fn every_variant_is_a_locale_in_declaration_order() {
+    assert_eq!(locales::<Lang>(), [Lang::En, Lang::EnGb, Lang::Ja]);
 }
 
 #[test]

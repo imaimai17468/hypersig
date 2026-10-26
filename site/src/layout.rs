@@ -16,7 +16,7 @@ use crate::doc::{Doc, Library};
 use crate::lang::{L, Lang};
 use crate::prose::{self, Docs, Part, href};
 use crate::{Site, code, own};
-use hypersig_i18n::Locale as _;
+use hypersig_i18n::{Locale as _, locales};
 
 /// The repository the header links to.
 pub const REPOSITORY: SafeUrl = SafeUrl::new("https://github.com/imaimai17468/hypersig");
@@ -63,7 +63,7 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
                 ja: "hypersig、Rust だけで書く Web フレームワーク。サーバーが状態を、型が正しさを。",
             }),
         );
-        for &lang in Lang::ALL {
+        for &lang in locales::<Lang>() {
             let (origin, url) = site
                 .with_lang(lang)
                 .canonical(&doc.path())
@@ -74,7 +74,10 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
             }
         }
     }
-    for &lang in Lang::ALL.iter().filter(|&&lang| lang != site.lang()) {
+    for &lang in locales::<Lang>()
+        .iter()
+        .filter(|&&lang| lang != site.lang())
+    {
         card = card.alternate_locale(lang.og_locale());
     }
     page.open_graph(card)
@@ -330,7 +333,7 @@ fn languages(site: Site, doc: Doc) -> Part {
             }),
         )
         .css(hstack(rem(0.75)).font_size(rem(0.875)))
-        .children(Lang::ALL.iter().map(|&lang| {
+        .children(locales::<Lang>().iter().map(|&lang| {
             let here = Place::current_if(lang == site.lang());
             let link = a()
                 .href(own(doc.url(site.with_lang(lang))))

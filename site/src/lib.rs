@@ -30,7 +30,7 @@ use std::fmt::Write as _;
 use std::path::Path;
 
 use hypersig::{Origin, PageResponse, Rest, Route, SafeUrl, Url};
-use hypersig_i18n::Locale as _;
+use hypersig_i18n::{Locale as _, locales};
 
 pub use doc::Doc;
 pub use lang::Lang;
@@ -227,7 +227,7 @@ pub const API_DIR: &str = "api";
 #[must_use]
 pub fn render(site: Site) -> Vec<File> {
     let mut files = Vec::new();
-    for &lang in Lang::ALL {
+    for &lang in locales::<Lang>() {
         let site = site.with_lang(lang);
         files.extend(Doc::ALL.iter().map(|&doc| File {
             path: format!("{}{}index.html", lang.dir(), doc.path()),
@@ -274,7 +274,7 @@ pub fn render(site: Site) -> Vec<File> {
 
 /// The absolute URL of the page at `path` in each language, English first.
 fn absolute_urls(site: Site, path: &str) -> Option<Vec<(Lang, String)>> {
-    Lang::ALL
+    locales::<Lang>()
         .iter()
         .map(|&lang| {
             let (origin, url) = site.with_lang(lang).canonical(path)?;
@@ -607,7 +607,7 @@ mod tests {
         let xml = sitemap(site).expect("the site knows its origin");
         assert_eq!(
             xml.matches("<loc>").count(),
-            Doc::ALL.len() * Lang::ALL.len()
+            Doc::ALL.len() * locales::<Lang>().len()
         );
         assert!(xml.contains("<loc>https://example.com/hypersig/ja/</loc>"));
         assert!(sitemap(Site::new("/hypersig")).is_none());
