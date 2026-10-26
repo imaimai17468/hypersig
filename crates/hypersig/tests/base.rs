@@ -222,12 +222,11 @@ async fn the_page_for_a_missing_path_loads_the_runtime_under_the_base() {
 }
 
 #[tokio::test]
-async fn a_router_nested_under_another_path_answers_with_a_500_that_names_both() {
+async fn a_router_nested_under_another_path_answers_with_a_500_that_names_no_path() {
     let (status, body, _) = get(Router::new().nest("/shop", app()), "/shop/items/3").await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
-    assert!(body.contains("`/items/{id}`"), "{body}");
-    assert!(body.contains("`/app`"), "{body}");
-    assert!(body.contains("`/shop/items/{id}`"), "{body}");
+    assert!(body.contains("nested under a path"), "{body}");
+    assert!(!body.contains("/items") && !body.contains("/app"), "{body}");
 }
 
 #[test]

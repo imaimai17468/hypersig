@@ -219,18 +219,14 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 || crate::query::parse_query::<Q>(request.uri.query().unwrap_or_default()),
                 Ok,
             );
-            let served_at = matched.as_str().to_owned();
             async move {
+                // The router is nested after `routes!` returns it, so the
+                // mistake shows only here. The body names no path, because
+                // a visitor reads it.
                 if nested {
-                    let links = match base.as_str() {
-                        "" => format!("`{path}`"),
-                        base => format!("`{base}` and `{path}`"),
-                    };
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        format!(
-                            "the page whose links point to {links} is registered on a nested router, which serves it at `{served_at}`"
-                        ),
+                        "the page is registered on a router nested under a path its links do not start with",
                     )
                         .into_response();
                 }

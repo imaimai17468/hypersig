@@ -448,8 +448,8 @@ async fn a_page_on_a_nested_router_answers_with_a_500() {
     )
     .await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
-    assert!(body.contains("`/legacy/members/{id}`"), "{body}");
-    assert!(body.contains("point to `/members/{id}` is"), "{body}");
+    assert!(body.contains("nested under a path"), "{body}");
+    assert!(!body.contains("/members"), "{body}");
 }
 
 #[tokio::test]
