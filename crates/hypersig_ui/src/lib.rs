@@ -38,6 +38,7 @@
 //! | [`Tooltip`] | the tooltip pattern on a `popover="hint"` |
 //! | [`Toaster`] | a landmark region holding an `aria-live` list |
 //! | [`Avatar`] | `role="img"` named after the person, over an `<img>` or their initials |
+//! | [`kbd`] | `<kbd>` |
 //! | [`progress`] | `role="progressbar"` |
 //!
 //! The ids that tie a label to its control, or a tab to its panel, are
@@ -88,6 +89,7 @@ mod dialog;
 mod donut;
 mod field;
 mod id;
+mod kbd;
 mod listbox;
 mod look;
 mod menu;
@@ -121,6 +123,7 @@ pub use combobox::{Combobox, ComboboxState};
 pub use dialog::{Dialog, Side, dialog_footer};
 pub use donut::DonutChart;
 pub use field::{Autocomplete, InputKind, InputMode, TextField};
+pub use kbd::kbd;
 pub use listbox::Listbox;
 pub use menu::{Menu, MenuItem};
 pub use navigation::{Breadcrumb, NavList, PaginationText, pagination};

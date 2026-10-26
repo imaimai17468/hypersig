@@ -1248,6 +1248,26 @@ fn component_page(page: Component) -> Page {
                 ),
             ],
         },
+        Component::Kbd => Page {
+            lead: L {
+                en: "A key or a shortcut the visitor presses, drawn as a small cap in running text.",
+                ja: "訪問者が押すキーやショートカットを、文中に小さなキーの形で表示します。",
+            },
+            demo: Demo::Kbd,
+            built_on: &[L {
+                en: "It is a native `<kbd>`, and a screen reader reads its text as it stands, so write the key's name in words where a symbol would be read as something else, such as \"Ctrl\" rather than \"^\". For a shortcut, place one `kbd` per key side by side.",
+                ja: "ネイティブの `<kbd>` で、スクリーンリーダーはテキストをそのまま読み上げます。そのため、記号が別のものとして読まれる場合は、「^」ではなく「Ctrl」のように、キーの名前を言葉で書いてください。ショートカットはキーごとに 1 つの `kbd` を並べて書きます。",
+            }],
+            keys: &[],
+            items: &[(
+                "kbd",
+                "hypersig_ui/fn.kbd.html",
+                L {
+                    en: "A `<kbd>` that shows a key or a shortcut the visitor presses.",
+                    ja: "訪問者が押すキーやショートカットを表示する `<kbd>`",
+                },
+            )],
+        },
         Component::Card => Page {
             lead: L {
                 en: "A bordered box with a header, content, and a footer.",
