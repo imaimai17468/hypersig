@@ -243,8 +243,8 @@ fn application(site: Site) -> Part {
                     ja: "シグナルの値。ブラウザが持っていて書き換えられるので、サーバーが頼る価格、役割、持ち主は、サーバーで読み直してください。",
                 },
                 L {
-                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. A policy the application sends replaces the page's `frame-ancestors`, so include `frame-ancestors 'self'` in it, as the `ui` example does. Without it the page still has `X-Frame-Options: SAMEORIGIN`, but a page given `Framing::Origins` with an origin has neither.",
-                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。アプリが送るポリシーはページの `frame-ancestors` を置き換えるので、`ui` の例と同じように `frame-ancestors 'self'` を含めてください。含めなくても `X-Frame-Options: SAMEORIGIN` は残りますが、`Framing::Origins` にオリジンを渡したページではどちらも残りません。",
+                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. The page's `frame-ancestors` goes out as a header of its own beside the application's policy, and the browser enforces both.",
+                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。ページの `frame-ancestors` はアプリのポリシーとは別のヘッダーで送られ、ブラウザは両方を適用します。",
                 },
                 L {
                     en: "The host of a URL. A `SafeUrl` may name any host, so a URL a visitor typed suits a link the visitor follows, and not the `src` of an `<iframe>`, which shows that host's page inside this one. An `<iframe>`, an `<embed>`, or a `<frame>` panics when its `src` reads a signal. Nothing in hypersig refuses a visitor's URL passed to one as a fixed `SafeUrl`, so the application refuses it.",

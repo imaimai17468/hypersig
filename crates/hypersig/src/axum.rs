@@ -670,15 +670,44 @@ impl PageResponse {
                     request,
                 }),
             ) => {
+                // The page answering the 404 adds its own frame headers.
                 let unserved = Unserved::new(Reason::NoPage, &request);
-                Box::pin(page.answer(state, request, unserved)).await
+                (Box::pin(page.answer(state, request, unserved)).await, None)
             }
             (reply, _) => reply.into_response(base),
         };
-        parts
+        let (response, framing) = response;
+        let response = parts
             .into_iter()
-            .fold(response, |response, add| add(response))
+            .fold(response, |response, add| add(response));
+        frame(response, framing.as_ref())
     }
+}
+
+/// `response` with the headers that say which pages may show it in a frame.
+///
+/// They are added after the header parts of the handler, because a part
+/// replaces a header of its name, and a handler that sends its own
+/// `Content-Security-Policy` would otherwise drop `frame-ancestors`. The
+/// policy goes out as a header of its own beside the handler's, and the
+/// browser enforces each policy it receives. An `X-Frame-Options` the
+/// handler sent is kept, because two values of that header make it invalid.
+fn frame(mut response: Response, framing: Option<&Framing>) -> Response {
+    let Some(framing) = framing else {
+        return response;
+    };
+    let headers = response.headers_mut();
+    if let Some(value) = framing.x_frame_options() {
+        headers
+            .entry(header::X_FRAME_OPTIONS)
+            .or_insert(HeaderValue::from_static(value));
+    }
+    if let Some(policy) = framing.content_security_policy() {
+        // `Origin` holds only the bytes of a host and a port, which a header can hold.
+        let policy = HeaderValue::try_from(policy).expect("an origin is header text");
+        headers.append(header::CONTENT_SECURITY_POLICY, policy);
+    }
+    response
 }
 
 /// What a 404 needs to show the page the router names for it.
@@ -689,8 +718,10 @@ struct Unanswered<'a, St> {
 }
 
 impl Reply {
-    /// The response of a page under `base`, where a 404 has an empty body.
-    fn into_response(self, base: Base) -> Response {
+    /// The response of a page under `base`, where a 404 has an empty body,
+    /// and the framing of a page, which [`frame`] adds once the handler's
+    /// header parts are in.
+    fn into_response(self, base: Base) -> (Response, Option<Framing>) {
         match self {
             Self::Page {
                 render,
@@ -698,20 +729,11 @@ impl Reply {
                 framing,
             } => {
                 let html = render(base, dev::url(base).as_deref());
-                let mut response = (status.unwrap_or(StatusCode::OK), Html(html)).into_response();
-                let headers = response.headers_mut();
-                if let Some(value) = framing.x_frame_options() {
-                    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static(value));
-                }
-                if let Some(policy) = framing.content_security_policy() {
-                    // `Origin` holds only the bytes of a host and a port, which a header can hold.
-                    let policy = HeaderValue::try_from(policy).expect("an origin is header text");
-                    headers.insert(header::CONTENT_SECURITY_POLICY, policy);
-                }
-                response
+                let response = (status.unwrap_or(StatusCode::OK), Html(html)).into_response();
+                (response, Some(framing))
             }
-            Self::NotFound => StatusCode::NOT_FOUND.into_response(),
-            Self::Response(response) => response,
+            Self::NotFound => (StatusCode::NOT_FOUND.into_response(), None),
+            Self::Response(response) => (response, None),
         }
     }
 }
@@ -750,11 +772,11 @@ impl<R: Into<PageResponse>, E: IntoResponse> From<Result<R, E>> for PageResponse
 impl IntoResponse for PageResponse {
     fn into_response(self) -> Response {
         let Self { reply, parts } = self;
-        parts
+        let (response, framing) = reply.into_response(Base::ROOT);
+        let response = parts
             .into_iter()
-            .fold(reply.into_response(Base::ROOT), |response, add| {
-                add(response)
-            })
+            .fold(response, |response, add| add(response));
+        frame(response, framing.as_ref())
     }
 }
 

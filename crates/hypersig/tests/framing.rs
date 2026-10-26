@@ -33,6 +33,18 @@ hypersig::routes! {
             Page::new("Own policy", Blank { count: 0 }),
         )
     };
+    const OWN_POLICY_PORTALS: Route = "/own-policy-portals" => |(), ()| async {
+        (
+            [(header::CONTENT_SECURITY_POLICY, "default-src 'self'")],
+            Page::new("Own policy", Blank { count: 0 }).framing(Framing::Origins(vec![PORTAL])),
+        )
+    };
+    const OWN_FRAME_OPTIONS: Route = "/own-frame-options" => |(), ()| async {
+        (
+            [(header::X_FRAME_OPTIONS, "DENY")],
+            Page::new("Own frame options", Blank { count: 0 }),
+        )
+    };
 }
 
 async fn headers(path: &str) -> HeaderMap {
@@ -83,12 +95,40 @@ async fn a_page_framed_anywhere_sends_neither_header() {
     assert_eq!(value(&headers, header::CONTENT_SECURITY_POLICY), None);
 }
 
+fn policies(headers: &HeaderMap) -> Vec<&str> {
+    headers
+        .get_all(header::CONTENT_SECURITY_POLICY)
+        .iter()
+        .map(|value| value.to_str().expect("ASCII"))
+        .collect()
+}
+
 #[tokio::test]
-async fn a_policy_the_handler_sends_replaces_the_page_s_and_x_frame_options_stays() {
+async fn a_policy_the_handler_sends_goes_out_beside_frame_ancestors() {
     let headers = headers("/own-policy").await;
     assert_eq!(
-        value(&headers, header::CONTENT_SECURITY_POLICY),
-        Some("default-src 'self'")
+        policies(&headers),
+        ["default-src 'self'", "frame-ancestors 'self'"]
     );
     assert_eq!(value(&headers, header::X_FRAME_OPTIONS), Some("SAMEORIGIN"));
+}
+
+#[tokio::test]
+async fn a_page_framed_by_origins_keeps_frame_ancestors_beside_the_handler_s_policy() {
+    let headers = headers("/own-policy-portals").await;
+    assert_eq!(value(&headers, header::X_FRAME_OPTIONS), None);
+    assert_eq!(
+        policies(&headers),
+        [
+            "default-src 'self'",
+            "frame-ancestors 'self' https://portal.example"
+        ]
+    );
+}
+
+#[tokio::test]
+async fn an_x_frame_options_the_handler_sends_is_kept() {
+    let headers = headers("/own-frame-options").await;
+    assert_eq!(headers.get_all(header::X_FRAME_OPTIONS).iter().count(), 1);
+    assert_eq!(value(&headers, header::X_FRAME_OPTIONS), Some("DENY"));
 }
