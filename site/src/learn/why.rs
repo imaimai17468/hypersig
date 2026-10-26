@@ -406,6 +406,18 @@ fn unchecked(site: Site) -> [Part; 2] {
                     ja: "1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けると、ページの描画が panic します。",
                 },
                 L {
+                    en: "An `Item`, or a signal reached from one, is used after the closure it was passed to returns. Building the page panics. The check does not see an expression built inside the closure and used outside it, for which the runtime throws `hypersig: no list item at depth N` in the browser. Nor does it see an item used inside another list at the same depth, which then reads that list's item.",
+                    ja: "`Item` や、そこからたどったシグナルを、渡されたクロージャが返った後で使うと、ページを組み立てるときに panic します。クロージャの中で作った式を外で使う場合は、この検査に引っかかりません。そのときはブラウザでランタイムが `hypersig: no list item at depth N` を投げます。同じ深さの別のリストの中で使う場合も引っかからず、そのリストの項目を読みます。",
+                },
+                L {
+                    en: "Two elements carry one `Id` or one `FileInput` name where the runtime can reach both, or an element inside a list template has an id set with `El::id`. Rendering the page panics.",
+                    ja: "ランタイムが両方にたどり着ける 2 つの要素に同じ `Id` か同じ `FileInput` の名前を付けるか、リストのテンプレートの中の要素に `El::id` で id を付けると、ページの描画が panic します。",
+                },
+                L {
+                    en: "A signal holds an integer outside -2^53 to 2^53, which the browser would round. Rendering the page, or building a patch with the value, panics.",
+                    ja: "シグナルが -2^53 から 2^53 の外の整数を持つと、ブラウザがその値を丸めてしまうので、ページの描画か、その値で差分を作る処理が panic します。",
+                },
+                L {
                     en: "A field marked `#[signals(computed)]` is named by no `Page::computed` call on its page. Nothing recomputes it, so it keeps the value the page's struct gave it.",
                     ja: "`#[signals(computed)]` を付けたフィールドを、ページのどの `Page::computed` も指定していないと、そのフィールドは計算し直されず、ページの構造体が与えた値のまま変わりません。",
                 },

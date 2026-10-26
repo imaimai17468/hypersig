@@ -718,6 +718,10 @@ pub fn escape_hatches(site: Site) -> Part {
                     en: "An application that works without a connection to the server, such as one used offline.",
                     ja: "オフラインで使うものなど、サーバーにつながらなくても動くアプリケーション。",
                 },
+                L {
+                    en: "A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so only the runtime sends a form, and a browser that does not run it shows the first HTML and sends nothing.",
+                    ja: "JavaScript を切っても、ボタンやフォームが動く必要のあるページ。ページには `action` 属性も `formaction` 属性も書けないので、フォームを送るのはランタイムだけです。ランタイムを実行しないブラウザは最初の HTML を表示しますが、何も送りません。",
+                },
             ],
         ),
     ])

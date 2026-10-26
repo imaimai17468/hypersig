@@ -130,6 +130,9 @@ These mistakes compile, and each one shows up when the program runs ([What the c
 - The function `routes!` generates is never called on the router. Its pages and actions then answer 404. rustc's `dead_code` lint reports a handler `fn` that only that function names, but not a closure.
 - A page served under a `Base` calls an action from a `routes!` block without it. The call goes to the path without the prefix, which a proxy or `Router::nest` answers with 404.
 - One `node_ref!` or `dialog_ref!` constant sits on two elements outside a list template. Rendering the page panics.
+- An `Item`, or a signal reached from one, is used after the closure it was passed to returns. Building the page panics. The check does not see an expression built inside the closure and used outside it, for which the runtime throws `hypersig: no list item at depth N` in the browser. Nor does it see an item used inside another list at the same depth, which then reads that list's item.
+- Two elements carry one `Id` or one `FileInput` name where the runtime can reach both, or an element inside a list template has an id set with `El::id`. Rendering the page panics.
+- A signal holds an integer outside -2^53 to 2^53, which the browser would round. Rendering the page, or building a patch with the value, panics.
 - A field marked `#[signals(computed)]` is named by no `Page::computed` call on its page. Nothing recomputes it, so it keeps the value the page's struct gave it.
 - A reference such as `label_for(&EMAIL)` names an `Id` that no element on the page carries. The browser ignores it, so the control has no label.
 - A script outside hypersig finds an element marked with `El::foreign` by its `data-hs-foreign` value, which is the constant's full path, such as `office::MAP`. Renaming or moving the module or the constant changes that value, and the script then finds no element. Give the element an `Id` and look it up by id instead ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)).
@@ -140,6 +143,7 @@ Without the server, the browser can run only the operations and statements hyper
 
 - An application whose main work runs inside a JavaScript library, such as a drawing tool or a spreadsheet
 - An application that works without a connection to the server
+- A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so only the runtime sends a form, and a browser that does not run it shows the first HTML and sends nothing.
 
 ## Development
 
