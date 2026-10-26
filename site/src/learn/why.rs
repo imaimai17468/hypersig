@@ -427,7 +427,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "A `#[signals(computed)]` field is never passed to `Page::computed`",
-                        "Rendering the page panics. A field of a nested struct is not caught and keeps its first value",
+                        "Rendering the page panics, for a field of a nested struct only where the page reads it",
                     ],
                     &[
                         "A list item is used outside the closure it was passed to",
@@ -469,7 +469,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "`#[signals(computed)]` を付けたフィールドを `Page::computed` に渡し忘れる",
-                        "ページの描画が panic します。入れ子の構造体のフィールドは検出されず、値が最初のまま変わりません",
+                        "ページの描画が panic します。入れ子の構造体のフィールドでは、ページがそのフィールドを読む場合に限ります",
                     ],
                     &[
                         "リストの項目を、渡されたクロージャの外で使う",

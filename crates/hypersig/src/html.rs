@@ -324,33 +324,39 @@ pub(crate) fn check_names<S>(nodes: &[Node<S>]) {
 /// the closure and attached outside it. The runtime finds no item there, or
 /// the item of whichever list encloses the element at that depth.
 pub(crate) fn check_item_reads<S>(nodes: &[Node<S>]) {
+    visit_trees(nodes, &mut assert_items_open);
+}
+
+/// Calls `visit` with each expression and statement tree in `nodes`, and
+/// with the depths of the lists around it as the bits of a mask.
+pub(crate) fn visit_trees<S>(nodes: &[Node<S>], visit: &mut impl FnMut(&Value, u128)) {
     for node in nodes {
-        node_item_reads(node, 0);
+        node_trees(node, 0, visit);
     }
 }
 
-/// Checks `node` under the lists whose depths are the bits of `open`.
-fn node_item_reads<S>(node: &Node<S>, open: u128) {
+/// Visits the trees of `node` under the lists whose depths are the bits of `open`.
+fn node_trees<S>(node: &Node<S>, open: u128, visit: &mut impl FnMut(&Value, u128)) {
     match &node.0 {
-        NodeKind::Element(el) => el_item_reads(el, open),
+        NodeKind::Element(el) => el_trees(el, open, visit),
         NodeKind::Text(_) => {}
         NodeKind::Each {
             list,
             depth,
             template,
         } => {
-            assert_items_open(list, open);
-            el_item_reads(template, open | depth_bit(u64::from(*depth)));
+            visit(list, open);
+            el_trees(template, open | depth_bit(u64::from(*depth)), visit);
         }
         NodeKind::When { cond, template } => {
-            assert_items_open(cond.as_json(), open);
-            el_item_reads(template, open);
+            visit(cond.as_json(), open);
+            el_trees(template, open, visit);
         }
     }
 }
 
-fn el_item_reads<S>(el: &El<S>, open: u128) {
-    let check = |ast: &Value| assert_items_open(ast, open);
+fn el_trees<S>(el: &El<S>, open: u128, visit: &mut impl FnMut(&Value, u128)) {
+    let mut check = |ast: &Value| visit(ast, open);
     let exprs = el
         .show
         .iter()
@@ -370,7 +376,7 @@ fn el_item_reads<S>(el: &El<S>, open: u128) {
         .chain(&el.key)
         .chain(el.watches.iter().map(|(place, _)| place))
         .chain(el.active.iter().map(|(_, place)| place))
-        .for_each(check);
+        .for_each(&mut check);
     let stmts = el
         .effects
         .iter()
@@ -382,7 +388,7 @@ fn el_item_reads<S>(el: &El<S>, open: u128) {
         .chain(el.keys.iter().map(|(_, stmt)| stmt));
     stmts.for_each(|stmt| check(stmt.as_json()));
     for child in &el.children {
-        node_item_reads(child, open);
+        node_trees(child, open, visit);
     }
 }
 
@@ -2759,7 +2765,7 @@ impl<S> El<S> {
         let mut names = Names::default();
         names.el(self, None);
         names.check();
-        el_item_reads(self, 0);
+        el_trees(self, 0, &mut assert_items_open);
         let mut out = String::new();
         self.write(&mut out, None, None);
         out

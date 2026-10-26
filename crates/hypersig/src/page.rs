@@ -11,7 +11,8 @@ use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
     Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, assert_items_open,
-    check_item_reads, check_names, escape_into, keys_json, write_attr, write_json_attr,
+    check_item_reads, check_names, escape_into, keys_json, visit_trees, write_attr,
+    write_json_attr,
 };
 use crate::route::{Base, Url};
 use crate::signal::{FromPage, IsComputed, Sig, Signals};
@@ -701,6 +702,36 @@ impl<S: Signals> Page<S> {
         root
     }
 
+    /// Panics if the page reads a computed field of a nested struct that no
+    /// [`Page::computed`] call names.
+    ///
+    /// Only the paths [`Sig::at_computed`](crate::Sig::at_computed) has
+    /// recorded for `S` are known, and only a read on this page counts, so a
+    /// signal built for another page of the same struct does not panic here.
+    fn check_nested_computed(&self) {
+        for path in crate::signal::nested_computed::<S>() {
+            if self.computed.iter().any(|(computed, _)| *computed == path) {
+                continue;
+            }
+            let mut read = self
+                .bound_title
+                .iter()
+                .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()))
+                .chain(self.computed.iter().map(|(_, value)| value))
+                .any(|ast| reads_path(ast, &path));
+            visit_trees(&self.body, &mut |ast, _| {
+                read = read || reads_path(ast, &path);
+            });
+            assert!(
+                !read,
+                "the page reads `{path}`, a field of a nested struct of `{}` marked \
+                 `#[signals(computed)]`, and no `Page::computed` call names it, so nothing \
+                 would keep it up to date",
+                std::any::type_name::<S>()
+            );
+        }
+    }
+
     /// Writes what search engines and link previews read into `<head>`.
     fn write_metadata(&self, out: &mut String) {
         if let Some(description) = &self.description {
@@ -811,6 +842,7 @@ impl<S: Signals> Page<S> {
         for ast in page {
             assert_items_open(ast, 0);
         }
+        self.check_nested_computed();
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
         if let Some(lang) = &self.lang {
@@ -1208,6 +1240,43 @@ mod tests {
             .computed(Order::subtotal(), Order::price() * 2.0)
             .computed(Order::total(), Order::total() + 1.0)
             .render();
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Line {
+        price: f64,
+        #[signals(computed)]
+        total: f64,
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Shop {
+        line: Line,
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Stall {
+        line: Line,
+    }
+
+    #[test]
+    #[should_panic(expected = "the page reads `line.total`, a field of a nested struct")]
+    fn a_nested_computed_field_no_page_computed_names_panics() {
+        let total = Shop::line().at_computed(Line::total());
+        let _ = Page::new("Shop", Shop::default())
+            .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
+            .render();
+    }
+
+    #[test]
+    fn a_nested_computed_field_page_computed_names_renders() {
+        let line = Stall::line();
+        let total = line.at_computed(Line::total());
+        let html = Page::new("Stall", Stall::default())
+            .computed(total, line.at(Line::price()) * 2.0)
+            .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
+            .render();
+        assert!(html.contains("line.total"), "{html}");
     }
 
     #[test]
