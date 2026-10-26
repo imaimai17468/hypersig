@@ -57,13 +57,22 @@ pub struct Page<S> {
     framing: Framing,
 }
 
-/// Which pages may show a page in a frame, which a response says in
-/// `X-Frame-Options` and in a `Content-Security-Policy` of `frame-ancestors`.
-#[derive(Debug, Clone)]
-pub(crate) enum Framing {
+/// Which pages may show a page in a frame, which [`Page::framing`] sets.
+///
+/// A response says it in `X-Frame-Options` and in a
+/// `Content-Security-Policy` of `frame-ancestors`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Framing {
     /// Pages of the page's own origin, and of these origins.
+    ///
+    /// With no origin, this is how a page is served unless
+    /// [`Page::framing`] says otherwise.
     Origins(Vec<Origin>),
     /// Pages of any site.
+    ///
+    /// Use it for a page that changes nothing for the visitor who sees it,
+    /// such as an embedded chart, because another site can frame it and
+    /// lead the visitor to click.
     Anywhere,
 }
 
@@ -255,59 +264,36 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Lets pages served from `origin` show this page in a frame.
+    /// Sets which pages may show this page in a frame.
     ///
     /// A page is served with `X-Frame-Options: SAMEORIGIN` and
     /// `Content-Security-Policy: frame-ancestors 'self'`, so a page of another
     /// site cannot frame it and lead a visitor to click its buttons, which
-    /// send their requests from this page's own origin. Each call adds
-    /// `origin` to `frame-ancestors` and drops `X-Frame-Options`, which
-    /// cannot name another origin. The headers are written by the axum
-    /// integration, so [`Page::render`] for a static file carries none, and
-    /// a `<meta>` cannot carry `frame-ancestors`.
+    /// send their requests from this page's own origin. [`Framing::Origins`]
+    /// adds origins to `frame-ancestors` and drops `X-Frame-Options`, which
+    /// cannot name another origin, and [`Framing::Anywhere`] sends neither
+    /// header. The headers are written by the axum integration, so
+    /// [`Page::render`] for a static file carries none, and a `<meta>` cannot
+    /// carry `frame-ancestors`.
     ///
     /// ```
-    /// use hypersig::{Origin, Page, Signals};
+    /// use hypersig::{Framing, Origin, Page, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
     /// struct Widget {}
     ///
     /// const PORTAL: Origin = Origin::new("https://portal.example");
-    /// let _page = Page::new("Widget", Widget {}).framed_by(PORTAL);
+    /// let _page = Page::new("Widget", Widget {}).framing(Framing::Origins(vec![PORTAL]));
     /// ```
     #[must_use]
-    pub fn framed_by(mut self, origin: Origin) -> Self {
-        if let Framing::Origins(origins) = &mut self.framing {
-            origins.push(origin);
-        }
-        self
-    }
-
-    /// Lets a page of any site show this page in a frame.
-    ///
-    /// The page is served without the headers [`Page::framed_by`] describes.
-    /// Use it for a page that changes nothing for the visitor who sees it,
-    /// such as an embedded chart, because another site can frame it and
-    /// lead the visitor to click.
-    ///
-    /// ```
-    /// use hypersig::{Page, Signals};
-    /// use serde::{Deserialize, Serialize};
-    ///
-    /// #[derive(Signals, Serialize, Deserialize)]
-    /// struct Chart {}
-    ///
-    /// let _page = Page::new("Chart", Chart {}).framed_anywhere();
-    /// ```
-    #[must_use]
-    pub fn framed_anywhere(mut self) -> Self {
-        self.framing = Framing::Anywhere;
+    pub fn framing(mut self, framing: Framing) -> Self {
+        self.framing = framing;
         self
     }
 
     #[cfg(feature = "axum")]
-    pub(crate) fn framing(&self) -> &Framing {
+    pub(crate) fn frame_policy(&self) -> &Framing {
         &self.framing
     }
 

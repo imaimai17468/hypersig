@@ -3,7 +3,7 @@
 use axum::Router;
 use axum::body::Body;
 use axum::http::{HeaderMap, Request, StatusCode, header};
-use hypersig::{Origin, Page, PageResponse, Route, Signals};
+use hypersig::{Framing, Origin, Page, PageResponse, Route, Signals};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -19,10 +19,10 @@ hypersig::routes! {
     fn pages(Router<()>);
     const PLAIN: Route = "/" => |(), ()| async { Page::new("Plain", Blank { count: 0 }) };
     const PORTALS: Route = "/portals" => |(), ()| async {
-        Page::new("Portals", Blank { count: 0 }).framed_by(PORTAL).framed_by(SHOP)
+        Page::new("Portals", Blank { count: 0 }).framing(Framing::Origins(vec![PORTAL, SHOP]))
     };
     const ANYWHERE: Route = "/anywhere" => |(), ()| async {
-        Page::new("Anywhere", Blank { count: 0 }).framed_anywhere()
+        Page::new("Anywhere", Blank { count: 0 }).framing(Framing::Anywhere)
     };
     const MISSING: Route = "/missing" => |(), ()| async {
         PageResponse::with_status(StatusCode::NOT_FOUND, Page::new("Missing", Blank { count: 0 }))

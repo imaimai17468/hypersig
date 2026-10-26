@@ -169,8 +169,8 @@ fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A page of another site that shows the page in a frame and leads the visitor to click a button gets past these checks, because the click sends its request from the page's own origin. A page is therefore served with `X-Frame-Options: SAMEORIGIN` and `Content-Security-Policy: frame-ancestors 'self'`, and the browser shows it in a frame only on its own origin. `Page::framed_by` adds an origin that may frame it, and `Page::framed_anywhere` lets any site, for a page that changes nothing for the visitor.",
-                ja: "別のサイトのページがこのページを枠に表示し、訪問者にボタンを押させると、上の検査は通ってしまいます。押したときのリクエストはこのページ自身のオリジンから出るためです。そのためページは `X-Frame-Options: SAMEORIGIN` と `Content-Security-Policy: frame-ancestors 'self'` を付けて配信され、ブラウザは同じオリジンの枠にしか表示しません。枠に表示してよいオリジンは `Page::framed_by` で追加できます。訪問者のために何も変えないページは、`Page::framed_anywhere` を付けると、どのサイトの枠にも表示できます。",
+                en: "A page of another site that shows the page in a frame and leads the visitor to click a button gets past these checks, because the click sends its request from the page's own origin. A page is therefore served with `X-Frame-Options: SAMEORIGIN` and `Content-Security-Policy: frame-ancestors 'self'`, and the browser shows it in a frame only on its own origin. `Page::framing` with `Framing::Origins` adds origins that may frame it, and `Framing::Anywhere` lets any site, for a page that changes nothing for the visitor.",
+                ja: "別のサイトのページがこのページを枠に表示し、訪問者にボタンを押させると、上の検査は通ってしまいます。押したときのリクエストはこのページ自身のオリジンから出るためです。そのためページは `X-Frame-Options: SAMEORIGIN` と `Content-Security-Policy: frame-ancestors 'self'` を付けて配信され、ブラウザは同じオリジンの枠にしか表示しません。枠に表示してよいオリジンは `Page::framing` に `Framing::Origins` を渡して追加できます。訪問者のために何も変えないページは、`Framing::Anywhere` を渡すと、どのサイトの枠にも表示できます。",
             },
         ),
     ])
@@ -243,8 +243,8 @@ fn application(site: Site) -> Part {
                     ja: "シグナルの値。ブラウザが持っていて書き換えられるので、サーバーが頼る価格、役割、持ち主は、サーバーで読み直してください。",
                 },
                 L {
-                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. A policy the application sends replaces the page's `frame-ancestors`, so include `frame-ancestors 'self'` in it, as the `ui` example does. Without it the page still has `X-Frame-Options: SAMEORIGIN`, but a page given `Page::framed_by` has neither.",
-                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。アプリが送るポリシーはページの `frame-ancestors` を置き換えるので、`ui` の例と同じように `frame-ancestors 'self'` を含めてください。含めなくても `X-Frame-Options: SAMEORIGIN` は残りますが、`Page::framed_by` を付けたページではどちらも残りません。",
+                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. A policy the application sends replaces the page's `frame-ancestors`, so include `frame-ancestors 'self'` in it, as the `ui` example does. Without it the page still has `X-Frame-Options: SAMEORIGIN`, but a page given `Framing::Origins` with an origin has neither.",
+                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。アプリが送るポリシーはページの `frame-ancestors` を置き換えるので、`ui` の例と同じように `frame-ancestors 'self'` を含めてください。含めなくても `X-Frame-Options: SAMEORIGIN` は残りますが、`Framing::Origins` にオリジンを渡したページではどちらも残りません。",
                 },
                 L {
                     en: "The host of a URL. A `SafeUrl` may name any host, so a URL a visitor typed suits a link the visitor follows, and not the `src` of an `<iframe>`, which shows that host's page inside this one. An `<iframe>`, an `<embed>`, or a `<frame>` panics when its `src` reads a signal. Nothing in hypersig refuses a visitor's URL passed to one as a fixed `SafeUrl`, so the application refuses it.",

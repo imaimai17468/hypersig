@@ -100,7 +100,7 @@ pub use head::{OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError};
 pub use href::{IntoHref, SafeUrl, UnsafeUrl};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use intl::{IntlLocale, PluralCategory};
-pub use page::Page;
+pub use page::{Framing, Page};
 pub use patch::{Fragment, ListPatch, Patches, SignalPatch, fragment};
 pub use route::{
     Base, Extends, Link, Params, Rest, Route, Search, SearchScalar, SearchValue, Segment, Url,

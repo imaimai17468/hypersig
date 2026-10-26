@@ -633,7 +633,7 @@ impl PageResponse {
     /// The reply that renders `page`, answering with `status` where there is one.
     fn page<S: Signals + Send + 'static>(page: Page<S>, status: Option<StatusCode>) -> Self {
         Self::new(Reply::Page {
-            framing: page.framing().clone(),
+            framing: page.frame_policy().clone(),
             render: Box::new(move |base, dev| page.render_under(base, dev)),
             status,
         })

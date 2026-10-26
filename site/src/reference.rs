@@ -330,19 +330,19 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
-                            "framed_by",
-                            "struct.Page.html#method.framed_by",
+                            "framing",
+                            "struct.Page.html#method.framing",
                             L {
-                                en: "Lets pages served from `origin` show this page in a frame.",
-                                ja: "`origin` から配信したページがこのページを枠に表示できるようにします。",
+                                en: "Sets which pages may show this page in a frame.",
+                                ja: "このページを枠に表示してよいページを設定します。",
                             },
                         ),
                         (
-                            "framed_anywhere",
-                            "struct.Page.html#method.framed_anywhere",
+                            "Framing",
+                            "enum.Framing.html",
                             L {
-                                en: "Lets a page of any site show this page in a frame.",
-                                ja: "どのサイトのページもこのページを枠に表示できるようにします。",
+                                en: "Which pages may show a page in a frame, which `Page::framing` sets.",
+                                ja: "ページを枠に表示してよいページです。`Page::framing` で設定します。",
                             },
                         ),
                         (
