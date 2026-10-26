@@ -23,7 +23,12 @@ function sent(fetch: { mock: { calls: Parameters<Fetch>[] } }, call: number): st
 
 it("sends the arguments and the picked files as multipart with the upload header", async () => {
   const fetch = vi.fn<Fetch>(() =>
-    Promise.resolve(new Response('event: hs-signals\ndata: {"saved":"2"}\n\n', { status: 200 })),
+    Promise.resolve(
+      new Response('event: hs-signals\ndata: {"saved":"2"}\n\nevent: hs-end\ndata: {}\n\n', {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      }),
+    ),
   );
   vi.stubGlobal("fetch", fetch);
   const runtime = mount("upload");
@@ -34,7 +39,11 @@ it("sends the arguments and the picked files as multipart with the upload header
   const [url, init] = fetch.mock.calls[0]!;
   expect(url.pathname).toBe("/pictures");
   expect(init.method).toBe("POST");
-  expect(init.headers).toEqual({ accept: "text/event-stream", "hypersig-upload": "1" });
+  expect(init.headers).toEqual({
+    accept: "text/event-stream",
+    "hypersig-call": "1",
+    "hypersig-upload": "1",
+  });
   const body = init.body as FormData;
   expect(await (body.get("args") as Blob).text()).toBe('"beach"');
   const files = body.getAll("files") as File[];
@@ -44,7 +53,14 @@ it("sends the arguments and the picked files as multipart with the upload header
 });
 
 it("looks up the file input apart from a node ref of the same name", async () => {
-  const fetch = vi.fn<Fetch>(() => Promise.resolve(new Response("", { status: 200 })));
+  const fetch = vi.fn<Fetch>(() =>
+    Promise.resolve(
+      new Response("event: hs-end\ndata: {}\n\n", {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      }),
+    ),
+  );
   vi.stubGlobal("fetch", fetch);
   const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
   mount("upload");
@@ -58,7 +74,14 @@ it("looks up the file input apart from a node ref of the same name", async () =>
 });
 
 it("sends no file part when nothing is picked, and empties the input after sending", async () => {
-  const fetch = vi.fn<Fetch>(() => Promise.resolve(new Response("", { status: 200 })));
+  const fetch = vi.fn<Fetch>(() =>
+    Promise.resolve(
+      new Response("event: hs-end\ndata: {}\n\n", {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      }),
+    ),
+  );
   vi.stubGlobal("fetch", fetch);
   mount("upload");
   $<HTMLInputElement>("#pictures").value = "";

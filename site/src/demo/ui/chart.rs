@@ -3,14 +3,14 @@
 use hypersig::html::div;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::rem;
-use hypersig::{Page, Signals};
+use hypersig::{Page, Segment, Signals};
 use hypersig_ui::{ButtonSize, ButtonVariant, Chart, DonutChart, Tabs, button, token};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
 use crate::lang::L;
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Kind {
     Bar,
     Stacked,
@@ -97,33 +97,29 @@ pub fn page(site: Site) -> Page<Traffic> {
         Month::desktop(),
         |month| month.at(Month::desktop()) + 400,
     );
-    let tabs = Tabs::new(label, Traffic::kind())
-        .tab(
-            Kind::Bar,
+    let tabs = Tabs::new(label, Traffic::kind(), |kind| match kind {
+        Kind::Bar => (
             site.t(L {
                 en: "Bar",
                 ja: "棒",
             }),
             visitors(Chart::bar(label, Traffic::months(), Month::name())).render(),
-        )
-        .tab(
-            Kind::Stacked,
+        ),
+        Kind::Stacked => (
             site.t(L {
                 en: "Stacked",
                 ja: "積み上げ",
             }),
             visitors(Chart::stacked_bar(label, Traffic::months(), Month::name())).render(),
-        )
-        .tab(
-            Kind::Horizontal,
+        ),
+        Kind::Horizontal => (
             site.t(L {
                 en: "Horizontal",
                 ja: "横棒",
             }),
             visitors(Chart::horizontal_bar(label, Traffic::months(), Month::name())).render(),
-        )
-        .tab(
-            Kind::Donut,
+        ),
+        Kind::Donut => (
             site.t(L {
                 en: "Donut",
                 ja: "ドーナツ",
@@ -138,7 +134,8 @@ pub fn page(site: Site) -> Page<Traffic> {
                 Browser::visitors(),
             )
             .render(),
-        );
+        ),
+    });
     Page::new(
         label,
         Traffic {

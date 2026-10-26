@@ -126,8 +126,8 @@ fn container_existing(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Run `cargo hypersig add server` in the directory that holds `Cargo.toml`. It writes the template's `Dockerfile`, adds `target` to `.dockerignore` so the build leaves it out, and adds `\"signal\"` to tokio's features in `Cargo.toml`, which the `shutdown` function below needs. It prints the change to `Cargo.toml` before writing it, and writes no file that is already there unless it is given `--force`. The `Dockerfile` names no package, so it builds any project whose package has one binary.",
-                ja: "`Cargo.toml` のあるディレクトリで `cargo hypersig add server` を実行します。このコマンドはテンプレートの `Dockerfile` を書き出し、ビルドの対象から `target` を外すために `.dockerignore` に `target` を追加し、下の `shutdown` 関数が使う `\"signal\"` を `Cargo.toml` の tokio の features に追加します。`Cargo.toml` の変更は書き込む前に表示します。すでにあるファイルは、`--force` を付けない限り上書きしません。`Dockerfile` はパッケージの名前を書いていないので、バイナリが 1 つのパッケージならどのプロジェクトでもそのままビルドできます。",
+                en: "Run `cargo hypersig add server` in the directory that holds `Cargo.toml`. It writes the template's `Dockerfile`, and adds `target` to `.dockerignore` so the build leaves it out. It writes no file that is already there unless it is given `--force`. The `Dockerfile` names no package, so it builds any project whose package has one binary.",
+                ja: "`Cargo.toml` のあるディレクトリで `cargo hypersig add server` を実行します。このコマンドはテンプレートの `Dockerfile` を書き出し、ビルドの対象から `target` を外すために `.dockerignore` に `target` を追加します。すでにあるファイルは、`--force` を付けない限り上書きしません。`Dockerfile` はパッケージの名前を書いていないので、バイナリが 1 つのパッケージならどのプロジェクトでもそのままビルドできます。",
             },
         ),
         code::block(
@@ -139,8 +139,8 @@ cargo hypersig add server",
         para(
             site,
             L {
-                en: "The command leaves `main` to you and prints the change to make, which is the code below. A `main` that binds `127.0.0.1`, as the [quick start](learn/) does, cannot be reached from outside the container. Replace its `TcpListener::bind(\"127.0.0.1:3000\")` line and the `axum::serve` line below it with the lines below, which listen on every interface at the port in `PORT`, and add the `shutdown` function after `main`. The server runs as the container's first process, which does not stop on Ctrl+C or on the SIGTERM a host sends unless it handles them, so without `shutdown`, `docker stop` waits 10 seconds and then kills it.",
-                ja: "`main` はこのコマンドでは書き換えず、変更する内容を表示します。表示するのは下のコードです。[クイックスタート](learn/) のように `127.0.0.1` で待ち受ける `main` には、コンテナの外から接続できません。`TcpListener::bind(\"127.0.0.1:3000\")` の行と、その下の `axum::serve` の行を次の行に置き換え、すべてのインターフェースの `PORT` のポートで待ち受けるようにします。`main` のあとには `shutdown` 関数を追加してください。サーバーはコンテナの最初のプロセスとして動き、自分で扱わない限り Ctrl+C やホストが送る SIGTERM では止まりません。そのため `shutdown` がないと、`docker stop` は 10 秒待ってから強制終了します。",
+                en: "The command leaves `main` to you and prints the change to make, which is the code below. A `main` that binds `127.0.0.1`, as the [quick start](learn/) does, cannot be reached from outside the container. Replace its `TcpListener::bind(\"127.0.0.1:3000\")` line and the `axum::serve` line below it with the call to `hypersig::serve` below. Where `PORT` is set, as the `Dockerfile` sets it, `hypersig::serve` listens on every interface at that port. The server runs as the container's first process, which does not stop on Ctrl+C or on the SIGTERM a host sends unless it handles them. `hypersig::serve` handles both, so `docker stop` does not wait 10 seconds and then kill it.",
+                ja: "`main` はこのコマンドでは書き換えず、変更する内容を表示します。表示するのは下のコードです。[クイックスタート](learn/) のように `127.0.0.1` で待ち受ける `main` には、コンテナの外から接続できません。`TcpListener::bind(\"127.0.0.1:3000\")` の行と、その下の `axum::serve` の行を、下の `hypersig::serve` の呼び出しに置き換えてください。`Dockerfile` が設定するように `PORT` があるとき、`hypersig::serve` はすべてのインターフェースのそのポートで待ち受けます。サーバーはコンテナの最初のプロセスとして動き、自分で扱わない限り Ctrl+C やホストが送る SIGTERM では止まりません。`hypersig::serve` はどちらも扱うので、`docker stop` が 10 秒待ってから強制終了することはありません。",
             },
         ),
         show(Snippet::Listen),

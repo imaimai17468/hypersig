@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `By: Segment` is not satisfied
+error[E0277]: `By` cannot be one segment of a URL's path
   --> tests/ui/fail/server_table_sort_key_not_segment.rs:38:60
    |
 38 |     .sortable_column(Column::text("Title", Task::title()), &By::Title);
@@ -11,6 +11,7 @@ help: the trait `Segment` is not implemented for `By`
    |
 19 | enum By {
    | ^^^^^^^
+   = note: a segment is an integer, a `String`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six
    = help: the following other types implement trait `Segment`:
              Rest
              String

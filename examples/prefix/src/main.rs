@@ -87,8 +87,6 @@ async fn main() -> std::io::Result<()> {
     let app = Router::new()
         .route("/", get(|| async { PageResponse::redirect(HOME.url(())) }))
         .nest(APP.as_str(), shop);
-    let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3009".to_owned());
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("listening on http://{addr}/app");
-    axum::serve(listener, app).await
+    println!("The shop is under /app");
+    hypersig::serve(app, 3009).await
 }

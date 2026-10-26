@@ -131,7 +131,7 @@ async fn a_segment_or_a_query_value_that_is_not_utf_8_gets_the_page() {
     assert!(body.contains(">No such page.</p>"), "{body}");
     let (status, body) = get(pages(Router::new()), page("/en/products?by=%FF")).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(body.contains("does not decode to UTF-8"), "{body}");
+    assert!(body.contains(">Bad request: the query string of"), "{body}");
 }
 
 #[tokio::test]
@@ -149,9 +149,12 @@ async fn a_query_that_does_not_deserialize_gets_the_page_with_400() {
     let (status, body) = get(pages(Router::new()), page("/en/products?by=bogus")).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert!(
-        body.contains(">Bad request: Failed to deserialize query string"),
+        body.contains(
+            ">Bad request: the query string of `/en/products` does not deserialize into its route's search parameters</p>"
+        ),
         "{body}"
     );
+    assert!(!body.contains("bogus"), "{body}");
     let (status, _) = get(pages(Router::new()), page("/en/products?by=price")).await;
     assert_eq!(status, StatusCode::OK);
 }
@@ -197,10 +200,28 @@ async fn without_a_page_for_them_a_404_is_empty_and_a_400_names_the_query() {
     assert_eq!((status, body.as_str()), (StatusCode::NOT_FOUND, ""));
     let (status, body) = get(plain_pages(Router::new()), page("/plain/1?by=bogus")).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(
-        body.starts_with("Failed to deserialize query string"),
-        "{body}"
+    assert_eq!(
+        body,
+        "the query string does not deserialize into the page's search parameters"
     );
+}
+
+hypersig::routes! {
+    fn detail_pages(Router<()>) else detail;
+    const DETAIL: Route<(), Sort> = "/detail" => |(), _sort: Sort| async move { shop("sorted") };
+}
+
+/// Shows what the query reader said, which a log would record.
+async fn detail((): (), unserved: Unserved) -> Page<Shop> {
+    let source = std::error::Error::source(&unserved).map(ToString::to_string);
+    shop(&source.unwrap_or_default())
+}
+
+#[tokio::test]
+async fn the_reader_s_message_is_the_source_of_unserved() {
+    let (status, body) = get(detail_pages(Router::new()), page("/detail?by=bogus")).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body.contains("unknown variant `bogus`"), "{body}");
 }
 
 #[tokio::test]

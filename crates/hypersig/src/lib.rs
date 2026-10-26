@@ -55,6 +55,7 @@
 extern crate self as hypersig;
 
 mod action;
+mod asset;
 #[cfg(feature = "axum")]
 mod axum;
 mod date;
@@ -86,6 +87,12 @@ struct Readme;
 struct ReadmeJa;
 
 pub use action::{Action, Call, DialogRef, Method, NodeRef, StreamAction, StreamCall};
+pub use asset::Asset;
+#[cfg(all(
+    feature = "axum",
+    not(all(target_arch = "wasm32", target_os = "unknown"))
+))]
+pub use axum::serve;
 #[cfg(feature = "axum")]
 pub use axum::{
     ActionResponse, Handler, IntoActionResponse, PageResponse, PatchStream, RequestError,
@@ -96,7 +103,9 @@ pub use expr::{
     CharClass, Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };
 pub use form::{FieldErrors, Form, Rules, Validate};
-pub use head::{OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError};
+pub use head::{
+    LanguageTag, LanguageTagError, OpenGraph, OpenGraphLocale, OpenGraphType, Origin, OriginError,
+};
 pub use href::{IntoHref, SafeUrl, UnsafeUrl};
 pub use hypersig_proc::{Search, Segment, Signals};
 pub use intl::{IntlLocale, PluralCategory};
@@ -111,7 +120,7 @@ pub use signal::{
 };
 pub use upload::{FileInput, Upload};
 #[cfg(feature = "axum")]
-pub use upload::{StreamedFile, UploadStream, Uploaded, UploadedFile};
+pub use upload::{FileName, StreamedFile, UploadStream, Uploaded, UploadedFile};
 
 /// Typed atomic CSS, from the `hypersig_style` crate.
 ///
@@ -197,27 +206,59 @@ pub mod _private {
     #[cfg(feature = "axum")]
     pub use crate::axum::UnservedPage;
 
-    pub use crate::route::SearchFields;
-    pub use crate::route::sealed::Sealed;
+    pub use crate::route::RouteType;
+    pub use crate::route::sealed::{Sealed, SealedSearch};
     use crate::route::{Base, Extends, Params, Route, Search};
     use crate::signal::{Path, Sig};
 
-    /// Called by `routes!` for a page at `path` under `base`.
+    /// Called by `routes!` for a page at `path` under `base`, which
+    /// [`check_route`] checks in a `const _` beside it.
     #[must_use]
-    pub const fn route<P: Params, Q: Search>(base: Base, path: &'static str) -> Route<P, Q> {
-        Route::new(path).under(base)
+    pub const fn route<P, Q>(base: Base, path: &'static str) -> Route<P, Q> {
+        Route::unchecked(base, path)
     }
 
-    /// Called by `routes!` for a page at `path` under `parent`.
+    /// Called by `routes!` with a line's type, written out so that the
+    /// compiler's message for parameters a route cannot take points at it.
+    ///
+    /// # Errors
+    ///
+    /// Why `path` cannot be the path of a route of type `R`.
+    pub const fn check_route<R: RouteType>(path: &'static str) -> Result<(), &'static str> {
+        Route::<R::Params, R::Search>::check(path)
+    }
+
+    /// Called by `#[derive(Search)]` for the query string of `search`.
     #[must_use]
-    pub const fn child<P: Params, Q: Search, C: Params + Extends<P>, R: Search>(
+    pub fn search_query<Q: crate::Signals>(search: &Q) -> String {
+        crate::route::search_query(search)
+    }
+
+    /// Called by `routes!` for a page at `path` under `parent`, which
+    /// [`check_child`] checks in a `const _` beside it.
+    #[must_use]
+    pub const fn child<P, Q, C, R>(parent: &Route<P, Q>, path: &'static str) -> Route<C, R> {
+        parent.unchecked_child(path)
+    }
+
+    /// Called by `routes!` with the type of a line after `in`, as
+    /// [`check_route`] is for other lines.
+    ///
+    /// # Errors
+    ///
+    /// Why `path` cannot be the path of a route of type `R` under `parent`.
+    pub const fn check_child<R: RouteType, P: Params, Q: Search>(
         parent: &Route<P, Q>,
         path: &'static str,
-    ) -> Route<C, R> {
-        parent.child(path)
+    ) -> Result<(), &'static str>
+    where
+        R::Params: Extends<P>,
+    {
+        parent.check_child::<R::Params, R::Search>(path)
     }
 
-    /// Called by `routes!` for an action served on `method path` under `base`.
+    /// Called by `routes!` for an action served on `method path` under
+    /// `base`, which [`check_action`] checks in a `const _` beside it.
     #[must_use]
     pub const fn action<S, A>(
         base: Base,
@@ -227,13 +268,15 @@ pub mod _private {
         crate::Action::at(method, base, path)
     }
 
-    /// Called by `routes!` for a stream served on `GET path` under `base`.
+    /// Called by `routes!` for a stream served on `GET path` under `base`,
+    /// which [`check_stream`] checks in a `const _` beside it.
     #[must_use]
     pub const fn stream<S, A>(base: Base, path: &'static str) -> crate::StreamAction<S, A> {
         crate::StreamAction::at(base, path)
     }
 
-    /// Called by `routes!` for an upload served on `POST path` under `base`.
+    /// Called by `routes!` for an upload served on `POST path` under
+    /// `base`, which [`check_upload`] checks in a `const _` beside it.
     #[must_use]
     pub const fn upload<S, A>(
         base: Base,
@@ -241,6 +284,33 @@ pub mod _private {
         max_bytes: usize,
     ) -> crate::Upload<S, A> {
         crate::Upload::at(base, path, max_bytes)
+    }
+
+    /// Called by `routes!` for the path of an `action` line.
+    ///
+    /// # Errors
+    ///
+    /// Why `path` cannot be an action's path.
+    pub const fn check_action(path: &'static str) -> Result<(), &'static str> {
+        crate::Action::<(), ()>::check_path(path)
+    }
+
+    /// Called by `routes!` for the path of a `stream` line.
+    ///
+    /// # Errors
+    ///
+    /// Why `path` cannot be a stream's path.
+    pub const fn check_stream(path: &'static str) -> Result<(), &'static str> {
+        crate::StreamAction::<(), ()>::check_path(path)
+    }
+
+    /// Called by `routes!` for the path of an `upload` line.
+    ///
+    /// # Errors
+    ///
+    /// Why `path` cannot be an upload's path.
+    pub const fn check_upload(path: &'static str) -> Result<(), &'static str> {
+        crate::Upload::<(), ()>::check_path(path)
     }
 
     /// The limit `routes!` gives an upload line without `max_bytes`.
@@ -258,18 +328,24 @@ pub mod _private {
         Sig::from_path(Path::field(field))
     }
 
-    /// Called by `attr!` inside a `const` block, so a name `Attr` refuses
-    /// is a compile error.
-    #[must_use]
-    pub const fn attr(name: &'static str) -> crate::html::Attr {
-        crate::html::Attr::new(name)
+    /// Called by `attr!` inside a `const` block, which panics on the
+    /// reason, so a name `Attr` refuses is a compile error.
+    ///
+    /// # Errors
+    ///
+    /// The rule of `Attr` that `name` breaks.
+    pub const fn attr(name: &'static str) -> Result<crate::html::Attr, &'static str> {
+        crate::html::Attr::check(name)
     }
 
-    /// Called by `tag!` inside a `const` block, so a name `Tag` refuses is
-    /// a compile error.
-    #[must_use]
-    pub const fn tag(name: &'static str) -> crate::html::Tag {
-        crate::html::Tag::new(name)
+    /// Called by `tag!` inside a `const` block, which panics on the reason,
+    /// so a name `Tag` refuses is a compile error.
+    ///
+    /// # Errors
+    ///
+    /// The rule of `Tag` that `name` breaks.
+    pub const fn tag(name: &'static str) -> Result<crate::html::Tag, &'static str> {
+        crate::html::Tag::check(name)
     }
 
     /// Called by `node_ref!` with the path of its constant.
@@ -403,7 +479,14 @@ macro_rules! dialog_ref {
 #[macro_export]
 macro_rules! attr {
     ($name:literal) => {
-        const { $crate::_private::attr($name) }
+        // The panic sits in this block rather than in `Attr`'s check, so the
+        // compiler's message points at the macro call.
+        const {
+            match $crate::_private::attr($name) {
+                ::core::result::Result::Ok(attr) => attr,
+                ::core::result::Result::Err(reason) => ::core::panic!("{}", reason),
+            }
+        }
     };
 }
 
@@ -422,6 +505,13 @@ macro_rules! attr {
 #[macro_export]
 macro_rules! tag {
     ($name:literal) => {
-        const { $crate::_private::tag($name) }
+        // The panic sits in this block rather than in `Tag`'s check, so the
+        // compiler's message points at the macro call.
+        const {
+            match $crate::_private::tag($name) {
+                ::core::result::Result::Ok(tag) => tag,
+                ::core::result::Result::Err(reason) => ::core::panic!("{}", reason),
+            }
+        }
     };
 }

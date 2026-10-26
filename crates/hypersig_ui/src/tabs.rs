@@ -6,14 +6,14 @@ use hypersig::style::value::{
     rem,
 };
 use hypersig::style::{PseudoClass, Style};
-use hypersig::{Sig, if_else};
+use hypersig::{Sig, Variants, if_else};
 use serde::Serialize;
 
 use crate::look;
 use crate::token;
 
 /// A tab list named `label` whose selection is the signal `selected`, with
-/// one panel per tab.
+/// one tab and one panel per variant of its enum.
 ///
 /// It follows the WAI-ARIA tabs pattern. The list has `role="tablist"`, each
 /// tab `role="tab"` with `aria-selected` and `aria-controls`, and each panel
@@ -22,13 +22,17 @@ use crate::token;
 /// selected as it gains focus, through [`El::roving_focus`]. The ids are
 /// derived from the signal's path and the tab's position.
 ///
+/// The value of `selected` is an enum with `#[derive(Segment)]`, and the
+/// tabs are its variants, so the selected value always has a tab that Tab
+/// can reach.
+///
 /// ```
-/// use hypersig::Signals;
 /// use hypersig::html::p;
+/// use hypersig::{Segment, Signals};
 /// use hypersig_ui::Tabs;
 /// use serde::{Deserialize, Serialize};
 ///
-/// #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+/// #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
 /// enum Section {
 ///     Account,
 ///     Password,
@@ -39,9 +43,10 @@ use crate::token;
 ///     section: Section,
 /// }
 ///
-/// let tabs = Tabs::new("Settings", Settings::section())
-///     .tab(Section::Account, "Account", p().text("Your name and email."))
-///     .tab(Section::Password, "Password", p().text("Change your password."));
+/// let tabs = Tabs::new("Settings", Settings::section(), |section| match section {
+///     Section::Account => ("Account", p().text("Your name and email.")),
+///     Section::Password => ("Password", p().text("Change your password.")),
+/// });
 /// let html = tabs.render().render();
 /// assert!(html.contains(r#"role="tablist""#));
 /// assert!(html.contains(r#"aria-controls="ui-section-panel-1""#));
@@ -50,25 +55,34 @@ use crate::token;
 pub struct Tabs<S, T> {
     label: String,
     selected: Sig<S, T>,
-    entries: Vec<(T, String, El<S>)>,
+    /// The title and panel of each variant, in declaration order.
+    entries: Vec<(String, El<S>)>,
 }
 
-impl<S, T: Serialize + PartialEq> Tabs<S, T> {
-    /// An empty tab list named `label` for assistive technology.
+impl<S, T: Variants + Serialize + PartialEq> Tabs<S, T> {
+    /// A tab list named `label`, with the title and panel `tab` gives each variant.
+    ///
+    /// `tab` is called once per variant, in declaration order, so a `match`
+    /// on the variant names a tab for each one, and the compiler rejects a
+    /// `match` that leaves a variant out.
     #[must_use]
-    pub fn new(label: impl Into<String>, selected: Sig<S, T>) -> Self {
+    pub fn new<L: Into<String>>(
+        label: impl Into<String>,
+        selected: Sig<S, T>,
+        tab: impl Fn(&T) -> (L, El<S>),
+    ) -> Self {
+        let entries = T::VARIANTS
+            .iter()
+            .map(|value| {
+                let (title, panel) = tab(value);
+                (title.into(), panel)
+            })
+            .collect();
         Self {
             label: label.into(),
             selected,
-            entries: Vec::new(),
+            entries,
         }
-    }
-
-    /// Adds a tab titled `title` that selects `value` and shows `panel`.
-    #[must_use]
-    pub fn tab(mut self, value: T, title: impl Into<String>, panel: El<S>) -> Self {
-        self.entries.push((value, title.into(), panel));
-        self
     }
 
     /// The tab list followed by the panels, in a `<div>`.
@@ -81,10 +95,10 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
             .roving_focus(Orientation::Horizontal)
             .css(list_style());
         let mut panels = Vec::with_capacity(self.entries.len());
-        for (index, (value, title, panel)) in self.entries.into_iter().enumerate() {
+        for (index, (value, (title, panel))) in T::VARIANTS.iter().zip(self.entries).enumerate() {
             let tab_id = crate::id::of(selected, "tab").with_key(index);
             let panel_id = crate::id::of(selected, "panel").with_key(index);
-            let active = selected.equals(&value);
+            let active = selected.equals(value);
             list = list.child(
                 button()
                     .attr(attr::TYPE, "button")
@@ -96,8 +110,8 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
                         if_else(active.clone(), "true", "false"),
                     )
                     .bind_attr(attr::TABINDEX, if_else(active.clone(), "0", "-1"))
-                    .on(Event::Focus, selected.set(&value))
-                    .on_click(selected.set(&value))
+                    .on(Event::Focus, selected.set(value))
+                    .on_click(selected.set(value))
                     .css(tab_style())
                     .css_when(active_style(), active.clone())
                     .text(title),
@@ -117,13 +131,13 @@ impl<S, T: Serialize + PartialEq> Tabs<S, T> {
     }
 }
 
-impl<S, T: Serialize + PartialEq> From<Tabs<S, T>> for El<S> {
+impl<S, T: Variants + Serialize + PartialEq> From<Tabs<S, T>> for El<S> {
     fn from(tabs: Tabs<S, T>) -> Self {
         tabs.render()
     }
 }
 
-impl<S, T: Serialize + PartialEq> From<Tabs<S, T>> for hypersig::html::Node<S> {
+impl<S, T: Variants + Serialize + PartialEq> From<Tabs<S, T>> for hypersig::html::Node<S> {
     fn from(tabs: Tabs<S, T>) -> Self {
         tabs.render().into()
     }

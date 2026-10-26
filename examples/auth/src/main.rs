@@ -22,8 +22,9 @@ use hypersig::style::Style;
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::rem;
 use hypersig::{
-    Action, ActionResponse, FieldErrors, FileInput, Form, Page, PageResponse, Patches, RequestKind,
-    Route, RouterExt, Rules, Sig, Signals, Unserved, Upload, Uploaded, Validate, if_else,
+    Action, ActionResponse, FieldErrors, FileInput, FileName, Form, Page, PageResponse, Patches,
+    RequestKind, Route, RouterExt, Rules, Sig, Signals, Unserved, Upload, Uploaded, Validate,
+    if_else,
 };
 use hypersig_ui::{
     Autocomplete, ButtonSize, ButtonVariant, InputKind, Level, TextField, button, card,
@@ -516,7 +517,9 @@ async fn upload_picture(
     }
     let described = format!(
         "{}, {} bytes",
-        file.file_name().unwrap_or("picture"),
+        file.file_name()
+            .and_then(FileName::base_name)
+            .unwrap_or("picture"),
         file.bytes().len()
     );
     state.pictures().insert(member.name, described.clone());
@@ -564,8 +567,5 @@ async fn main() -> std::io::Result<()> {
         .hypersig_runtime()
         .with_state(state)
         .layer(sessions());
-    let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3007".to_owned());
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("listening on http://{addr}");
-    axum::serve(listener, app).await
+    hypersig::serve(app, 3007).await
 }

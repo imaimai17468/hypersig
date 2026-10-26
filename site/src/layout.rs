@@ -16,7 +16,7 @@ use crate::doc::{Doc, Library};
 use crate::lang::{L, Lang};
 use crate::prose::{self, Docs, Part, href};
 use crate::{Site, code, own};
-use hypersig_i18n::Locale as _;
+use hypersig_i18n::{Locale as _, locales};
 
 /// The repository the header links to.
 pub const REPOSITORY: SafeUrl = SafeUrl::new("https://github.com/imaimai17468/hypersig");
@@ -63,7 +63,7 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
                 ja: "hypersig、Rust だけで書く Web フレームワーク。サーバーが状態を、型が正しさを。",
             }),
         );
-        for &lang in Lang::ALL {
+        for &lang in locales::<Lang>() {
             let (origin, url) = site
                 .with_lang(lang)
                 .canonical(&doc.path())
@@ -74,12 +74,15 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
             }
         }
     }
-    for &lang in Lang::ALL.iter().filter(|&&lang| lang != site.lang()) {
+    for &lang in locales::<Lang>()
+        .iter()
+        .filter(|&&lang| lang != site.lang())
+    {
         card = card.alternate_locale(lang.og_locale());
     }
     page.open_graph(card)
-        .runtime_src(site.runtime())
-        .icon(site.icon())
+        .runtime_src(crate::RUNTIME)
+        .icon(crate::ICON)
         .global(hypersig_ui::global())
         .global(
             Global::new().rule(
@@ -93,7 +96,7 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
         .theme(code::theme())
         .child(top_bar(site, doc))
         .child(body)
-        .render()
+        .render_under(site.base())
 }
 
 /// A page of `doc` with the sidebar of its section and `content` as an
@@ -234,8 +237,8 @@ fn other_language(site: Site, doc: Doc) -> Part {
         Lang::En
     };
     a().href(own(doc.url(site.with_lang(other))))
-        .attr(attr::HREFLANG, other.tag())
-        .attr(attr::LANG, other.tag())
+        .attr(attr::HREFLANG, other.tag().as_str())
+        .attr(attr::LANG, other.tag().as_str())
         .css(
             nav_link_style(Place::Other)
                 .margin_left(raw("auto"))
@@ -261,7 +264,7 @@ fn brand(site: Site, library: Library) -> Part {
                 .css(name.clone().merge(hstack(rem(0.5))))
                 .child(
                     img()
-                        .src(own(site.icon()))
+                        .src(own(site.url(crate::ICON_FILE)))
                         .attr(attr::ALT, "")
                         .attr(attr::WIDTH, "24")
                         .attr(attr::HEIGHT, "24"),
@@ -330,12 +333,12 @@ fn languages(site: Site, doc: Doc) -> Part {
             }),
         )
         .css(hstack(rem(0.75)).font_size(rem(0.875)))
-        .children(Lang::ALL.iter().map(|&lang| {
+        .children(locales::<Lang>().iter().map(|&lang| {
             let here = Place::current_if(lang == site.lang());
             let link = a()
                 .href(own(doc.url(site.with_lang(lang))))
-                .attr(attr::HREFLANG, lang.tag())
-                .attr(attr::LANG, lang.tag())
+                .attr(attr::HREFLANG, lang.tag().as_str())
+                .attr(attr::LANG, lang.tag().as_str())
                 .css(nav_link_style(here));
             mark_current(link, here).text(lang.name())
         }))

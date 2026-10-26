@@ -68,19 +68,26 @@ impl<S, A> Upload<S, A> {
 
     /// An upload served on `POST path` under `base`, accepting a body of at
     /// most `max_bytes` bytes, the arguments and the multipart framing
-    /// included. [`routes!`](crate::routes) calls it in a `const`, so a path
-    /// that does not start with `/` is a compile error.
+    /// included.
+    ///
+    /// [`routes!`](crate::routes) checks `path` with [`Upload::check_path`]
+    /// in a `const _` beside the constant, so a path that does not start
+    /// with `/` is a compile error.
     pub(crate) const fn at(base: Base, path: &'static str, max_bytes: usize) -> Self {
-        assert!(
-            !path.is_empty() && path.as_bytes()[0] == b'/',
-            "an upload path starts with `/`"
-        );
         Self {
             base,
             path,
             max_bytes,
             marker: PhantomData,
         }
+    }
+
+    /// Why `path` cannot be an upload's path, if it cannot.
+    pub(crate) const fn check_path(path: &'static str) -> Result<(), &'static str> {
+        if path.is_empty() || path.as_bytes()[0] != b'/' {
+            return Err("an upload path starts with `/`");
+        }
+        Ok(())
     }
 
     /// The path the upload is served on, without its [`Base`].
@@ -231,7 +238,8 @@ impl<A> Uploaded<A> {
 pub struct UploadedFile {
     file_name: Option<String>,
     content_type: Option<String>,
-    bytes: Vec<u8>,
+    /// The bytes as the multipart reader handed them over, without a copy.
+    bytes: axum::body::Bytes,
 }
 
 #[cfg(feature = "axum")]
@@ -239,7 +247,7 @@ impl UploadedFile {
     pub(crate) fn new(
         file_name: Option<String>,
         content_type: Option<String>,
-        bytes: Vec<u8>,
+        bytes: axum::body::Bytes,
     ) -> Self {
         Self {
             file_name,
@@ -249,11 +257,9 @@ impl UploadedFile {
     }
 
     /// The file's name on the visitor's computer, as the browser sent it.
-    ///
-    /// The visitor controls it, so it is no safe path to write to.
     #[must_use]
-    pub fn file_name(&self) -> Option<&str> {
-        self.file_name.as_deref()
+    pub fn file_name(&self) -> Option<FileName<'_>> {
+        self.file_name.as_deref().map(FileName)
     }
 
     /// The media type the browser sent, such as `image/png`. The browser
@@ -270,9 +276,65 @@ impl UploadedFile {
     }
 
     /// The file's contents, owned.
+    ///
+    /// The buffer the multipart reader filled is handed over without a copy
+    /// where no other value shares it.
     #[must_use]
     pub fn into_bytes(self) -> Vec<u8> {
-        self.bytes
+        self.bytes.into()
+    }
+}
+
+/// The name a browser sent for an uploaded file, which the visitor chooses.
+///
+/// A visitor can send any text as the name, such as `../../etc/passwd` or
+/// `C:\boot.ini`, so the name reaches the handler as this type rather than
+/// as a `&str` that a path could be joined with by accident.
+/// [`FileName::base_name`] is the last segment, for showing the name or
+/// reading its extension, and [`FileName::as_sent`] is the text itself.
+/// Store a file under a name the application chooses.
+///
+/// ```
+/// use hypersig::{Patches, Signals, Uploaded};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Gallery {
+///     last: String,
+/// }
+///
+/// async fn receive((): (), uploaded: Uploaded<()>) -> Patches<Gallery> {
+///     let name = uploaded.files().first().and_then(|file| file.file_name());
+///     let shown = name.and_then(|name| name.base_name()).unwrap_or("picture");
+///     Gallery::last().patch(shown.to_owned()).into()
+/// }
+/// # let _ = receive;
+/// ```
+#[cfg(feature = "axum")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FileName<'a>(&'a str);
+
+#[cfg(feature = "axum")]
+impl<'a> FileName<'a> {
+    /// The last segment of the name, or `None` where it is no file name.
+    ///
+    /// The name is cut after its last `/` or `\`, and the rest is `None`
+    /// where it is empty, `.`, or `..`, or holds a control character. The
+    /// result names no directory, so joined to a directory it stays inside
+    /// it, but two visitors can still send one name, and a name can still
+    /// be one the file system treats specially, such as `CON` on Windows.
+    #[must_use]
+    pub fn base_name(self) -> Option<&'a str> {
+        let name = self.0.rsplit(['/', '\\']).next().unwrap_or_default();
+        let refused =
+            name.is_empty() || name == "." || name == ".." || name.chars().any(char::is_control);
+        (!refused).then_some(name)
+    }
+
+    /// The name as the browser sent it, which may name directories.
+    #[must_use]
+    pub fn as_sent(self) -> &'a str {
+        self.0
     }
 }
 
@@ -382,11 +444,9 @@ pub struct StreamedFile<'a> {
 #[cfg(feature = "axum")]
 impl StreamedFile<'_> {
     /// The file's name on the visitor's computer, as the browser sent it.
-    ///
-    /// The visitor controls it, so it is no safe path to write to.
     #[must_use]
-    pub fn file_name(&self) -> Option<&str> {
-        self.field.file_name()
+    pub fn file_name(&self) -> Option<FileName<'_>> {
+        self.field.file_name().map(FileName)
     }
 
     /// The media type the browser sent, such as `image/png`. The browser
@@ -418,3 +478,21 @@ pub(crate) const ARGS_PART: &str = "args";
 /// The name of the multipart parts that hold the files.
 #[cfg(feature = "axum")]
 pub(crate) const FILES_PART: &str = "files";
+
+#[cfg(all(test, feature = "axum"))]
+mod tests {
+    use super::FileName;
+
+    #[test]
+    fn the_base_name_is_the_last_segment_of_a_file_name() {
+        let base = |sent| FileName(sent).base_name();
+        assert_eq!(base("photo.png"), Some("photo.png"));
+        assert_eq!(base("../../etc/passwd"), Some("passwd"));
+        assert_eq!(base(r"C:\Users\ada\photo.png"), Some("photo.png"));
+        assert_eq!(base(".profile"), Some(".profile"));
+        for sent in ["", ".", "..", "a/..", "dir/", "a\u{0}b", "line\nbreak"] {
+            assert_eq!(base(sent), None, "{sent:?}");
+        }
+        assert_eq!(FileName("../x").as_sent(), "../x");
+    }
+}

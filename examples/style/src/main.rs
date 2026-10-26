@@ -425,8 +425,5 @@ async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
         .layer(middleware::from_fn(content_security_policy));
-    let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3004".to_owned());
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("listening on http://{addr}");
-    axum::serve(listener, app).await
+    hypersig::serve(app, 3004).await
 }

@@ -1,3 +1,3 @@
 {
-  "stream": "event: hs-list\ndata: [\"append\",\"notes\",[\"lit\",[{\"body\":\"three\",\"id\":3}]]]\n\nevent: hs-list\ndata: [\"prepend\",\"notes\",[\"lit\",[{\"body\":\"zero\",\"id\":0}]]]\n\nevent: hs-list\ndata: [\"upsert\",\"notes\",0,[\"item\",0,\"id\"],[\"lit\",[{\"body\":\"one!\",\"id\":1},{\"body\":\"four\",\"id\":4}]]]\n\nevent: hs-list\ndata: [\"remove_keys\",\"notes\",0,[\"item\",0,\"id\"],[\"lit\",[2,3]]]\n\n"
+  "stream": "event: hs-list\ndata: [\"append\",\"notes\",[\"lit\",[{\"body\":\"three\",\"id\":3}]]]\n\nevent: hs-list\ndata: [\"prepend\",\"notes\",[\"lit\",[{\"body\":\"zero\",\"id\":0}]]]\n\nevent: hs-list\ndata: [\"upsert\",\"notes\",0,[\"item\",0,\"id\"],[\"lit\",[{\"body\":\"one!\",\"id\":1},{\"body\":\"four\",\"id\":4}]]]\n\nevent: hs-list\ndata: [\"remove_keys\",\"notes\",0,[\"item\",0,\"id\"],[\"lit\",[2,3]]]\n\nevent: hs-end\ndata: {}\n\n"
 }

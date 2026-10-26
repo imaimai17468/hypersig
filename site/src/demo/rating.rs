@@ -4,7 +4,7 @@
 use hypersig::html::{CustomEvent, div, el, p, attr};
 use hypersig::style::pattern::hstack;
 use hypersig::style::value::rem;
-use hypersig::{Page, Signals, if_else};
+use hypersig::{Asset, Page, Signals, if_else};
 use hypersig_ui::{ButtonSize, ButtonVariant, button};
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +15,9 @@ use crate::lang::L;
 pub struct Review {
     stars: i32,
 }
+
+// The script that defines `<star-rating>`, served next to the page.
+const STAR_RATING: Asset = Asset::new("/star-rating.js");
 
 // `star-rating.js` dispatches it with the number of the star clicked.
 const RATE: CustomEvent<i32> = CustomEvent::new("rate");
@@ -28,7 +31,7 @@ pub fn page(site: Site) -> Page<Review> {
         }),
         Review { stars: 3 },
     )
-    .script(site.star_rating())
+    .script(STAR_RATING)
     .child(
         div()
             .css(hstack(rem(1)))

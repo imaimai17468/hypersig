@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/ui/fail/page_script_from_str.rs:9:49
+  |
+9 |     let _ = Page::new("Place", Place {}).script("/map.js");
+  |                                          ------ ^^^^^^^^^ expected `Asset`, found `&str`
+  |                                          |
+  |                                          arguments to this method are incorrect
+  |
+note: method defined here
+ --> src/page.rs
+  |
+  |     pub fn script(mut self, src: Asset) -> Self {
+  |            ^^^^^^

@@ -52,8 +52,8 @@ hypersig_i18n = "0.8""#,
         para(
             site,
             L {
-                en: "List the languages in an enum with `#[derive(Segment)]`, and implement [`Locale`](api:hypersig_i18n/trait.Locale.html) for it. `Locale::Text` names a struct with one field per language, and `pick` returns the field of the language. serde serializes each variant to the language's BCP 47 tag, which `tag` returns, so with `#[serde(rename_all = \"lowercase\")]` the tags are `en` and `ja`.",
-                ja: "言語を `#[derive(Segment)]` を付けた enum に並べ、その enum に [`Locale`](api:hypersig_i18n/trait.Locale.html) を実装します。`Locale::Text` には言語ごとに 1 つのフィールドを持つ構造体を指定し、`pick` はその言語のフィールドを返します。serde がバリアントをシリアライズした文字列がその言語の BCP 47 のタグになり、`tag` はその文字列を返します。そのため `#[serde(rename_all = \"lowercase\")]` を付けると、タグは `en` と `ja` になります。",
+                en: "List the languages in an enum with `#[derive(Segment)]`, and implement [`Locale`](api:hypersig_i18n/trait.Locale.html) for it. `Locale::Text` names a struct with one field per language, and `pick` returns the field of the language. serde serializes each variant to the language's BCP 47 tag, which `tag` returns, so with `#[serde(rename_all = \"lowercase\")]` the tags are `en` and `ja`. The first variant is the default language.",
+                ja: "言語を `#[derive(Segment)]` を付けた enum に並べ、その enum に [`Locale`](api:hypersig_i18n/trait.Locale.html) を実装します。`Locale::Text` には言語ごとに 1 つのフィールドを持つ構造体を指定し、`pick` はその言語のフィールドを返します。serde がバリアントをシリアライズした文字列がその言語の BCP 47 のタグになり、`tag` はその文字列を返します。そのため `#[serde(rename_all = \"lowercase\")]` を付けると、タグは `en` と `ja` になります。最初のバリアントが既定の言語です。",
             },
         ),
         show(Snippet::I18nLocale),
@@ -82,10 +82,6 @@ hypersig_i18n = "0.8""#,
         bullets(
             site,
             &[
-                L {
-                    en: "`Locale::ALL` lists the languages for `negotiate`, and the compiler does not check that it lists every variant. A variant missing from it is never chosen.",
-                    ja: "`Locale::ALL` は `negotiate` が選ぶ言語の一覧で、すべてのバリアントが並んでいるかはコンパイラが検査しません。一覧にないバリアントが選ばれることはありません。",
-                },
                 L {
                     en: "The compiler checks only that a translation exists. A Japanese field that holds English compiles.",
                     ja: "検査するのは訳があることで、訳が正しいことではありません。日本語のフィールドに英語を書いても、コンパイルは通ります。",
@@ -135,8 +131,8 @@ fn pages(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "To link to the same page in another language, pass `link_with` the other language and the same remaining parameters. The route then checks that link as it checks any other. A language switcher lists `Locale::ALL` and links, in each language, to the page the reader is on.",
-                ja: "同じページの別の言語へのリンクは、`link_with` に別の言語とそのほかの同じパラメータを渡して作ります。そのため、ほかのリンクと同じくルートがこのリンクを検査します。言語を切り替える UI は `Locale::ALL` を並べ、言語ごとに読者が今いるページへリンクします。",
+                en: "To link to the same page in another language, pass `link_with` the other language and the same remaining parameters. The route then checks that link as it checks any other. A language switcher lists `locales::<Lang>()`, every variant of the enum, and links, in each language, to the page the reader is on.",
+                ja: "同じページの別の言語へのリンクは、`link_with` に別の言語とそのほかの同じパラメータを渡して作ります。そのため、ほかのリンクと同じくルートがこのリンクを検査します。言語を切り替える UI は列挙型のすべてのバリアントを返す `locales::<Lang>()` を並べ、言語ごとに読者が今いるページへリンクします。",
             },
         ),
         heading(
@@ -149,15 +145,15 @@ fn pages(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) writes the tag into `<html lang>`. The browser uses it to decide hyphenation, the voice a screen reader uses, and the fonts, so Japanese text set with `lang=\"ja\"` gets Japanese glyphs.",
-                ja: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) はタグを `<html lang>` に書きます。ブラウザはこの属性を見て、ハイフネーション、スクリーンリーダーの読み上げの声、使うフォントを決めます。そのため、`lang=\"ja\"` の付いた日本語の文は日本語の字形で表示されます。",
+                en: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) writes the tag into `<html lang>`, and `Page::alternate` writes it into `hreflang`. Both take a [`LanguageTag`](api:hypersig/struct.LanguageTag.html), which `tag` returns, so a segment such as `en_US` that is not shaped as a language tag panics when `tag` reads it. The browser uses it to decide hyphenation, the voice a screen reader uses, and the fonts, so Japanese text set with `lang=\"ja\"` gets Japanese glyphs.",
+                ja: "[`Page::lang`](api:hypersig/struct.Page.html#method.lang) はタグを `<html lang>` に書き、`Page::alternate` は `hreflang` に書きます。どちらも `tag` が返す [`LanguageTag`](api:hypersig/struct.LanguageTag.html) を受け取ります。そのため、`en_US` のように言語タグの形をしていないセグメントは、`tag` が読んだときにパニックします。ブラウザはこの属性を見て、ハイフネーション、スクリーンリーダーの読み上げの声、使うフォントを決めます。そのため、`lang=\"ja\"` の付いた日本語の文は日本語の字形で表示されます。",
             },
         ),
         para(
             site,
             L {
-                en: "[`LocalePage::alternates`](api:hypersig_i18n/trait.LocalePage.html#tymethod.alternates) takes an `Origin` and a function from a language to the page's `Url`, as in `|lang| POST.url((lang, id))`. It writes one `<link rel=\"alternate\" hreflang>` per language of `Locale::ALL`, and an `x-default` at the first language, so a search engine shows each reader the page in their language.",
-                ja: "[`LocalePage::alternates`](api:hypersig_i18n/trait.LocalePage.html#tymethod.alternates) は `Origin` と、`|lang| POST.url((lang, id))` のように言語からページの `Url` を返す関数を受け取ります。`Locale::ALL` の言語ごとに `<link rel=\"alternate\" hreflang>` を 1 つ書き、最初の言語には `x-default` も書きます。検索エンジンはこれを見て、読者の言語のページを結果に出します。",
+                en: "[`LocalePage::alternates`](api:hypersig_i18n/trait.LocalePage.html#tymethod.alternates) takes an `Origin` and a function from a language to the page's `Url`, as in `|lang| POST.url((lang, id))`. It writes one `<link rel=\"alternate\" hreflang>` per variant of the language enum, and an `x-default` at the first variant, so a search engine shows each reader the page in their language.",
+                ja: "[`LocalePage::alternates`](api:hypersig_i18n/trait.LocalePage.html#tymethod.alternates) は `Origin` と、`|lang| POST.url((lang, id))` のように言語からページの `Url` を返す関数を受け取ります。言語の列挙型のバリアントごとに `<link rel=\"alternate\" hreflang>` を 1 つ書き、最初のバリアントには `x-default` も書きます。検索エンジンはこれを見て、読者の言語のページを結果に出します。",
             },
         ),
     ])
@@ -177,8 +173,8 @@ fn negotiation(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`negotiate`](api:hypersig_i18n/fn.negotiate.html) reads an `Accept-Language` value and returns the best language of `Locale::ALL`. It tries the ranges from the highest `q` to the lowest, and in the order written where two have the same `q`. A range first matches a tag equal to it, ignoring case. Next it matches a tag equal to the range with its last subtags dropped, so `ja-JP` matches `ja`. Last it matches a tag that starts with the range, so `en` matches `en-US`. `*`, an empty header, and a header with no match give the first language of `Locale::ALL`.",
-                ja: "[`negotiate`](api:hypersig_i18n/fn.negotiate.html) は `Accept-Language` の値を読み、`Locale::ALL` の中から最も合う言語を返します。範囲は `q` の大きい順に試し、`q` が同じものは書かれた順に試します。範囲はまず、大文字と小文字を区別せずに範囲と等しいタグに一致します。次に、範囲の後ろのサブタグを削った形と等しいタグに一致するので、`ja-JP` は `ja` に一致します。最後に、範囲で始まるタグに一致するので、`en` は `en-US` に一致します。`*`、空のヘッダー、一致する言語のないヘッダーには、`Locale::ALL` の最初の言語を返します。",
+                en: "[`negotiate`](api:hypersig_i18n/fn.negotiate.html) reads an `Accept-Language` value and returns the variant of the language enum that matches it best. It tries the ranges from the highest `q` to the lowest, and in the order written where two have the same `q`. A range first matches a tag equal to it, ignoring case. Next it matches a tag equal to the range with its last subtags dropped, so `ja-JP` matches `ja`. Last it matches a tag that starts with the range, so `en` matches `en-US`. `*`, an empty header, and a header with no match give the first variant, the default.",
+                ja: "[`negotiate`](api:hypersig_i18n/fn.negotiate.html) は `Accept-Language` の値を読み、言語の列挙型のバリアントから最も合うものを返します。範囲は `q` の大きい順に試し、`q` が同じものは書かれた順に試します。範囲はまず、大文字と小文字を区別せずに範囲と等しいタグに一致します。次に、範囲の後ろのサブタグを削った形と等しいタグに一致するので、`ja-JP` は `ja` に一致します。最後に、範囲で始まるタグに一致するので、`en` は `en-US` に一致します。`*`、空のヘッダー、一致する言語のないヘッダーには、既定の言語である最初のバリアントを返します。",
             },
         ),
         heading(

@@ -2,7 +2,7 @@
 #     include!("../../snippets/elements_module.rs");
 # }
 # fn main() {
-use hypersig::{Page, Signals};
+use hypersig::{Asset, Page, Signals};
 use serde::{Deserialize, Serialize};
 use shoelace::sl_rating;
 use shoelace::sl_rating::event::SlHoverDetail;
@@ -15,7 +15,7 @@ struct Review {
 
 let (stars, hovered) = (Review::stars(), Review::hovered());
 let page = Page::new("Review", Review { stars: 3.0, hovered: 0.0 })
-    .script("/shoelace/shoelace-autoloader.js")
+    .script(Asset::new("/shoelace/shoelace-autoloader.js"))
     .child(
         sl_rating()
             .bind_attr(sl_rating::attr::VALUE, stars.to_text())

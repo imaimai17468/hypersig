@@ -202,6 +202,7 @@ async fn a_stream_builds_its_fragments_under_the_part() {
     let (status, body) = send(
         Request::get("/readers")
             .header("accept", "text/event-stream")
+            .header("hypersig-call", "1")
             .header("hypersig-part", "footer")
             .body(Body::empty())
             .expect("request"),
@@ -219,7 +220,9 @@ fn broadcast_from(path: &str, part: Option<&str>) -> Request<Body> {
     let request = if path == "/broadcast" {
         Request::post(path).header("content-type", "application/json")
     } else {
-        Request::get(path).header("accept", "text/event-stream")
+        Request::get(path)
+            .header("accept", "text/event-stream")
+            .header("hypersig-call", "1")
     };
     let request = match part {
         Some(part) => request.header("hypersig-part", part),

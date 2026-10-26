@@ -7,11 +7,13 @@ use std::fmt;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
+use crate::asset::Asset;
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
-use crate::head::{OpenGraph, Origin, meta};
+use crate::head::{LanguageTag, OpenGraph, Origin, meta};
 use crate::html::{
-    Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, check_names, escape_into,
-    keys_json, write_attr, write_json_attr,
+    Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, assert_items_open,
+    check_item_reads, check_names, escape_into, keys_json, visit_trees, write_attr,
+    write_json_attr,
 };
 use crate::route::{Base, Url};
 use crate::signal::{FromPage, IsComputed, Sig, Signals};
@@ -32,8 +34,8 @@ pub struct Page<S> {
     title: String,
     bound_title: Option<Value>,
     signals: S,
-    stylesheets: Vec<&'static str>,
-    scripts: Vec<&'static str>,
+    stylesheets: Vec<Asset>,
+    scripts: Vec<Asset>,
     styles: Vec<&'static str>,
     theme: Theme,
     global: Global,
@@ -41,16 +43,16 @@ pub struct Page<S> {
     body: Vec<Node<S>>,
     keys: Vec<(Shortcut, Stmt<S>)>,
     /// The path given to [`Page::runtime_src`], if any.
-    runtime: Option<&'static str>,
-    lang: Option<String>,
+    runtime: Option<Asset>,
+    lang: Option<LanguageTag>,
     description: Option<String>,
     canonical: Option<String>,
-    icon: Option<&'static str>,
+    icon: Option<Asset>,
     open_graph: Option<OpenGraph>,
     noindex: bool,
     nofollow: bool,
     /// Each `hreflang` with its absolute URL, where `None` is `x-default`.
-    alternates: Vec<(Option<String>, String)>,
+    alternates: Vec<(Option<LanguageTag>, String)>,
     /// Each JSON-LD block, serialized with `<` escaped.
     json_ld: Vec<String>,
     nonce: Option<String>,
@@ -191,7 +193,7 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Names `url` on `origin` as the same page in the language `hreflang`, a BCP 47 tag.
+    /// Names `url` on `origin` as the same page in the language `hreflang`.
     ///
     /// Search engines show the visitor the version in their language. Each
     /// version lists every version, itself included, and
@@ -199,7 +201,7 @@ impl<S: Signals> Page<S> {
     /// application.
     ///
     /// ```
-    /// use hypersig::{Origin, Page, Route, Signals};
+    /// use hypersig::{IntlLocale, Origin, Page, Route, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
@@ -216,8 +218,8 @@ impl<S: Signals> Page<S> {
     /// const SITE: Origin = Origin::new("https://example.com");
     ///
     /// let html = Page::new("Home", Home {})
-    ///     .alternate(SITE, &EN.url(()), "en")
-    ///     .alternate(SITE, &JA.url(()), "ja")
+    ///     .alternate(SITE, &EN.url(()), IntlLocale::En)
+    ///     .alternate(SITE, &JA.url(()), IntlLocale::Ja)
     ///     .alternate_default(SITE, &EN.url(()))
     ///     .render();
     /// assert!(html.contains(r#"<link rel="alternate" hreflang="ja" href="https://example.com/ja">"#));
@@ -225,7 +227,12 @@ impl<S: Signals> Page<S> {
     /// # let _ = pages;
     /// ```
     #[must_use]
-    pub fn alternate(mut self, origin: Origin, url: &Url, hreflang: impl Into<String>) -> Self {
+    pub fn alternate(
+        mut self,
+        origin: Origin,
+        url: &Url,
+        hreflang: impl Into<LanguageTag>,
+    ) -> Self {
         self.alternates
             .push((Some(hreflang.into()), origin.join(url.as_str())));
         self
@@ -385,9 +392,10 @@ impl<S: Signals> Page<S> {
     /// Uses the file at `href` as the page's icon in tabs and bookmarks.
     ///
     /// A page without it declares an empty icon, so the browser does not
-    /// request `/favicon.ico`.
+    /// request `/favicon.ico`. A path the application serves goes under the
+    /// [`Base`] of the route that serves the page, as [`Asset`] describes.
     #[must_use]
-    pub fn icon(mut self, href: &'static str) -> Self {
+    pub fn icon(mut self, href: Asset) -> Self {
         self.icon = Some(href);
         self
     }
@@ -399,23 +407,29 @@ impl<S: Signals> Page<S> {
         self
     }
 
-    /// Sets the language of the page, the `lang` attribute of `<html>`, to the BCP 47 tag `tag`.
+    /// Sets the language of the page, the `lang` attribute of `<html>`, to `tag`.
     ///
     /// The browser reads it for hyphenation, the voice of a screen reader,
     /// and the fonts it picks for the text. A page without it has no `lang`.
+    /// `tag` is a [`LanguageTag`], or the [`IntlLocale`](crate::IntlLocale)
+    /// the page's numbers and dates are written in.
     ///
     /// ```
-    /// use hypersig::{Page, Signals};
+    /// use hypersig::{IntlLocale, LanguageTag, Page, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
     /// struct Note {}
     ///
-    /// let html = Page::new("ノート", Note {}).lang("ja").render();
+    /// let html = Page::new("ノート", Note {}).lang(IntlLocale::Ja).render();
     /// assert!(html.starts_with(r#"<!doctype html><html lang="ja">"#));
+    ///
+    /// const PT_BR: LanguageTag = LanguageTag::new("pt-BR");
+    /// let html = Page::new("Nota", Note {}).lang(PT_BR).render();
+    /// assert!(html.starts_with(r#"<!doctype html><html lang="pt-BR">"#));
     /// ```
     #[must_use]
-    pub fn lang(mut self, tag: impl Into<String>) -> Self {
+    pub fn lang(mut self, tag: impl Into<LanguageTag>) -> Self {
         self.lang = Some(tag.into());
         self
     }
@@ -427,7 +441,9 @@ impl<S: Signals> Page<S> {
     /// than each evaluating `value`. The server computes it once for the first
     /// HTML, and an action call can pass it as an argument like any signal.
     /// Computed signals are evaluated in the order they are declared, so one
-    /// may read an earlier one.
+    /// may read an earlier one and no other: [`Page::render`] panics when
+    /// two calls name one signal, or when a computed signal reads itself or
+    /// one declared after it.
     ///
     /// `signal` is a field marked `#[signals(computed)]`, whose
     /// [`Sig`] has no statement that writes it and no `patch`. The value the
@@ -496,15 +512,21 @@ impl<S: Signals> Page<S> {
     /// Loads the runtime from `src` instead of [`RUNTIME_PATH`](crate::RUNTIME_PATH),
     /// for a page served as a static file next to a copy of
     /// [`RUNTIME_JS`](crate::RUNTIME_JS).
+    ///
+    /// A path the application serves goes under the [`Base`] of the route
+    /// that serves the page, as [`Asset`] describes.
     #[must_use]
-    pub fn runtime_src(mut self, src: &'static str) -> Self {
+    pub fn runtime_src(mut self, src: Asset) -> Self {
         self.runtime = Some(src);
         self
     }
 
     /// Adds a `<link rel="stylesheet">` for the file at `href` to `<head>`.
+    ///
+    /// A path the application serves goes under the [`Base`] of the route
+    /// that serves the page, as [`Asset`] describes.
     #[must_use]
-    pub fn stylesheet(mut self, href: &'static str) -> Self {
+    pub fn stylesheet(mut self, href: Asset) -> Self {
         self.stylesheets.push(href);
         self
     }
@@ -515,20 +537,26 @@ impl<S: Signals> Page<S> {
     /// a custom element. The scripts run after the runtime, in the order they
     /// were added. A custom element defined then is upgraded in place, so it
     /// keeps the attributes and the listeners the runtime gave it. It carries
-    /// the page's [`csp_nonce`](Page::csp_nonce), if there is one.
+    /// the page's [`csp_nonce`](Page::csp_nonce), if there is one. A path
+    /// the application serves goes under the [`Base`] of the route that
+    /// serves the page, as [`Asset`] describes.
     ///
     /// ```
-    /// use hypersig::{Page, Signals};
+    /// use hypersig::{Asset, Base, Page, Signals};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
     /// struct Place {}
     ///
-    /// let html = Page::new("Place", Place {}).script("/map.js").render();
-    /// assert!(html.contains(r#"<script type="module" src="/map.js"></script>"#));
+    /// const MAP: Asset = Asset::new("/map.js");
+    /// const APP: Base = Base::new("/app");
+    ///
+    /// let page = Page::new("Place", Place {}).script(MAP);
+    /// assert!(page.render().contains(r#"<script type="module" src="/map.js"></script>"#));
+    /// assert!(page.render_under(APP).contains(r#"<script type="module" src="/app/map.js"></script>"#));
     /// ```
     #[must_use]
-    pub fn script(mut self, src: &'static str) -> Self {
+    pub fn script(mut self, src: Asset) -> Self {
         self.scripts.push(src);
         self
     }
@@ -642,7 +670,9 @@ impl<S: Signals> Page<S> {
     /// # Panics
     ///
     /// Panics if a field of `S` marked `#[signals(computed)]` is named by no
-    /// [`Page::computed`] call, or if the signals fail to serialize.
+    /// [`Page::computed`] call, if two calls name one signal, if a computed
+    /// signal reads itself or one computed after it, or if the signals fail
+    /// to serialize.
     fn initial_values(&self) -> Tape {
         for field in S::COMPUTED {
             assert!(
@@ -651,6 +681,34 @@ impl<S: Signals> Page<S> {
                  `Page::computed` call names it, so nothing would keep it up to date",
                 std::any::type_name::<S>()
             );
+        }
+        for (at, (path, value)) in self.computed.iter().enumerate() {
+            assert!(
+                self.computed[..at]
+                    .iter()
+                    .all(|(earlier, _)| earlier != path),
+                "two `Page::computed` calls name `{path}`, and the browser would keep \
+                 it equal to both expressions: remove one of them"
+            );
+            // The server evaluates the expressions once, in this order, so a
+            // read of a signal computed here or later would see the value the
+            // struct holds rather than the computed one.
+            if let Some((later, _)) = self.computed[at..]
+                .iter()
+                .find(|(later, _)| reads_path(value, later))
+            {
+                assert!(
+                    later != path,
+                    "the computed signal `{path}` reads itself, so it has no value to \
+                     start from: compute it from other signals"
+                );
+                panic!(
+                    "the computed signal `{path}` reads `{later}`, which a later \
+                     `Page::computed` call computes, so the first HTML would show `{path}` \
+                     from the value `{later}` starts with: call `Page::computed` for \
+                     `{later}` first, and keep two computed signals from reading each other"
+                );
+            }
         }
         let mut root = Tape::new(&self.signals)
             .unwrap_or_else(|error| panic!("the page's signals do not serialize to JSON: {error}"));
@@ -667,6 +725,36 @@ impl<S: Signals> Page<S> {
             }
         }
         root
+    }
+
+    /// Panics if the page reads a computed field of a nested struct that no
+    /// [`Page::computed`] call names.
+    ///
+    /// Only the paths [`Sig::at_computed`](crate::Sig::at_computed) has
+    /// recorded for `S` are known, and only a read on this page counts, so a
+    /// signal built for another page of the same struct does not panic here.
+    fn check_nested_computed(&self) {
+        for path in crate::signal::nested_computed::<S>() {
+            if self.computed.iter().any(|(computed, _)| *computed == path) {
+                continue;
+            }
+            let mut read = self
+                .bound_title
+                .iter()
+                .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()))
+                .chain(self.computed.iter().map(|(_, value)| value))
+                .any(|ast| reads_path(ast, &path));
+            visit_trees(&self.body, &mut |ast, _| {
+                read = read || reads_path(ast, &path);
+            });
+            assert!(
+                !read,
+                "the page reads `{path}`, a field of a nested struct of `{}` marked \
+                 `#[signals(computed)]`, and no `Page::computed` call names it, so nothing \
+                 would keep it up to date",
+                std::any::type_name::<S>()
+            );
+        }
     }
 
     /// Writes what search engines and link previews read into `<head>`.
@@ -687,7 +775,11 @@ impl<S: Signals> Page<S> {
         }
         for (hreflang, url) in &self.alternates {
             out.push_str("<link rel=\"alternate\"");
-            write_attr(out, "hreflang", hreflang.as_deref().unwrap_or("x-default"));
+            write_attr(
+                out,
+                "hreflang",
+                hreflang.as_ref().map_or("x-default", LanguageTag::as_str),
+            );
             write_attr(out, "href", url);
             out.push('>');
         }
@@ -733,7 +825,10 @@ impl<S: Signals> Page<S> {
     ///
     /// Panics if the signal struct fails to serialize to JSON, or if the value
     /// does not deserialize into `T`, which happens where a `Serialize` impl
-    /// skips the field or disagrees with its `Deserialize` impl.
+    /// skips the field or disagrees with its `Deserialize` impl. It also
+    /// panics where [`Page::render`] would for the computed signals: two calls
+    /// naming one signal, a computed signal reading itself or one declared
+    /// after it, or one reading a list item.
     #[must_use]
     pub fn value_of<T: DeserializeOwned, M: FromPage>(&self, signal: Sig<S, T, M>) -> T {
         let root = self.initial_values();
@@ -753,29 +848,62 @@ impl<S: Signals> Page<S> {
     /// happens for a `Serialize` impl that returns an error, or if it holds an
     /// integer outside -2^53 to 2^53, which the browser would round, or if two
     /// elements carry one [`NodeRef`](crate::NodeRef) name, one
-    /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
+    /// [`FileInput`](crate::FileInput) name, or one id from
+    /// [`Id::new`](crate::html::Id::new), with or without keys, where
     /// the runtime can reach both, or if an element inside a list template has an id set with
     /// [`El::id`](crate::html::El::id). Each item of a list may carry the same
-    /// name.
+    /// name. It also panics if a field marked `#[signals(computed)]` is named
+    /// by no [`Page::computed`] call, if two calls name one signal, or if a
+    /// computed signal reads itself or one declared after it, or if the page
+    /// reads a computed field of a nested struct that no call names, or if an
+    /// expression or statement reads a list item outside every list that
+    /// renders it.
     #[must_use]
     pub fn render(&self) -> String {
-        self.render_under(Base::ROOT, None)
+        self.render_with(Base::ROOT, None)
+    }
+
+    /// Renders the document for a site served under `base`, such as a static site at `/docs`.
+    ///
+    /// The runtime's path and each [`Asset`] path the application serves
+    /// start with `base`, as they do for a page a route under `base` serves.
+    ///
+    /// # Panics
+    ///
+    /// Panics where [`Page::render`] does.
+    #[must_use]
+    pub fn render_under(&self, base: Base) -> String {
+        self.render_with(base, None)
     }
 
     /// Renders the document for a route under `base`, which the runtime's
-    /// path starts with, and gives `<body>` the URL of the stream that tells
-    /// the page to reload, where `dev` holds one.
-    pub(crate) fn render_under(&self, base: Base, dev: Option<&str>) -> String {
+    /// path and the assets' paths start with, and gives `<body>` the URL of
+    /// the stream that tells the page to reload, where `dev` holds one.
+    pub(crate) fn render_with(&self, base: Base, dev: Option<&str>) -> String {
         check_names(&self.body);
+        check_item_reads(&self.body);
+        let page = self
+            .computed
+            .iter()
+            .map(|(_, value)| value)
+            .chain(&self.bound_title)
+            .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()));
+        for ast in page {
+            assert_items_open(ast, 0);
+        }
+        self.check_nested_computed();
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
         if let Some(lang) = &self.lang {
-            write_attr(&mut out, "lang", lang);
+            write_attr(&mut out, "lang", lang.as_str());
         }
         out.push_str("><head><meta charset=\"utf-8\">");
         out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
         out.push_str("<link rel=\"icon\"");
-        write_attr(&mut out, "href", self.icon.unwrap_or("data:,"));
+        let icon = self
+            .icon
+            .map_or(Cow::Borrowed("data:,"), |icon| icon.under(base));
+        write_attr(&mut out, "href", &icon);
         out.push('>');
         let rules = RefCell::new(Vec::new());
         let ctx = Ctx {
@@ -797,10 +925,10 @@ impl<S: Signals> Page<S> {
         out.push_str("</title>");
         self.write_metadata(&mut out);
         let styles_at = out.len();
-        self.write_styles(&mut out);
+        self.write_styles(&mut out, base);
         out.push_str("<script type=\"module\"");
         let runtime: Cow<'_, str> = match self.runtime {
-            Some(src) => Cow::Borrowed(src),
+            Some(src) => src.under(base),
             None if base == Base::ROOT => Cow::Borrowed(crate::RUNTIME_PATH),
             None => Cow::Owned(base.join(crate::RUNTIME_PATH)),
         };
@@ -809,7 +937,7 @@ impl<S: Signals> Page<S> {
         out.push_str("></script>");
         for src in &self.scripts {
             out.push_str("<script type=\"module\"");
-            write_attr(&mut out, "src", src);
+            write_attr(&mut out, "src", &src.under(base));
             self.write_nonce(&mut out);
             out.push_str("></script>");
         }
@@ -887,7 +1015,7 @@ impl<S: Signals> Page<S> {
 
     /// Writes the global rules, the theme, the atomic classes of the body,
     /// and the page's stylesheets into `<head>`.
-    fn write_styles(&self, out: &mut String) {
+    fn write_styles(&self, out: &mut String, base: Base) {
         if !self.global.is_empty() {
             out.push_str("<style data-hs-global");
             self.write_nonce(out);
@@ -916,7 +1044,7 @@ impl<S: Signals> Page<S> {
         }
         for href in &self.stylesheets {
             out.push_str("<link rel=\"stylesheet\"");
-            write_attr(out, "href", href);
+            write_attr(out, "href", &href.under(base));
             out.push('>');
         }
         for css in &self.styles {
@@ -929,14 +1057,48 @@ impl<S: Signals> Page<S> {
     }
 }
 
+/// Whether the expression `ast` reads the signal at the dotted `path`, a
+/// field inside it, or a struct that holds it.
+///
+/// A signal is read by `["sig",path]`, and a list by the place at index 1
+/// of the operations that run an expression per item. A literal's value is
+/// data, so it is not searched.
+fn reads_path(ast: &Value, path: &str) -> bool {
+    let overlaps = |read: &Value| {
+        read.as_str().is_some_and(|read| {
+            let inside = |outer: &str, inner: &str| {
+                inner
+                    .strip_prefix(outer)
+                    .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
+            };
+            inside(read, path) || inside(path, read)
+        })
+    };
+    match ast.as_array().map(Vec::as_slice) {
+        Some([op, ..]) if op == "lit" => false,
+        Some([op, read]) if op == "sig" => overlaps(read),
+        Some([op, place, rest @ ..])
+            if ["count", "sum_of", "max_of", "min_of", "map"]
+                .contains(&op.as_str().unwrap_or("")) =>
+        {
+            overlaps(place)
+                || reads_path(place, path)
+                || rest.iter().any(|part| reads_path(part, path))
+        }
+        Some(parts) => parts.iter().any(|part| reads_path(part, path)),
+        None => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
 
     use crate::html::{Stylesheet, input, p};
+    use crate::route::Base;
     use crate::style::value::Color;
     use crate::style::{Global, Property, Style, Theme, Token};
-    use crate::{NodeRef, Page, Signals};
+    use crate::{Asset, NodeRef, Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize, Default)]
     struct Search {
@@ -1030,8 +1192,8 @@ mod tests {
     fn scripts_follow_the_runtime_in_order_with_the_nonce() {
         let html = Page::new("Search", Search::default())
             .csp_nonce("n0nce")
-            .script("/map.js")
-            .script("/editor.js")
+            .script(Asset::new("/map.js"))
+            .script(Asset::new("/editor.js"))
             .render();
         let runtime = html.find(crate::RUNTIME_PATH).expect("the runtime script");
         let map = html
@@ -1041,6 +1203,23 @@ mod tests {
             .find(r#"<script type="module" src="/editor.js" nonce="n0nce"></script>"#)
             .expect("the editor script");
         assert!(runtime < map && map < editor && editor < html.find("</head>").unwrap());
+    }
+
+    #[test]
+    fn assets_the_application_serves_go_under_the_base() {
+        const APP: Base = Base::new("/app");
+        let html = Page::new("Search", Search::default())
+            .icon(Asset::new("/icon.svg"))
+            .stylesheet(Asset::new("/site.css"))
+            .stylesheet(Asset::new("https://cdn.example/a.css"))
+            .script(Asset::new("/map.js"))
+            .runtime_src(Asset::new("/hypersig.js"))
+            .render_under(APP);
+        assert!(html.contains(r#"<link rel="icon" href="/app/icon.svg">"#));
+        assert!(html.contains(r#"<link rel="stylesheet" href="/app/site.css">"#));
+        assert!(html.contains(r#"<link rel="stylesheet" href="https://cdn.example/a.css">"#));
+        assert!(html.contains(r#"<script type="module" src="/app/hypersig.js"></script>"#));
+        assert!(html.contains(r#"<script type="module" src="/app/map.js"></script>"#));
     }
 
     #[derive(Signals, Serialize, Deserialize, Default)]
@@ -1067,6 +1246,107 @@ mod tests {
         )
         .computed(Cart::total(), Cart::price() * 2.0);
         assert_eq!(page.value_of(Cart::total()), 4.0);
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Order {
+        price: f64,
+        #[signals(computed)]
+        subtotal: f64,
+        #[signals(computed)]
+        total: f64,
+    }
+
+    fn order() -> Page<Order> {
+        Page::new(
+            "Order",
+            Order {
+                price: 20.0,
+                ..Order::default()
+            },
+        )
+    }
+
+    #[test]
+    fn a_computed_signal_reads_one_computed_before_it() {
+        let page = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::subtotal() + 1.0);
+        assert_eq!(page.value_of(Order::total()), 41.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "two `Page::computed` calls name `total`")]
+    fn one_signal_computed_twice_panics() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::price() * 1.0)
+            .computed(Order::total(), Order::price() * 2.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `total` reads `subtotal`, which a later")]
+    fn a_computed_signal_that_reads_a_later_one_panics() {
+        let _ = order()
+            .computed(Order::total(), Order::subtotal() + 1.0)
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `subtotal` reads `total`, which a later")]
+    fn two_computed_signals_that_read_each_other_panic() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::total() - 1.0)
+            .computed(Order::total(), Order::subtotal() + 1.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `total` reads itself")]
+    fn a_computed_signal_that_reads_itself_panics() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::total() + 1.0)
+            .render();
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Line {
+        price: f64,
+        #[signals(computed)]
+        total: f64,
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Shop {
+        line: Line,
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Stall {
+        line: Line,
+    }
+
+    #[test]
+    #[should_panic(expected = "the page reads `line.total`, a field of a nested struct")]
+    fn a_nested_computed_field_no_page_computed_names_panics() {
+        let total = Shop::line().at_computed(Line::total());
+        let _ = Page::new("Shop", Shop::default())
+            .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
+            .render();
+    }
+
+    #[test]
+    fn a_nested_computed_field_page_computed_names_renders() {
+        let line = Stall::line();
+        let total = line.at_computed(Line::total());
+        let html = Page::new("Stall", Stall::default())
+            .computed(total, line.at(Line::price()) * 2.0)
+            .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
+            .render();
+        assert!(html.contains("line.total"), "{html}");
     }
 
     #[test]

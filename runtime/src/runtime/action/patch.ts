@@ -21,7 +21,8 @@ export class Patches {
    * patch fails, is reported and skipped, so the events after it still apply.
    */
   apply(event: ServerEvent): void {
-    if (this.#rt.navigation.leaving) return;
+    // `hs-end`, the last event of every answer, patches nothing, and `call.ts` reads it to tell a complete answer from a cut one.
+    if (this.#rt.navigation.leaving || event.event === "hs-end") return;
     try {
       this.#apply(event);
     } catch (error) {

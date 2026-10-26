@@ -1,7 +1,7 @@
 use axum::Router;
 use axum::http::StatusCode;
 use hypersig::html::{button, div, attr};
-use hypersig::{FileInput, Page, Patches, Signals, Upload, Uploaded};
+use hypersig::{FileInput, FileName, Page, Patches, Signals, Upload, Uploaded};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -44,7 +44,7 @@ async fn avatar((): (), uploaded: Uploaded<()>) -> Result<Patches<Profile>, Stat
     if !file.bytes().starts_with(b"\x89PNG") {
         return Err(StatusCode::UNPROCESSABLE_ENTITY);
     }
-    let name = file.file_name().unwrap_or("picture").to_owned();
+    let name = file.file_name().and_then(FileName::base_name).unwrap_or("picture").to_owned();
     Ok(Profile::picture().patch(name).into())
 }
 

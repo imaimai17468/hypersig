@@ -1,6 +1,8 @@
 //! Serving actions and the runtime from an axum [`Router`].
 
 mod dev;
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+mod serve;
 
 use std::backtrace::Backtrace;
 use std::collections::HashMap;
@@ -8,6 +10,7 @@ use std::convert::Infallible;
 use std::error::Error as StdError;
 use std::fmt;
 use std::marker::PhantomData;
+use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -17,11 +20,11 @@ use axum::body::{Body, Bytes};
 use axum::extract::rejection::RawPathParamsRejection;
 use axum::extract::{FromRequestParts, MatchedPath, Query, RawPathParams, Request, State};
 use axum::http::request::Parts;
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header};
 use axum::response::sse::{Event as SseEvent, Sse};
 use axum::response::{Html, IntoResponse, IntoResponseParts, Redirect, Response};
 use axum::routing::{MethodRouter, get, post};
-use futures::{Stream, StreamExt as _, stream};
+use futures::{FutureExt as _, Stream, StreamExt as _, stream};
 use serde::de::DeserializeOwned;
 
 use crate::action::{Action, Method, StreamAction};
@@ -31,6 +34,9 @@ use crate::patch::{ListPatch, PartMismatch, PatchEvent, Patches, SignalPatch};
 use crate::route::{Base, Params, Route, Search, Url};
 use crate::signal::{Signals, current_part, in_part};
 use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
+
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+pub use serve::serve;
 
 /// Adds the browser runtime to an axum [`Router`].
 ///
@@ -133,6 +139,7 @@ fn runtime_file(headers: &HeaderMap) -> Response {
         // at another path.
         (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
         (header::VARY, "accept-encoding"),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
     ];
     if accepts_brotli(headers) {
         (head, [(header::CONTENT_ENCODING, "br")], crate::RUNTIME_BR).into_response()
@@ -149,6 +156,7 @@ fn runtime_file(_headers: &HeaderMap) -> Response {
         // The path names a hash of the file, so a changed runtime is served
         // at another path.
         (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
     ];
     (head, crate::RUNTIME_JS).into_response()
 }
@@ -219,26 +227,20 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 || crate::query::parse_query::<Q>(request.uri.query().unwrap_or_default()),
                 Ok,
             );
-            let served_at = matched.as_str().to_owned();
-            async move {
+            let answer = async move {
+                // The router is nested after `routes!` returns it, so the
+                // mistake shows only here. The body names no path, because
+                // a visitor reads it.
                 if nested {
-                    let links = match base.as_str() {
-                        "" => format!("`{path}`"),
-                        base => format!("`{base}` and `{path}`"),
-                    };
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        format!(
-                            "the page whose links point to {links} is registered on a nested router, which serves it at `{served_at}`"
-                        ),
+                        "the page is registered on a router nested under a path its links do not start with",
                     )
                         .into_response();
                 }
                 let refused = match (params, search) {
                     (None, _) => Err(Reason::Segments),
-                    (Some(_), Err(rejection)) => Err(Reason::Query(format!(
-                        "Failed to deserialize query string: {rejection}"
-                    ))),
+                    (Some(_), Err(rejection)) => Err(Reason::Query(rejection)),
                     (Some(params), Ok(search)) => Ok(Q::join(params, search)),
                 };
                 let args = match (refused, &unserved) {
@@ -247,8 +249,15 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                         let unserved = Unserved::new(reason, &request);
                         return page.answer(state, request, unserved).await;
                     }
-                    (Err(Reason::Query(text)), None) => {
-                        return (StatusCode::BAD_REQUEST, text).into_response();
+                    // The rejection quotes the query and names the fields'
+                    // types, so it stays in the `Unserved` an `else` page
+                    // receives.
+                    (Err(Reason::Query(_)), None) => {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            "the query string does not deserialize into the page's search parameters",
+                        )
+                            .into_response();
                     }
                     (Err(_), None) => return StatusCode::NOT_FOUND.into_response(),
                 };
@@ -268,7 +277,8 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                     }
                     Err(rejection) => rejection,
                 }
-            }
+            };
+            async move { nosniff(answer.await) }
         };
         self.route(route.path(), get(route_handler))
     }
@@ -332,7 +342,15 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                             .chain(stream::iter([Ok(end_of_stream())])),
                     ),
                 };
-                Ok::<_, RequestError>(keep_alive(Sse::new(events)).into_response())
+                let mut response = keep_alive(Sse::new(events)).into_response();
+                // nginx holds a proxied response until its buffer fills
+                // unless the response says otherwise, and a stream's events
+                // would then arrive late and together.
+                response.headers_mut().insert(
+                    HeaderName::from_static("x-accel-buffering"),
+                    HeaderValue::from_static("no"),
+                );
+                Ok::<_, RequestError>(response)
             })
         };
         self.route(stream.path(), method_router(method, route))
@@ -418,6 +436,12 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
 /// 2xx, which the page's [`Call::error`](crate::Call::error) shows. The
 /// browser's `fetch` follows a redirect, so an action refused with one hands
 /// the page the HTML it points to, and the page shows nothing.
+///
+/// A function of an action, a stream, or an upload that panics before it
+/// returns answers `500 Internal Server Error`, which the page shows as any
+/// failed call. The stream a stream's function returns is read after the
+/// response has begun, so a panic while it is read closes the connection
+/// before `hs-end`.
 ///
 /// ```
 /// use axum::Router;
@@ -532,6 +556,9 @@ where
 /// handler [`routes!`](crate::routes) names after `else`, and has an empty
 /// body where it names none.
 ///
+/// A page goes out with `Cache-Control: private, no-cache`, because it
+/// carries the visitor's signals, and a `Cache-Control` part replaces it.
+///
 /// ```
 /// use hypersig::html::h1;
 /// use hypersig::{Page, PageResponse, Route, Signals};
@@ -640,7 +667,7 @@ impl PageResponse {
     fn page<S: Signals + Send + 'static>(page: Page<S>, status: Option<StatusCode>) -> Self {
         Self::new(Reply::Page {
             framing: page.frame_policy().clone(),
-            render: Box::new(move |base, dev| page.render_under(base, dev)),
+            render: Box::new(move |base, dev| page.render_with(base, dev)),
             status,
         })
     }
@@ -670,15 +697,55 @@ impl PageResponse {
                     request,
                 }),
             ) => {
+                // The page answering the 404 adds its own frame headers.
                 let unserved = Unserved::new(Reason::NoPage, &request);
-                Box::pin(page.answer(state, request, unserved)).await
+                (Box::pin(page.answer(state, request, unserved)).await, None)
             }
             (reply, _) => reply.into_response(base),
         };
-        parts
+        let (response, framing) = response;
+        let response = parts
             .into_iter()
-            .fold(response, |response, add| add(response))
+            .fold(response, |response, add| add(response));
+        frame(response, framing.as_ref())
     }
+}
+
+/// `response` with `X-Content-Type-Options: nosniff`, so the browser reads
+/// its body as its `Content-Type` says rather than as a script or a page it
+/// guesses from the bytes.
+fn nosniff(mut response: Response) -> Response {
+    response.headers_mut().insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    response
+}
+
+/// `response` with the headers that say which pages may show it in a frame.
+///
+/// They are added after the header parts of the handler, because a part
+/// replaces a header of its name, and a handler that sends its own
+/// `Content-Security-Policy` would otherwise drop `frame-ancestors`. The
+/// policy goes out as a header of its own beside the handler's, and the
+/// browser enforces each policy it receives. An `X-Frame-Options` the
+/// handler sent is kept, because two values of that header make it invalid.
+fn frame(mut response: Response, framing: Option<&Framing>) -> Response {
+    let Some(framing) = framing else {
+        return response;
+    };
+    let headers = response.headers_mut();
+    if let Some(value) = framing.x_frame_options() {
+        headers
+            .entry(header::X_FRAME_OPTIONS)
+            .or_insert(HeaderValue::from_static(value));
+    }
+    if let Some(policy) = framing.content_security_policy() {
+        // `Origin` holds only the bytes of a host and a port, which a header can hold.
+        let policy = HeaderValue::try_from(policy).expect("an origin is header text");
+        headers.append(header::CONTENT_SECURITY_POLICY, policy);
+    }
+    response
 }
 
 /// What a 404 needs to show the page the router names for it.
@@ -689,8 +756,10 @@ struct Unanswered<'a, St> {
 }
 
 impl Reply {
-    /// The response of a page under `base`, where a 404 has an empty body.
-    fn into_response(self, base: Base) -> Response {
+    /// The response of a page under `base`, where a 404 has an empty body,
+    /// and the framing of a page, which [`frame`] adds once the handler's
+    /// header parts are in.
+    fn into_response(self, base: Base) -> (Response, Option<Framing>) {
         match self {
             Self::Page {
                 render,
@@ -698,20 +767,17 @@ impl Reply {
                 framing,
             } => {
                 let html = render(base, dev::url(base).as_deref());
-                let mut response = (status.unwrap_or(StatusCode::OK), Html(html)).into_response();
-                let headers = response.headers_mut();
-                if let Some(value) = framing.x_frame_options() {
-                    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static(value));
-                }
-                if let Some(policy) = framing.content_security_policy() {
-                    // `Origin` holds only the bytes of a host and a port, which a header can hold.
-                    let policy = HeaderValue::try_from(policy).expect("an origin is header text");
-                    headers.insert(header::CONTENT_SECURITY_POLICY, policy);
-                }
-                response
+                // The page carries the visitor's signals, so a shared cache
+                // keeps no copy, and the browser asks again before reusing
+                // its own. `no-store` would also keep the page out of the
+                // back-forward cache, which restores it without a request.
+                // A header part of the handler replaces it.
+                let head = [(header::CACHE_CONTROL, "private, no-cache")];
+                let response = (status.unwrap_or(StatusCode::OK), head, Html(html)).into_response();
+                (response, Some(framing))
             }
-            Self::NotFound => StatusCode::NOT_FOUND.into_response(),
-            Self::Response(response) => response,
+            Self::NotFound => (StatusCode::NOT_FOUND.into_response(), None),
+            Self::Response(response) => (response, None),
         }
     }
 }
@@ -750,11 +816,11 @@ impl<R: Into<PageResponse>, E: IntoResponse> From<Result<R, E>> for PageResponse
 impl IntoResponse for PageResponse {
     fn into_response(self) -> Response {
         let Self { reply, parts } = self;
-        parts
+        let (response, framing) = reply.into_response(Base::ROOT);
+        let response = parts
             .into_iter()
-            .fold(reply.into_response(Base::ROOT), |response, add| {
-                add(response)
-            })
+            .fold(response, |response, add| add(response));
+        nosniff(frame(response, framing.as_ref()))
     }
 }
 
@@ -766,6 +832,11 @@ impl IntoResponse for PageResponse {
 /// a query string that does not deserialize into the route's search
 /// parameters. A page the handler returns is sent with that status, unless
 /// it comes from [`PageResponse::with_status`].
+///
+/// Its `Display` is one fixed sentence per reason, naming the path, which a
+/// page can show the visitor. For a query string, the reader's message,
+/// which quotes the query and names the types of the search parameters, is
+/// its [`source`](std::error::Error::source), for a log.
 #[derive(Debug)]
 pub struct Unserved {
     reason: Reason,
@@ -777,7 +848,7 @@ enum Reason {
     NoRoute,
     Segments,
     NoPage,
-    Query(String),
+    Query(serde::de::value::Error),
 }
 
 impl Unserved {
@@ -805,7 +876,7 @@ impl Unserved {
     ///
     /// ```
     /// use hypersig::html::p;
-    /// use hypersig::{Page, Route, Signals, Unserved};
+    /// use hypersig::{IntlLocale, Page, Route, Signals, Unserved};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
@@ -819,8 +890,12 @@ impl Unserved {
     ///
     /// async fn missing((): (), unserved: Unserved) -> Page<Missing> {
     ///     let lang = unserved.within(HOME).unwrap_or_else(|| "en".to_owned());
-    ///     let text = if lang == "ja" { "ページが見つかりません。" } else { "No such page." };
-    ///     Page::new(text, Missing {}).lang(lang).child(p().text(text))
+    ///     let (locale, text) = if lang == "ja" {
+    ///         (IntlLocale::Ja, "ページが見つかりません。")
+    ///     } else {
+    ///         (IntlLocale::En, "No such page.")
+    ///     };
+    ///     Page::new(text, Missing {}).lang(locale).child(p().text(text))
     /// }
     /// # let _ = pages;
     /// ```
@@ -840,7 +915,19 @@ impl fmt::Display for Unserved {
                 "a segment of `{path}` does not parse into its route's parameters"
             ),
             Reason::NoPage => write!(f, "the handler of `{path}` answered with no page"),
-            Reason::Query(rejection) => f.write_str(rejection),
+            Reason::Query(_) => write!(
+                f,
+                "the query string of `{path}` does not deserialize into its route's search parameters"
+            ),
+        }
+    }
+}
+
+impl StdError for Unserved {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match &self.reason {
+            Reason::Query(rejection) => Some(rejection),
+            Reason::NoRoute | Reason::Segments | Reason::NoPage => None,
         }
     }
 }
@@ -915,7 +1002,7 @@ impl<St: Clone + Send + Sync + 'static> UnservedPage<St> {
                     return StatusCode::NOT_FOUND.into_response();
                 }
                 let unserved = Unserved::new(Reason::NoRoute, &request);
-                page.answer(state, request, unserved).await
+                nosniff(page.answer(state, request, unserved).await)
             }
         })
     }
@@ -990,8 +1077,9 @@ impl<St: Sync> FromRequestParts<St> for RequestKind {
 /// [`IntoResponse`] answers with the error, so a handler can use `?`. The
 /// runtime treats a status outside 2xx as a failure and writes the status
 /// and the body to the signal the page gave
-/// [`Call::error`](crate::Call::error). An error response with a 2xx status
-/// reaches the page as an answer with no patches.
+/// [`Call::error`](crate::Call::error). The patches end with the event
+/// `hs-end`, so an error response with a 2xx status, which lacks it, counts
+/// as a failure too.
 ///
 /// ```
 /// use axum::http::StatusCode;
@@ -1048,7 +1136,9 @@ impl<S: Signals> From<Patches<S>> for ActionResponse<S> {
         let events: Result<Vec<_>, _> = patches
             .into_events()
             .iter()
-            .map(|event| to_sse(event).map(Ok::<_, Infallible>))
+            .map(to_sse)
+            .chain([Ok(end_of_stream())])
+            .map(|event| event.map(Ok::<_, Infallible>))
             .collect();
         Self::new(match events {
             Ok(events) => Sse::new(stream::iter(events)).into_response(),
@@ -1166,11 +1256,11 @@ fn read_args<A: DeserializeOwned>(
             }
             exact::from_slice(if body.is_empty() { b"null" } else { body })
         }
-        // An `<img>`, a link, or a form sends a GET with another `Accept`, so
-        // they cannot call the action from a browser without
-        // `Sec-Fetch-Site`. An `EventSource` on another site still sends this
-        // one, which is why a GET action changes nothing.
-        Method::Get if !from_runtime(headers) => {
+        // An `<img>`, a link, a form, an `EventSource`, and a `no-cors`
+        // `fetch` cannot add a header, and a `fetch` from another origin that
+        // adds one sends a preflight this server does not answer. That holds
+        // in a browser that sends no `Sec-Fetch-Site` too.
+        Method::Get if !headers.contains_key(CALL_HEADER) => {
             return Err(RequestError::new(Refusal::NotFromRuntime));
         }
         Method::Get => {
@@ -1193,6 +1283,10 @@ fn refuse_cross_site(headers: &HeaderMap) -> Result<(), RequestError> {
 
 /// The header the runtime adds to an upload. Its value is not read.
 const UPLOAD_HEADER: &str = "hypersig-upload";
+
+/// The header the runtime adds to every call, which a GET action or stream
+/// requires. Its value is not read.
+pub(crate) const CALL_HEADER: &str = "hypersig-call";
 
 /// The header the runtime adds to a call made inside a [`Part`](crate::Part),
 /// holding the dotted path of the page field the part sits at.
@@ -1223,6 +1317,12 @@ fn called_part(headers: &HeaderMap) -> Result<Option<Arc<str>>, RequestError> {
 
 /// Runs `future`, the response to one request, with `part`, the part the
 /// request came from, current, or answers with the refusal of a malformed part.
+///
+/// A panic while `future` runs answers `500 Internal Server Error`, which
+/// the runtime shows through [`Call::error`](crate::Call::error) as it shows
+/// any failed call. Left to unwind, the panic would drop the connection, and
+/// the runtime would see a network error. The default panic hook still
+/// prints the message.
 fn in_called_part<F>(
     part: Result<Option<Arc<str>>, RequestError>,
     future: F,
@@ -1231,8 +1331,23 @@ where
     F: Future<Output: IntoResponse> + Send + 'static,
 {
     let (part, inner): (_, Pin<Box<dyn Future<Output = Response> + Send>>) = match part {
-        Ok(part) => (part, Box::pin(async move { future.await.into_response() })),
-        Err(refusal) => (None, Box::pin(std::future::ready(refusal.into_response()))),
+        Ok(part) => (
+            part,
+            Box::pin(async move {
+                // The router state is all the future shares with later
+                // requests, and a `Mutex` in it is poisoned by this panic as
+                // by a panic on any thread.
+                let response = AssertUnwindSafe(async move { future.await.into_response() })
+                    .catch_unwind()
+                    .await
+                    .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+                nosniff(response)
+            }),
+        ),
+        Err(refusal) => (
+            None,
+            Box::pin(std::future::ready(nosniff(refusal.into_response()))),
+        ),
     };
     InPart { part, inner }
 }
@@ -1288,7 +1403,7 @@ async fn read_upload<A: DeserializeOwned>(
         let file_name = field.file_name().map(str::to_owned);
         let content_type = field.content_type().map(ToString::to_string);
         let bytes = field.bytes().await.map_err(RequestError::from_multer)?;
-        files.push(UploadedFile::new(file_name, content_type, bytes.to_vec()));
+        files.push(UploadedFile::new(file_name, content_type, bytes));
     }
     Ok(Uploaded::new(args, files))
 }
@@ -1393,7 +1508,13 @@ fn to_sse(event: &PatchEvent) -> Result<SseEvent, PartMismatch> {
 /// [`Upload::limit`], and `400 Bad Request` for a malformed multipart body,
 /// an upload whose first part is not the arguments, a call whose
 /// `hypersig-part` header is not a dotted field path,
-/// or arguments that do not deserialize, with the serde message.
+/// or arguments that do not deserialize.
+///
+/// The body of the response is one fixed sentence per refusal, the error's
+/// `Display`. What the parser said about a malformed body or arguments,
+/// which names the argument type's fields and quotes the visitor's input,
+/// is the error's [`source`](std::error::Error::source), for a handler of a
+/// streaming upload to log.
 #[derive(Debug)]
 pub struct RequestError {
     refusal: Refusal,
@@ -1465,7 +1586,7 @@ impl fmt::Display for RequestError {
             Refusal::CrossSite => f.write_str("the action was called from another site"),
             Refusal::NotJson => f.write_str("the action's body is not `application/json`"),
             Refusal::NotFromRuntime => {
-                f.write_str("the call lacks the `Accept` header the hypersig runtime sends")
+                f.write_str("the call lacks the `hypersig-call` header the hypersig runtime adds")
             }
             Refusal::NotFromPage => {
                 f.write_str("the upload lacks the header the hypersig runtime adds")
@@ -1474,10 +1595,10 @@ impl fmt::Display for RequestError {
                 f.write_str("the upload's body is not `multipart/form-data`")
             }
             Refusal::TooLarge => f.write_str("the upload is longer than its limit"),
-            Refusal::Multipart(source) => write!(f, "the upload's body is malformed: {source}"),
+            Refusal::Multipart(_) => f.write_str("the upload's body is malformed"),
             Refusal::PartOrder => f.write_str("the upload's first part is not the arguments"),
-            Refusal::Arguments(source) => {
-                write!(f, "the action's arguments did not deserialize: {source}")
+            Refusal::Arguments(_) => {
+                f.write_str("the action's arguments did not deserialize into its argument type")
             }
             Refusal::Part => f.write_str("the call's part header is not a dotted field path"),
         }

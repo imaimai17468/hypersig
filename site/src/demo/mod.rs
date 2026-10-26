@@ -87,18 +87,24 @@ demos! {
     RadioGroup => radio_group, "ui/radio_group.rs", "13.5rem";
     Select => select, "ui/select.rs", "16rem";
     Slider => slider, "ui/slider.rs", "7rem";
+    Toggle => toggle, "ui/toggle.rs", "8rem";
     Listbox => listbox, "ui/listbox.rs", "10.5rem";
     Combobox => combobox, "ui/combobox.rs", "22rem";
     Tabs => tabs, "ui/tabs.rs", "8rem";
     Accordion => accordion, "ui/accordion.rs", "19rem";
+    Collapsible => collapsible, "ui/collapsible.rs", "10rem";
     Dialog => dialog, "ui/dialog.rs", "24rem";
     Menu => menu, "ui/menu.rs", "17rem";
     Tooltip => tooltip, "ui/tooltip.rs", "8rem";
+    Popover => popover, "ui/popover.rs", "18rem";
     Toast => toast, "ui/toast.rs", "20rem";
     Card => card, "ui/card.rs", "19rem";
     Alert => alert, "ui/alert.rs", "16rem";
     Badge => badge, "ui/badge.rs", "8rem";
     Progress => progress, "ui/progress.rs", "10.5rem";
+    Loading => loading, "ui/loading.rs", "6rem";
+    Avatar => avatar, "ui/avatar.rs", "5rem";
+    Kbd => kbd, "ui/kbd.rs", "7rem";
     Separator => separator, "ui/separator.rs", "12.5rem";
     Navigation => navigation, "ui/navigation.rs", "15rem";
     DataTable => data_table, "ui/data_table.rs", "25rem";
@@ -153,8 +159,8 @@ impl Demo {
 /// A demo is shown inside a page of the docs, so search engines are asked
 /// not to list it on its own.
 fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
-    page.runtime_src(site.runtime())
-        .icon(site.icon())
+    page.runtime_src(crate::RUNTIME)
+        .icon(crate::ICON)
         .noindex()
         .global(hypersig_ui::global())
         .global(
@@ -163,7 +169,7 @@ fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
                 .rule(Element::Ul, Style::new().padding_left(px(0))),
         )
         .theme(hypersig_ui::theme())
-        .render()
+        .render_under(site.base())
 }
 
 /// `demo` running in a frame, above its source.
@@ -257,12 +263,7 @@ fn shown_source(source: &str, lang: crate::Lang) -> String {
                 "use crate::Site;" | "use crate::lang::L;" | "let site = Site::rendering();"
             )
         })
-        .map(|line| {
-            line.replace("(site: Site)", "()").replace(
-                "site.star_rating()",
-                &format!("\"/{}\"", crate::STAR_RATING_FILE),
-            )
-        })
+        .map(|line| line.replace("(site: Site)", "()"))
         .collect::<Vec<_>>()
         .join("\n")
         .replace("\n\n\n", "\n\n")
@@ -339,12 +340,6 @@ mod tests {
             shown_source(source, crate::Lang::Ja)
                 .contains("p().text(format!(\"{}、こんにちは\", x))")
         );
-    }
-
-    #[test]
-    fn the_shown_source_names_the_script_by_its_path() {
-        let shown = shown_source("    .script(site.star_rating())\n", crate::Lang::En);
-        assert_eq!(shown, "    .script(\"/star-rating.js\")");
     }
 
     #[test]

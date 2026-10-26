@@ -1,0 +1,22 @@
+error[E0080]: evaluation panicked: a subtag holds only ASCII letters and digits, separated by `-`
+ --> tests/ui/fail/language_tag_with_underscore.rs:4:28
+  |
+4 | const EN_US: LanguageTag = LanguageTag::new("en_US");
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `EN_US` failed inside this call
+  |
+note: inside `LanguageTag::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_display(&$arg);
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/head.rs
+  |
+  |             panic!("{}", reason);
+  |             -------------------- in this macro invocation
+
+note: erroneous constant encountered
+ --> tests/ui/fail/language_tag_with_underscore.rs:7:13
+  |
+7 |     let _ = EN_US;
+  |             ^^^^^

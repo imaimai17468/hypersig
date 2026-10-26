@@ -56,6 +56,14 @@ fn output(site: Site) -> Part {
                         "The runtime runs code from the page",
                         "The runtime evaluates expressions from a fixed table of operators. It calls neither `eval` nor `new Function`, so a page served with `Page::csp_nonce` runs under a Content-Security-Policy without `unsafe-eval` or `unsafe-inline`.",
                     ],
+                    &[
+                        "The browser reads a response as a script or a page its `Content-Type` does not name",
+                        "Pages, the runtime, and the answers of actions, streams, and uploads, refusals included, are served with `X-Content-Type-Options: nosniff`.",
+                    ],
+                    &[
+                        "A cache shows one visitor's page to another",
+                        "A page holds the visitor's signals, so it is served with `Cache-Control: private, no-cache`. No shared cache keeps it, and the browser asks the server again before it shows a kept copy. `no-store` is left out because it also keeps the page out of the back-forward cache. A `Cache-Control` the handler sends replaces it.",
+                    ],
                 ],
                 ja: &[
                     &[
@@ -77,6 +85,14 @@ fn output(site: Site) -> Part {
                     &[
                         "ランタイムがページにあるコードを動かす",
                         "ランタイムは決まった演算子の表だけで式を評価します。`eval` も `new Function` も呼ばないので、`Page::csp_nonce` を付けたページは、`unsafe-eval` も `unsafe-inline` もない Content-Security-Policy のもとで動きます。",
+                    ],
+                    &[
+                        "ブラウザがレスポンスを `Content-Type` にないスクリプトやページとして読む",
+                        "ページ、ランタイム、アクションとストリームとアップロードの応答（拒否も含む）には `X-Content-Type-Options: nosniff` を付けて配信します。",
+                    ],
+                    &[
+                        "キャッシュがある訪問者のページを別の訪問者に見せる",
+                        "ページは訪問者のシグナルを持つので、`Cache-Control: private, no-cache` を付けて配信します。共有のキャッシュはページを保存せず、ブラウザは保存したページを表示する前にサーバーへ確かめます。`no-store` はページを戻る・進むのキャッシュからも外すので使いません。ハンドラが `Cache-Control` を送ると、そちらに置き換わります。",
                     ],
                 ],
             },
@@ -118,7 +134,7 @@ fn requests(site: Site) -> Part {
                         "415",
                     ],
                     &[
-                        "A GET without the `Accept: text/event-stream` the runtime sends, as from an `<img>` or a link",
+                        "A GET without the `hypersig-call` header the runtime adds, as from an `<img>`, a link, an `EventSource`, or a `no-cors` `fetch`, none of which can add a header",
                         "403",
                     ],
                     &[
@@ -144,7 +160,7 @@ fn requests(site: Site) -> Part {
                         "415",
                     ],
                     &[
-                        "`<img>` やリンクからの GET のように、ランタイムが送る `Accept: text/event-stream` のない GET",
+                        "ランタイムが付ける `hypersig-call` のヘッダーのない GET。`<img>`、リンク、`EventSource`、`no-cors` の `fetch` は、どれもこのヘッダーを付けられません",
                         "403",
                     ],
                     &[
@@ -162,8 +178,15 @@ fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A script on another site can still send that `Accept` header with a GET, and a browser that sends no `Sec-Fetch-Site` lets it through, so a GET action should change nothing.",
-                ja: "別のサイトのスクリプトは GET にこの `Accept` を付けて送れます。`Sec-Fetch-Site` を送らないブラウザではそれが通るので、GET のアクションでは何も変更しないでください。",
+                en: "The body of each refusal is one fixed sentence. What the parser said about the arguments or a page's query string names the fields of the type and quotes what the visitor sent, so it stays in the `source` of the `RequestError` or the `Unserved` and is not sent back.",
+                ja: "拒否の本文はどれも決まった一文です。引数やページのクエリ文字列についてパーサーが出すメッセージには、型のフィールドと訪問者が送った値が含まれます。そのためこのメッセージは送り返さず、`RequestError` や `Unserved` の `source` に残します。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A script on another site that adds `hypersig-call` to its `fetch` makes the browser send a preflight first, which this server does not answer, so the GET is not sent, in a browser without `Sec-Fetch-Site` too. A GET action should still change nothing, because the runtime aborts a GET once the element that sent it leaves the page, and the server may then stop its handler at an `.await`.",
+                ja: "別のサイトのスクリプトが `fetch` に `hypersig-call` を付けると、ブラウザは先にプリフライトを送ります。このサーバーはプリフライトに応答しないので、`Sec-Fetch-Site` を送らないブラウザでも GET は送られません。それでも GET のアクションでは何も変更しないでください。ランタイムは、GET を送った要素がページから外れるとその GET を取り消し、サーバーはそのときハンドラを `.await` の時点で止めることがあるためです。",
             },
         ),
         para(
@@ -243,8 +266,8 @@ fn application(site: Site) -> Part {
                     ja: "シグナルの値。ブラウザが持っていて書き換えられるので、サーバーが頼る価格、役割、持ち主は、サーバーで読み直してください。",
                 },
                 L {
-                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. A policy the application sends replaces the page's `frame-ancestors`, so include `frame-ancestors 'self'` in it, as the `ui` example does. Without it the page still has `X-Frame-Options: SAMEORIGIN`, but a page given `Framing::Origins` with an origin has neither.",
-                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。アプリが送るポリシーはページの `frame-ancestors` を置き換えるので、`ui` の例と同じように `frame-ancestors 'self'` を含めてください。含めなくても `X-Frame-Options: SAMEORIGIN` は残りますが、`Framing::Origins` にオリジンを渡したページではどちらも残りません。",
+                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. The page's `frame-ancestors` goes out as a header of its own beside the application's policy, and the browser enforces both.",
+                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。ページの `frame-ancestors` はアプリのポリシーとは別のヘッダーで送られ、ブラウザは両方を適用します。",
                 },
                 L {
                     en: "The host of a URL. A `SafeUrl` may name any host, so a URL a visitor typed suits a link the visitor follows, and not the `src` of an `<iframe>`, which shows that host's page inside this one. An `<iframe>`, an `<embed>`, or a `<frame>` panics when its `src` reads a signal. Nothing in hypersig refuses a visitor's URL passed to one as a fixed `SafeUrl`, so the application refuses it.",
@@ -255,8 +278,8 @@ fn application(site: Site) -> Part {
                     ja: "保存したデータから作る id。固定の id が 2 つ同じなら描画はパニックしますが、`String` の id が 2 つ同じでもそのまま描画され、その id へのリンクや差分は最初の要素に届きます。タグ名のように訪問者が保存した値から id を作るときは、レコードのキーと組み合わせて一意にしてください。",
                 },
                 L {
-                    en: "Its own queries and files, such as SQL built from arguments, and a file name from an upload, which `UploadedFile::file_name` returns as the browser sent it.",
-                    ja: "引数から組み立てる SQL や、`UploadedFile::file_name` がブラウザの送ったまま返すアップロードのファイル名のような、アプリ自身のクエリとファイル。",
+                    en: "Its own queries and files, such as SQL built from arguments, and the path an uploaded file is stored at. `UploadedFile::file_name` returns a `FileName`, whose `base_name` names no directory and whose `as_sent` is the text the browser sent, but two visitors can send the same name, so store the file under a name the application chooses.",
+                    ja: "引数から組み立てる SQL や、アップロードしたファイルを保存するパスのような、アプリ自身のクエリとファイル。`UploadedFile::file_name` は `FileName` を返します。その `base_name` はディレクトリを含まず、`as_sent` はブラウザが送った文字列そのものです。ただし 2 人の訪問者が同じ名前を送ることもあるので、ファイルはアプリが決めた名前で保存してください。",
                 },
             ],
         ),
@@ -276,8 +299,8 @@ fn tested(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Each refusal above has a test in the repository: the escaping and the attribute checks in the tests of the HTML builder and of the style values, the requests in `crates/hypersig/tests/axum.rs` and `upload.rs`, the frame headers in `framing.rs`, and the compile errors in the trybuild cases under `crates/hypersig/tests/ui/fail`. The crates have been reviewed with Trail of Bits' sharp-edges, insecure-defaults, rust-review, and differential-review skills, and each finding they confirmed was fixed, is listed above as the application's to check, or fails only the request that caused it. No outside security audit has been done.",
-                ja: "上で挙げた検査には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は、直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するかのいずれかです。外部のセキュリティ監査は受けていません。",
+                en: "Each refusal above has a test in the repository: the escaping and the attribute checks in the tests of the HTML builder and of the style values, the requests in `crates/hypersig/tests/axum.rs` and `upload.rs`, the frame headers in `framing.rs`, the caching and sniffing headers in `headers.rs`, and the compile errors in the trybuild cases under `crates/hypersig/tests/ui/fail`. The crates have been reviewed with Trail of Bits' sharp-edges, insecure-defaults, rust-review, and differential-review skills, and each finding they confirmed was fixed, is listed above as the application's to check, or fails only the request that caused it. No outside security audit has been done.",
+                ja: "上で挙げた検査には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、キャッシュと `nosniff` のヘッダーは `headers.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は、直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するかのいずれかです。外部のセキュリティ監査は受けていません。",
             },
         ),
     ])

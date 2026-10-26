@@ -44,6 +44,8 @@ export interface CallOptions {
   readonly reconnect: boolean;
   /** Set the indicator while the server's answer is open, rather than from sending until the answer ends. */
   readonly connected: boolean;
+  /** Skip the call while another call to the same action awaits its answer. */
+  readonly exclusive: boolean;
   /** The element whose statement made the call. Reconnecting stops once it leaves the document. */
   readonly origin: Element | undefined;
   /** The name of the file input whose files go with the arguments, for an upload. */
@@ -56,6 +58,8 @@ export interface CallOptions {
   readonly status?: string;
   /** The dotted path of the page field the part that made the call sits at. */
   readonly part?: string;
+  /** The milliseconds after which an answer that has not ended counts as a failure. */
+  readonly timeout?: number;
 }
 
 /** The side effects a statement can ask the runtime for. */

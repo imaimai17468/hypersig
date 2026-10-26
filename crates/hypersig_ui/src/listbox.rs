@@ -5,28 +5,30 @@ use hypersig::style::value::{
     AlignItems, BorderStyle, Cursor, Display, JustifyContent, Opacity, px, rem,
 };
 use hypersig::style::{PseudoClass, Style};
-use hypersig::{Expr, Sig, if_else};
+use hypersig::{Sig, Variants, if_else};
 use serde::Serialize;
 
 use crate::look::{self, icon};
 use crate::token;
 
-/// A list named `label` whose selected option is the signal `selected`.
+/// A list named `label` whose selected option is the signal `selected`, one option per variant.
 ///
 /// It follows the WAI-ARIA listbox pattern for a single selection. The list
 /// has `role="listbox"` and each option `role="option"` with
-/// `aria-selected`. Tab enters the list at the selected option, or at the
-/// first where none is selected, and the arrow keys, Home, and End move
-/// between options through [`El::roving_focus`](hypersig::html::El::roving_focus),
+/// `aria-selected`. Tab enters the list at the selected option, and the
+/// arrow keys, Home, and End move between options through [`El::roving_focus`](hypersig::html::El::roving_focus),
 /// selecting each as it gains focus. The ids are derived from the signal's
 /// path and the option's position.
 ///
+/// The value of `selected` is an enum with `#[derive(Segment)]`, and the
+/// options are its variants, so the selected value always has an option.
+///
 /// ```
-/// use hypersig::Signals;
+/// use hypersig::{Segment, Signals};
 /// use hypersig_ui::Listbox;
 /// use serde::{Deserialize, Serialize};
 ///
-/// #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+/// #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
 /// enum Plan {
 ///     Hobby,
 ///     Pro,
@@ -37,9 +39,10 @@ use crate::token;
 ///     plan: Plan,
 /// }
 ///
-/// let plans = Listbox::new("Plan", Billing::plan())
-///     .option(Plan::Hobby, "Hobby")
-///     .option(Plan::Pro, "Pro");
+/// let plans = Listbox::new("Plan", Billing::plan(), |plan| match plan {
+///     Plan::Hobby => "Hobby",
+///     Plan::Pro => "Pro",
+/// });
 /// let html = plans.render().render();
 /// assert!(html.contains(r#"role="listbox""#));
 /// assert!(html.contains(r#"id="ui-plan-option-1""#));
@@ -48,84 +51,73 @@ use crate::token;
 pub struct Listbox<S, T> {
     label: String,
     selected: Sig<S, T>,
-    options: Vec<(T, String)>,
+    /// The title of each variant, in declaration order.
+    titles: Vec<String>,
 }
 
-impl<S, T: Serialize + PartialEq> Listbox<S, T> {
-    /// An empty list named `label` for assistive technology.
+impl<S, T: Variants + Serialize + PartialEq> Listbox<S, T> {
+    /// A list named `label`, with the title `option` gives each variant.
+    ///
+    /// `option` is called once per variant, in declaration order, so a
+    /// `match` on the variant names a title for each one, and the compiler
+    /// rejects a `match` that leaves a variant out.
     #[must_use]
-    pub fn new(label: impl Into<String>, selected: Sig<S, T>) -> Self {
+    pub fn new<L: Into<String>>(
+        label: impl Into<String>,
+        selected: Sig<S, T>,
+        option: impl Fn(&T) -> L,
+    ) -> Self {
         Self {
             label: label.into(),
             selected,
-            options: Vec::new(),
+            titles: T::VARIANTS
+                .iter()
+                .map(|value| option(value).into())
+                .collect(),
         }
-    }
-
-    /// Adds an option labeled `title` that selects `value`.
-    #[must_use]
-    pub fn option(mut self, value: T, title: impl Into<String>) -> Self {
-        self.options.push((value, title.into()));
-        self
     }
 
     /// The list and its options.
     #[must_use]
     pub fn render(self) -> El<S> {
         let selected = self.selected;
-        // True while no option holds the selected value, when the first
-        // option takes the tab stop so that Tab can still reach the list.
-        let none: Expr<S, bool> = self
-            .options
-            .iter()
-            .fold(Expr::lit(&true), |none, (value, _)| {
-                none.and(selected.not_equals(value))
-            });
         div()
             .role(Role::ListBox)
             .attr(attr::ARIA_LABEL, self.label)
             .roving_focus(Orientation::Vertical)
             .css(list_style())
-            .children(
-                self.options
-                    .into_iter()
-                    .enumerate()
-                    .map(|(index, (value, title))| {
-                        let chosen = selected.equals(&value);
-                        let stop = if index == 0 {
-                            chosen.or(&none)
-                        } else {
-                            chosen.clone()
-                        };
-                        div()
-                            .role(Role::Option)
-                            .id(crate::id::of(selected, "option").with_key(index))
-                            .bind_attr(
-                                attr::ARIA_SELECTED,
-                                if_else(chosen.clone(), "true", "false"),
-                            )
-                            .bind_attr(attr::TABINDEX, if_else(stop, "0", "-1"))
-                            .on(Event::Focus, selected.set(&value))
-                            .on_click(selected.set(&value))
-                            .css(option_style())
-                            .text(title)
-                            .child(
-                                icon(look::icon::CHECK, rem(1))
-                                    .css(Style::new().opacity(Opacity::Number(0.0)))
-                                    .css_when(Style::new().opacity(Opacity::Number(1.0)), chosen),
-                            )
-                    }),
-            )
+            .children(T::VARIANTS.iter().zip(self.titles).enumerate().map(
+                |(index, (value, title))| {
+                    let chosen = selected.equals(value);
+                    div()
+                        .role(Role::Option)
+                        .id(crate::id::of(selected, "option").with_key(index))
+                        .bind_attr(
+                            attr::ARIA_SELECTED,
+                            if_else(chosen.clone(), "true", "false"),
+                        )
+                        .bind_attr(attr::TABINDEX, if_else(chosen.clone(), "0", "-1"))
+                        .on(Event::Focus, selected.set(value))
+                        .on_click(selected.set(value))
+                        .css(option_style())
+                        .text(title)
+                        .child(
+                            icon(look::icon::CHECK, rem(1))
+                                .css(Style::new().opacity(Opacity::Number(0.0)))
+                                .css_when(Style::new().opacity(Opacity::Number(1.0)), chosen),
+                        )
+                },
+            ))
     }
 }
 
-impl<S, T: Serialize + PartialEq> From<Listbox<S, T>> for El<S> {
+impl<S, T: Variants + Serialize + PartialEq> From<Listbox<S, T>> for El<S> {
     fn from(listbox: Listbox<S, T>) -> Self {
         listbox.render()
     }
 }
 
-impl<S, T: Serialize + PartialEq> From<Listbox<S, T>> for hypersig::html::Node<S> {
+impl<S, T: Variants + Serialize + PartialEq> From<Listbox<S, T>> for hypersig::html::Node<S> {
     fn from(listbox: Listbox<S, T>) -> Self {
         listbox.render().into()
     }

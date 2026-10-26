@@ -114,6 +114,16 @@ snippets! {
     ErrorPage => "error_page.rs";
     LoadMore => "load_more.rs";
     EditState => "edit_state.rs";
+    // The upgrading page shows each release's breaking changes as the code
+    // after them, so the doctest compiles what the release accepts.
+    Upgrade05 => "upgrading/v0_5.rs";
+    Upgrade06 => "upgrading/v0_6.rs";
+    Upgrade07 => "upgrading/v0_7.rs";
+    Upgrade08 => "upgrading/v0_8.rs";
+    TroubleHandler => "troubleshooting/handler.rs", "compile_fail,E0277";
+    TroubleId => "troubleshooting/id.rs", "compile_fail,E0080";
+    TroubleComputed => "troubleshooting/computed.rs", "compile_fail,E0277";
+    TroubleCallError => "troubleshooting/call_error.rs";
 }
 
 /// The lines of `snippet` that the page shows.

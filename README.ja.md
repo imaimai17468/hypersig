@@ -6,15 +6,11 @@
 
 **サーバーが状態を、型が正しさを。**
 
-Rust だけで書く[ハイパーメディア](https://imaimai17468.github.io/hypersig/ja/learn/why/#hypermedia)の Web フレームワークです。画面もブラウザでの動きもサーバーの処理も Rust で書き、axum の上で動きます。状態はサーバーが持ってブラウザにパッチを送り、ブラウザが扱う文字列（シグナルの名前、式、アクションの URL、リンク）はすべて Rust の型から作るので、その書き間違いはコンパイルエラーになります。コンパイラが見つけられない少数の間違いは[コンパイラが検査しないこと](#コンパイラが検査しないこと)にまとめています。
+Rust だけで書く[ハイパーメディア](https://imaimai17468.github.io/hypersig/ja/learn/why/#hypermedia)の Web フレームワークです。画面もブラウザでの動きもサーバーの処理も Rust で書き、axum の上で動きます。状態はサーバーが持ってブラウザにパッチを送り、ブラウザが扱う文字列（シグナルの名前、式、アクションの URL、リンク）はすべて Rust の型から作るので、その書き間違いはコンパイルエラーになります。
 
 - `cargo build` だけでビルドでき、Node も wasm も要りません。
-- 画面とサーバーの食い違いと、ルートに合わないリンクはコンパイルエラーになります（[hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/)）。
-- 最初の HTML にページの状態が入っています。アクションは変わった値だけを返し、ブラウザはその値を表示している箇所だけを書き換えます（[サーバーとのやり取り](https://imaimai17468.github.io/hypersig/ja/learn/server/)）。
-- ハイドレーションはありません。読み込み時、ランタイムはサーバーが HTML に書き込んだ状態を読むだけで、コンポーネントを実行し直しません（[hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/)）。
-- フォームの検証規則は一度書けば、ブラウザとサーバーの両方が同じ規則で検証します（[フォーム](https://imaimai17468.github.io/hypersig/ja/learn/forms/)）。
-- CSS のプロパティと値も型で検査します（[スタイル](https://imaimai17468.github.io/hypersig/ja/style/)）。
-- shadcn/ui の見た目のコンポーネント集と、訳の漏れをコンパイルエラーにする多言語化のクレートがあります（[コンポーネント](https://imaimai17468.github.io/hypersig/ja/components/)、[多言語化](https://imaimai17468.github.io/hypersig/ja/i18n/)）。
+- 最初の HTML にページの状態が入っているので、ハイドレーションはありません。アクションは変わった値だけを返します（[hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/)）。
+- フォームの検証規則、CSS、翻訳もコンパイラが検査します。shadcn/ui の見た目のコンポーネント集も付いています（[フォーム](https://imaimai17468.github.io/hypersig/ja/learn/forms/)、[スタイル](https://imaimai17468.github.io/hypersig/ja/style/)、[多言語化](https://imaimai17468.github.io/hypersig/ja/i18n/)、[コンポーネント](https://imaimai17468.github.io/hypersig/ja/components/)）。
 
 ## クイックスタート
 
@@ -69,17 +65,11 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らず、ブラウザの中で数を増やします。リセットのボタンは `/reset` を呼び、ハンドラが返す差分で `count` が 0 に戻ります。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。`cargo install --locked hypersig_cli` でインストールする `cargo hypersig dev` を使うと、変更のたびにサーバーがビルドされて起動し直し、開いているタブは新しいサーバーから読み込み直されます。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
+`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らずにブラウザの中で数を増やし、リセットのボタンは `/reset` を呼んで、ハンドラが返す差分で `count` を 0 に戻します。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。CLI（`cargo install --locked hypersig_cli`）を入れると、`cargo hypersig new my-app` でプロジェクトを作れ、`cargo hypersig dev` で変更のたびにビルドと再読み込みが走ります。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
 
 ## フレームワークの比較
 
-hypersig に近いのは Topcoat と Datastar です。どちらもブラウザの中にシグナルを持ち、ブラウザ向けのビルドなしにサーバーから画面を更新します。Topcoat はブラウザで動く式も Rust で書きます。Leptos と Dioxus も画面とサーバーを Rust で書きますが、画面を WebAssembly にコンパイルし、ブラウザでサーバーの HTML をハイドレートします。
-
-|  | Topcoat と Datastar | hypersig |
-|---|---|---|
-| シグナル名と URL（Datastar） | HTML の属性に文字列で書きます。打ち間違いはブラウザが実行するまで分かりません | Rust の値から書きます。打ち間違いがあると `cargo build` が止まります |
-| リンクのパラメータ（Topcoat） | `href!` が検査するのはハンドラだけです。パスパラメータが足りないか多いと、ページを描くときにパニックし、リクエストは 500 を返します | `Route` がパラメータを型の付いた値で受け取ります。間違えるとコンパイルエラーになります |
-| 一覧への追加（Topcoat） | 式から項目を足せないので、サーバーが答えて描き直したときに一覧が変わります | 一覧をシグナルに持つので、サーバーが答える前にブラウザが変更を表示します |
+最も近い Topcoat と Datastar との詳しい比較は [hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/) にあります。
 
 | | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar | Leptos | Dioxus |
 |---|---|---|---|---|---|---|---|---|---|
@@ -102,26 +92,11 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 | Total Blocking Time | 3 ms (0–37) | 318 ms (311–351) | 16 ms (11–23) | 14 ms (9–16) | 0 ms (0–0) | 36 ms (29–42) | 20 ms (17–23) | 47 ms (42–57) | 122 ms (114–126) |
 | Interaction to Next Paint | 24 ms (24–24) | 24 ms (24–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (24–24) | 16 ms (16–16) | 24 ms (16–24) | 72 ms (72–80) |
 
-測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあります。どのアプリもコミット 7d031d0 で測りました。Leptos と Dioxus はコードの大半を WebAssembly で読み込むので、その大きさを JS の行とは別に Wasm の行に数えています。ブラウザの中だけで行うリストの操作を比べる [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) の結果は、[`bench/js-framework-benchmark/results.md`](bench/js-framework-benchmark/results.md) にあります。
+測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあり、どれもコミット 7d031d0 で測りました。Leptos と Dioxus はコードの大半を WebAssembly で読み込むので、その大きさを Wasm の行に数えています。js-framework-benchmark の結果は [`bench/js-framework-benchmark`](bench/js-framework-benchmark/results.md) に、スタイルのクレートの比較は [`hypersig_style` の README](crates/hypersig_style/README.ja.md#ベンチマーク) にあります。同じマシンで [`examples/todomvc`](examples/todomvc)（485 行）をビルドすると、空の target ディレクトリからは 13.4 s、1 行変えた後の再ビルドは 1.3 s でした（`cargo build`、Rust 1.99.0）。
 
-同じページを `hypersig::style`、Tailwind CSS、Panda CSS、StyleX、vanilla-extract でスタイルした計測は、[`hypersig_style` の README](crates/hypersig_style/README.ja.md#ベンチマーク) にあります。
+## デプロイとセキュリティ
 
-コンパイル時間は、同じマシンの Rust 1.99.0 で `cargo build`（`dev` プロファイル）を使って測りました。空の target ディレクトリからのビルドは 3 回、アプリのコードを 1 行変えた後の再ビルドは 5 回測った中央値です。
-
-| | Rust の行数 | 空の状態から | 1 行変えた後 |
-|---|---|---|---|
-| [`examples/todomvc`](examples/todomvc) | 485 | 13.4 s (11.0–13.7) | 1.3 s (1.1–1.4) |
-| [`site`](site)（ドキュメントサイト） | 19,484 | - | 2.5 s (2.5–3.6) |
-
-再ビルドでコンパイルし直すのはアプリのクレートだけです。`site` のビルドを `cargo build --timings` で測ると、`hypersig` クレートに 2.1 s、`site` のライブラリに 5.6 s かかりました。
-
-## デプロイ
-
-[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページでは、`cargo install --locked hypersig_cli` でインストールする `cargo hypersig` でプロジェクトを作り、数行のコマンドで動くところまで進められます。`cargo hypersig new my-app --host server` で作るプロジェクトは、Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`--host cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。`--host vercel` はそれらを Vercel の関数として動かし、`vercel_runtime` の `VercelLayer` が同じようにリクエストを `Router` に渡します。[`crates/hypersig_cli/templates/`](crates/hypersig_cli/templates) のテンプレートはコマンドに埋め込まれているので、同じ版で作ったプロジェクトは、ビルドで実行するコマンドも含めて同じファイルになります。Workers と Vercel のプロジェクトでは Node.js も必要です。Cloudflare のコマンドラインツール `wrangler` と Vercel のツール `vercel` が npm で配布されているためです。既存のプロジェクトでは、`cargo hypersig add <ホスト>` が `Cargo.toml` を編集してホストのファイルを書き出し、手で直す Rust のコードの変更を表示します。
-
-## セキュリティ
-
-[セキュリティ](https://imaimai17468.github.io/hypersig/ja/learn/security/) のページに、hypersig が確かめることをまとめています。エスケープ、ページに書ける属性と URL、アクションが拒否するリクエスト、リクエストでサーバーのどのコードを動かすかを指定できない理由です。アクションを誰が呼んでよいかをはじめ、アプリが自分で確かめることも載せています。
+`cargo hypersig new my-app --host server|cloudflare|vercel` は、コンテナのホスト、Cloudflare Workers、Vercel の関数のどれかで動くプロジェクトを作ります。既存のプロジェクトには `cargo hypersig add <ホスト>` で足せます（[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/)）。hypersig がリクエストごとに確かめることと、アクションを誰が呼んでよいかをはじめアプリが自分で確かめることは、[セキュリティ](https://imaimai17468.github.io/hypersig/ja/learn/security/) のページにまとめています。
 
 ## コンパイラが検査しないこと
 
@@ -131,20 +106,21 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 |---|---|
 | `routes!` が生成する関数をルーターに渡し忘れる | そのページとアクションが 404 を返します |
 | `Base` の下のページが、`Base` のない `routes!` ブロックのアクションを呼ぶ | 呼び出しが 404 になります |
-| 同じ `node_ref!`、`dialog_ref!`、`Id`、`FileInput` の名前を 2 つの要素に付ける。リストのテンプレートの中で `El::id` を使う | ページの描画が panic します |
+| 同じ `node_ref!`、`dialog_ref!`、`Id`、`FileInput` の名前を 2 つの要素に付ける。リストのテンプレートの中で `El::id` を使う | ページの描画が panic します。`Id::from_text` で作った同じ id どうしは検出されず、その id を指す参照は先にある要素に届きます |
 | `label_for` などの参照が、どの要素にもない `Id` を指す | 入力欄にラベルが付きません |
 | hypersig の外のスクリプトが `El::foreign` の値で要素を探していて、その定数の名前を変える | スクリプトが要素を見つけられません。`Id` で探してください |
-| `#[signals(computed)]` を付けたフィールドを `Page::computed` に渡し忘れる | ページの描画が panic します。入れ子の構造体のフィールドは検出されず、値が最初のまま変わりません |
-| リストの項目を、渡されたクロージャの外で使う | ページを組み立てるときに panic します。ただし、クロージャの中で項目から作った式は検出されず、別のリストの項目を読むか、ブラウザでエラーになります |
+| `#[signals(computed)]` を付けたフィールドを `Page::computed` に渡し忘れる | ページの描画が panic します。入れ子の構造体のフィールドで panic するのは、ページがそのフィールドを読む場合だけです |
+| リストの項目を、渡されたクロージャの外で使う | ページの組み立てか描画が panic します。ただし、クロージャの中で項目から作った式を、同じ深さの別のリストの中で使うと検出されず、そのリストの項目を読みます |
 | シグナルに ±2^53 を超える整数を入れる | ページの描画か差分の作成が panic します |
+| `String` のルートの区間か `Rest` の一部が空、`.`、`..` になる | リンクが 404 を返すか、ブラウザがドットを解決して別のページを求めます |
 
 ## 向かないアプリ
 
-ブラウザだけで完結するのは、hypersig が用意した演算と命令と、ページが読み込んだスクリプトだけです。地図やリッチテキストエディタのような JavaScript のライブラリはカスタム要素の中で動かせます。ページは属性で値を渡し、型付きのイベントを受け取ります（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。Custom Elements Manifest（`custom-elements.json`）を同梱したライブラリなら、`cargo hypersig elements` がタグ、属性名、イベント名を Rust の項目として書き出すので、つづりの間違いはコンパイルエラーになります。それ以外の処理はサーバーを通すので、次のようなアプリには向きません。
+サーバーを通さずにブラウザで動くのは、hypersig が用意した演算と、ページが読み込んだスクリプトだけです。地図やエディタのような JavaScript のライブラリはカスタム要素の中で動かせます。`cargo hypersig elements` は、ライブラリの `custom-elements.json` にある名前を Rust の項目として書き出します（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。次のようなアプリには向きません。
 
 - お絵かきツールや表計算ソフトのように、主な処理が JavaScript のライブラリの中で動くアプリ
 - サーバーにつながらない状態で動くアプリ
-- JavaScript を切っても、ボタンやフォームが動く必要のあるページ。ページには `action` 属性も `formaction` 属性も書けないので、フォームからアクションを呼べるのはランタイムだけです。ランタイムは、ブラウザがフォームを自分で送ることも止めます。ランタイムを実行しないブラウザは最初の HTML を表示します。そこでフォームを送ると、名前の付いたフィールドをクエリに入れて同じページの URL を読み込み直すだけで、アクションは実行されません。
+- JavaScript を切ってもフォームが動く必要のあるページ。フォームからアクションを呼べるのはランタイムだけです
 
 ## 開発
 

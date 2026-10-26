@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/accordion_group_from_string.rs:12:41
+   |
+12 |     let _ = Accordion::<Faq>::exclusive("faq");
+   |             --------------------------- ^^^^^ expected `Id`, found `&str`
+   |             |
+   |             arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> src/accordion.rs
+   |
+   |     pub fn exclusive(group: Id) -> Self {
+   |            ^^^^^^^^^

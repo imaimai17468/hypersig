@@ -1,7 +1,10 @@
 //! What a page tells crawlers and link previews: the origin absolute URLs
 //! start with, and the Open Graph card.
 
+use std::borrow::Cow;
 use std::fmt;
+
+use crate::intl::IntlLocale;
 
 /// The scheme, host, and optional path prefix a site is served from.
 ///
@@ -213,6 +216,122 @@ const fn starts_with(bytes: &[u8], prefix: &[u8]) -> bool {
         i += 1;
     }
     true
+}
+
+/// A BCP 47 language tag, such as `ja` or `en-US`, for `lang` and `hreflang`.
+///
+/// [`Page::lang`](crate::Page::lang) and
+/// [`Page::alternate`](crate::Page::alternate) take it, so `en_US`, which
+/// the browser and search engines do not read as a language, fails to
+/// compile in a `const`. An [`IntlLocale`](crate::IntlLocale) converts into
+/// one, so the page's language can be the locale its text is formatted in.
+///
+/// The tag's shape is checked: subtags of one to eight ASCII letters and
+/// digits separated by `-`, the first of two, three, or five to eight
+/// letters. Whether the language exists in the IANA registry is not.
+///
+/// ```
+/// use hypersig::{IntlLocale, LanguageTag};
+///
+/// const EN_US: LanguageTag = LanguageTag::new("en-US");
+/// assert_eq!(EN_US.as_str(), "en-US");
+/// assert_eq!(LanguageTag::from(IntlLocale::Ja).as_str(), "ja");
+/// assert!(LanguageTag::parse("en_US").is_err());
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LanguageTag(Cow<'static, str>);
+
+impl LanguageTag {
+    /// The tag `tag`, written in the program.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `tag` is not shaped as a BCP 47 tag, such as `en_US` or
+    /// `en-`. In a `const` the panic is a compile error.
+    #[must_use]
+    pub const fn new(tag: &'static str) -> Self {
+        if let Err(reason) = check_language_tag(tag.as_bytes()) {
+            panic!("{}", reason);
+        }
+        Self(Cow::Borrowed(tag))
+    }
+
+    /// Reads a tag built at run time, such as the name serde gives a locale enum's variant.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LanguageTagError`] where [`LanguageTag::new`] would panic.
+    pub fn parse(tag: impl Into<String>) -> Result<Self, LanguageTagError> {
+        let tag = tag.into();
+        match check_language_tag(tag.as_bytes()) {
+            Ok(()) => Ok(Self(Cow::Owned(tag))),
+            Err(reason) => Err(LanguageTagError { tag, reason }),
+        }
+    }
+
+    /// The tag as `lang` and `hreflang` write it.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for LanguageTag {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl From<IntlLocale> for LanguageTag {
+    fn from(locale: IntlLocale) -> Self {
+        Self(Cow::Borrowed(locale.tag()))
+    }
+}
+
+/// Text that [`LanguageTag::parse`] refused, with the rule it broke.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LanguageTagError {
+    tag: String,
+    reason: &'static str,
+}
+
+impl fmt::Display for LanguageTagError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "`{}` is not a BCP 47 language tag: {}",
+            self.tag, self.reason
+        )
+    }
+}
+
+impl std::error::Error for LanguageTagError {}
+
+/// Whether `tag` has the shape of a BCP 47 tag.
+const fn check_language_tag(tag: &[u8]) -> Result<(), &'static str> {
+    let mut start = 0;
+    let mut first = true;
+    while start <= tag.len() {
+        let mut end = start;
+        let mut letters = true;
+        while end < tag.len() && tag[end] != b'-' {
+            if !tag[end].is_ascii_alphanumeric() {
+                return Err("a subtag holds only ASCII letters and digits, separated by `-`");
+            }
+            letters = letters && tag[end].is_ascii_alphabetic();
+            end += 1;
+        }
+        let len = end - start;
+        if len == 0 || len > 8 {
+            return Err("a subtag is one to eight characters");
+        }
+        if first && (!letters || len == 1 || len == 4) {
+            return Err("the language subtag is two, three, or five to eight letters");
+        }
+        first = false;
+        start = end + 1;
+    }
+    Ok(())
 }
 
 /// The card a chat app or a social site shows for a link to the page.
@@ -445,7 +564,8 @@ pub(crate) fn meta(out: &mut String, key: &str, name: &str, content: &str) {
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use super::{OpenGraph, OpenGraphLocale, Origin};
+    use super::{LanguageTag, OpenGraph, OpenGraphLocale, Origin};
+    use crate::IntlLocale;
     use crate::{Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize)]
@@ -473,7 +593,7 @@ mod tests {
     fn the_card_reads_the_title_and_description_of_the_page() {
         let html = Page::new("Tom & Jerry", note())
             .description("A \"cat\"")
-            .icon("/icon.svg")
+            .icon(crate::Asset::new("/icon.svg"))
             .open_graph(OpenGraph::new())
             .render();
         assert!(html.contains(r#"<link rel="icon" href="/icon.svg">"#));
@@ -576,5 +696,39 @@ mod tests {
     #[should_panic(expected = "a path on an origin starts with `/`")]
     fn an_image_path_without_a_slash_panics() {
         let _ = OpenGraph::new().image(SITE, "og.png", "");
+    }
+
+    #[test]
+    fn a_language_tag_takes_subtags_after_the_language() {
+        for tag in ["en", "fil", "zh-Hant-TW", "de-CH-1901", "sl-rozaj-biske"] {
+            assert_eq!(
+                LanguageTag::parse(tag).map(|tag| tag.to_string()),
+                Ok(tag.to_owned())
+            );
+        }
+    }
+
+    #[test]
+    fn a_language_tag_refuses_what_is_not_shaped_as_one() {
+        for tag in [
+            "",
+            "en_US",
+            "en-",
+            "-en",
+            "en--US",
+            "e",
+            "e1",
+            "abcd",
+            "en-toolongsubtag",
+            "ja jp",
+        ] {
+            assert!(LanguageTag::parse(tag).is_err(), "{tag}");
+        }
+    }
+
+    #[test]
+    fn lang_writes_the_tag_of_the_intl_locale() {
+        let html = Page::new("Note", note()).lang(IntlLocale::Ja).render();
+        assert!(html.starts_with(r#"<!doctype html><html lang="ja">"#));
     }
 }

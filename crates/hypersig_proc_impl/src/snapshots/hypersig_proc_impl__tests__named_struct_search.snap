@@ -3,8 +3,26 @@ source: crates/hypersig_proc_impl/src/lib.rs
 expression: "expand_search(quote! { pub struct Filter { q: String, page: Option<i32> } })"
 ---
 #[automatically_derived]
-impl ::hypersig::_private::SearchFields for Filter
+impl ::hypersig::_private::SealedSearch for Filter {}
+#[automatically_derived]
+impl ::hypersig::Search for Filter
 where
+    Filter: ::hypersig::Signals,
     String: ::hypersig::SearchValue,
     Option<i32>: ::hypersig::SearchValue,
-{}
+{
+    const TYPED: bool = true;
+    type Args<P: ::hypersig::Params> = <P as ::hypersig::Params>::With<Self>;
+    fn join<P: ::hypersig::Params>(params: P, search: Self) -> Self::Args<P> {
+        <P as ::hypersig::Params>::join(params, search)
+    }
+    fn split<P: ::hypersig::Params>(args: Self::Args<P>) -> (P, Self) {
+        <P as ::hypersig::Params>::split(args)
+    }
+    fn unit() -> ::core::option::Option<Self> {
+        ::core::option::Option::None
+    }
+    fn query(&self) -> ::std::string::String {
+        ::hypersig::_private::search_query(self)
+    }
+}

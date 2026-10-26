@@ -26,7 +26,6 @@ pub trait LocaleRouterExt<St>: Sized {
     /// # enum Lang { En, Ja }
     /// # struct ByLang<T> { en: T, ja: T }
     /// # impl Locale for Lang {
-    /// #     const ALL: &'static [Self] = &[Self::En, Self::Ja];
     /// #     type Text<T> = ByLang<T>;
     /// #     fn pick<T>(self, t: ByLang<T>) -> T { match self { Self::En => t.en, Self::Ja => t.ja } }
     /// # }
