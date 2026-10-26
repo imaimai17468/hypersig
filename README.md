@@ -105,6 +105,7 @@ The compiler checks that names, types, and links match. These mistakes still com
 | Mistake | What happens |
 |---|---|
 | The function `routes!` generates is never passed to the router | Its pages and actions answer 404 |
+| A block `under` a `Base` is served neither inside `Router::nest` at that base nor behind a proxy that strips it | Its pages and actions answer 404, since its links start with the base and its routes do not |
 | A page under a `Base` calls an action of a `routes!` block without it | The call answers 404 |
 | One `node_ref!`, `dialog_ref!`, `Id`, or `FileInput` name goes on two elements, or `El::id` is used inside a list template | Rendering the page panics. Two ids from `Id::from_text` alike are not caught, and a reference to that id reaches the first |
 | `label_for` or a similar reference names an `Id` no element carries | The control has no label |
