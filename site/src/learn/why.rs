@@ -415,7 +415,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "One `node_ref!`, `dialog_ref!`, `Id`, or `FileInput` name goes on two elements, or `El::id` is used inside a list template",
-                        "Rendering the page panics",
+                        "Rendering the page panics. Two ids from `Id::from_text` alike are not caught, and a reference to that id reaches the first",
                     ],
                     &[
                         "`label_for` or a similar reference names an `Id` no element carries",
@@ -457,7 +457,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "同じ `node_ref!`、`dialog_ref!`、`Id`、`FileInput` の名前を 2 つの要素に付ける。リストのテンプレートの中で `El::id` を使う",
-                        "ページの描画が panic します",
+                        "ページの描画が panic します。`Id::from_text` で作った同じ id どうしは検出されず、その id を指す参照は先にある要素に届きます",
                     ],
                     &[
                         "`label_for` などの参照が、どの要素にもない `Id` を指す",

@@ -296,7 +296,7 @@ impl<S> Node<S> {
 }
 
 /// Panics if two elements in `nodes` carry one node ref name, one file
-/// input name, or one `&'static str` id, where the runtime could find
+/// input name, or one id the program wrote, where the runtime could find
 /// either, or if an element inside a list template carries a fixed id.
 ///
 /// The runtime looks a name up in the list items and conditional copies
@@ -368,8 +368,8 @@ impl<'a> Names<'a> {
                 );
                 at = scope.outer;
             }
-            let fixed = matches!(id, Cow::Borrowed(_));
-            self.found.push(("id", id, Scope::path(scope), fixed));
+            self.found
+                .push(("id", id.as_str(), Scope::path(scope), id.fixed));
         }
         for child in &el.children {
             self.node(child, scope);
@@ -396,9 +396,9 @@ impl<'a> Names<'a> {
         self.found
             .sort_unstable_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
         for group in self.found.chunk_by(|a, b| (a.0, a.1) == (b.0, b.1)) {
-            // An id built at runtime may come from data a visitor stored, and
-            // a panic would stop the page for every visitor until the data
-            // changes, so only two fixed ids alike panic.
+            // An id from `Id::from_text` may come from data a visitor stored,
+            // and a panic would stop the page for every visitor until the
+            // data changes, so only two ids the program wrote alike panic.
             for (i, (kind, name, a, fixed)) in group.iter().enumerate() {
                 let meets = |(_, _, b, other): &(_, _, Vec<u32>, bool)| {
                     *fixed && *other && (a.starts_with(b) || b.starts_with(a))
@@ -672,7 +672,7 @@ where
 pub struct El<S> {
     tag: &'static str,
     void: bool,
-    id: Option<Cow<'static, str>>,
+    id: Option<Id>,
     attrs: Vec<(&'static str, String)>,
     classes: Vec<&'static str>,
     show: Option<Expr<S, bool>>,
@@ -1736,13 +1736,13 @@ impl<S> El<S> {
     /// An element rendered through a [`Fragment`](crate::Fragment) gets the
     /// fragment's id instead. Rendering panics if the element sits inside a
     /// list template, whose every item would repeat it, and if another
-    /// element the runtime can reach carries the same id from [`Id::new`].
+    /// element the runtime can reach carries the same id from [`Id::new`],
+    /// with or without the keys of [`Id::with_key`].
     ///
-    /// Two ids alike where either comes from [`Id::with_key`] render, because
-    /// the key may come from data visitors stored. An anchor, a label's
-    /// `for`, an `aria-*` reference, or a fragment's patch to that id then
-    /// reaches the first of them, so a key from stored data is made unique by
-    /// the program, such as the record's own key.
+    /// Two ids alike where either comes from [`Id::from_text`] render,
+    /// because the text may come from data visitors stored. An anchor, a
+    /// label's `for`, an `aria-*` reference, or a fragment's patch to that id
+    /// then reaches the first of them.
     ///
     /// # Panics
     ///
@@ -1754,7 +1754,7 @@ impl<S> El<S> {
             "`El::id` is called twice on one `<{}>`, which holds one id",
             self.tag
         );
-        self.id = Some(id.0);
+        self.id = Some(id);
         self
     }
 
@@ -2613,7 +2613,7 @@ impl<S> El<S> {
     }
 
     pub(crate) fn with_id(mut self, id: Id) -> Self {
-        self.id = Some(id.0);
+        self.id = Some(id);
         self
     }
 
@@ -2760,7 +2760,7 @@ impl<S> El<S> {
         out.push('<');
         out.push_str(self.tag);
         if let Some(id) = &self.id {
-            write_attr(out, "id", id);
+            write_attr(out, "id", id.as_str());
         }
         let classes = self
             .classes
@@ -3479,16 +3479,34 @@ mod tests {
         }
 
         #[test]
-        fn ids_with_a_key_may_repeat() {
-            const TAG: Id = Id::new("tag");
-            let tag = |name: &str| li::<Page>().id(TAG.with_key(name));
-            let html = div::<Page>()
-                .child(tag("a"))
-                .child(tag("a"))
-                .child(div().id(Id::new("total").with_key(1)))
-                .child(div().id(Id::new("total").with_key(1)))
+        #[should_panic(expected = "carry the id `row-7`")]
+        fn an_id_with_a_key_next_to_the_same_id_written_whole_panics() {
+            const ROW: Id = Id::new("row");
+            let _ = div::<Page>()
+                .child(li().id(Id::new("row-7")))
+                .child(li().id(ROW.with_key(7)))
                 .render();
-            assert_eq!(html.matches(r#"id="tag-a""#).count(), 2, "{html}");
+        }
+
+        #[test]
+        #[should_panic(expected = "carry the id `tag-a`")]
+        fn two_ids_with_one_key_panic() {
+            const TAG: Id = Id::new("tag");
+            let _ = div::<Page>()
+                .child(li().id(TAG.with_key("a")))
+                .child(li().id(TAG.with_key("a")))
+                .render();
+        }
+
+        #[test]
+        fn ids_from_text_may_repeat() {
+            let html = div::<Page>()
+                .child(div().id(Id::from_text("Intro")))
+                .child(div().id(Id::from_text("Intro").with_key(1)))
+                .child(div().id(Id::from_text("Intro").with_key(1)))
+                .child(div().id(Id::from_text("Intro")))
+                .render();
+            assert_eq!(html.matches(r#"id="Intro""#).count(), 2, "{html}");
         }
 
         #[test]
