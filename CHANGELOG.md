@@ -4,6 +4,10 @@ The release notes on GitHub list the titles of the merged pull requests. This fi
 
 ## [Unreleased]
 
+### Breaking
+
+- `hypersig_ui::Chart<S, T, R>` is now `Chart<S, T>`. Its constructors still take the rows of a plain field or of a computed one, and code that named the third parameter drops it.
+
 ### Added
 
 - `Sig::read()` on a page-rooted signal returns a `Sig<S, T, Read>`, a read-only view with the same path. The view reads like the signal it came from, because `Read` implements `FromPage`, and it has no `set`, list statement, `bind`, or `patch`. `Page::computed` refuses it.

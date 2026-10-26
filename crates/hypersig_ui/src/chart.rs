@@ -12,7 +12,7 @@ use hypersig::style::value::{
     ZIndex, pct, px, raw, rem,
 };
 use hypersig::style::{Condition, Property, PseudoClass, Style, Token};
-use hypersig::{Expr, FromPage, IntoExpr, Item, Number, NumberFormat, Root, Sig, Textual, if_else};
+use hypersig::{Expr, FromPage, IntoExpr, Item, Number, NumberFormat, Read, Sig, Textual, if_else};
 
 use crate::look;
 use crate::token;
@@ -109,32 +109,27 @@ const TICKS: i32 = 6;
 /// assert!(html.contains("<caption>Visitors</caption>"));
 /// assert!(html.contains(">400</span>"));
 /// ```
-///
-/// `R` is the marker of the rows' signal: [`Root`] for a field of the page's
-/// struct, and [`Computed`](hypersig::Computed) for one that
-/// [`Page::computed`](hypersig::Page::computed) keeps, such as the rows a
-/// filter leaves.
-pub struct Chart<S, T, R = Root> {
+pub struct Chart<S, T> {
     kind: Kind,
     label: String,
-    rows: Sig<S, Vec<T>, R>,
+    rows: Sig<S, Vec<T>, Read>,
     category: Sig<T, String>,
     series: Vec<Series<S, T>>,
     format: Option<NumberFormat>,
     max_labels: u32,
 }
 
-impl<S: 'static, T: 'static, R: FromPage> Chart<S, T, R> {
+impl<S: 'static, T: 'static> Chart<S, T> {
     /// A bar chart named `label` of `rows`, labeled by `category`.
     ///
     /// Each row has a group of bars, one per series.
     #[must_use]
-    pub fn bar(
+    pub fn bar<R: FromPage>(
         label: impl Into<String>,
         rows: Sig<S, Vec<T>, R>,
         category: Sig<T, String>,
     ) -> Self {
-        Self::new(Kind::Bar, label.into(), rows, category)
+        Self::new(Kind::Bar, label.into(), rows.read(), category)
     }
 
     /// A stacked bar chart named `label` of `rows`, labeled by `category`.
@@ -144,12 +139,12 @@ impl<S: 'static, T: 'static, R: FromPage> Chart<S, T, R> {
     /// from it, so the scale reaches the largest sum of a row's positive
     /// values and the smallest sum of its negative ones.
     #[must_use]
-    pub fn stacked_bar(
+    pub fn stacked_bar<R: FromPage>(
         label: impl Into<String>,
         rows: Sig<S, Vec<T>, R>,
         category: Sig<T, String>,
     ) -> Self {
-        Self::new(Kind::StackedBar, label.into(), rows, category)
+        Self::new(Kind::StackedBar, label.into(), rows.read(), category)
     }
 
     /// A horizontal bar chart named `label` of `rows`, labeled by `category`.
@@ -158,39 +153,44 @@ impl<S: 'static, T: 'static, R: FromPage> Chart<S, T, R> {
     /// per series running from 0 along the scale at the bottom. It suits
     /// categories whose names are too long to sit under a vertical bar.
     #[must_use]
-    pub fn horizontal_bar(
+    pub fn horizontal_bar<R: FromPage>(
         label: impl Into<String>,
         rows: Sig<S, Vec<T>, R>,
         category: Sig<T, String>,
     ) -> Self {
-        Self::new(Kind::HorizontalBar, label.into(), rows, category)
+        Self::new(Kind::HorizontalBar, label.into(), rows.read(), category)
     }
 
     /// A line chart named `label` of `rows`, labeled by `category`.
     ///
     /// Each row is a point on the line of each series.
     #[must_use]
-    pub fn line(
+    pub fn line<R: FromPage>(
         label: impl Into<String>,
         rows: Sig<S, Vec<T>, R>,
         category: Sig<T, String>,
     ) -> Self {
-        Self::new(Kind::Line, label.into(), rows, category)
+        Self::new(Kind::Line, label.into(), rows.read(), category)
     }
 
     /// An area chart named `label` of `rows`, labeled by `category`.
     ///
     /// It is a line chart with the area between each line and 0 filled.
     #[must_use]
-    pub fn area(
+    pub fn area<R: FromPage>(
         label: impl Into<String>,
         rows: Sig<S, Vec<T>, R>,
         category: Sig<T, String>,
     ) -> Self {
-        Self::new(Kind::Area, label.into(), rows, category)
+        Self::new(Kind::Area, label.into(), rows.read(), category)
     }
 
-    fn new(kind: Kind, label: String, rows: Sig<S, Vec<T>, R>, category: Sig<T, String>) -> Self {
+    fn new(
+        kind: Kind,
+        label: String,
+        rows: Sig<S, Vec<T>, Read>,
+        category: Sig<T, String>,
+    ) -> Self {
         Self {
             kind,
             label,
@@ -757,7 +757,7 @@ impl<S: 'static, T: 'static, R: FromPage> Chart<S, T, R> {
     }
 }
 
-impl<S, T, R> fmt::Debug for Chart<S, T, R> {
+impl<S, T> fmt::Debug for Chart<S, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Chart")
             .field("kind", &self.kind)
@@ -778,14 +778,14 @@ impl<S, T, R> fmt::Debug for Chart<S, T, R> {
     }
 }
 
-impl<S: 'static, T: 'static, R: FromPage> From<Chart<S, T, R>> for El<S> {
-    fn from(chart: Chart<S, T, R>) -> Self {
+impl<S: 'static, T: 'static> From<Chart<S, T>> for El<S> {
+    fn from(chart: Chart<S, T>) -> Self {
         chart.render()
     }
 }
 
-impl<S: 'static, T: 'static, R: FromPage> From<Chart<S, T, R>> for Node<S> {
-    fn from(chart: Chart<S, T, R>) -> Self {
+impl<S: 'static, T: 'static> From<Chart<S, T>> for Node<S> {
+    fn from(chart: Chart<S, T>) -> Self {
         chart.render().into()
     }
 }

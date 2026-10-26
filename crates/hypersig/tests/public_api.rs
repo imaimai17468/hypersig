@@ -32,13 +32,11 @@ const FORMAT_VERSION: u64 = 61;
 
 /// The public types with a third type parameter, each justified in
 /// `.claude/rules/rust.md` under M-SIMPLE-ABSTRACTIONS.
-const THREE_TYPE_PARAMETERS: [&str; 2] = [
-    // `R` records whether the path starts at the page or at a list item, and
-    // whether the field is computed.
+const THREE_TYPE_PARAMETERS: [&str; 1] = [
+    // `R` records whether the path starts at the page or at a list item,
+    // whether the field is computed, and whether the signal is a read-only
+    // view from `Sig::read`.
     "hypersig::Sig",
-    // `R` is the `R` of the `Sig` that holds the chart's rows, so that a
-    // chart draws a computed list the way it draws a field of the page.
-    "hypersig_ui::Chart",
 ];
 
 /// The crates of the standard library.
