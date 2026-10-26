@@ -1,4 +1,4 @@
-//! The use cases page: the three kinds of request where hypersig and Next.js
+//! The use cases page: the three kinds of feature where hypersig and Next.js
 //! differ in the code a change takes, and the applications that get them.
 
 use hypersig::html::{Id, a, attr, details, div, h3, h4, li, p, span, summary, ul};
@@ -26,12 +26,12 @@ pub fn render(site: Site) -> String {
                 site,
                 Doc::UseCases.title(site),
                 site.t(L {
-                    en: "What a new request changes in the code",
+                    en: "What one more feature changes in the code",
                     ja: "仕様の追加で、コードのどこが変わるか",
                 }),
                 site.t(L {
-                    en: "A screen built with hypersig can look and behave like one built with Next.js. The difference shows when someone asks for one more thing, in which files change and in what has to be written by hand. Each hypersig change below is code that `cargo test` compiles, beside the work the same request takes in Next.js 16 with the App Router.",
-                    ja: "hypersig で作った画面も Next.js で作った画面も、見た目と動きは同じにできます。差が出るのは、あとから仕様を 1 つ足すときに、どのファイルが変わり、何を手で書くかです。下の hypersig の差分は `cargo test` がコンパイルしているコードで、それぞれに Next.js 16 の App Router で同じ依頼に要る作業を並べています。",
+                    en: "A screen built with hypersig can look and behave like one built with Next.js. The difference is in which files change and what has to be written by hand when one more feature is added. Each hypersig change below is code that `cargo test` compiles, beside the work the same feature takes in Next.js 16 with the App Router.",
+                    ja: "hypersig で作った画面も Next.js で作った画面も、見た目と動きは同じにできます。差が出るのは、あとから仕様を 1 つ足すときに、どのファイルが変わり、何を手で書くかです。下の hypersig の差分は `cargo test` がコンパイルしているコードで、それぞれに Next.js 16 の App Router で同じ仕様を足すのに要る作業を並べています。",
                 }),
                 &[
                     (
@@ -62,8 +62,8 @@ pub fn render(site: Site) -> String {
                     para(
                         site,
                         L {
-                            en: "The requests on this page fall into three kinds, by what the framework handles for them. The Next.js work starts from the shape of the TodoMVC in `bench/compare/next`, where a Server Component reads the data and a Client Component holds it in `useState`. In each hypersig change, a green line was added and a red line removed.",
-                            ja: "このページの依頼は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は `bench/compare/next` の TodoMVC と同じ構成から始めた場合のものです。その構成では、Server Component がデータを読み、Client Component がそれを `useState` に持ちます。hypersig の差分では、緑の行は足した行、赤の行は消した行です。",
+                            en: "The features on this page fall into three kinds, by what the framework handles for them. The Next.js work starts from the shape of the TodoMVC in `bench/compare/next`, where a Server Component reads the data and a Client Component holds it in `useState`. In each hypersig change, a green line was added and a red line removed.",
+                            ja: "このページで足す仕様は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は `bench/compare/next` の TodoMVC と同じ構成から始めた場合のものです。その構成では、Server Component がデータを読み、Client Component がそれを `useState` に持ちます。hypersig の差分では、緑の行は足した行、赤の行は消した行です。",
                         },
                     ),
                     div().children(CONCEPTS.iter().map(|concept| concept_section(site, concept))),
@@ -72,15 +72,15 @@ pub fn render(site: Site) -> String {
             titled(
                 site,
                 L {
-                    en: "Applications that get these requests",
+                    en: "Applications these features are added to",
                     ja: "この差が出るアプリ",
                 },
                 [
                     para(
                         site,
                         L {
-                            en: "Each application below gets several requests of the kinds above. Open one to read the change one of them makes.",
-                            ja: "下のアプリには、上の種類の依頼がいくつも来ます。開くと、そのうち 1 つの依頼の差分を読めます。",
+                            en: "Several features of the kinds above are added to each application below. Open one to read the change that one of those features makes.",
+                            ja: "下のアプリには上の種類の仕様をいくつも足します。開くと、そのうち 1 つを足したときの差分を読めます。",
                         },
                     ),
                     div()
@@ -92,7 +92,7 @@ pub fn render(site: Site) -> String {
     )
 }
 
-/// The three kinds of request, each the heading of a concept section.
+/// The three kinds of feature, each the heading of a concept section.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Kind {
     /// A change made on the server reaches the open tabs.
@@ -112,7 +112,7 @@ impl Kind {
         }
     }
 
-    /// The id of the kind's section, which a request's badge links to.
+    /// The id of the kind's section, which a feature's badge links to.
     fn id(self) -> &'static str {
         match self {
             Self::Push => "push",
@@ -157,7 +157,7 @@ impl Kind {
     }
 }
 
-/// One request, with the work it takes in Next.js and the change it makes
+/// One feature, with the work it takes in Next.js and the change it makes
 /// in hypersig.
 struct Detail {
     next: &'static [L<&'static str>],
@@ -165,19 +165,19 @@ struct Detail {
     caption: L<&'static str>,
 }
 
-/// A kind of request: what differs, and one request of the kind in detail.
+/// A kind of feature: what differs, and one feature of the kind in detail.
 struct Concept {
     kind: Kind,
     text: L<&'static str>,
-    request: L<&'static str>,
+    feature: L<&'static str>,
     detail: Detail,
 }
 
-/// An application, the requests it gets, and one of them in detail.
+/// An application, the features it gets, and one of them in detail.
 struct Case {
     title: L<&'static str>,
     scene: L<&'static str>,
-    /// The requests listed before the one `detail` is about.
+    /// The features listed before the one `detail` is about.
     before: &'static [(Kind, L<&'static str>)],
     detailed: (Kind, L<&'static str>),
     after: &'static [(Kind, L<&'static str>)],
@@ -214,19 +214,19 @@ fn concept_section(site: Site, concept: &Concept) -> Part {
                     .font_style(FontStyle::Italic)
                     .line_height(LineHeight::Length(rem(1.75))),
             )
-            .children(inline(site, site.t(concept.request))),
+            .children(inline(site, site.t(concept.feature))),
         )
         .child(detail(site, &concept.detail))
 }
 
 impl Case {
-    /// Every request of the application, each with whether it is the one
+    /// Every feature of the application, each with whether it is the one
     /// `detail` is about.
-    fn requests(&self) -> impl Iterator<Item = (Kind, L<&'static str>, bool)> {
-        let listed = |requests: &'static [(Kind, L<&'static str>)]| {
-            requests
+    fn features(&self) -> impl Iterator<Item = (Kind, L<&'static str>, bool)> {
+        let listed = |features: &'static [(Kind, L<&'static str>)]| {
+            features
                 .iter()
-                .map(|&(kind, request)| (kind, request, false))
+                .map(|&(kind, feature)| (kind, feature, false))
         };
         listed(self.before)
             .chain(std::iter::once((self.detailed.0, self.detailed.1, true)))
@@ -237,7 +237,7 @@ impl Case {
 fn case_card(site: Site, case: &Case) -> Part {
     let kinds = [Kind::Push, Kind::Names, Kind::Calls]
         .into_iter()
-        .filter(|&kind| case.requests().any(|(of, _, _)| of == kind));
+        .filter(|&kind| case.features().any(|(of, _, _)| of == kind));
     details()
         .css(
             Style::new()
@@ -311,9 +311,9 @@ fn case_card(site: Site, case: &Case) -> Part {
                             .padding_left(px(0))
                             .list_style_type(ListStyleType::None),
                     )
-                    .children(case.requests().map(
-                        |(kind, request, detailed)| {
-                            // The change below is about one of the requests, so
+                    .children(case.features().map(
+                        |(kind, feature, detailed)| {
+                            // The change below is about one of the features, so
                             // it stands out from the others.
                             let text = if detailed {
                                 Style::new().font_weight(FontWeight::Number(500.0))
@@ -334,7 +334,7 @@ fn case_card(site: Site, case: &Case) -> Part {
                                     .css(Style::new().flex_shrink(0))
                                     .child(letter(kind)),
                             )
-                            .child(span().children(inline(site, site.t(request))))
+                            .child(span().children(inline(site, site.t(feature))))
                         },
                     )),
                 )
@@ -342,7 +342,7 @@ fn case_card(site: Site, case: &Case) -> Part {
         )
 }
 
-/// The work a request takes in Next.js, and the hypersig change.
+/// The work a feature takes in Next.js, and the hypersig change.
 fn detail(site: Site, detail: &Detail) -> Part {
     div()
         .child(label(site.t(L {
@@ -427,7 +427,7 @@ const CONCEPTS: &[Concept] = &[
             en: "Another visitor's write, a job's progress, or a deadline changes the screen while the visitor does nothing. A Server Action answers only the tab that called it, so in Next.js these changes need a second path: a stream of their own, and client code that merges what arrives into the state. In hypersig, a stream sends the same `Patches` an action answers with, and the runtime applies both the same way. [Talking to the server](learn/server/) covers streams.",
             ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が要ります。専用のストリームと、届いた値を状態に取り込むクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [サーバーとのやり取り](learn/server/) で説明しています。",
         },
-        request: L {
+        feature: L {
             en: "Show the tasks other people add, without a reload.",
             ja: "ほかの人が足したタスクも、読み込み直さずに出してください。",
         },
@@ -459,7 +459,7 @@ const CONCEPTS: &[Concept] = &[
             en: "A message the server reports under a field, a filter kept in the URL, the status of a failed request, and a translated text each work only while the browser and the server agree on a name. In Next.js, a query key and a translation key are strings, and an error from a Server Action reaches the page through a Client Component that holds the action's state. In hypersig, the name comes from a Rust item that both sides read, so a name that does not match fails to compile. The item is a field of a `Signals` struct, a `Search` struct, a `StatusCode`, or a field of the translation struct. [Forms](learn/forms/) covers the rules both sides check.",
             ja: "欄の下に出すサーバーのエラー、URL に入れる絞り込み、失敗したリクエストのステータス、訳した文言は、どれもブラウザとサーバーが同じ名前を使っている間だけ動きます。Next.js ではクエリのキーも訳のキーも文字列で、Server Action のエラーは、アクションの状態を持つ Client Component を通ってページに届きます。hypersig では、名前は両側が読む Rust の項目から作られます。その項目は `Signals` 構造体のフィールド、`Search` 構造体、`StatusCode`、訳の構造体のフィールドなので、名前が合わなければコンパイルエラーになります。両側が検査するルールは [フォーム](learn/forms/) で説明しています。",
         },
-        request: L {
+        feature: L {
             en: "If the email address is already registered, say so under the email field.",
             ja: "登録済みのメールアドレスなら、メールアドレスの欄の下にそう出してください。",
         },
@@ -491,7 +491,7 @@ const CONCEPTS: &[Concept] = &[
             en: "A slow answer arrives after a newer one, the connection drops, or the visitor presses the button again while it waits. In Next.js, the component handles these with an `AbortController`, a pending flag, and code that reconnects. In hypersig, each is a method on the call: `.latest()` aborts the earlier call, `.indicator()` sets a flag while the call waits, and `.reconnect()` opens a stream again. [Calls in depth](learn/calls/) covers calls that overlap.",
             ja: "遅い応答が新しい応答のあとに届く、接続が切れる、待っている間にボタンがもう一度押される、という場面です。Next.js では、`AbortController`、処理中のフラグ、つなぎ直す処理をコンポーネントに書きます。hypersig では、どれも呼び出しのメソッドです。`.latest()` は前の呼び出しを止め、`.indicator()` は待っている間フラグを立て、`.reconnect()` はストリームをつなぎ直します。重なった呼び出しは [呼び出しの詳細](learn/calls/) で説明しています。",
         },
-        request: L {
+        feature: L {
             en: "Search as the visitor types, show that it is searching, and never let an older result replace a newer one.",
             ja: "入力に合わせて検索し、検索中であることを出してください。古い結果が新しい結果を上書きしないようにしてください。",
         },

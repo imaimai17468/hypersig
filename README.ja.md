@@ -112,17 +112,17 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 
 ## セキュリティ
 
-[セキュリティ](https://imaimai17468.github.io/hypersig/ja/learn/security/) のページに、hypersig が確かめることをまとめています。エスケープ、ページに書ける属性と URL、アクションが断るリクエスト、リクエストがサーバーで動かすコードを名指しできない理由です。アクションを誰が呼んでよいかをはじめ、アプリが自分で確かめることも載せています。
+[セキュリティ](https://imaimai17468.github.io/hypersig/ja/learn/security/) のページに、hypersig が確かめることをまとめています。エスケープ、ページに書ける属性と URL、アクションが拒否するリクエスト、リクエストでサーバーのどのコードを動かすかを指定できない理由です。アクションを誰が呼んでよいかをはじめ、アプリが自分で確かめることも載せています。
 
 ## コンパイラが検査しないこと
 
-次の間違いはコンパイルが通り、プログラムを動かしたときに表に出ます（[コンパイラが検査しないこと](https://imaimai17468.github.io/hypersig/ja/learn/why/#what-the-compiler-does-not-check)）。
+次の間違いはコンパイルが通り、プログラムを動かして初めて分かります（[コンパイラが検査しないこと](https://imaimai17468.github.io/hypersig/ja/learn/why/#what-the-compiler-does-not-check)）。
 
-- `routes!` が生成する関数をルーターに渡していない。そのブロックのページとアクションは 404 を返します。その関数だけが名指しするハンドラーの `fn` は rustc の `dead_code` lint が報告しますが、クロージャーは報告されません。
-- `Base` の下で配信するページが、その `Base` のない `routes!` ブロックのアクションを呼んでいる。呼び出しは接頭辞のないパスに送られ、プロキシか `Router::nest` が 404 を返します。
-- 1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けている。ページの描画が panic します。
-- `label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指している。ブラウザはその参照を無視するので、入力欄にラベルが付きません。
-- hypersig の外のスクリプトが、`El::foreign` を付けた要素を `data-hs-foreign` の値で探している。この値は `office::MAP` のような定数の完全なパスなので、モジュールや定数の名前を変えたり移したりすると値が変わり、スクリプトは要素を見つけられなくなります。要素に `Id` を付けて、id で探してください（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。
+- `routes!` が生成する関数をルーターに渡していないと、そのブロックのページとアクションは 404 を返します。その関数の中でだけ使うハンドラの `fn` は rustc の `dead_code` lint が報告しますが、クロージャは報告されません。
+- `Base` の下で配信するページが、その `Base` のない `routes!` ブロックのアクションを呼ぶと、呼び出しは接頭辞のないパスに送られ、プロキシか `Router::nest` が 404 を返します。
+- 1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けると、ページの描画が panic します。
+- `label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指していると、ブラウザはその参照を無視するので、入力欄にラベルが付きません。
+- `data-hs-foreign` の値は `office::MAP` のような定数の完全なパスで、モジュールや定数の名前を変えたり移したりすると変わります。hypersig の外のスクリプトが `El::foreign` を付けた要素をこの値で探していると、名前を変えたときに要素を見つけられなくなります。要素に `Id` を付けて、id で探してください（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。
 
 ## 向かないアプリ
 

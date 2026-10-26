@@ -190,7 +190,7 @@ fn server_code(site: Site) -> Part {
             site,
             L {
                 en: "Some frameworks have let a request run code on the server: the request names a server function, a module, or a class, and the framework finds it and calls it while it reads the request. In hypersig the request has no way to name code, for these reasons.",
-                ja: "フレームワークによっては、リクエストでサーバーのコードを動かせたことがあります。リクエストがサーバーの関数、モジュール、クラスを名指しし、フレームワークがリクエストを読みながらそれを探して呼ぶ仕組みでした。hypersig では次の理由で、リクエストがコードを名指しする手段がありません。",
+                ja: "フレームワークによっては、リクエストでサーバーのコードを動かせたことがあります。リクエストの中でサーバーの関数、モジュール、クラスの名前を指定し、フレームワークがリクエストを読みながらそれを探して呼ぶ仕組みでした。hypersig では次の理由で、リクエストでコードを指定する手段がありません。",
             },
         ),
         bullets(
