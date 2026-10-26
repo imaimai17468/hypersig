@@ -31,6 +31,7 @@ pub fn why(site: Site) -> Part {
             .chain(typed(site))
             .chain(state(site))
             .chain(fetching(site))
+            .chain(unchecked(site))
             .chain(costs(site)),
     )
 }
@@ -239,8 +240,8 @@ fn typed(site: Site) -> [Part; 4] {
                     ja: "式と文は `Expr` と `Stmt` の値で、その演算子は両辺の型を検査します。",
                 },
                 L {
-                    en: "Action URLs come from `Action<S, A>`, which also fixes the page an action belongs to and the type of its arguments.",
-                    ja: "アクションの URL は `Action<S, A>` から作られます。この型は、アクションが属するページと引数の型も決めます。",
+                    en: "Action URLs come from `Action<S, A>`, declared in `routes!` on the line that names its handler, so an action without a handler does not compile. The type also fixes the page an action belongs to and the type of its arguments.",
+                    ja: "アクションの URL は `Action<S, A>` から作られます。アクションはハンドラーを名指しする行として `routes!` で宣言するので、ハンドラーのないアクションはコンパイルが通りません。この型は、アクションが属するページと引数の型も決めます。",
                 },
                 L {
                     en: "Page links come from `Route<P, Q>`, declared in `routes!` with the handler that serves it, so a link carries the right path parameters and query.",
@@ -251,8 +252,8 @@ fn typed(site: Site) -> [Part; 4] {
                     ja: "差分を適用する先は `Fragment::ID` から作られます。ページと差分は同じ定数を読みます。",
                 },
                 L {
-                    en: "Element names for DOM calls come from `NodeRef`.",
-                    ja: "DOM の呼び出しで使う要素の名前は `NodeRef` から作られます。",
+                    en: "Element names for DOM calls come from `NodeRef`, which `node_ref!` names after the constant's path, so two constants never share one.",
+                    ja: "DOM の呼び出しで使う要素の名前は `NodeRef` から作られます。`node_ref!` が定数のパスから名前を付けるので、2 つの定数が同じ名前になることはありません。",
                 },
             ],
         ),
@@ -376,6 +377,39 @@ fn fetching(site: Site) -> [Part; 6] {
                 en: "The cost is on failure. When the server answers with an error, the change made in the browser stays, and nothing rolls it back by itself. `Call::on_error` runs a statement where the call was made, so the page can undo or mark the one change whose save failed.",
                 ja: "負担になるのは失敗したときです。サーバーがエラーを返しても、ブラウザで変えた値はそのまま残り、ひとりでに元へ戻ることはありません。`Call::on_error` は呼び出しを書いた場所で文を実行するので、保存に失敗した 1 つの変更だけを元に戻したり、印を付けたりできます。",
             },
+        ),
+    ]
+}
+
+fn unchecked(site: Site) -> [Part; 2] {
+    [
+        heading(
+            site,
+            L {
+                en: "What the compiler does not check",
+                ja: "コンパイラが検査しないこと",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "The function `routes!` generates is never called on the router. Its pages and actions then answer 404. rustc's `dead_code` lint reports a handler `fn` that only that function names, but not a closure.",
+                    ja: "`routes!` が生成する関数をルーターに渡していない。そのブロックのページとアクションは 404 を返します。その関数だけが名指しするハンドラーの `fn` は rustc の `dead_code` lint が報告しますが、クロージャーは報告されません。",
+                },
+                L {
+                    en: "A page served under a `Base` calls an action from a `routes!` block without it. The call goes to the path without the prefix, which a proxy or `Router::nest` answers with 404.",
+                    ja: "`Base` の下で配信するページが、その `Base` のない `routes!` ブロックのアクションを呼んでいる。呼び出しは接頭辞のないパスに送られ、プロキシか `Router::nest` が 404 を返します。",
+                },
+                L {
+                    en: "One `node_ref!` or `dialog_ref!` constant sits on two elements outside a list template. Rendering the page panics.",
+                    ja: "1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けている。ページの描画が panic します。",
+                },
+                L {
+                    en: "A reference such as `label_for(&EMAIL)` names an `Id` that no element on the page carries. The browser ignores it, so the control has no label.",
+                    ja: "`label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指している。ブラウザはその参照を無視するので、入力欄にラベルが付きません。",
+                },
+            ],
         ),
     ]
 }
