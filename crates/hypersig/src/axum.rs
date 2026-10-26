@@ -8,6 +8,7 @@ use std::convert::Infallible;
 use std::error::Error as StdError;
 use std::fmt;
 use std::marker::PhantomData;
+use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
@@ -21,7 +22,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::sse::{Event as SseEvent, Sse};
 use axum::response::{Html, IntoResponse, IntoResponseParts, Redirect, Response};
 use axum::routing::{MethodRouter, get, post};
-use futures::{Stream, StreamExt as _, stream};
+use futures::{FutureExt as _, Stream, StreamExt as _, stream};
 use serde::de::DeserializeOwned;
 
 use crate::action::{Action, Method, StreamAction};
@@ -419,6 +420,12 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
 /// 2xx, which the page's [`Call::error`](crate::Call::error) shows. The
 /// browser's `fetch` follows a redirect, so an action refused with one hands
 /// the page the HTML it points to, and the page shows nothing.
+///
+/// A function of an action, a stream, or an upload that panics before it
+/// returns answers `500 Internal Server Error`, which the page shows as any
+/// failed call. The stream a stream's function returns is read after the
+/// response has begun, so a panic while it is read closes the connection
+/// before `hs-end`.
 ///
 /// ```
 /// use axum::Router;
@@ -1263,6 +1270,12 @@ fn called_part(headers: &HeaderMap) -> Result<Option<Arc<str>>, RequestError> {
 
 /// Runs `future`, the response to one request, with `part`, the part the
 /// request came from, current, or answers with the refusal of a malformed part.
+///
+/// A panic while `future` runs answers `500 Internal Server Error`, which
+/// the runtime shows through [`Call::error`](crate::Call::error) as it shows
+/// any failed call. Left to unwind, the panic would drop the connection, and
+/// the runtime would see a network error. The default panic hook still
+/// prints the message.
 fn in_called_part<F>(
     part: Result<Option<Arc<str>>, RequestError>,
     future: F,
@@ -1271,7 +1284,18 @@ where
     F: Future<Output: IntoResponse> + Send + 'static,
 {
     let (part, inner): (_, Pin<Box<dyn Future<Output = Response> + Send>>) = match part {
-        Ok(part) => (part, Box::pin(async move { future.await.into_response() })),
+        Ok(part) => (
+            part,
+            Box::pin(async move {
+                // The router state is all the future shares with later
+                // requests, and a `Mutex` in it is poisoned by this panic as
+                // by a panic on any thread.
+                AssertUnwindSafe(async move { future.await.into_response() })
+                    .catch_unwind()
+                    .await
+                    .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+            }),
+        ),
         Err(refusal) => (None, Box::pin(std::future::ready(refusal.into_response()))),
     };
     InPart { part, inner }
