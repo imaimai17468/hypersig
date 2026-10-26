@@ -135,7 +135,7 @@ The compiler checks that names, types, and links match. These mistakes still com
 | `label_for` or a similar reference names an `Id` no element carries | The control has no label |
 | A script outside hypersig finds an `El::foreign` element by its value, and the constant is renamed | The script finds no element. Look it up by `Id` instead |
 | A `#[signals(computed)]` field is never passed to `Page::computed` | Rendering the page panics. A field of a nested struct is not caught and keeps its first value |
-| A list item is used outside the closure it was passed to | Building the page panics. An expression built from the item inside the closure is not caught, and reads another list's item or fails in the browser |
+| A list item is used outside the closure it was passed to | Building or rendering the page panics. An expression built from the item inside the closure and used inside another list at the same depth is not caught, and reads that list's item |
 | A signal holds an integer beyond ±2^53 | Rendering the page or building the patch panics |
 
 ## What it does not suit

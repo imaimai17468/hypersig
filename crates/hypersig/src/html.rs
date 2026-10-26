@@ -316,6 +316,132 @@ pub(crate) fn check_names<S>(nodes: &[Node<S>]) {
     names.check();
 }
 
+/// Panics if an expression or statement in `nodes` reads a list item that no
+/// list around it renders.
+///
+/// [`Item`] checks that its closure is still running when it is read, so the
+/// item can reach elsewhere only inside an expression or statement built in
+/// the closure and attached outside it. The runtime finds no item there, or
+/// the item of whichever list encloses the element at that depth.
+pub(crate) fn check_item_reads<S>(nodes: &[Node<S>]) {
+    for node in nodes {
+        node_item_reads(node, 0);
+    }
+}
+
+/// Checks `node` under the lists whose depths are the bits of `open`.
+fn node_item_reads<S>(node: &Node<S>, open: u128) {
+    match &node.0 {
+        NodeKind::Element(el) => el_item_reads(el, open),
+        NodeKind::Text(_) => {}
+        NodeKind::Each {
+            list,
+            depth,
+            template,
+        } => {
+            assert_items_open(list, open);
+            el_item_reads(template, open | depth_bit(u64::from(*depth)));
+        }
+        NodeKind::When { cond, template } => {
+            assert_items_open(cond.as_json(), open);
+            el_item_reads(template, open);
+        }
+    }
+}
+
+fn el_item_reads<S>(el: &El<S>, open: u128) {
+    let check = |ast: &Value| assert_items_open(ast, open);
+    let exprs = el
+        .show
+        .iter()
+        .chain(&el.checked)
+        .chain(el.class_when.iter().map(|(_, expr)| expr))
+        .chain(el.css_when.iter().map(|(_, _, expr)| expr))
+        .chain(el.attr_when.iter().map(|(_, expr)| expr));
+    exprs.for_each(|expr| check(expr.as_json()));
+    let texts = el
+        .text
+        .iter()
+        .chain(el.attr_bind.iter().map(|(_, expr)| expr))
+        .chain(el.style.iter().map(|(_, expr)| expr));
+    texts.for_each(|expr| check(expr.as_json()));
+    el.bind
+        .iter()
+        .chain(&el.key)
+        .chain(el.watches.iter().map(|(place, _)| place))
+        .chain(el.active.iter().map(|(_, place)| place))
+        .for_each(check);
+    let stmts = el
+        .effects
+        .iter()
+        .chain(el.watches.iter().map(|(_, stmt)| stmt))
+        .chain(el.interval.iter().map(|(_, stmt)| stmt))
+        .chain(el.timeout.iter().map(|(_, stmt)| stmt))
+        .chain(el.on.values())
+        .chain(el.custom.iter().map(|(_, _, stmt)| stmt))
+        .chain(el.keys.iter().map(|(_, stmt)| stmt));
+    stmts.for_each(|stmt| check(stmt.as_json()));
+    for child in &el.children {
+        node_item_reads(child, open);
+    }
+}
+
+/// The bit of `open` that marks the list at `depth` as open. A depth past
+/// 127 has none, so it is never reported.
+fn depth_bit(depth: u64) -> u128 {
+    u32::try_from(depth)
+        .ok()
+        .and_then(|depth| 1_u128.checked_shl(depth))
+        .unwrap_or(0)
+}
+
+/// Panics if `ast` reads `["item",depth,..]` or `["index",depth]` where
+/// neither a list whose depth is a bit of `open` nor an operation inside
+/// `ast` that runs per item binds `depth`.
+pub(crate) fn assert_items_open(ast: &Value, open: u128) {
+    if let Some(depth) = unbound_item(ast, open) {
+        panic!(
+            "an expression or statement reads the item at depth {depth} of a list that does \
+             not enclose it: build it inside the closure of the `each`, or the list method, \
+             that received the item, and attach it to an element that list renders"
+        );
+    }
+}
+
+/// The depth of the first item `ast` reads that `open` leaves unbound.
+fn unbound_item(ast: &Value, open: u128) -> Option<u64> {
+    let parts = ast.as_array()?;
+    let Some(op) = parts.first().and_then(Value::as_str) else {
+        return parts.iter().find_map(|part| unbound_item(part, open));
+    };
+    // The index of the depth that binds the item in the parts after it, in
+    // the operations and statements that run an expression per item, which
+    // `scoped` and the list statements in `signal.rs` build.
+    let bound_at = match op {
+        "lit" => return None,
+        "item" | "index" => {
+            let depth = parts.get(1)?.as_u64()?;
+            let bit = depth_bit(depth);
+            return (bit != 0 && open & bit == 0).then_some(depth);
+        }
+        "count" | "sum_of" | "max_of" | "min_of" | "map" | "retain" | "update" | "sort" => 2,
+        "extend" => 3,
+        _ => 0,
+    };
+    let rest = parts.get(1..)?;
+    match parts.get(bound_at).and_then(Value::as_u64) {
+        Some(depth) if bound_at > 0 => {
+            let (before, after) = rest.split_at(bound_at - 1);
+            let inner = open | depth_bit(depth);
+            before
+                .iter()
+                .find_map(|part| unbound_item(part, open))
+                .or_else(|| after.iter().find_map(|part| unbound_item(part, inner)))
+        }
+        _ => rest.iter().find_map(|part| unbound_item(part, open)),
+    }
+}
+
 /// The names that elements carry, each with the templates it sits in,
 /// outermost first, numbered in the order the walk enters them, and whether
 /// the program wrote it as a fixed string.
@@ -2633,6 +2759,7 @@ impl<S> El<S> {
         let mut names = Names::default();
         names.el(self, None);
         names.check();
+        el_item_reads(self, 0);
         let mut out = String::new();
         self.write(&mut out, None, None);
         out
@@ -3382,6 +3509,98 @@ mod tests {
             html.contains(r#"data-hs-text="[&quot;item&quot;,1,&quot;&quot;]""#),
             "{html}"
         );
+    }
+
+    mod item_reads {
+        use super::super::{div, each, li, span, ul};
+        use super::{Page, sig};
+        use crate::{Expr, Sig, Stmt};
+
+        struct Task;
+
+        fn tasks() -> Sig<Page, Vec<Task>> {
+            sig("tasks")
+        }
+
+        fn done() -> Sig<Page, Vec<Task>> {
+            sig("done")
+        }
+
+        fn title() -> Sig<Task, String> {
+            sig("title")
+        }
+
+        fn tags() -> Sig<Task, Vec<String>> {
+            sig("tags")
+        }
+
+        #[test]
+        #[should_panic(expected = "reads the item at depth 0 of a list that does not enclose it")]
+        fn an_expression_built_in_a_closure_and_bound_outside_its_list_panics() {
+            let mut kept: Option<Expr<Page, String>> = None;
+            let list = each(tasks(), |task| {
+                kept = Some(task.at(title()).expr());
+                li()
+            });
+            let text = kept.expect("`each` runs its closure before it returns");
+            let _ = div::<Page>()
+                .child(list)
+                .child(span().bind_text(text))
+                .render();
+        }
+
+        #[test]
+        #[should_panic(expected = "reads the item at depth 0 of a list that does not enclose it")]
+        fn a_statement_built_in_a_closure_and_run_outside_its_list_panics() {
+            let mut kept: Option<Stmt<Page>> = None;
+            let list = each(tasks(), |task| {
+                kept = Some(task.remove());
+                li()
+            });
+            let remove = kept.expect("`each` runs its closure before it returns");
+            let _ = div::<Page>()
+                .child(ul().child(list))
+                .child(super::button().on_click(remove))
+                .render();
+        }
+
+        #[test]
+        #[should_panic(expected = "reads the item at depth 1 of a list that does not enclose it")]
+        fn an_inner_item_used_in_the_outer_list_panics() {
+            let mut kept: Option<Expr<Page, String>> = None;
+            let _ = ul::<Page>()
+                .child(each(tasks(), |task| {
+                    let tags = each(task.at(tags()), |tag| {
+                        kept = Some(tag.value().expr());
+                        span()
+                    });
+                    li().child(tags)
+                        .child(span().bind_text(kept.take().unwrap()))
+                }))
+                .render();
+        }
+
+        #[test]
+        fn items_read_inside_their_lists_and_list_operations_render() {
+            let html = ul::<Page>()
+                .child(each(tasks(), |task| {
+                    let tagged = task.at(tags()).count(|tag| !tag.value().is_empty());
+                    li().bind_text(task.at(title()))
+                        .child(each(task.at(tags()), |tag| {
+                            span()
+                                .bind_text(tag.value().concat(task.at(title())))
+                                .on_click(
+                                    task.at(tags())
+                                        .retain(|other| !other.value().equals(tag.value())),
+                                )
+                        }))
+                        .child(span().bind_text(tagged.to_text()))
+                        .on_click(task.remove())
+                }))
+                .child(span().on_click(done().sort_by(|task| task.at(title()))))
+                .render();
+            assert!(html.contains("data-hs-each"), "{html}");
+        }
     }
 
     mod names {

@@ -10,8 +10,8 @@ use serde_json::{Value, json};
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
-    Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, check_names, escape_into,
-    keys_json, write_attr, write_json_attr,
+    Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, assert_items_open,
+    check_item_reads, check_names, escape_into, keys_json, write_attr, write_json_attr,
 };
 use crate::route::{Base, Url};
 use crate::signal::{FromPage, IsComputed, Sig, Signals};
@@ -801,6 +801,16 @@ impl<S: Signals> Page<S> {
     /// the page to reload, where `dev` holds one.
     pub(crate) fn render_under(&self, base: Base, dev: Option<&str>) -> String {
         check_names(&self.body);
+        check_item_reads(&self.body);
+        let page = self
+            .computed
+            .iter()
+            .map(|(_, value)| value)
+            .chain(&self.bound_title)
+            .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()));
+        for ast in page {
+            assert_items_open(ast, 0);
+        }
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
         if let Some(lang) = &self.lang {
