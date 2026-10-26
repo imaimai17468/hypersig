@@ -44,9 +44,9 @@ struct TodoMvc {
 hypersig::routes! {
     fn pages(Router<AppState>);
     const INDEX: Route = "/" => index;
+    action SAVE: Action<TodoMvc, Vec<Todo>> = post "/save" => save;
 }
 
-const SAVE: Action<TodoMvc, Vec<Todo>> = Action::post("/save");
 hypersig::node_ref!(const EDIT: NodeRef<TodoMvc>);
 const TOGGLE_ALL: Id = Id::new("toggle-all");
 
@@ -477,7 +477,6 @@ mod styles {
 async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
-        .action(SAVE, save)
         .with_state(AppState::default());
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3002".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;

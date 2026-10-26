@@ -702,7 +702,10 @@ impl<S: 'static, T: 'static> From<DataTable<S, T>> for Node<S> {
 ///     Email,
 /// }
 ///
-/// const LOAD: Action<Users, TableState> = Action::post("/users");
+/// hypersig::routes! {
+///     fn actions(Router<()>);
+///     action LOAD: Action<Users, TableState> = post "/users" => load;
+/// }
 ///
 /// /// The page of users `state` names, and how many pass its filter.
 /// fn query(all: &[User], state: &TableState) -> (Vec<User>, i32) {
@@ -744,7 +747,6 @@ impl<S: 'static, T: 'static> From<DataTable<S, T>> for Node<S> {
 ///     .child(table)
 ///     .render();
 /// assert!(html.contains("1–1 / 1"));
-/// # let _ = load;
 /// ```
 pub struct ServerTable<S, T> {
     label: String,

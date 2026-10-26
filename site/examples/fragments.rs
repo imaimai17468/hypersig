@@ -38,9 +38,8 @@ impl Fragment for Results {
 hypersig::routes! {
     fn pages(Router<()>);
     const INDEX: Route = "/" => index;
+    action SEARCH: Action<Search, String> = post "/search" => search;
 }
-
-const SEARCH: Action<Search, String> = Action::post("/search");
 
 async fn index((): (), (): ()) -> Page<Search> {
     let query = Search::query();
@@ -71,9 +70,7 @@ async fn search((): (), query: String) -> Patches<Search> {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = pages(Router::new())
-        .hypersig_runtime()
-        .action(SEARCH, search);
+    let app = pages(Router::new()).hypersig_runtime();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     axum::serve(listener, app).await
 }

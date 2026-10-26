@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use hypersig::html::{button, div, input, span};
-use hypersig::{Action, Signals};
+use hypersig::{Action, Patches, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -15,7 +15,10 @@ struct Other {
     flag: bool,
 }
 
-const TOGGLE: Action<Other> = Action::post("/toggle");
+hypersig::routes! {
+    fn actions(Router<()>);
+    action TOGGLE: Action<Other> = post "/toggle" => |(), ()| async { Patches::<Other>::new() };
+}
 
 fn main() {
     let _ = button::<Counter>().on_click(TOGGLE.call());

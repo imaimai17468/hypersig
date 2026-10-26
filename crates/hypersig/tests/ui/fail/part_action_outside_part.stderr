@@ -1,7 +1,7 @@
 error[E0277]: `El<Account>` is not a child of an element on the page whose signals are `Inbox`
-  --> tests/ui/fail/part_action_outside_part.rs:29:10
+  --> tests/ui/fail/part_action_outside_part.rs:32:10
    |
-29 |         .child(button().on_click(SIGN_OUT.call()));
+32 |         .child(button().on_click(SIGN_OUT.call()));
    |          ^^^^^ ---------------------------------- `El<Account>` doesn't satisfy the trait bound
    |          |
    |          the trait `IntoNode<Inbox>` is not implemented for `El<Account>`

@@ -126,7 +126,7 @@ fn requests(site: Site) -> Part {
                         "403",
                     ],
                     &[
-                        "An upload longer than `Upload::max_bytes`, 8 MiB unless set",
+                        "An upload longer than the `max_bytes` of its line, 8 MiB unless set",
                         "413",
                     ],
                     &[
@@ -152,7 +152,7 @@ fn requests(site: Site) -> Part {
                         "403",
                     ],
                     &[
-                        "`Upload::max_bytes`（指定しなければ 8 MiB）より長いアップロード",
+                        "行の `max_bytes`（指定しなければ 8 MiB）より長いアップロード",
                         "413",
                     ],
                     &["アクションの引数の型にデシリアライズできない引数", "400"],

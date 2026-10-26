@@ -30,12 +30,11 @@ use crate::route::{Base, Params, Route, Search, Url};
 use crate::signal::{Signals, current_part, in_part};
 use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
 
-/// Adds hypersig routes to an axum [`Router`].
+/// Adds the browser runtime to an axum [`Router`].
 ///
-/// Each handler takes the router state and its arguments, and may take one
-/// [`FromRequestParts`] extractor between them, such as [`HeaderMap`] or the
-/// application's own signed-in user. A tuple of extractors counts as one.
-/// See [`Handler`].
+/// The pages, actions, streams, and uploads are registered by the function
+/// that [`routes!`](crate::routes) generates, which calls this trait's
+/// hidden methods.
 pub trait RouterExt<St>: Sized {
     /// Serves the browser runtime at [`RUNTIME_PATH`](crate::RUNTIME_PATH).
     ///
@@ -75,19 +74,8 @@ pub trait RouterExt<St>: Sized {
         Fut: Future<Output = R> + Send + 'static,
         R: Into<PageResponse>;
 
-    /// Serves `action` with a handler that returns one batch of patches.
-    ///
-    /// The handler receives the router state and the arguments the call
-    /// passed, already deserialized, and returns anything that converts into
-    /// an [`ActionResponse`], as [`IntoActionResponse`] lists. A [`RequestError`] refuses the request before
-    /// the handler runs: a request from another site, a POST whose body is not
-    /// JSON, a GET without the `Accept: text/event-stream` the runtime sends,
-    /// or arguments that do not deserialize.
-    ///
-    /// The arguments come from the visitor's browser, which can send any value
-    /// of `A`, so the handler checks that the visitor may act on them. Read
-    /// the visitor from the request with an extractor, as the `auth` example
-    /// does.
+    /// Serves `action` with `handler`. `routes!` calls it for each `action` line.
+    #[doc(hidden)]
     #[must_use]
     fn action<S, A, H, M, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
     where
@@ -98,12 +86,8 @@ pub trait RouterExt<St>: Sized {
         Fut: Future<Output = P> + Send + 'static,
         P: IntoActionResponse<S>;
 
-    /// Serves `stream` on `GET` with a handler that returns a stream of patches.
-    ///
-    /// The response stays open until the stream ends or the browser leaves
-    /// the page. Use it with [`El::on_load`](crate::html::El::on_load) to push
-    /// changes made by other users. The request is refused as for
-    /// [`RouterExt::action`].
+    /// Serves `stream` on `GET` with `handler`. `routes!` calls it for each `stream` line.
+    #[doc(hidden)]
     #[must_use]
     fn stream<S, A, H, M, Str>(self, stream: StreamAction<S, A>, handler: H) -> Self
     where
@@ -113,17 +97,8 @@ pub trait RouterExt<St>: Sized {
         M: 'static,
         Str: PatchStream<S>;
 
-    /// Serves `upload` with a handler that receives its arguments and files
-    /// as an [`Uploaded`] and answers as an action's handler does.
-    ///
-    /// A [`RequestError`] refuses the request before the handler runs: a
-    /// request from another site or without the header the runtime adds, a
-    /// body that is not `multipart/form-data`, one longer than
-    /// [`Upload::limit`], one whose first part is not the arguments, or
-    /// arguments that do not deserialize. Parts other than the arguments
-    /// and the files are skipped. A handler's extractor runs after the
-    /// header checks and before the body is read, so one that refuses a
-    /// visitor who is not signed in answers before any file arrives.
+    /// Serves `upload` with `handler`. `routes!` calls it for each `upload` line.
+    #[doc(hidden)]
     #[must_use]
     fn upload<S, A, H, M, Fut, P>(self, upload: Upload<S, A>, handler: H) -> Self
     where
@@ -134,13 +109,8 @@ pub trait RouterExt<St>: Sized {
         Fut: Future<Output = P> + Send + 'static,
         P: IntoActionResponse<S>;
 
-    /// Serves `upload` with a handler that receives its arguments and reads
-    /// the files in chunks from an [`UploadStream`], for files too large to
-    /// hold in memory.
-    ///
-    /// The same refusals as [`RouterExt::upload`] apply before the handler
-    /// runs, and the limit of `upload` holds while the handler reads the
-    /// files.
+    /// Serves `upload` with `handler`. `routes!` calls it for each `upload` line with `stream`.
+    #[doc(hidden)]
     #[must_use]
     fn upload_stream<S, A, H, M, Fut, P>(self, upload: Upload<S, A>, handler: H) -> Self
     where
@@ -427,12 +397,15 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
 
 /// A function that serves a page, an action, or a stream.
 ///
+/// Name it after `=>` on a line of [`routes!`](crate::routes).
+///
 /// It is implemented for `Fn(St, A) -> O` and for `Fn(St, E, A) -> O`, where
 /// `St` is the router state, `A` the page's parameters or the action's
 /// arguments, and `E` a [`FromRequestParts`] extractor that runs before the
-/// function. When the extractor fails, its rejection is the response and the
-/// function does not run. `M` tells the two forms apart, and the compiler
-/// infers it.
+/// function, such as [`HeaderMap`] or the application's own signed-in user.
+/// A tuple of extractors counts as one. When the extractor fails, its
+/// rejection is the response and the function does not run. `M` tells the
+/// two forms apart, and the compiler infers it.
 ///
 /// An extractor that guards an action should refuse with a status outside
 /// 2xx, which the page's [`Call::error`](crate::Call::error) shows. The
@@ -442,7 +415,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
 /// ```
 /// use axum::Router;
 /// use axum::http::HeaderMap;
-/// use hypersig::{Action, Patches, RouterExt, Signals};
+/// use hypersig::{Action, Patches, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -450,14 +423,17 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
 ///     text: String,
 /// }
 ///
-/// const GREET: Action<Greeting> = Action::post("/greet");
+/// hypersig::routes! {
+///     fn actions(Router<()>);
+///     action GREET: Action<Greeting> = post "/greet" => greet;
+/// }
 ///
 /// async fn greet((): (), headers: HeaderMap, (): ()) -> Patches<Greeting> {
 ///     let agent = headers.get("user-agent").and_then(|value| value.to_str().ok());
 ///     Greeting::text().patch(format!("Hello, {}", agent.unwrap_or("stranger"))).into()
 /// }
 ///
-/// let _app: Router = Router::new().action(GREET, greet);
+/// let _app: Router = actions(Router::new());
 /// ```
 #[diagnostic::on_unimplemented(
     message = "`{Self}` cannot serve this page or action",
@@ -1012,7 +988,7 @@ impl<St: Sync> FromRequestParts<St> for RequestKind {
 ///
 /// ```
 /// use axum::http::StatusCode;
-/// use hypersig::{Action, Patches, RouterExt, Signals};
+/// use hypersig::{Action, Patches, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -1020,7 +996,10 @@ impl<St: Sync> FromRequestParts<St> for RequestKind {
 ///     count: i32,
 /// }
 ///
-/// const ADD: Action<Notes, i32> = Action::post("/add");
+/// hypersig::routes! {
+///     fn actions(Router<()>);
+///     action ADD: Action<Notes, i32> = post "/add" => add;
+/// }
 ///
 /// async fn add((): (), count: i32) -> Result<Patches<Notes>, (StatusCode, String)> {
 ///     let full = || (StatusCode::CONFLICT, "Too many notes.".to_owned());
@@ -1028,7 +1007,7 @@ impl<St: Sync> FromRequestParts<St> for RequestKind {
 ///     Ok(Notes::count().patch(next).into())
 /// }
 ///
-/// let _app: axum::Router = axum::Router::new().action(ADD, add);
+/// let _app: axum::Router = actions(axum::Router::new());
 /// ```
 pub struct ActionResponse<S> {
     response: Response,

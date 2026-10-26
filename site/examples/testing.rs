@@ -20,9 +20,8 @@ struct Votes {
 hypersig::routes! {
     fn pages(Router<Likes>);
     const INDEX: Route = "/" => index;
+    action LIKE: Action<Votes, i32> = post "/like" => like;
 }
-
-const LIKE: Action<Votes, i32> = Action::post("/like");
 
 #[derive(Clone, Default)]
 struct Likes(Arc<AtomicI32>);
@@ -51,10 +50,7 @@ async fn like(likes: Likes, by: i32) -> Result<Patches<Votes>, (StatusCode, &'st
 }
 
 fn app(likes: Likes) -> Router {
-    pages(Router::new())
-        .hypersig_runtime()
-        .action(LIKE, like)
-        .with_state(likes)
+    pages(Router::new()).hypersig_runtime().with_state(likes)
 }
 
 #[tokio::main]

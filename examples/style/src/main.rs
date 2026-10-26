@@ -37,9 +37,9 @@ struct Gallery {
 hypersig::routes! {
     fn pages(Router<()>);
     const INDEX: Route = "/" => index;
+    action MORE: Action<Gallery> = post "/more" => more;
 }
 
-const MORE: Action<Gallery> = Action::post("/more");
 const DETAILS_TOGGLE: Id = Id::new("details-toggle");
 
 /// Cards the server sends on request. Their widths use the `md` breakpoint,
@@ -424,7 +424,6 @@ async fn content_security_policy(mut request: Request, next: Next) -> Response {
 async fn main() -> std::io::Result<()> {
     let app = pages(Router::new())
         .hypersig_runtime()
-        .action(MORE, more)
         .layer(middleware::from_fn(content_security_policy));
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3004".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;

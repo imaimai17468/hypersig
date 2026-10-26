@@ -59,8 +59,10 @@ pub trait Signals: Serialize + DeserializeOwned + Send + 'static {
 /// whose signal structs differ. Write such a piece as a `Part`: its own
 /// signal struct, an [`El`](crate::html::El) over it, and actions over it.
 /// A page embeds it with [`html::part`](crate::html::part) at a field of its
-/// own struct whose type is the part's struct, and registers each action of
-/// the part once, for every page that embeds it.
+/// own struct whose type is the part's struct. The part's actions are lines
+/// of the application's [`routes!`](crate::routes) block like any other, so
+/// each is registered once, and its one handler serves every page that
+/// embeds the part.
 ///
 /// The part's paths are written under that field. A call made inside the
 /// part tells the server the field, so the patches its handler answers with
@@ -85,7 +87,11 @@ pub trait Signals: Serialize + DeserializeOwned + Send + 'static {
 ///     signing_out: bool,
 /// }
 ///
-/// const SIGN_OUT: Action<Account> = Action::post("/sign-out");
+/// hypersig::routes! {
+///     fn pages(Router<()>);
+///     // One handler serves every page that embeds `Account`.
+///     action SIGN_OUT: Action<Account> = post "/sign-out" => sign_out;
+/// }
 ///
 /// impl Part for Account {
 ///     fn render() -> El<Self> {
@@ -107,12 +113,10 @@ pub trait Signals: Serialize + DeserializeOwned + Send + 'static {
 ///     .render();
 /// assert!(html.contains(r#"[&quot;sig&quot;,&quot;account.name&quot;]"#));
 ///
-/// // One handler serves every page that embeds `Account`.
 /// async fn sign_out((): (), (): ()) -> Patches<Account> {
 ///     Account::signing_out().patch(false).into()
 /// }
-/// let _app: axum::Router = axum::Router::new().action(SIGN_OUT, sign_out);
-/// # use hypersig::RouterExt as _;
+/// let _app: axum::Router = pages(axum::Router::new());
 /// ```
 pub trait Part: Signals {
     /// Renders the part, with its paths written under the field it is embedded at.

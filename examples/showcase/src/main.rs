@@ -123,22 +123,22 @@ struct Showcase {
 hypersig::routes! {
     fn pages(Router<()>);
     const INDEX: Route<(), Find> = "/" => index;
+    action SEARCH: Action<Showcase, String> = post "/search" => search_fruit;
+    action ORDER: Action<Showcase, (i32, Size, bool)> = post "/order" => order;
+    action OLDER: Action<Showcase, i32> = get "/feed/older" => older;
+    action NEWER: Action<Showcase, i32> = post "/feed/newer" => newer;
+    action STAR: Action<Showcase, i32> = post "/feed/star" => star;
+    action DISMISS: Action<Showcase, i32> = post "/feed/dismiss" => dismiss;
+    action MORE: Action<Showcase, i32> = get "/more" => more;
 }
 
-const SEARCH: Action<Showcase, String> = Action::post("/search");
-const ORDER: Action<Showcase, (i32, Size, bool)> = Action::post("/order");
 hypersig::node_ref!(const SEARCH_FIELD: NodeRef<Showcase>);
-const OLDER: Action<Showcase, i32> = Action::get("/feed/older");
-const NEWER: Action<Showcase, i32> = Action::post("/feed/newer");
-const STAR: Action<Showcase, i32> = Action::post("/feed/star");
-const DISMISS: Action<Showcase, i32> = Action::post("/feed/dismiss");
 
 /// The notes the feed shows first, and the number one click adds.
 const FEED_START: i32 = 41;
 const FEED_PAGE: i32 = 5;
 
 hypersig::dialog_ref!(const PALETTE: DialogRef<Showcase>);
-const MORE: Action<Showcase, i32> = Action::get("/more");
 
 /// How many numbers one load adds, and how many there are in all.
 const PAGE: i32 = 20;
@@ -906,15 +906,7 @@ textarea { font: inherit; min-height: 3rem; }
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = pages(Router::new())
-        .hypersig_runtime()
-        .action(SEARCH, search_fruit)
-        .action(ORDER, order)
-        .action(OLDER, older)
-        .action(NEWER, newer)
-        .action(STAR, star)
-        .action(DISMISS, dismiss)
-        .action(MORE, more);
+    let app = pages(Router::new()).hypersig_runtime();
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3003".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

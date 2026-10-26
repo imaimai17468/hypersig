@@ -40,12 +40,11 @@ hypersig::routes! {
     fn pages(Router<AppState>);
     const INDEX: Route = "/" => index;
     const TODO: Route<u64> = "/todos/{id}" => todo;
+    action ADD: Action<TodoPage, String> = post "/todos" => add;
+    action TOGGLE: Action<TodoPage, u64> = post "/todos/toggle" => toggle;
+    action REMOVE: Action<TodoPage, u64> = post "/todos/remove" => remove;
+    stream UPDATES: StreamAction<TodoPage> = "/todos/updates" => updates;
 }
-
-const ADD: Action<TodoPage, String> = Action::post("/todos");
-const TOGGLE: Action<TodoPage, u64> = Action::post("/todos/toggle");
-const REMOVE: Action<TodoPage, u64> = Action::post("/todos/remove");
-const UPDATES: StreamAction<TodoPage> = StreamAction::new("/todos/updates");
 
 #[derive(Default)]
 struct Todos {
@@ -325,13 +324,7 @@ async fn main() -> std::io::Result<()> {
         todos: Arc::default(),
         changed,
     };
-    let app = pages(Router::new())
-        .hypersig_runtime()
-        .action(ADD, add)
-        .action(TOGGLE, toggle)
-        .action(REMOVE, remove)
-        .stream(UPDATES, updates)
-        .with_state(state);
+    let app = pages(Router::new()).hypersig_runtime().with_state(state);
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3001".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     println!("listening on http://{addr}");

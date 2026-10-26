@@ -18,7 +18,10 @@ struct Booking {
 #     }
 # }
 #
-# const HOLD: Action<Booking, String> = Action::post("/seats/hold");
+# hypersig::routes! {
+#     fn pages(Router<AppState>);
+#     action HOLD: Action<Booking, String> = post "/seats/hold" => hold;
+# }
 #
 let taken = i32::from(StatusCode::CONFLICT.as_u16()); //+
 let _ = div()
@@ -32,4 +35,4 @@ async fn hold(state: AppState, seat: String) -> Result<Patches<Booking>, StatusC
     }
     Ok(Patches::new())
 }
-# let _ = hold;
+# let _ = pages;

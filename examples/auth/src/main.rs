@@ -84,13 +84,13 @@ hypersig::routes! {
     fn pages(Router<AppState>) else missing;
     const HOME: Route = "/" => home;
     const LOGIN: Route = "/login" => login;
+    action SIGN_IN: Action<Login, Credentials> = post "/sign-in" => sign_in;
+    action SIGN_OUT: Action<Home> = post "/sign-out" => sign_out;
+    action ADD_NOTE: Action<Home, String> = post "/notes" => add_note;
+    upload UPLOAD_PICTURE: Upload<Home> = "/picture" max_bytes 64 * 1024 => upload_picture;
 }
 
-const SIGN_IN: Action<Login, Credentials> = Action::post("/sign-in");
-const SIGN_OUT: Action<Home> = Action::post("/sign-out");
-const ADD_NOTE: Action<Home, String> = Action::post("/notes");
 const PICTURE_FILE: FileInput<Home> = FileInput::new("picture");
-const UPLOAD_PICTURE: Upload<Home> = Upload::post("/picture").max_bytes(64 * 1024);
 const PICTURE_FIELD: Id = Id::new("picture-file");
 
 #[derive(Clone)]
@@ -562,10 +562,6 @@ async fn main() -> std::io::Result<()> {
     };
     let app = pages(Router::new())
         .hypersig_runtime()
-        .action(SIGN_IN, sign_in)
-        .action(SIGN_OUT, sign_out)
-        .action(ADD_NOTE, add_note)
-        .upload(UPLOAD_PICTURE, upload_picture)
         .with_state(state)
         .layer(sessions());
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3007".to_owned());

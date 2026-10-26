@@ -30,7 +30,6 @@
 #     name: String,
 #     password: String,
 # }
-# const SIGN_IN: Action<Login, Credentials> = Action::post("/sign-in");
 # async fn home(_: AppState, (): ()) -> Page<Home> {
 #     Page::new("Home", Home { name: String::new() })
 # }
@@ -53,11 +52,11 @@
 #     fn pages(Router<AppState>);
 #     const HOME: Route = "/" => home;
 #     const LOGIN: Route = "/login" => login;
+#     action SIGN_IN: Action<Login, Credentials> = post "/sign-in" => sign_in;
 # }
 # fn app() -> Router {
 #     pages(Router::new())
 #         .hypersig_runtime()
-#         .action(SIGN_IN, sign_in)
 #         .with_state(AppState)
 #         .layer(SessionManagerLayer::new(MemoryStore::default()).with_name("session"))
 # }

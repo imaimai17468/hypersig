@@ -9,7 +9,11 @@ struct Newsletter {
     joined: bool,
 }
 
-const JOIN: Action<Newsletter, String> = Action::post("/join");
+// The part's action is a line of the application's block, which registers it once.
+hypersig::routes! {
+    fn pages(Router<()>);
+    action JOIN: Action<Newsletter, String> = post "/join" => join;
+}
 
 impl Part for Newsletter {
     fn render() -> El<Self> {
@@ -46,5 +50,5 @@ let about = Page::new("About", About { footer: Newsletter::default() })
     .child(part(About::footer()));
 
 // One handler answers the form on both pages.
-let app: Router = Router::new().hypersig_runtime().action(JOIN, join);
+let app: Router = pages(Router::new()).hypersig_runtime();
 # let _ = (home, about, app);

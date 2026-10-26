@@ -1,4 +1,4 @@
-use hypersig::{Action, Signals};
+use hypersig::{Action, Patches, Signals};
 use hypersig_ui::{Column, ServerTable, TableState};
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,12 @@ enum By {
     Title,
 }
 
-const LOAD: Action<Board, TableState> = Action::post("/tasks");
+hypersig::routes! {
+    fn actions(Router<()>);
+    action LOAD: Action<Board, TableState> = post "/tasks" => |(), _: TableState| async {
+        Patches::<Board>::new()
+    };
+}
 
 fn main() {
     let _ = ServerTable::new(

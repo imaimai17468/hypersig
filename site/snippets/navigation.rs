@@ -13,9 +13,8 @@ hypersig::routes! {
     fn pages(Router<()>);
     const POST: Route<i32> = "/posts/{id}" => post;
     const OLD_POST: Route<i32> = "/p/{id}" => old_post;
+    action PUBLISH: Action<Draft> = post "/publish" => publish;
 }
-
-const PUBLISH: Action<Draft> = Action::post("/publish");
 
 // A page handler answers an old address with a redirect.
 async fn old_post((): (), id: i32) -> PageResponse {
@@ -30,4 +29,4 @@ async fn publish((): (), (): ()) -> Patches<Draft> {
 
 // A button leaves the page after setting a signal.
 let _back = button::<Draft>().on_click(Draft::saving().set(false).then(POST.link_with(&1).navigate()));
-# let _ = (pages, PUBLISH, publish);
+# let _ = (pages, PUBLISH);

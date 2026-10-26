@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
-  --> tests/ui/fail/file_input_from_other_page.rs:19:25
+  --> tests/ui/fail/file_input_from_other_page.rs:22:25
    |
-19 |     let _ = AVATAR.call(PICTURE);
+22 |     let _ = AVATAR.call(PICTURE);
    |                    ---- ^^^^^^^ expected `FileInput<Profile>`, found `FileInput<Gallery>`
    |                    |
    |                    arguments to this method are incorrect

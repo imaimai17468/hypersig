@@ -25,8 +25,11 @@ struct Deploy {
 #     }
 # }
 #
-//-const LOG: StreamAction<Deploy> = StreamAction::new("/deploy/log");
-const LOG: StreamAction<Deploy, i32> = StreamAction::new("/deploy/log"); //+
+hypersig::routes! {
+    fn pages(Router<AppState>);
+//-    stream LOG: StreamAction<Deploy> = "/deploy/log" => log;
+    stream LOG: StreamAction<Deploy, i32> = "/deploy/log" => log; //+
+}
 
 # let _ = div()
 //-    .on_load(LOG.call().reconnect())
@@ -50,4 +53,4 @@ fn log(state: AppState, last: i32) -> impl Stream<Item = Patches<Deploy>> { //+
         }
     })
 }
-# let _ = log;
+# let _ = pages;

@@ -20,7 +20,15 @@
 //!     count: i32,
 //! }
 //!
-//! const RESET: Action<Counter> = Action::post("/reset");
+//! hypersig::routes! {
+//!     fn actions(Router<()>);
+//!     action RESET: Action<Counter> = post "/reset" => reset;
+//! }
+//!
+//! // The handler for RESET answers with a patch built from the same types.
+//! async fn reset((): (), (): ()) -> Patches<Counter> {
+//!     Counter::count().patch(0).into()
+//! }
 //!
 //! let count = Counter::count();
 //! let page = Page::new("Counter", Counter { count: 0 }).child(
@@ -31,14 +39,14 @@
 //! );
 //! assert!(page.render().contains("data-hs-on-click"));
 //!
-//! // The handler for RESET answers with a patch built from the same types.
 //! let reply: Patches<Counter> = count.patch(0).into();
 //! assert!(reply.to_event_stream().starts_with("event: hs-signals"));
+//! let _app: axum::Router = actions(axum::Router::new());
 //! ```
 //!
-//! With the `axum` feature (on by default), [`routes!`] declares the pages
-//! at their [`Route`]s together with their handlers, and `RouterExt` serves
-//! the runtime and the actions.
+//! With the `axum` feature (on by default), [`routes!`] declares the pages,
+//! actions, streams, and uploads together with their handlers, and
+//! `RouterExt` serves the runtime.
 #![doc(
     html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
     html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"
@@ -206,6 +214,35 @@ pub mod _private {
     ) -> Route<C, R> {
         parent.child(path)
     }
+
+    /// Called by `routes!` for an action served on `method path` under `base`.
+    #[must_use]
+    pub const fn action<S, A>(
+        base: Base,
+        method: crate::Method,
+        path: &'static str,
+    ) -> crate::Action<S, A> {
+        crate::Action::at(method, base, path)
+    }
+
+    /// Called by `routes!` for a stream served on `GET path` under `base`.
+    #[must_use]
+    pub const fn stream<S, A>(base: Base, path: &'static str) -> crate::StreamAction<S, A> {
+        crate::StreamAction::at(base, path)
+    }
+
+    /// Called by `routes!` for an upload served on `POST path` under `base`.
+    #[must_use]
+    pub const fn upload<S, A>(
+        base: Base,
+        path: &'static str,
+        max_bytes: usize,
+    ) -> crate::Upload<S, A> {
+        crate::Upload::at(base, path, max_bytes)
+    }
+
+    /// The limit `routes!` gives an upload line without `max_bytes`.
+    pub const UPLOAD_MAX_BYTES: usize = crate::upload::DEFAULT_MAX_BYTES;
 
     /// Called by `#[derive(Signals)]` with a field name of `S`.
     #[must_use]

@@ -7,7 +7,7 @@ use axum::http::{Request, StatusCode};
 use futures::{StreamExt as _, stream};
 use http_body_util::BodyExt as _;
 use hypersig::html::{El, Id, button, div, input, p, part, span};
-use hypersig::{Action, Fragment, Page, Part, Patches, RouterExt, Signals, StreamAction};
+use hypersig::{Action, Fragment, Page, Part, Patches, Signals, StreamAction};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -17,10 +17,19 @@ struct Newsletter {
     status: String,
 }
 
-const JOIN: Action<Newsletter, String> = Action::post("/join");
-const READERS: StreamAction<Newsletter> = StreamAction::new("/readers");
-const BROADCAST: Action<Newsletter> = Action::post("/broadcast");
-const BROADCASTS: StreamAction<Newsletter> = StreamAction::new("/broadcasts");
+// The part's actions are lines of the application's block, so each is
+// registered once for every page that embeds the part.
+hypersig::routes! {
+    fn actions(Router<()>);
+    action JOIN: Action<Newsletter, String> = post "/join" => join;
+    stream READERS: StreamAction<Newsletter> = "/readers" => |(), ()| {
+        // The stream builds each batch as it is read, after the handler returned.
+        stream::iter([2]).map(|readers| Patches::new().element(&Joined { readers }))
+    };
+    action BROADCAST: Action<Newsletter> = post "/broadcast" => |(), ()| async { broadcast() };
+    stream BROADCASTS: StreamAction<Newsletter> = "/broadcasts" =>
+        |(), ()| stream::once(async { broadcast() });
+}
 
 /// A batch built on another thread, as a task that broadcasts one batch to
 /// every page builds it, outside any part.
@@ -84,14 +93,7 @@ async fn join((): (), email: String) -> Patches<Newsletter> {
 }
 
 fn app() -> Router {
-    Router::new()
-        .action(JOIN, join)
-        .stream(READERS, |(), (): ()| {
-            // The stream builds each batch as it is read, after the handler returned.
-            stream::iter([2]).map(|readers| Patches::new().element(&Joined { readers }))
-        })
-        .action(BROADCAST, |(), (): ()| async { broadcast() })
-        .stream(BROADCASTS, |(), (): ()| stream::once(async { broadcast() }))
+    actions(Router::new())
 }
 
 async fn send(request: Request<Body>) -> (StatusCode, String) {

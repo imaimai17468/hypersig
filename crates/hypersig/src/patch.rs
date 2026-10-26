@@ -11,8 +11,8 @@
 //! | `hs-navigate` | `{"url": "..."}`, the page the browser loads next |
 //! | `hs-history` | `{"url": "...", "replace": bool}`, the URL the address bar shows, without loading it |
 //!
-//! A stream served with `RouterExt::stream` sends one more event last, once
-//! its handler's stream finishes: `hs-end` with the data `{}`. It patches
+//! A stream that a `stream` line of `routes!` serves sends one more event
+//! last, once its handler's stream finishes: `hs-end` with the data `{}`. It patches
 //! nothing. The runtime, in `runtime/src/runtime/action/call.ts`, opens a
 //! stream called with `reconnect` again when the response closes before it.
 //!

@@ -1,6 +1,6 @@
 # use serde::{Deserialize, Serialize};
 use hypersig::html::{div, each_keyed, li, ul};
-use hypersig::{Action, Patches, RouterExt, Signals};
+use hypersig::{Action, Patches, Signals};
 
 #[derive(Signals, Serialize, Deserialize)]
 struct Post {
@@ -17,7 +17,10 @@ struct Feed {
     more: bool,
 }
 
-const MORE: Action<Feed, i32> = Action::get("/feed/more");
+hypersig::routes! {
+    fn pages(Router<()>);
+    action MORE: Action<Feed, i32> = get "/feed/more" => more;
+}
 const PER_PAGE: usize = 20;
 
 # fn load_page(_page: i32) -> Vec<Post> { vec![Post { id: 21, title: "Hello".to_owned() }] }
@@ -43,5 +46,5 @@ async fn more((): (), page: i32) -> Patches<Feed> {
     )
 }
 
-let app: axum::Router = axum::Router::new().action(MORE, more);
+let app: axum::Router = pages(axum::Router::new());
 # let _ = (feed, app);

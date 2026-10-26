@@ -1,11 +1,14 @@
 error[E0277]: `String` is not a reply of an action on the page whose signals are `Board`
-  --> tests/ui/fail/action_returns_string.rs:19:35
+  --> tests/ui/fail/action_returns_string.rs:11:1
    |
-19 |     let _: Router = Router::new().action(RENAME, rename);
-   |                                   ^^^^^^ the trait `IntoActionResponse<Board>` is not implemented for `String`
+11 | / hypersig::routes! {
+12 | |     fn actions(Router<()>);
+13 | |     action RENAME: Action<Board, String> = post "/rename" => rename;
+14 | | }
+   | |_^ the trait `IntoActionResponse<Board>` is not implemented for `String`
    |
    = note: an action's handler returns `Patches<Board>`, a `SignalPatch<Board>`, a `ListPatch<Board>`, a tuple of response parts and one of those, or a `Result` of one of those whose error implements `IntoResponse`
-note: required by a bound in `action`
+note: required by a bound in `hypersig::RouterExt::action`
   --> src/axum.rs
    |
    |     fn action<S, A, H, M, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
@@ -13,3 +16,4 @@ note: required by a bound in `action`
 ...
    |         P: IntoActionResponse<S>;
    |            ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `RouterExt::action`
+   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

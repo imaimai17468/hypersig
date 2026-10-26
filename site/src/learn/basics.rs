@@ -134,8 +134,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                     ja: "`INDEX` は `/` のページを表す `Route` です。`routes!` は、このルートをハンドラ `index` と同じ行で宣言します。1 行目の `fn pages(Router<()>);` はマクロが生成する関数の名前で、この関数がブロック内のルートをすべてルーターに登録します。`Router<()>` は状態を持たないルーターです。`main` は `pages(Router::new())` を呼び出し、このページへのリンクは `INDEX.link()` で作ります。パラメータを持つルートは [ページとリンク](learn/pages/) で説明します。",
                 },
                 L {
-                    en: "`RESET` is an `Action<Counter>`. The page calls it with `RESET.call()` and the router serves it with `.action(RESET, reset)`, so both sides share its path, its method, its argument type, and the page it belongs to.",
-                    ja: "`RESET` は `Action<Counter>` です。ページは `RESET.call()` で呼び出し、ルーターは `.action(RESET, reset)` で配信するので、パス、メソッド、引数の型、属するページを両側で共有します。",
+                    en: "`RESET` is an `Action<Counter>`, declared in the same block on one line with its handler `reset`, so `pages` serves it too. The page calls it with `RESET.call()`, so both sides share its path, its method, its argument type, and the page it belongs to.",
+                    ja: "`RESET` は `Action<Counter>` で、同じブロックにハンドラ `reset` と同じ行で宣言するので、`pages` がこれも配信します。ページは `RESET.call()` で呼び出すので、パス、メソッド、引数の型、属するページを両側で共有します。",
                 },
                 L {
                     en: "A page handler and an action handler both take two arguments: the router's state, then what the request carries, which is the route's parameters for a page and the call's arguments for an action. This program has no state, the route `/` has no parameters, and `RESET.call()` sends no arguments, so each of them is `()`, and `(): ()` is an argument that receives `()`. [Talking to the server](learn/server/) adds state and arguments.",

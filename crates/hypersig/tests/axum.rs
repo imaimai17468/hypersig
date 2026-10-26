@@ -20,12 +20,6 @@ struct Counter {
     count: i32,
 }
 
-const ADD: Action<Counter, (i32, i32)> = Action::post("/add");
-const PEEK: Action<Counter, i32> = Action::get("/peek");
-const MOVE: Action<Counter, i32> = Action::post("/move");
-const TICKS: StreamAction<Counter, i32> = StreamAction::new("/ticks");
-const LENGTH: Action<Counter, String> = Action::get("/length");
-
 hypersig::routes! {
     fn pages(Router<()>);
     const HOME: Route = "/" => |(), ()| async {
@@ -62,6 +56,22 @@ hypersig::routes! {
         |(), (a, b, c, d, e, f): (i32, i32, i32, i32, i32, String)| async move {
             member_page(&f, a + b + c + d + e)
         };
+    action ADD: Action<Counter, (i32, i32)> = post "/add" =>
+        |(), (count, by): (i32, i32)| async move {
+            Patches::from(Counter::count().patch(count + by))
+        };
+    action PEEK: Action<Counter, i32> = get "/peek" => |(), count: i32| async move {
+        Patches::from(Counter::count().patch(count))
+    };
+    action MOVE: Action<Counter, i32> = post "/move" => |(), id: i32| async move {
+        Patches::from(Counter::count().patch(id)).navigate(ORG_MEMBER.url(("acme".to_owned(), id)))
+    };
+    action LENGTH: Action<Counter, String> = get "/length" => |(), text: String| async move {
+        Patches::from(Counter::count().patch(i32::try_from(text.chars().count()).unwrap()))
+    };
+    stream TICKS: StreamAction<Counter, i32> = "/ticks" => |(), from: i32| {
+        stream::iter([from, from + 1]).map(|count| Counter::count().patch(count).into())
+    };
 }
 
 hypersig::routes! {
@@ -92,22 +102,6 @@ fn member_page(team: &str, id: i32) -> Page<Counter> {
 fn app() -> Router {
     pages(Router::new())
         .hypersig_runtime()
-        .action(ADD, |(), (count, by): (i32, i32)| async move {
-            Patches::from(Counter::count().patch(count + by))
-        })
-        .action(PEEK, |(), count: i32| async move {
-            Patches::from(Counter::count().patch(count))
-        })
-        .action(MOVE, |(), id: i32| async move {
-            Patches::from(Counter::count().patch(id))
-                .navigate(ORG_MEMBER.url(("acme".to_owned(), id)))
-        })
-        .action(LENGTH, |(), text: String| async move {
-            Patches::from(Counter::count().patch(i32::try_from(text.chars().count()).unwrap()))
-        })
-        .stream(TICKS, |(), from: i32| {
-            stream::iter([from, from + 1]).map(|count| Counter::count().patch(count).into())
-        })
         .nest("/legacy", legacy_pages(Router::new()))
 }
 
@@ -627,15 +621,25 @@ impl<St: Sync> FromRequestParts<St> for Visitor {
     }
 }
 
-const GREET: Action<Counter> = Action::post("/greet");
-const SIGN_IN: Action<Counter> = Action::post("/sign-in");
-const FAIL: Action<Counter, i32> = Action::post("/fail");
-
 hypersig::routes! {
     fn guarded_pages(Router<()>);
     const WHO: Route = "/who" => who;
     const BROKEN: Route = "/broken" => |(), ()| async {
         Err::<Page<Counter>, _>((StatusCode::SERVICE_UNAVAILABLE, "the database is down"))
+    };
+    action GREET: Action<Counter> = post "/greet" => |(), Visitor(name): Visitor, ()| async move {
+        Patches::from(Counter::count().patch(i32::try_from(name.len()).unwrap_or(0)))
+    };
+    action SIGN_IN: Action<Counter> = post "/sign-in" => |(), ()| async {
+        (
+            [(header::SET_COOKIE, "session=abc; HttpOnly; Path=/")],
+            Counter::count().patch(1),
+        )
+    };
+    action FAIL: Action<Counter, i32> = post "/fail" => |(), count: i32| async move {
+        let full = (StatusCode::CONFLICT, "the count is full".to_owned());
+        let next = (count < 3).then_some(count + 1).ok_or(full)?;
+        Ok::<_, (StatusCode, String)>(Counter::count().patch(next))
     };
 }
 
@@ -650,20 +654,6 @@ async fn who(
 
 fn guarded() -> Router {
     guarded_pages(Router::new())
-        .action(GREET, |(), Visitor(name): Visitor, ()| async move {
-            Patches::from(Counter::count().patch(i32::try_from(name.len()).unwrap_or(0)))
-        })
-        .action(SIGN_IN, |(), ()| async {
-            (
-                [(header::SET_COOKIE, "session=abc; HttpOnly; Path=/")],
-                Counter::count().patch(1),
-            )
-        })
-        .action(FAIL, |(), count: i32| async move {
-            let full = (StatusCode::CONFLICT, "the count is full".to_owned());
-            let next = (count < 3).then_some(count + 1).ok_or(full)?;
-            Ok::<_, (StatusCode, String)>(Counter::count().patch(next))
-        })
 }
 
 async fn send_guarded(request: Request<Body>) -> (StatusCode, HeaderMap, String) {

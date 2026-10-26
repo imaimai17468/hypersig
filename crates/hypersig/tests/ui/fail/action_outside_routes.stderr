@@ -1,0 +1,17 @@
+error[E0599]: no associated function or constant named `post` found for struct `Action<S, A>` in the current scope
+  --> tests/ui/fail/action_outside_routes.rs:11:38
+   |
+11 | const ADD: Action<Counter> = Action::post("/add");
+   |                                      ^^^^ associated function or constant not found in `Action<_, _>`
+
+error[E0599]: no associated function or constant named `new` found for struct `StreamAction<S, A>` in the current scope
+  --> tests/ui/fail/action_outside_routes.rs:12:52
+   |
+12 | const TICKS: StreamAction<Counter> = StreamAction::new("/ticks");
+   |                                                    ^^^ associated function or constant not found in `StreamAction<_, _>`
+
+error[E0599]: no associated function or constant named `post` found for struct `Upload<S, A>` in the current scope
+  --> tests/ui/fail/action_outside_routes.rs:13:42
+   |
+13 | const PICTURE: Upload<Counter> = Upload::post("/picture");
+   |                                          ^^^^ associated function or constant not found in `Upload<_, _>`

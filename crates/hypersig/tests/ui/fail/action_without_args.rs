@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use hypersig::html::{button, div, input, span};
-use hypersig::{Action, Signals};
+use hypersig::{Action, Patches, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -15,10 +15,13 @@ struct Other {
     flag: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct Id(u32);
 
-const REMOVE: Action<Counter, Id> = Action::post("/remove");
+hypersig::routes! {
+    fn actions(Router<()>);
+    action REMOVE: Action<Counter, Id> = post "/remove" => |(), _: Id| async { Patches::<Counter>::new() };
+}
 
 fn main() {
     let _ = REMOVE.call();

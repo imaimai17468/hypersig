@@ -42,9 +42,13 @@ struct TodoMvc {
     left: i32,
 }
 
-const ADD: Action<TodoMvc, (i32, String)> = Action::post("/add");
-const SET_DONE: Action<TodoMvc, (i32, bool)> = Action::post("/done");
-const DELETE: Action<TodoMvc, i32> = Action::post("/delete");
+hypersig::routes! {
+    fn actions(Router<AppState>);
+    action ADD: Action<TodoMvc, (i32, String)> = post "/add" => add;
+    action SET_DONE: Action<TodoMvc, (i32, bool)> = post "/done" => set_done;
+    action DELETE: Action<TodoMvc, i32> = post "/delete" => delete;
+}
+
 mod class {
     use hypersig::html::Class;
 
@@ -232,13 +236,10 @@ async fn reset(State(state): State<AppState>) -> StatusCode {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = Router::new()
+    let app = actions(Router::new())
         .route("/", get(index))
         .route("/bench-reset", post(reset))
         .hypersig_runtime()
-        .action(ADD, add)
-        .action(SET_DONE, set_done)
-        .action(DELETE, delete)
         .with_state(AppState {
             todos: Arc::new(Mutex::new(seed())),
         });

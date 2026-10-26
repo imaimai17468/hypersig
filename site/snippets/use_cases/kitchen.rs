@@ -24,7 +24,10 @@ struct Line {
 #     }
 # }
 #
-# const SEND: Action<Order, i32> = Action::post("/order/send");
+# hypersig::routes! {
+#     fn pages(Router<AppState>);
+#     action SEND: Action<Order, i32> = post "/order/send" => send;
+# }
 #
 # let _ = ul().child(
 each(Order::lines(), |line| {
@@ -46,4 +49,4 @@ async fn send(state: AppState, line: i32) -> Result<Patches<Order>, (StatusCode,
     } //+
     Ok(Patches::new())
 }
-# let _ = send;
+# let _ = pages;

@@ -31,10 +31,9 @@ struct Counter {
 hypersig::routes! {
     fn pages(Router<()>);
     const INDEX: Route = "/" => index;
+    action DOUBLE: Action<Counter, i32> = post "/double" => double;
+    stream CLOCK: StreamAction<Counter> = "/clock" => clock;
 }
-
-const DOUBLE: Action<Counter, i32> = Action::post("/double");
-const CLOCK: StreamAction<Counter> = StreamAction::new("/clock");
 
 const TIME: DateFormat =
     DateFormat::date_time(IntlLocale::En, DateStyle::Medium, TimeStyle::Medium);
@@ -83,10 +82,7 @@ fn clock((): (), (): ()) -> impl Stream<Item = Patches<Counter>> {
 
 #[tokio::main]
 async fn main() -> Result<(), vercel_runtime::Error> {
-    let app = pages(Router::new())
-        .hypersig_runtime()
-        .action(DOUBLE, double)
-        .stream(CLOCK, clock);
+    let app = pages(Router::new()).hypersig_runtime();
     // Outside Vercel, `run` listens on 127.0.0.1 at the port in
     // `VERCEL_DEV_PORT`, or 3000.
     vercel_runtime::run(ServiceBuilder::new().layer(VercelLayer::new()).service(app)).await

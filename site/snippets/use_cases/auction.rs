@@ -36,7 +36,10 @@ struct Auction {
 #     }
 # }
 #
-# const BIDS: StreamAction<Auction> = StreamAction::new("/bids");
+# hypersig::routes! {
+#     fn pages(Router<AppState>);
+#     stream BIDS: StreamAction<Auction> = "/bids" => bids;
+# }
 #
 # let page = Page::new("Auction", Auction { price: 0, leading: false }).child(
 div()
@@ -59,4 +62,4 @@ fn bids(state: AppState, Member(me): Member, (): ()) -> impl Stream<Item = Patch
         }
     })
 }
-# let _ = (page.render(), bids);
+# let _ = (page.render(), pages);

@@ -53,7 +53,11 @@ use crate::ssr::{self, Ctx};
 ///     signup: Form<Signup>,
 /// }
 ///
-/// const JOIN: Action<Join, Signup> = Action::post("/join");
+/// hypersig::routes! {
+///     fn actions(Router<()>);
+///     action JOIN: Action<Join, Signup> = post "/join" => join;
+/// }
+/// # async fn join((): (), _: Signup) -> hypersig::Patches<Join> { hypersig::Patches::new() }
 ///
 /// let signup = Join::signup();
 /// let email = Signup::email();

@@ -25,9 +25,9 @@ struct NotesPage {
 hypersig::routes! {
     fn pages(Router<AppState>);
     const INDEX: Route = "/" => index;
+    action ADD: Action<NotesPage, String> = post "/notes" => add;
 }
 
-const ADD: Action<NotesPage, String> = Action::post("/notes");
 const NOTE_ROW: Id = Id::new("note");
 
 /// A note as the service's JSON has it.
@@ -248,7 +248,6 @@ async fn main() -> std::io::Result<()> {
     };
     let app = pages(Router::new())
         .hypersig_runtime()
-        .action(ADD, add)
         .with_state(AppState { api });
     let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3012".to_owned());
     let listener = tokio::net::TcpListener::bind(&addr).await?;

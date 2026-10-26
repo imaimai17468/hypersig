@@ -1,11 +1,14 @@
 error[E0277]: `Result<Patches<Counter>, DatabaseError>` is not a reply of an action on the page whose signals are `Counter`
-  --> tests/ui/fail/handler_error_not_a_response.rs:20:35
+  --> tests/ui/fail/handler_error_not_a_response.rs:12:1
    |
-20 |     let _: Router = Router::new().action(ADD, add);
-   |                                   ^^^^^^ the trait `IntoActionResponse<Counter>` is not implemented for `Result<Patches<Counter>, DatabaseError>`
+12 | / hypersig::routes! {
+13 | |     fn actions(Router<()>);
+14 | |     action ADD: Action<Counter> = post "/add" => add;
+15 | | }
+   | |_^ the trait `IntoActionResponse<Counter>` is not implemented for `Result<Patches<Counter>, DatabaseError>`
    |
    = note: an action's handler returns `Patches<Counter>`, a `SignalPatch<Counter>`, a `ListPatch<Counter>`, a tuple of response parts and one of those, or a `Result` of one of those whose error implements `IntoResponse`
-note: required by a bound in `action`
+note: required by a bound in `hypersig::RouterExt::action`
   --> src/axum.rs
    |
    |     fn action<S, A, H, M, Fut, P>(self, action: Action<S, A>, handler: H) -> Self
@@ -13,3 +16,4 @@ note: required by a bound in `action`
 ...
    |         P: IntoActionResponse<S>;
    |            ^^^^^^^^^^^^^^^^^^^^^ required by this bound in `RouterExt::action`
+   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

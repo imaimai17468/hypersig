@@ -3,7 +3,7 @@ use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::{HeaderName, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use hypersig::{Action, Page, PageResponse, Patches, Route, RouterExt, Signals};
+use hypersig::{Action, Page, PageResponse, Patches, Route, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -59,10 +59,9 @@ impl IntoResponse for SignedOut {
 hypersig::routes! {
     fn pages(Router<AppState>);
     const LOGIN: Route = "/login" => login;
+    action REFRESH: Action<Home> = post "/refresh" => refresh;
+    action SIGN_OUT: Action<Home> = post "/sign-out" => sign_out;
 }
-
-const REFRESH: Action<Home> = Action::post("/refresh");
-const SIGN_OUT: Action<Home> = Action::post("/sign-out");
 
 // The extractor sits between the state and the arguments.
 async fn refresh(_: AppState, Member(name): Member, (): ()) -> Patches<Home> {
@@ -77,7 +76,4 @@ async fn sign_out(_: AppState, _: Member, (): ()) -> (Cookie, Patches<Home>) {
     (forget, Patches::new())
 }
 
-let _app: Router = pages(Router::new())
-    .action(REFRESH, refresh)
-    .action(SIGN_OUT, sign_out)
-    .with_state(AppState);
+let _app: Router = pages(Router::new()).with_state(AppState);

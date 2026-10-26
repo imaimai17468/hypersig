@@ -1,7 +1,7 @@
 use axum::Router;
 use axum::http::StatusCode;
 use hypersig::html::{button, div, attr};
-use hypersig::{FileInput, Page, Patches, RouterExt, Signals, Upload, Uploaded};
+use hypersig::{FileInput, Page, Patches, Signals, Upload, Uploaded};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -13,7 +13,11 @@ struct Profile {
 
 // Both constants carry the page's type, so a file input from another page does not compile.
 const PICTURE: FileInput<Profile> = FileInput::new("picture");
-const AVATAR: Upload<Profile> = Upload::post("/avatar").max_bytes(256 * 1024);
+
+hypersig::routes! {
+    fn pages(Router<()>);
+    upload AVATAR: Upload<Profile> = "/avatar" max_bytes 256 * 1024 => avatar;
+}
 
 let signals = Profile { picture: String::new(), uploading: false, problem: String::new() };
 let page = Page::new("Profile", signals).child(
@@ -44,5 +48,5 @@ async fn avatar((): (), uploaded: Uploaded<()>) -> Result<Patches<Profile>, Stat
     Ok(Profile::picture().patch(name).into())
 }
 
-let _app: Router = Router::new().upload(AVATAR, avatar);
+let _app: Router = pages(Router::new());
 # let _ = page.render();
