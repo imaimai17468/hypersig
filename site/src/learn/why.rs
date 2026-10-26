@@ -381,7 +381,7 @@ fn fetching(site: Site) -> [Part; 6] {
     ]
 }
 
-fn unchecked(site: Site) -> [Part; 2] {
+fn unchecked(site: Site) -> [Part; 3] {
     [
         heading(
             site,
@@ -390,46 +390,89 @@ fn unchecked(site: Site) -> [Part; 2] {
                 ja: "コンパイラが検査しないこと",
             },
         ),
-        bullets(
+        para(
             site,
-            &[
-                L {
-                    en: "The function `routes!` generates is never called on the router. Its pages and actions then answer 404. rustc's `dead_code` lint reports a handler `fn` that only that function names, but not a closure.",
-                    ja: "`routes!` が生成する関数をルーターに渡していないと、そのブロックのページとアクションは 404 を返します。その関数の中でだけ使うハンドラの `fn` は rustc の `dead_code` lint が報告しますが、クロージャは報告されません。",
-                },
-                L {
-                    en: "A page served under a `Base` calls an action from a `routes!` block without it. The call goes to the path without the prefix, which a proxy or `Router::nest` answers with 404.",
-                    ja: "`Base` の下で配信するページが、その `Base` のない `routes!` ブロックのアクションを呼ぶと、呼び出しは接頭辞のないパスに送られ、プロキシか `Router::nest` が 404 を返します。",
-                },
-                L {
-                    en: "One `node_ref!` or `dialog_ref!` constant sits on two elements outside a list template. Rendering the page panics.",
-                    ja: "1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けると、ページの描画が panic します。",
-                },
-                L {
-                    en: "An `Item`, or a signal reached from one, is used after the closure it was passed to returns. Building the page panics. The check does not see an expression built inside the closure and used outside it, for which the runtime throws `hypersig: no list item at depth N` in the browser. Nor does it see an item used inside another list at the same depth, which then reads that list's item.",
-                    ja: "`Item` や、そこからたどったシグナルを、渡されたクロージャが返った後で使うと、ページを組み立てるときに panic します。クロージャの中で作った式を外で使う場合は、この検査に引っかかりません。そのときはブラウザでランタイムが `hypersig: no list item at depth N` を投げます。同じ深さの別のリストの中で使う場合も引っかからず、そのリストの項目を読みます。",
-                },
-                L {
-                    en: "Two elements carry one `Id` or one `FileInput` name where the runtime can reach both, or an element inside a list template has an id set with `El::id`. Rendering the page panics.",
-                    ja: "ランタイムが両方にたどり着ける 2 つの要素に同じ `Id` か同じ `FileInput` の名前を付けるか、リストのテンプレートの中の要素に `El::id` で id を付けると、ページの描画が panic します。",
-                },
-                L {
-                    en: "A signal holds an integer outside -2^53 to 2^53, which the browser would round. Rendering the page, or building a patch with the value, panics.",
-                    ja: "シグナルが -2^53 から 2^53 の外の整数を持つと、ブラウザがその値を丸めてしまうので、ページの描画か、その値で差分を作る処理が panic します。",
-                },
-                L {
-                    en: "A field marked `#[signals(computed)]` is named by no `Page::computed` call on its page. Nothing recomputes it, so it keeps the value the page's struct gave it.",
-                    ja: "`#[signals(computed)]` を付けたフィールドを、ページのどの `Page::computed` も指定していないと、そのフィールドは計算し直されず、ページの構造体が与えた値のまま変わりません。",
-                },
-                L {
-                    en: "A reference such as `label_for(&EMAIL)` names an `Id` that no element on the page carries. The browser ignores it, so the control has no label.",
-                    ja: "`label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指していると、ブラウザはその参照を無視するので、入力欄にラベルが付きません。",
-                },
-                L {
-                    en: "A script outside hypersig finds an element marked with `El::foreign` by its `data-hs-foreign` value, which is the constant's full path, such as `office::MAP`. Renaming or moving the module or the constant changes that value, and the script then finds no element. Give the element an `Id` and look it up by id instead.",
-                    ja: "`data-hs-foreign` の値は `office::MAP` のような定数の完全なパスで、モジュールや定数の名前を変えたり移したりすると変わります。hypersig の外のスクリプトが `El::foreign` を付けた要素をこの値で探していると、名前を変えたときに要素を見つけられなくなります。要素に `Id` を付けて、id で探してください。",
-                },
-            ],
+            L {
+                en: "The compiler checks that names, types, and links match. These mistakes still compile, and show up only when the program runs.",
+                ja: "名前、型、リンクが合っているかはコンパイラが検査します。次のミスはそれでもコンパイルが通り、動かして初めて分かります。",
+            },
+        ),
+        table_of(
+            site,
+            L {
+                en: &["Mistake", "What happens"],
+                ja: &["ミス", "起きること"],
+            },
+            L {
+                en: &[
+                    &[
+                        "The function `routes!` generates is never passed to the router",
+                        "Its pages and actions answer 404",
+                    ],
+                    &[
+                        "A page under a `Base` calls an action of a `routes!` block without it",
+                        "The call answers 404",
+                    ],
+                    &[
+                        "One `node_ref!`, `dialog_ref!`, `Id`, or `FileInput` name goes on two elements, or `El::id` is used inside a list template",
+                        "Rendering the page panics",
+                    ],
+                    &[
+                        "`label_for` or a similar reference names an `Id` no element carries",
+                        "The control has no label",
+                    ],
+                    &[
+                        "A script outside hypersig finds an `El::foreign` element by its value, and the constant is renamed",
+                        "The script finds no element. Look it up by `Id` instead",
+                    ],
+                    &[
+                        "A `#[signals(computed)]` field is never passed to `Page::computed`",
+                        "The field keeps its first value",
+                    ],
+                    &[
+                        "A list item is used outside the closure it was passed to",
+                        "Building the page usually panics. Some uses slip past and read the wrong item or fail in the browser",
+                    ],
+                    &[
+                        "A signal holds an integer beyond ±2^53",
+                        "Rendering the page or building the patch panics",
+                    ],
+                ],
+                ja: &[
+                    &[
+                        "`routes!` が生成する関数をルーターに渡し忘れる",
+                        "そのページとアクションが 404 を返します",
+                    ],
+                    &[
+                        "`Base` の下のページが、`Base` のない `routes!` ブロックのアクションを呼ぶ",
+                        "呼び出しが 404 になります",
+                    ],
+                    &[
+                        "同じ `node_ref!`、`dialog_ref!`、`Id`、`FileInput` の名前を 2 つの要素に付ける。リストのテンプレートの中で `El::id` を使う",
+                        "ページの描画が panic します",
+                    ],
+                    &[
+                        "`label_for` などの参照が、どの要素にもない `Id` を指す",
+                        "入力欄にラベルが付きません",
+                    ],
+                    &[
+                        "hypersig の外のスクリプトが `El::foreign` の値で要素を探していて、その定数の名前を変える",
+                        "スクリプトが要素を見つけられません。`Id` で探してください",
+                    ],
+                    &[
+                        "`#[signals(computed)]` を付けたフィールドを `Page::computed` に渡し忘れる",
+                        "値が最初のまま変わりません",
+                    ],
+                    &[
+                        "リストの項目を、渡されたクロージャの外で使う",
+                        "たいていはページを組み立てるときに panic します。一部は検出されず、別の項目を読むか、ブラウザでエラーになります",
+                    ],
+                    &[
+                        "シグナルに ±2^53 を超える整数を入れる",
+                        "ページの描画か差分の作成が panic します",
+                    ],
+                ],
+            },
         ),
     ]
 }
