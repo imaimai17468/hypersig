@@ -147,8 +147,8 @@ impl<T: Validate> Form<T> {
     ///
     /// # Panics
     ///
-    /// Panics if a rule reads [`Expr::now`] or [`Expr::random_below`], which
-    /// only the browser can evaluate, or if `value` fails to serialize.
+    /// Panics if `value` fails to serialize, or where [`Rules::check`]
+    /// panics.
     ///
     /// ```
     /// use hypersig::{Form, Rules, Sig, Signals, Validate};
@@ -186,12 +186,6 @@ impl<T: Validate> Form<T> {
         };
         let mut errors = FieldErrors::new();
         for check in &rules.checks {
-            assert!(
-                !reads_browser_only(check.ok.as_json())
-                    && !reads_browser_only(check.message.as_json()),
-                "a rule for `{}` reads a value only the browser has",
-                check.key
-            );
             if errors.messages.contains_key(&check.key) {
                 continue;
             }
@@ -245,9 +239,7 @@ enum Submission {}
 ///
 /// `rules` builds expressions from `form`, the values on whatever page
 /// they live, so the browser checks them as the visitor types and
-/// [`Form::validate`] checks the same expressions on the server. A rule
-/// that reads [`Expr::now`] or [`Expr::random_below`] cannot be checked on
-/// the server, which nothing checks before [`Form::validate`] panics.
+/// [`Form::validate`] checks the same expressions on the server.
 ///
 /// The default `rules` adds none, for a form that only needs its dirty
 /// state and [`reset`](Sig::reset).
@@ -284,17 +276,30 @@ impl<S, T> Rules<S, T> {
     ///
     /// A field with several checks shows the message of the first one that
     /// fails, in the order they were added.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `ok` or `message` reads [`Expr::now`] or
+    /// [`Expr::random_below`], which only the browser can evaluate, so
+    /// [`Form::validate`] could not check the rule. The rules are built
+    /// while the page is, so the page panics before it is served.
     pub fn check<U>(
         &mut self,
         field: Sig<T, U>,
         ok: impl IntoExpr<S, bool>,
         message: impl IntoExpr<S, String>,
     ) -> &mut Self {
-        self.checks.push(Check {
+        let check = Check {
             key: key(field),
             ok: ok.into_expr(),
             message: message.into_expr(),
-        });
+        };
+        assert!(
+            !reads_browser_only(check.ok.as_json()) && !reads_browser_only(check.message.as_json()),
+            "a rule for `{}` reads a value only the browser has, so the server cannot check it",
+            check.key
+        );
+        self.checks.push(check);
         self
     }
 
@@ -801,7 +806,16 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "reads a value only the browser has")]
-    fn a_rule_that_reads_the_browsers_clock_still_panics() {
+    fn a_rule_that_reads_the_browsers_clock_panics_on_validate() {
         let _ = Form::validate(&Stamp { at: 0.0 });
+    }
+
+    #[test]
+    #[should_panic(expected = "a rule for `at` reads a value only the browser has")]
+    fn a_rule_that_reads_the_browsers_clock_panics_while_the_page_is_built() {
+        fn stamp() -> Sig<Page, Form<Stamp>> {
+            sig("stamp")
+        }
+        let _ = stamp().form(crate::Stmt::none());
     }
 }
