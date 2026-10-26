@@ -46,7 +46,7 @@ use crate::route::Url;
 use crate::signal::{Item, Root, Sig, Signals, current_part, in_item_scope};
 use crate::style::Sheet;
 
-/// A part of the page that the server can re-render and replace without the rest of the page.
+/// A part of the page the server can re-render and replace alone.
 ///
 /// The fragment owns its element id, so the id in the initial page and the id
 /// in a later patch cannot drift apart.
@@ -594,7 +594,9 @@ impl<S: Signals> Patches<S> {
         self
     }
 
-    /// Shows `url` in the address bar in place of the current URL, without loading it.
+    /// Shows `url` in the address bar in place of the current URL.
+    ///
+    /// The browser does not load it.
     ///
     /// It is [`Patches::push_url`] without the new history entry.
     #[must_use]
@@ -654,7 +656,9 @@ impl<S: Signals> Patches<S> {
         })
     }
 
-    /// The items the batch adds to or replaces in `list`, for a test of an action.
+    /// The items the batch adds to or replaces in `list`.
+    ///
+    /// A test of an action reads them.
     ///
     /// They are the items of each [`patch_append`](Sig::patch_append),
     /// [`patch_prepend`](Sig::patch_prepend), and
@@ -705,7 +709,9 @@ impl<S: Signals> Patches<S> {
         items
     }
 
-    /// The keys the batch removes from `list` by `key`, for a test of an action.
+    /// The keys the batch removes from `list` by `key`.
+    ///
+    /// A test of an action reads them.
     ///
     /// They are the keys of each [`patch_remove`](Sig::patch_remove) of
     /// `list` whose key is the expression `key` builds, in the order the

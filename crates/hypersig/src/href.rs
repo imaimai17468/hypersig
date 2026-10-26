@@ -11,8 +11,10 @@ use crate::expr::{Expr, IntoExpr};
 use crate::route::{Link, Url};
 use crate::signal::Sig;
 
-/// A URL whose scheme cannot run a script: `http:`, `https:`, `mailto:`, or
-/// none at all, as in `/logo.png`, `#top`, `?page=2`, or `//cdn.example/a.js`.
+/// A URL whose scheme cannot run a script.
+///
+/// Its scheme is `http:`, `https:`, `mailto:`, or none at all, as in
+/// `/logo.png`, `#top`, `?page=2`, or `//cdn.example/a.js`.
 ///
 /// [`El::href`](crate::html::El::href) and [`El::src`](crate::html::El::src)
 /// take it for an address the router does not serve. A field of this type in
@@ -169,9 +171,11 @@ const fn same_ascii(url: &[u8], len: usize, scheme: &[u8]) -> bool {
 }
 
 /// A value [`El::href`](crate::html::El::href) and
-/// [`El::src`](crate::html::El::src) take: a [`Link`] or a [`Url`] to a page
-/// the router serves, a [`SafeUrl`], or an expression of one, which the
-/// browser keeps up to date as the signals change.
+/// [`El::src`](crate::html::El::src) take.
+///
+/// It is a [`Link`] or a [`Url`] to a page the router serves, a [`SafeUrl`], or
+/// an expression of one, which the browser keeps up to date as the signals
+/// change.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not a URL an `href` or a `src` takes on the page whose signals are `{S}`",
     note = "give a `Link` or a `Url` from a route, a `SafeUrl`, or a signal or expression of `SafeUrl`; a `String` becomes one through `SafeUrl::parse`"

@@ -68,7 +68,9 @@ pub trait Signals: Serialize + DeserializeOwned + Send + 'static {
     const COMPUTED: &'static [&'static str] = &[];
 }
 
-/// A piece of page written once against its own signals, which any page can embed.
+/// A piece of page written once against its own signals.
+///
+/// Any page can embed it.
 ///
 /// A sign-out button in an app's shell, a newsletter form in a site's
 /// footer, or a cart badge in a shared header appear on several pages,
@@ -859,8 +861,10 @@ impl<S, T, R> fmt::Debug for Sig<S, T, R> {
     }
 }
 
-/// The current item of a list, inside [`each`](crate::html::each) or a list
-/// predicate such as [`Sig::count`].
+/// The current item of a list.
+///
+/// [`each`](crate::html::each) and list predicates such as [`Sig::count`] pass
+/// it.
 ///
 /// An `Item` belongs to the closure it was passed to. The browser resolves it
 /// against the item being rendered or tested, so an expression built from it

@@ -15,7 +15,9 @@ use crate::patch::SignalPatch;
 use crate::signal::{Path, Sig, Signals};
 use crate::ssr::{self, Ctx};
 
-/// The values of a form, the values it started from, and what the visitor has done to it.
+/// The values of a form and what the visitor has done to it.
+///
+/// It also keeps the values the form started from.
 ///
 /// Put one in the page's signal struct as a field of type `Form<T>`, where
 /// `T` is a `Signals` struct of the form's values that implements
@@ -250,7 +252,9 @@ pub trait Validate: Signals {
     }
 }
 
-/// The checks of a form whose values are `T`, on the page whose signals are `S`.
+/// The checks of a form whose values are `T`.
+///
+/// The form sits on the page whose signals are `S`.
 ///
 /// [`Validate::rules`] receives one and adds to it with [`Rules::check`].
 pub struct Rules<S, T> {
@@ -459,7 +463,10 @@ impl<S, T> Sig<S, Form<T>> {
         ]))
     }
 
-    /// Whether the visitor has left `field`, or has submitted the form while `field` has a rule.
+    /// Whether the visitor has left `field`.
+    ///
+    /// It is also true once the visitor submits the form, where `field` has a
+    /// rule.
     #[must_use]
     pub fn is_touched<U>(self, field: Sig<T, U>) -> Expr<S, bool> {
         let touched: Sig<S, Value> = self.at(part("touched"));
@@ -491,7 +498,9 @@ impl<S, T> Sig<S, Form<T>> {
         Stmt::set(Value::from(place), Expr::<S, bool>::lit(&true))
     }
 
-    /// A statement that puts back the starting values and forgets what the visitor has done.
+    /// A statement that puts back the starting values.
+    ///
+    /// It also forgets what the visitor has done.
     #[must_use]
     pub fn reset(self) -> Stmt<S> {
         let empty = || Expr::<S, Value>::from_json(json!(["lit", {}]));
@@ -546,7 +555,9 @@ impl<S, T: Validate> Sig<S, Form<T>> {
         }
     }
 
-    /// A `<form>` that, on submit, touches every field with a rule and runs `then` if every rule passes.
+    /// A `<form>` that runs `then` on submit if every rule passes.
+    ///
+    /// Submitting first touches every field with a rule.
     ///
     /// Submitting also marks the form submitted and clears the messages
     /// from [`reject`](Sig::reject). `then` is usually the call that sends

@@ -300,7 +300,9 @@ impl<S> Call<S> {
         self
     }
 
-    /// Sets `message` to the error text when the call fails, and to `""` when it is sent.
+    /// Sets `message` to the error text when the call fails.
+    ///
+    /// It sets `message` to `""` when the call is sent.
     ///
     /// Emptying it on each send lets a handler of
     /// [`El::on_signal_change`](crate::html::El::on_signal_change) see a
@@ -321,7 +323,9 @@ impl<S> Call<S> {
         self
     }
 
-    /// Sets `status` to the HTTP status of a failed answer, and to `0` when the call is sent.
+    /// Sets `status` to the HTTP status of a failed answer.
+    ///
+    /// It sets `status` to `0` when the call is sent.
     ///
     /// It stays `0` when no answer the runtime can read arrives: the
     /// connection fails, the answer was redirected, is not an event stream,
@@ -612,7 +616,9 @@ impl<S> fmt::Debug for Call<S> {
     }
 }
 
-/// A stream of patches on the page whose signals are `S`, which receives arguments `A`.
+/// A stream of patches on the page whose signals are `S`.
+///
+/// Its arguments are `A`.
 ///
 /// Declare one on a `stream` line of [`routes!`](crate::routes), which
 /// serves it on `GET` with a handler that returns a stream of patches. A call
@@ -696,7 +702,9 @@ impl<S, A> StreamAction<S, A> {
         runtime_request(Method::Get, self.path, args)
     }
 
-    /// A call to this stream with `args`, evaluated in the browser when the call runs.
+    /// A call to this stream with `args`.
+    ///
+    /// The browser evaluates `args` when the call runs.
     ///
     /// A call that [reconnects](StreamCall::reconnect) evaluates `args`
     /// again before each attempt.
@@ -954,7 +962,7 @@ impl<S> NodeRef<S> {
         self.dom("hide-popover")
     }
 
-    /// A statement that shows the element if it is a popover that is not open.
+    /// A statement that shows the element if it is a closed popover.
     #[must_use]
     pub fn show_popover(self) -> Stmt<S> {
         self.dom("show-popover")
@@ -975,7 +983,9 @@ impl<S> fmt::Debug for NodeRef<S> {
     }
 }
 
-/// A named `<dialog>` on a page whose signals are `S`, which statements open and close.
+/// A named `<dialog>` on a page whose signals are `S`.
+///
+/// Statements open and close it.
 ///
 /// Declare one with [`dialog_ref!`](crate::dialog_ref).
 /// [`DialogRef::dialog`] is the only way to attach one, and it builds the

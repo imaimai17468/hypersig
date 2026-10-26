@@ -5,9 +5,12 @@ use std::borrow::Cow;
 use crate::href;
 use crate::route::Base;
 
-/// The URL of a file a page loads, which [`Page::script`](crate::Page::script),
-/// [`Page::stylesheet`](crate::Page::stylesheet), [`Page::icon`](crate::Page::icon),
-/// and [`Page::runtime_src`](crate::Page::runtime_src) take.
+/// The URL of a file a page loads.
+///
+/// [`Page::script`](crate::Page::script),
+/// [`Page::stylesheet`](crate::Page::stylesheet),
+/// [`Page::icon`](crate::Page::icon), and
+/// [`Page::runtime_src`](crate::Page::runtime_src) take one.
 ///
 /// A path that starts with a single `/`, such as `/map.js`, names a file the
 /// application serves, and the page writes it under the [`Base`] of the
@@ -40,7 +43,10 @@ use crate::route::Base;
 pub struct Asset(&'static str);
 
 impl Asset {
-    /// The file at `url`, a path the application serves or a URL written as given.
+    /// The file at `url`.
+    ///
+    /// `url` is a path the application serves, or a URL the page writes as
+    /// given.
     ///
     /// # Panics
     ///

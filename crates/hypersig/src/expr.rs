@@ -76,7 +76,9 @@ use crate::Segment;
 use crate::exact;
 use crate::signal::Sig;
 
-/// An expression over the signals of `S` that evaluates to a `T` in the browser.
+/// An expression over the signals of `S` that evaluates to a `T`.
+///
+/// The browser evaluates it.
 ///
 /// Its methods, such as [`gt`](Expr::gt) and [`to_text`](Expr::to_text),
 /// borrow it, and the arithmetic operators and `!` also take `&Expr`, so one
@@ -105,7 +107,9 @@ pub struct Expr<S, T> {
 }
 
 impl<S> Expr<S, i32> {
-    /// A random integer from 0 up to but not including `bound`, drawn in the browser.
+    /// A random integer from 0 up to but not including `bound`.
+    ///
+    /// The browser draws it.
     ///
     /// The server leaves it out of the first HTML, because it cannot draw the
     /// number the browser will.
@@ -189,7 +193,9 @@ impl<S, T> Expr<S, T> {
         Expr::from_json(json!(["get", self.ast.clone(), field.raw_path().dotted()]))
     }
 
-    /// The expression `body` builds from this value, which is evaluated once however often `body` uses it.
+    /// The expression `body` builds from this value.
+    ///
+    /// The browser evaluates the value once, however often `body` uses it.
     ///
     /// `body` receives an expression that stands for the value. Each use of
     /// a plain expression copies it into the attribute and evaluates it

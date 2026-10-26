@@ -219,7 +219,9 @@ const fn starts_with(name: &[u8], lower: &str) -> bool {
     name.len() >= prefix.len() && name.split_at(prefix.len()).0.eq_ignore_ascii_case(prefix)
 }
 
-/// A node in the tree: an element, a run of text, or a template the browser expands.
+/// A node in the tree.
+///
+/// It is an element, a run of text, or a template the browser expands.
 pub struct Node<S>(NodeKind<S>);
 
 enum NodeKind<S> {
@@ -600,8 +602,9 @@ impl<S, N: Into<Node<S>>> IntoNode<S> for N {
     }
 }
 
-/// Renders `render` once per item of `list` in the browser, and updates the
-/// rendered elements when the list changes.
+/// Renders `render` once per item of `list` in the browser.
+///
+/// The browser updates the rendered elements when the list changes.
 ///
 /// `render` runs once on the server to build a template, receiving an
 /// [`Item`] that stands for whichever item the browser is rendering. Items are
@@ -1239,7 +1242,9 @@ impl Key {
         Shortcut::from(self).alt()
     }
 
-    /// This key with Meta held, which is Command on a Mac and the Windows key elsewhere.
+    /// This key with Meta held.
+    ///
+    /// Meta is Command on a Mac and the Windows key elsewhere.
     #[must_use]
     pub fn meta(self) -> Shortcut {
         Shortcut::from(self).meta()
@@ -1488,8 +1493,9 @@ fn plain_css(value: &str) -> bool {
     depth == 0 && !value.contains("/*")
 }
 
-/// Creates an element with a tag that has no named constructor, such as an
-/// SVG element or a custom element.
+/// Creates an element with a tag that has no named constructor.
+///
+/// Examples are an SVG element and a custom element.
 ///
 /// Use the named constructors such as [`div`] where one exists, and build
 /// `tag` with [`tag!`](hypersig::tag!). A tag the HTML standard lists as void,
@@ -1747,8 +1753,9 @@ impl<S> El<S> {
         self
     }
 
-    /// Keeps `token` equal to `value` on this element and those inside it, as
-    /// signals change. The value is not checked, as for [`El::bind_style`].
+    /// Keeps `token` equal to `value` on this element and those inside it.
+    ///
+    /// The value is not checked, as for [`El::bind_style`].
     #[must_use]
     pub fn bind_token<T: TokenValue>(
         mut self,
@@ -1760,8 +1767,10 @@ impl<S> El<S> {
         self
     }
 
-    /// Sets the element's `href`: a link to a page the router serves, or a
-    /// [`SafeUrl`] for an address it does not.
+    /// Sets the element's `href`.
+    ///
+    /// It takes a link to a page the router serves, or a [`SafeUrl`] for an
+    /// address it does not.
     ///
     /// A fixed URL is written as a plain attribute. One that reads signals is
     /// kept up to date as they change.
@@ -1770,8 +1779,10 @@ impl<S> El<S> {
         self.url_attr("href", url)
     }
 
-    /// Sets the element's `src`, the address of the image, frame, or script
-    /// it loads, as [`El::href`] sets `href`.
+    /// Sets the element's `src`, the address of the image, frame, or script it
+    /// loads.
+    ///
+    /// It takes what [`El::href`] takes.
     ///
     /// A [`SafeUrl`] may name any host, so the `src` of an
     /// `<iframe>`, an `<embed>`, or a `<frame>`, which shows the page at that
@@ -1793,8 +1804,9 @@ impl<S> El<S> {
         self.url_attr("poster", url)
     }
 
-    /// Sets the images the browser picks from for an `<img>` or a
-    /// `<source>`, each a URL and the width or pixel density it is drawn for.
+    /// Sets the images the browser picks from for an `<img>` or a `<source>`.
+    ///
+    /// Each is a URL and the width or pixel density it is drawn for.
     ///
     /// ```
     /// use hypersig::SafeUrl;
@@ -2075,8 +2087,9 @@ impl<S> El<S> {
         self
     }
 
-    /// Adds the style of the case whose value `value` equals, as
-    /// [`El::css_when`] does for each case.
+    /// Adds the style of the case whose value `value` equals.
+    ///
+    /// It does what [`El::css_when`] does, for each case.
     ///
     /// This is the variant half of a recipe: the base goes in [`El::css`], and
     /// each case adds what one value changes. At most one case applies at a
@@ -2335,8 +2348,9 @@ impl<S> El<S> {
         );
     }
 
-    /// Makes this radio button set `signal` to `value` when checked, and
-    /// checks it while `signal` equals `value`.
+    /// Makes this radio button set `signal` to `value` when checked.
+    ///
+    /// It also checks the button while `signal` equals `value`.
     ///
     /// # Panics
     ///
@@ -2571,8 +2585,8 @@ impl<S> El<S> {
         self
     }
 
-    /// Moves focus between the items inside this element on the arrow keys,
-    /// Home, and End.
+    /// Moves focus between this element's items on the arrow keys, Home, and
+    /// End.
     ///
     /// An item is an element inside this one that has a `tabindex` attribute
     /// and is neither disabled nor `aria-disabled="true"`, unless a nearer
@@ -2617,7 +2631,9 @@ impl<S> El<S> {
     }
 
     /// Tracks the active option of `listbox` in `active` on the up and down
-    /// arrows, while focus stays on this element.
+    /// arrows.
+    ///
+    /// Focus stays on this element the whole time.
     ///
     /// This is the keyboard half of a combobox whose focus stays in its text
     /// field. An option is an element inside `listbox` with `role="option"`
@@ -2685,8 +2701,9 @@ impl<S> El<S> {
         self
     }
 
-    /// Runs `stmt` once, `delay` after the element is added to the document, if
-    /// the element is still in it then.
+    /// Runs `stmt` once, `delay` after the element is added to the document.
+    ///
+    /// It skips `stmt` if the element is no longer in the document then.
     ///
     /// A second call replaces the first.
     ///
@@ -2729,8 +2746,9 @@ impl<S> El<S> {
         self
     }
 
-    /// Runs `stmt` when the element is added to the document and whenever a
-    /// signal `stmt` reads changes.
+    /// Runs `stmt` when the element is added to the document.
+    ///
+    /// It runs `stmt` again whenever a signal `stmt` reads changes.
     ///
     /// The runtime records which signals `stmt` reads as it runs, so there is
     /// no dependency list to keep in step. A signal read only after an

@@ -29,7 +29,9 @@ use crate::signal::Sig;
 pub struct Timestamp(i64);
 
 impl Timestamp {
-    /// The time `millis` milliseconds after the Unix epoch, or before it for a negative value.
+    /// The time `millis` milliseconds after the Unix epoch.
+    ///
+    /// A negative `millis` counts back before the epoch.
     #[must_use]
     pub const fn from_millis(millis: i64) -> Self {
         Self(millis)
