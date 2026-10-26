@@ -86,6 +86,11 @@ struct Readme;
 struct ReadmeJa;
 
 pub use action::{Action, Call, DialogRef, Method, NodeRef, StreamAction, StreamCall};
+#[cfg(all(
+    feature = "axum",
+    not(all(target_arch = "wasm32", target_os = "unknown"))
+))]
+pub use axum::serve;
 #[cfg(feature = "axum")]
 pub use axum::{
     ActionResponse, Handler, IntoActionResponse, PageResponse, PatchStream, RequestError,

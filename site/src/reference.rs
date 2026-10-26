@@ -3033,6 +3033,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "serve",
+                            "fn.serve.html",
+                            L {
+                                en: "Serves `app` on the address in `ADDR` or `PORT` until Ctrl+C or SIGTERM.",
+                                ja: "`ADDR` か `PORT` のアドレスで、Ctrl+C か SIGTERM を受けるまで `app` を配信します。",
+                            },
+                        ),
+                        (
                             "PageResponse",
                             "struct.PageResponse.html",
                             L {

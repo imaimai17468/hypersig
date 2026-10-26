@@ -221,8 +221,5 @@ async fn main() -> std::io::Result<()> {
         members: Arc::new(Mutex::new(vec!["taken@example.com".to_owned()])),
     };
     let app = pages(Router::new()).hypersig_runtime().with_state(state);
-    let addr = std::env::var("ADDR").unwrap_or_else(|_| "127.0.0.1:3006".to_owned());
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("listening on http://{addr}");
-    axum::serve(listener, app).await
+    hypersig::serve(app, 3006).await
 }

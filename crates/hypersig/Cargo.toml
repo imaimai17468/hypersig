@@ -16,7 +16,7 @@ exclude = ["data"]
 
 [features]
 default = ["axum"]
-axum = ["dep:axum", "dep:futures", "dep:multer"]
+axum = ["dep:axum", "dep:futures", "dep:multer", "dep:tokio"]
 
 [dependencies]
 # Without axum's default features, so that the `axum` feature builds for
@@ -33,9 +33,11 @@ serde.workspace = true
 serde_json.workspace = true
 
 # A stream's keep-alive comments are timed with tokio, which has no timer on
-# wasm32-unknown-unknown.
+# wasm32-unknown-unknown. `serve` listens with axum's HTTP/1 server and stops
+# on the signals tokio watches, neither of which that target has.
 [target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
-axum = { version = "0.8.9", optional = true, default-features = false, features = ["tokio"] }
+axum = { version = "0.8.9", optional = true, default-features = false, features = ["http1", "tokio"] }
+tokio = { version = "1.53.3", optional = true, features = ["macros", "net", "signal", "sync", "time"] }
 
 # `Timestamp::now` reads the clock through JavaScript on wasm32-unknown-unknown,
 # where `SystemTime::now` panics.
