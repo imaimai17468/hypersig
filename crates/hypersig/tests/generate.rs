@@ -64,6 +64,17 @@ fn accepted(name: &str) -> bool {
                 | "data"
                 | "http-equiv"
                 | "attributename"
+                | "poster"
+                | "srcset"
+                | "style"
+                | "ping"
+                | "imagesrcset"
+                | "background"
+                | "manifest"
+                | "codebase"
+                | "archive"
+                | "classid"
+                | "longdesc"
         )
 }
 

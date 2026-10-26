@@ -39,3 +39,18 @@ it("runs the statement of a list item against that item", async () => {
     { name: "b", picked: true },
   ]);
 });
+
+it("drops an href whose scheme from a custom event's detail can run a script", async () => {
+  mount("widgets");
+  const link = $("#site");
+  expect(link.getAttribute("href")).toBe("https://example.com");
+  dispatch(link, "linked", "/about");
+  await tick();
+  expect(link.getAttribute("href")).toBe("/about");
+  dispatch(link, "linked", "java\tscript:alert(1)");
+  await tick();
+  expect(link.hasAttribute("href")).toBe(false);
+  dispatch(link, "linked", "JavaScript:alert(1)");
+  await tick();
+  expect(link.hasAttribute("href")).toBe(false);
+});

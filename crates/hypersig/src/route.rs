@@ -1268,8 +1268,11 @@ impl Segment for Rest {
 macro_rules! integer_segment {
     ($($ty:ty),*) => {$(
         impl Segment for $ty {
+            // A page whose signals hold an integer the browser would round
+            // does not render, so the URL of one names no page.
             fn parse(segment: &str) -> Option<Self> {
-                segment.parse().ok()
+                let v: $ty = segment.parse().ok()?;
+                crate::exact::holds_i128(i128::from(v)).then_some(v)
             }
 
             fn write(&self) -> String {
@@ -1755,5 +1758,16 @@ mod tests {
         );
         assert_eq!(<i32>::from_segments(&["seven"]), None);
         assert_eq!(<()>::from_segments(&[]), Some(()));
+    }
+
+    #[test]
+    fn an_integer_segment_the_browser_would_round_names_no_page() {
+        assert_eq!(<u64>::from_segments(&["9007199254740992"]), Some(1 << 53));
+        assert_eq!(
+            <i64>::from_segments(&["-9007199254740992"]),
+            Some(-(1 << 53))
+        );
+        assert_eq!(<u64>::from_segments(&["9007199254740993"]), None);
+        assert_eq!(<i64>::from_segments(&["-9007199254740993"]), None);
     }
 }

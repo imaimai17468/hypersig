@@ -42,7 +42,7 @@ fn output(site: Site) -> Part {
                     ],
                     &[
                         "A link runs a script, such as `javascript:`",
-                        "`El::href` and `El::src` take a `Link` to a route or a `SafeUrl`, which holds only `http:`, `https:`, `mailto:`, or a relative URL. `SafeUrl::parse` checks a URL a visitor typed, and a `SafeUrl` field of the signals checks it again when it deserializes. `attr`, `bind_attr`, and `attr_when` take the name as an `Attr`, and no `Attr` names `href`, `src`, an `on*` handler, `srcdoc`, `action`, `formaction`, `xlink:href`, `data`, `http-equiv`, or `attributeName`, in any case, or a name holding anything but letters, digits, `-`, `_`, `.`, and `:`. The constants of `html::attr` leave those names out, and `attr!` refuses them at compile time. `el` takes its tag as a `Tag` that `tag!` checks at compile time, which holds no space, quote, or `=` that would start an attribute, and is never `script`, `style`, or `base`.",
+                        "`El::href` and `El::src` take a `Link` to a route or a `SafeUrl`, which holds only `http:`, `https:`, `mailto:`, or a relative URL. `SafeUrl::parse` checks a URL a visitor typed, and a `SafeUrl` field of the signals checks it again when it deserializes. The runtime checks a `SafeUrl` that the browser builds, such as one in the `detail` of a custom event, when a signal writes it to `href`, `src`, or `poster`, and removes the attribute where the scheme is refused. `attr`, `bind_attr`, and `attr_when` take the name as an `Attr`, and no `Attr` names `href`, `src`, `poster`, `srcset`, `style`, an `on*` handler, `srcdoc`, `action`, `formaction`, `xlink:href`, `data`, `http-equiv`, `attributeName`, `ping`, `imagesrcset`, `background`, `manifest`, `codebase`, `archive`, `classid`, or `longdesc`, in any case, or a name holding anything but letters, digits, `-`, `_`, `.`, and `:`. The constants of `html::attr` leave those names out, and `attr!` refuses them at compile time. `el` takes its tag as a `Tag` that `tag!` checks at compile time, which holds no space, quote, or `=` that would start an attribute, and is never `script`, `style`, `base`, or `link`.",
                     ],
                     &[
                         "A URL sends the browser to another host",
@@ -64,7 +64,7 @@ fn output(site: Site) -> Part {
                     ],
                     &[
                         "`javascript:` のようなリンクがスクリプトを動かす",
-                        "`El::href` と `El::src` はルートへの `Link` か `SafeUrl` を受け取ります。`SafeUrl` が持てるのは `http:`、`https:`、`mailto:` か相対 URL だけです。訪問者が入力した URL は `SafeUrl::parse` で確かめ、シグナルの `SafeUrl` のフィールドはデシリアライズのときにもう一度確かめます。`attr`、`bind_attr`、`attr_when` は名前を `Attr` で受け取ります。`href`、`src`、`on*` のハンドラ、`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`、`attributeName` と、英数字、`-`、`_`、`.`、`:` 以外を含む名前には、大文字と小文字にかかわらず `Attr` がありません。`html::attr` の定数はこれらの名前を除いていて、`attr!` はコンパイル時に拒否します。`el` はタグを `tag!` がコンパイル時に検査する `Tag` で受け取ります。`Tag` は属性を始める空白、引用符、`=` を含まず、`script`、`style`、`base` にもなりません。",
+                        "`El::href` と `El::src` はルートへの `Link` か `SafeUrl` を受け取ります。`SafeUrl` が持てるのは `http:`、`https:`、`mailto:` か相対 URL だけです。訪問者が入力した URL は `SafeUrl::parse` で確かめ、シグナルの `SafeUrl` のフィールドはデシリアライズのときにもう一度確かめます。カスタムイベントの `detail` のようにブラウザで作られた `SafeUrl` は、シグナルが `href`、`src`、`poster` に書くときにランタイムが確かめ、拒否するスキームなら属性を取り除きます。`attr`、`bind_attr`、`attr_when` は名前を `Attr` で受け取ります。`href`、`src`、`poster`、`srcset`、`style`、`on*` のハンドラ、`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`、`attributeName`、`ping`、`imagesrcset`、`background`、`manifest`、`codebase`、`archive`、`classid`、`longdesc` と、英数字、`-`、`_`、`.`、`:` 以外を含む名前には、大文字と小文字にかかわらず `Attr` がありません。`html::attr` の定数はこれらの名前を除いていて、`attr!` はコンパイル時に拒否します。`el` はタグを `tag!` がコンパイル時に検査する `Tag` で受け取ります。`Tag` は属性を始める空白、引用符、`=` を含まず、`script`、`style`、`base`、`link` にもなりません。",
                     ],
                     &[
                         "URL がブラウザを別のホストへ送る",
@@ -169,8 +169,8 @@ fn requests(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A page of another site that shows the page in a frame and leads the visitor to click a button gets past these checks, because the click sends its request from the page's own origin. A page is therefore served with `X-Frame-Options: SAMEORIGIN` and `Content-Security-Policy: frame-ancestors 'self'`, and the browser shows it in a frame only on its own origin. `Page::framed_by` adds an origin that may frame it, and `Page::framed_anywhere` lets any site, for a page that changes nothing for the visitor.",
-                ja: "別のサイトのページがこのページを枠に表示し、訪問者にボタンを押させると、上の検査は通ってしまいます。押したときのリクエストはこのページ自身のオリジンから出るためです。そのためページは `X-Frame-Options: SAMEORIGIN` と `Content-Security-Policy: frame-ancestors 'self'` を付けて配信され、ブラウザは同じオリジンの枠にしか表示しません。枠に表示してよいオリジンは `Page::framed_by` で追加できます。訪問者のために何も変えないページは、`Page::framed_anywhere` を付けると、どのサイトの枠にも表示できます。",
+                en: "A page of another site that shows the page in a frame and leads the visitor to click a button gets past these checks, because the click sends its request from the page's own origin. A page is therefore served with `X-Frame-Options: SAMEORIGIN` and `Content-Security-Policy: frame-ancestors 'self'`, and the browser shows it in a frame only on its own origin. `Page::framing` with `Framing::Origins` adds origins that may frame it, and `Framing::Anywhere` lets any site, for a page that changes nothing for the visitor.",
+                ja: "別のサイトのページがこのページを枠に表示し、訪問者にボタンを押させると、上の検査は通ってしまいます。押したときのリクエストはこのページ自身のオリジンから出るためです。そのためページは `X-Frame-Options: SAMEORIGIN` と `Content-Security-Policy: frame-ancestors 'self'` を付けて配信され、ブラウザは同じオリジンの枠にしか表示しません。枠に表示してよいオリジンは `Page::framing` に `Framing::Origins` を渡して追加できます。訪問者のために何も変えないページは、`Framing::Anywhere` を渡すと、どのサイトの枠にも表示できます。",
             },
         ),
     ])
@@ -243,12 +243,12 @@ fn application(site: Site) -> Part {
                     ja: "シグナルの値。ブラウザが持っていて書き換えられるので、サーバーが頼る価格、役割、持ち主は、サーバーで読み直してください。",
                 },
                 L {
-                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. A policy the application sends replaces the page's `frame-ancestors`, so include `frame-ancestors 'self'` in it, as the `ui` example does. Without it the page still has `X-Frame-Options: SAMEORIGIN`, but a page given `Page::framed_by` has neither.",
-                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。アプリが送るポリシーはページの `frame-ancestors` を置き換えるので、`ui` の例と同じように `frame-ancestors 'self'` を含めてください。含めなくても `X-Frame-Options: SAMEORIGIN` は残りますが、`Page::framed_by` を付けたページではどちらも残りません。",
+                    en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. A policy the application sends replaces the page's `frame-ancestors`, so include `frame-ancestors 'self'` in it, as the `ui` example does. Without it the page still has `X-Frame-Options: SAMEORIGIN`, but a page given `Framing::Origins` with an origin has neither.",
+                    ja: "`Content-Security-Policy` のヘッダー。`Page::csp_nonce` はページの要素に nonce を付けます。ヘッダーはアプリが送り、nonce はレスポンスごとに 128 ビット以上の乱数にしてください。アプリが送るポリシーはページの `frame-ancestors` を置き換えるので、`ui` の例と同じように `frame-ancestors 'self'` を含めてください。含めなくても `X-Frame-Options: SAMEORIGIN` は残りますが、`Framing::Origins` にオリジンを渡したページではどちらも残りません。",
                 },
                 L {
-                    en: "The host of a URL. A `SafeUrl` may name any host, so a URL a visitor typed suits a link the visitor follows, and not the `src` of a script or the `href` of a `<base>`.",
-                    ja: "URL のホスト。`SafeUrl` はどのホストでも持てるので、訪問者が入力した URL は訪問者がたどるリンクに使い、スクリプトの `src` や `<base>` の `href` には使わないでください。",
+                    en: "The host of a URL. A `SafeUrl` may name any host, so a URL a visitor typed suits a link the visitor follows, and not the `src` of an `<iframe>`, which shows that host's page inside this one. An `<iframe>`, an `<embed>`, or a `<frame>` panics when its `src` reads a signal. Nothing in hypersig refuses a visitor's URL passed to one as a fixed `SafeUrl`, so the application refuses it.",
+                    ja: "URL のホスト。`SafeUrl` はどのホストでも持てるので、訪問者が入力した URL は訪問者がたどるリンクに使い、`<iframe>` の `src` には使わないでください。`<iframe>` はそのホストのページをこのページの中に表示します。`<iframe>`、`<embed>`、`<frame>` の `src` がシグナルを読むと panic します。訪問者の URL を固定の `SafeUrl` で渡すときは、アプリで拒否してください。",
                 },
                 L {
                     en: "Ids built from stored data. Rendering panics when two fixed ids are the same, but two identical `String` ids render, and a link or a patch to that id reaches the first of them. Build an id from a value visitors stored, such as a tag name, together with the record's key, so that it stays unique.",

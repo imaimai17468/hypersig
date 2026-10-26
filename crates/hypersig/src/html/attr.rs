@@ -72,9 +72,6 @@ pub const AMPLITUDE: Attr = Attr::new("amplitude");
 /// `arabic-form`, on `<glyph>`.
 pub const ARABIC_FORM: Attr = Attr::new("arabic-form");
 
-/// `archive`, on `<applet>`, `<object>`.
-pub const ARCHIVE: Attr = Attr::new("archive");
-
 /// `aria-atomic`, on every element, as ARIA defines.
 pub const ARIA_ATOMIC: Attr = Attr::new("aria-atomic");
 
@@ -228,9 +225,6 @@ pub const AXIS: Attr = Attr::new("axis");
 /// `azimuth`, on `<feDistantLight>`.
 pub const AZIMUTH: Attr = Attr::new("azimuth");
 
-/// `background`, on `<body>`.
-pub const BACKGROUND: Attr = Attr::new("background");
-
 /// `bandwidth`, on `<prefetch>`.
 pub const BANDWIDTH: Attr = Attr::new("bandwidth");
 
@@ -291,9 +285,6 @@ pub const CHECKED: Attr = Attr::new("checked");
 /// `cite`, on `<blockquote>`, `<del>`, `<ins>`, `<q>`.
 pub const CITE: Attr = Attr::new("cite");
 
-/// `classid`, on `<object>`.
-pub const CLASSID: Attr = Attr::new("classid");
-
 /// `clear`, on `<br>`.
 pub const CLEAR: Attr = Attr::new("clear");
 
@@ -314,9 +305,6 @@ pub const CLOSEDBY: Attr = Attr::new("closedby");
 
 /// `code`, on `<applet>`.
 pub const CODE: Attr = Attr::new("code");
-
-/// `codebase`, on `<applet>`, `<object>`.
-pub const CODEBASE: Attr = Attr::new("codebase");
 
 /// `codetype`, on `<object>`.
 pub const CODETYPE: Attr = Attr::new("codetype");
@@ -630,9 +618,6 @@ pub const IDEOGRAPHIC: Attr = Attr::new("ideographic");
 /// `imagesizes`, on `<link>`.
 pub const IMAGESIZES: Attr = Attr::new("imagesizes");
 
-/// `imagesrcset`, on `<link>`.
-pub const IMAGESRCSET: Attr = Attr::new("imagesrcset");
-
 /// `image-rendering`, on every SVG element.
 pub const IMAGE_RENDERING: Attr = Attr::new("image-rendering");
 
@@ -741,17 +726,11 @@ pub const LOADING: Attr = Attr::new("loading");
 /// `local`, on `<color-profile>`.
 pub const LOCAL: Attr = Attr::new("local");
 
-/// `longdesc`, on `<frame>`, `<iframe>`, `<img>`.
-pub const LONGDESC: Attr = Attr::new("longdesc");
-
 /// `loop`, on `<audio>`, `<video>`.
 pub const LOOP: Attr = Attr::new("loop");
 
 /// `low`, on `<meter>`.
 pub const LOW: Attr = Attr::new("low");
-
-/// `manifest`, on `<html>`.
-pub const MANIFEST: Attr = Attr::new("manifest");
 
 /// `marginheight`, on `<frame>`, `<iframe>`.
 pub const MARGINHEIGHT: Attr = Attr::new("marginheight");
@@ -960,9 +939,6 @@ pub const PATTERN_UNITS: Attr = Attr::new("patternUnits");
 /// `phase`, on `<listener>`.
 pub const PHASE: Attr = Attr::new("phase");
 
-/// `ping`, on `<a>`, `<area>`; `<a>`.
-pub const PING: Attr = Attr::new("ping");
-
 /// `placeholder`, on `<input>`, `<textarea>`.
 pub const PLACEHOLDER: Attr = Attr::new("placeholder");
 
@@ -995,9 +971,6 @@ pub const POPOVER: Attr = Attr::new("popover");
 
 /// `popovertargetaction`, on `<button>`, `<input>`.
 pub const POPOVERTARGETACTION: Attr = Attr::new("popovertargetaction");
-
-/// `poster`, on `<video>`.
-pub const POSTER: Attr = Attr::new("poster");
 
 /// `preload`, on `<audio>`, `<video>`.
 pub const PRELOAD: Attr = Attr::new("preload");
@@ -1182,9 +1155,6 @@ pub const SPREAD_METHOD: Attr = Attr::new("spreadMethod");
 /// `srclang`, on `<track>`.
 pub const SRCLANG: Attr = Attr::new("srclang");
 
-/// `srcset`, on `<img>`, `<source>`.
-pub const SRCSET: Attr = Attr::new("srcset");
-
 /// `standby`, on `<object>`.
 pub const STANDBY: Attr = Attr::new("standby");
 
@@ -1247,9 +1217,6 @@ pub const STROKE_OPACITY: Attr = Attr::new("stroke-opacity");
 
 /// `stroke-width`, on every SVG element.
 pub const STROKE_WIDTH: Attr = Attr::new("stroke-width");
-
-/// `style`, on every HTML element; every SVG element.
-pub const STYLE: Attr = Attr::new("style");
 
 /// `summary`, on `<table>`.
 pub const SUMMARY: Attr = Attr::new("summary");

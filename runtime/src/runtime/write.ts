@@ -6,6 +6,26 @@ export type Write = "show" | "text" | "checked" | "class" | "attr" | "toggle" | 
 /** The kinds of binding whose expression is a condition, which a comparison or a selector part can answer. */
 export const CONDITIONS: ReadonlySet<string> = new Set(["show", "class", "toggle", "if"]);
 
+/**
+ * The attributes whose binding holds a `SafeUrl`, which `El::href`,
+ * `El::src`, and `El::poster` write and no `Attr` can name.
+ */
+const URLS: ReadonlySet<string> = new Set(["href", "src", "poster"]);
+
+/**
+ * Whether `url` is one a `SafeUrl` can hold, the rule of `check` in
+ * `crates/hypersig/src/href.rs`. A `SafeUrl` the server sent passed it
+ * already, and one the browser built, such as the `detail` of a custom
+ * event, reaches the binding unchecked.
+ */
+export function safeUrl(url: string): boolean {
+  // The browser drops spaces and control characters around and inside the
+  // scheme before reading it, so `java\tscript:` runs as `javascript:`.
+  for (const char of url) if (char <= " " || char === "\u007F") return false;
+  const scheme = /^[a-z][a-z0-9+.-]*:/iu.exec(url);
+  return scheme === null || /^(?:https?|mailto):$/iu.test(scheme[0]);
+}
+
 /** The bindings of `spec` that write to the element, in the order the runtime runs them. */
 export function writes(spec: Spec): [kind: Write, name: string, ast: unknown][] {
   const found: [Write, string, unknown][] = [];
@@ -53,7 +73,8 @@ export function write(element: Element, kind: Write, name: string, value: unknow
       return;
     case "attr": {
       const next = String(value);
-      if (element.getAttribute(name) !== next) element.setAttribute(name, next);
+      if (URLS.has(name) && !safeUrl(next)) element.removeAttribute(name);
+      else if (element.getAttribute(name) !== next) element.setAttribute(name, next);
       return;
     }
     case "toggle":

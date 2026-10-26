@@ -66,6 +66,9 @@ hypersig::routes! {
     action MOVE: Action<Counter, i32> = post "/move" => |(), id: i32| async move {
         Patches::from(Counter::count().patch(id)).navigate(ORG_MEMBER.url(("acme".to_owned(), id)))
     };
+    action LEDGER: Action<Counter, Vec<i64>> = post "/ledger" => |(), amounts: Vec<i64>| async move {
+        Patches::from(Counter::count().patch(i32::try_from(amounts.len()).unwrap()))
+    };
     action LENGTH: Action<Counter, String> = get "/length" => |(), text: String| async move {
         Patches::from(Counter::count().patch(i32::try_from(text.chars().count()).unwrap()))
     };
@@ -208,6 +211,26 @@ async fn arguments_of_the_wrong_type_get_400() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert!(
         body.starts_with("the action's arguments did not deserialize"),
+        "{body}"
+    );
+}
+
+#[tokio::test]
+async fn an_argument_the_browser_would_round_gets_400() {
+    let ledger = |amounts: &'static str| {
+        send(
+            Request::post("/ledger")
+                .header("content-type", "application/json")
+                .body(Body::from(amounts))
+                .expect("request"),
+        )
+    };
+    let (status, _) = ledger("[9007199254740992, -9007199254740992]").await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, body) = ledger("[1, 9007199254740993]").await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(
+        body.contains("the integer 9007199254740993 is outside -2^53 to 2^53"),
         "{body}"
     );
 }

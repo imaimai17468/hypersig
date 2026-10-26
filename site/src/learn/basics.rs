@@ -193,8 +193,8 @@ pub fn describing_the_page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The [`html`](api:hypersig/html/index.html) module has one function per common tag, such as `div()`, `p()`, and `button()`, and `el(hypersig::tag!(\"tag\"))` for any other, which checks the tag at compile time and refuses `script`, `style`, and `base`. Each returns an `El<S>`, where `S` is the page's signal struct, and its methods return the element, so a tree is one expression.",
-                ja: "[`html`](api:hypersig/html/index.html) モジュールには `div()`、`p()`、`button()` のようによく使うタグごとの関数と、それ以外のタグに使う `el(hypersig::tag!(\"tag\"))` があります。`tag!` はタグをコンパイル時に検査し、`script`、`style`、`base` を拒否します。どれも `El<S>` を返します。`S` はページのシグナル構造体です。`El` のメソッドは要素そのものを返すので、木全体を 1 つの式で書けます。",
+                en: "The [`html`](api:hypersig/html/index.html) module has one function per common tag, such as `div()`, `p()`, and `button()`, and `el(hypersig::tag!(\"tag\"))` for any other, which checks the tag at compile time and refuses `script`, `style`, `base`, and `link`. Each returns an `El<S>`, where `S` is the page's signal struct, and its methods return the element, so a tree is one expression.",
+                ja: "[`html`](api:hypersig/html/index.html) モジュールには `div()`、`p()`、`button()` のようによく使うタグごとの関数と、それ以外のタグに使う `el(hypersig::tag!(\"tag\"))` があります。`tag!` はタグをコンパイル時に検査し、`script`、`style`、`base`、`link` を拒否します。どれも `El<S>` を返します。`S` はページのシグナル構造体です。`El` のメソッドは要素そのものを返すので、木全体を 1 つの式で書けます。",
             },
         ),
         show(Snippet::Elements),
@@ -232,16 +232,20 @@ pub fn describing_the_page(site: Site) -> Part {
                     ja: "`data-hs-` で始まる名前。ランタイムがこの属性を読むので、型付きのメソッドだけが書きます。",
                 },
                 L {
-                    en: "`href` and `src`, which `El::href` and `El::src` set from a `Link` or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), a URL whose scheme cannot run a script. [When bindings and statements are not enough](learn/escape-hatches/) covers `SafeUrl`.",
-                    ja: "`href` と `src`。`El::href` と `El::src` が、`Link` か、スクリプトを実行できないスキームの URL を持つ [`SafeUrl`](api:hypersig/struct.SafeUrl.html) から設定します。`SafeUrl` は [束縛と文で足りないとき](learn/escape-hatches/) で説明します。",
+                    en: "`href`, `src`, `poster`, and `srcset`, which `El::href`, `El::src`, `El::poster`, and `El::srcset` set from a `Link` or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), a URL whose scheme cannot run a script. [When bindings and statements are not enough](learn/escape-hatches/) covers `SafeUrl`.",
+                    ja: "`href`、`src`、`poster`、`srcset`。`El::href`、`El::src`、`El::poster`、`El::srcset` が、`Link` か、スクリプトを実行できないスキームの URL を持つ [`SafeUrl`](api:hypersig/struct.SafeUrl.html) から設定します。`SafeUrl` は [束縛と文で足りないとき](learn/escape-hatches/) で説明します。",
                 },
                 L {
                     en: "A name starting with `on`, such as `onclick`. The `on_*` methods, such as `on_click`, attach a statement in its place.",
                     ja: "`onclick` のように `on` で始まる名前。代わりに `on_click` などの `on_*` のメソッドで文を付けます。",
                 },
                 L {
-                    en: "`srcdoc`, `action`, `formaction`, `xlink:href`, `data`, and `http-equiv`, which have no method of their own. A form sends its values through an action call, as [Forms](learn/forms/) shows.",
-                    ja: "`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`。これらを設定するメソッドはありません。フォームの値は [フォーム](learn/forms/) のとおりアクションの呼び出しで送ります。",
+                    en: "`srcdoc`, `action`, `formaction`, `xlink:href`, `data`, `http-equiv`, `ping`, `imagesrcset`, `background`, `manifest`, `codebase`, `archive`, `classid`, and `longdesc`, which load a URL or a document and have no method of their own. A form sends its values through an action call, as [Forms](learn/forms/) shows.",
+                    ja: "`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`、`ping`、`imagesrcset`、`background`、`manifest`、`codebase`、`archive`、`classid`、`longdesc`。どれも URL か文書を読み込む属性で、設定するメソッドはありません。フォームの値は [フォーム](learn/forms/) のとおりアクションの呼び出しで送ります。",
+                },
+                L {
+                    en: "`style`, because `El::css` and `El::bind_style` write the element's CSS.",
+                    ja: "`style`。要素の CSS は `El::css` と `El::bind_style` で書きます。",
                 },
                 L {
                     en: "`attributeName`, whose value `href` would make an SVG animation write into a link.",

@@ -25,6 +25,11 @@ pub(crate) fn holds_u64(v: u64) -> bool {
     v <= LIMIT
 }
 
+/// Whether the browser reads `v` back as `v`.
+pub(crate) fn holds_i128(v: i128) -> bool {
+    v.unsigned_abs() <= u128::from(LIMIT)
+}
+
 /// The message of the panic for `v`, which the browser would round.
 pub(crate) fn message(v: impl std::fmt::Display) -> String {
     format!(
@@ -46,18 +51,41 @@ pub(crate) fn to_value(value: &(impl Serialize + ?Sized), what: &str) -> Value {
 
 /// Panics at the first integer in `value` that the browser would round.
 pub(crate) fn check(value: &Value) {
-    match value {
-        Value::Number(n) => {
-            if let Some(v) = n.as_i64() {
-                assert!(holds_i64(v), "{}", message(v));
-            } else if let Some(v) = n.as_u64() {
-                assert!(holds_u64(v), "{}", message(v));
-            }
-        }
-        Value::Array(items) => items.iter().for_each(check),
-        Value::Object(fields) => fields.values().for_each(check),
-        Value::Null | Value::Bool(_) | Value::String(_) => {}
+    if let Some(error) = rounded(value) {
+        panic!("{error}");
     }
+}
+
+/// The message for the first integer in `value` that the browser would
+/// round, if one is there.
+pub(crate) fn rounded(value: &Value) -> Option<String> {
+    match value {
+        Value::Number(n) => match (n.as_i64(), n.as_u64()) {
+            (Some(v), _) if !holds_i64(v) => Some(message(v)),
+            (None, Some(v)) if !holds_u64(v) => Some(message(v)),
+            _ => None,
+        },
+        Value::Array(items) => items.iter().find_map(rounded),
+        Value::Object(fields) => fields.values().find_map(rounded),
+        Value::Null | Value::Bool(_) | Value::String(_) => None,
+    }
+}
+
+#[cfg(feature = "axum")]
+/// Reads `A` from the JSON in `json`, refusing an integer the browser would
+/// round, which the page could not send back as it came.
+///
+/// # Errors
+///
+/// Returns the error of `serde_json`, or one naming the integer.
+pub(crate) fn from_slice<A: serde::de::DeserializeOwned>(
+    json: &[u8],
+) -> Result<A, serde_json::Error> {
+    let value: Value = serde_json::from_slice(json)?;
+    if let Some(error) = rounded(&value) {
+        return Err(serde::de::Error::custom(error));
+    }
+    serde_json::from_value(value)
 }
 
 #[cfg(test)]

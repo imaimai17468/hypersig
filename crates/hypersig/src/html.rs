@@ -56,7 +56,7 @@ use serde_json::{Value, json};
 use crate::action::NodeRef;
 use crate::exact;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
-use crate::href::IntoHref;
+use crate::href::{IntoHref, SafeUrl};
 use crate::signal::{Item, Part, Sig, Writable, in_item_scope, in_part};
 use crate::ssr::{self, Ctx, Val};
 use crate::style::{Property, Sheet, Style, Token, TokenValue};
@@ -84,12 +84,16 @@ pub use role::Role;
 /// [`El::role`] sets from a [`Role`], nor an attribute whose value names
 /// another element, such as `for` or `aria-describedby`, which the methods
 /// that take an [`Id`] set, nor one whose value can run a
-/// script or load a URL: `href` and `src`, which [`El::href`] and [`El::src`]
-/// set from a value that cannot, an event handler `on*`, `srcdoc`, `action`,
+/// script or load a URL: `href`, `src`, `poster`, and `srcset`, which
+/// [`El::href`], [`El::src`], [`El::poster`], and [`El::srcset`] set from a
+/// value that cannot, an event handler `on*`, `srcdoc`, `action`,
 /// `formaction`, `xlink:href`, `data`, which `<object>` loads, `http-equiv`,
-/// whose `refresh` loads the URL in `content`, and `attributeName`, with which
-/// SVG's `<animate>` and `<set>` could write into a link. Case is ignored, as
-/// the browser ignores it.
+/// whose `refresh` loads the URL in `content`, `attributeName`, with which
+/// SVG's `<animate>` and `<set>` could write into a link, `ping`, to which a
+/// click on a link sends a request, `imagesrcset`, `background`,
+/// `manifest`, `codebase`, `archive`, `classid`, and `longdesc`. Nor does it
+/// name `style`, whose CSS [`El::css`] and [`El::bind_style`] write. Case is
+/// ignored, as the browser ignores it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Attr(&'static str);
 
@@ -131,8 +135,16 @@ impl Attr {
             "this attribute names an element; set it with the `El` method that takes an `Id`"
         );
         assert!(
-            !is(bytes, "href") && !is(bytes, "src"),
-            "`El::href` and `El::src` set `href` and `src` from a `Link` or a `SafeUrl`"
+            !is(bytes, "href") && !is(bytes, "src") && !is(bytes, "poster"),
+            "`El::href`, `El::src`, and `El::poster` set `href`, `src`, and `poster` from a `Link` or a `SafeUrl`"
+        );
+        assert!(
+            !is(bytes, "srcset"),
+            "`El::srcset` sets `srcset` from `SafeUrl`s"
+        );
+        assert!(
+            !is(bytes, "style"),
+            "`El::css` and `El::bind_style` write the element's CSS"
         );
         assert!(
             !starts_with(bytes, "on"),
@@ -145,7 +157,15 @@ impl Attr {
                 && !is(bytes, "xlink:href")
                 && !is(bytes, "data")
                 && !is(bytes, "http-equiv")
-                && !is(bytes, "attributename"),
+                && !is(bytes, "attributename")
+                && !is(bytes, "ping")
+                && !is(bytes, "imagesrcset")
+                && !is(bytes, "background")
+                && !is(bytes, "manifest")
+                && !is(bytes, "codebase")
+                && !is(bytes, "archive")
+                && !is(bytes, "classid")
+                && !is(bytes, "longdesc"),
             "the value of this attribute can run a script or load a URL"
         );
         Self(name)
@@ -949,7 +969,10 @@ impl Event {
 /// The name and `T` describe code outside hypersig, so nothing checks them:
 /// an event the script never dispatches runs nothing, and a `detail` of
 /// another shape reaches the statement as it is, where reading a field it
-/// lacks gives `null`. For a library that ships a Custom Elements Manifest,
+/// lacks gives `null`. A [`SafeUrl`] in `T` is not checked
+/// either, so the runtime checks the `href`, `src`, or `poster` a signal
+/// gives an element, and removes the attribute where the URL has a scheme
+/// a `SafeUrl` refuses. For a library that ships a Custom Elements Manifest,
 /// `cargo hypersig elements` writes these constants from the manifest.
 ///
 /// ```
@@ -1339,10 +1362,13 @@ pub fn el<S>(tag: Tag) -> El<S> {
 ///
 /// [`tag!`](hypersig::tag!) builds one at compile time. A tag is ASCII letters,
 /// digits, `-`, `_`, `.`, and `:`, starting with a letter, so the name cannot
-/// end the tag and start an attribute. It is never `script`, `style`, or
-/// `base`, in any case: the first two run their text as code, and `base`
-/// moves every relative URL of the page, the action URLs among them, to
-/// another origin.
+/// end the tag and start an attribute. It is never `script`, `style`,
+/// `base`, or `link`, in any case: the first two run their text as code,
+/// `base` moves every relative URL of the page, the action URLs among them,
+/// to another origin, and `link` loads a stylesheet or a preload from the
+/// host its `href` names. [`Page::stylesheet`](crate::Page::stylesheet) and
+/// [`Page::icon`](crate::Page::icon) write the `<link>`s a page needs, from a
+/// URL written in the program.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Tag(&'static str);
 
@@ -1372,6 +1398,10 @@ impl Tag {
             !is(bytes, "script") && !is(bytes, "style") && !is(bytes, "base"),
             "`script` and `style` run their text as code, and `base` moves the page's URLs"
         );
+        assert!(
+            !is(bytes, "link"),
+            "`link` loads from the host its `href` names; `Page::stylesheet` and `Page::icon` write the page's `<link>`s"
+        );
         Self(name)
     }
 
@@ -1380,6 +1410,15 @@ impl Tag {
     pub const fn name(self) -> &'static str {
         self.0
     }
+}
+
+/// What an image of [`El::srcset`] is drawn for.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Candidate {
+    /// The image's width in pixels, written as `480w`.
+    Width(u32),
+    /// The device pixels per CSS pixel it suits, written as `2x`.
+    Density(f64),
 }
 
 /// The tags the HTML standard defines as void elements, which take no
@@ -1562,7 +1601,7 @@ impl<S> El<S> {
     }
 
     /// Sets the element's `href`: a link to a page the router serves, or a
-    /// [`SafeUrl`](crate::SafeUrl) for an address it does not.
+    /// [`SafeUrl`] for an address it does not.
     ///
     /// A fixed URL is written as a plain attribute. One that reads signals is
     /// kept up to date as they change.
@@ -1574,17 +1613,82 @@ impl<S> El<S> {
     /// Sets the element's `src`, the address of the image, frame, or script
     /// it loads, as [`El::href`] sets `href`.
     ///
-    /// A [`SafeUrl`](crate::SafeUrl) may name any host, so a script's `src`
-    /// comes from the program, never from a visitor.
+    /// A [`SafeUrl`] may name any host, so the `src` of an
+    /// `<iframe>`, an `<embed>`, or a `<frame>`, which shows the page at that
+    /// URL inside this one, comes from the program, never from a visitor.
+    ///
+    /// # Panics
+    ///
+    /// Panics on an `<iframe>`, an `<embed>`, or a `<frame>` if `url` reads
+    /// signals, which the browser could change to a page of any host.
     #[must_use]
     pub fn src(self, url: impl IntoHref<S>) -> Self {
         self.url_attr("src", url)
     }
 
+    /// Sets the image a `<video>` shows before it plays, as [`El::src`]
+    /// sets `src`.
+    #[must_use]
+    pub fn poster(self, url: impl IntoHref<S>) -> Self {
+        self.url_attr("poster", url)
+    }
+
+    /// Sets the images the browser picks from for an `<img>` or a
+    /// `<source>`, each a URL and the width or pixel density it is drawn for.
+    ///
+    /// ```
+    /// use hypersig::SafeUrl;
+    /// use hypersig::html::{Candidate, img};
+    ///
+    /// let html = img::<()>()
+    ///     .src(SafeUrl::new("/a-480.png"))
+    ///     .srcset([
+    ///         (SafeUrl::new("/a-480.png"), Candidate::Width(480)),
+    ///         (SafeUrl::new("/a-960.png"), Candidate::Width(960)),
+    ///     ])
+    ///     .render();
+    /// assert_eq!(
+    ///     html,
+    ///     r#"<img src="/a-480.png" srcset="/a-480.png 480w, /a-960.png 960w">"#
+    /// );
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if a [`Candidate::Density`] is not a finite number above 0.
+    #[must_use]
+    pub fn srcset(mut self, candidates: impl IntoIterator<Item = (SafeUrl, Candidate)>) -> Self {
+        let set: Vec<String> = candidates
+            .into_iter()
+            .map(|(url, candidate)| match candidate {
+                Candidate::Width(width) => format!("{url} {width}w"),
+                Candidate::Density(density) => {
+                    assert!(
+                        density.is_finite() && density > 0.0,
+                        "a pixel density is a finite number above 0, not {density}"
+                    );
+                    format!("{url} {density}x")
+                }
+            })
+            .collect();
+        self.attrs.push(("srcset", set.join(", ")));
+        self
+    }
+
     fn url_attr(mut self, name: &'static str, url: impl IntoHref<S>) -> Self {
         match url.into_parts() {
             Ok(url) => self.attrs.push((name, url)),
-            Err(expr) => self.attr_bind.push((name, expr)),
+            Err(expr) => {
+                assert!(
+                    !["iframe", "embed", "frame"]
+                        .iter()
+                        .any(|frame| self.tag.eq_ignore_ascii_case(frame)),
+                    "the `{name}` of a `<{}>` shows a page inside this one, so it comes from \
+                     the program and reads no signal",
+                    self.tag
+                );
+                self.attr_bind.push((name, expr));
+            }
         }
         self
     }
@@ -2517,16 +2621,10 @@ impl<S> El<S> {
             out.push('"');
         }
         for (name, value) in &self.attrs {
-            if *name == "style" && !style.is_empty() {
-                continue;
-            }
             write_attr(out, name, value);
         }
         if !style.is_empty() {
-            let own = self.attrs.iter().find(|(name, _)| *name == "style");
-            let mut all: Vec<String> = own.map(|(_, value)| value.clone()).into_iter().collect();
-            all.extend(style);
-            write_attr(out, "style", &all.join("; "));
+            write_attr(out, "style", &style.join("; "));
         }
         for (name, value) in &computed {
             if !self.has_attr(name) {
@@ -2793,15 +2891,58 @@ pub(crate) fn escape_into(out: &mut String, text: &str, to: Escape) {
 
 #[cfg(test)]
 mod tests {
-    use super::{Attr, Class, attr, button, div, el, img, input, picture, source, span};
+    use super::{Attr, Candidate, Class, attr, button, div, el, img, input, picture, source, span};
     use crate::_private::sig;
     use crate::style::Token;
-    use crate::{Sig, Stmt};
+    use crate::{SafeUrl, Sig, Stmt};
 
     struct Page;
 
     fn count() -> Sig<Page, i32> {
         sig("count")
+    }
+
+    fn site() -> Sig<Page, SafeUrl> {
+        sig("site")
+    }
+
+    #[test]
+    fn a_link_or_an_image_takes_its_url_from_a_signal() {
+        let html = super::a::<Page>().href(site()).render();
+        assert!(html.contains("data-hs-attr"), "{html}");
+        let html = super::video::<Page>().poster(site()).render();
+        assert!(html.contains("data-hs-attr"), "{html}");
+    }
+
+    #[test]
+    #[should_panic(expected = "the `src` of a `<IFrame>` shows a page inside this one")]
+    fn a_frame_takes_no_url_from_a_signal() {
+        let _ = el::<Page>(crate::tag!("IFrame")).src(site());
+    }
+
+    #[test]
+    fn a_frame_takes_a_fixed_url() {
+        let html = el::<Page>(crate::tag!("iframe"))
+            .src(SafeUrl::new("https://example.com/embed"))
+            .render();
+        assert_eq!(html, r#"<iframe src="https://example.com/embed"></iframe>"#);
+    }
+
+    #[test]
+    fn srcset_writes_each_url_with_its_width_or_density() {
+        let html = img::<Page>()
+            .srcset([
+                (SafeUrl::new("/a.png"), Candidate::Density(1.0)),
+                (SafeUrl::new("/a@1.5.png"), Candidate::Density(1.5)),
+            ])
+            .render();
+        assert_eq!(html, r#"<img srcset="/a.png 1x, /a@1.5.png 1.5x">"#);
+    }
+
+    #[test]
+    #[should_panic(expected = "a pixel density is a finite number above 0, not NaN")]
+    fn srcset_refuses_a_density_that_is_not_a_number() {
+        let _ = img::<Page>().srcset([(SafeUrl::new("/a.png"), Candidate::Density(f64::NAN))]);
     }
 
     fn name() -> Sig<Page, String> {
@@ -2823,13 +2964,15 @@ mod tests {
     #[test]
     fn a_void_tag_has_no_closing_tag_from_its_constructor_or_from_el() {
         let html = picture::<Page>()
-            .child(source().attr(attr::SRCSET, "/a.avif"))
+            .child(
+                source().srcset([(crate::SafeUrl::new("/a.avif"), super::Candidate::Width(480))]),
+            )
             .child(el(crate::tag!("meta")).attr(attr::ITEMPROP, "name"))
             .child(img().src(crate::SafeUrl::new("/a.png")))
             .render();
         assert_eq!(
             html,
-            r#"<picture><source srcset="/a.avif"><meta itemprop="name"><img src="/a.png"></picture>"#
+            r#"<picture><source srcset="/a.avif 480w"><meta itemprop="name"><img src="/a.png"></picture>"#
         );
     }
 
@@ -2840,13 +2983,13 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "`El::href` and `El::src` set")]
+    #[should_panic(expected = "`El::href`, `El::src`, and `El::poster` set")]
     fn an_attr_cannot_name_href() {
         let _ = Attr::new("href");
     }
 
     #[test]
-    #[should_panic(expected = "`El::href` and `El::src` set")]
+    #[should_panic(expected = "`El::href`, `El::src`, and `El::poster` set")]
     fn an_attr_cannot_name_src_in_any_case() {
         let _ = Attr::new("SRC");
     }

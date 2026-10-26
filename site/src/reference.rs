@@ -330,19 +330,19 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
-                            "framed_by",
-                            "struct.Page.html#method.framed_by",
+                            "framing",
+                            "struct.Page.html#method.framing",
                             L {
-                                en: "Lets pages served from `origin` show this page in a frame.",
-                                ja: "`origin` から配信したページがこのページを枠に表示できるようにします。",
+                                en: "Sets which pages may show this page in a frame.",
+                                ja: "このページを枠に表示してよいページを設定します。",
                             },
                         ),
                         (
-                            "framed_anywhere",
-                            "struct.Page.html#method.framed_anywhere",
+                            "Framing",
+                            "enum.Framing.html",
                             L {
-                                en: "Lets a page of any site show this page in a frame.",
-                                ja: "どのサイトのページもこのページを枠に表示できるようにします。",
+                                en: "Which pages may show a page in a frame, which `Page::framing` sets.",
+                                ja: "ページを枠に表示してよいページです。`Page::framing` で設定します。",
                             },
                         ),
                         (
@@ -496,6 +496,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "Sets the element's `src`, the address of the image, frame, or script it loads, as `El::href` sets `href`.",
                                 ja: "要素が読み込む画像、フレーム、スクリプトのアドレスである `src` を、`El::href` と同じように設定します。",
+                            },
+                        ),
+                        (
+                            "poster",
+                            "html/struct.El.html#method.poster",
+                            L {
+                                en: "Sets the image a `<video>` shows before it plays, as `El::src` sets `src`.",
+                                ja: "`<video>` が再生前に表示する画像を、`El::src` と同じように設定します。",
+                            },
+                        ),
+                        (
+                            "srcset",
+                            "html/struct.El.html#method.srcset",
+                            L {
+                                en: "Sets the images the browser picks from for an `<img>` or a `<source>`.",
+                                ja: "`<img>` や `<source>` でブラウザが選ぶ画像の候補を設定します。",
+                            },
+                        ),
+                        (
+                            "Candidate",
+                            "html/enum.Candidate.html",
+                            L {
+                                en: "What an image of `El::srcset` is drawn for.",
+                                ja: "`El::srcset` の画像が想定する幅か画素密度です。",
                             },
                         ),
                         (

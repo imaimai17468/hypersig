@@ -156,7 +156,7 @@ const fn check_origin(bytes: &[u8]) -> Result<(), &'static str> {
         if matches!(bytes[i], b'/' | b'?' | b'#' | b'"' | b' ') {
             return Err("an origin ends at the host and port");
         }
-        // `Page::framed_by` writes the origin into a header unescaped, where
+        // `Page::framing` writes the origin into a header unescaped, where
         // a `;` or a `,` would start another directive or policy.
         if !(bytes[i].is_ascii_alphanumeric()
             || matches!(bytes[i], b'.' | b'-' | b':' | b'[' | b']'))

@@ -22,8 +22,14 @@ use crate::signal::Sig;
 ///
 /// The host is not checked: `https://evil.example/a.js` and
 /// `//evil.example` are `SafeUrl`s. A visitor's URL suits a link the visitor
-/// follows, and not the `src` of a `<script>` or the `href` of a `<base>`,
-/// which would load or resolve against whatever host it names.
+/// follows, and not the `src` of an `<iframe>`, which would show the page of
+/// whatever host it names inside this one.
+///
+/// In the browser, a `SafeUrl` can also come from code outside hypersig,
+/// such as the `detail` of a [`CustomEvent`](crate::html::CustomEvent), which
+/// nothing checks on its way in. The runtime checks the same rule when a
+/// signal writes `href`, `src`, or `poster`, and removes the attribute where
+/// the URL breaks it.
 ///
 /// ```
 /// use hypersig::SafeUrl;
