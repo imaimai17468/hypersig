@@ -797,8 +797,8 @@ fn component_page(page: Component) -> Page {
             },
             demo: Demo::Listbox,
             built_on: &[L {
-                en: "It follows the WAI-ARIA listbox pattern for a single selection. The list has `role=\"listbox\"` and each option `role=\"option\"` with `aria-selected`. Focus moves between the options through `El::roving_focus`, and each option is selected as it gains focus. The ids are derived from the signal's path and the option's position.",
-                ja: "単一選択の WAI-ARIA listbox パターンに従います。一覧は `role=\"listbox\"` を持ち、各選択肢は `role=\"option\"` と `aria-selected` を持ちます。フォーカスは `El::roving_focus` で選択肢の間を移り、選択肢はフォーカスを受けると同時に選ばれます。id はシグナルのパスと選択肢の位置から作られます。",
+                en: "It follows the WAI-ARIA listbox pattern for a single selection. The list has `role=\"listbox\"` and each option `role=\"option\"` with `aria-selected`. Focus moves between the options through `El::roving_focus`, and each option is selected as it gains focus. The ids are derived from the signal's path and the option's position. The signal holds an enum with `#[derive(Segment)]`, and the options are its variants, so a `match` that leaves a variant without a title fails to compile.",
+                ja: "単一選択の WAI-ARIA listbox パターンに従います。一覧は `role=\"listbox\"` を持ち、各選択肢は `role=\"option\"` と `aria-selected` を持ちます。フォーカスは `El::roving_focus` で選択肢の間を移り、選択肢はフォーカスを受けると同時に選ばれます。id はシグナルのパスと選択肢の位置から作られます。シグナルの値は `#[derive(Segment)]` を付けた列挙型で、選択肢はそのバリアントです。そのため、タイトルのないバリアントを残した `match` はコンパイルできません。",
             }],
             keys: &[
                 (
@@ -807,8 +807,8 @@ fn component_page(page: Component) -> Page {
                         ja: "Tab",
                     },
                     L {
-                        en: "Moves focus into the list, to the selected option, or to the first where none is selected.",
-                        ja: "一覧の中の選ばれた選択肢にフォーカスを移します。選ばれた選択肢がなければ、最初の選択肢に移します。",
+                        en: "Moves focus into the list, to the selected option.",
+                        ja: "一覧の中の選ばれた選択肢にフォーカスを移します。",
                     },
                 ),
                 (
@@ -832,24 +832,14 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
             ],
-            items: &[
-                (
-                    "Listbox::new",
-                    "hypersig_ui/struct.Listbox.html#method.new",
-                    L {
-                        en: "An empty list named `label` for assistive technology.",
-                        ja: "支援技術に向けて `label` を名前に持つ、空の一覧",
-                    },
-                ),
-                (
-                    "option",
-                    "hypersig_ui/struct.Listbox.html#method.option",
-                    L {
-                        en: "Adds an option labeled `title` that selects `value`.",
-                        ja: "`title` をラベルに持ち、`value` を選ぶ選択肢を追加します。",
-                    },
-                ),
-            ],
+            items: &[(
+                "Listbox::new",
+                "hypersig_ui/struct.Listbox.html#method.new",
+                L {
+                    en: "A list named `label`, with the title `option` gives each variant.",
+                    ja: "`label` を名前に持ち、`option` が各バリアントに返すタイトルを選択肢にする一覧",
+                },
+            )],
         },
         Component::Combobox => Page {
             lead: L {
@@ -961,8 +951,8 @@ fn component_page(page: Component) -> Page {
             },
             demo: Demo::Tabs,
             built_on: &[L {
-                en: "It follows the WAI-ARIA tabs pattern. The list has `role=\"tablist\"`, each tab `role=\"tab\"` with `aria-selected` and `aria-controls`, and each panel `role=\"tabpanel\"` labeled by its tab. A tab is selected as it gains focus, through `El::roving_focus`. The ids are derived from the signal's path and the tab's position.",
-                ja: "WAI-ARIA tabs パターンに従います。一覧は `role=\"tablist\"` を持ち、各タブは `role=\"tab\"` と `aria-selected`、`aria-controls` を持ちます。各パネルは `role=\"tabpanel\"` を持ち、対応するタブがパネルのラベルになります。タブは `El::roving_focus` でフォーカスを受けると同時に選ばれます。id はシグナルのパスとタブの位置から作られます。",
+                en: "It follows the WAI-ARIA tabs pattern. The list has `role=\"tablist\"`, each tab `role=\"tab\"` with `aria-selected` and `aria-controls`, and each panel `role=\"tabpanel\"` labeled by its tab. A tab is selected as it gains focus, through `El::roving_focus`. The ids are derived from the signal's path and the tab's position. The signal holds an enum with `#[derive(Segment)]`, and the tabs are its variants, so the selected value always has a tab that Tab reaches, and a `match` that leaves a variant without a tab fails to compile.",
+                ja: "WAI-ARIA tabs パターンに従います。一覧は `role=\"tablist\"` を持ち、各タブは `role=\"tab\"` と `aria-selected`、`aria-controls` を持ちます。各パネルは `role=\"tabpanel\"` を持ち、対応するタブがパネルのラベルになります。タブは `El::roving_focus` でフォーカスを受けると同時に選ばれます。id はシグナルのパスとタブの位置から作られます。シグナルの値は `#[derive(Segment)]` を付けた列挙型で、タブはそのバリアントです。そのため、選ばれた値には必ず Tab キーで移れるタブがあり、タブのないバリアントを残した `match` はコンパイルできません。",
             }],
             keys: &[
                 (
@@ -996,24 +986,14 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
             ],
-            items: &[
-                (
-                    "Tabs::new",
-                    "hypersig_ui/struct.Tabs.html#method.new",
-                    L {
-                        en: "An empty tab list named `label` for assistive technology.",
-                        ja: "支援技術に向けて `label` を名前に持つ、空のタブの一覧",
-                    },
-                ),
-                (
-                    "tab",
-                    "hypersig_ui/struct.Tabs.html#method.tab",
-                    L {
-                        en: "Adds a tab titled `title` that selects `value` and shows `panel`.",
-                        ja: "`title` をタイトルに持ち、`value` を選んで `panel` を表示するタブを追加します。",
-                    },
-                ),
-            ],
+            items: &[(
+                "Tabs::new",
+                "hypersig_ui/struct.Tabs.html#method.new",
+                L {
+                    en: "A tab list named `label`, with the title and panel `tab` gives each variant.",
+                    ja: "`label` を名前に持ち、`tab` が各バリアントに返すタイトルとパネルを並べるタブの一覧",
+                },
+            )],
         },
         Component::Accordion => Page {
             lead: L {

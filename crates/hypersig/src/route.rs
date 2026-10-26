@@ -1198,7 +1198,7 @@ pub trait Segment: sealed::Sealed + Sized {
 /// it, from the enum's own variants.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` does not list its variants",
-    note = "`label` takes an enum with `#[derive(Segment)]`, which lists every variant"
+    note = "a function called once per variant, such as `label`, takes an enum with `#[derive(Segment)]`, which lists every variant"
 )]
 pub trait Variants: Segment + 'static {
     /// Every variant, in declaration order.

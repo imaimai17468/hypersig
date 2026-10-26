@@ -56,14 +56,14 @@ enum Region {
     Virginia,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
 enum Font {
     Sans,
     Serif,
     Mono,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
 enum Section {
     Account,
     Password,
@@ -457,12 +457,13 @@ fn pickers() -> El<Gallery> {
         div()
             .css(grid(1, rem(1.5)).on(Media::Md, grid(2, rem(1.5))))
             .child(
-                div().id(Id::new("font")).child(
-                    Listbox::new("Font", Gallery::font())
-                        .option(Font::Sans, "Sans serif")
-                        .option(Font::Serif, "Serif")
-                        .option(Font::Mono, "Monospace"),
-                ),
+                div()
+                    .id(Id::new("font"))
+                    .child(Listbox::new("Font", Gallery::font(), |font| match font {
+                        Font::Sans => "Sans serif",
+                        Font::Serif => "Serif",
+                        Font::Mono => "Monospace",
+                    })),
             )
             .child(
                 div()
@@ -485,24 +486,24 @@ fn pickers() -> El<Gallery> {
 }
 
 fn settings() -> El<Gallery> {
-    panel("Tabs").child(
-        Tabs::new("Settings", Gallery::section())
-            .tab(
-                Section::Account,
+    panel("Tabs").child(Tabs::new(
+        "Settings",
+        Gallery::section(),
+        |section| match section {
+            Section::Account => (
                 "Account",
                 p().text("Change your name and email in the profile above."),
-            )
-            .tab(
-                Section::Password,
+            ),
+            Section::Password => (
                 "Password",
                 p().text("Passwords are at least twelve characters."),
-            )
-            .tab(
-                Section::Billing,
+            ),
+            Section::Billing => (
                 "Billing",
                 p().text("Invoices arrive on the first of each month."),
             ),
-    )
+        },
+    ))
 }
 
 fn faq() -> El<Gallery> {
