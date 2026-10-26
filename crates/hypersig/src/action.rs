@@ -87,19 +87,26 @@ pub struct Action<S, A = ()> {
 
 impl<S, A> Action<S, A> {
     /// An action served on `method path` under `base`, which the page's
-    /// calls put before the path. [`routes!`](crate::routes) calls it in a
-    /// `const`, so a path that does not start with `/` is a compile error.
+    /// calls put before the path.
+    ///
+    /// [`routes!`](crate::routes) checks `path` with [`Action::check_path`]
+    /// in a `const _` beside the constant, so a path that does not start
+    /// with `/` is a compile error.
     pub(crate) const fn at(method: Method, base: Base, path: &'static str) -> Self {
-        assert!(
-            !path.is_empty() && path.as_bytes()[0] == b'/',
-            "an action path starts with `/`"
-        );
         Self {
             method,
             base,
             path,
             marker: PhantomData,
         }
+    }
+
+    /// Why `path` cannot be an action's path, if it cannot.
+    pub(crate) const fn check_path(path: &'static str) -> Result<(), &'static str> {
+        if path.is_empty() || path.as_bytes()[0] != b'/' {
+            return Err("an action path starts with `/`");
+        }
+        Ok(())
     }
 
     /// The path the action is served on, without its [`Base`].
@@ -539,18 +546,25 @@ pub struct StreamAction<S, A = ()> {
 
 impl<S, A> StreamAction<S, A> {
     /// A stream served on `GET path` under `base`, which the page's calls
-    /// put before the path. [`routes!`](crate::routes) calls it in a
-    /// `const`, so a path that does not start with `/` is a compile error.
+    /// put before the path.
+    ///
+    /// [`routes!`](crate::routes) checks `path` with
+    /// [`StreamAction::check_path`] in a `const _` beside the constant, so a
+    /// path that does not start with `/` is a compile error.
     pub(crate) const fn at(base: Base, path: &'static str) -> Self {
-        assert!(
-            !path.is_empty() && path.as_bytes()[0] == b'/',
-            "a stream path starts with `/`"
-        );
         Self {
             base,
             path,
             marker: PhantomData,
         }
+    }
+
+    /// Why `path` cannot be a stream's path, if it cannot.
+    pub(crate) const fn check_path(path: &'static str) -> Result<(), &'static str> {
+        if path.is_empty() || path.as_bytes()[0] != b'/' {
+            return Err("a stream path starts with `/`");
+        }
+        Ok(())
     }
 
     /// The path the stream is served on, without its [`Base`].

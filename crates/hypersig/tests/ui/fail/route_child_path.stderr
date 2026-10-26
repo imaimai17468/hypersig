@@ -6,41 +6,6 @@ error[E0080]: evaluation panicked: a child route's path is its parent's path fol
 11 | |     const ORG: Route<String> = "/orgs/{org}" => no_page;
 12 | |     const MEMBER: Route<(String, i32)> = "/teams/{team}/members/{id}" in ORG => no_page;
 13 | | }
-   | |_^ evaluation of `MEMBER` failed inside this call
+   | |_^ evaluation of `_` failed here
    |
-note: inside `hypersig::_private::child::<String, (), (String, i32), ()>`
-  --> src/lib.rs
-   |
-   |         parent.child(path)
-   |         ^^^^^^^^^^^^^^^^^^
-note: inside `Route::<String>::child::<(String, i32), ()>`
-  --> $RUST/core/src/panic.rs
-   |
-   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
-   |
-  ::: src/route.rs
-   |
-   | /         assert!(
-   | |             continues(path, self.path),
-   | |             "a child route's path is its parent's path followed by `/` and more segments"
-   | |         );
-   | |_________- in this macro invocation
-
-note: erroneous constant encountered
-  --> tests/ui/fail/route_child_path.rs:9:1
-   |
- 9 | / hypersig::routes! {
-10 | |     fn pages(Router<()>);
-11 | |     const ORG: Route<String> = "/orgs/{org}" => no_page;
-12 | |     const MEMBER: Route<(String, i32)> = "/teams/{team}/members/{id}" in ORG => no_page;
-13 | | }
-   | |_^
-   |
-   = note: this note originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-note: erroneous constant encountered
-  --> tests/ui/fail/route_child_path.rs:21:13
-   |
-21 |     let _ = MEMBER;
-   |             ^^^^^^
+   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

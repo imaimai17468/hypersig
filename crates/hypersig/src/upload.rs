@@ -68,19 +68,26 @@ impl<S, A> Upload<S, A> {
 
     /// An upload served on `POST path` under `base`, accepting a body of at
     /// most `max_bytes` bytes, the arguments and the multipart framing
-    /// included. [`routes!`](crate::routes) calls it in a `const`, so a path
-    /// that does not start with `/` is a compile error.
+    /// included.
+    ///
+    /// [`routes!`](crate::routes) checks `path` with [`Upload::check_path`]
+    /// in a `const _` beside the constant, so a path that does not start
+    /// with `/` is a compile error.
     pub(crate) const fn at(base: Base, path: &'static str, max_bytes: usize) -> Self {
-        assert!(
-            !path.is_empty() && path.as_bytes()[0] == b'/',
-            "an upload path starts with `/`"
-        );
         Self {
             base,
             path,
             max_bytes,
             marker: PhantomData,
         }
+    }
+
+    /// Why `path` cannot be an upload's path, if it cannot.
+    pub(crate) const fn check_path(path: &'static str) -> Result<(), &'static str> {
+        if path.is_empty() || path.as_bytes()[0] != b'/' {
+            return Err("an upload path starts with `/`");
+        }
+        Ok(())
     }
 
     /// The path the upload is served on, without its [`Base`].

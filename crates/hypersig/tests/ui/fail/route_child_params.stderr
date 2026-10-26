@@ -1,12 +1,8 @@
 error[E0277]: `(i32, i32)` does not start with `String`, the parameters of the parent route
-  --> tests/ui/fail/route_child_params.rs:9:1
+  --> tests/ui/fail/route_child_params.rs:12:19
    |
- 9 | / hypersig::routes! {
-10 | |     fn pages(Router<()>);
-11 | |     const ORG: Route<String> = "/orgs/{org}" => no_page;
-12 | |     const MEMBER: Route<(i32, i32)> = "/orgs/{org}/members/{id}" in ORG => no_page;
-13 | | }
-   | |_^ the trait `Extends<String>` is not implemented for `(i32, i32)`
+12 |     const MEMBER: Route<(i32, i32)> = "/orgs/{org}/members/{id}" in ORG => no_page;
+   |                   ^^^^^^^^^^^^^^^^^ the trait `Extends<String>` is not implemented for `(i32, i32)`
    |
    = note: a child route's parameters repeat its parent's, in order, and may add more after them
    = help: the following other types implement trait `Extends<P>`:
@@ -19,9 +15,11 @@ error[E0277]: `(i32, i32)` does not start with `String`, the parameters of the p
              `(A, B, C)` implements `Extends<(A, B, C)>`
              `(A, B, C)` implements `Extends<A>`
            and $N others
-note: required by a bound in `hypersig::_private::child`
+note: required by a bound in `hypersig::_private::check_child`
   --> src/lib.rs
    |
-   |     pub const fn child<P: Params, Q: Search, C: Params + Extends<P>, R: Search>(
-   |                                                          ^^^^^^^^^^ required by this bound in `child`
-   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)
+   |     pub const fn check_child<R: RouteType, P: Params, Q: Search>(
+   |                  ----------- required by a bound in this function
+...
+   |         R::Params: Extends<P>,
+   |                    ^^^^^^^^^^ required by this bound in `check_child`

@@ -2,26 +2,9 @@ error[E0080]: evaluation panicked: this attribute names an element; set it with 
  --> tests/ui/fail/attr_id_reference.rs:4:32
   |
 4 |     let _ = label::<()>().attr(hypersig::attr!("for"), "emial");
-  |                                ^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed inside this call
+  |                                ^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed here
   |
-note: inside `hypersig::_private::attr`
- --> src/lib.rs
-  |
-  |         crate::html::Attr::new(name)
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-note: inside `Attr::new`
- --> $RUST/core/src/panic.rs
-  |
-  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
-  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
-  |
- ::: src/html.rs
-  |
-  | /         assert!(
-  | |             !points_at_an_element(bytes),
-  | |             "this attribute names an element; set it with the `El` method that takes an `Id`"
-  | |         );
-  | |_________- in this macro invocation
+  = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 note: erroneous constant encountered
  --> tests/ui/fail/attr_id_reference.rs:4:32
