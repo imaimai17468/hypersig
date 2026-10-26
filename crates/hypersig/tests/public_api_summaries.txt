@@ -7,10 +7,6 @@ hypersig::Sig::extend
 hypersig::Sig::sort_by
 hypersig::Sig::sort_by_desc
 hypersig::Sig::update_where
-hypersig_i18n::Locale
-hypersig_i18n::LocalePage::alternates
-hypersig_i18n::LocaleRouterExt
-hypersig_i18n::LocaleRouterExt::redirect_to_locale
 hypersig_style::BASE_LAYER
 hypersig_style::Bucket
 hypersig_style::Bucket::css
