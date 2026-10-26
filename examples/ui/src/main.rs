@@ -944,7 +944,8 @@ fn query_orders(state: &TableState) -> (Vec<Order>, i32) {
         }
     }
     let total = i32::try_from(rows.len()).unwrap_or(i32::MAX);
-    let start = usize::try_from(state.page * 5).unwrap_or(0);
+    // `page` comes from the browser, so a large one must not overflow.
+    let start = usize::try_from(state.page).unwrap_or(0).saturating_mul(5);
     (rows.into_iter().skip(start).take(5).collect(), total)
 }
 
