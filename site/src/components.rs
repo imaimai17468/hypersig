@@ -118,7 +118,7 @@ fn toast_from_the_server(site: Site) -> [Part; 4] {
             site,
             L {
                 en: "A handler adds a toast with `patch_append`, which puts it after the toasts the browser shows, where `patch` would replace them. A failed call shows the server's message when `on_error` passes it to `Toast::push_expr` as `Toast::body()`.",
-                ja: "ハンドラーは `patch_append` でトーストを追加します。`patch_append` はブラウザが表示中のトーストの後ろに追加し、`patch` はそれらを置き換えます。呼び出しが失敗したときにサーバーのメッセージを表示するには、`on_error` が渡すメッセージを `Toast::push_expr` で `Toast::body()` に入れます。",
+                ja: "ハンドラは `patch_append` でトーストを追加します。`patch_append` はブラウザが表示中のトーストの後ろに追加し、`patch` はそれらを置き換えます。呼び出しが失敗したときにサーバーのメッセージを表示するには、`on_error` が渡すメッセージを `Toast::push_expr` で `Toast::body()` に入れます。",
             },
         ),
         show(Snippet::ToastServer),

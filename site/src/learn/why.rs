@@ -241,7 +241,7 @@ fn typed(site: Site) -> [Part; 4] {
                 },
                 L {
                     en: "Action URLs come from `Action<S, A>`, declared in `routes!` on the line that names its handler, so an action without a handler does not compile. The type also fixes the page an action belongs to and the type of its arguments.",
-                    ja: "アクションの URL は `Action<S, A>` から作られます。アクションはハンドラーを名指しする行として `routes!` で宣言するので、ハンドラーのないアクションはコンパイルが通りません。この型は、アクションが属するページと引数の型も決めます。",
+                    ja: "アクションの URL は `Action<S, A>` から作られます。アクションはハンドラと同じ行に `routes!` で宣言するので、ハンドラのないアクションはコンパイルが通りません。この型は、アクションが属するページと引数の型も決めます。",
                 },
                 L {
                     en: "Page links come from `Route<P, Q>`, declared in `routes!` with the handler that serves it, so a link carries the right path parameters and query.",
@@ -395,23 +395,23 @@ fn unchecked(site: Site) -> [Part; 2] {
             &[
                 L {
                     en: "The function `routes!` generates is never called on the router. Its pages and actions then answer 404. rustc's `dead_code` lint reports a handler `fn` that only that function names, but not a closure.",
-                    ja: "`routes!` が生成する関数をルーターに渡していない。そのブロックのページとアクションは 404 を返します。その関数だけが名指しするハンドラーの `fn` は rustc の `dead_code` lint が報告しますが、クロージャーは報告されません。",
+                    ja: "`routes!` が生成する関数をルーターに渡していないと、そのブロックのページとアクションは 404 を返します。その関数の中でだけ使うハンドラの `fn` は rustc の `dead_code` lint が報告しますが、クロージャは報告されません。",
                 },
                 L {
                     en: "A page served under a `Base` calls an action from a `routes!` block without it. The call goes to the path without the prefix, which a proxy or `Router::nest` answers with 404.",
-                    ja: "`Base` の下で配信するページが、その `Base` のない `routes!` ブロックのアクションを呼んでいる。呼び出しは接頭辞のないパスに送られ、プロキシか `Router::nest` が 404 を返します。",
+                    ja: "`Base` の下で配信するページが、その `Base` のない `routes!` ブロックのアクションを呼ぶと、呼び出しは接頭辞のないパスに送られ、プロキシか `Router::nest` が 404 を返します。",
                 },
                 L {
                     en: "One `node_ref!` or `dialog_ref!` constant sits on two elements outside a list template. Rendering the page panics.",
-                    ja: "1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けている。ページの描画が panic します。",
+                    ja: "1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けると、ページの描画が panic します。",
                 },
                 L {
                     en: "A reference such as `label_for(&EMAIL)` names an `Id` that no element on the page carries. The browser ignores it, so the control has no label.",
-                    ja: "`label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指している。ブラウザはその参照を無視するので、入力欄にラベルが付きません。",
+                    ja: "`label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指していると、ブラウザはその参照を無視するので、入力欄にラベルが付きません。",
                 },
                 L {
                     en: "A script outside hypersig finds an element marked with `El::foreign` by its `data-hs-foreign` value, which is the constant's full path, such as `office::MAP`. Renaming or moving the module or the constant changes that value, and the script then finds no element. Give the element an `Id` and look it up by id instead.",
-                    ja: "hypersig の外のスクリプトが、`El::foreign` を付けた要素を `data-hs-foreign` の値で探している。この値は `office::MAP` のような定数の完全なパスなので、モジュールや定数の名前を変えたり移したりすると値が変わり、スクリプトは要素を見つけられなくなります。要素に `Id` を付けて、id で探してください。",
+                    ja: "`data-hs-foreign` の値は `office::MAP` のような定数の完全なパスで、モジュールや定数の名前を変えたり移したりすると変わります。hypersig の外のスクリプトが `El::foreign` を付けた要素をこの値で探していると、名前を変えたときに要素を見つけられなくなります。要素に `Id` を付けて、id で探してください。",
                 },
             ],
         ),
