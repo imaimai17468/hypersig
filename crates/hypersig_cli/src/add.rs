@@ -27,7 +27,7 @@ struct Move {
 }
 
 const SERVER_STEPS: &[Step] = &[Step {
-    text: "In `main`, replace the `TcpListener::bind` line and the `axum::serve` line below it with the lines below, which listen on every interface at the port in `PORT`, and add the `shutdown` function after `main`. Without `shutdown`, the server, which runs as the container's first process, does not stop on Ctrl+C or on the SIGTERM a host sends, and `docker stop` waits 10 seconds and then kills it.",
+    text: "In `main`, replace the `TcpListener::bind` line and the `axum::serve` line below it with the call below, which listens on every interface at the port in `PORT` and stops on Ctrl+C or on the SIGTERM a host sends. A server that binds 127.0.0.1 cannot be reached from outside the container, and one that ignores SIGTERM, as the container's first process, makes `docker stop` wait 10 seconds and then kill it.",
     code: include_str!("../steps/server.rs"),
 }];
 
@@ -310,10 +310,8 @@ fn report(host: Host, plan: &Plan) {
 /// from the template's `Cargo.toml`, so that both name the same versions.
 fn edit(host: Host, manifest: &mut DocumentMut, template: &DocumentMut, notes: &mut Vec<String>) {
     match host {
-        Host::Server => {
-            let tokio = dependency(manifest, template, "tokio");
-            add_feature(tokio, "signal");
-        }
+        // `hypersig::serve`, which the step calls, comes with hypersig.
+        Host::Server => {}
         Host::Cloudflare => {
             let package = manifest
                 .get("package")
@@ -398,17 +396,6 @@ fn set(dependency: &mut Item, key: &str, value: Value) {
     }
     if let Some(table) = dependency.as_table_like_mut() {
         table.insert(key, Item::Value(value));
-    }
-}
-
-fn add_feature(dependency: &mut Item, feature: &str) {
-    match dependency.get("features").and_then(Item::as_array) {
-        Some(features) if features.iter().any(|have| have.as_str() == Some(feature)) => return,
-        Some(_) => {}
-        None => set(dependency, "features", Value::Array(Array::new())),
-    }
-    if let Some(features) = dependency.get_mut("features").and_then(Item::as_array_mut) {
-        features.push(feature);
     }
 }
 

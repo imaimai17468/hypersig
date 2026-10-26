@@ -114,8 +114,9 @@ fn check(dir: &Path, target: &Path, args: &[&str]) {
     std::fs::write(
         dir.join(".cargo/config.toml"),
         format!(
-            "[patch.crates-io]\nhypersig = {{ path = \"{}\" }}\n",
-            Path::new(ROOT).join("crates/hypersig").display()
+            "[patch.crates-io]\nhypersig = {{ path = \"{}\" }}\nhypersig_ui = {{ path = \"{}\" }}\n",
+            Path::new(ROOT).join("crates/hypersig").display(),
+            Path::new(ROOT).join("crates/hypersig_ui").display()
         ),
     )
     .unwrap();
@@ -218,10 +219,8 @@ fn server_projects_check() {
     let dir = quick_start("add-server");
     let stdout = succeeds(&hypersig(&dir, &["add", "server"]));
     assert!(stdout.contains("  wrote     Dockerfile"), "{stdout}");
-    assert_eq!(
-        read(dir.join("Cargo.toml")),
-        QUICK_START_MANIFEST.replace(r#""net"] }"#, r#""net", "signal"] }"#)
-    );
+    assert!(!stdout.contains("Cargo.toml"), "{stdout}");
+    assert_eq!(read(dir.join("Cargo.toml")), QUICK_START_MANIFEST);
     assert_eq!(
         read(dir.join("Dockerfile")),
         include_str!("../templates/server/Dockerfile")
@@ -231,15 +230,14 @@ fn server_projects_check() {
     add_refuses_to_overwrite(&dir, "server", "Dockerfile");
 
     // The step: the listener and `axum::serve` in `main` become the step's
-    // lines, and `shutdown` follows `main`.
+    // lines.
     let step = shown(include_str!("../steps/server.rs"));
-    let (body, shutdown) = step.split_once("\n\n").unwrap();
-    let body: String = body.lines().flat_map(|line| ["    ", line, "\n"]).collect();
+    let body: String = step.lines().flat_map(|line| ["    ", line, "\n"]).collect();
     let main = read(dir.join("src/main.rs")).replace(
-        "    let listener = tokio::net::TcpListener::bind(\"127.0.0.1:3000\").await?;\n    axum::serve(listener, app).await\n}\n",
-        &format!("{body}}}\n\n{shutdown}"),
+        "    let listener = tokio::net::TcpListener::bind(\"127.0.0.1:3000\").await?;\n    axum::serve(listener, app).await\n",
+        &body,
     );
-    assert!(main.contains("fn shutdown"));
+    assert!(main.contains("hypersig::serve(app, 3000)"));
     std::fs::write(dir.join("src/main.rs"), main).unwrap();
     check(&dir, &target, &[]);
 }
@@ -355,8 +353,7 @@ fn add_with_force_replaces_the_files() {
         read(dir.join("Dockerfile")),
         include_str!("../templates/server/Dockerfile")
     );
-    // The features already hold `signal`, so the second run leaves them.
-    assert_eq!(read(dir.join("Cargo.toml")).matches("signal").count(), 1);
+    assert_eq!(read(dir.join("Cargo.toml")), QUICK_START_MANIFEST);
 }
 
 #[test]
@@ -384,17 +381,14 @@ fn new_refuses_a_directory_that_exists() {
 }
 
 #[test]
-fn new_without_a_host_lists_the_hosts_and_an_example() {
+fn new_without_a_host_writes_the_server_template() {
     let dir = scratch("new-no-host");
-    let output = hypersig(&dir, &["new", "kanban"]);
-    assert!(!output.status.success());
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("  cloudflare   Cloudflare Workers")
-            && stderr.contains("cargo hypersig new kanban --host server"),
-        "{stderr}"
+    let stdout = succeeds(&hypersig(&dir, &["new", "kanban"]));
+    assert!(stdout.contains("from the server template"), "{stdout}");
+    assert_eq!(
+        read(dir.join("kanban/Dockerfile")),
+        include_str!("../templates/server/Dockerfile")
     );
-    assert!(!dir.join("kanban").exists());
 }
 
 /// The manifest under `tests/elements/` holds `sl-button` and `sl-rating`
