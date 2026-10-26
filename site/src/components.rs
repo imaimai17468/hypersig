@@ -1007,8 +1007,8 @@ fn component_page(page: Component) -> Page {
                     ja: "各セクションはネイティブの `<details>` で、その `<summary>` がセクションを開閉します。キーボード操作はブラウザが扱い、各 summary は展開か折りたたみの状態を持つボタンとして読み上げられます。ページ内検索で一致した箇所が閉じたセクションにあれば、ブラウザがそのセクションを開きます。",
                 },
                 L {
-                    en: "An exclusive accordion gives its sections one `name`, so the browser closes the open one when another opens.",
-                    ja: "排他的なアコーディオンはセクションに同じ `name` を付けるので、別のセクションが開くと、ブラウザが開いていたセクションを閉じます。",
+                    en: "An exclusive accordion gives its sections one `name`, so the browser closes the open one when another opens. The name is an `Id` that the accordion's `<div>` also carries, so two accordions given one `Id::new` make the page panic when it renders, where they would otherwise close each other's sections.",
+                    ja: "排他的なアコーディオンはセクションに同じ `name` を付けるので、別のセクションが開くと、ブラウザが開いていたセクションを閉じます。この名前は `Id` で、アコーディオンの `<div>` も同じ id を持ちます。そのため、1 つの `Id::new` を 2 つのアコーディオンに渡すと、互いのセクションを閉じ合う代わりに、ページの描画がパニックします。",
                 },
             ],
             keys: &[(
@@ -1034,8 +1034,8 @@ fn component_page(page: Component) -> Page {
                     "Accordion::exclusive",
                     "hypersig_ui/struct.Accordion.html#method.exclusive",
                     L {
-                        en: "An accordion that keeps at most one section open, grouped by `name`.",
-                        ja: "セクションを `name` でまとめ、開いているセクションを多くても 1 つにするアコーディオン",
+                        en: "An accordion that keeps at most one section open, its `<div>` carrying the id `group`.",
+                        ja: "開いているセクションを多くても 1 つにし、`<div>` に id `group` を持つアコーディオン",
                     },
                 ),
                 (

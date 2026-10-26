@@ -1,6 +1,6 @@
 //! An exclusive accordion, for the accordion page.
 
-use hypersig::html::{div, p, span};
+use hypersig::html::{Id, div, p, span};
 use hypersig::style::pattern::stack;
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
@@ -15,9 +15,11 @@ pub struct Faq {
     helpful: i32,
 }
 
+const FAQ: Id = Id::new("faq");
+
 pub fn page(site: Site) -> Page<Faq> {
     let helpful = Faq::helpful();
-    let answers = Accordion::exclusive("faq")
+    let answers = Accordion::exclusive(FAQ)
         .item(
             site.t(L {
                 en: "Does it need JavaScript?",

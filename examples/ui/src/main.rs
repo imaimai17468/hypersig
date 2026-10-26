@@ -243,6 +243,7 @@ const EDIT: Dialog<Gallery> = Dialog::new(EDIT_PROFILE);
 const DELETE: Dialog<Gallery> = Dialog::new(DELETE_PROJECT);
 const FILTERS: Dialog<Gallery> = Dialog::new(FILTER_SHEET);
 const ACTIONS: Menu<Gallery> = Menu::new(PROJECT_ACTIONS);
+const FAQ: Id = Id::new("faq");
 const ADD_TIP: Tooltip<Gallery> = Tooltip::new(ADD_ITEM_TIP);
 const COUNTRY: Combobox<Gallery> = Combobox::new(COUNTRY_FIELD, COUNTRY_OPTIONS);
 
@@ -508,7 +509,7 @@ fn settings() -> El<Gallery> {
 
 fn faq() -> El<Gallery> {
     panel("Accordion").child(
-        Accordion::exclusive("faq")
+        Accordion::exclusive(FAQ)
             .item(
                 "Does it need JavaScript?",
                 p().text("The accordion is <details>, which opens without it."),
