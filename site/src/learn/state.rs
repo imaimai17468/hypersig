@@ -95,8 +95,8 @@ pub fn signals(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Page::computed(signal, value)` keeps a field equal to an expression over other fields. Bindings read it like any field and run again only when its value changes, so no binding evaluates the expression itself. Computed signals are evaluated in the order they are declared, so one may read an earlier one. The field is marked `#[signals(computed)]` in the struct, and `Page::computed` accepts only a field with that mark.",
-                ja: "`Page::computed(signal, value)` は、フィールドをほかのフィールドを使った式の値に合わせ続けます。束縛はそれぞれ式を評価する代わりに、ほかのフィールドと同じようにこの値を読み、値が変わったときだけ評価し直します。計算されるシグナルは宣言した順に評価されるので、先に宣言したものを読めます。構造体ではそのフィールドに `#[signals(computed)]` を付けます。`Page::computed` が受け取るのは、この印の付いたフィールドだけです。",
+                en: "`Page::computed(signal, value)` keeps a field equal to an expression over other fields. Bindings read it like any field and run again only when its value changes, so no binding evaluates the expression itself. Computed signals are evaluated in the order they are declared, so one may read an earlier one, and rendering the page panics when one reads itself or one declared after it, or when two calls name one field. The field is marked `#[signals(computed)]` in the struct, and `Page::computed` accepts only a field with that mark.",
+                ja: "`Page::computed(signal, value)` は、フィールドをほかのフィールドを使った式の値に合わせ続けます。束縛はそれぞれ式を評価する代わりに、ほかのフィールドと同じようにこの値を読み、値が変わったときだけ評価し直します。計算されるシグナルは宣言した順に評価されるので、先に宣言したものを読めます。自分自身や後に宣言したものを読むとき、また 2 つの呼び出しが同じフィールドを指すときは、ページの描画が panic します。構造体ではそのフィールドに `#[signals(computed)]` を付けます。`Page::computed` が受け取るのは、この印の付いたフィールドだけです。",
             },
         ),
         demo::show(site, Demo::Cart),

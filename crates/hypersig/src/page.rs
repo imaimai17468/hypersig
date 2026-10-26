@@ -427,7 +427,9 @@ impl<S: Signals> Page<S> {
     /// than each evaluating `value`. The server computes it once for the first
     /// HTML, and an action call can pass it as an argument like any signal.
     /// Computed signals are evaluated in the order they are declared, so one
-    /// may read an earlier one.
+    /// may read an earlier one and no other: [`Page::render`] panics when
+    /// two calls name one signal, or when a computed signal reads itself or
+    /// one declared after it.
     ///
     /// `signal` is a field marked `#[signals(computed)]`, whose
     /// [`Sig`] has no statement that writes it and no `patch`. The value the
@@ -642,7 +644,9 @@ impl<S: Signals> Page<S> {
     /// # Panics
     ///
     /// Panics if a field of `S` marked `#[signals(computed)]` is named by no
-    /// [`Page::computed`] call, or if the signals fail to serialize.
+    /// [`Page::computed`] call, if two calls name one signal, if a computed
+    /// signal reads itself or one computed after it, or if the signals fail
+    /// to serialize.
     fn initial_values(&self) -> Tape {
         for field in S::COMPUTED {
             assert!(
@@ -651,6 +655,34 @@ impl<S: Signals> Page<S> {
                  `Page::computed` call names it, so nothing would keep it up to date",
                 std::any::type_name::<S>()
             );
+        }
+        for (at, (path, value)) in self.computed.iter().enumerate() {
+            assert!(
+                self.computed[..at]
+                    .iter()
+                    .all(|(earlier, _)| earlier != path),
+                "two `Page::computed` calls name `{path}`, and the browser would keep \
+                 it equal to both expressions: remove one of them"
+            );
+            // The server evaluates the expressions once, in this order, so a
+            // read of a signal computed here or later would see the value the
+            // struct holds rather than the computed one.
+            if let Some((later, _)) = self.computed[at..]
+                .iter()
+                .find(|(later, _)| reads_path(value, later))
+            {
+                assert!(
+                    later != path,
+                    "the computed signal `{path}` reads itself, so it has no value to \
+                     start from: compute it from other signals"
+                );
+                panic!(
+                    "the computed signal `{path}` reads `{later}`, which a later \
+                     `Page::computed` call computes, so the first HTML would show `{path}` \
+                     from the value `{later}` starts with: call `Page::computed` for \
+                     `{later}` first, and keep two computed signals from reading each other"
+                );
+            }
         }
         let mut root = Tape::new(&self.signals)
             .unwrap_or_else(|error| panic!("the page's signals do not serialize to JSON: {error}"));
@@ -756,7 +788,9 @@ impl<S: Signals> Page<S> {
     /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
     /// the runtime can reach both, or if an element inside a list template has an id set with
     /// [`El::id`](crate::html::El::id). Each item of a list may carry the same
-    /// name.
+    /// name. It also panics if a field marked `#[signals(computed)]` is named
+    /// by no [`Page::computed`] call, if two calls name one signal, or if a
+    /// computed signal reads itself or one declared after it.
     #[must_use]
     pub fn render(&self) -> String {
         self.render_under(Base::ROOT, None)
@@ -929,6 +963,39 @@ impl<S: Signals> Page<S> {
     }
 }
 
+/// Whether the expression `ast` reads the signal at the dotted `path`, a
+/// field inside it, or a struct that holds it.
+///
+/// A signal is read by `["sig",path]`, and a list by the place at index 1
+/// of the operations that run an expression per item. A literal's value is
+/// data, so it is not searched.
+fn reads_path(ast: &Value, path: &str) -> bool {
+    let overlaps = |read: &Value| {
+        read.as_str().is_some_and(|read| {
+            let inside = |outer: &str, inner: &str| {
+                inner
+                    .strip_prefix(outer)
+                    .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
+            };
+            inside(read, path) || inside(path, read)
+        })
+    };
+    match ast.as_array().map(Vec::as_slice) {
+        Some([op, ..]) if op == "lit" => false,
+        Some([op, read]) if op == "sig" => overlaps(read),
+        Some([op, place, rest @ ..])
+            if ["count", "sum_of", "max_of", "min_of", "map"]
+                .contains(&op.as_str().unwrap_or("")) =>
+        {
+            overlaps(place)
+                || reads_path(place, path)
+                || rest.iter().any(|part| reads_path(part, path))
+        }
+        Some(parts) => parts.iter().any(|part| reads_path(part, path)),
+        None => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
@@ -1067,6 +1134,70 @@ mod tests {
         )
         .computed(Cart::total(), Cart::price() * 2.0);
         assert_eq!(page.value_of(Cart::total()), 4.0);
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Order {
+        price: f64,
+        #[signals(computed)]
+        subtotal: f64,
+        #[signals(computed)]
+        total: f64,
+    }
+
+    fn order() -> Page<Order> {
+        Page::new(
+            "Order",
+            Order {
+                price: 20.0,
+                ..Order::default()
+            },
+        )
+    }
+
+    #[test]
+    fn a_computed_signal_reads_one_computed_before_it() {
+        let page = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::subtotal() + 1.0);
+        assert_eq!(page.value_of(Order::total()), 41.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "two `Page::computed` calls name `total`")]
+    fn one_signal_computed_twice_panics() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::price() * 1.0)
+            .computed(Order::total(), Order::price() * 2.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `total` reads `subtotal`, which a later")]
+    fn a_computed_signal_that_reads_a_later_one_panics() {
+        let _ = order()
+            .computed(Order::total(), Order::subtotal() + 1.0)
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `subtotal` reads `total`, which a later")]
+    fn two_computed_signals_that_read_each_other_panic() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::total() - 1.0)
+            .computed(Order::total(), Order::subtotal() + 1.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `total` reads itself")]
+    fn a_computed_signal_that_reads_itself_panics() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::total() + 1.0)
+            .render();
     }
 
     #[test]
