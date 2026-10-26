@@ -56,6 +56,14 @@ fn output(site: Site) -> Part {
                         "The runtime runs code from the page",
                         "The runtime evaluates expressions from a fixed table of operators. It calls neither `eval` nor `new Function`, so a page served with `Page::csp_nonce` runs under a Content-Security-Policy without `unsafe-eval` or `unsafe-inline`.",
                     ],
+                    &[
+                        "The browser reads a response as a script or a page its `Content-Type` does not name",
+                        "Pages, the runtime, and the answers of actions, streams, and uploads, refusals included, are served with `X-Content-Type-Options: nosniff`.",
+                    ],
+                    &[
+                        "A cache shows one visitor's page to another",
+                        "A page holds the visitor's signals, so it is served with `Cache-Control: private, no-cache`. No shared cache keeps it, and the browser asks the server again before it shows a kept copy. `no-store` is left out because it also keeps the page out of the back-forward cache. A `Cache-Control` the handler sends replaces it.",
+                    ],
                 ],
                 ja: &[
                     &[
@@ -77,6 +85,14 @@ fn output(site: Site) -> Part {
                     &[
                         "ランタイムがページにあるコードを動かす",
                         "ランタイムは決まった演算子の表だけで式を評価します。`eval` も `new Function` も呼ばないので、`Page::csp_nonce` を付けたページは、`unsafe-eval` も `unsafe-inline` もない Content-Security-Policy のもとで動きます。",
+                    ],
+                    &[
+                        "ブラウザがレスポンスを `Content-Type` にないスクリプトやページとして読む",
+                        "ページ、ランタイム、アクションとストリームとアップロードの応答（拒否も含む）には `X-Content-Type-Options: nosniff` を付けて配信します。",
+                    ],
+                    &[
+                        "キャッシュがある訪問者のページを別の訪問者に見せる",
+                        "ページは訪問者のシグナルを持つので、`Cache-Control: private, no-cache` を付けて配信します。共有のキャッシュはページを保存せず、ブラウザは保存したページを表示する前にサーバーへ確かめます。`no-store` はページを戻る・進むのキャッシュからも外すので使いません。ハンドラが `Cache-Control` を送ると、そちらに置き換わります。",
                     ],
                 ],
             },
@@ -283,8 +299,8 @@ fn tested(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Each refusal above has a test in the repository: the escaping and the attribute checks in the tests of the HTML builder and of the style values, the requests in `crates/hypersig/tests/axum.rs` and `upload.rs`, the frame headers in `framing.rs`, and the compile errors in the trybuild cases under `crates/hypersig/tests/ui/fail`. The crates have been reviewed with Trail of Bits' sharp-edges, insecure-defaults, rust-review, and differential-review skills, and each finding they confirmed was fixed, is listed above as the application's to check, or fails only the request that caused it. No outside security audit has been done.",
-                ja: "上で挙げた検査には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は、直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するかのいずれかです。外部のセキュリティ監査は受けていません。",
+                en: "Each refusal above has a test in the repository: the escaping and the attribute checks in the tests of the HTML builder and of the style values, the requests in `crates/hypersig/tests/axum.rs` and `upload.rs`, the frame headers in `framing.rs`, the caching and sniffing headers in `headers.rs`, and the compile errors in the trybuild cases under `crates/hypersig/tests/ui/fail`. The crates have been reviewed with Trail of Bits' sharp-edges, insecure-defaults, rust-review, and differential-review skills, and each finding they confirmed was fixed, is listed above as the application's to check, or fails only the request that caused it. No outside security audit has been done.",
+                ja: "上で挙げた検査には、それぞれリポジトリにテストがあります。エスケープと属性の検査は HTML ビルダーとスタイルの値のテストに、リクエストは `crates/hypersig/tests/axum.rs` と `upload.rs` に、枠のヘッダーは `framing.rs` に、キャッシュと `nosniff` のヘッダーは `headers.rs` に、コンパイルエラーは `crates/hypersig/tests/ui/fail` の trybuild のケースにあります。クレートは Trail of Bits の sharp-edges、insecure-defaults、rust-review、differential-review の Skill で見直し、確かめられた指摘は、直したか、アプリが確かめることとして上に挙げたか、その指摘を起こしたリクエストだけが失敗するかのいずれかです。外部のセキュリティ監査は受けていません。",
             },
         ),
     ])

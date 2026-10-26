@@ -18,7 +18,7 @@ use axum::body::{Body, Bytes};
 use axum::extract::rejection::RawPathParamsRejection;
 use axum::extract::{FromRequestParts, MatchedPath, Query, RawPathParams, Request, State};
 use axum::http::request::Parts;
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header};
 use axum::response::sse::{Event as SseEvent, Sse};
 use axum::response::{Html, IntoResponse, IntoResponseParts, Redirect, Response};
 use axum::routing::{MethodRouter, get, post};
@@ -134,6 +134,7 @@ fn runtime_file(headers: &HeaderMap) -> Response {
         // at another path.
         (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
         (header::VARY, "accept-encoding"),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
     ];
     if accepts_brotli(headers) {
         (head, [(header::CONTENT_ENCODING, "br")], crate::RUNTIME_BR).into_response()
@@ -150,6 +151,7 @@ fn runtime_file(_headers: &HeaderMap) -> Response {
         // The path names a hash of the file, so a changed runtime is served
         // at another path.
         (header::CACHE_CONTROL, "public, max-age=31536000, immutable"),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
     ];
     (head, crate::RUNTIME_JS).into_response()
 }
@@ -220,7 +222,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 || crate::query::parse_query::<Q>(request.uri.query().unwrap_or_default()),
                 Ok,
             );
-            async move {
+            let answer = async move {
                 // The router is nested after `routes!` returns it, so the
                 // mistake shows only here. The body names no path, because
                 // a visitor reads it.
@@ -270,7 +272,8 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                     }
                     Err(rejection) => rejection,
                 }
-            }
+            };
+            async move { nosniff(answer.await) }
         };
         self.route(route.path(), get(route_handler))
     }
@@ -334,7 +337,15 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                             .chain(stream::iter([Ok(end_of_stream())])),
                     ),
                 };
-                Ok::<_, RequestError>(keep_alive(Sse::new(events)).into_response())
+                let mut response = keep_alive(Sse::new(events)).into_response();
+                // nginx holds a proxied response until its buffer fills
+                // unless the response says otherwise, and a stream's events
+                // would then arrive late and together.
+                response.headers_mut().insert(
+                    HeaderName::from_static("x-accel-buffering"),
+                    HeaderValue::from_static("no"),
+                );
+                Ok::<_, RequestError>(response)
             })
         };
         self.route(stream.path(), method_router(method, route))
@@ -540,6 +551,9 @@ where
 /// handler [`routes!`](crate::routes) names after `else`, and has an empty
 /// body where it names none.
 ///
+/// A page goes out with `Cache-Control: private, no-cache`, because it
+/// carries the visitor's signals, and a `Cache-Control` part replaces it.
+///
 /// ```
 /// use hypersig::html::h1;
 /// use hypersig::{Page, PageResponse, Route, Signals};
@@ -692,6 +706,17 @@ impl PageResponse {
     }
 }
 
+/// `response` with `X-Content-Type-Options: nosniff`, so the browser reads
+/// its body as its `Content-Type` says rather than as a script or a page it
+/// guesses from the bytes.
+fn nosniff(mut response: Response) -> Response {
+    response.headers_mut().insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    response
+}
+
 /// `response` with the headers that say which pages may show it in a frame.
 ///
 /// They are added after the header parts of the handler, because a part
@@ -737,7 +762,13 @@ impl Reply {
                 framing,
             } => {
                 let html = render(base, dev::url(base).as_deref());
-                let response = (status.unwrap_or(StatusCode::OK), Html(html)).into_response();
+                // The page carries the visitor's signals, so a shared cache
+                // keeps no copy, and the browser asks again before reusing
+                // its own. `no-store` would also keep the page out of the
+                // back-forward cache, which restores it without a request.
+                // A header part of the handler replaces it.
+                let head = [(header::CACHE_CONTROL, "private, no-cache")];
+                let response = (status.unwrap_or(StatusCode::OK), head, Html(html)).into_response();
                 (response, Some(framing))
             }
             Self::NotFound => (StatusCode::NOT_FOUND.into_response(), None),
@@ -784,7 +815,7 @@ impl IntoResponse for PageResponse {
         let response = parts
             .into_iter()
             .fold(response, |response, add| add(response));
-        frame(response, framing.as_ref())
+        nosniff(frame(response, framing.as_ref()))
     }
 }
 
@@ -962,7 +993,7 @@ impl<St: Clone + Send + Sync + 'static> UnservedPage<St> {
                     return StatusCode::NOT_FOUND.into_response();
                 }
                 let unserved = Unserved::new(Reason::NoRoute, &request);
-                page.answer(state, request, unserved).await
+                nosniff(page.answer(state, request, unserved).await)
             }
         })
     }
@@ -1290,13 +1321,17 @@ where
                 // The router state is all the future shares with later
                 // requests, and a `Mutex` in it is poisoned by this panic as
                 // by a panic on any thread.
-                AssertUnwindSafe(async move { future.await.into_response() })
+                let response = AssertUnwindSafe(async move { future.await.into_response() })
                     .catch_unwind()
                     .await
-                    .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+                    .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+                nosniff(response)
             }),
         ),
-        Err(refusal) => (None, Box::pin(std::future::ready(refusal.into_response()))),
+        Err(refusal) => (
+            None,
+            Box::pin(std::future::ready(nosniff(refusal.into_response()))),
+        ),
     };
     InPart { part, inner }
 }
