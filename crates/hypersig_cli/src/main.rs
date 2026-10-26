@@ -48,6 +48,7 @@ Hosts:
 pub struct Error(String);
 
 impl Error {
+    /// Wraps `message`, which is printed as written.
     pub fn new(message: impl Into<String>) -> Self {
         Self(message.into())
     }

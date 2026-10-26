@@ -1658,9 +1658,11 @@ extends!((A, B, C, D, E); [A, B, C, D, E] => (), A, (A, B), (A, B, C), (A, B, C,
 extends!((A, B, C, D, E, F); [A, B, C, D, E, F] => (), A, (A, B), (A, B, C), (A, B, C, D), (A, B, C, D, E), (A, B, C, D, E, F));
 
 pub(crate) mod sealed {
+    /// Keeps `Search` to the query types `#[derive(Search)]` writes and `()`.
     pub trait SealedSearch {}
     impl SealedSearch for () {}
 
+    /// Keeps `Segment` to the types this module implements it for and the enums `#[derive(Segment)]` writes.
     pub trait Sealed {}
     impl Sealed for () {}
     impl Sealed for i32 {}
