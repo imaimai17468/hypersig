@@ -105,6 +105,7 @@ pub enum Component {
     Alert,
     Badge,
     Progress,
+    Spinner,
     Avatar,
     Kbd,
 }
@@ -464,6 +465,7 @@ pub const COMPONENTS: &[Group] = &[
             Doc::Components(Component::Alert),
             Doc::Components(Component::Badge),
             Doc::Components(Component::Progress),
+            Doc::Components(Component::Spinner),
         ],
     },
 ];
@@ -597,6 +599,7 @@ impl Doc {
         Self::Components(Component::Alert),
         Self::Components(Component::Badge),
         Self::Components(Component::Progress),
+        Self::Components(Component::Spinner),
         Self::Components(Component::Avatar),
         Self::Components(Component::Kbd),
         Self::Style(StylePage::Overview),
@@ -730,6 +733,7 @@ impl Doc {
                 Component::Alert => ("Alert", "アラート"),
                 Component::Badge => ("Badge", "バッジ"),
                 Component::Progress => ("Progress and skeleton", "プログレスとスケルトン"),
+                Component::Spinner => ("Spinner", "スピナー"),
                 Component::Avatar => ("Avatar", "アバター"),
                 Component::Kbd => ("Kbd", "Kbd"),
             },
@@ -1089,6 +1093,7 @@ impl Component {
             Self::Alert => "alert",
             Self::Badge => "badge",
             Self::Progress => "progress",
+            Self::Spinner => "spinner",
             Self::Avatar => "avatar",
             Self::Kbd => "kbd",
         }

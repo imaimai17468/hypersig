@@ -102,6 +102,7 @@ demos! {
     Alert => alert, "ui/alert.rs", "16rem";
     Badge => badge, "ui/badge.rs", "8rem";
     Progress => progress, "ui/progress.rs", "10.5rem";
+    Loading => loading, "ui/loading.rs", "6rem";
     Avatar => avatar, "ui/avatar.rs", "5rem";
     Kbd => kbd, "ui/kbd.rs", "7rem";
     Separator => separator, "ui/separator.rs", "12.5rem";

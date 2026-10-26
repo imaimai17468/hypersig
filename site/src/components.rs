@@ -1268,6 +1268,32 @@ fn component_page(page: Component) -> Page {
                 },
             )],
         },
+        Component::Spinner => Page {
+            lead: L {
+                en: "A turning ring that marks work whose length is not known.",
+                ja: "どれだけかかるかわからない処理の途中であることを示す、回転する輪です。",
+            },
+            demo: Demo::Loading,
+            built_on: &[
+                L {
+                    en: "The spinner is a `role=\"status\"` named by its label through `aria-label`, and the ring inside it is hidden from assistive technology. A screen reader reads the label where it reaches the spinner. Whether it also reads the label as the spinner appears differs between screen readers, so say in text when the work finishes, such as in a toast.",
+                    ja: "スピナーは `aria-label` でラベルを名前にした `role=\"status\"` で、中の輪は支援技術から隠されています。スクリーンリーダーはスピナーまで読み進めたときにラベルを読み上げます。スピナーが現れたときにも読み上げるかどうかはスクリーンリーダーによって違うので、処理が終わったことはトーストなどのテキストで伝えてください。",
+                },
+                L {
+                    en: "The ring turns in the current text color, and four times slower for a visitor who asks for reduced motion. Use `progress` where the share of the work done is known.",
+                    ja: "輪は現在の文字色で回り、動きを減らす設定の訪問者には 4 倍遅く回ります。処理の進み具合がわかる場合は `progress` を使ってください。",
+                },
+            ],
+            keys: &[],
+            items: &[(
+                "spinner",
+                "hypersig_ui/fn.spinner.html",
+                L {
+                    en: "A turning ring named `label`, which marks work that has no known length.",
+                    ja: "`label` を名前に持ち、長さのわからない処理を示す回転する輪",
+                },
+            )],
+        },
         Component::Card => Page {
             lead: L {
                 en: "A bordered box with a header, content, and a footer.",

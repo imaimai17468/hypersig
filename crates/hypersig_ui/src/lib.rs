@@ -40,6 +40,7 @@
 //! | [`Avatar`] | `role="img"` named after the person, over an `<img>` or their initials |
 //! | [`kbd`] | `<kbd>` |
 //! | [`progress`] | `role="progressbar"` |
+//! | [`spinner`] | `role="status"` named by its label |
 //!
 //! The ids that tie a label to its control, or a tab to its panel, are
 //! derived from the signal the component is bound to. A dialog, a menu, a
@@ -100,6 +101,7 @@ mod progress;
 mod select;
 mod separator;
 mod slider;
+mod spinner;
 mod table;
 mod tabs;
 mod theme;
@@ -133,6 +135,7 @@ pub use progress::{progress, skeleton};
 pub use select::{select_field, select_field_in_form};
 pub use separator::separator;
 pub use slider::Slider;
+pub use spinner::spinner;
 pub use table::{Column, DataTable, ServerTable, SortOrder, TableState, TableText};
 pub use tabs::Tabs;
 pub use theme::{dark, global, light, theme};
