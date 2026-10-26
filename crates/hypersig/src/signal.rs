@@ -212,7 +212,7 @@ mod sealed {
 /// A chain of field names, either from the page root or from a list item.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Path {
-    item: Option<u8>,
+    item: Option<Scope>,
     segments: [&'static str; MAX_DEPTH],
     len: u8,
 }
@@ -229,9 +229,9 @@ impl Path {
         }
     }
 
-    pub(crate) fn item(depth: u8) -> Self {
+    fn item(scope: Scope) -> Self {
         Self {
-            item: Some(depth),
+            item: Some(scope),
             segments: [""; MAX_DEPTH],
             len: 0,
         }
@@ -273,7 +273,7 @@ impl Path {
     pub(crate) fn expr_json(&self) -> Value {
         match self.item {
             None => json!(["sig", self.rooted()]),
-            Some(depth) => json!(["item", in_scope(depth), self.dotted()]),
+            Some(scope) => json!(["item", scope.open_depth(), self.dotted()]),
         }
     }
 
@@ -281,7 +281,7 @@ impl Path {
     pub(crate) fn place_json(&self) -> Value {
         match self.item {
             None => Value::from(self.rooted()),
-            Some(depth) => json!(["item", in_scope(depth), self.dotted()]),
+            Some(scope) => json!(["item", scope.open_depth(), self.dotted()]),
         }
     }
 }
@@ -316,53 +316,77 @@ impl fmt::Debug for Path {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.item {
             None => write!(f, "{}", self.dotted()),
-            Some(depth) => write!(f, "item[{depth}].{}", self.dotted()),
+            Some(scope) => write!(f, "item[{}].{}", scope.depth, self.dotted()),
         }
     }
 }
 
 thread_local! {
-    static ITEM_DEPTH: Cell<u8> = const { Cell::new(0) };
+    /// The ids of the item scopes whose closures are running, outermost first.
+    static OPEN_SCOPES: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+    static NEXT_SCOPE: Cell<u32> = const { Cell::new(0) };
 }
 
-/// `depth`, after checking that the closure of the list item at `depth` is still running.
-///
-/// An [`Item`] or a signal reached from one names its item by depth, so one
-/// used after its closure returned would name an item no list provides.
-/// The check sees only the depth, so an item used inside another list at
-/// the same depth passes it, and so does an expression built inside the
-/// closure and used outside, since it was written while the closure ran.
-///
-/// # Panics
-///
-/// Panics if no item scope at `depth` is open.
-fn in_scope(depth: u8) -> u8 {
-    assert!(
-        depth < ITEM_DEPTH.get(),
-        "a list item is used outside the closure it was passed to"
-    );
-    depth
+/// The list item a path or an [`Item`] names: the depth the runtime reads,
+/// and the id of the closure call that received it.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Scope {
+    depth: u8,
+    id: u32,
+}
+
+impl Scope {
+    /// The scope of the closure running now, which [`in_item_scope`] opened.
+    fn current(depth: u8) -> Self {
+        let id = OPEN_SCOPES.with_borrow(|open| open.get(usize::from(depth)).copied());
+        Self {
+            depth,
+            id: id.expect("an item is created inside the closure of its list"),
+        }
+    }
+
+    /// The depth, after checking that the closure this item was passed to is still running.
+    ///
+    /// The id is compared rather than the depth alone, so an item kept from
+    /// one list and used inside another list at the same depth is caught too.
+    /// An expression built inside the closure and used outside it passes,
+    /// since it was written while the closure ran.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the closure the item was passed to has returned.
+    fn open_depth(self) -> u8 {
+        let open =
+            OPEN_SCOPES.with_borrow(|open| open.get(usize::from(self.depth)) == Some(&self.id));
+        assert!(
+            open,
+            "a list item is used outside the closure it was passed to"
+        );
+        self.depth
+    }
 }
 
 /// Runs `body` with the depth of a new item scope, one deeper than the
 /// enclosing one, so nested lists name their items without colliding.
 ///
 /// The depth counts enclosing scopes, so rendering the same tree twice writes
-/// the same attributes.
+/// the same attributes. Each call also gets an id of its own, which the
+/// items created inside carry.
 pub(crate) fn in_item_scope<R>(body: impl FnOnce(u8) -> R) -> R {
-    struct Restore(u8);
-    impl Drop for Restore {
+    struct Close;
+    impl Drop for Close {
         fn drop(&mut self) {
-            ITEM_DEPTH.set(self.0);
+            OPEN_SCOPES.with_borrow_mut(Vec::pop);
         }
     }
-    let depth = ITEM_DEPTH.get();
-    let _restore = Restore(depth);
-    ITEM_DEPTH.set(
+    let id = NEXT_SCOPE.get();
+    NEXT_SCOPE.set(id.wrapping_add(1));
+    let depth = OPEN_SCOPES.with_borrow_mut(|open| {
+        let depth = u8::try_from(open.len()).expect("item scopes nest fewer than 256 deep");
+        open.push(id);
         depth
-            .checked_add(1)
-            .expect("item scopes nest fewer than 256 deep"),
-    );
+    });
+    let _close = Close;
     body(depth)
 }
 
@@ -788,7 +812,7 @@ impl<S, T, R> fmt::Debug for Sig<S, T, R> {
 /// being moved out.
 pub struct Item<S, T> {
     list: Path,
-    depth: u8,
+    scope: Scope,
     marker: PhantomData<fn() -> (S, T)>,
 }
 
@@ -796,7 +820,7 @@ impl<S, T> Item<S, T> {
     pub(crate) fn new(list: Path, depth: u8) -> Self {
         Self {
             list,
-            depth,
+            scope: Scope::current(depth),
             marker: PhantomData,
         }
     }
@@ -804,7 +828,7 @@ impl<S, T> Item<S, T> {
     /// The item itself, as a signal that can be read and written.
     #[must_use]
     pub fn value(self) -> Sig<S, T, Local> {
-        Sig::from_path(Path::item(self.depth))
+        Sig::from_path(Path::item(self.scope))
     }
 
     /// The field `field` of the item.
@@ -821,7 +845,7 @@ impl<S, T> Item<S, T> {
     /// The item's position in its list, starting at 0.
     #[must_use]
     pub fn index(self) -> Expr<S, i32> {
-        Expr::from_json(json!(["index", in_scope(self.depth)]))
+        Expr::from_json(json!(["index", self.scope.open_depth()]))
     }
 
     /// A statement that removes this item from its list.
@@ -843,7 +867,7 @@ impl<S, T> fmt::Debug for Item<S, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Item")
             .field("list", &self.list)
-            .field("depth", &self.depth)
+            .field("depth", &self.scope.depth)
             .finish()
     }
 }
@@ -875,5 +899,20 @@ mod tests {
         });
         let task = kept.expect("`each` runs its closure before it returns");
         let _ = task.at(title).set("");
+    }
+
+    #[test]
+    #[should_panic(expected = "a list item is used outside the closure it was passed to")]
+    fn an_item_used_inside_another_list_at_the_same_depth_panics() {
+        let todo: Sig<Board, Vec<Task>> = sig("todo");
+        let done: Sig<Board, Vec<Task>> = sig("done");
+        let title: Sig<Task, String> = sig("title");
+        let mut kept = None;
+        let _first = each(todo, |task| {
+            kept = Some(task);
+            span()
+        });
+        let task = kept.expect("`each` runs its closure before it returns");
+        let _second = each(done, |_| span().bind_text(task.at(title)));
     }
 }
