@@ -46,7 +46,14 @@ export class Computed {
     let lookup = new ChangeLookup(changes);
     for (const effect of this.#derived) {
       if (effect.deps === null || !lookup.affectsAny(effect.deps)) continue;
-      this.#rt.store.untracked(effect.run);
+      // A computed signal that fails keeps its value, and the statement whose
+      // write ran it goes on with its next step, as a binding that fails in
+      // the render leaves the others to run.
+      try {
+        this.#rt.store.untracked(effect.run);
+      } catch (error) {
+        console.error("hypersig:", error);
+      }
       lookup = new ChangeLookup(changes);
     }
   }
