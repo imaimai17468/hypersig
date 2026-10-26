@@ -29,7 +29,7 @@ This governs every text a person reads: replies to the user, plans, reports, com
 
 **Apply the portability test.** A sentence that could move unchanged to another repository, another module, or another company is filler. Replace it with a fact, a mechanism, a number, a file path, or a consequence that belongs to this subject alone. `The implications are significant` and `速度が向上する` name nothing.
 
-**Repeat the right word rather than rotating synonyms.** Calling one thing a gate, then a check, then a guard reads as variety and costs the reader the identity of the thing. Pick the term and keep it.
+**Repeat the right word rather than rotating synonyms.** Calling one thing a gate, then a check, then a guard reads as variety and costs the reader the identity of the thing. Pick the term and keep it. Where one English word covers two concepts in a text written in both languages, split it in the English first, because a translation that splits it only in Japanese leaves the English ambiguous and the two languages out of step.
 
 **Do not reach for a sweeping quantifier to add force.** `every`, `always`, `everyone`, `すべて` used to mean "many" claim more than was checked. A directive is the exception, because `never hand-edit it` states the rule's force rather than a measurement.
 
