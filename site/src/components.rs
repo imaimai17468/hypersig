@@ -191,8 +191,8 @@ hypersig_ui = "0.8""#,
                     ja: "スクリーンリーダーやキーボードでの操作に必要な振る舞いは、ブラウザに備わっていればブラウザのものを使います。ネイティブの `<button>`、`<input>`、`<select>`、`<details>`、`<dialog>`、`popover` です。ブラウザに備わっていない振る舞いは、コンポーネントが WAI-ARIA Authoring Practices に従って作り、キーボード操作は `El::roving_focus` と `El::active_descendant` で扱います。",
                 },
                 L {
-                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a tooltip, and a combobox are `const` handles built from a `NodeRef` that `node_ref!` declares, or a `DialogRef` from `dialog_ref!`, and their parts share the handle. The macro names the reference after its module and constant, so two handles never share an id.",
-                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ツールチップ、コンボボックスは、`node_ref!` で宣言した `NodeRef` か `dialog_ref!` で宣言した `DialogRef` から作る `const` のハンドルで、部品どうしでそのハンドルを共有します。マクロはモジュールと定数の名前から参照の名前を作るので、2 つのハンドルが同じ id になることはありません。",
+                    en: "The ids that tie a label to its control, or a tab to its panel, are derived from the signal the component is bound to. A dialog, a menu, a popover, a tooltip, and a combobox are `const` handles built from a `NodeRef` that `node_ref!` declares, or a `DialogRef` from `dialog_ref!`, and their parts share the handle. The macro names the reference after its module and constant, so two handles never share an id.",
+                    ja: "ラベルとコントロール、タブとパネルを結び付ける id は、コンポーネントが束縛するシグナルから作られます。ダイアログ、メニュー、ポップオーバー、ツールチップ、コンボボックスは、`node_ref!` で宣言した `NodeRef` か `dialog_ref!` で宣言した `DialogRef` から作る `const` のハンドルで、部品どうしでそのハンドルを共有します。マクロはモジュールと定数の名前から参照の名前を作るので、2 つのハンドルが同じ id になることはありません。",
                 },
                 L {
                     en: "The colors follow shadcn/ui's zinc theme. Three values differ, to meet WCAG 2.2 AA: a control's border has 3:1 contrast or more, secondary text keeps 4.5:1 on the muted background, and focus is a solid outline, which forced-colors mode still draws.",
@@ -1868,6 +1868,71 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "The tooltip, holding `text`.",
                         ja: "`text` を入れたツールチップ",
+                    },
+                ),
+            ],
+        },
+        Component::Popover => Page {
+            lead: L {
+                en: "A panel of content that a button opens beside itself.",
+                ja: "ボタンの横に開く、内容を入れるパネルです。",
+            },
+            demo: Demo::Popover,
+            built_on: &[
+                L {
+                    en: "The panel is a `popover=\"auto\"` with `role=\"dialog\"`, named by its button through `aria-labelledby`. The button has `aria-haspopup=\"dialog\"` and opens and closes it with `commandfor` and `command`, so the browser puts the panel above the page, closes it on Escape or on a click outside, and returns focus to the button when focus was inside the panel.",
+                    ja: "パネルは `role=\"dialog\"` を持つ `popover=\"auto\"` で、`aria-labelledby` によってボタンのテキストがパネルの名前になります。ボタンは `aria-haspopup=\"dialog\"` を持ち、`commandfor` と `command` でパネルを開け閉めします。そのため、ブラウザがパネルをページの上に表示し、Escape かパネルの外のクリックで閉じ、フォーカスがパネルの中にあった場合はボタンに戻します。",
+                },
+                L {
+                    en: "Focus stays on the button as the panel opens, so place the panel right after its button, where Tab moves from the button into it. A statement closes it with `NodeRef::hide_popover` on the node ref the popover is built from.",
+                    ja: "パネルが開いてもフォーカスはボタンに残ります。パネルはボタンの直後に置いてください。そうすると、ボタンから Tab でパネルの中に移れます。ステートメントから閉じるには、ポップオーバーを作った node ref の `NodeRef::hide_popover` を使います。",
+                },
+            ],
+            keys: &[
+                (
+                    L {
+                        en: "Enter, Space",
+                        ja: "Enter、Space",
+                    },
+                    L {
+                        en: "On the button, opens or closes the panel.",
+                        ja: "ボタンの上で押すと、パネルを開くか閉じます。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Escape",
+                        ja: "Escape",
+                    },
+                    L {
+                        en: "Closes the panel.",
+                        ja: "パネルを閉じます。",
+                    },
+                ),
+            ],
+            items: &[
+                (
+                    "Popover::new",
+                    "hypersig_ui/struct.Popover.html#method.new",
+                    L {
+                        en: "A popover that `panel` names, whose id is the name of `panel`.",
+                        ja: "`panel` が名前を付け、`panel` の名前を id とするポップオーバー",
+                    },
+                ),
+                (
+                    "trigger",
+                    "hypersig_ui/struct.Popover.html#method.trigger",
+                    L {
+                        en: "The button that opens and closes the panel.",
+                        ja: "パネルを開け閉めするボタン",
+                    },
+                ),
+                (
+                    "popover",
+                    "hypersig_ui/struct.Popover.html#method.popover",
+                    L {
+                        en: "The panel, empty, for the content added with `El::child`.",
+                        ja: "`El::child` で内容を加える、空のパネル",
                     },
                 ),
             ],

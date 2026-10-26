@@ -30,13 +30,14 @@
 //! | [`Dialog`] | `<dialog>` opened by invoker commands, centered or along an edge as a sheet |
 //! | [`NavList`], [`Breadcrumb`], [`pagination`] | `<nav>` holding a list of links, with `aria-current` on the link to the page shown |
 //! | [`Menu`] | the menu button pattern on a `popover` |
+//! | [`Popover`] | a `popover` with `role="dialog"`, named by the button that opens it |
 //! | [`Tooltip`] | the tooltip pattern on a `popover="hint"` |
 //! | [`Toaster`] | a landmark region holding an `aria-live` list |
 //! | [`progress`] | `role="progressbar"` |
 //!
 //! The ids that tie a label to its control, or a tab to its panel, are
 //! derived from the signal the component is bound to. A dialog, a menu, a
-//! tooltip, and a combobox take names in a `const` handle, as a
+//! popover, a tooltip, and a combobox take names in a `const` handle, as a
 //! [`NodeRef`](hypersig::NodeRef) does, because the runtime or the browser
 //! finds their elements by id.
 //!
@@ -85,6 +86,7 @@ mod look;
 mod menu;
 mod navigation;
 mod number;
+mod popover;
 mod progress;
 mod select;
 mod separator;
@@ -113,6 +115,7 @@ pub use listbox::Listbox;
 pub use menu::{Menu, MenuItem};
 pub use navigation::{Breadcrumb, NavList, PaginationText, pagination};
 pub use number::{NumberField, Numeric};
+pub use popover::Popover;
 pub use progress::{progress, skeleton};
 pub use select::{select_field, select_field_in_form};
 pub use separator::separator;

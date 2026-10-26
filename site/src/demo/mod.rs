@@ -94,6 +94,7 @@ demos! {
     Dialog => dialog, "ui/dialog.rs", "24rem";
     Menu => menu, "ui/menu.rs", "17rem";
     Tooltip => tooltip, "ui/tooltip.rs", "8rem";
+    Popover => popover, "ui/popover.rs", "18rem";
     Toast => toast, "ui/toast.rs", "20rem";
     Card => card, "ui/card.rs", "19rem";
     Alert => alert, "ui/alert.rs", "16rem";
