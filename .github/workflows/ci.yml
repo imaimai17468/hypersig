@@ -205,6 +205,14 @@ jobs:
           tool: cargo-udeps
       - run: cargo +nightly-2026-10-14 udeps --workspace --all-targets
       - run: cargo +nightly-2026-10-14 miri test -p hypersig --lib
+      # tests/public_api.rs reads the rustdoc JSON of each library crate,
+      # which only a nightly rustdoc writes.
+      - name: The public API follows .claude/rules/rust.md
+        run: |
+          for crate in hypersig hypersig_ui hypersig_style hypersig_i18n; do
+            cargo +nightly-2026-10-14 rustdoc -p "$crate" --all-features -- -Z unstable-options --output-format json
+          done
+          cargo +nightly-2026-10-14 test -p hypersig --test public_api -- --ignored
 
   # Publishes to crates.io every library crate whose workspace version is not
   # there yet, so a push to main that raises the version releases it and any
