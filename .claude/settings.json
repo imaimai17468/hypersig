@@ -43,5 +43,31 @@
     "beautiful-rust@beautiful-rust": true,
     "yomiyasu@yomiyasu": true,
     "humanizer@humanizer": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/inject-rules.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/inject-rules.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
