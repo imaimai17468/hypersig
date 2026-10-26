@@ -5,6 +5,8 @@ import { type Fetch, mount, sseResponse } from "../../mount.ts";
 beforeEach(() => {
   vi.useFakeTimers();
   vi.spyOn(console, "error").mockImplementation(() => {});
+  // The wait falls between half its length and all of it, and the tests time the longest.
+  vi.spyOn(Math, "random").mockReturnValue(1);
 });
 
 afterEach(() => {
@@ -187,4 +189,36 @@ it("waits longer each time a stream closes before it sends anything", async () =
   expect(fetch).toHaveBeenCalledTimes(3);
   await vi.advanceTimersByTimeAsync(4000);
   expect(fetch).toHaveBeenCalledTimes(4);
+});
+
+it("waits at least half of each wait, so pages that lost a server together spread their retries", async () => {
+  vi.spyOn(Math, "random").mockReturnValue(0);
+  const fetch = vi.fn<Fetch>().mockRejectedValue(new TypeError("Failed to fetch"));
+  vi.stubGlobal("fetch", fetch);
+  mount(feed, { results: "", problem: "" });
+  await vi.advanceTimersByTimeAsync(0);
+  await vi.advanceTimersByTimeAsync(499);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(fetch).toHaveBeenCalledTimes(3);
+});
+
+it("tries again at once when the browser comes back online or the page becomes visible", async () => {
+  const fetch = vi.fn<Fetch>().mockRejectedValue(new TypeError("Failed to fetch"));
+  vi.stubGlobal("fetch", fetch);
+  mount(feed, { results: "", problem: "" });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  dispatchEvent(new Event("online"));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  document.dispatchEvent(new Event("visibilitychange"));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(fetch).toHaveBeenCalledTimes(3);
+  $("p").remove();
+  dispatchEvent(new Event("online"));
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(fetch).toHaveBeenCalledTimes(3);
 });

@@ -2,10 +2,8 @@ import type { CallOptions } from "../../eval.ts";
 import { readEventStream, type ServerEvent } from "../../sse.ts";
 import type { Runtime } from "../../runtime.ts";
 import { FILES } from "../binding/ref.ts";
-
-/** The wait before a call sent with `reconnect` is sent again, doubling after each failure up to the last. */
-const FIRST_RETRY_MS = 1000;
-const LAST_RETRY_MS = 30_000;
+import { END_EVENT, type Failure, refused } from "./answer.ts";
+import { backoff, FIRST_RETRY_MS, LAST_RETRY_MS } from "./retry.ts";
 
 /** The header an upload carries, which `crates/hypersig/src/axum.rs` requires. */
 const UPLOAD_HEADER = "hypersig-upload";
@@ -17,8 +15,6 @@ const UPLOAD_HEADER = "hypersig-upload";
 const CALL_HEADER = "hypersig-call";
 /** The header that tells the server which page field the part that made a call sits at. */
 const PART_HEADER = "hypersig-part";
-/** The event `crates/hypersig/src/axum.rs` sends last on a stream whose handler finished. */
-const END_EVENT = "hs-end";
 
 /** A call in progress: what it sends, and what it reports to while it waits. */
 interface Pending {
@@ -35,34 +31,6 @@ interface Pending {
   readonly open: string | null;
   /** Whether nothing waits for the call any more. */
   readonly abandoned: () => boolean;
-}
-
-/** A failed request: the text the page shows for it, and the HTTP status, 0 where none came back. */
-interface Failure {
-  readonly message: string;
-  readonly status: number;
-}
-
-/** The media type of `response`, lowercase and without its parameters, or `""` without one. */
-function mediaType(response: Response): string {
-  return (response.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
-}
-
-/**
- * The text the error signal shows for an answer outside 2xx. A handler that
- * fails writes the sentence for the visitor as `text/plain`, which axum gives
- * a `String`, while a proxy's error page is HTML, so only a plain text body
- * is kept, and the status and its reason stand in for any other.
- */
-async function failureText(response: Response): Promise<string> {
-  const body = mediaType(response) === "text/plain" ? (await response.text()).trim() : "";
-  return body === "" ? `${response.status} ${response.statusText}`.trim() : body;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((done) => {
-    setTimeout(done, ms);
-  });
 }
 
 /** The action calls statements make, and the indicators that count the ones awaiting an answer. */
@@ -216,7 +184,7 @@ export class Calls {
       call.method === "GET" &&
       (failure.status === 0 || failure.status >= 500);
     if (!again || call.abandoned()) return;
-    await sleep(wait);
+    await backoff(wait);
     if (call.abandoned()) return;
     await this.#attempt(call, call.request(), Math.min(wait * 2, LAST_RETRY_MS));
   }
@@ -237,20 +205,12 @@ export class Calls {
   ): Promise<Failure | null> {
     try {
       const response = await fetch(url, init);
-      if (!response.ok) return { message: await failureText(response), status: response.status };
-      // A proxy that sends a signed-out visitor to its sign-in page answers
-      // the redirected `fetch` with a 200 HTML page, which carries no patches.
-      if (response.redirected)
-        return { message: `the answer was redirected to ${response.url}`, status: 0 };
-      if (mediaType(response) !== "text/event-stream" || response.body === null)
-        return {
-          message: `the answer is ${mediaType(response) || "empty"}, not an event stream`,
-          status: 0,
-        };
+      const failure = await refused(response);
+      if (failure !== null) return failure;
       connected();
       if (error !== null) this.#rt.store.set(error, "");
       let ended = false;
-      await readEventStream(response.body, (event) => {
+      await readEventStream(response.body!, (event) => {
         if (controller.signal.aborted) return;
         if (event.event === END_EVENT) ended = true;
         else received(event);

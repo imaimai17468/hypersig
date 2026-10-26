@@ -113,6 +113,7 @@ it("aborts the earlier latest call and applies only the newer answer", async () 
 
 it("sends a reconnect call again after the connection fails", async () => {
   vi.useFakeTimers();
+  vi.spyOn(Math, "random").mockReturnValue(1);
   vi.spyOn(console, "error").mockImplementation(() => {});
   const fetch = vi
     .fn<Fetch>()

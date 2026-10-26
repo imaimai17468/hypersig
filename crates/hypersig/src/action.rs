@@ -650,11 +650,15 @@ impl<S> StreamCall<S> {
 
     /// Opens the stream again when its connection fails, breaks off, or answers 5xx.
     ///
-    /// The first attempt waits 1 second, and each later one twice as long,
-    /// up to 30 seconds. A stream that delivers an event starts the wait
-    /// over, so a server that answers 2xx and closes before sending anything
-    /// is asked again less often each time. While the stream is failing, the
-    /// [`error`](StreamCall::error) signal holds the last failure.
+    /// The first attempt waits up to 1 second, and each later one up to twice
+    /// as long, up to 30 seconds. Each wait is at least half its length, at a
+    /// random point, so pages that lost the server together do not all
+    /// return at the same moment. The wait ends early when the browser comes
+    /// back online or the page becomes visible. A stream that delivers an
+    /// event starts the wait over, so a server that answers 2xx and closes
+    /// before sending anything is asked again less often each time. While
+    /// the stream is failing, the [`error`](StreamCall::error) signal holds
+    /// the last failure.
     ///
     /// The server sends the event `hs-end` last once the handler's stream
     /// finishes, and a stream that ended with it is not opened again. A
