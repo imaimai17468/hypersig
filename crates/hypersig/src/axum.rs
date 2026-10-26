@@ -1352,7 +1352,7 @@ async fn read_upload<A: DeserializeOwned>(
         let file_name = field.file_name().map(str::to_owned);
         let content_type = field.content_type().map(ToString::to_string);
         let bytes = field.bytes().await.map_err(RequestError::from_multer)?;
-        files.push(UploadedFile::new(file_name, content_type, bytes.to_vec()));
+        files.push(UploadedFile::new(file_name, content_type, bytes));
     }
     Ok(Uploaded::new(args, files))
 }

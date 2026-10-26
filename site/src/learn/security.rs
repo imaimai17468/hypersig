@@ -262,8 +262,8 @@ fn application(site: Site) -> Part {
                     ja: "保存したデータから作る id。固定の id が 2 つ同じなら描画はパニックしますが、`String` の id が 2 つ同じでもそのまま描画され、その id へのリンクや差分は最初の要素に届きます。タグ名のように訪問者が保存した値から id を作るときは、レコードのキーと組み合わせて一意にしてください。",
                 },
                 L {
-                    en: "Its own queries and files, such as SQL built from arguments, and a file name from an upload, which `UploadedFile::file_name` returns as the browser sent it.",
-                    ja: "引数から組み立てる SQL や、`UploadedFile::file_name` がブラウザの送ったまま返すアップロードのファイル名のような、アプリ自身のクエリとファイル。",
+                    en: "Its own queries and files, such as SQL built from arguments, and the path an uploaded file is stored at. `UploadedFile::file_name` returns a `FileName`, whose `base_name` names no directory and whose `as_sent` is the text the browser sent, but two visitors can send the same name, so store the file under a name the application chooses.",
+                    ja: "引数から組み立てる SQL や、アップロードしたファイルを保存するパスのような、アプリ自身のクエリとファイル。`UploadedFile::file_name` は `FileName` を返します。その `base_name` はディレクトリを含まず、`as_sent` はブラウザが送った文字列そのものです。ただし 2 人の訪問者が同じ名前を送ることもあるので、ファイルはアプリが決めた名前で保存してください。",
                 },
             ],
         ),
