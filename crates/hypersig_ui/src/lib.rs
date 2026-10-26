@@ -15,6 +15,9 @@
 //! | [`TextField`] | `<label>`, `<input>` or `<textarea>`, `aria-describedby`, `aria-invalid`, a live error |
 //! | [`NumberField`] | the same, on `<input type="number">` with typed `min`, `max`, and `step` |
 //! | [`checkbox`], [`switch`] | `<input type="checkbox">`, the switch with `role="switch"` |
+//! | [`toggle`], [`icon_toggle`] | `<button>` with `aria-pressed` |
+//! | [`ToggleGroup`] | the radio group pattern on toggle buttons, with roving focus |
+//! | [`MultiToggleGroup`] | a `role="group"` of toggle buttons, with roving focus |
 //! | [`radio_group`] | `<fieldset>`, `<legend>`, and radios that share a name |
 //! | [`select_field`] | `<label>` and `<select>`, with a `base-select` picker where supported |
 //! | [`TextField::in_form`], [`select_field_in_form`], [`radio_group_in_form`], [`checkbox_in_form`], [`switch_in_form`] | the control above bound to a field of a [`Form`](hypersig::Form), with its message tied by `aria-describedby` and `aria-invalid` |
@@ -95,6 +98,7 @@ mod table;
 mod tabs;
 mod theme;
 mod toast;
+mod toggle;
 pub mod token;
 mod tooltip;
 
@@ -124,4 +128,5 @@ pub use table::{Column, DataTable, ServerTable, SortOrder, TableState, TableText
 pub use tabs::Tabs;
 pub use theme::{dark, global, light, theme};
 pub use toast::{Toast, ToastVariant, Toaster};
+pub use toggle::{MultiToggleGroup, ToggleGroup, icon_toggle, toggle};
 pub use tooltip::Tooltip;

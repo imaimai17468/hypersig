@@ -87,6 +87,7 @@ demos! {
     RadioGroup => radio_group, "ui/radio_group.rs", "13.5rem";
     Select => select, "ui/select.rs", "16rem";
     Slider => slider, "ui/slider.rs", "7rem";
+    Toggle => toggle, "ui/toggle.rs", "8rem";
     Listbox => listbox, "ui/listbox.rs", "10.5rem";
     Combobox => combobox, "ui/combobox.rs", "22rem";
     Tabs => tabs, "ui/tabs.rs", "8rem";

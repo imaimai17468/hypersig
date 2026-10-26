@@ -790,6 +790,89 @@ fn component_page(page: Component) -> Page {
                 ),
             ],
         },
+        Component::Toggle => Page {
+            lead: L {
+                en: "A button that stays pressed, alone or in a group that picks one value or several.",
+                ja: "押した状態が続くボタンです。単独でも、1 つか複数の値を選ぶグループとしても使えます。",
+            },
+            demo: Demo::Toggle,
+            built_on: &[
+                L {
+                    en: "A toggle is a native `<button>` with `aria-pressed` bound to a `bool` signal, so a screen reader announces it as a toggle button that is pressed or not pressed. Keep its text the same in both states, since the state is announced on its own. `icon_toggle` takes the label that names it as an argument.",
+                    ja: "トグルは `bool` のシグナルに `aria-pressed` を束縛したネイティブの `<button>` です。そのため、スクリーンリーダーは押された状態か押されていない状態のトグルボタンとして読み上げます。状態は別に読み上げられるので、テキストはどちらの状態でも同じにしてください。`icon_toggle` は名前になるラベルを引数に取ります。",
+                },
+                L {
+                    en: "`ToggleGroup` picks one value of a signal and follows the WAI-ARIA radio group pattern: the group has `role=\"radiogroup\"`, each toggle `role=\"radio\"` with `aria-checked`, and Tab enters the group at the toggle that is on. `MultiToggleGroup` holds one `bool` signal per toggle in a `role=\"group\"`, and Tab enters it at its first toggle. In both, the arrow keys move between the toggles through `El::roving_focus`.",
+                    ja: "`ToggleGroup` はシグナルの値を 1 つ選び、WAI-ARIA radio group パターンに従います。グループは `role=\"radiogroup\"`、各トグルは `aria-checked` 付きの `role=\"radio\"` を持ち、Tab ではオンのトグルからグループに入ります。`MultiToggleGroup` は `role=\"group\"` の中にトグルごとの `bool` シグナルを持ち、Tab では最初のトグルからグループに入ります。どちらのグループでも、矢印キーは `El::roving_focus` によってトグルの間でフォーカスを移します。",
+                },
+            ],
+            keys: &[
+                (
+                    L {
+                        en: "Enter, Space",
+                        ja: "Enter、Space",
+                    },
+                    L {
+                        en: "Turns the focused toggle on or off.",
+                        ja: "フォーカスのあるトグルをオンかオフにします。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Left, Right",
+                        ja: "左、右",
+                    },
+                    L {
+                        en: "Move to the previous or the next toggle of a group, wrapping at either end. In a `ToggleGroup`, the toggle reached turns on.",
+                        ja: "グループの前か次のトグルに移り、端では反対の端に戻ります。`ToggleGroup` では、移った先のトグルがオンになります。",
+                    },
+                ),
+                (
+                    L {
+                        en: "Home, End",
+                        ja: "Home、End",
+                    },
+                    L {
+                        en: "Move to the first or the last toggle of a group.",
+                        ja: "グループの最初か最後のトグルに移ります。",
+                    },
+                ),
+            ],
+            items: &[
+                (
+                    "toggle",
+                    "hypersig_ui/fn.toggle.html",
+                    L {
+                        en: "A button that is pressed while `pressed` is true, and flips it when clicked.",
+                        ja: "`pressed` が true の間は押された状態になり、クリックで `pressed` を反転するボタン",
+                    },
+                ),
+                (
+                    "icon_toggle",
+                    "hypersig_ui/fn.icon_toggle.html",
+                    L {
+                        en: "A toggle that shows only an icon, named `label` for assistive technology.",
+                        ja: "アイコンだけを表示し、支援技術向けに `label` を名前に持つトグル",
+                    },
+                ),
+                (
+                    "ToggleGroup",
+                    "hypersig_ui/struct.ToggleGroup.html",
+                    L {
+                        en: "A group of toggles named `label` that picks one value of `selected`.",
+                        ja: "`label` を名前に持ち、`selected` の値を 1 つ選ぶトグルのグループ",
+                    },
+                ),
+                (
+                    "MultiToggleGroup",
+                    "hypersig_ui/struct.MultiToggleGroup.html",
+                    L {
+                        en: "A group of toggles named `label`, each bound to a flag of its own.",
+                        ja: "`label` を名前に持ち、トグルごとに別のフラグを束縛するグループ",
+                    },
+                ),
+            ],
+        },
         Component::Listbox => Page {
             lead: L {
                 en: "A list of options of which one is selected, kept in a signal.",
