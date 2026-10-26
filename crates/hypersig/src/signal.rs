@@ -178,14 +178,38 @@ pub enum Local {}
 #[derive(Debug, Clone, Copy)]
 pub enum Computed {}
 
+/// Marks a read-only view of a page-rooted [`Sig`], which [`Sig::read`] returns.
+///
+/// A function that only reads a signal takes it as `Sig<S, T, R>` with
+/// `R: FromPage`, so that a plain field and a computed one both fit, and
+/// calls [`Sig::read`] to keep it as a `Sig<S, T, Read>`, whose type no
+/// longer says which of the two it was. The view has the reads of the
+/// signal it came from and no `set`, list statement, `bind`, or `patch`,
+/// and [`Page::computed`](crate::Page::computed) refuses it.
+///
+/// ```compile_fail
+/// use hypersig::Signals;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Cart {
+///     price: f64,
+/// }
+///
+/// let _ = Cart::price().read().set(0.0);
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub enum Read {}
+
 /// The markers of a [`Sig`] the browser may write: [`Root`] and [`Local`].
 ///
-/// [`Computed`] lacks it, so a statement that writes a computed signal does
-/// not compile. The trait is sealed.
+/// [`Computed`] and [`Read`] lack it, so a statement that writes a computed
+/// signal or a read-only view does not compile. The trait is sealed.
 #[diagnostic::on_unimplemented(
-    message = "a computed signal cannot be written",
-    label = "this signal is kept equal to the expression `Page::computed` gives it",
-    note = "write one of the signals the expression reads instead"
+    message = "a signal marked `{Self}` cannot be written",
+    label = "the browser writes neither a computed signal nor a view from `Sig::read`",
+    note = "for a computed signal, write one of the signals its expression reads",
+    note = "for a view from `Sig::read`, write the signal `read` was called on"
 )]
 pub trait Writable: sealed::Sealed {}
 
@@ -195,30 +219,35 @@ impl Writable for Local {}
 /// The marker of a [`Sig`] that [`Page::computed`](crate::Page::computed) accepts: [`Computed`] alone.
 ///
 /// It exists so that passing a field without `#[signals(computed)]` names
-/// the missing attribute. The trait is sealed.
+/// the missing attribute. [`Read`] lacks it too, so `Page::computed` takes
+/// the field's accessor rather than a view of it. The trait is sealed.
 #[diagnostic::on_unimplemented(
     message = "`Page::computed` takes a field marked `#[signals(computed)]`",
-    label = "this signal can be written, so a computed value would not stay in it",
-    note = "add `#[signals(computed)]` to the field in the struct's definition"
+    label = "this signal is marked `{Self}`, and `Page::computed` takes only `Computed`",
+    note = "for a field without the mark, add `#[signals(computed)]` to it in the struct's definition",
+    note = "for a view from `Sig::read`, pass the field's accessor itself"
 )]
 pub trait IsComputed: sealed::Sealed {}
 
 impl IsComputed for Computed {}
 
-/// The markers of a [`Sig`] whose path starts at the page's signal struct: [`Root`] and [`Computed`].
+/// The markers of a [`Sig`] whose path starts at the page's signal struct.
 ///
-/// [`Local`] lacks it, because the path of a list item is resolved in the
-/// browser. The trait is sealed.
+/// They are [`Root`], [`Computed`], and [`Read`]. [`Local`] lacks it,
+/// because the path of a list item is resolved in the browser. The trait is
+/// sealed.
 pub trait FromPage: sealed::Sealed {}
 
 impl FromPage for Root {}
 impl FromPage for Computed {}
+impl FromPage for Read {}
 
 mod sealed {
     pub trait Sealed {}
     impl Sealed for super::Root {}
     impl Sealed for super::Local {}
     impl Sealed for super::Computed {}
+    impl Sealed for super::Read {}
 }
 
 /// A chain of field names, either from the page root or from a list item.
@@ -442,8 +471,9 @@ type Marker<S, T, R> = fn() -> (S, T, R);
 /// A typed reference to a signal of type `T` inside the signal struct `S`.
 ///
 /// `R` is [`Root`] for a signal reached from the page root, [`Local`] for
-/// one reached from a list item, and [`Computed`] for a field marked
-/// `#[signals(computed)]`. Values come only from the accessor functions
+/// one reached from a list item, [`Computed`] for a field marked
+/// `#[signals(computed)]`, and [`Read`] for the read-only view
+/// [`Sig::read`] returns. Values come only from the accessor functions
 /// that `#[derive(Signals)]` generates, combined with [`Sig::at`], so the path
 /// always names a real field.
 pub struct Sig<S, T, R = Root> {
@@ -516,7 +546,7 @@ impl<S, T, R: Writable> Sig<S, T, R> {
     }
 }
 
-impl<S, T> Sig<S, T, Root> {
+impl<S, T, R: FromPage> Sig<S, T, R> {
     /// The dotted field path this signal is stored under.
     ///
     /// Inside [`Part::render`](crate::Part::render), the path starts with the
@@ -526,6 +556,35 @@ impl<S, T> Sig<S, T, Root> {
         self.path.rooted()
     }
 
+    /// A read-only view of this signal, with the same path.
+    ///
+    /// A plain field and a computed one give the same type of view, so a
+    /// type that only reads a signal can store either without a type
+    /// parameter for the marker. The view reads what the signal reads, and
+    /// [`Page::render`](crate::Page::render) checks a view of a computed
+    /// field as it checks the field.
+    ///
+    /// ```
+    /// use hypersig::{Read, Sig, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Cart {
+    ///     price: f64,
+    ///     #[signals(computed)]
+    ///     total: f64,
+    /// }
+    ///
+    /// let views: [Sig<Cart, f64, Read>; 2] = [Cart::price().read(), Cart::total().read()];
+    /// assert_eq!(views[1].path(), "total");
+    /// ```
+    #[must_use]
+    pub fn read(self) -> Sig<S, T, Read> {
+        Sig::from_path(self.path)
+    }
+}
+
+impl<S, T> Sig<S, T, Root> {
     /// The dotted field path relative to `S`, which a patch writes under the
     /// field of the part answering when it is sent.
     pub(crate) fn dotted(self) -> String {
@@ -565,14 +624,6 @@ impl<S, T> Sig<S, T, Root> {
         let path = self.path.join(field.path);
         record_nested_computed(TypeId::of::<S>(), path.dotted());
         Sig::from_path(path)
-    }
-}
-
-impl<S, T> Sig<S, T, Computed> {
-    /// The dotted field path this signal is stored under, as [`Sig::path`] gives it.
-    #[must_use]
-    pub fn path(self) -> String {
-        self.path.rooted()
     }
 }
 

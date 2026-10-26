@@ -1,13 +1,14 @@
-error[E0277]: a computed signal cannot be written
+error[E0277]: a signal marked `Computed` cannot be written
   --> tests/ui/fail/computed_bind.rs:19:34
    |
 19 |     let _ = input::<Cart>().bind(Cart::total());
-   |                             ---- ^^^^^^^^^^^^^ this signal is kept equal to the expression `Page::computed` gives it
+   |                             ---- ^^^^^^^^^^^^^ the browser writes neither a computed signal nor a view from `Sig::read`
    |                             |
    |                             required by a bound introduced by this call
    |
    = help: the trait `Writable` is not implemented for `Computed`
-   = note: write one of the signals the expression reads instead
+   = note: for a computed signal, write one of the signals its expression reads
+   = note: for a view from `Sig::read`, write the signal `read` was called on
 help: the following other types implement trait `Writable`
   --> src/signal.rs
    |

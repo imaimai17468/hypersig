@@ -12,7 +12,6 @@ hypersig::Expr::random_below
 hypersig::FileInput
 hypersig::Form
 hypersig::Fragment
-hypersig::FromPage
 hypersig::Handler::Output
 hypersig::Handler::call
 hypersig::IntoHref

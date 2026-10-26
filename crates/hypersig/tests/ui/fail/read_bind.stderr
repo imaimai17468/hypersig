@@ -1,0 +1,23 @@
+error[E0277]: a signal marked `hypersig::Read` cannot be written
+  --> tests/ui/fail/read_bind.rs:13:34
+   |
+13 |     let _ = input::<Cart>().bind(Cart::price().read());
+   |                             ---- ^^^^^^^^^^^^^^^^^^^^ the browser writes neither a computed signal nor a view from `Sig::read`
+   |                             |
+   |                             required by a bound introduced by this call
+   |
+   = help: the trait `Writable` is not implemented for `hypersig::Read`
+   = note: for a computed signal, write one of the signals its expression reads
+   = note: for a view from `Sig::read`, write the signal `read` was called on
+help: the following other types implement trait `Writable`
+  --> src/signal.rs
+   |
+   | impl Writable for Root {}
+   | ^^^^^^^^^^^^^^^^^^^^^^ `hypersig::Root`
+   | impl Writable for Local {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^ `hypersig::Local`
+note: required by a bound in `El::<S>::bind`
+  --> src/html.rs
+   |
+   |     pub fn bind<T: Bindable, R: Writable>(mut self, signal: Sig<S, T, R>) -> Self {
+   |                                 ^^^^^^^^ required by this bound in `El::<S>::bind`
