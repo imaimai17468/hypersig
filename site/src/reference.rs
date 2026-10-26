@@ -234,7 +234,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "struct.Page.html#method.runtime_src",
                             L {
                                 en: "Loads the runtime from `src` instead of `RUNTIME_PATH`.",
-                                ja: "ランタイムを `RUNTIME_PATH` ではなく `src` から読み込みます。",
+                                ja: "`RUNTIME_PATH` の代わりに `src` からランタイムを読み込みます。",
                             },
                         ),
                         (
