@@ -270,6 +270,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "simulate",
+                            "struct.Page.html#method.simulate",
+                            L {
+                                en: "Simulates this page in a browser, for a test that clicks and types.",
+                                ja: "このページをブラウザで動かしたときを再現します。クリックや入力をするテストで使います。",
+                            },
+                        ),
+                        (
                             "RUNTIME_PATH",
                             "constant.RUNTIME_PATH.html",
                             L {
@@ -283,6 +291,114 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The browser runtime, built from `runtime/` in the repository.",
                                 ja: "リポジトリの `runtime/` からビルドした、ブラウザのランタイムです。",
+                            },
+                        ),
+                    ],
+                },
+                Section {
+                    heading: L {
+                        en: "Clicking and typing in a test",
+                        ja: "テストでのクリックと入力",
+                    },
+                    text: L {
+                        en: "`Page::simulate` runs the statements of an event on the server's evaluator and records the calls, links, and element statements it leaves for the server and the browser.",
+                        ja: "`Page::simulate` はイベントの文をサーバーの評価器で実行し、サーバーとブラウザに残す呼び出し、リンク、要素の文を記録します。",
+                    },
+                    rows: &[
+                        (
+                            "Simulation::value_of",
+                            "testing/struct.Simulation.html#method.value_of",
+                            L {
+                                en: "The value `signal` holds now.",
+                                ja: "`signal` がいま持つ値です。",
+                            },
+                        ),
+                        (
+                            "Simulation::element",
+                            "testing/struct.Simulation.html#method.element",
+                            L {
+                                en: "The element `target` names, as the page shows it now.",
+                                ja: "`target` が指す要素を、いまページに表示されているとおりに返します。",
+                            },
+                        ),
+                        (
+                            "Simulation::count",
+                            "testing/struct.Simulation.html#method.count",
+                            L {
+                                en: "The number of elements the page shows now that carry `target`.",
+                                ja: "`target` を持つ要素のうち、いまページに表示されている数です。",
+                            },
+                        ),
+                        (
+                            "Simulation::click",
+                            "testing/struct.Simulation.html#method.click",
+                            L {
+                                en: "Clicks the element `target` names and returns what the server and browser must do.",
+                                ja: "`target` が指す要素をクリックし、サーバーとブラウザがすべき処理を返します。",
+                            },
+                        ),
+                        (
+                            "Simulation::input",
+                            "testing/struct.Simulation.html#method.input",
+                            L {
+                                en: "Types `text` into the control `target` names, as one `input` event.",
+                                ja: "`target` が指す入力欄に、1 回の `input` イベントとして `text` を入力します。",
+                            },
+                        ),
+                        (
+                            "Simulation::change",
+                            "testing/struct.Simulation.html#method.change",
+                            L {
+                                en: "Sets the control `target` names to `text` and commits it.",
+                                ja: "`target` が指す入力欄を `text` にして確定します。",
+                            },
+                        ),
+                        (
+                            "Simulation::submit",
+                            "testing/struct.Simulation.html#method.submit",
+                            L {
+                                en: "Submits the `<form>` `target` names, which runs the closest `on_submit` from it up.",
+                                ja: "`target` が指す `<form>` を送信し、そこから外側へ向かっていちばん近い `on_submit` を実行します。",
+                            },
+                        ),
+                        (
+                            "Simulation::pause",
+                            "testing/struct.Simulation.html#method.pause",
+                            L {
+                                en: "Runs the debounced statements, as the browser does once the visitor stops typing.",
+                                ja: "訪問者が入力を止めたときのブラウザと同じように、`on_debounced` の文を実行します。",
+                            },
+                        ),
+                        (
+                            "Effects::calls",
+                            "testing/struct.Effects.html#method.calls",
+                            L {
+                                en: "The arguments of each call to `endpoint` the event sent, in order.",
+                                ja: "イベントが送った `endpoint` の呼び出しの引数を、順に返します。",
+                            },
+                        ),
+                        (
+                            "Effects::navigates_to",
+                            "testing/struct.Effects.html#method.navigates_to",
+                            L {
+                                en: "The URL the first `Link::navigate` the event ran loads.",
+                                ja: "イベントが最初に実行した `Link::navigate` が読み込む URL です。",
+                            },
+                        ),
+                        (
+                            "Effects::runs_in_browser",
+                            "testing/struct.Effects.html#method.runs_in_browser",
+                            L {
+                                en: "Whether the event asked the browser to run `stmt`, such as `FIELD.focus()`.",
+                                ja: "`FIELD.focus()` のような `stmt` の実行を、イベントがブラウザに求めたかどうかです。",
+                            },
+                        ),
+                        (
+                            "testing::nth",
+                            "testing/fn.nth.html",
+                            L {
+                                en: "The `index`th element, from 0, that carries `target`, in document order.",
+                                ja: "`target` を持つ要素のうち、文書の順で 0 から数えて `index` 番目のものです。",
                             },
                         ),
                     ],

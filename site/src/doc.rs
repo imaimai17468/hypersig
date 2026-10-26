@@ -842,8 +842,8 @@ impl Doc {
                     ja: "訪問者が送るものからページとアクションを守るために hypersig が検査すること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
                 },
                 Learn::Testing => L {
-                    en: "Tests that call a page's and an action's handler as functions and read the signals with their types, tests that send a request through the router, and what only a browser test reaches.",
-                    ja: "ページとアクションのハンドラを関数として呼び、シグナルの値を型で読むテスト、ルーターにリクエストを送るテスト、ブラウザのテストでしか確かめられないことを扱います。",
+                    en: "Tests that call a page's and an action's handler as functions and read the signals with their types, tests that send a request through the router, tests that click and type on a page without a browser, and what only a browser test reaches.",
+                    ja: "ページとアクションのハンドラを関数として呼び、シグナルの値を型で読むテスト、ルーターにリクエストを送るテスト、ブラウザなしでページをクリックして入力するテスト、ブラウザのテストでしか確かめられないことを扱います。",
                 },
                 Learn::Troubleshooting => L {
                     en: "How to read the compile errors hypersig's types and constants produce, and where a running page reports a panic, a failed call, or a problem the runtime meets.",

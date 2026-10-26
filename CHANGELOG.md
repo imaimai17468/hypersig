@@ -12,6 +12,7 @@ The release notes on GitHub list the titles of the merged pull requests. This fi
 
 - `Sig::read()` on a page-rooted signal returns a `Sig<S, T, Read>`, a read-only view with the same path. The view reads like the signal it came from, because `Read` implements `FromPage`, and it has no `set`, list statement, `bind`, or `patch`. `Page::computed` refuses it.
 - `hypersig::serve(router, port)` serves an axum `Router`. It listens on the address in `ADDR` where that is set, otherwise on every interface at the port in `PORT`, otherwise on `127.0.0.1:port`. On Ctrl+C or SIGTERM it waits for the requests in progress, for at most 5 seconds or until a second signal. It needs the `axum` feature and is not built for `wasm32-unknown-unknown`.
+- `Page::simulate` returns a `hypersig::testing::Simulation`, which clicks, types, and submits on a page in a test without a browser. It runs the statements of the event on the server's evaluator, finds elements by their `NodeRef`, `DialogRef`, `FileInput`, or `Id`, and reads their text, attributes, and visibility. Calls, links, and element statements such as `focus` come back in an `Effects`, typed by the `Action` or `Route` they came from. It panics on a statement that reads a value only the browser has, such as `Expr::now`.
 
 ### Changed
 

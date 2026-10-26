@@ -851,6 +851,31 @@ impl<S: Signals> Page<S> {
             .expect("a signal's initial value deserializes into the signal's type")
     }
 
+    /// Simulates this page in a browser, for a test that clicks and types.
+    ///
+    /// [`Simulation`](crate::testing::Simulation) has the details and an example.
+    ///
+    /// # Panics
+    ///
+    /// Panics where [`Page::render`] does.
+    #[must_use]
+    pub fn simulate(&self) -> crate::testing::Simulation<'_, S> {
+        check_names(&self.body);
+        check_item_reads(&self.body);
+        self.check_nested_computed();
+        crate::testing::Simulation::new(self, self.initial_values().root().to_value())
+    }
+
+    /// The nodes of `<body>`.
+    pub(crate) fn body(&self) -> &[Node<S>] {
+        &self.body
+    }
+
+    /// Each computed signal's path with its expression, in the order they run.
+    pub(crate) fn computed_signals(&self) -> &[(String, Value)] {
+        &self.computed
+    }
+
     /// Renders the document.
     ///
     /// # Panics

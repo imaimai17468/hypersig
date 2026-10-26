@@ -106,6 +106,11 @@ impl<S, A> Upload<S, A> {
         self.max_bytes
     }
 
+    /// The path a call to this upload names, with its [`Base`].
+    pub(crate) fn call_path(&self) -> String {
+        self.base.join(self.path)
+    }
+
     /// A call that sends the files picked in `files` and `args`.
     ///
     /// `args` is evaluated in the browser when the call runs, as for
@@ -166,6 +171,10 @@ pub struct FileInput<S> {
 }
 
 impl<S> FileInput<S> {
+    pub(crate) const fn name(self) -> &'static str {
+        self.name
+    }
+
     /// A file input named `name`.
     ///
     /// # Panics

@@ -26,6 +26,8 @@ pub(crate) fn holds_u64(v: u64) -> bool {
 }
 
 /// Whether the browser reads `v` back as `v`.
+// Only the request deserializer reads 128-bit integers, and it exists with axum.
+#[cfg(feature = "axum")]
 pub(crate) fn holds_i128(v: i128) -> bool {
     v.unsigned_abs() <= u128::from(LIMIT)
 }

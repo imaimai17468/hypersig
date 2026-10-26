@@ -65,6 +65,7 @@ use crate::tape::Ref;
 const RESERVED_PREFIX: &str = "data-hs-";
 
 pub mod attr;
+pub(crate) mod find;
 mod id;
 mod role;
 
