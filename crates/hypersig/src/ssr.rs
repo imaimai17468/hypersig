@@ -127,7 +127,7 @@ impl<'a> Ctx<'a> {
             Value::String(path) => Some(self.get(path)),
             Value::Array(parts) if parts.first().and_then(Value::as_str) == Some("item") => {
                 let depth = usize::try_from(parts.get(1)?.as_u64()?).ok()?;
-                let slot = self.scope.get(depth)?;
+                let slot = self.slot(depth);
                 Some(
                     slot.value
                         .get_path(parts.get(2)?.as_str()?)
@@ -136,6 +136,22 @@ impl<'a> Ctx<'a> {
             }
             _ => None,
         }
+    }
+
+    /// The enclosing list item at `depth`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if no list at `depth` encloses the expression, which happens
+    /// when an expression built from an item inside its closure is used
+    /// outside it, where the browser finds no item either.
+    fn slot(&self, depth: usize) -> Slot<'a> {
+        *self.scope.get(depth).unwrap_or_else(|| {
+            panic!(
+                "an expression reads the item at depth {depth} of a list that does not \
+                 enclose it: build it inside the closure that received the item"
+            )
+        })
     }
 
     pub(crate) fn get(&self, path: &str) -> Ref<'a> {
@@ -469,7 +485,7 @@ pub(crate) fn evaluate<'a>(ast: &'a Value, ctx: &Ctx<'a>) -> Option<Val<'a>> {
         }
         "index" => {
             let depth = usize::try_from(arg(1)?.as_u64()?).ok()?;
-            Value::from(ctx.scope.get(depth)?.index)
+            Value::from(ctx.slot(depth).index)
         }
         "tuple" => Value::Array(
             parts[1..]
@@ -870,6 +886,21 @@ mod tests {
         assert_eq!(js_fixed(-0.001, 2), "-0.00");
         assert_eq!(js_fixed(-0.0, 2), "0.00");
         assert_eq!(js_fixed(1e21, 2), "1e+21");
+    }
+
+    #[test]
+    #[should_panic(expected = "reads the item at depth 0 of a list that does not enclose it")]
+    fn an_item_read_outside_every_list_panics() {
+        let _ = eval(&json!(["item", 0, "v"]), &json!({}));
+    }
+
+    #[test]
+    #[should_panic(expected = "reads the item at depth 1 of a list that does not enclose it")]
+    fn an_index_read_outside_its_list_panics() {
+        let _ = eval(
+            &json!(["count", "rows", 0, ["eq", ["index", 1], ["lit", 0]]]),
+            &json!({ "rows": [1] }),
+        );
     }
 
     #[test]

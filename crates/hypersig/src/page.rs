@@ -10,8 +10,9 @@ use serde_json::{Value, json};
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{OpenGraph, Origin, meta};
 use crate::html::{
-    Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, check_names, escape_into,
-    keys_json, write_attr, write_json_attr,
+    Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, assert_items_open,
+    check_item_reads, check_names, escape_into, keys_json, visit_trees, write_attr,
+    write_json_attr,
 };
 use crate::route::{Base, Url};
 use crate::signal::{FromPage, IsComputed, Sig, Signals};
@@ -427,7 +428,9 @@ impl<S: Signals> Page<S> {
     /// than each evaluating `value`. The server computes it once for the first
     /// HTML, and an action call can pass it as an argument like any signal.
     /// Computed signals are evaluated in the order they are declared, so one
-    /// may read an earlier one.
+    /// may read an earlier one and no other: [`Page::render`] panics when
+    /// two calls name one signal, or when a computed signal reads itself or
+    /// one declared after it.
     ///
     /// `signal` is a field marked `#[signals(computed)]`, whose
     /// [`Sig`] has no statement that writes it and no `patch`. The value the
@@ -642,7 +645,9 @@ impl<S: Signals> Page<S> {
     /// # Panics
     ///
     /// Panics if a field of `S` marked `#[signals(computed)]` is named by no
-    /// [`Page::computed`] call, or if the signals fail to serialize.
+    /// [`Page::computed`] call, if two calls name one signal, if a computed
+    /// signal reads itself or one computed after it, or if the signals fail
+    /// to serialize.
     fn initial_values(&self) -> Tape {
         for field in S::COMPUTED {
             assert!(
@@ -651,6 +656,34 @@ impl<S: Signals> Page<S> {
                  `Page::computed` call names it, so nothing would keep it up to date",
                 std::any::type_name::<S>()
             );
+        }
+        for (at, (path, value)) in self.computed.iter().enumerate() {
+            assert!(
+                self.computed[..at]
+                    .iter()
+                    .all(|(earlier, _)| earlier != path),
+                "two `Page::computed` calls name `{path}`, and the browser would keep \
+                 it equal to both expressions: remove one of them"
+            );
+            // The server evaluates the expressions once, in this order, so a
+            // read of a signal computed here or later would see the value the
+            // struct holds rather than the computed one.
+            if let Some((later, _)) = self.computed[at..]
+                .iter()
+                .find(|(later, _)| reads_path(value, later))
+            {
+                assert!(
+                    later != path,
+                    "the computed signal `{path}` reads itself, so it has no value to \
+                     start from: compute it from other signals"
+                );
+                panic!(
+                    "the computed signal `{path}` reads `{later}`, which a later \
+                     `Page::computed` call computes, so the first HTML would show `{path}` \
+                     from the value `{later}` starts with: call `Page::computed` for \
+                     `{later}` first, and keep two computed signals from reading each other"
+                );
+            }
         }
         let mut root = Tape::new(&self.signals)
             .unwrap_or_else(|error| panic!("the page's signals do not serialize to JSON: {error}"));
@@ -667,6 +700,36 @@ impl<S: Signals> Page<S> {
             }
         }
         root
+    }
+
+    /// Panics if the page reads a computed field of a nested struct that no
+    /// [`Page::computed`] call names.
+    ///
+    /// Only the paths [`Sig::at_computed`](crate::Sig::at_computed) has
+    /// recorded for `S` are known, and only a read on this page counts, so a
+    /// signal built for another page of the same struct does not panic here.
+    fn check_nested_computed(&self) {
+        for path in crate::signal::nested_computed::<S>() {
+            if self.computed.iter().any(|(computed, _)| *computed == path) {
+                continue;
+            }
+            let mut read = self
+                .bound_title
+                .iter()
+                .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()))
+                .chain(self.computed.iter().map(|(_, value)| value))
+                .any(|ast| reads_path(ast, &path));
+            visit_trees(&self.body, &mut |ast, _| {
+                read = read || reads_path(ast, &path);
+            });
+            assert!(
+                !read,
+                "the page reads `{path}`, a field of a nested struct of `{}` marked \
+                 `#[signals(computed)]`, and no `Page::computed` call names it, so nothing \
+                 would keep it up to date",
+                std::any::type_name::<S>()
+            );
+        }
     }
 
     /// Writes what search engines and link previews read into `<head>`.
@@ -733,7 +796,10 @@ impl<S: Signals> Page<S> {
     ///
     /// Panics if the signal struct fails to serialize to JSON, or if the value
     /// does not deserialize into `T`, which happens where a `Serialize` impl
-    /// skips the field or disagrees with its `Deserialize` impl.
+    /// skips the field or disagrees with its `Deserialize` impl. It also
+    /// panics where [`Page::render`] would for the computed signals: two calls
+    /// naming one signal, a computed signal reading itself or one declared
+    /// after it, or one reading a list item.
     #[must_use]
     pub fn value_of<T: DeserializeOwned, M: FromPage>(&self, signal: Sig<S, T, M>) -> T {
         let root = self.initial_values();
@@ -753,10 +819,16 @@ impl<S: Signals> Page<S> {
     /// happens for a `Serialize` impl that returns an error, or if it holds an
     /// integer outside -2^53 to 2^53, which the browser would round, or if two
     /// elements carry one [`NodeRef`](crate::NodeRef) name, one
-    /// [`FileInput`](crate::FileInput) name, or one `&'static str` id, where
+    /// [`FileInput`](crate::FileInput) name, or one id from
+    /// [`Id::new`](crate::html::Id::new), with or without keys, where
     /// the runtime can reach both, or if an element inside a list template has an id set with
     /// [`El::id`](crate::html::El::id). Each item of a list may carry the same
-    /// name.
+    /// name. It also panics if a field marked `#[signals(computed)]` is named
+    /// by no [`Page::computed`] call, if two calls name one signal, or if a
+    /// computed signal reads itself or one declared after it, or if the page
+    /// reads a computed field of a nested struct that no call names, or if an
+    /// expression or statement reads a list item outside every list that
+    /// renders it.
     #[must_use]
     pub fn render(&self) -> String {
         self.render_under(Base::ROOT, None)
@@ -767,6 +839,17 @@ impl<S: Signals> Page<S> {
     /// the page to reload, where `dev` holds one.
     pub(crate) fn render_under(&self, base: Base, dev: Option<&str>) -> String {
         check_names(&self.body);
+        check_item_reads(&self.body);
+        let page = self
+            .computed
+            .iter()
+            .map(|(_, value)| value)
+            .chain(&self.bound_title)
+            .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()));
+        for ast in page {
+            assert_items_open(ast, 0);
+        }
+        self.check_nested_computed();
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
         if let Some(lang) = &self.lang {
@@ -929,6 +1012,39 @@ impl<S: Signals> Page<S> {
     }
 }
 
+/// Whether the expression `ast` reads the signal at the dotted `path`, a
+/// field inside it, or a struct that holds it.
+///
+/// A signal is read by `["sig",path]`, and a list by the place at index 1
+/// of the operations that run an expression per item. A literal's value is
+/// data, so it is not searched.
+fn reads_path(ast: &Value, path: &str) -> bool {
+    let overlaps = |read: &Value| {
+        read.as_str().is_some_and(|read| {
+            let inside = |outer: &str, inner: &str| {
+                inner
+                    .strip_prefix(outer)
+                    .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
+            };
+            inside(read, path) || inside(path, read)
+        })
+    };
+    match ast.as_array().map(Vec::as_slice) {
+        Some([op, ..]) if op == "lit" => false,
+        Some([op, read]) if op == "sig" => overlaps(read),
+        Some([op, place, rest @ ..])
+            if ["count", "sum_of", "max_of", "min_of", "map"]
+                .contains(&op.as_str().unwrap_or("")) =>
+        {
+            overlaps(place)
+                || reads_path(place, path)
+                || rest.iter().any(|part| reads_path(part, path))
+        }
+        Some(parts) => parts.iter().any(|part| reads_path(part, path)),
+        None => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
@@ -1067,6 +1183,107 @@ mod tests {
         )
         .computed(Cart::total(), Cart::price() * 2.0);
         assert_eq!(page.value_of(Cart::total()), 4.0);
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Order {
+        price: f64,
+        #[signals(computed)]
+        subtotal: f64,
+        #[signals(computed)]
+        total: f64,
+    }
+
+    fn order() -> Page<Order> {
+        Page::new(
+            "Order",
+            Order {
+                price: 20.0,
+                ..Order::default()
+            },
+        )
+    }
+
+    #[test]
+    fn a_computed_signal_reads_one_computed_before_it() {
+        let page = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::subtotal() + 1.0);
+        assert_eq!(page.value_of(Order::total()), 41.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "two `Page::computed` calls name `total`")]
+    fn one_signal_computed_twice_panics() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::price() * 1.0)
+            .computed(Order::total(), Order::price() * 2.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `total` reads `subtotal`, which a later")]
+    fn a_computed_signal_that_reads_a_later_one_panics() {
+        let _ = order()
+            .computed(Order::total(), Order::subtotal() + 1.0)
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `subtotal` reads `total`, which a later")]
+    fn two_computed_signals_that_read_each_other_panic() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::total() - 1.0)
+            .computed(Order::total(), Order::subtotal() + 1.0)
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "the computed signal `total` reads itself")]
+    fn a_computed_signal_that_reads_itself_panics() {
+        let _ = order()
+            .computed(Order::subtotal(), Order::price() * 2.0)
+            .computed(Order::total(), Order::total() + 1.0)
+            .render();
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Line {
+        price: f64,
+        #[signals(computed)]
+        total: f64,
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Shop {
+        line: Line,
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Stall {
+        line: Line,
+    }
+
+    #[test]
+    #[should_panic(expected = "the page reads `line.total`, a field of a nested struct")]
+    fn a_nested_computed_field_no_page_computed_names_panics() {
+        let total = Shop::line().at_computed(Line::total());
+        let _ = Page::new("Shop", Shop::default())
+            .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
+            .render();
+    }
+
+    #[test]
+    fn a_nested_computed_field_page_computed_names_renders() {
+        let line = Stall::line();
+        let total = line.at_computed(Line::total());
+        let html = Page::new("Stall", Stall::default())
+            .computed(total, line.at(Line::price()) * 2.0)
+            .child(input().bind_attr(crate::html::attr::VALUE, total.to_text()))
+            .render();
+        assert!(html.contains("line.total"), "{html}");
     }
 
     #[test]

@@ -1,9 +1,12 @@
 //! Signal structs and typed references to their fields.
 
+use std::any::TypeId;
 use std::cell::{Cell, RefCell};
+use std::collections::BTreeSet;
 use std::fmt;
 use std::marker::PhantomData;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, PoisonError};
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -60,7 +63,8 @@ pub trait Signals: Serialize + DeserializeOwned + Send + 'static {
     /// [`Page::render`](crate::Page::render) panics when one of them is
     /// named by no [`Page::computed`](crate::Page::computed) call, since
     /// nothing would then keep it up to date. Only the struct's own fields
-    /// are listed, so a marked field of a nested struct goes unchecked.
+    /// are listed. A marked field of a nested struct is reached with
+    /// [`Sig::at_computed`], which records the path for the check.
     const COMPUTED: &'static [&'static str] = &[];
 }
 
@@ -294,6 +298,41 @@ impl Path {
     }
 }
 
+/// The computed fields of nested structs that [`Sig::at_computed`] has
+/// reached, each with the struct its path starts at.
+///
+/// A process-wide set is used because a handler may build a signal on one
+/// thread and render the page on another. It holds one entry per path the
+/// program names, so it stops growing once each has been built.
+static NESTED_COMPUTED: Mutex<BTreeSet<(TypeId, String)>> = Mutex::new(BTreeSet::new());
+
+/// Whether [`NESTED_COMPUTED`] holds an entry, so that a program without
+/// nested computed fields renders without taking the lock.
+static ANY_NESTED_COMPUTED: AtomicBool = AtomicBool::new(false);
+
+fn record_nested_computed(page: TypeId, path: String) {
+    NESTED_COMPUTED
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .insert((page, path));
+    ANY_NESTED_COMPUTED.store(true, Ordering::Release);
+}
+
+/// The paths of the nested computed fields of `S` that [`Sig::at_computed`] has reached.
+pub(crate) fn nested_computed<S: 'static>() -> Vec<String> {
+    if !ANY_NESTED_COMPUTED.load(Ordering::Acquire) {
+        return Vec::new();
+    }
+    let page = TypeId::of::<S>();
+    NESTED_COMPUTED
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .iter()
+        .filter(|(of, _)| *of == page)
+        .map(|(_, path)| path.clone())
+        .collect()
+}
+
 thread_local! {
     static PART: RefCell<Option<Arc<str>>> = const { RefCell::new(None) };
 }
@@ -514,9 +553,18 @@ impl<S, T> Sig<S, T, Root> {
     /// marked `#[signals(computed)]` in a nested struct is reached with this
     /// method, and only from the page root, where
     /// [`Page::computed`](crate::Page::computed) can name it.
+    ///
+    /// The path is recorded for the struct `S`, and
+    /// [`Page::render`](crate::Page::render) panics when the page reads it
+    /// and no [`Page::computed`](crate::Page::computed) call names it.
     #[must_use]
-    pub fn at_computed<U>(self, field: Sig<T, U, Computed>) -> Sig<S, U, Computed> {
-        Sig::from_path(self.path.join(field.path))
+    pub fn at_computed<U>(self, field: Sig<T, U, Computed>) -> Sig<S, U, Computed>
+    where
+        S: 'static,
+    {
+        let path = self.path.join(field.path);
+        record_nested_computed(TypeId::of::<S>(), path.dotted());
+        Sig::from_path(path)
     }
 }
 

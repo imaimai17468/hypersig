@@ -415,7 +415,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "One `node_ref!`, `dialog_ref!`, `Id`, or `FileInput` name goes on two elements, or `El::id` is used inside a list template",
-                        "Rendering the page panics",
+                        "Rendering the page panics. Two ids from `Id::from_text` alike are not caught, and a reference to that id reaches the first",
                     ],
                     &[
                         "`label_for` or a similar reference names an `Id` no element carries",
@@ -427,15 +427,19 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "A `#[signals(computed)]` field is never passed to `Page::computed`",
-                        "Rendering the page panics. A field of a nested struct is not caught and keeps its first value",
+                        "Rendering the page panics, for a field of a nested struct only where the page reads it",
                     ],
                     &[
                         "A list item is used outside the closure it was passed to",
-                        "Building the page panics. An expression built from the item inside the closure is not caught, and reads another list's item or fails in the browser",
+                        "Building or rendering the page panics. An expression built from the item inside the closure and used inside another list at the same depth is not caught, and reads that list's item",
                     ],
                     &[
                         "A signal holds an integer beyond ±2^53",
-                        "Rendering the page or building the patch panics. One that an action's arguments or a query brings in gets 400, and one in a route segment 404",
+                        "Rendering the page or building the patch panics. One that an action's arguments bring in gets 400",
+                    ],
+                    &[
+                        "A `String` segment of a route, or a part of a `Rest`, is empty, `.`, or `..`",
+                        "The link answers 404, or the browser resolves the dots and asks for another page",
                     ],
                     &[
                         "One element gets `show`, `bind_text`, `id`, a node ref, or a binding twice, or one attribute twice",
@@ -457,7 +461,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "同じ `node_ref!`、`dialog_ref!`、`Id`、`FileInput` の名前を 2 つの要素に付ける。リストのテンプレートの中で `El::id` を使う",
-                        "ページの描画が panic します",
+                        "ページの描画が panic します。`Id::from_text` で作った同じ id どうしは検出されず、その id を指す参照は先にある要素に届きます",
                     ],
                     &[
                         "`label_for` などの参照が、どの要素にもない `Id` を指す",
@@ -469,15 +473,19 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "`#[signals(computed)]` を付けたフィールドを `Page::computed` に渡し忘れる",
-                        "ページの描画が panic します。入れ子の構造体のフィールドは検出されず、値が最初のまま変わりません",
+                        "ページの描画が panic します。入れ子の構造体のフィールドで panic するのは、ページがそのフィールドを読む場合だけです",
                     ],
                     &[
                         "リストの項目を、渡されたクロージャの外で使う",
-                        "ページを組み立てるときに panic します。ただし、クロージャの中で項目から作った式は検出されず、別のリストの項目を読むか、ブラウザでエラーになります",
+                        "ページの組み立てか描画が panic します。ただし、クロージャの中で項目から作った式を、同じ深さの別のリストの中で使うと検出されず、そのリストの項目を読みます",
                     ],
                     &[
                         "シグナルに ±2^53 を超える整数を入れる",
-                        "ページの描画か差分の作成が panic します。アクションの引数やクエリから入る値は 400、ルートの区間から入る値は 404 になります",
+                        "ページの描画か差分の作成が panic します。アクションの引数から入る値は 400 になります",
+                    ],
+                    &[
+                        "`String` のルートの区間か `Rest` の一部が空、`.`、`..` になる",
+                        "リンクが 404 を返すか、ブラウザがドットを解決して別のページを求めます",
                     ],
                     &[
                         "1 つの要素に `show`、`bind_text`、`id`、ノード参照、束縛を 2 回付ける。同じ属性を 2 回付ける",

@@ -253,22 +253,6 @@ impl IntoDeserializer<'_, Error> for Part<'_> {
     }
 }
 
-macro_rules! parse_integer_as {
-    ($($method:ident => $visit:ident),* $(,)?) => {$(
-        fn $method<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Error> {
-            match self.0.parse() {
-                // A page whose signals hold an integer the browser would
-                // round does not render, so the query refuses one.
-                Ok(value) if !i128::try_from(value).is_ok_and(crate::exact::holds_i128) => {
-                    Err(de::Error::custom(crate::exact::message(value)))
-                }
-                Ok(value) => visitor.$visit(value),
-                Err(error) => Err(de::Error::custom(format_args!("`{}`: {error}", self.0))),
-            }
-        }
-    )*};
-}
-
 macro_rules! parse_float_as {
     ($($method:ident => $visit:ident),* $(,)?) => {$(
         fn $method<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Error> {
@@ -311,19 +295,16 @@ impl<'de> Deserializer<'de> for Part<'_> {
         deserialize_u8 => visit_u8,
         deserialize_u16 => visit_u16,
         deserialize_u32 => visit_u32,
+        deserialize_i64 => visit_i64,
+        deserialize_i128 => visit_i128,
+        deserialize_u64 => visit_u64,
+        deserialize_u128 => visit_u128,
         deserialize_char => visit_char,
     );
 
     parse_float_as!(
         deserialize_f32 => visit_f32,
         deserialize_f64 => visit_f64,
-    );
-
-    parse_integer_as!(
-        deserialize_i64 => visit_i64,
-        deserialize_i128 => visit_i128,
-        deserialize_u64 => visit_u64,
-        deserialize_u128 => visit_u128,
     );
 
     fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Error> {
@@ -440,16 +421,10 @@ mod tests {
     }
 
     #[test]
-    fn rejects_an_integer_the_browser_would_round() {
+    fn reads_an_integer_past_two_to_the_53_exactly() {
         let filter: Filter =
-            parse_query("q=a&open=true&size=9007199254740992").expect("2^53 is exact");
-        assert_eq!(filter.size, vec![1 << 53]);
-        let error =
-            parse_query::<Filter>("q=a&open=true&size=9007199254740993").expect_err("past 2^53");
-        assert!(
-            error.to_string().contains("outside -2^53 to 2^53"),
-            "{error}"
-        );
+            parse_query("q=a&open=true&size=9007199254740993").expect("a u64 past 2^53");
+        assert_eq!(filter.size, vec![(1 << 53) + 1]);
     }
 
     #[test]

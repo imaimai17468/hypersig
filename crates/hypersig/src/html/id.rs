@@ -27,8 +27,28 @@ use std::fmt::{self, Write as _};
 /// Nothing checks that the page holds the element a reference names. A
 /// reference to an id no element carries is ignored by the browser, so the
 /// control reads with no label or description.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Id(pub(crate) Cow<'static, str>);
+#[derive(Clone, Debug)]
+pub struct Id {
+    pub(crate) text: Cow<'static, str>,
+    /// Whether the program wrote the id, from [`Id::new`] and any keys
+    /// [`Id::with_key`] added to it, which [`Page::render`](crate::Page::render)
+    /// checks for a second element carrying it. [`Id::from_text`] clears it.
+    pub(crate) fixed: bool,
+}
+
+impl PartialEq for Id {
+    fn eq(&self, other: &Self) -> bool {
+        self.text == other.text
+    }
+}
+
+impl Eq for Id {}
+
+impl std::hash::Hash for Id {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.text.hash(state);
+    }
+}
 
 impl Id {
     /// An id written in the code.
@@ -47,7 +67,10 @@ impl Id {
             assert!(!bytes[i].is_ascii_whitespace(), "an id holds no whitespace");
             i += 1;
         }
-        Self(Cow::Borrowed(name))
+        Self {
+            text: Cow::Borrowed(name),
+            fixed: true,
+        }
     }
 
     /// This id followed by `-` and `key`, for one of several elements, such
@@ -56,6 +79,11 @@ impl Id {
     /// An id holds no whitespace, so each ASCII whitespace character of
     /// `key` is written as `%` and its two hex digits, as in a URL, and `%`
     /// itself as `%25`. Two different keys therefore give two different ids.
+    ///
+    /// The id is checked for a second element carrying it as an id from
+    /// [`Id::new`] is, so two rows given one key make
+    /// [`Page::render`](crate::Page::render) panic. A key from data visitors
+    /// stored is made unique by the program, such as the record's own key.
     ///
     /// ```
     /// use hypersig::html::Id;
@@ -67,7 +95,7 @@ impl Id {
     /// ```
     #[must_use]
     pub fn with_key(&self, key: impl fmt::Display) -> Self {
-        let mut id = format!("{}-", self.0);
+        let mut id = format!("{}-", self.text);
         let start = id.len();
         let _ = write!(id, "{key}");
         let key = id.split_off(start);
@@ -78,7 +106,10 @@ impl Id {
                 id.push(c);
             }
         }
-        Self(Cow::Owned(id))
+        Self {
+            text: Cow::Owned(id),
+            fixed: self.fixed,
+        }
     }
 
     /// An id built at run time from `text`, such as the anchor of a heading
@@ -86,8 +117,9 @@ impl Id {
     ///
     /// ASCII whitespace in `text` becomes `_`, and an empty `text` gives
     /// `_`, because an id holds neither. Prefer [`Id::new`] for an id written
-    /// in the code, since only that id is checked for a second element
-    /// carrying it.
+    /// in the code, since only an id from it, with or without keys, is
+    /// checked for a second element carrying it. Two headings with one text
+    /// therefore render, and an anchor reaches the first of them.
     ///
     /// ```
     /// use hypersig::html::Id;
@@ -102,19 +134,22 @@ impl Id {
         if id.is_empty() {
             id.push('_');
         }
-        Self(Cow::Owned(id))
+        Self {
+            text: Cow::Owned(id),
+            fixed: false,
+        }
     }
 
     /// The id as the HTML holds it.
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.text
     }
 }
 
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
+        f.write_str(&self.text)
     }
 }
 
