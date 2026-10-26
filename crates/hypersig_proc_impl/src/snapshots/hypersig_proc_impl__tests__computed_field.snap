@@ -1,0 +1,23 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand(quote! { struct Cart { price: f64, #[signals(computed)] total: f64 } })"
+---
+#[automatically_derived]
+impl ::hypersig::Signals for Cart {
+    const SHAPE: &'static str = "price:f64,total:f64";
+}
+#[automatically_derived]
+impl Cart {
+    ///Typed reference to the `price` signal.
+    #[must_use]
+    #[allow(dead_code, reason = "an accessor is generated for every field, used or not")]
+    fn price() -> ::hypersig::Sig<Self, f64> {
+        ::hypersig::_private::sig("price")
+    }
+    ///Typed reference to the `total` signal.
+    #[must_use]
+    #[allow(dead_code, reason = "an accessor is generated for every field, used or not")]
+    fn total() -> ::hypersig::Sig<Self, f64, ::hypersig::Computed> {
+        ::hypersig::_private::computed_sig("total")
+    }
+}

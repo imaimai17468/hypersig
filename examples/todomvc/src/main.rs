@@ -37,7 +37,9 @@ struct TodoMvc {
     filter: Filter,
     editing: Option<i32>,
     edit_text: String,
+    #[signals(computed)]
     left: i32,
+    #[signals(computed)]
     completed: i32,
 }
 

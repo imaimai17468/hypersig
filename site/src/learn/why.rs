@@ -406,6 +406,10 @@ fn unchecked(site: Site) -> [Part; 2] {
                     ja: "1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けると、ページの描画が panic します。",
                 },
                 L {
+                    en: "A field marked `#[signals(computed)]` is named by no `Page::computed` call on its page. Nothing recomputes it, so it keeps the value the page's struct gave it.",
+                    ja: "`#[signals(computed)]` を付けたフィールドを、ページのどの `Page::computed` も指定していないと、そのフィールドは計算し直されず、ページの構造体が与えた値のまま変わりません。",
+                },
+                L {
                     en: "A reference such as `label_for(&EMAIL)` names an `Id` that no element on the page carries. The browser ignores it, so the control has no label.",
                     ja: "`label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指していると、ブラウザはその参照を無視するので、入力欄にラベルが付きません。",
                 },

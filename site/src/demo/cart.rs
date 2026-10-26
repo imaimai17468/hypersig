@@ -20,6 +20,7 @@ pub struct Item {
 pub struct Cart {
     item: Item,
     quantity: i32,
+    #[signals(computed)]
     total: f64,
 }
 

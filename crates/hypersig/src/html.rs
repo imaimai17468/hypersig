@@ -57,7 +57,7 @@ use crate::action::NodeRef;
 use crate::exact;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
 use crate::href::IntoHref;
-use crate::signal::{Item, Part, Sig, in_item_scope, in_part};
+use crate::signal::{Item, Part, Sig, Writable, in_item_scope, in_part};
 use crate::ssr::{self, Ctx, Val};
 use crate::style::{Property, Sheet, Style, Token, TokenValue};
 use crate::tape::Ref;
@@ -1949,7 +1949,7 @@ impl<S> El<S> {
     ///
     /// The signal can be a page signal or a field of a list item.
     #[must_use]
-    pub fn bind<T: Bindable, R>(mut self, signal: Sig<S, T, R>) -> Self {
+    pub fn bind<T: Bindable, R: Writable>(mut self, signal: Sig<S, T, R>) -> Self {
         self.bind = Some(json!([signal.raw_path().place_json(), T::KIND]));
         self
     }
@@ -1963,7 +1963,7 @@ impl<S> El<S> {
     /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
     /// which the browser would round.
     #[must_use]
-    pub fn bind_radio<T: Serialize + PartialEq, R>(
+    pub fn bind_radio<T: Serialize + PartialEq, R: Writable>(
         mut self,
         signal: Sig<S, T, R>,
         value: &T,
@@ -1985,7 +1985,7 @@ impl<S> El<S> {
     /// `Serialize` impl that returns an error, or if it holds an integer outside -2^53 to 2^53,
     /// which the browser would round.
     #[must_use]
-    pub fn bind_select<T: Serialize + PartialEq, R, L: Into<String>>(
+    pub fn bind_select<T: Serialize + PartialEq, R: Writable, L: Into<String>>(
         mut self,
         signal: Sig<S, T, R>,
         options: impl IntoIterator<Item = (T, L)>,

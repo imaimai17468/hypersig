@@ -106,7 +106,9 @@ pub use route::{
     Base, Extends, Link, Params, Rest, Route, Search, SearchScalar, SearchValue, Segment, Url,
     Variants,
 };
-pub use signal::{Item, Local, MAX_DEPTH, Part, Root, Sig, Signals};
+pub use signal::{
+    Computed, FromPage, IsComputed, Item, Local, MAX_DEPTH, Part, Root, Sig, Signals, Writable,
+};
 pub use upload::{FileInput, Upload};
 #[cfg(feature = "axum")]
 pub use upload::{StreamedFile, UploadStream, Uploaded, UploadedFile};
@@ -247,6 +249,12 @@ pub mod _private {
     /// Called by `#[derive(Signals)]` with a field name of `S`.
     #[must_use]
     pub fn sig<S, T>(field: &'static str) -> Sig<S, T> {
+        Sig::from_path(Path::field(field))
+    }
+
+    /// Called by `#[derive(Signals)]` for a field marked `#[signals(computed)]`.
+    #[must_use]
+    pub fn computed_sig<S, T>(field: &'static str) -> Sig<S, T, crate::Computed> {
         Sig::from_path(Path::field(field))
     }
 

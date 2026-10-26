@@ -1,0 +1,13 @@
+error[E0599]: the method `push` exists for struct `Sig<Cart, Vec<f64>, Computed>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/computed_push.rs:19:28
+   |
+19 |     let _ = Cart::totals().push(1.0);
+   |                            ^^^^ method cannot be called on `Sig<Cart, Vec<f64>, Computed>` due to unsatisfied trait bounds
+   |
+  ::: src/signal.rs
+   |
+   | pub enum Computed {}
+   | ----------------- doesn't satisfy `Computed: Writable`
+   |
+   = note: the following trait bounds were not satisfied:
+           `Computed: Writable`

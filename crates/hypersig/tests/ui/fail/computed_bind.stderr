@@ -1,0 +1,22 @@
+error[E0277]: a computed signal cannot be written
+  --> tests/ui/fail/computed_bind.rs:19:34
+   |
+19 |     let _ = input::<Cart>().bind(Cart::total());
+   |                             ---- ^^^^^^^^^^^^^ this signal is kept equal to the expression `Page::computed` gives it
+   |                             |
+   |                             required by a bound introduced by this call
+   |
+   = help: the trait `Writable` is not implemented for `Computed`
+   = note: write one of the signals the expression reads instead
+help: the following other types implement trait `Writable`
+  --> src/signal.rs
+   |
+   | impl Writable for Root {}
+   | ^^^^^^^^^^^^^^^^^^^^^^ `hypersig::Root`
+   | impl Writable for Local {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^ `hypersig::Local`
+note: required by a bound in `El::<S>::bind`
+  --> src/html.rs
+   |
+   |     pub fn bind<T: Bindable, R: Writable>(mut self, signal: Sig<S, T, R>) -> Self {
+   |                                 ^^^^^^^^ required by this bound in `El::<S>::bind`

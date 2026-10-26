@@ -45,6 +45,7 @@ snippets! {
     SignalPaths => "signal_paths.rs";
     WrongField => "wrong_field.rs", "compile_fail,E0599";
     Nested => "nested.rs";
+    ComponentState => "component_state.rs";
     Operators => "operators.rs";
     WrongType => "wrong_type.rs", "compile_fail,E0277";
     WhyCounter => "why_counter.rs";

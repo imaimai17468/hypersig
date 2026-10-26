@@ -1103,6 +1103,38 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Computed",
+                            "enum.Computed.html",
+                            L {
+                                en: "Marks a `Sig` whose value `Page::computed` keeps up to date.",
+                                ja: "`Sig` の値を `Page::computed` が式の値に合わせ続けることを表す型",
+                            },
+                        ),
+                        (
+                            "Writable",
+                            "trait.Writable.html",
+                            L {
+                                en: "The markers of a `Sig` the browser may write: `Root` and `Local`.",
+                                ja: "ブラウザが書き込める `Sig` の印（`Root` と `Local`）",
+                            },
+                        ),
+                        (
+                            "FromPage",
+                            "trait.FromPage.html",
+                            L {
+                                en: "The markers of a `Sig` whose path starts at the page's signal struct: `Root` and `Computed`.",
+                                ja: "パスがページのシグナル構造体から始まる `Sig` の印（`Root` と `Computed`）",
+                            },
+                        ),
+                        (
+                            "IsComputed",
+                            "trait.IsComputed.html",
+                            L {
+                                en: "The marker of a `Sig` that `Page::computed` accepts: `Computed` alone.",
+                                ja: "`Page::computed` が受け取る `Sig` の印（`Computed` だけ）",
+                            },
+                        ),
+                        (
                             "Part",
                             "trait.Part.html",
                             L {
@@ -1144,6 +1176,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "The field `field` of the struct this signal holds.",
                                 ja: "このシグナルが持つ構造体のフィールド `field`",
+                            },
+                        ),
+                        (
+                            "at_computed",
+                            "struct.Sig.html#method.at_computed",
+                            L {
+                                en: "The computed field `field` of the struct this signal holds.",
+                                ja: "このシグナルが持つ構造体の、計算されるフィールド `field`",
                             },
                         ),
                         (

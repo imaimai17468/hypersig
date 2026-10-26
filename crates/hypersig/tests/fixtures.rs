@@ -1082,7 +1082,9 @@ fn dates() -> El<Values> {
 struct Sums {
     a: i32,
     b: i32,
+    #[signals(computed)]
     sum: i32,
+    #[signals(computed)]
     doubled: i32,
 }
 

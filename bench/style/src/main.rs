@@ -39,6 +39,7 @@ struct TodoMvc {
     todos: Vec<Todo>,
     draft: String,
     filter: Filter,
+    #[signals(computed)]
     left: i32,
 }
 

@@ -106,6 +106,15 @@ The apps and the harness are in [`bench/compare`](bench/compare). Every app was 
 
 The same page styled with `hypersig::style`, Tailwind CSS, Panda CSS, StyleX, and vanilla-extract is measured in the [`hypersig_style` README](crates/hypersig_style/README.md#benchmarks).
 
+Compile times were measured with `cargo build` (the `dev` profile) on the same machine with Rust 1.99.0. Each number is a median, of 3 runs for a build from an empty target directory and of 5 runs for a rebuild after one line of the application changes.
+
+| | Lines of Rust | From empty | After a one-line change |
+|---|---|---|---|
+| [`examples/todomvc`](examples/todomvc) | 485 | 13.4 s (11.0–13.7) | 1.3 s (1.1–1.4) |
+| [`site`](site), the documentation site | 19,484 | - | 2.5 s (2.5–3.6) |
+
+The rebuild compiles only the application's crate. In the build of `site`, `cargo build --timings` gave 2.1 s to the `hypersig` crate and 5.6 s to the `site` library.
+
 ## Deploying
 
 [Deploying](https://imaimai17468.github.io/hypersig/learn/deploying/) goes from a new project to a running application in a few commands, using `cargo hypersig` (install it with `cargo install --locked hypersig_cli`). `cargo hypersig new my-app --host server` creates a project that builds a container image with Docker, for a host such as Fly.io, Cloud Run, or Render. With `--host cloudflare`, the same pages, actions, and streams run on Cloudflare Workers, and the worker hands each request to the axum `Router`. With `--host vercel`, they run as a Vercel Function, and `vercel_runtime`'s `VercelLayer` hands over the requests. The templates in [`crates/hypersig_cli/templates/`](crates/hypersig_cli/templates) are compiled into the command, so every project made with one version gets the same files, including the commands they run at build time. The Workers and Vercel projects also need Node.js, because Cloudflare and Vercel publish their command-line tools (`wrangler` and `vercel`) on npm. For an existing project, `cargo hypersig add <host>` edits `Cargo.toml`, writes the host's files, and prints the change you need to make to the Rust code.
@@ -121,6 +130,7 @@ These mistakes compile, and each one shows up when the program runs ([What the c
 - The function `routes!` generates is never called on the router. Its pages and actions then answer 404. rustc's `dead_code` lint reports a handler `fn` that only that function names, but not a closure.
 - A page served under a `Base` calls an action from a `routes!` block without it. The call goes to the path without the prefix, which a proxy or `Router::nest` answers with 404.
 - One `node_ref!` or `dialog_ref!` constant sits on two elements outside a list template. Rendering the page panics.
+- A field marked `#[signals(computed)]` is named by no `Page::computed` call on its page. Nothing recomputes it, so it keeps the value the page's struct gave it.
 - A reference such as `label_for(&EMAIL)` names an `Id` that no element on the page carries. The browser ignores it, so the control has no label.
 - A script outside hypersig finds an element marked with `El::foreign` by its `data-hs-foreign` value, which is the constant's full path, such as `office::MAP`. Renaming or moving the module or the constant changes that value, and the script then finds no element. Give the element an `Id` and look it up by id instead ([JavaScript libraries](https://imaimai17468.github.io/hypersig/learn/javascript/)).
 

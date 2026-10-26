@@ -106,6 +106,15 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 
 同じページを `hypersig::style`、Tailwind CSS、Panda CSS、StyleX、vanilla-extract でスタイルした計測は、[`hypersig_style` の README](crates/hypersig_style/README.ja.md#ベンチマーク) にあります。
 
+コンパイル時間は、同じマシンの Rust 1.99.0 で `cargo build`（`dev` プロファイル）を使って測りました。空の target ディレクトリからのビルドは 3 回、アプリのコードを 1 行変えた後の再ビルドは 5 回測った中央値です。
+
+| | Rust の行数 | 空の状態から | 1 行変えた後 |
+|---|---|---|---|
+| [`examples/todomvc`](examples/todomvc) | 485 | 13.4 s (11.0–13.7) | 1.3 s (1.1–1.4) |
+| [`site`](site)（ドキュメントサイト） | 19,484 | - | 2.5 s (2.5–3.6) |
+
+再ビルドでコンパイルし直すのはアプリのクレートだけです。`site` のビルドを `cargo build --timings` で測ると、`hypersig` クレートに 2.1 s、`site` のライブラリに 5.6 s かかりました。
+
 ## デプロイ
 
 [デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/) のページでは、`cargo install --locked hypersig_cli` でインストールする `cargo hypersig` でプロジェクトを作り、数行のコマンドで動くところまで進められます。`cargo hypersig new my-app --host server` で作るプロジェクトは、Docker でコンテナのイメージを作り、Fly.io、Cloud Run、Render のようなホストで動かします。`--host cloudflare` は同じページ、アクション、ストリームを Cloudflare Workers で動かし、Worker は受けたリクエストを axum の `Router` に渡します。`--host vercel` はそれらを Vercel の関数として動かし、`vercel_runtime` の `VercelLayer` が同じようにリクエストを `Router` に渡します。[`crates/hypersig_cli/templates/`](crates/hypersig_cli/templates) のテンプレートはコマンドに埋め込まれているので、同じ版で作ったプロジェクトは、ビルドで実行するコマンドも含めて同じファイルになります。Workers と Vercel のプロジェクトでは Node.js も必要です。Cloudflare のコマンドラインツール `wrangler` と Vercel のツール `vercel` が npm で配布されているためです。既存のプロジェクトでは、`cargo hypersig add <ホスト>` が `Cargo.toml` を編集してホストのファイルを書き出し、手で直す Rust のコードの変更を表示します。
@@ -121,6 +130,7 @@ hypersig に近いのは Topcoat と Datastar です。どちらもブラウザ�
 - `routes!` が生成する関数をルーターに渡していないと、そのブロックのページとアクションは 404 を返します。その関数の中でだけ使うハンドラの `fn` は rustc の `dead_code` lint が報告しますが、クロージャは報告されません。
 - `Base` の下で配信するページが、その `Base` のない `routes!` ブロックのアクションを呼ぶと、呼び出しは接頭辞のないパスに送られ、プロキシか `Router::nest` が 404 を返します。
 - 1 つの `node_ref!` か `dialog_ref!` の定数を、リストのテンプレートの外で 2 つの要素に付けると、ページの描画が panic します。
+- `#[signals(computed)]` を付けたフィールドを、ページのどの `Page::computed` も指定していないと、そのフィールドは計算し直されず、ページの構造体が与えた値のまま変わりません。
 - `label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指していると、ブラウザはその参照を無視するので、入力欄にラベルが付きません。
 - `data-hs-foreign` の値は `office::MAP` のような定数の完全なパスで、モジュールや定数の名前を変えたり移したりすると変わります。hypersig の外のスクリプトが `El::foreign` を付けた要素をこの値で探していると、名前を変えたときに要素を見つけられなくなります。要素に `Id` を付けて、id で探してください（[JavaScript のライブラリ](https://imaimai17468.github.io/hypersig/ja/learn/javascript/)）。
 

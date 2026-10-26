@@ -31,6 +31,10 @@ use crate::patch::SignalPatch;
 /// assert_eq!(count.path(), "count");
 /// ```
 ///
+/// A field marked `#[signals(computed)]` gets a `Sig<Self, T, Computed>`
+/// instead, for a value that [`Page::computed`](crate::Page::computed) keeps
+/// equal to an expression ([`Computed`]).
+///
 /// A page has one signal struct, which the browser keeps as one JSON object.
 /// An action receives only the arguments its call passes, so a handler that
 /// needs a signal's value takes it as an argument. A field may itself be a
@@ -137,6 +141,73 @@ pub enum Root {}
 /// [`each`](crate::html::each) or a list predicate. Its path is resolved in the browser per item.
 #[derive(Debug, Clone, Copy)]
 pub enum Local {}
+
+/// Marks a [`Sig`] whose value [`Page::computed`](crate::Page::computed) keeps up to date.
+///
+/// `#[derive(Signals)]` gives a field marked `#[signals(computed)]` an
+/// accessor that returns a `Sig<S, T, Computed>`. Such a signal can be read
+/// like any other, but it has no `set`, `toggle`, list statement, or `patch`,
+/// because the browser would overwrite the written value the next time a
+/// signal the expression reads changes.
+///
+/// ```compile_fail
+/// use hypersig::Signals;
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Cart {
+///     price: f64,
+///     #[signals(computed)]
+///     total: f64,
+/// }
+///
+/// let _ = Cart::total().set(0.0);
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub enum Computed {}
+
+/// The markers of a [`Sig`] the browser may write: [`Root`] and [`Local`].
+///
+/// [`Computed`] lacks it, so a statement that writes a computed signal does
+/// not compile. The trait is sealed.
+#[diagnostic::on_unimplemented(
+    message = "a computed signal cannot be written",
+    label = "this signal is kept equal to the expression `Page::computed` gives it",
+    note = "write one of the signals the expression reads instead"
+)]
+pub trait Writable: sealed::Sealed {}
+
+impl Writable for Root {}
+impl Writable for Local {}
+
+/// The marker of a [`Sig`] that [`Page::computed`](crate::Page::computed) accepts: [`Computed`] alone.
+///
+/// It exists so that passing a field without `#[signals(computed)]` names
+/// the missing attribute. The trait is sealed.
+#[diagnostic::on_unimplemented(
+    message = "`Page::computed` takes a field marked `#[signals(computed)]`",
+    label = "this signal can be written, so a computed value would not stay in it",
+    note = "add `#[signals(computed)]` to the field in the struct's definition"
+)]
+pub trait IsComputed: sealed::Sealed {}
+
+impl IsComputed for Computed {}
+
+/// The markers of a [`Sig`] whose path starts at the page's signal struct: [`Root`] and [`Computed`].
+///
+/// [`Local`] lacks it, because the path of a list item is resolved in the
+/// browser. The trait is sealed.
+pub trait FromPage: sealed::Sealed {}
+
+impl FromPage for Root {}
+impl FromPage for Computed {}
+
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for super::Root {}
+    impl Sealed for super::Local {}
+    impl Sealed for super::Computed {}
+}
 
 /// A chain of field names, either from the page root or from a list item.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -280,8 +351,9 @@ type Marker<S, T, R> = fn() -> (S, T, R);
 
 /// A typed reference to a signal of type `T` inside the signal struct `S`.
 ///
-/// `R` is [`Root`] for a signal reached from the page root, and [`Local`] for
-/// one reached from a list item. Values come only from the accessor functions
+/// `R` is [`Root`] for a signal reached from the page root, [`Local`] for
+/// one reached from a list item, and [`Computed`] for a field marked
+/// `#[signals(computed)]`. Values come only from the accessor functions
 /// that `#[derive(Signals)]` generates, combined with [`Sig::at`], so the path
 /// always names a real field.
 pub struct Sig<S, T, R = Root> {
@@ -325,12 +397,6 @@ impl<S, T, R> Sig<S, T, R> {
         Sig::from_path(self.path.join(field.path))
     }
 
-    /// A statement that assigns `value` to this signal in the browser.
-    #[must_use]
-    pub fn set(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
-        Stmt::set(self.path.place_json(), value.into_expr())
-    }
-
     /// A statement that runs `body` with this signal's value when the statement runs.
     ///
     /// It is [`Expr::let_in_stmt`] on the signal's value, so statements that
@@ -349,6 +415,14 @@ impl<S, T, R> Sig<S, T, R> {
     /// `operations!` writes on `&self` put inside the tree they build.
     pub(crate) fn operand(&self) -> Expr<S, T> {
         self.expr()
+    }
+}
+
+impl<S, T, R: Writable> Sig<S, T, R> {
+    /// A statement that assigns `value` to this signal in the browser.
+    #[must_use]
+    pub fn set(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
+        Stmt::set(self.path.place_json(), value.into_expr())
     }
 }
 
@@ -382,9 +456,28 @@ impl<S, T> Sig<S, T, Root> {
     {
         SignalPatch::single(self.dotted(), &value)
     }
+
+    /// The computed field `field` of the struct this signal holds.
+    ///
+    /// [`Sig::at`] takes only the fields the browser may write, so a field
+    /// marked `#[signals(computed)]` in a nested struct is reached with this
+    /// method, and only from the page root, where
+    /// [`Page::computed`](crate::Page::computed) can name it.
+    #[must_use]
+    pub fn at_computed<U>(self, field: Sig<T, U, Computed>) -> Sig<S, U, Computed> {
+        Sig::from_path(self.path.join(field.path))
+    }
 }
 
-impl<S, R> Sig<S, bool, R> {
+impl<S, T> Sig<S, T, Computed> {
+    /// The dotted field path this signal is stored under, as [`Sig::path`] gives it.
+    #[must_use]
+    pub fn path(self) -> String {
+        self.path.rooted()
+    }
+}
+
+impl<S, R: Writable> Sig<S, bool, R> {
     /// A statement that flips this flag.
     #[must_use]
     pub fn toggle(self) -> Stmt<S> {
@@ -393,71 +486,6 @@ impl<S, R> Sig<S, bool, R> {
 }
 
 impl<S, T, R> Sig<S, Vec<T>, R> {
-    /// A statement that appends `value` to this list.
-    #[must_use]
-    pub fn push(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
-        Stmt::list(
-            "push",
-            self.path.place_json(),
-            value.into_expr().into_json(),
-        )
-    }
-
-    /// A statement that appends every item of `items` to this list.
-    #[must_use]
-    pub fn append(self, items: impl IntoExpr<S, Vec<T>>) -> Stmt<S> {
-        Stmt::list(
-            "append",
-            self.path.place_json(),
-            items.into_expr().into_json(),
-        )
-    }
-
-    /// A statement that adds every item of `items` before the items of this list.
-    ///
-    /// Where the list is drawn with [`each_keyed`](crate::html::each_keyed),
-    /// the runtime keeps the items that were already on screen where they
-    /// were, scrolling the nearest scrollable ancestor by the height of the
-    /// items added above them. A list drawn with [`each`](crate::html::each)
-    /// matches its elements by position, so its first element shows the first
-    /// new item and nothing is scrolled.
-    #[must_use]
-    pub fn prepend(self, items: impl IntoExpr<S, Vec<T>>) -> Stmt<S> {
-        Stmt::list(
-            "prepend",
-            self.path.place_json(),
-            items.into_expr().into_json(),
-        )
-    }
-
-    /// A statement that removes the item at `index`, if there is one.
-    #[must_use]
-    pub fn remove_at(self, index: impl IntoExpr<S, i32>) -> Stmt<S> {
-        Stmt::list(
-            "remove",
-            self.path.place_json(),
-            index.into_expr().into_json(),
-        )
-    }
-
-    /// A statement that empties this list.
-    #[must_use]
-    pub fn clear(self) -> Stmt<S> {
-        Stmt::set(
-            self.path.place_json(),
-            Expr::<S, Vec<T>>::from_json(json!(["lit", []])),
-        )
-    }
-
-    /// A statement that keeps only the items for which `keep` is true.
-    ///
-    /// `keep` receives the item being tested and builds the predicate from it.
-    #[must_use]
-    pub fn retain<P: IntoExpr<S, bool>>(self, keep: impl FnOnce(Item<S, T>) -> P) -> Stmt<S> {
-        let (depth, predicate) = self.predicate(keep);
-        Stmt::new(json!(["retain", self.path.place_json(), depth, predicate]))
-    }
-
     /// The number of items for which `matches` is true.
     #[must_use]
     pub fn count<P: IntoExpr<S, bool>>(
@@ -526,6 +554,86 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
     ) -> Expr<S, V> {
         let (depth, value) = self.scoped(value);
         Expr::from_json(json!([op, self.path.place_json(), depth, value]))
+    }
+
+    fn predicate<P: IntoExpr<S, bool>>(self, build: impl FnOnce(Item<S, T>) -> P) -> (u8, Value) {
+        self.scoped(build)
+    }
+
+    /// The depth of a new item scope over this list, and the expression
+    /// `build` makes from its item.
+    fn scoped<U, E: IntoExpr<S, U>>(self, build: impl FnOnce(Item<S, T>) -> E) -> (u8, Value) {
+        in_item_scope(|depth| {
+            let item = Item::new(self.path, depth);
+            (depth, build(item).into_expr().into_json())
+        })
+    }
+}
+
+impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
+    /// A statement that appends `value` to this list.
+    #[must_use]
+    pub fn push(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
+        Stmt::list(
+            "push",
+            self.path.place_json(),
+            value.into_expr().into_json(),
+        )
+    }
+
+    /// A statement that appends every item of `items` to this list.
+    #[must_use]
+    pub fn append(self, items: impl IntoExpr<S, Vec<T>>) -> Stmt<S> {
+        Stmt::list(
+            "append",
+            self.path.place_json(),
+            items.into_expr().into_json(),
+        )
+    }
+
+    /// A statement that adds every item of `items` before the items of this list.
+    ///
+    /// Where the list is drawn with [`each_keyed`](crate::html::each_keyed),
+    /// the runtime keeps the items that were already on screen where they
+    /// were, scrolling the nearest scrollable ancestor by the height of the
+    /// items added above them. A list drawn with [`each`](crate::html::each)
+    /// matches its elements by position, so its first element shows the first
+    /// new item and nothing is scrolled.
+    #[must_use]
+    pub fn prepend(self, items: impl IntoExpr<S, Vec<T>>) -> Stmt<S> {
+        Stmt::list(
+            "prepend",
+            self.path.place_json(),
+            items.into_expr().into_json(),
+        )
+    }
+
+    /// A statement that removes the item at `index`, if there is one.
+    #[must_use]
+    pub fn remove_at(self, index: impl IntoExpr<S, i32>) -> Stmt<S> {
+        Stmt::list(
+            "remove",
+            self.path.place_json(),
+            index.into_expr().into_json(),
+        )
+    }
+
+    /// A statement that empties this list.
+    #[must_use]
+    pub fn clear(self) -> Stmt<S> {
+        Stmt::set(
+            self.path.place_json(),
+            Expr::<S, Vec<T>>::from_json(json!(["lit", []])),
+        )
+    }
+
+    /// A statement that keeps only the items for which `keep` is true.
+    ///
+    /// `keep` receives the item being tested and builds the predicate from it.
+    #[must_use]
+    pub fn retain<P: IntoExpr<S, bool>>(self, keep: impl FnOnce(Item<S, T>) -> P) -> Stmt<S> {
+        let (depth, predicate) = self.predicate(keep);
+        Stmt::new(json!(["retain", self.path.place_json(), depth, predicate]))
     }
 
     /// A statement that sets `field` to `value` on every item.
@@ -635,19 +743,6 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
             key,
             descending
         ]))
-    }
-
-    fn predicate<P: IntoExpr<S, bool>>(self, build: impl FnOnce(Item<S, T>) -> P) -> (u8, Value) {
-        self.scoped(build)
-    }
-
-    /// The depth of a new item scope over this list, and the expression
-    /// `build` makes from its item.
-    fn scoped<U, E: IntoExpr<S, U>>(self, build: impl FnOnce(Item<S, T>) -> E) -> (u8, Value) {
-        in_item_scope(|depth| {
-            let item = Item::new(self.path, depth);
-            (depth, build(item).into_expr().into_json())
-        })
     }
 }
 
