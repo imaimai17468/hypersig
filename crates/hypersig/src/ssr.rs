@@ -63,6 +63,13 @@ pub(crate) struct Slot<'a> {
     index: usize,
 }
 
+impl<'a> Slot<'a> {
+    /// The item `value` at position `index` of its list.
+    pub(crate) fn new(value: Ref<'a>, index: usize) -> Self {
+        Self { value, index }
+    }
+}
+
 /// The signals an expression reads, and the item of each enclosing list.
 pub(crate) struct Ctx<'a> {
     pub(crate) root: Ref<'a>,

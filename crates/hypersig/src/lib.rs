@@ -78,6 +78,7 @@ mod route;
 mod signal;
 mod ssr;
 mod tape;
+pub mod testing;
 mod upload;
 
 #[cfg(doctest)]

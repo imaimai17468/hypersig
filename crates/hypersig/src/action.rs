@@ -121,6 +121,11 @@ impl<S, A> Action<S, A> {
     pub fn method(&self) -> Method {
         self.method
     }
+
+    /// The path a call to this action names, with its [`Base`].
+    pub(crate) fn call_path(&self) -> String {
+        self.base.join(self.path)
+    }
 }
 
 #[cfg(feature = "axum")]
@@ -684,6 +689,11 @@ impl<S, A> StreamAction<S, A> {
         self.path
     }
 
+    /// The path a call to this stream names, with its [`Base`].
+    pub(crate) fn call_path(&self) -> String {
+        self.base.join(self.path)
+    }
+
     /// The request the runtime sends to open this stream with `args`.
     ///
     /// It is the `GET` that [`Action::request`] builds: `Accept:
@@ -1039,6 +1049,10 @@ impl<S> DialogRef<S> {
             name,
             marker: PhantomData,
         }
+    }
+
+    pub(crate) const fn name(self) -> &'static str {
+        self.name
     }
 
     /// An element id spelled as this reference's name, as [`NodeRef::id`] is.

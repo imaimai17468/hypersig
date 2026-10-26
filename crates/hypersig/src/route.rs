@@ -799,6 +799,11 @@ fn split_pair(ast: Value) -> (Value, Value) {
 pub struct Url(String);
 
 impl Url {
+    /// A URL a link expression evaluated to.
+    pub(crate) fn evaluated(text: String) -> Self {
+        Self(text)
+    }
+
     /// The URL as text.
     #[must_use]
     pub fn as_str(&self) -> &str {
