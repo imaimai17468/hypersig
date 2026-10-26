@@ -410,8 +410,8 @@ fn unchecked(site: Site) -> [Part; 2] {
                     ja: "`label_for(&EMAIL)` のような参照が、ページのどの要素も持たない `Id` を指している。ブラウザはその参照を無視するので、入力欄にラベルが付きません。",
                 },
                 L {
-                    en: "A script outside hypersig finds an element marked with `El::foreign` by its `data-hs-foreign` value, which is the constant's full path, such as `office::MAP`. Renaming or moving the module or the constant changes that value, and the script then finds no element.",
-                    ja: "hypersig の外のスクリプトは、`El::foreign` を付けた要素を `data-hs-foreign` の値で探します。この値は `office::MAP` のような定数の完全なパスなので、モジュールや定数の名前を変えたり移したりすると値が変わり、スクリプトは要素を見つけられなくなります。",
+                    en: "A script outside hypersig finds an element marked with `El::foreign` by its `data-hs-foreign` value, which is the constant's full path, such as `office::MAP`. Renaming or moving the module or the constant changes that value, and the script then finds no element. Give the element an `Id` and look it up by id instead.",
+                    ja: "hypersig の外のスクリプトが、`El::foreign` を付けた要素を `data-hs-foreign` の値で探している。この値は `office::MAP` のような定数の完全なパスなので、モジュールや定数の名前を変えたり移したりすると値が変わり、スクリプトは要素を見つけられなくなります。要素に `Id` を付けて、id で探してください。",
                 },
             ],
         ),

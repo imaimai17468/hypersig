@@ -1,4 +1,4 @@
-use hypersig::html::{CustomEvent, div};
+use hypersig::html::{CustomEvent, Id, div};
 use hypersig::{Page, Signals};
 use serde::{Deserialize, Serialize};
 
@@ -13,12 +13,11 @@ struct Office {
     center: Center,
 }
 
-// The script in `/map.js` finds the element whose `data-hs-foreign` is the
-// path of `MAP`, such as `office::MAP` in a crate named `office`, with
-// `'[data-hs-foreign="' + CSS.escape("office::MAP") + '"]'`. It draws a map there,
-// reads `data-lat` and `data-lng`, and dispatches `map-moved` with the new
-// center.
+// The script in `/map.js` finds the element with
+// `document.getElementById("map")`, draws a map there, reads `data-lat` and
+// `data-lng`, and dispatches `map-moved` with the new center.
 hypersig::node_ref!(const MAP: NodeRef<Office>);
+const MAP_ID: Id = Id::new("map");
 const MOVED: CustomEvent<Center> = CustomEvent::new("map-moved");
 # fn main() {
 
@@ -29,9 +28,10 @@ let page = Page::new("Office", Office { center: Center { lat: 35.68, lng: 139.77
         div()
             // A patch keeps the tiles and classes the script added.
             .foreign(MAP)
+            .id(MAP_ID)
             .bind_attr(hypersig::attr!("data-lat"), center.at(Center::lat()).to_text())
             .bind_attr(hypersig::attr!("data-lng"), center.at(Center::lng()).to_text())
             .on_custom(MOVED, move |moved| center.set(moved)),
     );
-# assert!(page.render().contains(&format!(r#"data-hs-foreign="{}::MAP""#, module_path!())));
+# assert!(page.render().contains(r#"id="map""#));
 # }

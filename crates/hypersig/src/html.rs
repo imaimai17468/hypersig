@@ -1864,9 +1864,11 @@ impl<S> El<S> {
     /// such as [`El::bind_attr`] and [`El::on_custom`], keep running, so the
     /// values a script reads change through signals. Among its siblings a
     /// patch finds it by its id, or by the name of `node_ref` where it has none,
-    /// so a sibling added before it does not take its place. A list item or a
-    /// condition that holds it is built anew with it when the runtime renders
-    /// the item or the condition again.
+    /// so a sibling added before it does not take its place. A script finds
+    /// it by an [`Id`] it carries, since the name `node_ref!` writes follows
+    /// the constant's path and changes when the module is renamed. A list
+    /// item or a condition that holds it is built anew with it when the
+    /// runtime renders the item or the condition again.
     ///
     /// ```
     /// use hypersig::html::{El, Role, div};
