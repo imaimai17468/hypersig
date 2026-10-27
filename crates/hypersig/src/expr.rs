@@ -422,29 +422,33 @@ impl Number for f64 {}
 /// A type the runtime can order with `<` and friends.
 ///
 /// Strings are ordered by UTF-16 code unit, as JavaScript orders them, on the
-/// server as in the browser.
+/// server as in the browser. A [`CalendarDate`](crate::CalendarDate) is
+/// ordered as its `YYYY-MM-DD` text, which is the order of the days.
 pub trait Comparable: sealed::Sealed {}
 impl Comparable for i32 {}
 impl Comparable for i64 {}
 impl Comparable for f64 {}
 impl Comparable for String {}
 impl Comparable for crate::Timestamp {}
+impl Comparable for crate::CalendarDate {}
 
 /// A type the runtime can turn into display text.
 ///
-/// It is implemented for `String`, `f64`, `bool`, and every [`Segment`]:
-/// the integers, [`PathSegment`](crate::PathSegment), and an enum with
+/// It is implemented for `String`, `f64`, `bool`, every [`Segment`] (the
+/// integers, [`PathSegment`](crate::PathSegment), and an enum with
 /// `#[derive(Segment)]`, whose text is the string serde writes for the
-/// variant.
+/// variant), and [`CalendarDate`](crate::CalendarDate), whose text is
+/// `YYYY-MM-DD`.
 #[diagnostic::on_unimplemented(
     message = "the browser cannot write `{Self}` as text",
-    note = "`to_text` takes a number, a `bool`, a `String`, or an enum with `#[derive(Segment)]`"
+    note = "`to_text` takes a number, a `bool`, a `String`, a `CalendarDate`, or an enum with `#[derive(Segment)]`"
 )]
 pub trait Textual: sealed::TextSeal {}
 impl<T: Segment> Textual for T {}
 impl Textual for String {}
 impl Textual for f64 {}
 impl Textual for bool {}
+impl Textual for crate::CalendarDate {}
 
 mod sealed {
     use crate::Segment;
@@ -456,12 +460,14 @@ mod sealed {
     impl Sealed for bool {}
     impl Sealed for String {}
     impl Sealed for crate::Timestamp {}
+    impl Sealed for crate::CalendarDate {}
 
     pub trait TextSeal {}
     impl<T: Segment> TextSeal for T {}
     impl TextSeal for String {}
     impl TextSeal for f64 {}
     impl TextSeal for bool {}
+    impl TextSeal for crate::CalendarDate {}
 }
 
 /// Defines the operator impls and methods on both `Expr` and `Sig`, so a

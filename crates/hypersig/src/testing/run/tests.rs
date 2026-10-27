@@ -251,6 +251,32 @@ fn typing_a_date_writes_it_only_where_it_is_a_date() {
 }
 
 #[test]
+fn a_date_shows_as_its_text_and_compares_in_day_order() {
+    const START: NodeRef<Trip> = NodeRef::new("START");
+    const SHOWN: NodeRef<Trip> = NodeRef::new("SHOWN");
+    const EARLY: NodeRef<Trip> = NodeRef::new("EARLY");
+    let trip = Trip {
+        start: CalendarDate::new(2026, 1, 5),
+        end: None,
+    };
+    let february = CalendarDate::new(2026, 2, 1);
+    let page = Page::new("Trip", trip)
+        .child(input().node_ref(START).bind(Trip::start()))
+        .child(p().node_ref(SHOWN).bind_text(Trip::start().to_text()))
+        .child(p().node_ref(EARLY).bind_text(crate::if_else(
+            Trip::start().lt(february),
+            "early",
+            "late",
+        )));
+    let mut browser = page.simulate();
+    assert_eq!(browser.element(SHOWN).text(), "2026-01-05");
+    assert_eq!(browser.element(EARLY).text(), "early");
+    browser.input(START, "2026-12-24");
+    assert_eq!(browser.element(SHOWN).text(), "2026-12-24");
+    assert_eq!(browser.element(EARLY).text(), "late");
+}
+
+#[test]
 fn change_reads_a_select_as_json_and_runs_on_change() {
     let page = Page::new("Board", board())
         .computed(Board::doubled(), Board::count() * 2)
