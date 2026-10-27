@@ -24,16 +24,25 @@ enum Amount {
 }
 
 impl Amount {
-    /// Writes the amount, leaving the unit off zero where `zero_bare` is set,
-    /// as a length may be written but a duration may not.
+    /// `value` in `unit`.
     ///
     /// # Panics
     ///
-    /// Panics if the number is NaN or infinite, which CSS cannot write.
+    /// Panics if `value` is NaN or infinite, which CSS cannot write.
+    fn unit(value: impl Into<f64>, unit: &'static str) -> Self {
+        let value = value.into();
+        assert!(
+            value.is_finite(),
+            "a CSS number is finite, and this one is {value}"
+        );
+        Self::Unit(value, unit)
+    }
+
+    /// Writes the amount, leaving the unit off zero where `zero_bare` is set,
+    /// as a length may be written but a duration may not.
     fn write(&self, f: &mut fmt::Formatter<'_>, zero_bare: bool) -> fmt::Result {
         match self {
             Self::Unit(n, unit) => {
-                assert!(n.is_finite(), "a CSS number is finite");
                 write!(f, "{n}")?;
                 if !(zero_bare && *n == 0.0) {
                     f.write_str(unit)?;
@@ -67,9 +76,13 @@ impl fmt::Display for Length {
 macro_rules! lengths {
     ($($name:ident => $unit:literal: $doc:literal),* $(,)?) => {$(
         #[doc = concat!("A length in `", $unit, "`, ", $doc, ".")]
+        ///
+        /// # Panics
+        ///
+        /// Panics if `value` is NaN or infinite.
         #[must_use]
         pub fn $name(value: impl Into<f64>) -> Length {
-            Length(Amount::Unit(value.into(), $unit))
+            Length(Amount::unit(value, $unit))
         }
     )*};
 }
@@ -112,9 +125,13 @@ impl fmt::Display for Percentage {
 }
 
 /// The percentage `value%`.
+///
+/// # Panics
+///
+/// Panics if `value` is NaN or infinite.
 #[must_use]
 pub fn pct(value: impl Into<f64>) -> Percentage {
-    Percentage(Amount::Unit(value.into(), "%"))
+    Percentage(Amount::unit(value, "%"))
 }
 
 /// A duration such as `200ms`, or a [`Token`](crate::Token) that holds one.
@@ -134,15 +151,23 @@ impl fmt::Display for Time {
 }
 
 /// A duration in milliseconds.
+///
+/// # Panics
+///
+/// Panics if `value` is NaN or infinite.
 #[must_use]
 pub fn ms(value: impl Into<f64>) -> Time {
-    Time(Amount::Unit(value.into(), "ms"))
+    Time(Amount::unit(value, "ms"))
 }
 
 /// A duration in seconds.
+///
+/// # Panics
+///
+/// Panics if `value` is NaN or infinite.
 #[must_use]
 pub fn secs(value: impl Into<f64>) -> Time {
-    Time(Amount::Unit(value.into(), "s"))
+    Time(Amount::unit(value, "s"))
 }
 
 /// An angle such as `90deg`, or a [`Token`](crate::Token) that holds one.
@@ -162,15 +187,23 @@ impl fmt::Display for Angle {
 }
 
 /// An angle in degrees.
+///
+/// # Panics
+///
+/// Panics if `value` is NaN or infinite.
 #[must_use]
 pub fn deg(value: impl Into<f64>) -> Angle {
-    Angle(Amount::Unit(value.into(), "deg"))
+    Angle(Amount::unit(value, "deg"))
 }
 
 /// An angle in whole turns.
+///
+/// # Panics
+///
+/// Panics if `value` is NaN or infinite.
 #[must_use]
 pub fn turn(value: impl Into<f64>) -> Angle {
-    Angle(Amount::Unit(value.into(), "turn"))
+    Angle(Amount::unit(value, "turn"))
 }
 
 /// A color.
@@ -376,7 +409,7 @@ impl fmt::Display for CssWideKeyword {
 
 #[cfg(test)]
 mod tests {
-    use super::{quoted, raw, stays_in_declaration, url};
+    use super::{px, quoted, raw, stays_in_declaration, url};
 
     #[test]
     fn a_string_escapes_every_character_that_would_end_it() {
@@ -400,5 +433,11 @@ mod tests {
         ] {
             assert!(!stays_in_declaration(open), "{open:?}");
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "a CSS number is finite")]
+    fn a_length_of_nan_panics_where_it_is_built() {
+        let _ = px(f64::NAN);
     }
 }
