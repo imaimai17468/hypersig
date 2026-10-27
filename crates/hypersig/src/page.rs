@@ -2,6 +2,7 @@
 
 use std::borrow::Cow;
 use std::cell::RefCell;
+use std::collections::BTreeSet;
 use std::fmt;
 
 use serde::de::DeserializeOwned;
@@ -15,6 +16,7 @@ use crate::html::{
     check_item_reads, check_names, escape_into, keys_json, visit_trees, write_attr,
     write_json_attr,
 };
+use crate::intl::IntlLocale;
 use crate::route::{Base, Url};
 use crate::signal::{FromPage, IsComputed, Sig, Signals};
 use crate::ssr::{self, Ctx, Val};
@@ -435,6 +437,14 @@ impl<S: Signals> Page<S> {
     /// let html = Page::new("Nota", Note {}).lang(PT_BR).render();
     /// assert!(html.starts_with(r#"<!doctype html><html lang="pt-BR">"#));
     /// ```
+    ///
+    /// In a debug build, [`Page::render`] panics where the first subtag of
+    /// `tag` is the language of an `IntlLocale` and the page formats plurals
+    /// and dates only with other `IntlLocale`s, as a page set to `ja` that
+    /// formats only with `IntlLocale::En` does. A page that also formats in
+    /// the language of `tag` passes, so it can show other locales beside its
+    /// own, and so does a page in a language no `IntlLocale` writes, such as
+    /// `fr`. A release build skips the check.
     #[must_use]
     pub fn lang(mut self, tag: impl Into<LanguageTag>) -> Self {
         self.lang = Some(tag.into());
@@ -766,6 +776,49 @@ impl<S: Signals> Page<S> {
         }
     }
 
+    /// Panics, in a debug build, if the page sets [`Page::lang`] to a language
+    /// an `IntlLocale` writes and formats plurals and dates only in others.
+    fn check_lang(&self) {
+        if !cfg!(debug_assertions) {
+            return;
+        }
+        let Some(lang) = &self.lang else {
+            return;
+        };
+        let mut locales = BTreeSet::new();
+        for ast in self
+            .bound_title
+            .iter()
+            .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()))
+            .chain(self.computed.iter().map(|(_, value)| value))
+        {
+            formatting_locales(ast, &mut locales);
+        }
+        visit_trees(&self.body, &mut |ast| formatting_locales(ast, &mut locales));
+        let primary = lang.as_str().split('-').next().unwrap_or_default();
+        // A page in a language no `IntlLocale` writes, such as `fr`, has to
+        // format in one of the others.
+        let has_own = IntlLocale::ALL
+            .iter()
+            .any(|locale| locale.tag().eq_ignore_ascii_case(primary));
+        if !has_own
+            || locales.is_empty()
+            || locales
+                .iter()
+                .any(|locale| locale.eq_ignore_ascii_case(primary))
+        {
+            return;
+        }
+        let used: Vec<&str> = locales.iter().map(String::as_str).collect();
+        panic!(
+            "the page sets `lang` to `{lang}` and formats its plurals and dates only in \
+             `{}`, so a screen reader reads that text in the wrong language: set \
+             `Page::lang` to the `IntlLocale` the page formats with, or format with the \
+             one `{lang}` names",
+            used.join("`, `")
+        );
+    }
+
     /// Writes what search engines and link previews read into `<head>`.
     fn write_metadata(&self, out: &mut String) {
         if let Some(description) = &self.description {
@@ -863,6 +916,7 @@ impl<S: Signals> Page<S> {
         check_names(&self.body);
         check_item_reads(&self.body);
         self.check_nested_computed();
+        self.check_lang();
         crate::testing::Simulation::new(self, self.initial_values().root().to_value())
     }
 
@@ -893,7 +947,8 @@ impl<S: Signals> Page<S> {
     /// computed signal reads itself or one declared after it, or if the page
     /// reads a computed field of a nested struct that no call names, or if an
     /// expression or statement reads a list item outside every list that
-    /// renders it.
+    /// renders it. In a debug build it also panics if [`Page::lang`] names
+    /// the language of an `IntlLocale` and the page formats only with others.
     #[must_use]
     pub fn render(&self) -> String {
         self.render_with(Base::ROOT, None)
@@ -930,6 +985,7 @@ impl<S: Signals> Page<S> {
             assert_items_open(ast, 0);
         }
         self.check_nested_computed();
+        self.check_lang();
         let root = self.initial_values();
         let mut out = String::from("<!doctype html><html");
         if let Some(lang) = &self.lang {
@@ -1125,6 +1181,29 @@ fn reads_path(ast: &Value, path: &str) -> bool {
         }
         Some(parts) => parts.iter().any(|part| reads_path(part, path)),
         None => false,
+    }
+}
+
+/// Adds to `found` the tag of each locale the expression `ast` formats with.
+///
+/// `["plural",n,locale,forms]` and `["date",t,locale,...]` carry it at index
+/// 2, and `["reltime",t,now,locale]` at index 3. A literal's value is data,
+/// so it is not searched.
+fn formatting_locales(ast: &Value, found: &mut BTreeSet<String>) {
+    let Some(parts) = ast.as_array() else {
+        return;
+    };
+    let at = match parts.first().and_then(Value::as_str) {
+        Some("lit") => return,
+        Some("plural" | "date") => Some(2),
+        Some("reltime") => Some(3),
+        _ => None,
+    };
+    if let Some(tag) = at.and_then(|at| parts.get(at)).and_then(Value::as_str) {
+        found.insert(tag.to_owned());
+    }
+    for part in parts {
+        formatting_locales(part, found);
     }
 }
 
@@ -1505,5 +1584,89 @@ mod tests {
         .child(input().node_ref(FIELD))
         .child(input().node_ref(FIELD))
         .render();
+    }
+
+    #[derive(Signals, Serialize, Deserialize, Default)]
+    struct Inbox {
+        unread: i32,
+        sent: crate::Timestamp,
+    }
+
+    fn unread_label(locale: crate::IntlLocale) -> crate::html::El<Inbox> {
+        p().bind_text(Inbox::unread().plural(locale, |category| match category {
+            crate::PluralCategory::One => "message",
+            _ => "messages",
+        }))
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "the page sets `lang` to `ja` and formats its plurals and dates only in `en`"
+    )]
+    fn a_page_that_formats_only_in_another_language_than_its_lang_panics() {
+        let _ = Page::new("受信箱", Inbox::default())
+            .lang(crate::IntlLocale::Ja)
+            .child(unread_label(crate::IntlLocale::En))
+            .render();
+    }
+
+    #[test]
+    #[should_panic(expected = "formats its plurals and dates only in `ja`")]
+    fn a_relative_time_in_another_language_than_lang_panics() {
+        let _ = Page::new("Inbox", Inbox::default())
+            .lang(crate::LanguageTag::new("en-US"))
+            .child(p().bind_text(Inbox::sent().relative_to(Inbox::sent(), crate::IntlLocale::Ja)))
+            .render();
+    }
+
+    #[test]
+    fn a_page_may_format_in_other_locales_beside_its_own() {
+        const JA_DATE: crate::DateFormat =
+            crate::DateFormat::date(crate::IntlLocale::Ja, crate::DateStyle::Long);
+        let html = Page::new("Inbox", Inbox::default())
+            .lang(crate::LanguageTag::new("en-GB"))
+            .child(unread_label(crate::IntlLocale::En))
+            .child(p().bind_text(Inbox::sent().format_date(&JA_DATE)))
+            .render();
+        assert!(html.starts_with(r#"<!doctype html><html lang="en-GB">"#));
+    }
+
+    #[test]
+    fn a_page_in_a_language_no_intl_locale_writes_may_format_in_another() {
+        let html = Page::new("Boîte", Inbox::default())
+            .lang(crate::LanguageTag::new("fr"))
+            .child(unread_label(crate::IntlLocale::En))
+            .render();
+        assert!(html.starts_with(r#"<!doctype html><html lang="fr">"#));
+    }
+
+    #[test]
+    fn a_page_without_lang_or_without_formatting_is_not_checked() {
+        let _ = Page::new("Inbox", Inbox::default())
+            .child(unread_label(crate::IntlLocale::En))
+            .render();
+        let _ = Page::new("受信箱", Inbox::default())
+            .lang(crate::IntlLocale::Ja)
+            .child(p().bind_text(Inbox::unread().to_text()))
+            .render();
+    }
+
+    #[test]
+    fn a_locale_inside_a_literal_is_data() {
+        let html = Page::new("受信箱", Inbox::default())
+            .lang(crate::IntlLocale::Ja)
+            .child(
+                p().bind_text(
+                    Expr::<Inbox, Vec<String>>::lit(&vec![
+                        "plural".into(),
+                        "1".into(),
+                        "en".into(),
+                    ])
+                    .len()
+                    .to_text(),
+                ),
+            )
+            .render();
+        assert!(html.contains("<html lang=\"ja\">"));
     }
 }

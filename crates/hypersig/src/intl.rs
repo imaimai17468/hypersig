@@ -20,6 +20,9 @@ pub enum IntlLocale {
 }
 
 impl IntlLocale {
+    /// Every locale.
+    pub(crate) const ALL: [Self; 2] = [Self::En, Self::Ja];
+
     /// The BCP 47 tag the browser's `Intl` receives, such as `"en"`.
     #[must_use]
     pub const fn tag(self) -> &'static str {
