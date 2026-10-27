@@ -1,25 +1,21 @@
-error[E0277]: `&str` is not an expression of type `(String, Filter)` on the page whose signals are `_`
+error[E0277]: `PathSegment` is not an expression of type `(PathSegment, Filter)` on the page whose signals are `_`
   --> tests/ui/fail/link_missing_search.rs:23:47
    |
-23 |     let _ = a::<Filter>().href(TEAM.link_with("red"));
-   |                                     --------- ^^^^^ the trait `IntoExpr<_, (String, Filter)>` is not implemented for `&str`
+23 |     let _ = a::<Filter>().href(TEAM.link_with(PathSegment::new("red")));
+   |                                     --------- ^^^^^^^^^^^^^^^^^^^^^^^ the trait `IntoExpr<_, (PathSegment, Filter)>` is not implemented for `PathSegment`
    |                                     |
    |                                     required by a bound introduced by this call
    |
    = note: an expression must have the type the attribute expects, and use signals of the same page
-help: the trait `IntoExpr<_, (String, Filter)>` is not implemented for `&str`
-      but trait `IntoExpr<_, String>` is implemented for it
-  --> src/expr.rs
+help: the trait `IntoExpr<_, (PathSegment, Filter)>` is not implemented for `PathSegment`
+      but trait `IntoExpr<_, PathSegment>` is implemented for it
+  --> src/route.rs
    |
-   |         impl<S> IntoExpr<S, $target> for $ty {
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...
-   | literal!(i32 => i32, i64 => i64, f64 => f64, bool => bool, String => String, &str => String);
-   | -------------------------------------------------------------------------------------------- in this macro invocation
-   = help: for that trait implementation, expected `String`, found `(String, Filter)`
+   | impl<S> IntoExpr<S, PathSegment> for PathSegment {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for that trait implementation, expected `PathSegment`, found `(PathSegment, Filter)`
 note: required by a bound in `Route::<P, Q>::link_with`
   --> src/route.rs
    |
    |     pub fn link_with<S>(&self, args: impl IntoExpr<S, Q::Args<P>>) -> Link<S> {
    |                                           ^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Route::<P, Q>::link_with`
-   = note: this error originates in the macro `literal` (in Nightly builds, run with -Z macro-backtrace for more info)

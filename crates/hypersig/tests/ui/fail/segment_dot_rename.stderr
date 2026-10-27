@@ -1,0 +1,5 @@
+error: a `Segment` variant is not renamed to an empty name, `.`, or `..`, because axum does not match an empty segment and the browser removes a dot segment
+ --> tests/ui/fail/segment_dot_rename.rs:9:22
+  |
+9 |     #[serde(rename = "..")]
+  |                      ^^^^

@@ -3116,11 +3116,27 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "PathSegment",
+                            "struct.PathSegment.html",
+                            L {
+                                en: "One segment of a path, never empty, `.`, or `..`.",
+                                ja: "パスのセグメント 1 つです。空、`.`、`..` にはなりません。",
+                            },
+                        ),
+                        (
                             "Rest",
                             "struct.Rest.html",
                             L {
                                 en: "The rest of a path, from a `{*name}` segment at its end.",
                                 ja: "パスの末尾にある `{*name}` セグメントが受け取る残りの部分です。",
+                            },
+                        ),
+                        (
+                            "PathSegmentError",
+                            "struct.PathSegmentError.html",
+                            L {
+                                en: "Text that `PathSegment::parse` or `Rest::parse` refused, with the rule it broke.",
+                                ja: "`PathSegment::parse` か `Rest::parse` が受け付けなかった文字列と、違反していた規則です。",
                             },
                         ),
                         (

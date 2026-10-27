@@ -119,8 +119,8 @@ pub use intl::{IntlLocale, PluralCategory};
 pub use page::{Framing, Page};
 pub use patch::{Fragment, ListPatch, Patches, SignalPatch, fragment};
 pub use route::{
-    Base, Extends, Link, Params, Rest, Route, Search, SearchScalar, SearchValue, Segment, Url,
-    Variants,
+    Base, Extends, Link, Params, PathSegment, PathSegmentError, Rest, Route, Search, SearchScalar,
+    SearchValue, Segment, Url, Variants,
 };
 pub use signal::{
     Computed, FromPage, IsComputed, Item, Local, MAX_DEPTH, Part, Read, Root, Sig, Signals,

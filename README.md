@@ -113,7 +113,6 @@ The compiler checks that names, types, and links match. These mistakes still com
 | A `#[signals(computed)]` field is never passed to `Page::computed` | Rendering the page panics, for a field of a nested struct only where the page reads it |
 | A list item is used outside the closure it was passed to | Building or rendering the page panics. An expression built from the item inside the closure and used inside another list at the same depth is not caught, and reads that list's item |
 | A signal holds an integer beyond ±2^53 | Rendering the page or building the patch panics |
-| A `String` segment of a route, or a part of a `Rest`, is empty, `.`, or `..` | The link answers 404, or the browser resolves the dots and asks for another page |
 
 ## What it does not suit
 

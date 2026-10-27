@@ -432,15 +432,17 @@ impl Comparable for crate::Timestamp {}
 
 /// A type the runtime can turn into display text.
 ///
-/// It is implemented for `f64`, `bool`, and every [`Segment`]: the
-/// integers, `String`, and an enum with `#[derive(Segment)]`, whose text is
-/// the string serde writes for the variant.
+/// It is implemented for `String`, `f64`, `bool`, and every [`Segment`]:
+/// the integers, [`PathSegment`](crate::PathSegment), and an enum with
+/// `#[derive(Segment)]`, whose text is the string serde writes for the
+/// variant.
 #[diagnostic::on_unimplemented(
     message = "the browser cannot write `{Self}` as text",
     note = "`to_text` takes a number, a `bool`, a `String`, or an enum with `#[derive(Segment)]`"
 )]
 pub trait Textual: sealed::TextSeal {}
 impl<T: Segment> Textual for T {}
+impl Textual for String {}
 impl Textual for f64 {}
 impl Textual for bool {}
 
@@ -457,6 +459,7 @@ mod sealed {
 
     pub trait TextSeal {}
     impl<T: Segment> TextSeal for T {}
+    impl TextSeal for String {}
     impl TextSeal for f64 {}
     impl TextSeal for bool {}
 }

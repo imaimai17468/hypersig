@@ -1,6 +1,6 @@
 //! A child route whose parameters do not start with its parent's.
 
-use hypersig::{Page, Route, Signals};
+use hypersig::{Page, PathSegment, Route, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -8,7 +8,7 @@ struct Blank {}
 
 hypersig::routes! {
     fn pages(Router<()>);
-    const ORG: Route<String> = "/orgs/{org}" => no_page;
+    const ORG: Route<PathSegment> = "/orgs/{org}" => no_page;
     const MEMBER: Route<(i32, i32)> = "/orgs/{org}/members/{id}" in ORG => no_page;
 }
 

@@ -3,7 +3,7 @@ error[E0080]: evaluation panicked: a `{*name}` segment and a last parameter of t
    |
  9 | / hypersig::routes! {
 10 | |     fn pages(Router<()>);
-11 | |     const FILE: Route<String> = "/files/{*path}" => no_page;
+11 | |     const FILE: Route<PathSegment> = "/files/{*path}" => no_page;
 12 | | }
    | |_^ evaluation of `_` failed here
    |

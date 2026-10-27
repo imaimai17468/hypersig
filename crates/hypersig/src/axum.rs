@@ -881,21 +881,21 @@ impl Unserved {
     ///
     /// ```
     /// use hypersig::html::p;
-    /// use hypersig::{IntlLocale, Page, Route, Signals, Unserved};
+    /// use hypersig::{IntlLocale, Page, PathSegment, Route, Signals, Unserved};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
     /// struct Missing {}
     ///
-    /// # async fn home((): (), _: String) -> Option<Page<Missing>> { None }
+    /// # async fn home((): (), _: PathSegment) -> Option<Page<Missing>> { None }
     /// hypersig::routes! {
     ///     fn pages(Router<()>) else missing;
-    ///     const HOME: Route<String> = "/{lang}" => home;
+    ///     const HOME: Route<PathSegment> = "/{lang}" => home;
     /// }
     ///
     /// async fn missing((): (), unserved: Unserved) -> Page<Missing> {
-    ///     let lang = unserved.within(HOME).unwrap_or_else(|| "en".to_owned());
-    ///     let (locale, text) = if lang == "ja" {
+    ///     let ja = unserved.within(HOME).is_some_and(|lang| lang.as_str() == "ja");
+    ///     let (locale, text) = if ja {
     ///         (IntlLocale::Ja, "ページが見つかりません。")
     ///     } else {
     ///         (IntlLocale::En, "No such page.")

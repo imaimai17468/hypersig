@@ -1,0 +1,52 @@
+error[E0277]: `String` cannot be one segment of a URL's path
+  --> tests/ui/fail/route_string_segment.rs:11:16
+   |
+11 |     const ORG: Route<String> = "/orgs/{org}" => no_page;
+   |                ^^^^^^^^^^^^^ the trait `Segment` is not implemented for `String`
+   |
+   = note: a segment is an integer, a `PathSegment`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six
+   = help: the following other types implement trait `Segment`:
+             PathSegment
+             Rest
+             i32
+             i64
+             u32
+             u64
+   = note: required for `String` to implement `Params`
+   = note: required for `Route<String>` to implement `hypersig::_private::RouteType`
+note: required by a bound in `hypersig::_private::check_route`
+  --> src/lib.rs
+   |
+   |     pub const fn check_route<R: RouteType>(path: &'static str) -> Result<(), &'static str> {
+   |                                 ^^^^^^^^^ required by this bound in `check_route`
+
+error[E0277]: `String` cannot be the parameters of a route
+  --> tests/ui/fail/route_string_segment.rs:9:1
+   |
+ 9 | / hypersig::routes! {
+10 | |     fn pages(Router<()>);
+11 | |     const ORG: Route<String> = "/orgs/{org}" => no_page;
+12 | | }
+   | | ^
+   | | |
+   | |_the trait `Segment` is not implemented for `String`
+   |   required by a bound introduced by this call
+   |
+   = note: a route takes `()`, one `Segment` (an integer, `PathSegment`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them
+   = help: the following other types implement trait `Segment`:
+             PathSegment
+             Rest
+             i32
+             i64
+             u32
+             u64
+   = note: required for `String` to implement `Params`
+note: required by a bound in `hypersig::RouterExt::page`
+  --> src/axum.rs
+   |
+   |     fn page<P, Q, H, M, Fut, R>(
+   |        ---- required by a bound in this associated function
+...
+   |         P: Params + Send + 'static,
+   |            ^^^^^^ required by this bound in `RouterExt::page`
+   = note: this error originates in the macro `$crate::routes` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

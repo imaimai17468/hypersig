@@ -1,8 +1,8 @@
-error[E0277]: `(i32, i32)` does not start with `String`, the parameters of the parent route
+error[E0277]: `(i32, i32)` does not start with `PathSegment`, the parameters of the parent route
   --> tests/ui/fail/route_child_params.rs:12:19
    |
 12 |     const MEMBER: Route<(i32, i32)> = "/orgs/{org}/members/{id}" in ORG => no_page;
-   |                   ^^^^^^^^^^^^^^^^^ the trait `Extends<String>` is not implemented for `(i32, i32)`
+   |                   ^^^^^^^^^^^^^^^^^ the trait `Extends<PathSegment>` is not implemented for `(i32, i32)`
    |
    = note: a child route's parameters repeat its parent's, in order, and may add more after them
    = help: the following other types implement trait `Extends<P>`:

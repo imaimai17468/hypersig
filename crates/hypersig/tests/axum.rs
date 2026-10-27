@@ -9,8 +9,8 @@ use futures::{StreamExt as _, stream};
 use http_body_util::BodyExt as _;
 use hypersig::html::{a, p};
 use hypersig::{
-    Action, Page, PageResponse, Patches, Rest, Route, RouterExt, Search, Segment, Signals,
-    StreamAction,
+    Action, Page, PageResponse, Patches, PathSegment, Rest, Route, RouterExt, Search, Segment,
+    Signals, StreamAction,
 };
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
@@ -24,19 +24,19 @@ hypersig::routes! {
     fn pages(Router<()>);
     const HOME: Route = "/" => |(), ()| async {
         Page::new("Home", Counter { count: 0 })
-            .child(a().href(MEMBER.link_with(("red team", 2))).text("Member"))
-            .child(a().href(ORG_MEMBER.link_with(("acme", 9))).text("Org member"))
+            .child(a().href(MEMBER.link_with((PathSegment::new("red team"), 2))).text("Member"))
+            .child(a().href(ORG_MEMBER.link_with((PathSegment::new("acme"), 9))).text("Org member"))
     };
-    const MEMBER: Route<(String, i32)> = "/teams/{team}/members/{id}" =>
-        |(), (team, id): (String, i32)| async move { (id >= 0).then(|| member_page(&team, id)) };
-    const ORG: Route<String> = "/orgs/{org}" => |(), org: String| async move { member_page(&org, 0) };
-    const ORG_MEMBER: Route<(String, i32)> = "/orgs/{org}/members/{id}" in ORG =>
-        |(), (org, id): (String, i32)| async move { member_page(&org, id) };
+    const MEMBER: Route<(PathSegment, i32)> = "/teams/{team}/members/{id}" =>
+        |(), (team, id): (PathSegment, i32)| async move { (id >= 0).then(|| member_page(team.as_str(), id)) };
+    const ORG: Route<PathSegment> = "/orgs/{org}" => |(), org: PathSegment| async move { member_page(org.as_str(), 0) };
+    const ORG_MEMBER: Route<(PathSegment, i32)> = "/orgs/{org}/members/{id}" in ORG =>
+        |(), (org, id): (PathSegment, i32)| async move { member_page(org.as_str(), id) };
     const OLD_MEMBER: Route<i32> = "/people/{id}" => |(), id: i32| async move {
-        PageResponse::redirect(MEMBER.url(("old team".to_owned(), id)))
+        PageResponse::redirect(MEMBER.url((PathSegment::new("old team"), id)))
     };
-    const TEAM: Route<String, Filter> = "/teams/{team}" =>
-        |(), (team, filter): (String, Filter)| async move {
+    const TEAM: Route<PathSegment, Filter> = "/teams/{team}" =>
+        |(), (team, filter): (PathSegment, Filter)| async move {
             member_page(
                 &format!(
                     "{team} {} {} {:?} {:?}",
@@ -46,15 +46,15 @@ hypersig::routes! {
             )
         };
     const FIND: Route<(), Filter> = "/find" => |(), filter: Filter| async move {
-        PageResponse::redirect(TEAM.url(("red team".to_owned(), filter)))
+        PageResponse::redirect(TEAM.url((PathSegment::new("red team"), filter)))
     };
-    const TAB: Route<(String, Tab)> = "/tabs/{team}/{tab}" =>
-        |(), (team, tab): (String, Tab)| async move { member_page(&format!("{team} {tab:?}"), 0) };
-    const FILE: Route<(String, Rest)> = "/repos/{repo}/files/{*path}" =>
-        |(), (repo, path): (String, Rest)| async move { member_page(&format!("{repo}:{path}"), 0) };
-    const DEEP: Route<(i32, i32, i32, i32, i32, String)> = "/{a}/{b}/{c}/{d}/{e}/{f}" =>
-        |(), (a, b, c, d, e, f): (i32, i32, i32, i32, i32, String)| async move {
-            member_page(&f, a + b + c + d + e)
+    const TAB: Route<(PathSegment, Tab)> = "/tabs/{team}/{tab}" =>
+        |(), (team, tab): (PathSegment, Tab)| async move { member_page(&format!("{team} {tab:?}"), 0) };
+    const FILE: Route<(PathSegment, Rest)> = "/repos/{repo}/files/{*path}" =>
+        |(), (repo, path): (PathSegment, Rest)| async move { member_page(&format!("{repo}:{path}"), 0) };
+    const DEEP: Route<(i32, i32, i32, i32, i32, PathSegment)> = "/{a}/{b}/{c}/{d}/{e}/{f}" =>
+        |(), (a, b, c, d, e, f): (i32, i32, i32, i32, i32, PathSegment)| async move {
+            member_page(f.as_str(), a + b + c + d + e)
         };
     action ADD: Action<Counter, (i32, i32)> = post "/add" =>
         |(), (count, by): (i32, i32)| async move {
@@ -64,7 +64,7 @@ hypersig::routes! {
         Patches::from(Counter::count().patch(count))
     };
     action MOVE: Action<Counter, i32> = post "/move" => |(), id: i32| async move {
-        Patches::from(Counter::count().patch(id)).navigate(ORG_MEMBER.url(("acme".to_owned(), id)))
+        Patches::from(Counter::count().patch(id)).navigate(ORG_MEMBER.url((PathSegment::new("acme"), id)))
     };
     action LEDGER: Action<Counter, Vec<i64>> = post "/ledger" => |(), amounts: Vec<i64>| async move {
         Patches::from(Counter::count().patch(i32::try_from(amounts.len()).unwrap()))
@@ -589,7 +589,7 @@ async fn an_enum_segment_parses_by_variant_name() {
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(
-        TAB.url(("red".to_owned(), Tab::Overview)).as_str(),
+        TAB.url((PathSegment::new("red"), Tab::Overview)).as_str(),
         "/tabs/red/Overview"
     );
 }
@@ -617,10 +617,23 @@ async fn a_rest_segment_reads_the_rest_of_the_path() {
     assert_eq!(status, StatusCode::OK);
     assert!(body.contains("web:docs/a b/c.md"), "{body}");
     assert_eq!(
-        FILE.url(("web".to_owned(), Rest::new("docs/a b/c.md")))
+        FILE.url((PathSegment::new("web"), Rest::new("docs/a b/c.md")))
             .as_str(),
         "/repos/web/files/docs/a%20b/c.md"
     );
+}
+
+#[tokio::test]
+async fn a_dot_segment_sent_by_hand_answers_404() {
+    for path in [
+        "/orgs/%2E%2E",
+        "/orgs/%2e",
+        "/repos/web/files/docs/%2E%2E/%2E%2E/etc",
+        "/repos/%2E%2E/files/a.md",
+    ] {
+        let (status, _) = send(Request::get(path).body(Body::empty()).expect("request")).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path}");
+    }
 }
 
 #[derive(Segment, Serialize, Deserialize, Debug, PartialEq)]
