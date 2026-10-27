@@ -2,14 +2,6 @@ error[E0080]: evaluation panicked: an `on*` attribute runs a script; attach a ha
  --> tests/ui/fail/attr_event_handler.rs:4:30
   |
 4 |     let _ = img::<()>().attr(hypersig::attr!("onError"), "alert(1)");
-  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed here
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::ATTR` failed here
   |
   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-note: erroneous constant encountered
- --> tests/ui/fail/attr_event_handler.rs:4:30
-  |
-4 |     let _ = img::<()>().attr(hypersig::attr!("onError"), "alert(1)");
-  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this note originates in the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -6,7 +6,7 @@ members = ["crates/*", "examples/*", "site"]
 exclude = ["target/templates", "target/tmp"]
 
 [workspace.package]
-version = "0.9.0"
+version = "0.9.1"
 edition = "2024"
 rust-version = "1.99"
 license = "MIT"
@@ -18,12 +18,12 @@ categories = ["web-programming"]
 readme = "README.md"
 
 [workspace.dependencies]
-hypersig = { path = "crates/hypersig", version = "=0.9.0" }
-hypersig_proc = { path = "crates/hypersig_proc", version = "=0.9.0" }
-hypersig_proc_impl = { path = "crates/hypersig_proc_impl", version = "=0.9.0" }
-hypersig_i18n = { path = "crates/hypersig_i18n", version = "=0.9.0" }
-hypersig_style = { path = "crates/hypersig_style", version = "=0.9.0" }
-hypersig_ui = { path = "crates/hypersig_ui", version = "=0.9.0" }
+hypersig = { path = "crates/hypersig", version = "=0.9.1" }
+hypersig_proc = { path = "crates/hypersig_proc", version = "=0.9.1" }
+hypersig_proc_impl = { path = "crates/hypersig_proc_impl", version = "=0.9.1" }
+hypersig_i18n = { path = "crates/hypersig_i18n", version = "=0.9.1" }
+hypersig_style = { path = "crates/hypersig_style", version = "=0.9.1" }
+hypersig_ui = { path = "crates/hypersig_ui", version = "=0.9.1" }
 
 aws-config = "1.13.0"
 aws-sdk-dynamodb = "1.134.0"
@@ -116,3 +116,14 @@ string_add = "warn"
 literal_string_with_formatting_args = "allow"
 # Transitive dependencies of axum and tokio pull several versions of the same crate.
 multiple_crate_versions = "allow"
+
+# With macOS's default of `unpacked`, every build leaves its object files in
+# `target/debug/deps` for the debug info to point at, and nothing removes the
+# old ones: a rebuild of `site` adds about 650. `packed` writes one `.dSYM`
+# instead, and line tables alone keep that step about as fast as before
+# (4.7 s against 4.6 s for `site` after an edit to `html.rs`) while a
+# backtrace still names the file and line. A debugger shows no local
+# variables.
+[profile.dev]
+debug = "line-tables-only"
+split-debuginfo = "packed"

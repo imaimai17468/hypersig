@@ -13,7 +13,7 @@ readme = "../../README.md"
 include = ["src/**/*.rs"]
 
 [dependencies]
-hypersig = { path = "../hypersig", version = "=0.9.0", default-features = false }
+hypersig = { path = "../hypersig", version = "=0.9.1", default-features = false }
 serde.workspace = true
 
 [dev-dependencies]
@@ -23,3 +23,7 @@ trybuild.workspace = true
 
 [lints]
 workspace = true
+
+# trybuild starts cargo, which blaze's sandbox refuses; cargo ignores this table.
+[package.metadata.blaze.sandbox]
+unsandboxed-tests = ["ui"]

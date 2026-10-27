@@ -17,9 +17,3 @@ note: inside `OpenGraphLocale::new`
   | |             "an Open Graph locale is a language, `_`, and a territory, such as `ja_JP`"
   | |         );
   | |_________- in this macro invocation
-
-note: erroneous constant encountered
- --> tests/ui/fail/open_graph_locale_with_hyphen.rs:7:13
-  |
-7 |     let _ = EN;
-  |             ^^

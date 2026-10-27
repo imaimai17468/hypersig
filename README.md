@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request, and the reset button calls `/reset`, whose patch sets `count` back to 0. Misspelling `count`, or adding a string to it, stops `cargo build`. With the CLI (`cargo install --locked hypersig_cli`), `cargo hypersig new my-app` starts a project and `cargo hypersig dev` rebuilds and reloads it after each change. The [documentation](https://imaimai17468.github.io/hypersig/learn/) continues from here.
+Run `cargo run` and open <http://127.0.0.1:3000>. The `+1` button counts in the browser without a request, and the reset button calls `/reset`, whose patch sets `count` back to 0. Misspelling `count`, or adding a string to it, stops `cargo build`. With the CLI (`cargo install --locked hypersig_cli`), `cargo hypersig new my-app` starts a project and `cargo hypersig dev` rebuilds and reloads it after each change, building with [blaze](https://github.com/indexable-inc/blaze), which it needs installed. The [documentation](https://imaimai17468.github.io/hypersig/learn/) continues from here.
 
 ## Framework comparison
 

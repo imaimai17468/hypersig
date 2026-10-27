@@ -14,9 +14,3 @@ note: inside `LanguageTag::new`
   |
   |             panic!("{}", reason);
   |             -------------------- in this macro invocation
-
-note: erroneous constant encountered
- --> tests/ui/fail/language_tag_with_underscore.rs:7:13
-  |
-7 |     let _ = EN_US;
-  |             ^^^^^

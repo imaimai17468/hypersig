@@ -487,13 +487,16 @@ macro_rules! dialog_ref {
 #[macro_export]
 macro_rules! attr {
     ($name:literal) => {
-        // The panic sits in this block rather than in `Attr`'s check, so the
-        // compiler's message points at the macro call.
-        const {
-            match $crate::_private::attr($name) {
+        // The panic sits in this item rather than in `Attr`'s check, so the
+        // compiler's message points at the macro call. A named `const` item
+        // is evaluated by `cargo check`, where an inline `const` block is
+        // evaluated only when rustc generates code.
+        {
+            const ATTR: $crate::html::Attr = match $crate::_private::attr($name) {
                 ::core::result::Result::Ok(attr) => attr,
                 ::core::result::Result::Err(reason) => ::core::panic!("{}", reason),
-            }
+            };
+            ATTR
         }
     };
 }
@@ -513,13 +516,16 @@ macro_rules! attr {
 #[macro_export]
 macro_rules! tag {
     ($name:literal) => {
-        // The panic sits in this block rather than in `Tag`'s check, so the
-        // compiler's message points at the macro call.
-        const {
-            match $crate::_private::tag($name) {
+        // The panic sits in this item rather than in `Tag`'s check, so the
+        // compiler's message points at the macro call. A named `const` item
+        // is evaluated by `cargo check`, where an inline `const` block is
+        // evaluated only when rustc generates code.
+        {
+            const TAG: $crate::html::Tag = match $crate::_private::tag($name) {
                 ::core::result::Result::Ok(tag) => tag,
                 ::core::result::Result::Err(reason) => ::core::panic!("{}", reason),
-            }
+            };
+            TAG
         }
     };
 }
