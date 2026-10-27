@@ -3,8 +3,8 @@ error[E0080]: evaluation panicked: a child route's path is its parent's path fol
    |
  9 | / hypersig::routes! {
 10 | |     fn pages(Router<()>);
-11 | |     const ORG: Route<String> = "/orgs/{org}" => no_page;
-12 | |     const MEMBER: Route<(String, i32)> = "/teams/{team}/members/{id}" in ORG => no_page;
+11 | |     const ORG: Route<PathSegment> = "/orgs/{org}" => no_page;
+12 | |     const MEMBER: Route<(PathSegment, i32)> = "/teams/{team}/members/{id}" in ORG => no_page;
 13 | | }
    | |_^ evaluation of `_` failed here
    |

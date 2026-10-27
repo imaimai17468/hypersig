@@ -15,8 +15,8 @@ use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
     Action, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment, IntlLocale, Page,
-    Part, Patches, PluralCategory, Rest, Route, Rules, SafeUrl, Search, Segment, Sig, Signals,
-    Stmt, StreamAction, TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
+    Part, Patches, PathSegment, PluralCategory, Rest, Route, Rules, SafeUrl, Search, Segment, Sig,
+    Signals, Stmt, StreamAction, TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -1230,7 +1230,7 @@ impl Fragment for Panel {
 
 #[derive(Signals, Serialize, Deserialize)]
 struct Member {
-    team: String,
+    team: PathSegment,
     id: i32,
 }
 
@@ -1253,9 +1253,9 @@ struct Roster {
 hypersig::routes! {
     fn pages(Router<()>);
     const HOME: Route = "/" => no_page;
-    const MEMBER: Route<(String, i32)> = "/teams/{team}/members/{id}" => no_page;
+    const MEMBER: Route<(PathSegment, i32)> = "/teams/{team}/members/{id}" => no_page;
     const FIND: Route<(), Filter> = "/search" => no_page;
-    const TEAM_SEARCH: Route<String, Filter> = "/teams/{team}" => no_page;
+    const TEAM_SEARCH: Route<PathSegment, Filter> = "/teams/{team}" => no_page;
     const FILE: Route<Rest> = "/files/{*path}" => no_page;
 }
 
@@ -1316,7 +1316,7 @@ fn links() -> (El<Roster>, Roster) {
         )
         .child(
             a().id(Id::new("file-fixed"))
-                .href(FILE.link_with(&Rest::new("docs/a b/ü?.md"))),
+                .href(FILE.link_with(Rest::new("docs/a b/ü?.md"))),
         )
         .child(
             a().id(Id::new("file-bound"))
@@ -1335,11 +1335,11 @@ fn links() -> (El<Roster>, Roster) {
     let signals = Roster {
         members: vec![
             Member {
-                team: "red team".to_owned(),
+                team: PathSegment::new("red team"),
                 id: 1,
             },
             Member {
-                team: "café/ü?&#".to_owned(),
+                team: PathSegment::new("café/ü?&#"),
                 id: -2,
             },
         ],
@@ -1603,7 +1603,7 @@ fn fixtures_match_the_builder() {
             serde_json::to_string_pretty(&json!({
                 "stream": Patches::<Roster>::new()
                     .push_url(FIND.url(filter()))
-                    .replace_url(MEMBER.url(("red team".to_owned(), 1)))
+                    .replace_url(MEMBER.url((PathSegment::new("red team"), 1)))
                     .to_event_stream()
             }))
             .expect("fixture JSON")

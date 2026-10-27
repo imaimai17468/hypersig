@@ -1,5 +1,6 @@
 //! Pages served at typed paths, and the links that point to them.
 
+use std::borrow::Cow;
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -31,7 +32,7 @@ use crate::signal::Signals;
 ///
 /// ```
 /// use hypersig::html::a;
-/// use hypersig::{Page, Route, Signals};
+/// use hypersig::{Page, PathSegment, Route, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -44,7 +45,7 @@ use crate::signal::Signals;
 ///     fn pages(Router<()>);
 ///     const HOME: Route = "/" => page;
 ///     const MEMBER: Route<i32> = "/members/{id}" => page;
-///     const POST: Route<(String, i32)> = "/blog/{slug}/comments/{id}" => page;
+///     const POST: Route<(PathSegment, i32)> = "/blog/{slug}/comments/{id}" => page;
 /// }
 ///
 /// let home = a::<Team>().href(HOME.link()).render();
@@ -53,7 +54,8 @@ use crate::signal::Signals;
 /// let lead = a().href(MEMBER.link_with(Team::lead())).render();
 /// assert!(lead.contains("data-hs-attr"));
 ///
-/// let comment = a::<Team>().href(POST.link_with(("hello world", 3))).render();
+/// const HELLO: PathSegment = PathSegment::new("hello world");
+/// let comment = a::<Team>().href(POST.link_with((HELLO, 3))).render();
 /// assert!(comment.contains(r#"href="/blog/hello%20world/comments/3""#));
 /// # let _ = pages;
 /// ```
@@ -329,17 +331,19 @@ impl<P: Params, Q: Search> Route<P, Q> {
     /// percent-encoded as there.
     ///
     /// ```
-    /// # use hypersig::{Page, Route, Signals};
+    /// # use hypersig::{Page, PathSegment, Route, Signals};
     /// # #[derive(Signals, serde::Serialize, serde::Deserialize)]
     /// # struct Blog {}
-    /// # async fn post((): (), _: (String, i32)) -> Option<Page<Blog>> { None }
+    /// # async fn post((): (), _: (PathSegment, i32)) -> Option<Page<Blog>> { None }
     /// hypersig::routes! {
     ///     fn pages(Router<()>);
-    ///     const POST: Route<(String, i32)> = "/blog/{slug}/comments/{id}" => post;
+    ///     const POST: Route<(PathSegment, i32)> = "/blog/{slug}/comments/{id}" => post;
     /// }
     ///
-    /// assert_eq!(POST.url(("hello world".to_owned(), 3)).as_str(), "/blog/hello%20world/comments/3");
+    /// let slug = PathSegment::parse("hello world")?;
+    /// assert_eq!(POST.url((slug, 3)).as_str(), "/blog/hello%20world/comments/3");
     /// # let _ = pages;
+    /// # Ok::<(), hypersig::PathSegmentError>(())
     /// ```
     #[must_use]
     pub fn url(&self, args: Q::Args<P>) -> Url {
@@ -446,7 +450,7 @@ impl Route<(), ()> {
 /// ```
 /// use axum::Router;
 /// use hypersig::html::{a, button, h1};
-/// use hypersig::{Action, Page, Patches, Route, RouterExt, Signals};
+/// use hypersig::{Action, Page, Patches, PathSegment, Route, RouterExt, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -458,23 +462,24 @@ impl Route<(), ()> {
 ///     /// Serves every page and action of the application.
 ///     fn pages(Router<()>);
 ///     const HOME: Route = "/" => home;
-///     const ORG: Route<String> = "/orgs/{org}" => org;
-///     const MEMBER: Route<(String, i32)> = "/orgs/{org}/members/{id}" in ORG => member;
+///     const ORG: Route<PathSegment> = "/orgs/{org}" => org;
+///     const MEMBER: Route<(PathSegment, i32)> = "/orgs/{org}/members/{id}" in ORG => member;
 ///     action RENAME: Action<Profile, String> = post "/rename" => rename;
 /// }
 ///
 /// async fn home((): (), (): ()) -> Page<Profile> {
 ///     let signals = Profile { name: "Ada".to_owned() };
 ///     Page::new("Home", signals)
-///         .child(a().href(MEMBER.link_with(("acme", 1))).text("Ada"))
+///         .child(a().href(MEMBER.link_with((PathSegment::new("acme"), 1))).text("Ada"))
 ///         .child(button().on_click(RENAME.call_with("Grace")).text("Rename"))
 /// }
 ///
-/// async fn org((): (), org: String) -> Page<Profile> {
-///     Page::new(org.clone(), Profile { name: org }).child(h1().bind_text(Profile::name()))
+/// async fn org((): (), org: PathSegment) -> Page<Profile> {
+///     let name = String::from(org);
+///     Page::new(name.clone(), Profile { name }).child(h1().bind_text(Profile::name()))
 /// }
 ///
-/// async fn member((): (), (_org, id): (String, i32)) -> Option<Page<Profile>> {
+/// async fn member((): (), (_org, id): (PathSegment, i32)) -> Option<Page<Profile>> {
 ///     let name = ["Ada", "Grace"].get(usize::try_from(id).ok()?)?;
 ///     let signals = Profile { name: (*name).to_owned() };
 ///     Some(Page::new(*name, signals).child(a().href(HOME.link()).text("Home")))
@@ -1222,7 +1227,7 @@ pub(crate) fn query_string(value: &Value) -> String {
 /// [`label`](crate::Expr::label).
 ///
 /// ```
-/// use hypersig::{Page, Route, Segment, Signals};
+/// use hypersig::{Page, PathSegment, Route, Segment, Signals};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Segment, Serialize, Deserialize)]
@@ -1235,18 +1240,18 @@ pub(crate) fn query_string(value: &Value) -> String {
 /// #[derive(Signals, Serialize, Deserialize)]
 /// struct Team {}
 ///
-/// # async fn tab((): (), _: (String, Tab)) -> Option<Page<Team>> { None }
+/// # async fn tab((): (), _: (PathSegment, Tab)) -> Option<Page<Team>> { None }
 /// hypersig::routes! {
 ///     fn pages(Router<()>);
-///     const TAB: Route<(String, Tab)> = "/teams/{team}/{tab}" => tab;
+///     const TAB: Route<(PathSegment, Tab)> = "/teams/{team}/{tab}" => tab;
 /// }
 ///
-/// assert_eq!(TAB.url(("red".to_owned(), Tab::TeamSettings)).as_str(), "/teams/red/team-settings");
+/// assert_eq!(TAB.url((PathSegment::new("red"), Tab::TeamSettings)).as_str(), "/teams/red/team-settings");
 /// # let _ = pages;
 /// ```
 #[diagnostic::on_unimplemented(
     message = "`{Self}` cannot be one segment of a URL's path",
-    note = "a segment is an integer, a `String`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six"
+    note = "a segment is an integer, a `PathSegment`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six"
 )]
 pub trait Segment: sealed::Sealed + Sized {
     /// Reads the value from a percent-decoded segment, or `None` if it is not one.
@@ -1278,16 +1283,130 @@ pub trait Variants: Segment + 'static {
     const VARIANTS: &'static [Self];
 }
 
+/// One segment of a path, never empty, `.`, or `..`.
+///
+/// It is the [`Segment`] for a parameter that holds any text, such as the
+/// name in `"/orgs/{org}"`. A link writes it percent-encoded, so a `/` or
+/// a `?` in it stays inside the segment. The three values it refuses break
+/// the link even when encoded. axum does not match a `{name}` segment
+/// against an empty one, so `/orgs/` answers 404, and the browser removes a
+/// `.` or `..` segment before it sends the request, so `/orgs/..` opens
+/// `/`. The URL Standard reads `%2e` as `.` too, so encoding keeps no dot.
+///
+/// The server refuses the same values in a request, so a handler never
+/// receives `..` from a client that sent `/orgs/%2E%2E` by hand, and the
+/// request answers 404.
+///
+/// ```
+/// use hypersig::{Page, PathSegment, Route, Signals};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Org {}
+///
+/// # async fn org((): (), _: PathSegment) -> Option<Page<Org>> { None }
+/// hypersig::routes! {
+///     fn pages(Router<()>);
+///     const ORG: Route<PathSegment> = "/orgs/{org}" => org;
+/// }
+///
+/// const RED: PathSegment = PathSegment::new("red team");
+/// assert_eq!(ORG.url(RED).as_str(), "/orgs/red%20team");
+/// assert!(PathSegment::parse("..").is_err());
+/// # let _ = pages;
+/// ```
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
+#[serde(try_from = "String", into = "String")]
+pub struct PathSegment(Cow<'static, str>);
+
+impl PathSegment {
+    /// The segment `text`, written in the program, before percent-encoding.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `text` is empty, `.`, or `..`. In a `const` the panic is a
+    /// compile error.
+    #[must_use]
+    pub const fn new(text: &'static str) -> Self {
+        if let Err(reason) = check_segment(text.as_bytes()) {
+            panic!("{}", reason);
+        }
+        Self(Cow::Borrowed(text))
+    }
+
+    /// Reads a segment built at run time, such as a name from a database.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PathSegmentError`] where [`PathSegment::new`] would panic.
+    pub fn parse(text: impl Into<String>) -> Result<Self, PathSegmentError> {
+        let text = text.into();
+        match check_segment(text.as_bytes()) {
+            Ok(()) => Ok(Self(Cow::Owned(text))),
+            Err(reason) => Err(PathSegmentError { text, reason }),
+        }
+    }
+
+    /// The segment as text, percent-decoded.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for PathSegment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl TryFrom<String> for PathSegment {
+    type Error = PathSegmentError;
+
+    fn try_from(text: String) -> Result<Self, Self::Error> {
+        Self::parse(text)
+    }
+}
+
+impl From<PathSegment> for String {
+    fn from(segment: PathSegment) -> Self {
+        segment.0.into_owned()
+    }
+}
+
+impl<S> IntoExpr<S, PathSegment> for PathSegment {
+    fn into_expr(self) -> Expr<S, PathSegment> {
+        Expr::lit(&self)
+    }
+}
+
+impl Segment for PathSegment {
+    fn parse(segment: &str) -> Option<Self> {
+        Self::parse(segment).ok()
+    }
+
+    fn write(&self) -> String {
+        self.0.clone().into_owned()
+    }
+}
+
 /// The rest of a path, from a `{*name}` segment at its end.
 ///
 /// It may hold `/`.
 ///
 /// It is the last value of a route's parameters, and only there, as axum's
 /// wildcard is the last segment. Each `/`-separated part is percent-encoded
-/// in a link, and the `/`s between them stay as they are. axum does not
-/// match a wildcard against an empty rest, so `"/files/"` answers 404, and
-/// the browser resolves a part that is `.` or `..` before it sends the
-/// request, as it does for a [`Segment`] of `String`.
+/// in a link, and the `/`s between them stay as they are. It is not empty,
+/// because axum does not match a wildcard against an empty rest, and no
+/// part of it is `.` or `..`, because the browser removes those parts, as
+/// it does for a [`PathSegment`]. An empty part, as in `docs/` or `a//b`,
+/// is kept.
+///
+/// The server refuses the same values in a request, so a handler that
+/// opens the file a `Rest` names never receives `../` from a request, and
+/// the request answers 404.
 ///
 /// ```
 /// use hypersig::{Page, Rest, Route, Signals};
@@ -1303,17 +1422,41 @@ pub trait Variants: Segment + 'static {
 /// }
 ///
 /// assert_eq!(FILE.url(Rest::new("docs/a b.md")).as_str(), "/files/docs/a%20b.md");
+/// assert!(Rest::parse("docs/../../etc").is_err());
 /// # let _ = pages;
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(transparent)]
-pub struct Rest(String);
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
+#[serde(try_from = "String", into = "String")]
+pub struct Rest(Cow<'static, str>);
 
 impl Rest {
-    /// The rest of a path, with its `/`s and before percent-encoding.
+    /// The rest of a path, written in the program before percent-encoding.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `path` is empty or a part of it is `.` or `..`. In a
+    /// `const` the panic is a compile error.
     #[must_use]
-    pub fn new(path: impl Into<String>) -> Self {
-        Self(path.into())
+    pub const fn new(path: &'static str) -> Self {
+        if let Err(reason) = check_rest(path.as_bytes()) {
+            panic!("{}", reason);
+        }
+        Self(Cow::Borrowed(path))
+    }
+
+    /// Reads the rest of a path built at run time.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PathSegmentError`] where [`Rest::new`] would panic.
+    pub fn parse(path: impl Into<String>) -> Result<Self, PathSegmentError> {
+        let path = path.into();
+        match check_rest(path.as_bytes()) {
+            Ok(()) => Ok(Self(Cow::Owned(path))),
+            Err(reason) => Err(PathSegmentError { text: path, reason }),
+        }
     }
 
     /// The rest of the path as text, percent-decoded.
@@ -1329,16 +1472,94 @@ impl fmt::Display for Rest {
     }
 }
 
+impl TryFrom<String> for Rest {
+    type Error = PathSegmentError;
+
+    fn try_from(path: String) -> Result<Self, Self::Error> {
+        Self::parse(path)
+    }
+}
+
+impl From<Rest> for String {
+    fn from(rest: Rest) -> Self {
+        rest.0.into_owned()
+    }
+}
+
+impl<S> IntoExpr<S, Rest> for Rest {
+    fn into_expr(self) -> Expr<S, Rest> {
+        Expr::lit(&self)
+    }
+}
+
 impl Segment for Rest {
     const REST: bool = true;
 
     fn parse(segment: &str) -> Option<Self> {
-        Some(Self(segment.to_owned()))
+        Self::parse(segment).ok()
     }
 
     fn write(&self) -> String {
-        self.0.clone()
+        self.0.clone().into_owned()
     }
+}
+
+/// Text that [`PathSegment::parse`] or [`Rest::parse`] refused, with the rule it broke.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PathSegmentError {
+    text: String,
+    reason: &'static str,
+}
+
+impl fmt::Display for PathSegmentError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "`{}` cannot be written into a path: {}",
+            self.text, self.reason
+        )
+    }
+}
+
+impl std::error::Error for PathSegmentError {}
+
+/// Whether `text` can be one segment of a path.
+const fn check_segment(text: &[u8]) -> Result<(), &'static str> {
+    if text.is_empty() {
+        return Err("a segment is not empty, because axum does not match an empty one");
+    }
+    if is_dot_segment(text) {
+        return Err("a segment is not `.` or `..`, because the browser removes it");
+    }
+    Ok(())
+}
+
+/// Whether `text` can be the rest of a path.
+const fn check_rest(text: &[u8]) -> Result<(), &'static str> {
+    if text.is_empty() {
+        return Err("the rest of a path is not empty, because axum does not match an empty one");
+    }
+    let mut start = 0;
+    while start <= text.len() {
+        let mut end = start;
+        while end < text.len() && text[end] != b'/' {
+            end += 1;
+        }
+        let (_, tail) = text.split_at(start);
+        let (part, _) = tail.split_at(end - start);
+        if is_dot_segment(part) {
+            return Err(
+                "no part of the rest of a path is `.` or `..`, because the browser removes it",
+            );
+        }
+        start = end + 1;
+    }
+    Ok(())
+}
+
+/// Whether `part` is `.` or `..`.
+const fn is_dot_segment(part: &[u8]) -> bool {
+    matches!(part, b"." | b"..")
 }
 
 macro_rules! integer_segment {
@@ -1357,22 +1578,12 @@ macro_rules! integer_segment {
 
 integer_segment!(i32, i64, u32, u64);
 
-impl Segment for String {
-    fn parse(segment: &str) -> Option<Self> {
-        Some(segment.to_owned())
-    }
-
-    fn write(&self) -> String {
-        self.clone()
-    }
-}
-
 /// The parameters of a [`Route`].
 ///
 /// They are `()`, one [`Segment`], or a tuple of two to six.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` cannot be the parameters of a route",
-    note = "a route takes `()`, one `Segment` (an integer, `String`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them"
+    note = "a route takes `()`, one `Segment` (an integer, `PathSegment`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them"
 )]
 pub trait Params: sealed::Sealed + Sized {
     /// The number of `{name}` segments the path has.
@@ -1621,8 +1832,9 @@ impl<T: SearchScalar> SearchValue for Vec<T> {}
 
 /// A type that one value of the query string holds.
 ///
-/// It is implemented for every [`Segment`] (the integers, `String`, and an
-/// enum with `#[derive(Segment)]`), and for `f64`, `f32`, and `bool`.
+/// It is implemented for every [`Segment`] (the integers, [`PathSegment`],
+/// and an enum with `#[derive(Segment)]`), and for `String`, `f64`, `f32`,
+/// and `bool`.
 ///
 /// Implement it for your own type only where serde writes the type as one of
 /// these, such as a newtype with `#[serde(try_from = "i32", into = "i32")]`
@@ -1636,6 +1848,7 @@ impl<T: SearchScalar> SearchValue for Vec<T> {}
 pub trait SearchScalar {}
 
 impl<T: Segment> SearchScalar for T {}
+impl SearchScalar for String {}
 impl SearchScalar for f64 {}
 impl SearchScalar for f32 {}
 impl SearchScalar for bool {}
@@ -1682,7 +1895,7 @@ pub(crate) mod sealed {
     impl Sealed for i64 {}
     impl Sealed for u32 {}
     impl Sealed for u64 {}
-    impl Sealed for String {}
+    impl Sealed for super::PathSegment {}
     impl Sealed for super::Rest {}
 }
 
@@ -1718,7 +1931,10 @@ mod tests {
 
     #[test]
     fn checks_a_path_against_the_parameters() {
-        assert_eq!(Route::<(String, i32)>::check("/blog/{slug}/{id}"), Ok(()));
+        assert_eq!(
+            Route::<(PathSegment, i32)>::check("/blog/{slug}/{id}"),
+            Ok(())
+        );
         let reason = Route::<i32>::check("/blog/{slug}/{id}").expect_err("two segments, one value");
         assert!(reason.contains("differ in number"), "{reason}");
         let reason = Route::<()>::check("blog").expect_err("no leading slash");
@@ -1775,8 +1991,8 @@ mod tests {
 
     #[test]
     fn literal_parameters_give_a_fixed_link() {
-        const POST: Route<(String, i32)> = Route::new("/blog/{slug}/comments/{id}");
-        let link: Link<()> = POST.link_with(("a/b", -4));
+        const POST: Route<(PathSegment, i32)> = Route::new("/blog/{slug}/comments/{id}");
+        let link: Link<()> = POST.link_with((PathSegment::new("a/b"), -4));
         assert_eq!(
             link.into_parts().ok().as_deref(),
             Some("/blog/a%2Fb/comments/-4")
@@ -1785,29 +2001,23 @@ mod tests {
 
     #[test]
     fn a_url_matches_the_fixed_link() {
-        const POST: Route<(String, i32)> = Route::new("/blog/{slug}/comments/{id}");
-        let link: Link<()> = POST.link_with(("a/b é", -4));
+        const POST: Route<(PathSegment, i32)> = Route::new("/blog/{slug}/comments/{id}");
+        const SLUG: PathSegment = PathSegment::new("a/b é");
+        let link: Link<()> = POST.link_with((SLUG, -4));
         assert_eq!(
             link.into_parts().ok(),
-            Some(POST.url(("a/b é".to_owned(), -4)).to_string())
+            Some(POST.url((SLUG, -4)).to_string())
         );
     }
 
-    #[test]
-    fn an_empty_first_segment_stays_on_this_host() {
-        const REPO: Route<(String, String)> = Route::new("/{org}/{repo}");
-        let url = REPO.url((String::new(), "evil.example".to_owned()));
-        assert_eq!(url.as_str(), "/.//evil.example");
-        let link: Link<()> = REPO.link_with(("", "evil.example"));
-        assert_eq!(link.into_parts().ok().as_deref(), Some("/.//evil.example"));
-    }
-
+    // The server writes no empty `PathSegment`, but the browser evaluates the
+    // link from its store, which a script outside hypersig can write to.
     #[test]
     fn a_bound_link_with_an_empty_first_segment_stays_on_this_host() {
         use crate::ssr::{Ctx, evaluate, js_string};
-        const REPO: Route<(String, String)> = Route::new("/{org}/{repo}");
-        let org: crate::Sig<(), String> = crate::_private::sig("org");
-        let link: Link<()> = REPO.link_with((org, "evil.example"));
+        const REPO: Route<(PathSegment, PathSegment)> = Route::new("/{org}/{repo}");
+        let org: crate::Sig<(), PathSegment> = crate::_private::sig("org");
+        let link: Link<()> = REPO.link_with((org, PathSegment::new("evil.example")));
         let ast = link
             .into_parts()
             .expect_err("a link that reads a signal")
@@ -1838,9 +2048,10 @@ mod tests {
     #[test]
     fn parses_segments_in_path_order() {
         assert_eq!(
-            <(String, i32)>::from_segments(&["x", "7"]),
-            Some(("x".to_owned(), 7))
+            <(PathSegment, i32)>::from_segments(&["x", "7"]),
+            Some((PathSegment::new("x"), 7))
         );
+        assert_eq!(<(PathSegment, i32)>::from_segments(&["..", "7"]), None);
         assert_eq!(<i32>::from_segments(&["seven"]), None);
         assert_eq!(<()>::from_segments(&[]), Some(()));
     }
@@ -1852,5 +2063,54 @@ mod tests {
         }
         assert_eq!(<u64>::from_segments(&[&u64::MAX.write()]), Some(u64::MAX));
         assert_eq!(<u64>::from_segments(&["-1"]), None);
+    }
+
+    #[test]
+    fn a_segment_refuses_only_empty_and_dot_text() {
+        for text in ["", ".", ".."] {
+            assert!(PathSegment::parse(text).is_err(), "{text:?}");
+        }
+        for text in ["...", ".a", "a.", "a/b", "%2e"] {
+            assert_eq!(
+                PathSegment::parse(text).map(String::from).as_deref(),
+                Ok(text)
+            );
+        }
+    }
+
+    #[test]
+    fn a_rest_refuses_empty_text_and_dot_parts() {
+        for path in ["", ".", "..", "./a", "a/..", "a/./b", "a/../b"] {
+            assert!(Rest::parse(path).is_err(), "{path:?}");
+        }
+        for path in ["a", "a/", "a//b", "/a", "a/.../b", "a/.b"] {
+            assert_eq!(Rest::parse(path).map(String::from).as_deref(), Ok(path));
+        }
+    }
+
+    #[test]
+    fn the_server_refuses_dot_segments_in_a_request() {
+        assert_eq!(<PathSegment as Segment>::parse(".."), None);
+        assert_eq!(<Rest as Segment>::parse("docs/../../etc"), None);
+        assert_eq!(
+            <Rest as Segment>::parse("docs/a.md"),
+            Some(Rest::new("docs/a.md"))
+        );
+    }
+
+    #[test]
+    fn deserializing_checks_a_segment() {
+        serde_json::from_value::<PathSegment>(json!("..")).expect_err("a dot segment");
+        serde_json::from_value::<Rest>(json!("a/../b")).expect_err("a dot part");
+        assert_eq!(
+            serde_json::from_value::<Rest>(json!("a/b")).ok(),
+            Some(Rest::new("a/b"))
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "a segment is not `.` or `..`")]
+    fn a_dot_segment_panics() {
+        let _ = PathSegment::new("..");
     }
 }

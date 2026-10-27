@@ -30,7 +30,8 @@ const PAGES: [Component; 6] = [
 
 /// The path of `doc` inside this site, as `PAGE` takes it.
 fn at(site: Site, doc: Doc) -> Rest {
-    Rest::new(doc.url(site).trim_start_matches('/'))
+    Rest::parse(doc.url(site).trim_start_matches('/'))
+        .expect("a component's page has a directory without `.` or `..` parts")
 }
 
 pub fn page(site: Site) -> Page<Docs> {
@@ -75,7 +76,7 @@ pub fn page(site: Site) -> Page<Docs> {
             en: "Components",
             ja: "コンポーネント",
         }),
-        PAGE.link_with(&at(site, Doc::ComponentsHome)),
+        PAGE.link_with(at(site, Doc::ComponentsHome)),
     )
     .current(site.t(L {
         en: "Navigation",
@@ -104,7 +105,7 @@ pub fn page(site: Site) -> Page<Docs> {
     let pager = pagination(
         5,
         6,
-        |page| PAGE.link_with(&at(site, Doc::Components(PAGES[page as usize - 1]))),
+        |page| PAGE.link_with(at(site, Doc::Components(PAGES[page as usize - 1]))),
         &text,
     );
     let initial = Docs {

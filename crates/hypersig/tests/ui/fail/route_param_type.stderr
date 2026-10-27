@@ -4,7 +4,7 @@ error[E0277]: `f64` cannot be one segment of a URL's path
 9 |     const PRICE: Route<f64> = "/prices/{amount}" => no_page;
   |                  ^^^^^^^^^^ the trait `Segment` is not implemented for `f64`
   |
-  = note: a segment is an integer, a `String`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six
+  = note: a segment is an integer, a `PathSegment`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six
 help: the following other types implement trait `Segment`
  --> src/route.rs
   |
@@ -39,7 +39,7 @@ error[E0277]: `f64` cannot be the parameters of a route
    | |_the trait `Segment` is not implemented for `f64`
    |   required by a bound introduced by this call
    |
-   = note: a route takes `()`, one `Segment` (an integer, `String`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them
+   = note: a route takes `()`, one `Segment` (an integer, `PathSegment`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them
 help: the following other types implement trait `Segment`
   --> src/route.rs
    |

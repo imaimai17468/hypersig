@@ -4,10 +4,10 @@ error[E0277]: `(i32, i32, i32, i32, i32, i32, i32)` cannot be one segment of a U
 11 |     const DEEP: Route<(i32, i32, i32, i32, i32, i32, i32)> = "/{a}/{b}/{c}/{d}/{e}/{f}/{g}" => no_page;
    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Segment` is not implemented for `(i32, i32, i32, i32, i32, i32, i32)`
    |
-   = note: a segment is an integer, a `String`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six
+   = note: a segment is an integer, a `PathSegment`, or an enum with `#[derive(Segment)]`, and a route's parameters are `()`, one segment, or a tuple of two to six
    = help: the following other types implement trait `Segment`:
+             PathSegment
              Rest
-             String
              i32
              i64
              u32
@@ -32,10 +32,10 @@ error[E0277]: `(i32, i32, i32, i32, i32, i32, i32)` cannot be the parameters of 
    | |_the trait `Segment` is not implemented for `(i32, i32, i32, i32, i32, i32, i32)`
    |   required by a bound introduced by this call
    |
-   = note: a route takes `()`, one `Segment` (an integer, `String`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them
+   = note: a route takes `()`, one `Segment` (an integer, `PathSegment`, or an enum with `#[derive(Segment)]`), or a tuple of two to six of them
    = help: the following other types implement trait `Segment`:
+             PathSegment
              Rest
-             String
              i32
              i64
              u32

@@ -1,0 +1,33 @@
+error[E0080]: evaluation panicked: a segment is not `.` or `..`, because the browser removes it
+ --> tests/ui/fail/path_segment_dot.rs:5:25
+  |
+5 | const UP: PathSegment = PathSegment::new("..");
+  |                         ^^^^^^^^^^^^^^^^^^^^^^ evaluation of `UP` failed inside this call
+  |
+note: inside `PathSegment::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_display(&$arg);
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/route.rs
+  |
+  |             panic!("{}", reason);
+  |             -------------------- in this macro invocation
+
+error[E0080]: evaluation panicked: no part of the rest of a path is `.` or `..`, because the browser removes it
+ --> tests/ui/fail/path_segment_dot.rs:6:22
+  |
+6 | const ESCAPE: Rest = Rest::new("docs/../../etc");
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `ESCAPE` failed inside this call
+  |
+note: inside `Rest::new`
+ --> $RUST/core/src/panic.rs
+  |
+  |         $crate::panicking::panic_display(&$arg);
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: src/route.rs
+  |
+  |             panic!("{}", reason);
+  |             -------------------- in this macro invocation

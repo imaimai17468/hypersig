@@ -1,0 +1,22 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_segment(quote! { enum E { A, #[serde(rename = \"..\")] Up } })"
+---
+::core::compile_error! {
+    "a `Segment` variant is not renamed to an empty name, `.`, or `..`, because axum does not match an empty segment and the browser removes a dot segment"
+}
+#[automatically_derived]
+impl ::hypersig::_private::Sealed for E {}
+#[automatically_derived]
+impl ::hypersig::Segment for E {
+    fn parse(_segment: &str) -> ::core::option::Option<Self> {
+        ::core::option::Option::None
+    }
+    fn write(&self) -> ::std::string::String {
+        ::core::unreachable!("the derive of `Segment` failed to compile")
+    }
+}
+#[automatically_derived]
+impl ::hypersig::Variants for E {
+    const VARIANTS: &'static [Self] = &[];
+}

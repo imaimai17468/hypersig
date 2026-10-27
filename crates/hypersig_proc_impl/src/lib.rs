@@ -224,8 +224,9 @@ fn expand_search(input: TokenStream) -> syn::Result<TokenStream> {
 /// the same URL. It defines no other item.
 ///
 /// Rejected inputs, each with a compile error at the offending span: structs,
-/// unions, generic enums, enums without variants, variants with fields, an
-/// unknown `rename_all` rule, and any other `#[serde(...)]` attribute on the
+/// unions, generic enums, enums without variants, variants with fields, a
+/// variant renamed to an empty name, `.`, or `..`, an unknown `rename_all`
+/// rule, and any other `#[serde(...)]` attribute on the
 /// enum or a variant, because it could make serde write a variant as
 /// something other than its segment.
 ///
@@ -318,7 +319,16 @@ fn expand_segment(input: &DeriveInput) -> syn::Result<TokenStream> {
         idents.push(&variant.ident);
         let name = variant.ident.unraw().to_string();
         names.push(match (rename, &rename_all) {
-            (Some(rename), _) => rename.value(),
+            (Some(rename), _) => {
+                let value = rename.value();
+                if matches!(value.as_str(), "" | "." | "..") {
+                    return Err(syn::Error::new_spanned(
+                        rename,
+                        "a `Segment` variant is not renamed to an empty name, `.`, or `..`, because axum does not match an empty segment and the browser removes a dot segment",
+                    ));
+                }
+                value
+            }
             (None, Some(rule)) => apply_rename_all(rule, &name)?,
             (None, None) => name,
         });
@@ -584,6 +594,13 @@ mod tests {
         insta::assert_snapshot!(expand_segment(quote! {
             #[serde(rename_all = "kebab-case")]
             enum Locale { En, JaJp, #[serde(rename = "zh-Hant")] ZhHant }
+        }));
+    }
+
+    #[test]
+    fn rejects_segment_dot_rename() {
+        insta::assert_snapshot!(expand_segment(quote! {
+            enum E { A, #[serde(rename = "..")] Up }
         }));
     }
 

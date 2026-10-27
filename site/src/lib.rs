@@ -46,14 +46,16 @@ pub struct Site {
 
 // The site is written as files and nothing serves these routes, so the
 // generated function goes unused. `PAGE` names a page's directory inside the
-// site and builds the `Url` its canonical link takes.
+// site and builds the `Url` its canonical link takes, and `HOME` the English
+// home page, whose directory is the site's root and so has no `Rest`.
 hypersig::routes! {
     fn pages(Router<()>);
+    const HOME: Route = "/" => unserved;
     const PAGE: Route<Rest> = "/{*path}" => unserved;
 }
 
 #[expect(dead_code, reason = "the site is written as files, not served")]
-async fn unserved((): (), _path: Rest) -> PageResponse {
+async fn unserved<P>((): (), _path: P) -> PageResponse {
     PageResponse::not_found()
 }
 
@@ -111,7 +113,12 @@ impl Site {
     /// rendered in, when the site knows its origin.
     fn canonical(self, path: &str) -> Option<(Origin, Url)> {
         self.origin.map(|origin| {
-            let url = PAGE.url(Rest::new(format!("{}{path}", self.lang.dir())));
+            let path = format!("{}{path}", self.lang.dir());
+            let url = if path.is_empty() {
+                HOME.url(())
+            } else {
+                PAGE.url(Rest::parse(path).expect("a page's directory has no `.` or `..` part"))
+            };
             (origin, url)
         })
     }
