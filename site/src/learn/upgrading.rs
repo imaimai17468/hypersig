@@ -14,15 +14,60 @@ pub fn upgrading(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The releases that changed a public signature, 0.5 through 0.9, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
-                ja: "公開しているシグネチャを変えた 0.5 から 0.9 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
+                en: "The releases that changed a public signature, 0.5 through 0.10, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
+                ja: "公開しているシグネチャを変えた 0.5 から 0.10 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
             },
         ),
+        to_0_10(site),
         to_0_9(site),
         to_0_8(site),
         to_0_7(site),
         to_0_6(site),
         to_0_5(site),
+    ])
+}
+
+fn to_0_10(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "From 0.9 to 0.10",
+                ja: "0.9 から 0.10 へ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A route parameter that holds any text is a [`PathSegment`](api:hypersig/struct.PathSegment.html) in place of a `String`. It refuses an empty value, `.`, and `..`, which a link cannot carry. `PathSegment::new` refuses one at compile time in a `const`, and `PathSegment::parse` returns an error for text read from data. A handler takes the `PathSegment`, and `as_str` gives its text.",
+                ja: "任意の文字列を持つルートのパラメータは、`String` の代わりに [`PathSegment`](api:hypersig/struct.PathSegment.html) で受け取るようになりました。`PathSegment` は、リンクに載せられない空の値、`.`、`..` を拒否します。`const` の中の `PathSegment::new` はこれらをコンパイル時に拒否し、データから読んだ文字列には `PathSegment::parse` がエラーを返します。ハンドラは `PathSegment` を受け取り、文字列は `as_str` で取り出せます。",
+            },
+        ),
+        show_change(Snippet::Upgrade010),
+        para(
+            site,
+            L {
+                en: "The other changes that need an edit:",
+                ja: "ほかに書き換えが必要な変更は次のとおりです。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "`Rest::new` takes a `&'static str`. Build a `Rest` from text read at run time with `Rest::parse`, which refuses an empty rest and a `.` or `..` part.",
+                    ja: "`Rest::new` は `&'static str` を受け取ります。実行時に読んだ文字列からは `Rest::parse` で作ってください。`Rest::parse` は空の値と、`.` や `..` の部分を拒否します。",
+                },
+                L {
+                    en: "A signal field that a link reads as a segment becomes a `PathSegment`, and so does a `String` sort key of `hypersig_ui`'s `Table`.",
+                    ja: "リンクがセグメントとして読むシグナルのフィールドは `PathSegment` にしてください。`hypersig_ui` の `Table` の `String` のソートキーも同じです。",
+                },
+                L {
+                    en: "A `#[derive(Segment)]` variant renamed to an empty name, `.`, or `..` fails to compile.",
+                    ja: "`#[derive(Segment)]` のバリアントを空の名前、`.`、`..` にリネームすると、コンパイルが通りません。",
+                },
+            ],
+        ),
     ])
 }
 
