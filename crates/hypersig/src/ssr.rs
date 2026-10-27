@@ -4,10 +4,10 @@
 //! This mirrors `evaluate` in `runtime/src/eval.ts`. Where the two disagree,
 //! the runtime wins: it re-evaluates every binding when the page loads, so a
 //! difference shows for one frame and is then corrected. The known
-//! differences are string ordering outside the Basic Multilingual Plane,
-//! the last bit of `log10` and `pow`, which each side takes from its
-//! platform's math library, and the spaces and commas of a date, which the
-//! browser takes from its own version of the Unicode CLDR data.
+//! differences are the last bit of `log10` and `pow`, which each side takes
+//! from its platform's math library, and the spaces and commas of a date,
+//! which the browser takes from its own version of the Unicode CLDR data.
+//! `differential` compares the two on generated expressions.
 //!
 //! The server writes locale-dependent text for the locale the expression
 //! names, never the visitor's, and a date in the zone the expression names.
@@ -701,6 +701,9 @@ fn arithmetic(op: &str, a: f64, b: f64) -> Option<Value> {
         _ => a.max(b),
     })
 }
+
+#[cfg(test)]
+mod differential;
 
 #[cfg(test)]
 mod tests {
