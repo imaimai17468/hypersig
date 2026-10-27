@@ -1536,23 +1536,26 @@ pub(crate) const INLINE: &str = "data-hs-inline";
 /// Whether `value` can sit inside a declaration in a `<style>` element
 /// without ending the declaration, the rule, a string, or the element.
 ///
-/// An unclosed `(` would let a `url(` token run on into the next rules, so
-/// the parentheses have to balance.
+/// An unclosed `(` would let a `url(` token run on into the next rules, and
+/// an unclosed `[` opens a block that takes in the rules after it, so the
+/// parentheses and the square brackets have to balance and nest.
 fn plain_css(value: &str) -> bool {
-    let mut depth = 0_usize;
+    let mut open: Vec<char> = Vec::new();
     for c in value.chars() {
         match c {
-            '(' => depth += 1,
-            ')' => match depth.checked_sub(1) {
-                Some(less) => depth = less,
-                None => return false,
-            },
+            '(' => open.push(')'),
+            '[' => open.push(']'),
+            ')' | ']' => {
+                if open.pop() != Some(c) {
+                    return false;
+                }
+            }
             '{' | '}' | ';' | '<' | '>' | '\\' | '"' | '\'' => return false,
             c if c.is_control() => return false,
             _ => {}
         }
     }
-    depth == 0 && !value.contains("/*")
+    open.is_empty() && !value.contains("/*")
 }
 
 /// Creates an element with a tag that has no named constructor.
@@ -3481,6 +3484,8 @@ mod tests {
             "calc(100% - var(--a, 1px))",
             "rgb(0 0 0 / 50%)",
             "#fff",
+            "[a] 1fr [b]",
+            "repeat(2, [a] 1fr)",
         ] {
             assert!(super::plain_css(value), "{value}");
         }
@@ -3490,6 +3495,9 @@ mod tests {
             "</style>",
             "url(x",
             "a)",
+            "calc(1px + [)",
+            "a]",
+            "([)]",
             "\"",
             "/* x",
             "a\\b",
