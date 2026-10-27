@@ -758,13 +758,13 @@ impl<S> Effects<S> {
     /// simulation runs it itself.
     #[must_use]
     pub fn runs_in_browser(&self, stmt: impl IntoStmt<S>) -> bool {
-        let ast = stmt.into_stmt().into_json();
-        match ast.as_array() {
+        let stmt = stmt.into_stmt();
+        match stmt.as_json().as_array() {
             Some(parts) if parts.first() == Some(&Value::from("seq")) => parts
                 .get(1)
                 .and_then(Value::as_array)
                 .is_some_and(|steps| steps.iter().all(|step| self.browser.contains(step))),
-            _ => self.browser.contains(&ast),
+            _ => self.browser.contains(stmt.as_json()),
         }
     }
 

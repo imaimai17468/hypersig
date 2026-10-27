@@ -180,7 +180,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
 }
 
 pub fn describing_the_page(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Learn(Learn::DescribingThePage).title(site)),
         lead(site, Doc::Learn(Learn::DescribingThePage).leads()),
         heading(

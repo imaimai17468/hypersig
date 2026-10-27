@@ -58,7 +58,9 @@ use crate::date::CalendarDate;
 use crate::exact;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
 use crate::href::{IntoHref, SafeUrl};
-use crate::signal::{Item, Part, Sig, Writable, in_item_scope, in_part};
+use crate::signal::{
+    Item, Part, Scope as ItemScope, Scopes, Sig, Writable, in_item_scope, in_part,
+};
 use crate::ssr::{self, Ctx, Val};
 use crate::style::{Property, Sheet, Style, Token, TokenValue};
 use crate::tape::Ref;
@@ -231,7 +233,10 @@ enum NodeKind<S> {
     Text(String),
     Each {
         list: Value,
-        depth: u8,
+        /// The list item scopes `list` reads, for a list inside an item.
+        list_scopes: Scopes,
+        /// The scope the template's item reads carry.
+        scope: ItemScope,
         template: Box<El<S>>,
     },
     When {
@@ -277,18 +282,20 @@ impl<S> Node<S> {
             NodeKind::Text(text) => escape_into(out, text, Escape::Text),
             NodeKind::Each {
                 list,
-                depth,
+                scope,
                 template,
+                ..
             } => {
                 out.push_str("<template");
                 if !ctx.is_some_and(|ctx| ctx.copy) {
-                    write_attr(out, "data-hs-each", &json!([list, depth]).to_string());
+                    let each = json!([list, scope.depth()]).to_string();
+                    write_attr(out, "data-hs-each", &each);
                 }
                 out.push('>');
                 template.write(out, None, None);
                 out.push_str("</template>");
                 if let Some(ctx) = ctx {
-                    template.write_items(out, ctx, list, usize::from(*depth));
+                    template.write_items(out, ctx, list, usize::from(scope.depth()));
                 }
             }
             NodeKind::When { cond, template } => {
@@ -336,41 +343,72 @@ pub(crate) fn check_names<S>(nodes: &[Node<S>]) {
 /// [`Item`] checks that its closure is still running when it is read, so the
 /// item can reach elsewhere only inside an expression or statement built in
 /// the closure and attached outside it. The runtime finds no item there, or
-/// the item of whichever list encloses the element at that depth.
+/// the item of whichever list encloses the element at that depth, so the
+/// walk compares the depths each tree reads with the lists around it, and
+/// the item scopes it reads with the scopes of those lists.
 pub(crate) fn check_item_reads<S>(nodes: &[Node<S>]) {
-    visit_trees(nodes, &mut assert_items_open);
-}
-
-/// Calls `visit` with each expression and statement tree in `nodes`, and
-/// with the depths of the lists around it as the bits of a mask.
-pub(crate) fn visit_trees<S>(nodes: &[Node<S>], visit: &mut impl FnMut(&Value, u128)) {
+    let mut open = Vec::new();
     for node in nodes {
-        node_trees(node, 0, visit);
+        node_trees(node, &mut open, &mut assert_tree_open);
     }
 }
 
-/// Visits the trees of `node` under the lists whose depths are the bits of `open`.
-fn node_trees<S>(node: &Node<S>, open: u128, visit: &mut impl FnMut(&Value, u128)) {
+/// Calls `visit` with each expression and statement tree in `nodes`.
+pub(crate) fn visit_trees<S>(nodes: &[Node<S>], visit: &mut impl FnMut(&Value)) {
+    let mut open = Vec::new();
+    for node in nodes {
+        node_trees(node, &mut open, &mut |tree, _, _| visit(tree));
+    }
+}
+
+/// Panics if `tree` reads an item of a list that `open` does not hold,
+/// with `scopes` the item scopes it reads.
+fn assert_tree_open(tree: &Value, scopes: &Scopes, open: &[ItemScope]) {
+    let depths = open
+        .iter()
+        .fold(0, |mask, scope| mask | depth_bit(u64::from(scope.depth())));
+    assert_items_open(tree, depths);
+    assert!(
+        scopes.outside(open).is_none(),
+        "a list item is used outside the closure it was passed to: an expression or \
+         statement built from it is attached to an element of another list, which the \
+         browser would read its own item for"
+    );
+}
+
+/// Visits the trees of `node` under the lists `open` holds, outermost first,
+/// with the item scopes each tree reads.
+fn node_trees<S>(
+    node: &Node<S>,
+    open: &mut Vec<ItemScope>,
+    visit: &mut impl FnMut(&Value, &Scopes, &[ItemScope]),
+) {
     match &node.0 {
         NodeKind::Element(el) => el_trees(el, open, visit),
         NodeKind::Text(_) => {}
         NodeKind::Each {
             list,
-            depth,
+            list_scopes,
+            scope,
             template,
         } => {
-            visit(list, open);
-            el_trees(template, open | depth_bit(u64::from(*depth)), visit);
+            visit(list, list_scopes, open);
+            open.push(*scope);
+            el_trees(template, open, visit);
+            open.pop();
         }
         NodeKind::When { cond, template } => {
-            visit(cond.as_json(), open);
+            visit(cond.as_json(), cond.scopes(), open);
             el_trees(template, open, visit);
         }
     }
 }
 
-fn el_trees<S>(el: &El<S>, open: u128, visit: &mut impl FnMut(&Value, u128)) {
-    let mut check = |ast: &Value| visit(ast, open);
+fn el_trees<S>(
+    el: &El<S>,
+    open: &mut Vec<ItemScope>,
+    visit: &mut impl FnMut(&Value, &Scopes, &[ItemScope]),
+) {
     let exprs = el
         .show
         .iter()
@@ -378,19 +416,19 @@ fn el_trees<S>(el: &El<S>, open: u128, visit: &mut impl FnMut(&Value, u128)) {
         .chain(el.class_when.iter().map(|(_, expr)| expr))
         .chain(el.css_when.iter().map(|(_, _, expr)| expr))
         .chain(el.attr_when.iter().map(|(_, expr)| expr));
-    exprs.for_each(|expr| check(expr.as_json()));
+    exprs.for_each(|expr| visit(expr.as_json(), expr.scopes(), open));
     let texts = el
         .text
         .iter()
         .chain(el.attr_bind.iter().map(|(_, expr)| expr))
         .chain(el.style.iter().map(|(_, expr)| expr));
-    texts.for_each(|expr| check(expr.as_json()));
+    texts.for_each(|expr| visit(expr.as_json(), expr.scopes(), open));
     el.bind
         .iter()
         .chain(&el.key)
         .chain(el.watches.iter().map(|(place, _)| place))
         .chain(el.active.iter().map(|(_, place)| place))
-        .for_each(&mut check);
+        .for_each(|place| visit(place, &el.place_scopes, open));
     let stmts = el
         .effects
         .iter()
@@ -400,7 +438,7 @@ fn el_trees<S>(el: &El<S>, open: u128, visit: &mut impl FnMut(&Value, u128)) {
         .chain(el.on.values())
         .chain(el.custom.iter().map(|(_, _, stmt)| stmt))
         .chain(el.keys.iter().map(|(_, stmt)| stmt));
-    stmts.for_each(|stmt| check(stmt.as_json()));
+    stmts.for_each(|stmt| visit(stmt.as_json(), stmt.scopes(), open));
     for child in &el.children {
         node_trees(child, open, visit);
     }
@@ -637,11 +675,14 @@ impl<S, N: Into<Node<S>>> IntoNode<S> for N {
 #[must_use]
 pub fn each<S, T, R>(list: Sig<S, Vec<T>, R>, render: impl FnOnce(Item<S, T>) -> El<S>) -> Node<S> {
     let path = list.raw_path();
-    in_item_scope(|depth| {
-        let template = render(Item::new(path, depth));
+    let mut list_scopes = Scopes::default();
+    let list = path.place_json(&mut list_scopes);
+    in_item_scope(|scope| {
+        let template = render(Item::new(path, scope));
         Node(NodeKind::Each {
-            list: path.place_json(),
-            depth,
+            list,
+            list_scopes,
+            scope,
             template: Box::new(template),
         })
     })
@@ -683,7 +724,7 @@ pub fn each_keyed<S, T, R, K, E: IntoExpr<S, K>>(
 ) -> Node<S> {
     each(list, |item| {
         let mut template = render(item);
-        template.key = Some(key(item).into_expr().into_json());
+        template.key = Some(key(item).into_expr().take(&mut template.place_scopes));
         template
     })
 }
@@ -723,11 +764,13 @@ impl<S> Node<S> {
             NodeKind::Text(text) => NodeKind::Text(text),
             NodeKind::Each {
                 list,
-                depth,
+                list_scopes,
+                scope,
                 template,
             } => NodeKind::Each {
                 list,
-                depth,
+                list_scopes,
+                scope,
                 template: Box::new(template.retype()),
             },
             NodeKind::When { cond, template } => NodeKind::When {
@@ -739,11 +782,11 @@ impl<S> Node<S> {
 }
 
 fn retype_expr<S, S2, T>(expr: Expr<S, T>) -> Expr<S2, T> {
-    Expr::from_json(expr.into_json())
+    expr.rebase()
 }
 
 fn retype_stmt<S, S2>(stmt: Stmt<S>) -> Stmt<S2> {
-    Stmt::new(stmt.into_json())
+    stmt.rebase()
 }
 
 impl<S> El<S> {
@@ -790,6 +833,7 @@ impl<S> El<S> {
             keys: retype_stmts(self.keys),
             roving: self.roving,
             active: self.active,
+            place_scopes: self.place_scopes,
             children: self.children.into_iter().map(Node::retype).collect(),
         }
     }
@@ -846,6 +890,9 @@ pub struct El<S> {
     keys: Vec<(Shortcut, Stmt<S>)>,
     roving: Option<Orientation>,
     active: Option<(&'static str, Value)>,
+    /// The list item scopes that `bind`, `key`, the places of `watches`, and
+    /// `active` read.
+    place_scopes: Scopes,
     children: Vec<Node<S>>,
 }
 
@@ -1665,6 +1712,7 @@ impl<S> El<S> {
             keys: Vec::new(),
             roving: None,
             active: None,
+            place_scopes: Scopes::default(),
             children: Vec::new(),
         }
     }
@@ -2323,10 +2371,11 @@ impl<S> El<S> {
     /// [`El::bind_select`].
     #[must_use]
     pub fn bind<T: Bindable, R: Writable>(mut self, signal: Sig<S, T, R>) -> Self {
+        let place = signal.raw_path().place_json(&mut self.place_scopes);
         self.set_bind(
             "bind",
             &["input", "textarea", "select"],
-            json!([signal.raw_path().place_json(), T::KIND]),
+            json!([place, T::KIND]),
         );
         self
     }
@@ -2381,11 +2430,8 @@ impl<S> El<S> {
     ) -> Self {
         let value = exact::to_value(value, "a radio value does not serialize to JSON");
         self.set_attr("type", "radio".to_owned());
-        self.set_bind(
-            "bind_radio",
-            &["input"],
-            json!([signal.raw_path().place_json(), "radio", value]),
-        );
+        let place = signal.raw_path().place_json(&mut self.place_scopes);
+        self.set_bind("bind_radio", &["input"], json!([place, "radio", value]));
         self
     }
 
@@ -2412,11 +2458,8 @@ impl<S> El<S> {
             self.children
                 .push(option().attr(attr::VALUE, value).text(label).into());
         }
-        self.set_bind(
-            "bind_select",
-            &["select"],
-            json!([signal.raw_path().place_json(), "json"]),
-        );
+        let place = signal.raw_path().place_json(&mut self.place_scopes);
+        self.set_bind("bind_select", &["select"], json!([place, "json"]));
         self
     }
 
@@ -2443,11 +2486,13 @@ impl<S> El<S> {
     /// days, which the browser's timer cannot wait.
     #[must_use]
     pub fn on_debounced(self, event: Event, quiet: Duration, stmt: impl IntoStmt<S>) -> Self {
-        let wrapped = Stmt::new(json!([
-            "debounce",
-            timer_millis(quiet, "on_debounced"),
-            stmt.into_stmt().into_json()
-        ]));
+        let wrapped = Stmt::build(|scopes| {
+            json!([
+                "debounce",
+                timer_millis(quiet, "on_debounced"),
+                stmt.into_stmt().take(scopes)
+            ])
+        });
         self.on(event, wrapped)
     }
 
@@ -2501,7 +2546,7 @@ impl<S> El<S> {
         handle: impl FnOnce(Expr<S, T>) -> B,
     ) -> Self {
         let (depth, stmt) = in_let_scope(|depth| {
-            let detail = Expr::from_json(json!(["var", depth]));
+            let detail = Expr::build(|_| json!(["var", depth]));
             (depth, handle(detail).into_stmt())
         });
         self.custom.push((event.name, depth, stmt));
@@ -2690,7 +2735,8 @@ impl<S> El<S> {
     /// ```
     #[must_use]
     pub fn active_descendant(mut self, listbox: NodeRef<S>, active: Sig<S, String>) -> Self {
-        self.active = Some((listbox.name(), active.raw_path().place_json()));
+        let place = active.raw_path().place_json(&mut self.place_scopes);
+        self.active = Some((listbox.name(), place));
         self.attr_bind
             .push(("aria-activedescendant", active.into_expr()));
         self
@@ -2780,8 +2826,8 @@ impl<S> El<S> {
     /// call that saves a list each time the list changes.
     #[must_use]
     pub fn on_signal_change<T, R>(mut self, signal: Sig<S, T, R>, stmt: impl IntoStmt<S>) -> Self {
-        self.watches
-            .push((signal.raw_path().place_json(), stmt.into_stmt()));
+        let place = signal.raw_path().place_json(&mut self.place_scopes);
+        self.watches.push((place, stmt.into_stmt()));
         self
     }
 
@@ -2808,7 +2854,7 @@ impl<S> El<S> {
         let mut names = Names::default();
         names.el(self, None);
         names.check();
-        el_trees(self, 0, &mut assert_items_open);
+        el_trees(self, &mut Vec::new(), &mut assert_tree_open);
         let mut out = String::new();
         self.write(&mut out, None, None);
         out
@@ -3300,36 +3346,26 @@ mod tests {
     #[test]
     fn a_timer_waits_up_to_2_to_the_31_milliseconds() {
         let longest = Duration::from_millis((1 << 31) - 1);
-        let html = div::<Page>()
-            .on_timeout(longest, Stmt::new(serde_json::json!(["seq", []])))
-            .render();
+        let html = div::<Page>().on_timeout(longest, Stmt::none()).render();
         assert!(html.contains("2147483647"), "{html}");
     }
 
     #[test]
     #[should_panic(expected = "the time `on_timeout` waits is at most 2^31 - 1 milliseconds")]
     fn a_timeout_the_browser_would_run_at_once_is_refused() {
-        let _ = div::<Page>().on_timeout(
-            Duration::from_millis(1 << 31),
-            Stmt::new(serde_json::json!(["seq", []])),
-        );
+        let _ = div::<Page>().on_timeout(Duration::from_millis(1 << 31), Stmt::none());
     }
 
     #[test]
     #[should_panic(expected = "the time `on_debounced` waits is at most 2^31 - 1 milliseconds")]
     fn a_debounce_past_any_timer_is_refused() {
-        let _ = div::<Page>().on_debounced(
-            super::Event::Input,
-            Duration::MAX,
-            Stmt::new(serde_json::json!(["seq", []])),
-        );
+        let _ = div::<Page>().on_debounced(super::Event::Input, Duration::MAX, Stmt::none());
     }
 
     #[test]
     #[should_panic(expected = "the period of `on_interval` is at least 1 millisecond")]
     fn an_interval_of_no_time_is_refused() {
-        let _ =
-            div::<Page>().on_interval(Duration::ZERO, Stmt::new(serde_json::json!(["seq", []])));
+        let _ = div::<Page>().on_interval(Duration::ZERO, Stmt::none());
     }
 
     #[test]

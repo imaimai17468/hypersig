@@ -288,9 +288,11 @@ impl<S, T: Serialize> Sig<S, Vec<T>, Root> {
 
     /// The depth of the item scope `key` is built in, and the key's expression.
     fn key<K, E: IntoExpr<S, K>>(self, key: impl FnOnce(Item<S, T>) -> E) -> (u8, Value) {
-        in_item_scope(|depth| {
-            let item = Item::new(self.raw_path(), depth);
-            (depth, key(item).into_expr().into_json())
+        // A patch reaches the browser without the render walk, so the scopes
+        // the key reads are not kept.
+        in_item_scope(|scope| {
+            let item = Item::new(self.raw_path(), scope);
+            (scope.depth(), key(item).into_expr().into_tree())
         })
     }
 }

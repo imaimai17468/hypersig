@@ -314,19 +314,21 @@ impl Path {
         }
     }
 
-    /// The JSON the runtime reads this path's value from.
-    pub(crate) fn expr_json(&self) -> Value {
+    /// The JSON the runtime reads this path's value from, adding the item
+    /// scope it reads to `scopes`.
+    pub(crate) fn expr_json(&self, scopes: &mut Scopes) -> Value {
         match self.item {
             None => json!(["sig", self.rooted()]),
-            Some(scope) => json!(["item", scope.open_depth(), self.dotted()]),
+            Some(scope) => json!(["item", scope.read(scopes), self.dotted()]),
         }
     }
 
-    /// The JSON the runtime resolves to a place it can write to.
-    pub(crate) fn place_json(&self) -> Value {
+    /// The JSON the runtime resolves to a place it can write to, adding the
+    /// item scope it reads to `scopes`.
+    pub(crate) fn place_json(&self, scopes: &mut Scopes) -> Value {
         match self.item {
             None => Value::from(self.rooted()),
-            Some(scope) => json!(["item", scope.open_depth(), self.dotted()]),
+            Some(scope) => json!(["item", scope.read(scopes), self.dotted()]),
         }
     }
 }
@@ -416,43 +418,96 @@ pub(crate) struct Scope {
 }
 
 impl Scope {
-    /// The scope of the closure running now, which [`in_item_scope`] opened.
-    fn current(depth: u8) -> Self {
-        let id = OPEN_SCOPES.with_borrow(|open| open.get(usize::from(depth)).copied());
-        Self {
-            depth,
-            id: id.expect("an item is created inside the closure of its list"),
-        }
+    /// The depth the runtime reads the item at.
+    pub(crate) fn depth(self) -> u8 {
+        self.depth
     }
 
-    /// The depth, after checking that the closure this item was passed to is still running.
+    /// The depth, after checking that the closure this item was passed to
+    /// is still running, with this scope added to `scopes`.
     ///
     /// The id is compared rather than the depth alone, so an item kept from
     /// one list and used inside another list at the same depth is caught too.
-    /// An expression built inside the closure and used outside it passes,
-    /// since it was written while the closure ran.
+    /// An expression built inside the closure carries the scope in
+    /// `scopes`, and the render walk compares it with the lists around the
+    /// element the expression is attached to.
     ///
     /// # Panics
     ///
     /// Panics if the closure the item was passed to has returned.
-    fn open_depth(self) -> u8 {
+    fn read(self, scopes: &mut Scopes) -> u8 {
         let open =
             OPEN_SCOPES.with_borrow(|open| open.get(usize::from(self.depth)) == Some(&self.id));
         assert!(
             open,
             "a list item is used outside the closure it was passed to"
         );
+        scopes.insert(self);
         self.depth
     }
 }
 
-/// Runs `body` with the depth of a new item scope, one deeper than the
-/// enclosing one, so nested lists name their items without colliding.
+/// The list item scopes an expression or statement reads.
+///
+/// It travels beside the JSON tree and never reaches the browser. The render
+/// walk checks that each scope belongs to a list around the element the tree
+/// is attached to, because the runtime resolves `["item",depth,..]` against
+/// whichever list encloses the element at that depth.
+///
+/// Almost every tree reads no item, so the set stays unallocated until it
+/// holds one.
+#[derive(Clone, Default, PartialEq, Eq)]
+pub(crate) struct Scopes(Option<Box<[Scope]>>);
+
+impl Scopes {
+    fn insert(&mut self, scope: Scope) {
+        if self.iter().any(|held| held == scope) {
+            return;
+        }
+        let mut scopes = self.0.take().map(Vec::from).unwrap_or_default();
+        scopes.push(scope);
+        self.0 = Some(scopes.into_boxed_slice());
+    }
+
+    fn iter(&self) -> impl Iterator<Item = Scope> + '_ {
+        self.0.iter().flat_map(|scopes| scopes.iter().copied())
+    }
+
+    /// Adds the scopes of `other`.
+    pub(crate) fn extend(&mut self, other: Self) {
+        if self.0.is_none() {
+            *self = other;
+        } else {
+            for scope in other.iter() {
+                self.insert(scope);
+            }
+        }
+    }
+
+    /// The scope that `open` holds none of, if there is one.
+    pub(crate) fn outside(&self, open: &[Scope]) -> Option<Scope> {
+        self.iter().find(|scope| !open.contains(scope))
+    }
+
+    /// Runs `build` with an empty set, then adds what it read to this set,
+    /// leaving out `bound`, the scope of the list operation `build` runs in.
+    pub(crate) fn binding<R>(&mut self, bound: Scope, build: impl FnOnce(&mut Self) -> R) -> R {
+        let mut inner = Self::default();
+        let out = build(&mut inner);
+        for scope in inner.iter().filter(|scope| *scope != bound) {
+            self.insert(scope);
+        }
+        out
+    }
+}
+
+/// Runs `body` with a new item scope, one deeper than the enclosing one,
+/// so nested lists name their items without colliding.
 ///
 /// The depth counts enclosing scopes, so rendering the same tree twice writes
 /// the same attributes. Each call also gets an id of its own, which the
 /// items created inside carry.
-pub(crate) fn in_item_scope<R>(body: impl FnOnce(u8) -> R) -> R {
+pub(crate) fn in_item_scope<R>(body: impl FnOnce(Scope) -> R) -> R {
     struct Close;
     impl Drop for Close {
         fn drop(&mut self) {
@@ -467,7 +522,7 @@ pub(crate) fn in_item_scope<R>(body: impl FnOnce(u8) -> R) -> R {
         depth
     });
     let _close = Close;
-    body(depth)
+    body(Scope { depth, id })
 }
 
 type Marker<S, T, R> = fn() -> (S, T, R);
@@ -532,7 +587,7 @@ impl<S, T, R> Sig<S, T, R> {
     }
 
     pub(crate) fn expr(self) -> Expr<S, T> {
-        Expr::from_json(self.path.expr_json())
+        Expr::build(|scopes| self.path.expr_json(scopes))
     }
 
     /// The expression that reads this signal, which the methods
@@ -546,7 +601,9 @@ impl<S, T, R: Writable> Sig<S, T, R> {
     /// A statement that assigns `value` to this signal in the browser.
     #[must_use]
     pub fn set(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
-        Stmt::set(self.path.place_json(), value.into_expr())
+        let mut scopes = Scopes::default();
+        let place = self.path.place_json(&mut scopes);
+        Stmt::set(place, scopes, value.into_expr())
     }
 }
 
@@ -646,8 +703,10 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
         self,
         matches: impl FnOnce(Item<S, T>) -> P,
     ) -> Expr<S, i32> {
-        let (depth, predicate) = self.predicate(matches);
-        Expr::from_json(json!(["count", self.path.place_json(), depth, predicate]))
+        Expr::build(|scopes| {
+            let (depth, predicate) = self.scoped(scopes, matches);
+            json!(["count", self.path.place_json(scopes), depth, predicate])
+        })
     }
 
     /// The list of what `value` gives for each item, in order.
@@ -706,20 +765,23 @@ impl<S, T, R> Sig<S, Vec<T>, R> {
         op: &str,
         value: impl FnOnce(Item<S, T>) -> E,
     ) -> Expr<S, V> {
-        let (depth, value) = self.scoped(value);
-        Expr::from_json(json!([op, self.path.place_json(), depth, value]))
-    }
-
-    fn predicate<P: IntoExpr<S, bool>>(self, build: impl FnOnce(Item<S, T>) -> P) -> (u8, Value) {
-        self.scoped(build)
+        Expr::build(|scopes| {
+            let (depth, value) = self.scoped(scopes, value);
+            json!([op, self.path.place_json(scopes), depth, value])
+        })
     }
 
     /// The depth of a new item scope over this list, and the expression
-    /// `build` makes from its item.
-    fn scoped<U, E: IntoExpr<S, U>>(self, build: impl FnOnce(Item<S, T>) -> E) -> (u8, Value) {
-        in_item_scope(|depth| {
-            let item = Item::new(self.path, depth);
-            (depth, build(item).into_expr().into_json())
+    /// `build` makes from its item, whose other item scopes go to `scopes`.
+    fn scoped<U, E: IntoExpr<S, U>>(
+        self,
+        scopes: &mut Scopes,
+        build: impl FnOnce(Item<S, T>) -> E,
+    ) -> (u8, Value) {
+        in_item_scope(|scope| {
+            let item = Item::new(self.path, scope);
+            let value = scopes.binding(scope, |inner| build(item).into_expr().take(inner));
+            (scope.depth(), value)
         })
     }
 }
@@ -728,21 +790,13 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
     /// A statement that appends `value` to this list.
     #[must_use]
     pub fn push(self, value: impl IntoExpr<S, T>) -> Stmt<S> {
-        Stmt::list(
-            "push",
-            self.path.place_json(),
-            value.into_expr().into_json(),
-        )
+        Stmt::list("push", self.path, value.into_expr())
     }
 
     /// A statement that appends every item of `items` to this list.
     #[must_use]
     pub fn append(self, items: impl IntoExpr<S, Vec<T>>) -> Stmt<S> {
-        Stmt::list(
-            "append",
-            self.path.place_json(),
-            items.into_expr().into_json(),
-        )
+        Stmt::list("append", self.path, items.into_expr())
     }
 
     /// A statement that adds every item of `items` before the items of this list.
@@ -755,30 +809,19 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
     /// new item and nothing is scrolled.
     #[must_use]
     pub fn prepend(self, items: impl IntoExpr<S, Vec<T>>) -> Stmt<S> {
-        Stmt::list(
-            "prepend",
-            self.path.place_json(),
-            items.into_expr().into_json(),
-        )
+        Stmt::list("prepend", self.path, items.into_expr())
     }
 
     /// A statement that removes the item at `index`, if there is one.
     #[must_use]
     pub fn remove_at(self, index: impl IntoExpr<S, i32>) -> Stmt<S> {
-        Stmt::list(
-            "remove",
-            self.path.place_json(),
-            index.into_expr().into_json(),
-        )
+        Stmt::list("remove", self.path, index.into_expr())
     }
 
     /// A statement that empties this list.
     #[must_use]
     pub fn clear(self) -> Stmt<S> {
-        Stmt::set(
-            self.path.place_json(),
-            Expr::<S, Vec<T>>::from_json(json!(["lit", []])),
-        )
+        self.set(Expr::build(|_| json!(["lit", []])))
     }
 
     /// A statement that keeps only the items for which `keep` is true.
@@ -786,19 +829,23 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
     /// `keep` receives the item being tested and builds the predicate from it.
     #[must_use]
     pub fn retain<P: IntoExpr<S, bool>>(self, keep: impl FnOnce(Item<S, T>) -> P) -> Stmt<S> {
-        let (depth, predicate) = self.predicate(keep);
-        Stmt::new(json!(["retain", self.path.place_json(), depth, predicate]))
+        Stmt::build(|scopes| {
+            let (depth, predicate) = self.scoped(scopes, keep);
+            json!(["retain", self.path.place_json(scopes), depth, predicate])
+        })
     }
 
     /// A statement that sets `field` to `value` on every item.
     #[must_use]
     pub fn set_all<U>(self, field: Sig<T, U>, value: impl IntoExpr<S, U>) -> Stmt<S> {
-        Stmt::new(json!([
-            "set_all",
-            self.path.place_json(),
-            field.path.dotted(),
-            value.into_expr().into_json()
-        ]))
+        Stmt::build(|scopes| {
+            json!([
+                "set_all",
+                self.path.place_json(scopes),
+                field.path.dotted(),
+                value.into_expr().take(scopes)
+            ])
+        })
     }
 
     /// A statement that appends `count` items built from their positions.
@@ -811,17 +858,20 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
         count: impl IntoExpr<S, i32>,
         build: impl FnOnce(Expr<S, i32>) -> E,
     ) -> Stmt<S> {
-        let (depth, item) = in_item_scope(|depth| {
-            let index = Expr::from_json(json!(["index", depth]));
-            (depth, build(index).into_expr().into_json())
-        });
-        Stmt::new(json!([
-            "extend",
-            self.path.place_json(),
-            count.into_expr().into_json(),
-            depth,
-            item
-        ]))
+        Stmt::build(|scopes| {
+            let (depth, item) = in_item_scope(|scope| {
+                let index = Expr::build(|_| json!(["index", scope.depth()]));
+                let item = scopes.binding(scope, |inner| build(index).into_expr().take(inner));
+                (scope.depth(), item)
+            });
+            json!([
+                "extend",
+                self.path.place_json(scopes),
+                count.into_expr().take(scopes),
+                depth,
+                item
+            ])
+        })
     }
 
     /// A statement that sets `field` to `value` on each item `when` accepts.
@@ -836,33 +886,39 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
         field: Sig<T, U>,
         value: impl FnOnce(Item<S, T>) -> E,
     ) -> Stmt<S> {
-        let (depth, when, value) = in_item_scope(|depth| {
-            let item = Item::new(self.path, depth);
-            (
+        Stmt::build(|scopes| {
+            let (depth, when, value) = in_item_scope(|scope| {
+                let item = Item::new(self.path, scope);
+                scopes.binding(scope, |inner| {
+                    (
+                        scope.depth(),
+                        when(item).into_expr().take(inner),
+                        value(item).into_expr().take(inner),
+                    )
+                })
+            });
+            json!([
+                "update",
+                self.path.place_json(scopes),
                 depth,
-                when(item).into_expr().into_json(),
-                value(item).into_expr().into_json(),
-            )
-        });
-        Stmt::new(json!([
-            "update",
-            self.path.place_json(),
-            depth,
-            when,
-            field.path.dotted(),
-            value
-        ]))
+                when,
+                field.path.dotted(),
+                value
+            ])
+        })
     }
 
     /// A statement that exchanges the items at `a` and `b`, if both exist.
     #[must_use]
     pub fn swap(self, a: impl IntoExpr<S, i32>, b: impl IntoExpr<S, i32>) -> Stmt<S> {
-        Stmt::new(json!([
-            "swap",
-            self.path.place_json(),
-            a.into_expr().into_json(),
-            b.into_expr().into_json()
-        ]))
+        Stmt::build(|scopes| {
+            json!([
+                "swap",
+                self.path.place_json(scopes),
+                a.into_expr().take(scopes),
+                b.into_expr().take(scopes)
+            ])
+        })
     }
 
     /// A statement that sorts the items by `key`, ascending.
@@ -892,17 +948,10 @@ impl<S, T, R: Writable> Sig<S, Vec<T>, R> {
         key: impl FnOnce(Item<S, T>) -> E,
         descending: bool,
     ) -> Stmt<S> {
-        let (depth, key) = in_item_scope(|depth| {
-            let item = Item::new(self.path, depth);
-            (depth, key(item).into_expr().into_json())
-        });
-        Stmt::new(json!([
-            "sort",
-            self.path.place_json(),
-            depth,
-            key,
-            descending
-        ]))
+        Stmt::build(|scopes| {
+            let (depth, key) = self.scoped(scopes, key);
+            json!(["sort", self.path.place_json(scopes), depth, key, descending])
+        })
     }
 }
 
@@ -928,7 +977,9 @@ impl<S, T, R> fmt::Debug for Sig<S, T, R> {
 /// An `Item` belongs to the closure it was passed to. The browser resolves it
 /// against the item being rendered or tested, so an expression built from it
 /// means nothing outside that closure. The type system does not stop one from
-/// being moved out.
+/// being moved out. Reading the item after its closure returns panics, and
+/// so does rendering an expression, a statement, or an element built from it
+/// anywhere its list does not render.
 pub struct Item<S, T> {
     list: Path,
     scope: Scope,
@@ -936,10 +987,10 @@ pub struct Item<S, T> {
 }
 
 impl<S, T> Item<S, T> {
-    pub(crate) fn new(list: Path, depth: u8) -> Self {
+    pub(crate) fn new(list: Path, scope: Scope) -> Self {
         Self {
             list,
-            scope: Scope::current(depth),
+            scope,
             marker: PhantomData,
         }
     }
@@ -964,13 +1015,19 @@ impl<S, T> Item<S, T> {
     /// The item's position in its list, starting at 0.
     #[must_use]
     pub fn index(self) -> Expr<S, i32> {
-        Expr::from_json(json!(["index", self.scope.open_depth()]))
+        Expr::build(|scopes| json!(["index", self.scope.read(scopes)]))
     }
 
     /// A statement that removes this item from its list.
     #[must_use]
     pub fn remove(self) -> Stmt<S> {
-        Stmt::list("remove", self.list.place_json(), self.index().into_json())
+        Stmt::build(|scopes| {
+            json!([
+                "remove",
+                self.list.place_json(scopes),
+                self.index().take(scopes)
+            ])
+        })
     }
 }
 
@@ -1001,7 +1058,7 @@ impl<S, T> IntoExpr<S, T> for Item<S, T> {
 mod tests {
     use super::*;
     use crate::_private::sig;
-    use crate::html::{each, span};
+    use crate::html::{div, each, input, span};
 
     enum Board {}
     enum Task {}
@@ -1033,5 +1090,60 @@ mod tests {
         });
         let task = kept.expect("`each` runs its closure before it returns");
         let _second = each(done, |_| span().bind_text(task.at(title)));
+    }
+
+    #[test]
+    #[should_panic(expected = "a list item is used outside the closure it was passed to")]
+    fn an_expression_built_in_one_list_and_rendered_in_another_panics() {
+        let todo: Sig<Board, Vec<Task>> = sig("todo");
+        let done: Sig<Board, Vec<Task>> = sig("done");
+        let title: Sig<Task, String> = sig("title");
+        let mut kept = None;
+        let _first = each(todo, |task| {
+            kept = Some(task.at(title).to_uppercase());
+            span()
+        });
+        let shout = kept.expect("`each` runs its closure before it returns");
+        let second = each(done, |_| span().bind_text(shout));
+        let _ = div().child(second).render();
+    }
+
+    #[test]
+    #[should_panic(expected = "a list item is used outside the closure it was passed to")]
+    fn an_element_built_in_one_list_and_rendered_in_another_panics() {
+        let todo: Sig<Board, Vec<Task>> = sig("todo");
+        let done: Sig<Board, Vec<Task>> = sig("done");
+        let title: Sig<Task, String> = sig("title");
+        let mut kept = None;
+        let _first = each(todo, |task| {
+            kept = Some(input().bind(task.at(title)));
+            span()
+        });
+        let field = kept.expect("`each` runs its closure before it returns");
+        let second = each(done, |_| div().child(field));
+        let _ = div().child(second).render();
+    }
+
+    #[test]
+    fn item_reads_inside_their_own_lists_render() {
+        let todo: Sig<Board, Vec<Task>> = sig("todo");
+        let title: Sig<Task, String> = sig("title");
+        let tags: Sig<Task, Vec<Task>> = sig("tags");
+        let rank: Sig<Task, i32> = sig("rank");
+        let list = each(todo, |task| {
+            let longest = task.at(tags).max_of(|tag| tag.at(rank));
+            let named = task
+                .at(title)
+                .to_uppercase()
+                .let_in(|name| name.concat("!"));
+            div()
+                .bind_text(named)
+                .show(longest.unwrap_or(0).gt(0))
+                .child(each(task.at(tags), |tag| {
+                    span().bind_text(task.at(title).concat(tag.at(title)))
+                }))
+        });
+        let html = div().child(list).render();
+        assert!(html.contains("data-hs-each"));
     }
 }

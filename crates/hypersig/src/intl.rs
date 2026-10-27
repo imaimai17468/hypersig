@@ -4,7 +4,7 @@
 use serde_json::{Value, json};
 
 use crate::expr::{Expr, IntoExpr, Number};
-use crate::signal::Sig;
+use crate::signal::{Scopes, Sig};
 
 /// A locale that the browser's `Intl` writes text for, and the first HTML matches.
 ///
@@ -64,11 +64,14 @@ impl PluralCategory {
 }
 
 /// The forms `form` gives for each category, in the order of [`PluralCategory::ALL`].
-fn plural_forms<S, U, L: IntoExpr<S, U>>(form: impl Fn(PluralCategory) -> L) -> Value {
+fn plural_forms<S, U, L: IntoExpr<S, U>>(
+    form: impl Fn(PluralCategory) -> L,
+    scopes: &mut Scopes,
+) -> Value {
     Value::Array(
         PluralCategory::ALL
             .iter()
-            .map(|category| form(*category).into_expr().into_json())
+            .map(|category| form(*category).into_expr().take(scopes))
             .collect(),
     )
 }
@@ -104,11 +107,11 @@ macro_rules! intl_operations {
                 locale: IntlLocale,
                 form: impl Fn(PluralCategory) -> L,
             ) -> Expr<S, U> {
-                Expr::from_json(json!([
+                Expr::build(|scopes| json!([
                     "plural",
-                    self.operand().into_json(),
+                    self.operand().take(scopes),
                     locale.tag(),
-                    plural_forms(form)
+                    plural_forms(form, scopes)
                 ]))
             }
         }

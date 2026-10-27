@@ -10,7 +10,7 @@ use serde_json::{Map, Value, json};
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
 use crate::html::{El, Id};
 use crate::route::Base;
-use crate::signal::{Sig, current_part};
+use crate::signal::{Scopes, Sig, current_part};
 
 /// The HTTP method an [`Action`] is served on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -176,7 +176,12 @@ impl<S> Action<S, ()> {
     /// A call to this action, which takes no arguments.
     #[must_use]
     pub fn call(&self) -> Call<S> {
-        Call::new(self.method, self.base, self.path, Value::Null)
+        Call::new(
+            self.method,
+            self.base,
+            self.path,
+            Expr::<S, ()>::build(|_| Value::Null),
+        )
     }
 }
 
@@ -187,12 +192,7 @@ impl<S, A> Action<S, A> {
     /// literal such as `&id` or an expression such as `item.at(Todo::id())`.
     #[must_use]
     pub fn call_with(&self, args: impl IntoExpr<S, A>) -> Call<S> {
-        Call::new(
-            self.method,
-            self.base,
-            self.path,
-            args.into_expr().into_json(),
-        )
+        Call::new(self.method, self.base, self.path, args.into_expr())
     }
 }
 
@@ -260,16 +260,19 @@ pub struct Call<S> {
     on_success: Option<Value>,
     /// The page field of the [`Part`](crate::Part) the call was built in.
     part: Option<Arc<str>>,
+    /// The list item scopes the arguments and the statements read.
+    scopes: Scopes,
     marker: PhantomData<fn() -> S>,
 }
 
 impl<S> Call<S> {
-    fn new(method: Method, base: Base, path: &'static str, args: Value) -> Self {
+    fn new<A>(method: Method, base: Base, path: &'static str, args: Expr<S, A>) -> Self {
+        let mut scopes = Scopes::default();
         Self {
             method,
             base,
             path,
-            args,
+            args: args.take(&mut scopes),
             indicator: Value::Null,
             error: Value::Null,
             latest: false,
@@ -282,13 +285,19 @@ impl<S> Call<S> {
             on_error: None,
             on_success: None,
             part: current_part(),
+            scopes,
             marker: PhantomData,
         }
     }
 
     /// A `POST` to `path` that sends `args` with the files picked in the
     /// file input named `files`.
-    pub(crate) fn upload(base: Base, path: &'static str, args: Value, files: &'static str) -> Self {
+    pub(crate) fn upload<A>(
+        base: Base,
+        path: &'static str,
+        args: Expr<S, A>,
+        files: &'static str,
+    ) -> Self {
         Self {
             files: Some(files),
             ..Self::new(Method::Post, base, path, args)
@@ -531,8 +540,8 @@ impl<S> Call<S> {
     #[must_use]
     pub fn on_error<B: IntoStmt<S>>(mut self, handle: impl FnOnce(Expr<S, String>) -> B) -> Self {
         self.on_error = Some(in_let_scope(|depth| {
-            let message = Expr::from_json(json!(["var", depth]));
-            (depth, handle(message).into_stmt().into_json())
+            let message = Expr::build(|_| json!(["var", depth]));
+            (depth, handle(message).into_stmt().take(&mut self.scopes))
         }));
         self
     }
@@ -543,7 +552,7 @@ impl<S> Call<S> {
     /// for an aborted `latest` call or once the page navigates away.
     #[must_use]
     pub fn on_success(mut self, next: impl IntoStmt<S>) -> Self {
-        self.on_success = Some(next.into_stmt().into_json());
+        self.on_success = Some(next.into_stmt().take(&mut self.scopes));
         self
     }
 
@@ -608,7 +617,10 @@ impl<S> IntoStmt<S> for Call<S> {
                 items.push(Value::Object(outcomes));
             }
         }
-        Stmt::new(ast)
+        Stmt::build(|scopes| {
+            scopes.extend(call.scopes);
+            ast
+        })
     }
 }
 
@@ -724,7 +736,7 @@ impl<S, A> StreamAction<S, A> {
             Method::Get,
             self.base,
             self.path,
-            args.into_expr().into_json(),
+            args.into_expr(),
         ))
     }
 }
@@ -733,7 +745,12 @@ impl<S> StreamAction<S, ()> {
     /// A call to this stream, which takes no arguments.
     #[must_use]
     pub fn call(&self) -> StreamCall<S> {
-        StreamCall(Call::new(Method::Get, self.base, self.path, Value::Null))
+        StreamCall(Call::new(
+            Method::Get,
+            self.base,
+            self.path,
+            Expr::<S, ()>::build(|_| Value::Null),
+        ))
     }
 }
 
@@ -936,7 +953,7 @@ impl<S> NodeRef<S> {
     }
 
     fn dom(self, op: &str) -> Stmt<S> {
-        Stmt::new(json!(["dom", op, self.name]))
+        Stmt::build(|_| json!(["dom", op, self.name]))
     }
 
     /// A statement that focuses the element after the next render.

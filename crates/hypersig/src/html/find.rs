@@ -82,15 +82,16 @@ impl<'n, S> Walk<'n, '_, '_, S> {
             NodeKind::Text(_) => {}
             NodeKind::Each {
                 list,
-                depth,
+                scope: item_scope,
                 template,
+                ..
             } => {
                 let path = resolve(list, scope);
                 let len = Ref::from(self.root)
                     .get_path(&path)
                     .and_then(Ref::items)
                     .map_or(0, Iterator::count);
-                let depth = usize::from(*depth).min(scope.len());
+                let depth = usize::from(item_scope.depth()).min(scope.len());
                 for index in 0..len {
                     let mut inner = scope[..depth].to_vec();
                     inner.push(ItemAt {

@@ -118,12 +118,7 @@ impl<S, A> Upload<S, A> {
     /// no file picked sends no file.
     #[must_use]
     pub fn call_with(&self, files: FileInput<S>, args: impl IntoExpr<S, A>) -> Call<S> {
-        Call::upload(
-            self.base,
-            self.path,
-            args.into_expr().into_json(),
-            files.name,
-        )
+        Call::upload(self.base, self.path, args.into_expr(), files.name)
     }
 }
 
@@ -133,7 +128,12 @@ impl<S> Upload<S, ()> {
     /// It is for an upload that takes no arguments.
     #[must_use]
     pub fn call(&self, files: FileInput<S>) -> Call<S> {
-        Call::upload(self.base, self.path, serde_json::Value::Null, files.name)
+        Call::upload(
+            self.base,
+            self.path,
+            crate::Expr::<S, ()>::build(|_| serde_json::Value::Null),
+            files.name,
+        )
     }
 }
 
@@ -198,7 +198,7 @@ impl<S> FileInput<S> {
     /// A statement that empties the input, such as after its files were sent.
     #[must_use]
     pub fn clear(self) -> Stmt<S> {
-        Stmt::new(json!(["clear-files", self.name]))
+        Stmt::build(|_| json!(["clear-files", self.name]))
     }
 }
 

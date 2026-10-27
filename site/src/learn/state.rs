@@ -124,7 +124,7 @@ fn computed(site: Site) -> Part {
 }
 
 pub fn expressions(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Learn(Learn::Expressions).title(site)),
         lead(site, Doc::Learn(Learn::Expressions).leads()),
         heading(

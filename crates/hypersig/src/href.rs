@@ -96,7 +96,7 @@ impl<'de> Deserialize<'de> for SafeUrl {
 
 impl<S> IntoExpr<S, SafeUrl> for SafeUrl {
     fn into_expr(self) -> Expr<S, SafeUrl> {
-        Expr::from_json(json!(["lit", self.0]))
+        Expr::build(|_| json!(["lit", self.0]))
     }
 }
 
@@ -215,12 +215,11 @@ impl<S> IntoHref<S> for SafeUrl {
 
 impl<S> IntoHref<S> for Expr<S, SafeUrl> {
     fn into_parts(self) -> Result<String, Expr<S, String>> {
-        let ast = self.into_json();
-        match ast.as_array().map(Vec::as_slice) {
+        match self.as_json().as_array().map(Vec::as_slice) {
             Some([op, Value::String(url)]) if op == "lit" => Ok(url.clone()),
             // A `SafeUrl` is a string in the page's signals, so the browser
             // reads the same value as text.
-            _ => Err(Expr::from_json(ast)),
+            _ => Err(self.retype()),
         }
     }
 }

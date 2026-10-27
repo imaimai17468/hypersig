@@ -483,7 +483,7 @@ impl<S: Signals> Page<S> {
         value: impl IntoExpr<S, T>,
     ) -> Self {
         self.computed
-            .push((signal.raw_path().rooted(), value.into_expr().into_json()));
+            .push((signal.raw_path().rooted(), value.into_expr().into_tree()));
         self
     }
 
@@ -512,7 +512,7 @@ impl<S: Signals> Page<S> {
     /// ```
     #[must_use]
     pub fn bind_title(mut self, title: impl IntoExpr<S, String>) -> Self {
-        self.bound_title = Some(title.into_expr().into_json());
+        self.bound_title = Some(title.into_expr().into_tree());
         self
     }
 
@@ -753,7 +753,7 @@ impl<S: Signals> Page<S> {
                 .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()))
                 .chain(self.computed.iter().map(|(_, value)| value))
                 .any(|ast| reads_path(ast, &path));
-            visit_trees(&self.body, &mut |ast, _| {
+            visit_trees(&self.body, &mut |ast| {
                 read = read || reads_path(ast, &path);
             });
             assert!(

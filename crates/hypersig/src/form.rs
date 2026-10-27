@@ -12,7 +12,7 @@ use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, if_else};
 use crate::finite;
 use crate::html::{self, El};
 use crate::patch::SignalPatch;
-use crate::signal::{Path, Sig, Signals};
+use crate::signal::{Path, Scopes, Sig, Signals};
 use crate::ssr::{self, Ctx};
 
 /// The values of a form and what the visitor has done to it.
@@ -445,22 +445,26 @@ impl<S, T> Sig<S, Form<T>> {
     #[must_use]
     pub fn is_dirty(self) -> Expr<S, bool> {
         let initial: Sig<S, T> = self.at(part("initial"));
-        Expr::from_json(json!([
-            "ne",
-            self.value().expr().into_json(),
-            initial.expr().into_json()
-        ]))
+        Expr::build(|scopes| {
+            json!([
+                "ne",
+                self.value().expr().take(scopes),
+                initial.expr().take(scopes)
+            ])
+        })
     }
 
     /// Whether `field` differs from the value it started from.
     #[must_use]
     pub fn is_field_dirty<U>(self, field: Sig<T, U>) -> Expr<S, bool> {
         let initial: Sig<S, T> = self.at(part("initial"));
-        Expr::from_json(json!([
-            "ne",
-            self.field(field).expr().into_json(),
-            initial.at(field).expr().into_json()
-        ]))
+        Expr::build(|scopes| {
+            json!([
+                "ne",
+                self.field(field).expr().take(scopes),
+                initial.at(field).expr().take(scopes)
+            ])
+        })
     }
 
     /// Whether the visitor has left `field`.
@@ -470,11 +474,13 @@ impl<S, T> Sig<S, Form<T>> {
     #[must_use]
     pub fn is_touched<U>(self, field: Sig<T, U>) -> Expr<S, bool> {
         let touched: Sig<S, Value> = self.at(part("touched"));
-        Expr::from_json(json!([
-            "or_else",
-            ["get", touched.expr().into_json(), key(field)],
-            ["lit", false]
-        ]))
+        Expr::build(|scopes| {
+            json!([
+                "or_else",
+                ["get", touched.expr().take(scopes), key(field)],
+                ["lit", false]
+            ])
+        })
     }
 
     /// Whether the visitor has submitted the form since it started or was reset.
@@ -495,7 +501,11 @@ impl<S, T> Sig<S, Form<T>> {
 
     fn touch_key(self, key: &str) -> Stmt<S> {
         let place = format!("{}.touched.{key}", self.path());
-        Stmt::set(Value::from(place), Expr::<S, bool>::lit(&true))
+        Stmt::set(
+            Value::from(place),
+            Scopes::default(),
+            Expr::<S, bool>::lit(&true),
+        )
     }
 
     /// A statement that puts back the starting values.
@@ -503,7 +513,7 @@ impl<S, T> Sig<S, Form<T>> {
     /// It also forgets what the visitor has done.
     #[must_use]
     pub fn reset(self) -> Stmt<S> {
-        let empty = || Expr::<S, Value>::from_json(json!(["lit", {}]));
+        let empty = || Expr::<S, Value>::build(|_| json!(["lit", {}]));
         self.value()
             .set(self.at(part::<T, T>("initial")))
             .then(self.at(part::<T, Value>("touched")).set(empty()))
@@ -543,11 +553,13 @@ impl<S, T: Validate> Sig<S, Form<T>> {
     pub fn error<U>(self, field: Sig<T, U>) -> Expr<S, String> {
         let key = key(field);
         let errors: Sig<S, Value> = self.at(part("errors"));
-        let server = Expr::<S, String>::from_json(json!([
-            "or_else",
-            ["get", errors.expr().into_json(), key],
-            ["lit", ""]
-        ]));
+        let server = Expr::<S, String>::build(|scopes| {
+            json!([
+                "or_else",
+                ["get", errors.expr().take(scopes), key],
+                ["lit", ""]
+            ])
+        });
         match self.rules().message(&key) {
             None => server,
             Some(client) => if_else(self.is_touched(field), client, "")
@@ -580,7 +592,7 @@ impl<S, T: Validate> Sig<S, Form<T>> {
             .then(self.at(part::<T, bool>("submitted")).set(true))
             .then(
                 self.at(part::<T, Value>("errors"))
-                    .set(Expr::from_json(json!(["lit", {}]))),
+                    .set(Expr::build(|_| json!(["lit", {}]))),
             )
             .then(Stmt::when(rules.all_pass(), then));
         html::form()

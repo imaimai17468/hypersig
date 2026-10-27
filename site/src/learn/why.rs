@@ -435,7 +435,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "A list item is used outside the closure it was passed to",
-                        "Building or rendering the page panics. An expression built from the item inside the closure and used inside another list at the same depth is not caught, and reads that list's item",
+                        "Building or rendering the page panics",
                     ],
                     &[
                         "A signal holds an integer beyond ±2^53",
@@ -481,7 +481,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                     ],
                     &[
                         "リストの項目を、渡されたクロージャの外で使う",
-                        "ページの組み立てか描画が panic します。ただし、クロージャの中で項目から作った式を、同じ深さの別のリストの中で使うと検出されず、そのリストの項目を読みます",
+                        "ページの組み立てか描画が panic します",
                     ],
                     &[
                         "シグナルに ±2^53 を超える整数を入れる",
