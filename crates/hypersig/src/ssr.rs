@@ -703,7 +703,7 @@ fn arithmetic(op: &str, a: f64, b: f64) -> Option<Value> {
 }
 
 #[cfg(test)]
-mod differential;
+pub(crate) mod differential;
 
 #[cfg(test)]
 mod tests {

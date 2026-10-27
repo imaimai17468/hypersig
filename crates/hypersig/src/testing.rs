@@ -71,6 +71,8 @@ use crate::signal::{FromPage, Sig, Signals};
 use crate::tape::Ref;
 use crate::{Action, DialogRef, FileInput, NodeRef, Page, StreamAction, Upload};
 
+#[cfg(test)]
+mod differential;
 mod run;
 
 /// A page as a browser holds it, which a test clicks and types into.
