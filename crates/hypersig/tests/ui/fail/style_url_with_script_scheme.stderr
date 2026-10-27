@@ -1,0 +1,20 @@
+error[E0080]: evaluation panicked: a URL a page loads is a path or an `http` or `https` URL, with no space or control character
+ --> tests/ui/fail/style_url_with_script_scheme.rs:4:22
+  |
+4 | const PAYLOAD: Url = url("javascript:alert(1)");
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `PAYLOAD` failed inside this call
+  |
+note: inside `url`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $WORKSPACE/crates/hypersig_style/src/value/mod.rs
+  |
+  | /     assert!(
+  | |         is_loaded_url(href.as_bytes()),
+  | |         "a URL a page loads is a path or an `http` or `https` URL, with no space or \
+  | |          control character"
+  | |     );
+  | |_____- in this macro invocation

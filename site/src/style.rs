@@ -162,7 +162,7 @@ fn values(site: Site, head: Part) -> Part {
                     ],
                     &[
                         "Text and URLs",
-                        "`quoted(\"→\")` escapes the text, and `url(\"/a.png\")` writes `url(\"...\")`",
+                        "`quoted(\"→\")` escapes the text, and `url(\"/a.png\")` writes `url(\"...\")` for a path or an `http` or `https` URL, so `url(\"javascript:...\")` in a `const` fails to compile",
                     ],
                     &[
                         "Every property",
@@ -179,7 +179,7 @@ fn values(site: Site, head: Part) -> Part {
                     ],
                     &[
                         "テキストと URL",
-                        "`quoted(\"→\")` はテキストをエスケープし、`url(\"/a.png\")` は `url(\"...\")` を書きます",
+                        "`quoted(\"→\")` はテキストをエスケープします。`url(\"/a.png\")` はパスか `http`、`https` の URL から `url(\"...\")` を書くので、`const` の中の `url(\"javascript:...\")` はコンパイルエラーになります",
                     ],
                     &[
                         "どのプロパティでも",

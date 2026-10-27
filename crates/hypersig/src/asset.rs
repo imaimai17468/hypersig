@@ -2,8 +2,8 @@
 
 use std::borrow::Cow;
 
-use crate::href;
 use crate::route::Base;
+use crate::style::value::{Url, url};
 
 /// The URL of a file a page loads.
 ///
@@ -40,43 +40,38 @@ use crate::route::Base;
 /// Nothing checks that the router serves the file. A path that no service
 /// answers loads nothing, and the browser's console shows the 404.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Asset(&'static str);
+pub struct Asset(Url);
 
 impl Asset {
-    /// The file at `url`.
+    /// The file at `href`.
     ///
-    /// `url` is a path the application serves, or a URL the page writes as
+    /// `href` is a path the application serves, or a URL the page writes as
     /// given.
     ///
     /// # Panics
     ///
-    /// Panics if `url` is empty, has a scheme other than `http` or `https`, or holds a
+    /// Panics if `href` is empty, has a scheme other than `http` or `https`, or holds a
     /// space or a control character. In a `const` the panic is a compile
     /// error.
     #[must_use]
-    pub const fn new(url: &'static str) -> Self {
-        assert!(
-            !url.is_empty()
-                && href::check(url.as_bytes()).is_ok()
-                && !href::has_scheme(url.as_bytes(), b"mailto"),
-            "an asset is a path or an `http` or `https` URL, with no space or control character"
-        );
-        Self(url)
+    pub const fn new(href: &'static str) -> Self {
+        Self(url(href))
     }
 
     /// The URL as written in the program.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
-        self.0
+        self.0.as_str()
     }
 
     /// The URL the page writes when a route under `base` serves it.
     pub(crate) fn under(self, base: Base) -> Cow<'static, str> {
-        let served = self.0.starts_with('/') && !self.0.starts_with("//");
+        let href = self.as_str();
+        let served = href.starts_with('/') && !href.starts_with("//");
         if served && base != Base::ROOT {
-            Cow::Owned(base.join(self.0))
+            Cow::Owned(base.join(href))
         } else {
-            Cow::Borrowed(self.0)
+            Cow::Borrowed(href)
         }
     }
 }
@@ -107,19 +102,19 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "an asset is a path")]
+    #[should_panic(expected = "a URL a page loads is a path")]
     fn a_script_scheme_panics() {
         let _ = Asset::new("javascript:alert(1)");
     }
 
     #[test]
-    #[should_panic(expected = "an asset is a path")]
+    #[should_panic(expected = "a URL a page loads is a path")]
     fn an_empty_url_panics() {
         let _ = Asset::new("");
     }
 
     #[test]
-    #[should_panic(expected = "an asset is a path")]
+    #[should_panic(expected = "a URL a page loads is a path")]
     fn a_mail_address_panics() {
         let _ = Asset::new("mailto:a@example.com");
     }

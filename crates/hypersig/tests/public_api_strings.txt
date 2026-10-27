@@ -2,7 +2,7 @@
 # as `path(parameter)`. A function missing here fails tests/public_api.rs until
 # a person decides that the string is not a signal path, an element id, a URL,
 # an expression, or CSS (M-STRONG-TYPES), and adds the line.
-hypersig::Asset::new(url)
+hypersig::Asset::new(href)
 hypersig::Base::new(path)
 hypersig::CalendarDate::parse(text)
 hypersig::Expr::text(value)
