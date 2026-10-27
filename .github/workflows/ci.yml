@@ -20,8 +20,8 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       site-deps: ${{ steps.filter.outputs.site-deps }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
         id: filter
         with:
           # A file counts toward a filter only when it matches every pattern
@@ -41,12 +41,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@d124f86f28ff42855784ff3319f48ac182c248f8 # 1.99
         with:
           components: rustfmt, clippy, rust-src
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       # The crates a Cloudflare Worker links, built for the target it runs on.
@@ -63,7 +63,7 @@ jobs:
       # The `sqlx::query!` macros of examples/postgres build from the query
       # descriptions in examples/postgres/.sqlx. `--check` fails when a query
       # or a migration changed and that directory was not written again.
-      - uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2
         with:
           tool: sqlx-cli@0.9.0
       - name: examples/postgres/.sqlx matches its queries
@@ -85,14 +85,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@d124f86f28ff42855784ff3319f48ac182c248f8 # 1.99
         with:
           components: rust-src
           # The tests of hypersig_cli check the Cloudflare projects it writes
           # for the target a worker runs on.
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - run: cargo test --workspace
 
   runtime:
@@ -103,11 +103,11 @@ jobs:
       run:
         working-directory: runtime
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           package_json_file: runtime/package.json
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           cache: pnpm
@@ -130,11 +130,11 @@ jobs:
       run:
         working-directory: e2e
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@d124f86f28ff42855784ff3319f48ac182c248f8 # 1.99
         with:
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           # The worker-build cache below holds ~/.cargo/bin/worker-build and
           # the two files where cargo records what it installed.
@@ -143,7 +143,7 @@ jobs:
       # about two minutes. The template's wrangler.toml runs the same `cargo
       # install` again, and cargo skips it only when .crates.toml lists the
       # version, so the cache holds that file next to the binary.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/bin/worker-build
@@ -156,7 +156,7 @@ jobs:
       # step comes after rust-cache so that its save, which runs in reverse
       # order, happens before that cleaning. ~/.cache/worker-build holds the
       # wasm-bindgen, wasm-opt, and esbuild that worker-build downloads.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             target/templates/cloudflare/target
@@ -165,15 +165,15 @@ jobs:
           restore-keys: cloudflare-${{ runner.os }}-
       # The Vercel template builds in target/templates/vercel/target, which
       # rust-cache drops for the same reason.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: target/templates/vercel/target
           key: vercel-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'crates/hypersig_cli/templates/vercel/**') }}
           restore-keys: vercel-${{ runner.os }}-
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           package_json_file: e2e/package.json
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           cache: pnpm
@@ -182,7 +182,7 @@ jobs:
       - run: pnpm check
       - run: cargo build --release -p example-counter -p example-todo -p example-todomvc -p example-showcase -p example-style -p example-ui -p example-signup -p example-auth -p example-storefront -p example-prefix -p example-database -p example-postgres -p example-redis -p example-api
       - run: pnpm test
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
           name: playwright-report
@@ -193,16 +193,16 @@ jobs:
     if: needs.changes.outputs.code == 'true' || needs.changes.outputs.site-deps == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Pinned so that a new nightly cannot fail main on its own.
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           toolchain: nightly-2026-10-14
           components: miri, rust-src
-      - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2
         with:
-          tool: cargo-udeps
+          tool: cargo-udeps@0.1.61
       - run: cargo +nightly-2026-10-14 udeps --workspace --all-targets
       - run: cargo +nightly-2026-10-14 miri test -p hypersig --lib
       # tests/public_api.rs reads the rustdoc JSON of each library crate,
@@ -231,10 +231,15 @@ jobs:
     concurrency:
       group: publish
       cancel-in-progress: false
+    # This job holds the rights to publish and to push, so it runs no
+    # third-party action it does not need (`cargo publish` builds in
+    # `target/package`, which no cache restores), and the checkout leaves
+    # no token in `.git/config` for the build scripts `cargo publish` runs.
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@d124f86f28ff42855784ff3319f48ac182c248f8 # 1.99
       - id: pending
         name: List the crates whose version crates.io does not have
         run: |
@@ -256,7 +261,7 @@ jobs:
       # names this repository and ci.yml as its trusted publisher.
       - id: auth
         if: steps.pending.outputs.args != ''
-        uses: rust-lang/crates-io-auth-action@v1
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1
       - if: steps.pending.outputs.args != ''
         run: cargo publish ${{ steps.pending.outputs.args }}
         env:
