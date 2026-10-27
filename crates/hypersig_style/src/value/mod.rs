@@ -304,21 +304,99 @@ pub fn quoted(text: impl Into<String>) -> Quoted {
 }
 
 /// A URL, written `url("...")`.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Url(String);
+///
+/// The stylesheet writes a path that starts with a single `/` as given,
+/// whatever `Base` the page's routes are declared `under`, because a patch
+/// builds the rules it brings with no `Base`. So under `Base::new("/app")`
+/// the URL `/fonts/inter.woff2` loads the file at the root of the host. A
+/// URL relative to the page, such as `fonts/inter.woff2`, follows the page's
+/// own path.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Url(&'static str);
+
+impl Url {
+    /// The URL as written in the program.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        self.0
+    }
+}
 
 impl fmt::Display for Url {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("url(")?;
-        quote(&self.0, f)?;
+        quote(self.0, f)?;
         f.write_str(")")
     }
 }
 
-/// The URL `href`.
+/// The URL `href`, of a file the page loads.
+///
+/// `href` is a path the application serves, a URL relative to the page, or
+/// an `http` or `https` URL on another host. It is text written in the
+/// program, because each value names its own class, so a URL built at run
+/// time would add a class per value.
+///
+/// # Panics
+///
+/// Panics if `href` is empty, has a scheme other than `http` or `https`, or
+/// holds a space or a control character. In a `const` the panic is a compile
+/// error.
 #[must_use]
-pub fn url(href: impl Into<String>) -> Url {
-    Url(href.into())
+pub const fn url(href: &'static str) -> Url {
+    assert!(
+        is_loaded_url(href.as_bytes()),
+        "a URL a page loads is a path or an `http` or `https` URL, with no space or \
+         control character"
+    );
+    Url(href)
+}
+
+/// Whether `url` is a non-empty URL with no space or control character,
+/// whose scheme, if it has one, is `http` or `https`.
+const fn is_loaded_url(url: &[u8]) -> bool {
+    if url.is_empty() {
+        return false;
+    }
+    // The browser drops spaces and control characters around and inside the
+    // scheme before reading it, so `java\tscript:` runs as `javascript:`.
+    let mut i = 0;
+    while i < url.len() {
+        if url[i] <= b' ' || url[i] == 0x7f {
+            return false;
+        }
+        i += 1;
+    }
+    let mut end = 0;
+    while end < url.len() && scheme_byte(url[end], end == 0) {
+        end += 1;
+    }
+    // Without a scheme before the first `:`, the URL is relative to the page.
+    if end == 0 || end == url.len() || url[end] != b':' {
+        return true;
+    }
+    same_ascii(url, end, b"http") || same_ascii(url, end, b"https")
+}
+
+/// Whether `byte` may sit in a URL scheme, whose first character is a letter.
+const fn scheme_byte(byte: u8, first: bool) -> bool {
+    byte.is_ascii_alphabetic()
+        || (!first && (byte.is_ascii_digit() || matches!(byte, b'+' | b'-' | b'.')))
+}
+
+/// Whether the first `len` bytes of `url` are `scheme`, ignoring case.
+const fn same_ascii(url: &[u8], len: usize, scheme: &[u8]) -> bool {
+    if len != scheme.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i < len {
+        if url[i].to_ascii_lowercase() != scheme[i] {
+            return false;
+        }
+        i += 1;
+    }
+    true
 }
 
 /// A value written into the stylesheet as given.
@@ -409,7 +487,7 @@ impl fmt::Display for CssWideKeyword {
 
 #[cfg(test)]
 mod tests {
-    use super::{px, quoted, raw, stays_in_declaration, url};
+    use super::{is_loaded_url, px, quoted, raw, stays_in_declaration, url};
 
     #[test]
     fn a_string_escapes_every_character_that_would_end_it() {
@@ -417,9 +495,48 @@ mod tests {
         // CSS reads `\r`, `\x0c`, and `\r\n` as a newline, which ends the
         // string and lets the rest be read as rules.
         assert_eq!(
-            url("x\r);}a{b:c}\x0c\n").to_string(),
-            r#"url("x\d );}a{b:c}\c \a ")"#,
+            quoted("x\r);}a{b:c}\x0c\n").to_string(),
+            r#""x\d );}a{b:c}\c \a ""#,
         );
+        assert_eq!(
+            url("x\");}a{b:c}<").to_string(),
+            r#"url("x\");}a{b:c}\3c ")"#
+        );
+    }
+
+    #[test]
+    fn a_path_a_relative_url_and_another_host_are_urls_a_page_loads() {
+        for href in [
+            "/inter.woff2",
+            "./inter.woff2",
+            "inter.woff2",
+            "//cdn.example/inter.woff2",
+            "https://cdn.example/inter.woff2",
+            "HTTP://cdn.example/inter.woff2",
+            "inter.woff2?v=1:2",
+        ] {
+            assert_eq!(url(href).as_str(), href);
+        }
+    }
+
+    #[test]
+    fn a_url_with_a_script_scheme_or_a_space_is_not_one_a_page_loads() {
+        for href in [
+            "",
+            "javascript:alert(1)",
+            "java\tscript:alert(1)",
+            "mailto:a@example.com",
+            "data:font/woff2;base64,AAAA",
+            "/a b.png",
+        ] {
+            assert!(!is_loaded_url(href.as_bytes()), "{href:?}");
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "a URL a page loads is a path")]
+    fn a_url_with_a_script_scheme_panics_where_it_is_built() {
+        let _ = url("javascript:alert(1)");
     }
 
     #[test]

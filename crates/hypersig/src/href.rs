@@ -144,11 +144,6 @@ pub(crate) const fn check(url: &[u8]) -> Result<(), &'static str> {
     }
 }
 
-/// Whether `url` starts with the scheme `scheme` and a `:`, ignoring case.
-pub(crate) const fn has_scheme(url: &[u8], scheme: &[u8]) -> bool {
-    url.len() > scheme.len() && url[scheme.len()] == b':' && same_ascii(url, scheme.len(), scheme)
-}
-
 /// Whether `byte` may sit in a URL scheme, whose first character is a letter.
 const fn scheme_byte(byte: u8, first: bool) -> bool {
     byte.is_ascii_alphabetic()
