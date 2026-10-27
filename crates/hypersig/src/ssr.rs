@@ -703,6 +703,9 @@ fn arithmetic(op: &str, a: f64, b: f64) -> Option<Value> {
 }
 
 #[cfg(test)]
+mod differential;
+
+#[cfg(test)]
 mod tests {
     use serde_json::json;
 
