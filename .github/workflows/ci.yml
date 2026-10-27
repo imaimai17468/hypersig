@@ -9,8 +9,10 @@ jobs:
   # Decides which of the jobs below a push or pull request needs. A change
   # that touches only Markdown, the documentation site, the benchmarks, or the
   # pictures in assets/ cannot change what runtime, e2e, or nightly checks,
-  # because no crate, example, or test reads those files except the READMEs,
-  # which the doctests of the test job compile.
+  # because those jobs read none of these files. The Markdown a crate does
+  # read reaches lint and test, which run on every change: the doctests
+  # compile the READMEs, and hypersig_cli builds `templates/*/AGENTS.host.md`
+  # into the binary the test job builds.
   changes:
     runs-on: ubuntu-latest
     permissions:

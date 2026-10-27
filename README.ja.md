@@ -2,7 +2,7 @@
 
 # hypersig
 
-[English](README.md) | [ドキュメント](https://imaimai17468.github.io/hypersig/ja/)
+[English](https://github.com/imaimai17468/hypersig/blob/main/README.md) | [ドキュメント](https://imaimai17468.github.io/hypersig/ja/)
 
 **サーバーが状態を、型が正しさを。**
 
@@ -92,7 +92,7 @@ async fn main() -> std::io::Result<()> {
 | Total Blocking Time | 3 ms (0–37) | 318 ms (311–351) | 16 ms (11–23) | 14 ms (9–16) | 0 ms (0–0) | 36 ms (29–42) | 20 ms (17–23) | 47 ms (42–57) | 122 ms (114–126) |
 | Interaction to Next Paint | 24 ms (24–24) | 24 ms (24–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (24–24) | 16 ms (16–16) | 24 ms (16–24) | 72 ms (72–80) |
 
-測ったアプリと計測の仕組みは [`bench/compare`](bench/compare) にあり、どれもコミット 7d031d0 で測りました。Leptos と Dioxus はコードの大半を WebAssembly で読み込むので、その大きさを Wasm の行に数えています。js-framework-benchmark の結果は [`bench/js-framework-benchmark`](bench/js-framework-benchmark/results.md) に、スタイルのクレートの比較は [`hypersig_style` の README](crates/hypersig_style/README.ja.md#ベンチマーク) にあります。同じマシンで [`examples/todomvc`](examples/todomvc)（485 行）をビルドすると、空の target ディレクトリからは 13.4 s、1 行変えた後の再ビルドは 1.3 s でした（`cargo build`、Rust 1.99.0）。
+測ったアプリと計測の仕組みは [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare) にあり、どれもコミット 7d031d0 で測りました。Leptos と Dioxus はコードの大半を WebAssembly で読み込むので、その大きさを Wasm の行に数えています。js-framework-benchmark の結果は [`bench/js-framework-benchmark`](https://github.com/imaimai17468/hypersig/blob/main/bench/js-framework-benchmark/results.md) に、スタイルのクレートの比較は [`hypersig_style` の README](https://github.com/imaimai17468/hypersig/blob/main/crates/hypersig_style/README.ja.md#ベンチマーク) にあります。同じマシンで [`examples/todomvc`](https://github.com/imaimai17468/hypersig/tree/main/examples/todomvc)（485 行）をビルドすると、空の target ディレクトリからは 13.4 s、1 行変えた後の再ビルドは 1.3 s でした（`cargo build`、Rust 1.99.0）。
 
 ## デプロイとセキュリティ
 
@@ -124,7 +124,7 @@ async fn main() -> std::io::Result<()> {
 
 ## 開発
 
-不具合の報告とプルリクエストについては [`CONTRIBUTING.md`](CONTRIBUTING.md)（英語）に、リポジトリの構成と変更のたびに通す確認は [`AGENTS.md`](AGENTS.md) にあります。
+不具合の報告とプルリクエストについては [`CONTRIBUTING.md`](https://github.com/imaimai17468/hypersig/blob/main/CONTRIBUTING.md)（英語）に、リポジトリの構成と変更のたびに通す確認は [`AGENTS.md`](https://github.com/imaimai17468/hypersig/blob/main/AGENTS.md) にあります。
 
 ## License
 
