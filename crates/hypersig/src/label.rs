@@ -4,27 +4,29 @@ use serde_json::{Value, json};
 
 use crate::expr::{Expr, IntoExpr};
 use crate::route::Variants;
-use crate::signal::Sig;
+use crate::signal::{Scopes, Sig};
 
 /// The chain `label` builds: for each variant but the last, whether `value`
 /// equals it, and the last variant's text where none does.
 fn label_chain<S, T: Variants, L: IntoExpr<S, String>>(
     value: &Value,
     label: impl Fn(&T) -> L,
+    scopes: &mut Scopes,
 ) -> Value {
     let (last, rest) = T::VARIANTS
         .split_last()
         .expect("`#[derive(Segment)]` rejects an enum without variants");
-    rest.iter()
-        .rev()
-        .fold(label(last).into_expr().into_json(), |otherwise, variant| {
+    rest.iter().rev().fold(
+        label(last).into_expr().take(scopes),
+        |otherwise, variant| {
             json!([
                 "if",
                 ["eq", value, ["lit", variant.write()]],
-                label(variant).into_expr().into_json(),
+                label(variant).into_expr().take(scopes),
                 otherwise
             ])
-        })
+        },
+    )
 }
 
 /// Defines `label` on both `Expr` and `Sig`.
@@ -70,11 +72,12 @@ macro_rules! label_operations {
                 let value = self.operand();
                 match value.as_json().get(0).and_then(Value::as_str) {
                     // Reading a signal again costs no more than reading a name.
-                    Some("sig" | "item" | "lit" | "var") => {
-                        Expr::from_json(label_chain::<S, T, L>(value.as_json(), label))
-                    }
+                    Some("sig" | "item" | "lit" | "var") => Expr::build(|scopes| {
+                        let value = value.take(scopes);
+                        label_chain::<S, T, L>(&value, label, scopes)
+                    }),
                     _ => value.let_in(|value| {
-                        Expr::from_json(label_chain::<S, T, L>(value.as_json(), label))
+                        Expr::build(|scopes| label_chain::<S, T, L>(value.as_json(), label, scopes))
                     }),
                 }
             }

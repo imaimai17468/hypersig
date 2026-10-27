@@ -493,12 +493,8 @@ fn a_statement_computing_an_infinity_is_refused() {
 #[test]
 #[should_panic(expected = "`upsert` is a list statement that only a server patch sends")]
 fn a_patch_statement_is_refused() {
-    let page = page(Stmt::new(json!([
-        "upsert",
-        "rows",
-        0,
-        ["lit", 1],
-        ["lit", []]
-    ])));
+    let page = page(Stmt::build(|_| {
+        json!(["upsert", "rows", 0, ["lit", 1], ["lit", []]])
+    }));
     page.simulate().click(GO);
 }

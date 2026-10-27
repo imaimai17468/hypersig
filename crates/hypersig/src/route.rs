@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use serde_json::{Value, json};
 
 use crate::expr::{Expr, IntoExpr, Stmt};
-use crate::signal::Signals;
+use crate::signal::{Scopes, Signals};
 
 /// A page served at a path whose parameters are `P`, with search parameters `Q`.
 ///
@@ -306,7 +306,8 @@ impl<P: Params, Q: Search> Route<P, Q> {
     /// date. Each value is percent-encoded as `encodeURIComponent` does.
     #[must_use]
     pub fn link_with<S>(&self, args: impl IntoExpr<S, Q::Args<P>>) -> Link<S> {
-        let args = args.into_expr().into_json();
+        let mut scopes = Scopes::default();
+        let args = args.into_expr().take(&mut scopes);
         let (params, search) = match (Q::TYPED, P::COUNT) {
             (false, _) => (args, None),
             (true, 0) => (Value::Null, Some(args)),
@@ -320,7 +321,7 @@ impl<P: Params, Q: Search> Route<P, Q> {
             1 => vec![params],
             count => split_tuple(params, count),
         };
-        Link::new(&self.parts(), values, search, P::REST_LAST)
+        Link::new(&self.parts(), values, search, P::REST_LAST, scopes)
     }
 
     /// The URL of this page with the arguments `args`, written on the server.
@@ -416,7 +417,7 @@ impl Route<(), ()> {
     /// A link to this page, which has no parameters.
     #[must_use]
     pub fn link<S>(&self) -> Link<S> {
-        Link::new(&self.parts(), Vec::new(), None, false)
+        Link::new(&self.parts(), Vec::new(), None, false, Scopes::default())
     }
 }
 
@@ -934,8 +935,15 @@ enum LinkKind<S> {
 }
 
 impl<S> Link<S> {
-    /// A link to the path whose literal parts are `parts`, with `values` between them.
-    fn new(parts: &[String], values: Vec<Value>, search: Option<Value>, rest_last: bool) -> Self {
+    /// A link to the path whose literal parts are `parts`, with `values`
+    /// between them, which read the list item scopes `scopes`.
+    fn new(
+        parts: &[String],
+        values: Vec<Value>,
+        search: Option<Value>,
+        rest_last: bool,
+        scopes: Scopes,
+    ) -> Self {
         let count = values.len();
         let is_rest = |index: usize| rest_last && index + 1 == count;
         let segments: Option<Vec<String>> = values
@@ -974,7 +982,10 @@ impl<S> Link<S> {
                 ast
             ]);
         }
-        Self(LinkKind::Bound(Expr::from_json(ast)))
+        Self(LinkKind::Bound(Expr::build(|read| {
+            read.extend(scopes);
+            ast
+        })))
     }
 
     /// A statement that loads the linked page, as following the link would.
@@ -1000,7 +1011,7 @@ impl<S> Link<S> {
     /// ```
     #[must_use]
     pub fn navigate(self) -> Stmt<S> {
-        Stmt::new(json!(["navigate", self.into_json()]))
+        Stmt::build(|scopes| json!(["navigate", self.take(scopes)]))
     }
 
     /// A statement that shows the linked URL as a new history entry.
@@ -1050,7 +1061,7 @@ impl<S> Link<S> {
     /// ```
     #[must_use]
     pub fn push_url(self) -> Stmt<S> {
-        Stmt::new(json!(["history", "push", self.into_json()]))
+        Stmt::build(|scopes| json!(["history", "push", self.take(scopes)]))
     }
 
     /// A statement that shows the linked URL in place of the current one.
@@ -1062,14 +1073,15 @@ impl<S> Link<S> {
     /// field.
     #[must_use]
     pub fn replace_url(self) -> Stmt<S> {
-        Stmt::new(json!(["history", "replace", self.into_json()]))
+        Stmt::build(|scopes| json!(["history", "replace", self.take(scopes)]))
     }
 
-    /// The URL as an expression: a literal for a fixed link.
-    fn into_json(self) -> Value {
+    /// The URL as an expression, a literal for a fixed link, with the item
+    /// scopes it reads added to `scopes`.
+    fn take(self, scopes: &mut Scopes) -> Value {
         match self.0 {
             LinkKind::Fixed(url) => json!(["lit", url]),
-            LinkKind::Bound(expr) => expr.into_json(),
+            LinkKind::Bound(expr) => expr.take(scopes),
         }
     }
 
@@ -2021,7 +2033,8 @@ mod tests {
         let ast = link
             .into_parts()
             .expect_err("a link that reads a signal")
-            .into_json();
+            .as_json()
+            .clone();
         let root = json!({ "org": "" });
         let ctx = Ctx {
             root: (&root).into(),

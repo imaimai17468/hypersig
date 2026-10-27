@@ -84,7 +84,7 @@ impl From<SystemTime> for Timestamp {
 
 impl<S> IntoExpr<S, Timestamp> for Timestamp {
     fn into_expr(self) -> Expr<S, Timestamp> {
-        Expr::from_json(json!(["lit", self.0]))
+        Expr::build(|_| json!(["lit", self.0]))
     }
 }
 
@@ -96,7 +96,7 @@ impl<S> Expr<S, Timestamp> {
     /// [`Timestamp::now`] in a signal instead.
     #[must_use]
     pub fn timestamp_now() -> Self {
-        Self::from_json(json!(["now"]))
+        Self::build(|_| json!(["now"]))
     }
 }
 
@@ -225,7 +225,7 @@ impl<'de> Deserialize<'de> for CalendarDate {
 
 impl<S> IntoExpr<S, CalendarDate> for CalendarDate {
     fn into_expr(self) -> Expr<S, CalendarDate> {
-        Expr::from_json(json!(["lit", self.to_string()]))
+        Expr::build(|_| json!(["lit", self.to_string()]))
     }
 }
 
@@ -433,16 +433,16 @@ macro_rules! time_operations {
             /// The milliseconds since the Unix epoch.
             #[must_use]
             pub fn millis(&self) -> Expr<S, i64> {
-                Expr::from_json(self.operand().into_json())
+                Expr::build(|scopes| self.operand().take(scopes))
             }
 
             /// The time `millis` milliseconds later, or earlier for a negative value.
             #[must_use]
             pub fn add_millis(&self, millis: impl IntoExpr<S, i64>) -> Expr<S, Timestamp> {
-                Expr::from_json(json!([
+                Expr::build(|scopes| json!([
                     "add",
-                    self.operand().into_json(),
-                    millis.into_expr().into_json()
+                    self.operand().take(scopes),
+                    millis.into_expr().take(scopes)
                 ]))
             }
 
@@ -463,9 +463,9 @@ macro_rules! time_operations {
             /// ```
             #[must_use]
             pub fn format_date(&self, format: &DateFormat) -> Expr<S, String> {
-                Expr::from_json(json!([
+                Expr::build(|scopes| json!([
                     "date",
-                    self.operand().into_json(),
+                    self.operand().take(scopes),
                     format.locale.tag(),
                     format.date.map(DateStyle::name),
                     format.time.map(TimeStyle::name),
@@ -503,10 +503,10 @@ macro_rules! time_operations {
                 now: impl IntoExpr<S, Timestamp>,
                 locale: IntlLocale,
             ) -> Expr<S, String> {
-                Expr::from_json(json!([
+                Expr::build(|scopes| json!([
                     "reltime",
-                    self.operand().into_json(),
-                    now.into_expr().into_json(),
+                    self.operand().take(scopes),
+                    now.into_expr().take(scopes),
                     locale.tag()
                 ]))
             }

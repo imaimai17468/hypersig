@@ -74,7 +74,7 @@ use serde_json::{Value, json};
 
 use crate::Segment;
 use crate::exact;
-use crate::signal::Sig;
+use crate::signal::{Path, Scopes, Sig};
 
 /// An expression over the signals of `S` that evaluates to a `T`.
 ///
@@ -102,7 +102,8 @@ use crate::signal::Sig;
 /// # let _ = summary;
 /// ```
 pub struct Expr<S, T> {
-    ast: Value,
+    tree: Value,
+    scopes: Scopes,
     marker: PhantomData<fn() -> (S, T)>,
 }
 
@@ -115,7 +116,7 @@ impl<S> Expr<S, i32> {
     /// number the browser will.
     #[must_use]
     pub fn random_below(bound: impl IntoExpr<S, i32>) -> Self {
-        Self::from_json(json!(["random", bound.into_expr().ast]))
+        Self::build(|scopes| json!(["random", bound.into_expr().take(scopes)]))
     }
 }
 
@@ -131,7 +132,7 @@ impl<S> Expr<S, String> {
     /// ```
     #[must_use]
     pub fn text(value: &str) -> Self {
-        Self::from_json(json!(["lit", value]))
+        Self::build(|_| json!(["lit", value]))
     }
 }
 
@@ -141,14 +142,19 @@ impl<S> Expr<S, f64> {
     /// The server leaves it out of the first HTML, as it does a random number.
     #[must_use]
     pub fn now() -> Self {
-        Self::from_json(json!(["now"]))
+        Self::build(|_| json!(["now"]))
     }
 }
 
 impl<S, T> Expr<S, T> {
-    pub(crate) fn from_json(ast: Value) -> Self {
+    /// The expression whose tree `build` writes, adding the item scopes of
+    /// the operands it takes to the set it is handed.
+    pub(crate) fn build(build: impl FnOnce(&mut Scopes) -> Value) -> Self {
+        let mut scopes = Scopes::default();
+        let tree = build(&mut scopes);
         Self {
-            ast,
+            tree,
+            scopes,
             marker: PhantomData,
         }
     }
@@ -166,19 +172,25 @@ impl<S, T> Expr<S, T> {
         T: Serialize,
     {
         let value = exact::to_value(value, "a literal does not serialize to JSON");
-        Self::from_json(json!(["lit", value]))
+        Self::build(|_| json!(["lit", value]))
     }
 
     fn binary<U>(op: &str, lhs: Self, rhs: Self) -> Expr<S, U> {
-        Expr::from_json(Value::Array(vec![Value::from(op), lhs.ast, rhs.ast]))
+        Expr::build(|scopes| {
+            Value::Array(vec![Value::from(op), lhs.take(scopes), rhs.take(scopes)])
+        })
     }
 
     fn unary<U>(op: &str, operand: Self) -> Expr<S, U> {
-        Expr::from_json(Value::Array(vec![Value::from(op), operand.ast]))
+        Expr::build(|scopes| Value::Array(vec![Value::from(op), operand.take(scopes)]))
     }
 
-    fn retype<U>(self) -> Expr<S, U> {
-        Expr::from_json(self.ast)
+    pub(crate) fn retype<U>(self) -> Expr<S, U> {
+        Expr {
+            tree: self.tree,
+            scopes: self.scopes,
+            marker: PhantomData,
+        }
     }
 
     /// A copy of this expression, which the methods `operations!` writes on
@@ -190,7 +202,13 @@ impl<S, T> Expr<S, T> {
     /// The field `field` of the struct this expression evaluates to.
     #[must_use]
     pub fn at<U>(&self, field: Sig<T, U>) -> Expr<S, U> {
-        Expr::from_json(json!(["get", self.ast.clone(), field.raw_path().dotted()]))
+        Expr::build(|scopes| {
+            json!([
+                "get",
+                self.operand().take(scopes),
+                field.raw_path().dotted()
+            ])
+        })
     }
 
     /// The expression `body` builds from this value.
@@ -220,8 +238,8 @@ impl<S, T> Expr<S, T> {
     #[must_use]
     pub fn let_in<U>(self, body: impl FnOnce(Expr<S, T>) -> Expr<S, U>) -> Expr<S, U> {
         in_let_scope(|depth| {
-            let body = body(Expr::from_json(json!(["var", depth])));
-            Expr::from_json(json!(["let", self.ast, depth, body.ast]))
+            let body = body(Expr::build(|_| json!(["var", depth])));
+            Expr::build(|scopes| json!(["let", self.take(scopes), depth, body.take(scopes)]))
         })
     }
 
@@ -258,21 +276,46 @@ impl<S, T> Expr<S, T> {
     #[must_use]
     pub fn let_in_stmt<B: IntoStmt<S>>(self, body: impl FnOnce(Expr<S, T>) -> B) -> Stmt<S> {
         in_let_scope(|depth| {
-            let body = body(Expr::from_json(json!(["var", depth]))).into_stmt();
-            Stmt::new(json!(["let", self.ast, depth, body.ast]))
+            let body = body(Expr::build(|_| json!(["var", depth]))).into_stmt();
+            Stmt::build(|scopes| json!(["let", self.take(scopes), depth, body.take(scopes)]))
         })
     }
 
-    pub(crate) fn into_json(self) -> Value {
-        self.ast
+    /// The tree, with this expression's item scopes added to `scopes`.
+    pub(crate) fn take(self, scopes: &mut Scopes) -> Value {
+        scopes.extend(self.scopes);
+        self.tree
+    }
+
+    /// The tree alone, for a place that no list encloses, where
+    /// [`assert_items_open`](crate::html::assert_items_open) refuses any
+    /// item read the tree holds, or for a patch, which the browser reads
+    /// against the list it names.
+    pub(crate) fn into_tree(self) -> Value {
+        self.tree
     }
 
     pub(crate) fn as_json(&self) -> &Value {
-        &self.ast
+        &self.tree
+    }
+
+    /// The list item scopes the tree reads.
+    pub(crate) fn scopes(&self) -> &Scopes {
+        &self.scopes
+    }
+
+    /// The same expression over the signals `S2`, for an element a
+    /// [`Part`](crate::Part) renders.
+    pub(crate) fn rebase<S2>(self) -> Expr<S2, T> {
+        Expr {
+            tree: self.tree,
+            scopes: self.scopes,
+            marker: PhantomData,
+        }
     }
 
     pub(crate) fn to_json(&self) -> String {
-        self.ast.to_string()
+        self.tree.to_string()
     }
 }
 
@@ -301,13 +344,17 @@ pub(crate) fn in_let_scope<R>(body: impl FnOnce(u8) -> R) -> R {
 
 impl<S, T> Clone for Expr<S, T> {
     fn clone(&self) -> Self {
-        Self::from_json(self.ast.clone())
+        Self {
+            tree: self.tree.clone(),
+            scopes: self.scopes.clone(),
+            marker: PhantomData,
+        }
     }
 }
 
 impl<S, T> fmt::Debug for Expr<S, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Expr").field(&self.ast).finish()
+        f.debug_tuple("Expr").field(&self.tree).finish()
     }
 }
 
@@ -356,7 +403,7 @@ macro_rules! literal {
             fn into_expr(self) -> Expr<S, $target> {
                 let value = json!(self);
                 exact::check(&value);
-                Expr::from_json(json!(["lit", value]))
+                Expr::build(|_| json!(["lit", value]))
             }
         }
     )*};
@@ -371,7 +418,7 @@ macro_rules! tuple {
         impl<S, $($ty,)+ $($expr: IntoExpr<S, $ty>,)+> IntoExpr<S, ($($ty,)+)> for ($($expr,)+) {
             fn into_expr(self) -> Expr<S, ($($ty,)+)> {
                 let ($($value,)+) = self;
-                Expr::from_json(json!(["tuple", $($value.into_expr().ast),+]))
+                Expr::build(|scopes| json!(["tuple", $($value.into_expr().take(scopes)),+]))
             }
         }
     };
@@ -387,12 +434,14 @@ pub fn if_else<S, T>(
     then: impl IntoExpr<S, T>,
     otherwise: impl IntoExpr<S, T>,
 ) -> Expr<S, T> {
-    Expr::from_json(json!([
-        "if",
-        cond.into_expr().ast,
-        then.into_expr().ast,
-        otherwise.into_expr().ast
-    ]))
+    Expr::build(|scopes| {
+        json!([
+            "if",
+            cond.into_expr().take(scopes),
+            then.into_expr().take(scopes),
+            otherwise.into_expr().take(scopes)
+        ])
+    })
 }
 
 /// A type the runtime does arithmetic on with the same result Rust would get.
@@ -546,9 +595,9 @@ macro_rules! operations {
             /// ```
             #[must_use]
             pub fn format(&self, format: &NumberFormat) -> Expr<S, String> {
-                Expr::from_json(json!([
+                Expr::build(|scopes| json!([
                     "format",
-                    self.operand().ast,
+                    self.operand().take(scopes),
                     format.digits,
                     format.group,
                     format.point,
@@ -621,7 +670,7 @@ macro_rules! operations {
             #[must_use]
             pub fn to_fixed(&self, digits: u8) -> Expr<S, String> {
                 assert!(digits <= 100, "toFixed takes at most 100 digits, not {digits}");
-                Expr::from_json(json!(["fixed", self.operand().ast, digits]))
+                Expr::build(|scopes| json!(["fixed", self.operand().take(scopes), digits]))
             }
         }
 
@@ -693,13 +742,13 @@ macro_rules! operations {
             /// ```
             #[must_use]
             pub fn all_chars(&self, class: CharClass) -> Expr<S, bool> {
-                Expr::from_json(json!(["chars_all", self.operand().ast, class.name()]))
+                Expr::build(|scopes| json!(["chars_all", self.operand().take(scopes), class.name()]))
             }
 
             /// Whether some character of this string is in `class`, false for an empty string.
             #[must_use]
             pub fn any_char(&self, class: CharClass) -> Expr<S, bool> {
-                Expr::from_json(json!(["chars_any", self.operand().ast, class.name()]))
+                Expr::build(|scopes| json!(["chars_any", self.operand().take(scopes), class.name()]))
             }
         }
 
@@ -713,7 +762,7 @@ macro_rules! operations {
             /// The item at `index`, or `None` past either end.
             #[must_use]
             pub fn nth(&self, index: impl IntoExpr<S, i32>) -> Expr<S, Option<T>> {
-                Expr::from_json(json!(["nth", self.operand().ast, index.into_expr().ast]))
+                Expr::build(|scopes| json!(["nth", self.operand().take(scopes), index.into_expr().take(scopes)]))
             }
 
             /// Whether the list has no items.
@@ -727,19 +776,19 @@ macro_rules! operations {
             /// Whether this option holds a value.
             #[must_use]
             pub fn is_some(&self) -> Expr<S, bool> {
-                Expr::binary("ne", self.operand(), Expr::from_json(json!(["lit", null])))
+                Expr::binary("ne", self.operand(), Expr::build(|_| json!(["lit", null])))
             }
 
             /// Whether this option is `None`.
             #[must_use]
             pub fn is_none(&self) -> Expr<S, bool> {
-                Expr::binary("eq", self.operand(), Expr::from_json(json!(["lit", null])))
+                Expr::binary("eq", self.operand(), Expr::build(|_| json!(["lit", null])))
             }
 
             /// The held value, or `default` for `None`.
             #[must_use]
             pub fn unwrap_or(&self, default: impl IntoExpr<S, T>) -> Expr<S, T> {
-                Expr::from_json(json!(["or_else", self.operand().ast, default.into_expr().ast]))
+                Expr::build(|scopes| json!(["or_else", self.operand().take(scopes), default.into_expr().take(scopes)]))
             }
         }
 
@@ -818,11 +867,11 @@ macro_rules! operations {
             /// A copy of this struct with `field` replaced by `value`.
             #[must_use]
             pub fn with<U>(&self, field: Sig<T, U>, value: impl IntoExpr<S, U>) -> Expr<S, T> {
-                Expr::from_json(json!([
+                Expr::build(|scopes| json!([
                     "with",
-                    self.operand().ast,
+                    self.operand().take(scopes),
                     field.raw_path().dotted(),
-                    value.into_expr().ast
+                    value.into_expr().take(scopes)
                 ]))
             }
         }
@@ -1018,30 +1067,46 @@ impl CharClass {
 
 /// A statement over the signals of `S` that the browser runs on an event.
 pub struct Stmt<S> {
-    ast: Value,
+    tree: Value,
+    scopes: Scopes,
     marker: PhantomData<fn() -> S>,
 }
 
 impl<S> Stmt<S> {
-    pub(crate) fn new(ast: Value) -> Self {
+    /// The statement whose tree `build` writes, as [`Expr::build`] does.
+    pub(crate) fn build(build: impl FnOnce(&mut Scopes) -> Value) -> Self {
+        let mut scopes = Scopes::default();
+        let tree = build(&mut scopes);
         Self {
-            ast,
+            tree,
+            scopes,
             marker: PhantomData,
         }
     }
 
-    pub(crate) fn set<T>(place: Value, value: Expr<S, T>) -> Self {
-        Self::new(Value::Array(vec![Value::from("set"), place, value.ast]))
+    /// A statement that assigns `value` to the place `place` names, which
+    /// reads the list item scopes `place_scopes`.
+    pub(crate) fn set<T>(place: Value, place_scopes: Scopes, value: Expr<S, T>) -> Self {
+        Self::build(|scopes| {
+            scopes.extend(place_scopes);
+            Value::Array(vec![Value::from("set"), place, value.take(scopes)])
+        })
     }
 
-    pub(crate) fn list(op: &str, place: Value, operand: Value) -> Self {
-        Self::new(Value::Array(vec![Value::from(op), place, operand]))
+    pub(crate) fn list<T>(op: &str, place: Path, operand: Expr<S, T>) -> Self {
+        Self::build(|scopes| {
+            Value::Array(vec![
+                Value::from(op),
+                place.place_json(scopes),
+                operand.take(scopes),
+            ])
+        })
     }
 
     /// A statement that does nothing.
     #[must_use]
     pub fn none() -> Self {
-        Self::new(json!(["seq", []]))
+        Self::build(|_| json!(["seq", []]))
     }
 
     /// Runs `then` only while `cond` is true.
@@ -1057,38 +1122,60 @@ impl<S> Stmt<S> {
         then: impl IntoStmt<S>,
         otherwise: impl IntoStmt<S>,
     ) -> Self {
-        Self::new(json!([
-            "if",
-            cond.into_expr().ast,
-            then.into_stmt().ast,
-            otherwise.into_stmt().ast
-        ]))
+        Self::build(|scopes| {
+            json!([
+                "if",
+                cond.into_expr().take(scopes),
+                then.into_stmt().take(scopes),
+                otherwise.into_stmt().take(scopes)
+            ])
+        })
     }
 
     /// Runs `self`, then `next`.
     #[must_use]
     pub fn then(self, next: impl IntoStmt<S>) -> Self {
-        let mut steps = match self.ast {
-            Value::Array(mut items) if items.first() == Some(&json!("seq")) => match items.pop() {
-                Some(Value::Array(steps)) => steps,
-                _ => unreachable!("a seq statement always holds an array of steps"),
-            },
-            single => vec![single],
-        };
-        steps.push(next.into_stmt().ast);
-        Self::new(json!(["seq", steps]))
+        Self::build(|scopes| {
+            let mut steps = match self.take(scopes) {
+                Value::Array(mut items) if items.first() == Some(&json!("seq")) => {
+                    match items.pop() {
+                        Some(Value::Array(steps)) => steps,
+                        _ => unreachable!("a seq statement always holds an array of steps"),
+                    }
+                }
+                single => vec![single],
+            };
+            steps.push(next.into_stmt().take(scopes));
+            json!(["seq", steps])
+        })
     }
 
-    pub(crate) fn into_json(self) -> Value {
-        self.ast
+    /// The tree, with this statement's item scopes added to `scopes`.
+    pub(crate) fn take(self, scopes: &mut Scopes) -> Value {
+        scopes.extend(self.scopes);
+        self.tree
     }
 
     pub(crate) fn as_json(&self) -> &Value {
-        &self.ast
+        &self.tree
+    }
+
+    /// The list item scopes the tree reads.
+    pub(crate) fn scopes(&self) -> &Scopes {
+        &self.scopes
+    }
+
+    /// The same statement over the signals `S2`, as [`Expr::rebase`] does.
+    pub(crate) fn rebase<S2>(self) -> Stmt<S2> {
+        Stmt {
+            tree: self.tree,
+            scopes: self.scopes,
+            marker: PhantomData,
+        }
     }
 
     pub(crate) fn to_json(&self) -> String {
-        self.ast.to_string()
+        self.tree.to_string()
     }
 }
 
@@ -1113,13 +1200,17 @@ impl<S> IntoStmt<S> for Stmt<S> {
 
 impl<S> Clone for Stmt<S> {
     fn clone(&self) -> Self {
-        Self::new(self.ast.clone())
+        Self {
+            tree: self.tree.clone(),
+            scopes: self.scopes.clone(),
+            marker: PhantomData,
+        }
     }
 }
 
 impl<S> fmt::Debug for Stmt<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Stmt").field(&self.ast).finish()
+        f.debug_tuple("Stmt").field(&self.tree).finish()
     }
 }
 
