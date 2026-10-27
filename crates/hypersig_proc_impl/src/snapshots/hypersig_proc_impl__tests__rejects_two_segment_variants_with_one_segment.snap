@@ -1,0 +1,22 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand_segment(quote!\n{\n    #[serde(rename_all = \"lowercase\")] enum Lang\n    { En, #[serde(rename = \"en\")] English }\n})"
+---
+::core::compile_error! {
+    "`En` and `English` are both the segment `en`, so a URL with it could not say which one it means"
+}
+#[automatically_derived]
+impl ::hypersig::_private::Sealed for Lang {}
+#[automatically_derived]
+impl ::hypersig::Segment for Lang {
+    fn parse(_segment: &str) -> ::core::option::Option<Self> {
+        ::core::option::Option::None
+    }
+    fn write(&self) -> ::std::string::String {
+        ::core::unreachable!("the derive of `Segment` failed to compile")
+    }
+}
+#[automatically_derived]
+impl ::hypersig::Variants for Lang {
+    const VARIANTS: &'static [Self] = &[];
+}

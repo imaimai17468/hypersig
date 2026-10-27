@@ -318,7 +318,7 @@ fn expand_segment(input: &DeriveInput) -> syn::Result<TokenStream> {
         }
         idents.push(&variant.ident);
         let name = variant.ident.unraw().to_string();
-        names.push(match (rename, &rename_all) {
+        let segment = match (rename, &rename_all) {
             (Some(rename), _) => {
                 let value = rename.value();
                 if matches!(value.as_str(), "" | "." | "..") {
@@ -331,7 +331,17 @@ fn expand_segment(input: &DeriveInput) -> syn::Result<TokenStream> {
             }
             (None, Some(rule)) => apply_rename_all(rule, &name)?,
             (None, None) => name,
-        });
+        };
+        if let Some(at) = names.iter().position(|other| *other == segment) {
+            return Err(syn::Error::new_spanned(
+                &variant.ident,
+                format!(
+                    "`{}` and `{}` are both the segment `{segment}`, so a URL with it could not say which one it means",
+                    idents[at], variant.ident
+                ),
+            ));
+        }
+        names.push(segment);
     }
 
     let name = &input.ident;
@@ -457,6 +467,9 @@ fn serde_rename(attrs: &[syn::Attribute], key: &str) -> syn::Result<Option<syn::
 }
 
 /// `name`, a variant's name, renamed by the `rename_all` rule `rule` as serde renames a variant.
+///
+/// serde changes the case of ASCII letters only (`apply_to_variant` in
+/// `serde_derive`'s `internals/case.rs`), so a variant `Über` stays `Über`.
 fn apply_rename_all(rule: &syn::LitStr, name: &str) -> syn::Result<String> {
     let snake = || {
         let mut out = String::new();
@@ -464,24 +477,26 @@ fn apply_rename_all(rule: &syn::LitStr, name: &str) -> syn::Result<String> {
             if c.is_uppercase() && i > 0 {
                 out.push('_');
             }
-            out.extend(c.to_lowercase());
+            out.push(c.to_ascii_lowercase());
         }
         out
     };
     Ok(match rule.value().as_str() {
-        "lowercase" => name.to_lowercase(),
-        "UPPERCASE" => name.to_uppercase(),
+        "lowercase" => name.to_ascii_lowercase(),
+        "UPPERCASE" => name.to_ascii_uppercase(),
         "PascalCase" => name.to_owned(),
         "camelCase" => {
             let mut chars = name.chars();
             chars.next().map_or_else(String::new, |first| {
-                first.to_lowercase().chain(chars).collect()
+                std::iter::once(first.to_ascii_lowercase())
+                    .chain(chars)
+                    .collect()
             })
         }
         "snake_case" => snake(),
-        "SCREAMING_SNAKE_CASE" => snake().to_uppercase(),
+        "SCREAMING_SNAKE_CASE" => snake().to_ascii_uppercase(),
         "kebab-case" => snake().replace('_', "-"),
-        "SCREAMING-KEBAB-CASE" => snake().replace('_', "-").to_uppercase(),
+        "SCREAMING-KEBAB-CASE" => snake().replace('_', "-").to_ascii_uppercase(),
         _ => {
             return Err(syn::Error::new_spanned(
                 rule,
@@ -602,6 +617,35 @@ mod tests {
         insta::assert_snapshot!(expand_segment(quote! {
             enum E { A, #[serde(rename = "..")] Up }
         }));
+    }
+
+    #[test]
+    fn rejects_two_segment_variants_with_one_segment() {
+        insta::assert_snapshot!(expand_segment(quote! {
+            #[serde(rename_all = "lowercase")]
+            enum Lang { En, #[serde(rename = "en")] English }
+        }));
+    }
+
+    #[test]
+    fn renames_ascii_letters_only_as_serde_does() {
+        let rule = |rule: &str| syn::LitStr::new(rule, proc_macro2::Span::call_site());
+        for (name, want) in [
+            ("lowercase", "Über"),
+            ("UPPERCASE", "ÜBER"),
+            ("snake_case", "Über"),
+            ("camelCase", "Über"),
+        ] {
+            assert_eq!(
+                super::apply_rename_all(&rule(name), "Über").expect(name),
+                want,
+                "{name}"
+            );
+        }
+        assert_eq!(
+            super::apply_rename_all(&rule("kebab-case"), "JaJp").expect("kebab"),
+            "ja-jp"
+        );
     }
 
     #[test]
