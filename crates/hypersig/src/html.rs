@@ -3558,6 +3558,33 @@ mod tests {
     }
 
     #[test]
+    fn attr_and_tag_refuse_the_names_that_run_a_script_or_load_a_url() {
+        for name in [
+            "srcdoc",
+            "action",
+            "formaction",
+            "xlink:href",
+            "data",
+            "http-equiv",
+            "attributename",
+            "background",
+            "manifest",
+            "codebase",
+            "archive",
+            "classid",
+            "longdesc",
+            "ping",
+            "imagesrcset",
+            "SrcDoc",
+        ] {
+            assert!(Attr::check(name).is_err(), "{name}");
+        }
+        for tag in ["script", "style", "base", "link", "STYLE"] {
+            assert!(super::Tag::check(tag).is_err(), "{tag}");
+        }
+    }
+
+    #[test]
     fn a_plain_css_value_cannot_leave_its_declaration() {
         for value in [
             "50%",
