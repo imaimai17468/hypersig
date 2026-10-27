@@ -39,8 +39,8 @@ fn overview(site: Site, head: Part) -> Part {
             Lang::Toml,
             Some("Cargo.toml"),
             r#"[dependencies]
-hypersig = "0.10"
-hypersig_i18n = "0.10""#,
+hypersig = "0.11"
+hypersig_i18n = "0.11""#,
         ),
         heading(
             site,

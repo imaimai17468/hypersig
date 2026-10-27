@@ -14,16 +14,61 @@ pub fn upgrading(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The releases that changed a public signature, 0.5 through 0.10, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
-                ja: "公開しているシグネチャを変えた 0.5 から 0.10 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
+                en: "The releases that changed a public signature, 0.5 through 0.11, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
+                ja: "公開しているシグネチャを変えた 0.5 から 0.11 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
             },
         ),
+        to_0_11(site),
         to_0_10(site),
         to_0_9(site),
         to_0_8(site),
         to_0_7(site),
         to_0_6(site),
         to_0_5(site),
+    ])
+}
+
+fn to_0_11(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "From 0.10 to 0.11",
+                ja: "0.10 から 0.11 へ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "[`url`](api:hypersig_style/value/fn.url.html), the value a stylesheet loads a file from, takes a `&'static str` and is a `const fn`, as `Asset::new` is. It refuses an empty URL, a space or a control character, and a scheme other than `http` or `https`, so `url(\"javascript:...\")` in a `const` fails to compile. A URL built with `format!` or held in a `String` no longer compiles: write each file's URL as a constant.",
+                ja: "スタイルシートがファイルを読み込む値の [`url`](api:hypersig_style/value/fn.url.html) は、`Asset::new` と同じく `&'static str` を受け取る `const fn` になりました。空の URL、空白や制御文字を含む URL、`http` と `https` 以外のスキームの URL を拒否するので、`const` の中の `url(\"javascript:...\")` はコンパイルエラーになります。`format!` で作った URL や `String` に入れた URL はコンパイルが通らなくなったので、ファイルごとの URL を定数で書いてください。",
+            },
+        ),
+        show_change(Snippet::Upgrade011),
+        para(
+            site,
+            L {
+                en: "These changes need no edit and may change what a page does:",
+                ja: "次の変更は書き換えが要りませんが、ページの動きが変わることがあります。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "A root path in `url(..)`, such as `/fonts/inter.woff2`, goes under the routes' `Base`, in the page and in the patches its actions send, so an application served under `/app` loads `/app/fonts/inter.woff2`.",
+                    ja: "`/fonts/inter.woff2` のような `url(..)` のルートからのパスは、ページの中でもアクションが送る差分の中でもルートの `Base` の下に書かれます。`/app` の下で配信するアプリケーションは `/app/fonts/inter.woff2` を読み込みます。",
+                },
+                L {
+                    en: "`Page::render` panics where an expression reads the item of one list inside another list at the same depth, which rendered the other list's item before.",
+                    ja: "あるリストのアイテムを同じ深さの別のリストの中で読む式は、これまで別のリストのアイテムを表示していましたが、今は `Page::render` がパニックします。",
+                },
+                L {
+                    en: "In a debug build, `Page::render` panics where `Page::lang` names the language of an `IntlLocale` and the page formats its plurals and dates only with other ones.",
+                    ja: "デバッグビルドでは、`Page::lang` が `IntlLocale` のある言語を指していて、ページが複数形と日付をほかの `IntlLocale` だけで書くと、`Page::render` がパニックします。",
+                },
+            ],
+        ),
     ])
 }
 
