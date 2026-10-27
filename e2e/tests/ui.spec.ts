@@ -52,6 +52,20 @@ test("a number field is a labeled spin button that starts at its signal and keep
   await expect(seats).toHaveValue("1");
 });
 
+test("a date field writes a whole date and keeps it while the visitor clears a part", async ({ page }) => {
+  const start = page.getByLabel("Start date");
+  await expect(start).toHaveValue("2026-03-02");
+  await expect(start).toHaveAccessibleDescription("Any day in 2026.");
+  await expect(start).toHaveAttribute("min", "2026-01-01");
+  await expect(start).toHaveAttribute("max", "2026-12-31");
+  await start.fill("2026-07-04");
+  await expect(page.locator("#starts")).toHaveText("2026-07-04");
+  await start.focus();
+  await page.keyboard.press("Backspace");
+  await expect(start).toHaveValue("");
+  await expect(page.locator("#starts")).toHaveText("2026-07-04");
+});
+
 test("a checkbox, a switch, and radios keep their native roles and keys", async ({ page }) => {
   const newsletter = page.getByRole("checkbox", { name: "Email me about new releases" });
   await expect(newsletter).not.toBeChecked();

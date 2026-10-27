@@ -14,6 +14,7 @@
 //! | [`button`], [`submit_button`], [`icon_button`] | `<button>`, with the icon button's name required |
 //! | [`TextField`] | `<label>`, `<input>` or `<textarea>`, `aria-describedby`, `aria-invalid`, a live error |
 //! | [`NumberField`] | the same, on `<input type="number">` with typed `min`, `max`, and `step` |
+//! | [`DateField`] | the same, on `<input type="date">` bound to a [`CalendarDate`](hypersig::CalendarDate), with typed `min` and `max` |
 //! | [`checkbox`], [`switch`] | `<input type="checkbox">`, the switch with `role="switch"` |
 //! | [`toggle`], [`icon_toggle`] | `<button>` with `aria-pressed` |
 //! | [`ToggleGroup`] | the radio group pattern on toggle buttons, with roving focus |
@@ -90,6 +91,7 @@ mod chart;
 mod choice;
 mod collapsible;
 mod combobox;
+mod date;
 mod dialog;
 mod donut;
 mod field;
@@ -126,6 +128,7 @@ pub use choice::{
 };
 pub use collapsible::Collapsible;
 pub use combobox::{Combobox, ComboboxState};
+pub use date::{DateField, Dated};
 pub use dialog::{Dialog, Side, dialog_footer};
 pub use donut::DonutChart;
 pub use field::{Autocomplete, InputKind, InputMode, TextField};
