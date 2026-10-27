@@ -101,10 +101,10 @@ const OPERATIONS: [&str; 57] = [
 const LEAVES: [&str; 5] = ["sig", "item", "lit", "var", "index"];
 
 /// `SplitMix64`, which needs no dependency and gives the same numbers on every platform.
-struct Rng(u64);
+pub(crate) struct Rng(pub(crate) u64);
 
 impl Rng {
-    fn next(&mut self) -> u64 {
+    pub(crate) fn next(&mut self) -> u64 {
         self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
         let mut z = self.0;
         z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
@@ -112,16 +112,16 @@ impl Rng {
         z ^ (z >> 31)
     }
 
-    fn below(&mut self, n: usize) -> usize {
+    pub(crate) fn below(&mut self, n: usize) -> usize {
         let n = u64::try_from(n).unwrap();
         usize::try_from(self.next() % n).unwrap()
     }
 
-    fn chance(&mut self, percent: usize) -> bool {
+    pub(crate) fn chance(&mut self, percent: usize) -> bool {
         self.below(100) < percent
     }
 
-    fn pick<'a, T>(&mut self, items: &'a [T]) -> &'a T {
+    pub(crate) fn pick<'a, T>(&mut self, items: &'a [T]) -> &'a T {
         &items[self.below(items.len())]
     }
 
@@ -137,7 +137,7 @@ impl Rng {
 
 /// The type of an item of a list.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum El {
+pub(crate) enum El {
     Num,
     Int,
     Str,
@@ -145,9 +145,9 @@ enum El {
 }
 
 impl El {
-    const ALL: [El; 4] = [El::Num, El::Int, El::Str, El::Row];
+    pub(crate) const ALL: [El; 4] = [El::Num, El::Int, El::Str, El::Row];
 
-    fn ty(self) -> Ty {
+    pub(crate) fn ty(self) -> Ty {
         match self {
             El::Num => Ty::Num,
             El::Int => Ty::Int,
@@ -160,7 +160,7 @@ impl El {
 /// The Rust type an expression has: `f64`, `i32`, `String`, `bool`,
 /// `Timestamp`, a row struct, a search struct, a `Vec`, or an `Option`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum Ty {
+pub(crate) enum Ty {
     Num,
     Int,
     Str,
@@ -172,7 +172,7 @@ enum Ty {
     Opt(El),
 }
 
-const TYPES: [Ty; 17] = [
+pub(crate) const TYPES: [Ty; 17] = [
     Ty::Num,
     Ty::Int,
     Ty::Str,
@@ -194,7 +194,7 @@ const TYPES: [Ty; 17] = [
 ];
 
 /// The page signals of each type, as dotted paths.
-fn sig_paths(ty: Ty) -> &'static [&'static str] {
+pub(crate) fn sig_paths(ty: Ty) -> &'static [&'static str] {
     match ty {
         Ty::Num => &["n0", "n1", "n2", "rec.v", "rec.sub.x", "q.n"],
         Ty::Int => &["i0", "i1", "rec.k", "q.page"],
@@ -215,7 +215,7 @@ fn sig_paths(ty: Ty) -> &'static [&'static str] {
 }
 
 /// The fields of a row of type `ty`, as dotted paths inside the row.
-fn row_fields(ty: Ty) -> &'static [&'static str] {
+pub(crate) fn row_fields(ty: Ty) -> &'static [&'static str] {
     match ty {
         Ty::Num => &["v", "sub.x"],
         Ty::Int => &["k"],
@@ -412,12 +412,12 @@ const POINTS: [&str; 2] = [".", ","];
 const PREFIXES: [&str; 3] = ["", "$", "¥"];
 const SUFFIXES: [&str; 3] = ["", " €", "%"];
 
-struct Gen {
-    rng: Rng,
+pub(crate) struct Gen {
+    pub(crate) rng: Rng,
     /// The type of the item of each enclosing list, by depth.
-    items: Vec<El>,
+    pub(crate) items: Vec<El>,
     /// The type of each `let` value, by depth.
-    vars: Vec<Ty>,
+    pub(crate) vars: Vec<Ty>,
 }
 
 impl Gen {
@@ -429,7 +429,7 @@ impl Gen {
         }
     }
 
-    fn int(&mut self) -> i32 {
+    pub(crate) fn int(&mut self) -> i32 {
         if self.rng.chance(20) {
             i32::try_from(self.rng.below(2001)).unwrap() - 1000
         } else {
@@ -442,7 +442,7 @@ impl Gen {
         (0..pieces).map(|_| *self.rng.pick(&STRINGS)).collect()
     }
 
-    fn value(&mut self, ty: Ty) -> Value {
+    pub(crate) fn value(&mut self, ty: Ty) -> Value {
         match ty {
             Ty::Num => json!(self.number()),
             Ty::Int => json!(self.int()),
@@ -480,7 +480,7 @@ impl Gen {
 
     /// The page's signals, with `t1` a chosen distance from `t0` so that
     /// `reltime` sees every unit.
-    fn signals(&mut self) -> Value {
+    pub(crate) fn signals(&mut self) -> Value {
         let t0 = *self.rng.pick(&TIMESTAMPS);
         let t1 = t0 + *self.rng.pick(&DELTAS);
         json!({
@@ -548,7 +548,7 @@ impl Gen {
     }
 
     /// The tree of a list place a fold reads, and the type of its items.
-    fn place(&mut self) -> (Value, El) {
+    pub(crate) fn place(&mut self) -> (Value, El) {
         let mut options: Vec<(Value, El)> = vec![
             (json!("rows"), El::Row),
             (json!("ln"), El::Num),
@@ -598,7 +598,7 @@ impl Gen {
 
     /// An expression of type `ty` with at most `budget` operations from its
     /// root to a leaf.
-    fn expr(&mut self, ty: Ty, budget: u32) -> Value {
+    pub(crate) fn expr(&mut self, ty: Ty, budget: u32) -> Value {
         if budget == 0 || self.rng.chance(20) {
             return self.leaf(ty);
         }
@@ -837,7 +837,7 @@ impl Gen {
 }
 
 /// The names of the operations `ast` holds, apart from those inside a literal's value.
-fn operations(ast: &Value, out: &mut BTreeSet<String>) {
+pub(crate) fn operations(ast: &Value, out: &mut BTreeSet<String>) {
     let Value::Array(parts) = ast else { return };
     if let Some(Value::String(op)) = parts.first() {
         out.insert(op.clone());
