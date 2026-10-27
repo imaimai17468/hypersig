@@ -19,6 +19,8 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::thread;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -291,9 +293,17 @@ fn writes_what_the_simulation_leaves_for_the_runtime_to_compare() {
     let (mut run, mut stopped) = (0_usize, 0_usize);
     let mut groups = Vec::new();
     // The simulation panics on an expression it cannot evaluate, and each
-    // such case is left out, so the panic messages are not printed.
-    let hook = panic::take_hook();
-    panic::set_hook(Box::new(|_| {}));
+    // such case is left out, so the panic messages of this thread are not
+    // printed. The hook is process-wide, and a test on another thread still
+    // prints through the previous one.
+    let previous = Arc::new(panic::take_hook());
+    let here = thread::current().id();
+    let forward = Arc::clone(&previous);
+    panic::set_hook(Box::new(move |info| {
+        if thread::current().id() != here {
+            forward(info);
+        }
+    }));
     for _ in 0..GROUPS {
         let signals = generator.signals();
         let rows = signals["rows"].as_array().map_or(0, Vec::len);
@@ -338,7 +348,10 @@ fn writes_what_the_simulation_leaves_for_the_runtime_to_compare() {
         run += cases.len();
         groups.push((signals, cases));
     }
-    panic::set_hook(hook);
+    drop(panic::take_hook());
+    if let Ok(previous) = Arc::try_unwrap(previous) {
+        panic::set_hook(previous);
+    }
     let missing: Vec<&str> = STATEMENTS
         .iter()
         .copied()
