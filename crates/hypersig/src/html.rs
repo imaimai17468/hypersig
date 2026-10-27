@@ -3035,6 +3035,7 @@ impl<S> El<S> {
         if self.void {
             return;
         }
+        let start = out.len();
         if let Some(text) = content {
             escape_into(out, &text, Escape::Text);
         } else {
@@ -3052,6 +3053,11 @@ impl<S> El<S> {
                     _ => child.write(out, ctx),
                 }
             }
+        }
+        // The HTML parser drops one newline right after the start tag of
+        // these elements, so a second one keeps the content's own.
+        if matches!(self.tag, "pre" | "textarea" | "listing") && out[start..].starts_with('\n') {
+            out.insert(start, '\n');
         }
         out.push_str("</");
         out.push_str(self.tag);
