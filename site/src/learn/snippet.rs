@@ -124,6 +124,7 @@ snippets! {
     Upgrade09 => "upgrading/v0_9.rs";
     Upgrade010 => "upgrading/v0_10.rs";
     Upgrade011 => "upgrading/v0_11.rs";
+    Upgrade012 => "upgrading/v0_12.rs";
     TroubleHandler => "troubleshooting/handler.rs", "compile_fail,E0277";
     TroubleId => "troubleshooting/id.rs", "compile_fail,E0080";
     TroubleComputed => "troubleshooting/computed.rs", "compile_fail,E0277";
