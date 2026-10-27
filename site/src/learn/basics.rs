@@ -77,20 +77,20 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "While you edit, run the server with `cargo hypersig dev` in place of `cargo run`. Install the command first:",
-                ja: "コードを書き換えながら動かすときは、`cargo run` の代わりに `cargo hypersig dev` でサーバーを起動します。先にコマンドをインストールしてください。",
+                en: "While you edit, run the server with `cargo hypersig dev` in place of `cargo run`. It builds with [blaze](https://github.com/indexable-inc/blaze), an incremental build tool for Rust. Install both first:",
+                ja: "コードを書き換えながら動かすときは、`cargo run` の代わりに `cargo hypersig dev` でサーバーを起動します。`cargo hypersig dev` は Rust の差分ビルドツールの [blaze](https://github.com/indexable-inc/blaze) でビルドします。先に両方をインストールしてください。",
             },
         ),
         code::block(
             Lang::Shell,
             None,
-            "cargo install --locked hypersig_cli\ncargo hypersig dev",
+            "cargo install --locked hypersig_cli\ncurl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh\ncargo hypersig dev",
         ),
         para(
             site,
             L {
-                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. A build that fails leaves the last server running. The state the server holds in memory starts over at each restart.",
-                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。ビルドが失敗したときは前のサーバーが動き続けます。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。",
+                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. After a change, blaze compiles only the functions that changed, and `cargo check` runs beside it to decide whether the code compiles, so a compile error stops the restart and leaves the last server running. The state the server holds in memory starts over at each restart.",
+                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。変更のあと、blaze は変わった関数だけをコンパイルし、同時に走る `cargo check` が、コードをコンパイルできるかどうかを判定します。コンパイルエラーがあれば起動し直さず、前のサーバーが動き続けます。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。",
             },
         ),
         para(

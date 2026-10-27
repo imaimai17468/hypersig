@@ -40,7 +40,7 @@ Hosts:
   vercel       A Vercel Function
 
 `add` writes no file that is already there unless it is given --force.
-`dev` passes <build options>, such as -p or --bin, to `cargo build`, and <args> to the server.
+`dev` passes <build options>, such as -p or --bin, to `cargo check` and `cargo blaze build`, and <args> to the server.
 `elements` prints the module, which a redirect such as `> src/shoelace.rs` saves.";
 
 /// A failure to report to the person running the command, as one message.
@@ -154,7 +154,7 @@ fn run() -> Result<(), Error> {
     if args.peek().map(String::as_str) == Some("hypersig") {
         args.next();
     }
-    // The arguments of `dev` belong to `cargo build` and the server, so the
+    // The arguments of `dev` belong to the build and the server, so the
     // options of `new` and `add` are not read from them.
     if args.peek().map(String::as_str) == Some("dev") {
         args.next();

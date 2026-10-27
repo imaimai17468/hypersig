@@ -6,7 +6,7 @@ This is a web application built with [hypersig](https://imaimai17468.github.io/h
 
 - `cargo check` after each edit. A hypersig mistake is a compile error that names the type it expected, so read the whole message before changing anything.
 - `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `cargo test` before you report the work done.
-- `cargo hypersig dev` runs the server and restarts it after each change, and the open page reloads itself. A Rust test runs no JavaScript, so a binding or a statement that changes the page in the browser is checked only by opening the page.
+- `cargo hypersig dev` runs the server and restarts it after each change, and the open page reloads itself. It builds with [blaze](https://github.com/indexable-inc/blaze) and checks with `cargo check`, so it needs blaze installed (`curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh`); where it is missing, `dev` says so, and installing it is the developer's to decide. A Rust test runs no JavaScript, so a binding or a statement that changes the page in the browser is checked only by opening the page.
 
 ## Where to read
 
