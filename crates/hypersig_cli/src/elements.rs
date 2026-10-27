@@ -412,7 +412,7 @@ fn field_ident(name: &str) -> Option<String> {
 }
 
 /// The keywords of Rust 2024 that a raw identifier can spell.
-const KEYWORDS: [&str; 48] = [
+pub(crate) const KEYWORDS: [&str; 48] = [
     "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "do", "dyn",
     "else", "enum", "extern", "false", "final", "fn", "for", "gen", "if", "impl", "in", "let",
     "loop", "macro", "match", "mod", "move", "mut", "override", "priv", "pub", "ref", "return",
