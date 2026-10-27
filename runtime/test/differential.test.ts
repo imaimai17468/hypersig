@@ -66,7 +66,7 @@ const skips: readonly Skip[] = [
     // is -0.05283285613065316 against -0.05283285613065315. The server calls
     // its platform's `pow` and `log10`, and V8 its own, and the two round the
     // last bit differently. The header of `crates/hypersig/src/ssr.rs` names it.
-    finding: "pow and log10 round the last bit differently on the server and in V8",
+    finding: "pow and log10 round the last bit differently on the server and in V8 (#118)",
     covers: (ast) => uses(ast, "pow") || uses(ast, "log10"),
   },
 ];

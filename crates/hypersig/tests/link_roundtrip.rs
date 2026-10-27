@@ -71,6 +71,7 @@ struct Sparse {
 /// skips a failure only where the case lists one. Each finding must still
 /// fail at least one case, so a fixed finding fails the test until its
 /// entry here goes.
+/// The findings of this test that `Route::url` still has, filed as #119.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Finding {
     /// An `i64` or `u64` search value past 2^53 is written with the digits

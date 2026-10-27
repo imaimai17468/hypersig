@@ -18,7 +18,7 @@ import { generate, random, show, type ElementModel, type Model } from "./morph/g
 const KNOWN = [
   {
     finding:
-      "a <template> inserted before an input with no id stops the lookahead, so the input is replaced",
+      "a <template> inserted before an input with no id stops the lookahead, so the input is replaced (#117)",
     matches: (problem: string) => problem.startsWith("input matched by name"),
   },
 ];
