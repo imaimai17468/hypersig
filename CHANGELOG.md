@@ -2,6 +2,16 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.9.1] - 2026-10-27
+
+### Changed
+
+- `cargo hypersig dev` builds with [blaze](https://github.com/indexable-inc/blaze) and checks with `cargo check`. After each change it runs both at once and restarts the server from blaze's binary once the check passes, so a compile error still leaves the last server running. It needs blaze installed, and stops with the install line where it is missing. Where blaze fails on code that checks, it builds with `cargo build` as before.
+
+### Fixed
+
+- `attr!` and `tag!` refuse a name in `cargo check` and in rust-analyzer. Before, only `cargo build` reported `attr!("onerror")`.
+
 ## [0.9.0] - 2026-10-27
 
 ### Breaking
