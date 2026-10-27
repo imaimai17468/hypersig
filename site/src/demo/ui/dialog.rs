@@ -4,7 +4,7 @@ use hypersig::html::{Role, div, p};
 use hypersig::style::pattern::{stack, wrap};
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
-use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, Side, TextField, dialog_footer};
+use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, DialogText, Side, TextField, dialog_footer};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
@@ -26,6 +26,14 @@ const DETAILS: Dialog<Project> = Dialog::new(DETAILS_SHEET);
 pub fn page(site: Site) -> Page<Project> {
     let name = Project::name();
     let status = Project::status();
+    let text = DialogText {
+        close: site
+            .t(L {
+                en: "Close",
+                ja: "閉じる",
+            })
+            .into(),
+    };
     let initial = Project {
         name: "hypersig".into(),
         status: String::new(),
@@ -111,6 +119,7 @@ pub fn page(site: Site) -> Page<Project> {
                                         })),
                                 ),
                         ),
+                    &text,
                 ),
             )
             .child(
@@ -132,6 +141,7 @@ pub fn page(site: Site) -> Page<Project> {
                                 ja: "完了",
                             })),
                     ),
+                    &text,
                 ),
             )
             .child(

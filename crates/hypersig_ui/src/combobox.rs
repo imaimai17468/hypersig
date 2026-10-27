@@ -59,6 +59,38 @@ impl ComboboxState {
     }
 }
 
+/// The words [`Combobox::render`] names the list with and shows when no
+/// option matches.
+///
+/// They are English until replaced, so a page in another language passes
+/// its own:
+///
+/// ```
+/// use hypersig_ui::ComboboxText;
+///
+/// let japanese = ComboboxText {
+///     list: "候補".into(),
+///     empty: "一致する候補はありません".into(),
+/// };
+/// assert_ne!(japanese, ComboboxText::default());
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ComboboxText {
+    /// The name of the list of options, "Suggestions".
+    pub list: String,
+    /// Shown in place of the list when no option matches, "No matches".
+    pub empty: String,
+}
+
+impl Default for ComboboxText {
+    fn default() -> Self {
+        Self {
+            list: "Suggestions".to_owned(),
+            empty: "No matches".to_owned(),
+        }
+    }
+}
+
 /// A combobox: a text field with a list of options that the text filters.
 ///
 /// It sits on a page whose signals are `S`.
@@ -87,7 +119,7 @@ impl ComboboxState {
 ///
 /// ```
 /// use hypersig::{NodeRef, Signals};
-/// use hypersig_ui::{Combobox, ComboboxState};
+/// use hypersig_ui::{Combobox, ComboboxState, ComboboxText};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -100,7 +132,12 @@ impl ComboboxState {
 /// const COUNTRY: Combobox<Form> = Combobox::new(COUNTRY_FIELD, COUNTRY_OPTIONS);
 ///
 /// # fn main() {
-/// let field = COUNTRY.render("Country", Form::country(), ["France", "Japan", "Kenya"]);
+/// let field = COUNTRY.render(
+///     "Country",
+///     Form::country(),
+///     ["France", "Japan", "Kenya"],
+///     &ComboboxText::default(),
+/// );
 /// let html = field.render();
 /// let controls = format!(r#"aria-controls="{}::COUNTRY_OPTIONS""#, module_path!());
 /// assert!(html.contains(r#"role="combobox""#));
@@ -130,22 +167,24 @@ impl<S> Combobox<S> {
 
     /// The label, the text field, and the list of `options`, in a `<div>`.
     ///
-    /// It keeps their state in `state`.
+    /// It keeps their state in `state`, and names the list and says that no
+    /// option matches with `text`.
     #[must_use]
     pub fn render<L: Into<String>>(
         self,
         label_text: impl Into<String>,
         state: Sig<S, ComboboxState>,
         options: impl IntoIterator<Item = L>,
+        text: &ComboboxText,
     ) -> El<S> {
-        let text = state.at(ComboboxState::text());
+        let typed = state.at(ComboboxState::text());
         let open = state.at(ComboboxState::open());
         let active = state.at(ComboboxState::active());
         let pointer = state.at(ComboboxState::pointer());
         let focused = state.at(ComboboxState::focused());
         let field_ref = self.field;
         let list_ref = self.list;
-        let query = text.to_lowercase();
+        let query = typed.to_lowercase();
 
         let close: Stmt<S> = open.set(false).then(active.set(""));
         let mut none_shown: Expr<S, bool> = Expr::lit(&true);
@@ -163,7 +202,8 @@ impl<S> Combobox<S> {
                     .bind_attr(attr::ARIA_SELECTED, reached.to_text())
                     .show(shown)
                     .on_click(
-                        text.set(title.clone())
+                        typed
+                            .set(title.clone())
                             .then(close.clone())
                             .then(pointer.set(false))
                             .then(field_ref.focus()),
@@ -174,7 +214,7 @@ impl<S> Combobox<S> {
                         reached,
                     )
                     .text(title.clone())
-                    .child(icon(look::icon::CHECK, rem(1)).show(text.equals(title))),
+                    .child(icon(look::icon::CHECK, rem(1)).show(typed.equals(title))),
             );
         }
 
@@ -194,7 +234,7 @@ impl<S> Combobox<S> {
                 div()
                     .id(self.list.id())
                     .role(Role::ListBox)
-                    .attr(attr::ARIA_LABEL, "Suggestions")
+                    .attr(attr::ARIA_LABEL, text.list.as_str())
                     .node_ref(list_ref)
                     .show(!&none_shown)
                     .css(
@@ -212,7 +252,7 @@ impl<S> Combobox<S> {
                         .color(token::muted_foreground().var()),
                 )
                 .show(none_shown)
-                .text("No matches"),
+                .text(text.empty.as_str()),
             );
 
         div()

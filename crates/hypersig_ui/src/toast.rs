@@ -173,6 +173,7 @@ fn browser_key<S>(toasts: Sig<S, Vec<Toast>>) -> Expr<S, i32> {
 pub struct Toaster<S> {
     toasts: Sig<S, Vec<Toast>>,
     label: String,
+    dismiss_label: String,
     dismiss_after: Option<Duration>,
 }
 
@@ -183,6 +184,7 @@ impl<S> Toaster<S> {
         Self {
             toasts,
             label: "Notifications".to_owned(),
+            dismiss_label: "Dismiss".to_owned(),
             dismiss_after: None,
         }
     }
@@ -192,6 +194,13 @@ impl<S> Toaster<S> {
     #[must_use]
     pub fn label(mut self, label: impl Into<String>) -> Self {
         self.label = label.into();
+        self
+    }
+
+    /// Names the button that removes a toast, in place of "Dismiss".
+    #[must_use]
+    pub fn dismiss_label(mut self, label: impl Into<String>) -> Self {
+        self.dismiss_label = label.into();
         self
     }
 
@@ -209,6 +218,7 @@ impl<S> Toaster<S> {
     #[must_use]
     pub fn render(self) -> El<S> {
         let dismiss_after = self.dismiss_after;
+        let dismiss_label = self.dismiss_label;
         section()
             .attr(attr::ARIA_LABEL, self.label)
             .css(region_style())
@@ -248,7 +258,7 @@ impl<S> Toaster<S> {
                                         ),
                                 )
                                 .child(
-                                    icon_button(ButtonVariant::Ghost, "Dismiss")
+                                    icon_button(ButtonVariant::Ghost, dismiss_label.as_str())
                                         .css(Style::new().width(rem(1.75)).height(rem(1.75)))
                                         .on_click(toast.remove())
                                         .child(icon(look::icon::X, rem(1))),

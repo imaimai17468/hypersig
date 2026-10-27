@@ -1,6 +1,6 @@
 use hypersig::html::div;
 use hypersig::{NodeRef, Page, Signals};
-use hypersig_ui::{Combobox, ComboboxState, TableState};
+use hypersig_ui::{Combobox, ComboboxState, ComboboxText, TableState};
 use serde::{Deserialize, Serialize};
 
 // The state of every component on the page, in one field of the page's struct.
@@ -33,6 +33,7 @@ let page = Page::new(
     "Country",
     controls.at(Controls::country()),
     ["France", "Japan", "Kenya"],
+    &ComboboxText::default(),
 )));
 # let _ = page.render();
 # }

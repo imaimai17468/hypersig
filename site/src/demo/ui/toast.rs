@@ -66,6 +66,16 @@ pub fn page(site: Site) -> Page<App> {
                         ja: "エラーを表示",
                     })),
             )
-            .child(Toaster::new(toasts)),
+            .child(
+                Toaster::new(toasts)
+                    .label(site.t(L {
+                        en: "Notifications",
+                        ja: "通知",
+                    }))
+                    .dismiss_label(site.t(L {
+                        en: "Dismiss",
+                        ja: "閉じる",
+                    })),
+            ),
     )
 }
