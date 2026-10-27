@@ -1,6 +1,10 @@
 //! `cargo hypersig dev`: builds the project's server, runs it, and builds
 //! and runs it again each time a file it is built from changes.
 //!
+//! blaze writes the binary, and `cargo check` decides whether the code
+//! compiles. After an edit, blaze compiles only the functions that changed,
+//! so the wait is the check's.
+//!
 //! A page that a debug build of hypersig serves keeps a stream to the server
 //! open and reloads once a new server answers in its place, so the browser
 //! shows the new build without a hand on the reload button. The reloaded
@@ -39,6 +43,7 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
             "warning: only a debug build serves the stream a page reloads from, so pages will not reload"
         );
     }
+    blaze_installed()?;
     let before = snapshot(&dir, None);
     let mut built = build(build_args)?;
     let mut seen = as_built(&before, snapshot(&dir, built.as_ref()));
@@ -87,64 +92,155 @@ struct Built {
     sources: BTreeSet<PathBuf>,
 }
 
+/// The install line `dev` prints where blaze is missing. blaze's own
+/// installer puts `cargo-blaze` on the path.
+const INSTALL_BLAZE: &str =
+    "curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh";
+
+fn cargo() -> OsString {
+    std::env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"))
+}
+
+/// Fails where `cargo blaze` does not run, before the first build.
+///
+/// # Errors
+///
+/// Fails with the install line where Cargo finds no `blaze` command.
+fn blaze_installed() -> Result<(), Error> {
+    let runs = Command::new(cargo())
+        .args(["blaze", "--version"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|status| status.success());
+    if runs {
+        Ok(())
+    } else {
+        Err(Error::new(format!(
+            "`cargo hypersig dev` builds with blaze, which is not installed; install it with\n\n    {INSTALL_BLAZE}\n\nand run `cargo hypersig dev` again"
+        )))
+    }
+}
+
+/// Runs `cargo check` and `cargo blaze build` at once, and finds the one
+/// binary the build wrote, or `None` where the check failed.
+///
+/// rustc's check decides what is an error, so a mistake that blaze would
+/// compile still stops here. Where blaze fails on code that checks, Cargo
+/// builds it instead.
+///
+/// # Errors
+///
+/// Fails where Cargo cannot run, or the package has no binary or several,
+/// which no edit to the code changes.
+fn build(build_args: &[String]) -> Result<Option<Built>, Error> {
+    let mut check = Command::new(cargo())
+        .arg("check")
+        .arg("--message-format=json-render-diagnostics")
+        .args(build_args)
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|error| Error::new(format!("cannot run cargo: {error}")))?;
+    // blaze's own lines repeat what the check prints, so they are dropped.
+    let mut blaze = Command::new(cargo())
+        .args(["blaze", "build"])
+        .args(build_args)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|error| Error::new(format!("cannot run cargo blaze: {error}")))?;
+    let binaries = read_cargo(&mut check, checked_binary_of)?;
+    let checked = check
+        .wait()
+        .map_err(|error| Error::new(format!("cannot wait for cargo: {error}")))?;
+    let blazed = blaze
+        .wait()
+        .map_err(|error| Error::new(format!("cannot wait for cargo blaze: {error}")))?;
+    if !checked.success() {
+        return Ok(None);
+    }
+    let binary = one_binary(binaries)?;
+    if !blazed.success() {
+        eprintln!("blaze did not build it, so Cargo builds it");
+        return build_with_cargo(build_args);
+    }
+    Ok(Some(built(binary)))
+}
+
 /// Runs `cargo build` and finds the one binary it wrote, or `None` where
 /// the build failed.
 ///
 /// # Errors
 ///
-/// Fails where Cargo cannot run, or the build wrote no binary or several,
-/// which no edit to the code changes.
-fn build(build_args: &[String]) -> Result<Option<Built>, Error> {
-    let cargo = std::env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"));
-    let mut child = Command::new(cargo)
+/// Fails where Cargo cannot run, or the build wrote no binary or several.
+fn build_with_cargo(build_args: &[String]) -> Result<Option<Built>, Error> {
+    let mut child = Command::new(cargo())
         .arg("build")
         .arg("--message-format=json-render-diagnostics")
         .args(build_args)
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|error| Error::new(format!("cannot run cargo: {error}")))?;
-    let stdout = child.stdout.take().expect("stdout is piped");
-    let mut binaries = Vec::new();
-    for line in BufReader::new(stdout).lines() {
-        let line =
-            line.map_err(|error| Error::new(format!("cannot read cargo's output: {error}")))?;
-        if let Some(binary) = binary_of(&line) {
-            binaries.push(binary);
-        }
-    }
+    let binaries = read_cargo(&mut child, binary_of)?;
     let status = child
         .wait()
         .map_err(|error| Error::new(format!("cannot wait for cargo: {error}")))?;
     if !status.success() {
         return Ok(None);
     }
-    let binary = match <[PathBuf; 1]>::try_from(binaries) {
-        Ok([binary]) => binary,
-        Err(binaries) if binaries.is_empty() => {
-            return Err(Error::new(
-                "the build wrote no binary to run; a Cloudflare project runs under `npx wrangler dev`",
-            ));
-        }
+    Ok(Some(built(one_binary(binaries)?)))
+}
+
+/// The binaries `binary` finds in the lines of Cargo's JSON output.
+fn read_cargo(
+    child: &mut Child,
+    binary: fn(&str) -> Option<PathBuf>,
+) -> Result<Vec<PathBuf>, Error> {
+    let stdout = child.stdout.take().expect("stdout is piped");
+    let mut binaries = Vec::new();
+    for line in BufReader::new(stdout).lines() {
+        let line =
+            line.map_err(|error| Error::new(format!("cannot read cargo's output: {error}")))?;
+        binaries.extend(binary(&line));
+    }
+    Ok(binaries)
+}
+
+/// The one binary of `binaries`.
+///
+/// # Errors
+///
+/// Fails where there is none or several.
+fn one_binary(binaries: Vec<PathBuf>) -> Result<PathBuf, Error> {
+    match <[PathBuf; 1]>::try_from(binaries) {
+        Ok([binary]) => Ok(binary),
+        Err(binaries) if binaries.is_empty() => Err(Error::new(
+            "the build has no binary to run; a Cloudflare project runs under `npx wrangler dev`",
+        )),
         Err(binaries) => {
             let names: Vec<String> = binaries
                 .iter()
                 .filter_map(|binary| binary.file_name())
                 .map(|name| format!("`{}`", name.to_string_lossy()))
                 .collect();
-            return Err(Error::new(format!(
-                "the build wrote {}; name one with --bin or -p",
+            Err(Error::new(format!(
+                "the build has {}; name one with --bin or -p",
                 names.join(", ")
-            )));
+            )))
         }
-    };
+    }
+}
+
+/// The binary at `binary`, and the files it was built from.
+fn built(binary: PathBuf) -> Built {
     let sources = std::fs::read_to_string(dep_info_of(&binary))
         .map(|text| parse_dep_info(&text))
         .unwrap_or_default();
-    Ok(Some(Built {
+    Built {
         modified: modified(&binary),
         binary,
         sources,
-    }))
+    }
 }
 
 /// The path of the binary that a line of Cargo's JSON output reports, if it
@@ -160,6 +256,27 @@ fn binary_of(line: &str) -> Option<PathBuf> {
         .any(|kind| kind == "bin");
     let executable = message["executable"].as_str()?;
     is_bin.then(|| PathBuf::from(executable))
+}
+
+/// The path a build writes the binary to, for a line of `cargo check`'s
+/// JSON output that reports a binary.
+///
+/// A check reports no executable, only the metadata file it wrote under the
+/// profile's `deps` directory, and a build puts the binary in the directory
+/// above, under the target's name.
+fn checked_binary_of(line: &str) -> Option<PathBuf> {
+    let message: Value = serde_json::from_str(line).ok()?;
+    if message["reason"] != "compiler-artifact" {
+        return None;
+    }
+    let is_bin = message["target"]["kind"]
+        .as_array()?
+        .iter()
+        .any(|kind| kind == "bin");
+    let name = message["target"]["name"].as_str()?;
+    let metadata = Path::new(message["filenames"].get(0)?.as_str()?);
+    let profile = metadata.parent()?.parent()?;
+    is_bin.then(|| profile.join(format!("{name}{}", std::env::consts::EXE_SUFFIX)))
 }
 
 /// The dep-info file Cargo writes beside `binary`, which lists the files it
@@ -331,6 +448,16 @@ mod tests {
         assert_eq!(binary_of(lib), None);
         assert_eq!(binary_of(done), None);
         assert_eq!(binary_of("not json"), None);
+    }
+
+    #[test]
+    fn puts_the_binary_of_a_checked_bin_above_its_metadata() {
+        let bin = r#"{"reason":"compiler-artifact","target":{"kind":["bin"],"name":"my-app"},"filenames":["/p/target/debug/deps/libmy_app-0123.rmeta"],"executable":null}"#;
+        let lib = r#"{"reason":"compiler-artifact","target":{"kind":["lib"],"name":"core"},"filenames":["/p/target/debug/deps/libcore-0123.rmeta"],"executable":null}"#;
+        let expected = format!("/p/target/debug/my-app{}", std::env::consts::EXE_SUFFIX);
+        assert_eq!(checked_binary_of(bin), Some(PathBuf::from(expected)));
+        assert_eq!(checked_binary_of(lib), None);
+        assert_eq!(checked_binary_of("not json"), None);
     }
 
     #[test]

@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
 }
 ```
 
-`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らずにブラウザの中で数を増やし、リセットのボタンは `/reset` を呼んで、ハンドラが返す差分で `count` を 0 に戻します。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。CLI（`cargo install --locked hypersig_cli`）を入れると、`cargo hypersig new my-app` でプロジェクトを作れ、`cargo hypersig dev` で変更のたびにビルドと再読み込みが走ります。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
+`cargo run` を実行し、<http://127.0.0.1:3000> を開いてください。`+1` のボタンはリクエストを送らずにブラウザの中で数を増やし、リセットのボタンは `/reset` を呼んで、ハンドラが返す差分で `count` を 0 に戻します。`count` のつづりを間違えたり、`count` に文字列を足したりすると、`cargo build` が止まります。CLI（`cargo install --locked hypersig_cli`）を入れると、`cargo hypersig new my-app` でプロジェクトを作れ、`cargo hypersig dev` で変更のたびにビルドと再読み込みが走ります。`cargo hypersig dev` は [blaze](https://github.com/indexable-inc/blaze) でビルドするので、blaze も入れておいてください。続きは [ドキュメント](https://imaimai17468.github.io/hypersig/ja/learn/) にあります。
 
 ## フレームワークの比較
 
