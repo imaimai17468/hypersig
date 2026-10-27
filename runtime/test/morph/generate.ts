@@ -165,7 +165,9 @@ function edit(gen: Gen, children: readonly Model[], depth: number): Model[] {
     if (child.content !== undefined)
       copy.content = gen.chance(0.3) ? gen.pick(TEMPLATES) : child.content;
     if (gen.chance(0.08) && TAGS.includes(copy.tag)) copy.tag = gen.pick(TAGS);
-    if (gen.chance(0.2)) setAttr(copy, "class", gen.chance(0.5) ? gen.pick(TEXTS) : undefined);
+    // The server writes a `<template>` with `data-hs-each` or `data-hs-if` alone.
+    if (copy.tag !== "template" && gen.chance(0.2))
+      setAttr(copy, "class", gen.chance(0.5) ? gen.pick(TEXTS) : undefined);
     if ((copy.tag === "details" || copy.tag === "dialog") && gen.chance(0.3))
       setAttr(copy, "open", attr(copy, "open") === undefined ? "" : undefined);
     if (copy.tag === "input" && gen.chance(0.2)) setAttr(copy, "value", gen.pick(TEXTS));

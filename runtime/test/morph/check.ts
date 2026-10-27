@@ -57,7 +57,7 @@ function like(list: readonly Element[], model: Element): Element[] {
 /**
  * Adds to `unkeyed` the children of `from` without a key that `morph`
  * matches all the same: the one `<template>` of a parent where `to` has one
- * with the same content, and an element whose tag and `name` no sibling
+ * with the same attributes and content, and an element whose tag and `name` no sibling
  * shares in either tree, among siblings with no `<template>`, where the
  * lookahead stops.
  */
@@ -71,7 +71,11 @@ function unkeyedStay(from: Element, to: Element, unkeyed: Set<Element>): void {
     other !== undefined &&
     more.length === 0 &&
     others.length === 0 &&
-    template.innerHTML === other.innerHTML
+    template.innerHTML === other.innerHTML &&
+    template.getAttributeNames().join() === other.getAttributeNames().join() &&
+    template
+      .getAttributeNames()
+      .every((name) => template.getAttribute(name) === other.getAttribute(name))
   )
     unkeyed.add(template);
   if (templates([...from.children]).length > 0) return;

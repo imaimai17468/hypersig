@@ -173,8 +173,7 @@ function morphChildren(
       placed = next;
     } else placed = morphChild(from, current, next, key, kept, removed, drawn);
     let after = placed.nextSibling;
-    const own =
-      placed === current && placed instanceof HTMLTemplateElement ? drawn?.(placed) : undefined;
+    const own = placed instanceof HTMLTemplateElement ? drawn?.(placed) : undefined;
     if (own !== undefined)
       while (after instanceof Element && own.has(after)) after = after.nextSibling;
     current = after;
@@ -194,17 +193,29 @@ function like(a: Element, b: Element): boolean {
 
 /**
  * The first element from `start` on that has no key and is `like` `model`.
- * The search stops at a `<template>`, because the elements the runtime drew
- * after one belong to it rather than to the siblings around it.
+ * For any other element the search stops at a `<template>`, because the
+ * elements the runtime drew after one belong to it rather than to the
+ * siblings around it. A `<template>` model is looked for past them, among
+ * the templates with the same attributes and content.
  */
 function ahead(start: ChildNode | null, model: Element): Element | null {
-  if (keyOf(model) !== "" || model instanceof HTMLTemplateElement) return null;
+  if (keyOf(model) !== "") return null;
+  const template = model instanceof HTMLTemplateElement;
   for (let node = start; node !== null; node = node.nextSibling) {
     if (!(node instanceof Element)) continue;
-    if (node instanceof HTMLTemplateElement) return null;
-    if (keyOf(node) === "" && like(node, model)) return node;
+    if (node instanceof HTMLTemplateElement) {
+      if (template && keyOf(node) === "" && sameTemplate(node, model)) return node;
+      if (!template) return null;
+    } else if (!template && keyOf(node) === "" && like(node, model)) return node;
   }
   return null;
+}
+
+/** Whether `a` and `b`, two `<template>`s, have the same attributes and content. */
+function sameTemplate(a: HTMLTemplateElement, b: HTMLTemplateElement): boolean {
+  if (a.innerHTML !== b.innerHTML || a.attributes.length !== b.attributes.length) return false;
+  for (const { name, value } of a.attributes) if (b.getAttribute(name) !== value) return false;
+  return true;
 }
 
 /**
@@ -230,7 +241,13 @@ function morphChild(
   const match = next instanceof Element ? ahead(current, next) : null;
   if (match !== null && next instanceof Element) {
     // The siblings before the match left `to`, and the loop after it removes them.
+    // A template takes the elements drawn after it along.
+    const own = match instanceof HTMLTemplateElement ? drawn?.(match) : undefined;
+    const run: Element[] = [];
+    for (let at = match.nextElementSibling; at !== null && own?.has(at); at = at.nextElementSibling)
+      run.push(at);
     move(from, match, current);
+    for (const item of run) move(from, item, current);
     return morphElement(match, next, removed, drawn);
   }
   if (

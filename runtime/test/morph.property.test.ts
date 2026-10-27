@@ -18,13 +18,6 @@ import { generate, random, show, type ElementModel, type Model } from "./morph/g
 const KNOWN = [
   {
     finding:
-      "a <template> is kept only where the node at its place in `from` is that template, so a sibling inserted or removed before it replaces it and takes out the items drawn after it",
-    matches: (problem: string) =>
-      problem.startsWith("template matched by position") ||
-      problem.startsWith("template item matched by position"),
-  },
-  {
-    finding:
       "a <template> inserted before an input with no id stops the lookahead, so the input is replaced",
     matches: (problem: string) => problem.startsWith("input matched by name"),
   },
@@ -84,7 +77,7 @@ function template(content: string): ElementModel {
   };
 }
 
-it.fails("keeps a template and its items when an element before it is removed", () => {
+it("keeps a template and its items when an element before it is removed", () => {
   // from: <div id="root"><p></p><template data-hs-each="[]">a</template><span data-drawn="0">item</span></div>
   // to:   <div id="root"><template data-hs-each="[]">a</template></div>
   const from: Model[] = [
@@ -94,7 +87,7 @@ it.fails("keeps a template and its items when an element before it is removed", 
   expect(check({ from, to: [template("a")] })).toEqual([]);
 });
 
-it.fails("keeps a template and its items when an element is inserted before it", () => {
+it("keeps a template and its items when an element is inserted before it", () => {
   // from: <div id="root"><template data-hs-each="[]">a</template><span data-drawn="0">item</span></div>
   // to:   <div id="root"><p></p><template data-hs-each="[]">a</template></div>
   const to: Model[] = [{ kind: "element", tag: "p", attrs: [], children: [] }, template("a")];
