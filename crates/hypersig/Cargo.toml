@@ -60,3 +60,7 @@ harness = false
 
 [lints]
 workspace = true
+
+# trybuild starts cargo, which blaze's sandbox refuses; cargo ignores this table.
+[package.metadata.blaze.sandbox]
+unsandboxed-tests = ["ui"]
