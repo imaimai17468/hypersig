@@ -31,7 +31,7 @@ use crate::action::{Action, Method, StreamAction};
 use crate::exact;
 use crate::page::{Framing, Page};
 use crate::patch::{ListPatch, PartMismatch, PatchEvent, Patches, SignalPatch};
-use crate::route::{Base, Params, Route, Search, Url};
+use crate::route::{Base, Params, Route, Search, Url, current_base, in_base};
 use crate::signal::{Signals, current_part, in_part};
 use crate::upload::{ARGS_PART, FILES_PART, Upload, UploadStream, Uploaded, UploadedFile};
 
@@ -293,12 +293,13 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         P: IntoActionResponse<S>,
     {
         let method = action.method();
+        let base = action.base();
         let route = move |State(state): State<St>,
                           Query(query): Query<HashMap<String, String>>,
                           request: Parts,
                           body: Bytes| {
             let handler = handler.clone();
-            in_called_part(called_part(&request.headers), async move {
+            in_called_part(base, called_part(&request.headers), async move {
                 let args = read_args::<A>(method, &request.headers, &query, &body)?;
                 Ok::<_, RequestError>(match handler.call(state, request, ready(args)).await {
                     Ok(reply) => reply.await.into_action_response().into_response(),
@@ -318,12 +319,13 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         Str: PatchStream<S>,
     {
         let method = Method::Get;
+        let base = stream.base();
         let route = move |State(state): State<St>,
                           Query(query): Query<HashMap<String, String>>,
                           request: Parts,
                           body: Bytes| {
             let handler = handler.clone();
-            in_called_part(called_part(&request.headers), async move {
+            in_called_part(base, called_part(&request.headers), async move {
                 let args = read_args::<A>(method, &request.headers, &query, &body)?;
                 let patches = match handler.call(state, request, ready(args)).await {
                     Ok(patches) => patches,
@@ -334,6 +336,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                 // An event it cannot write ends the response with an error,
                 // which closes the stream before `hs-end`.
                 let events = InPart {
+                    base: current_base(),
                     part: current_part(),
                     inner: Box::pin(
                         patches
@@ -366,9 +369,10 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         P: IntoActionResponse<S>,
     {
         let limit = upload.limit();
+        let base = upload.base();
         let route = move |State(state): State<St>, request: Request| {
             let handler = handler.clone();
-            in_called_part(called_part(request.headers()), async move {
+            in_called_part(base, called_part(request.headers()), async move {
                 let (request, body) = request.into_parts();
                 let multipart = open_upload_stream(&request.headers, body, limit)?;
                 let uploaded = async move {
@@ -396,9 +400,10 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
         P: IntoActionResponse<S>,
     {
         let limit = upload.limit();
+        let base = upload.base();
         let route = move |State(state): State<St>, request: Request| {
             let handler = handler.clone();
-            in_called_part(called_part(request.headers()), async move {
+            in_called_part(base, called_part(request.headers()), async move {
                 let (request, body) = request.into_parts();
                 let mut multipart = open_upload_stream(&request.headers, body, limit)?;
                 let uploaded = async move {
@@ -1331,6 +1336,7 @@ fn called_part(headers: &HeaderMap) -> Result<Option<Arc<str>>, RequestError> {
 /// the runtime would see a network error. The default panic hook still
 /// prints the message.
 fn in_called_part<F>(
+    base: Base,
     part: Result<Option<Arc<str>>, RequestError>,
     future: F,
 ) -> InPart<dyn Future<Output = Response> + Send>
@@ -1356,15 +1362,17 @@ where
             Box::pin(std::future::ready(nosniff(refusal.into_response()))),
         ),
     };
-    InPart { part, inner }
+    InPart { base, part, inner }
 }
 
-/// A future or a stream that runs with the paths of `part` current each
-/// time it is polled, so the patches it builds and writes land under it.
+/// A future or a stream that runs with the paths of `part` and the routes'
+/// `base` current each time it is polled, so the patches it builds and
+/// writes land under the part, and the files their CSS loads under the base.
 ///
-/// The part is set and put back around every poll, because a task may move
+/// Both are set and put back around every poll, because a task may move
 /// between threads between two polls.
 struct InPart<T: ?Sized> {
+    base: Base,
     part: Option<Arc<str>>,
     inner: Pin<Box<T>>,
 }
@@ -1374,7 +1382,9 @@ impl<T: Future + ?Sized> Future for InPart<T> {
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<T::Output> {
         let this = &mut *self;
-        in_part(this.part.clone(), || this.inner.as_mut().poll(cx))
+        in_base(this.base, || {
+            in_part(this.part.clone(), || this.inner.as_mut().poll(cx))
+        })
     }
 }
 
@@ -1383,7 +1393,9 @@ impl<T: Stream + ?Sized> Stream for InPart<T> {
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<T::Item>> {
         let this = &mut *self;
-        in_part(this.part.clone(), || this.inner.as_mut().poll_next(cx))
+        in_base(this.base, || {
+            in_part(this.part.clone(), || this.inner.as_mut().poll_next(cx))
+        })
     }
 }
 

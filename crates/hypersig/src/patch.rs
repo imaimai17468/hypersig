@@ -39,10 +39,11 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value, json};
 
+use crate::asset::css_under;
 use crate::exact;
 use crate::expr::IntoExpr;
 use crate::html::{El, Id};
-use crate::route::Url;
+use crate::route::{Url, current_base};
 use crate::signal::{Item, Root, Sig, Signals, current_part, in_item_scope};
 use crate::style::Sheet;
 
@@ -399,6 +400,11 @@ impl PatchEvent {
                 if css.is_empty() {
                     json!({ "html": html }).to_string()
                 } else {
+                    let base = current_base();
+                    let css: Vec<_> = css
+                        .iter()
+                        .map(|(key, css)| (key, css_under(css, base)))
+                        .collect();
                     json!({ "html": html, "css": css }).to_string()
                 }
             }
@@ -800,6 +806,10 @@ impl<S: Signals> Patches<S> {
     ///
     /// The body ends with the event `hs-end`, without which the runtime
     /// counts the answer as cut off and the call as failed.
+    ///
+    /// Outside the action, stream, or upload that answers a call, a path in
+    /// a fragment's [`url`](crate::style::value::url) is written as given,
+    /// for routes at the root of the host.
     ///
     /// # Panics
     ///

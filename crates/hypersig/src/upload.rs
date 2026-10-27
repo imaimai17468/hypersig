@@ -106,6 +106,12 @@ impl<S, A> Upload<S, A> {
         self.max_bytes
     }
 
+    /// The base the routes are declared under.
+    #[cfg(feature = "axum")]
+    pub(crate) fn base(&self) -> Base {
+        self.base
+    }
+
     /// The path a call to this upload names, with its [`Base`].
     pub(crate) fn call_path(&self) -> String {
         self.base.join(self.path)

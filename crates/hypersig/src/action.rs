@@ -122,6 +122,12 @@ impl<S, A> Action<S, A> {
         self.method
     }
 
+    /// The base the routes are declared under.
+    #[cfg(feature = "axum")]
+    pub(crate) fn base(&self) -> Base {
+        self.base
+    }
+
     /// The path a call to this action names, with its [`Base`].
     pub(crate) fn call_path(&self) -> String {
         self.base.join(self.path)
@@ -699,6 +705,12 @@ impl<S, A> StreamAction<S, A> {
     #[must_use]
     pub fn path(&self) -> &'static str {
         self.path
+    }
+
+    /// The base the routes are declared under.
+    #[cfg(feature = "axum")]
+    pub(crate) fn base(&self) -> Base {
+        self.base
     }
 
     /// The path a call to this stream names, with its [`Base`].
