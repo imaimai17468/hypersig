@@ -2,6 +2,23 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.10.0] - 2026-10-27
+
+### Breaking
+
+- `String` is no longer a `Segment`. A route parameter that holds any text is a `PathSegment`, which refuses an empty value, `.`, and `..`: `PathSegment::new` panics on one, which is a compile error in a `const`, and `PathSegment::parse` returns a `PathSegmentError`. A link that read a `String` signal as a segment reads a `PathSegment` field, and a `String` sort key of `hypersig_ui`'s `Table` becomes a `PathSegment` or an enum with `#[derive(Segment)]`.
+- `Rest::new` takes a `&'static str` and panics on an empty rest or a `.` or `..` part. `Rest::parse` reads one built at run time.
+- `#[derive(Segment)]` refuses a variant renamed to an empty name, `.`, or `..`.
+
+### Added
+
+- `hypersig::PathSegment`, `hypersig::PathSegmentError`, and `Rest::parse`.
+
+### Changed
+
+- A request whose `PathSegment` or `Rest` decodes to an empty value, `.`, or `..`, such as `/orgs/%2E%2E`, answers 404 before the handler runs, and deserializing either type refuses those values.
+- `hypersig::style`'s unit constructors, such as `px`, panic on a NaN or infinite number where the value is built. Before, the stylesheet panicked when it was written.
+
 ## [0.9.1] - 2026-10-27
 
 ### Changed
