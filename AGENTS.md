@@ -26,6 +26,14 @@ That last sentence is the project's thesis. A change that lets a user write one 
 
 The wire format between the two halves is defined twice, once in `crates/hypersig/src/expr.rs`, `html.rs`, `page.rs`, `patch.rs`, and `route.rs` and once in `runtime/src/`. A change to one is a change to both in the same commit. `tests/fixtures.rs` fails when a committed fixture differs from what the builder writes now, and `runtime/test/features.test.ts` runs those fixtures, so a change on one side that the other side does not follow fails one of the two test suites. Regenerate the fixtures with `HYPERSIG_FIXTURES=overwrite cargo test -p hypersig --test fixtures`, then run `pnpm test`.
 
+## Edit loop
+
+While editing, build with [blaze](https://github.com/indexable-inc/blaze), which compiles only the functions an edit changed: `cargo blaze build`, `cargo blaze run -p <package>`, and `cargo blaze test -p <crate>`. After an edit to `html.rs`, `cargo blaze build -p site` took 0.36 s on one Mac where `cargo build` took 4.4 s. Install it with `curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh`, and leave `blaze enable` off, because it links `cargo clippy` to blaze's own 24 lints.
+
+blaze compiles some code that rustc rejects (the `ra-jit` build its installer gives today compiles a use after move), so run `cargo check` before reporting, and run the list below with cargo. Two commands stay on cargo while editing too. `cargo test --doc`: blaze runs one rustc per example where cargo merges them, 82 s against 1.3 s for `hypersig`'s 126. `cargo test --workspace`: blaze 0.1.0 fails to load the whole workspace for tests and hands every run to cargo.
+
+The tests that start another program run outside blaze 0.1.0's sandbox, by `[package.metadata.blaze.sandbox]` in `crates/hypersig/Cargo.toml`, `crates/hypersig_ui/Cargo.toml` (trybuild starts cargo), and `crates/hypersig_cli/Cargo.toml` (its tests start `cargo-hypersig`).
+
 ## Verification before completion
 
 No hook runs these. Run them yourself before reporting a change complete:

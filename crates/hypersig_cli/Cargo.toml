@@ -25,3 +25,8 @@ toml_edit = "0.25.17"
 
 [lints]
 workspace = true
+
+# The CLI's tests start `cargo-hypersig`, which blaze's sandbox refuses; cargo
+# ignores this table.
+[package.metadata.blaze.sandbox]
+tests = false

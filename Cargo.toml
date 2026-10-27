@@ -112,3 +112,14 @@ unimplemented = "warn"
 literal_string_with_formatting_args = "allow"
 # Transitive dependencies of axum and tokio pull several versions of the same crate.
 multiple_crate_versions = "allow"
+
+# With macOS's default of `unpacked`, every build leaves its object files in
+# `target/debug/deps` for the debug info to point at, and nothing removes the
+# old ones: a rebuild of `site` adds about 650. `packed` writes one `.dSYM`
+# instead, and line tables alone keep that step about as fast as before
+# (4.7 s against 4.6 s for `site` after an edit to `html.rs`) while a
+# backtrace still names the file and line. A debugger shows no local
+# variables.
+[profile.dev]
+debug = "line-tables-only"
+split-debuginfo = "packed"
