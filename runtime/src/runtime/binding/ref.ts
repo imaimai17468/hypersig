@@ -54,15 +54,24 @@ export class Refs {
   /**
    * The element whose `attribute` is `name`, looked for first in the list
    * items around `origin`, innermost first, then in the whole page.
+   *
+   * `first`, where given, maps each name to the first element of the page
+   * that carries it, so that a caller who looks up many names reads the
+   * page once.
    */
-  find(attribute: string, name: string, origin: Element | undefined): Element | null {
+  find(
+    attribute: string,
+    name: string,
+    origin: Element | undefined,
+    first?: ReadonlyMap<string, Element>,
+  ): Element | null {
     const selector = `[${attribute}="${CSS.escape(name)}"]`;
     for (let at = origin ?? null; at !== null; at = at.parentElement) {
       if (own(at)?.root !== true) continue;
       const found = at.matches(selector) ? at : at.querySelector(selector);
       if (found !== null) return found;
     }
-    return this.#rt.root.querySelector(selector);
+    return first === undefined ? this.#rt.root.querySelector(selector) : (first.get(name) ?? null);
   }
 
   /**
