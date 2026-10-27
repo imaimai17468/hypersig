@@ -414,6 +414,13 @@ impl<'a> Iterator for Items<'a> {
             }
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self {
+            Items::Json(items) => items.size_hint(),
+            Items::Tape { left, .. } => (*left, Some(*left)),
+        }
+    }
 }
 
 pub(crate) enum Entries<'a> {

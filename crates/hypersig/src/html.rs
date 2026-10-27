@@ -43,8 +43,9 @@
 //! ```
 
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt;
+use std::hash::{BuildHasherDefault, Hasher};
 use std::io;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -1533,6 +1534,67 @@ pub(crate) const HIDE: &str = "data-hs-hide";
 /// [`El::bind_style`] values, on a page with a CSP nonce.
 pub(crate) const INLINE: &str = "data-hs-inline";
 
+/// The keys a list has written, so that a repeated one can be told apart.
+///
+/// The keys share one buffer and are found by their FNV-1a hash, so a list
+/// allocates for its keys a few times in all, not once per item.
+#[derive(Default)]
+struct SeenKeys {
+    text: String,
+    ends: Vec<usize>,
+    hashes: HashSet<u64, BuildHasherDefault<Fnv>>,
+}
+
+impl SeenKeys {
+    fn reserve(&mut self, items: usize) {
+        self.ends.reserve(items);
+        self.hashes.reserve(items);
+    }
+
+    /// Records `key`, and says whether it was recorded before.
+    fn repeated(&mut self, key: &str) -> bool {
+        let new_hash = self.hashes.insert(fnv(key));
+        let repeated = !new_hash && {
+            let mut start = 0;
+            self.ends.iter().any(|&end| {
+                let written = &self.text[start..end];
+                start = end;
+                written == key
+            })
+        };
+        self.text.push_str(key);
+        self.ends.push(self.text.len());
+        repeated
+    }
+}
+
+/// FNV-1a over the bytes of `text`.
+fn fnv(text: &str) -> u64 {
+    text.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+        (hash ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3)
+    })
+}
+
+/// Hands the `u64` that [`fnv`] already computed to the `HashSet` as it is.
+#[derive(Default)]
+struct Fnv(u64);
+
+impl Hasher for Fnv {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        for &byte in bytes {
+            self.0 = (self.0 ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3);
+        }
+    }
+
+    fn write_u64(&mut self, i: u64) {
+        self.0 = i;
+    }
+}
+
 /// Whether `value` can sit inside a declaration in a `<style>` element
 /// without ending the declaration, the rule, a string, or the element.
 ///
@@ -2870,12 +2932,24 @@ impl<S> El<S> {
             return;
         };
         let mut key = String::new();
+        let mut seen = SeenKeys::default();
+        if self.key.is_some() {
+            seen.reserve(items.size_hint().0);
+        }
         ctx.for_each_item(depth, items, |item, index| {
             key.clear();
             match &self.key {
                 None => ssr::write_into(&mut key, format_args!("#{index}")),
                 Some(expr) => match ssr::evaluate(expr, item) {
-                    Some(value) => ssr::write_js_json(&mut key, &value),
+                    Some(value) => {
+                        ssr::write_js_json(&mut key, &value);
+                        // The runtime files a repeated key under this name
+                        // (`match.ts`) and records the new name in its place.
+                        if seen.repeated(&key) {
+                            ssr::write_into(&mut key, format_args!("#{index}"));
+                            seen.repeated(&key);
+                        }
+                    }
                     None => return Some(()),
                 },
             }
