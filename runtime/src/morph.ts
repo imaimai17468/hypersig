@@ -1,3 +1,5 @@
+import { move } from "./move.ts";
+
 /**
  * The attribute `El::foreign` writes, naming an element whose attributes and
  * children a script owns. `morph` keeps such an element as it is, and
@@ -27,10 +29,11 @@ export type Drawn = (template: HTMLTemplateElement) => ReadonlySet<Element> | un
  * the same tag and `name`. A `<template>` whose content changed is replaced whole, because
  * its content is not among its children. One that stays keeps the elements
  * `drawn` names for it, which `to` does not hold. A `<details>` or a
- * `<dialog>` keeps its `open` as the visitor or a script left it. Each element it takes out
- * of the document is pushed onto `removed`. One of them can be back in the
- * document by the time `morph` returns, where a later child with the same id
- * or foreign name moved it there. Where the focused element left the
+ * `<dialog>` keeps its `open` as the visitor or a script left it. A child
+ * with a key that `to` still has stays in the document while it moves, with
+ * `moveBefore` where the browser has it, so an iframe or a video inside it
+ * does not load again. Each element it takes out of the document is pushed
+ * onto `removed`. Where the focused element left the
  * document or lost focus on the way, focus and the text selection move to
  * the element now there with its id, or else its tag and `name`.
  */
@@ -147,6 +150,11 @@ function morphChildren(
     const key = keyOf(child);
     if (key !== "") byKey.set(key, child);
   }
+  const kept = new Set<string>();
+  for (const child of to.children) {
+    const key = keyOf(child);
+    if (byKey.has(key)) kept.add(key);
+  }
 
   let current: ChildNode | null = from.firstChild;
   // A copy, because each child moved into `from` leaves `to.childNodes`.
@@ -155,17 +163,18 @@ function morphChildren(
     if (key !== "") {
       const match = byKey.get(key);
       if (match !== undefined && match !== current) {
-        from.insertBefore(match, current);
+        move(from, match, current);
         current = match;
       }
     }
-    let kept: ChildNode;
+    let placed: ChildNode;
     if (current === null) {
       from.append(next);
-      kept = next;
-    } else kept = morphChild(from, current, next, key, removed, drawn);
-    let after = kept.nextSibling;
-    const own = kept === current && kept instanceof HTMLTemplateElement ? drawn?.(kept) : undefined;
+      placed = next;
+    } else placed = morphChild(from, current, next, key, kept, removed, drawn);
+    let after = placed.nextSibling;
+    const own =
+      placed === current && placed instanceof HTMLTemplateElement ? drawn?.(placed) : undefined;
     if (own !== undefined)
       while (after instanceof Element && own.has(after)) after = after.nextSibling;
     current = after;
@@ -200,13 +209,15 @@ function ahead(start: ChildNode | null, model: Element): Element | null {
 
 /**
  * Morphs `current`, the child of `from` at the place of `next`, into
- * `next`, whose key is `key`, and returns the node now at that place.
+ * `next`, whose key is `key`, and returns the node now at that place. `kept`
+ * holds the keys of the children of `from` that `to` still has.
  */
 function morphChild(
   from: Element,
   current: ChildNode,
   next: ChildNode,
   key: string,
+  kept: ReadonlySet<string>,
   removed: Element[],
   drawn: Drawn | undefined,
 ): ChildNode {
@@ -219,10 +230,13 @@ function morphChild(
   const match = next instanceof Element ? ahead(current, next) : null;
   if (match !== null && next instanceof Element) {
     // The siblings before the match left `to`, and the loop after it removes them.
-    from.insertBefore(match, current);
+    move(from, match, current);
     return morphElement(match, next, removed, drawn);
   }
-  if (current instanceof Element && ahead(next.nextSibling, current) !== null) {
+  if (
+    current instanceof Element &&
+    (kept.has(keyOf(current)) || ahead(next.nextSibling, current) !== null)
+  ) {
     // `next` is new before an element `to` still has, which keeps its place and its state.
     from.insertBefore(next, current);
     return next;

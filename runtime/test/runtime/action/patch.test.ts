@@ -50,7 +50,7 @@ it("keeps the bindings of an element that a patch moved by its id", async () => 
   );
   await tick();
   const kept = $("#kept");
-  // The morph replaces the span at the first position with the <b>, then finds it by id and moves it to the second.
+  // The morph puts the <b> in before the span, which the patch still has, so the span stays in the document.
   runtime.apply({
     event: "hs-element",
     data: JSON.stringify({
