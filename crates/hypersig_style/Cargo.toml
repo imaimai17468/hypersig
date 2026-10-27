@@ -10,7 +10,7 @@ description = "Typed atomic CSS for hypersig. Use it through the hypersig crate"
 keywords.workspace = true
 categories.workspace = true
 readme = "README.md"
-include = ["src/**/*.rs"]
+include = ["src/**/*.rs", "LICENSE"]
 
 [dev-dependencies]
 serde_json.workspace = true
