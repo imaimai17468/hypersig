@@ -92,7 +92,8 @@ impl<S, A> Action<S, A> {
     ///
     /// [`routes!`](crate::routes) checks `path` with [`Action::check_path`]
     /// in a `const _` beside the constant, so a path that does not start
-    /// with `/` is a compile error.
+    /// with `/`, holds a `{name}` segment, or holds a byte the browser
+    /// percent-encodes is a compile error.
     pub(crate) const fn at(method: Method, base: Base, path: &'static str) -> Self {
         Self {
             method,
@@ -104,10 +105,7 @@ impl<S, A> Action<S, A> {
 
     /// Why `path` cannot be an action's path, if it cannot.
     pub(crate) const fn check_path(path: &'static str) -> Result<(), &'static str> {
-        if path.is_empty() || path.as_bytes()[0] != b'/' {
-            return Err("an action path starts with `/`");
-        }
-        Ok(())
+        crate::route::check_handler_path(path, "an action path starts with `/`")
     }
 
     /// The path the action is served on, without its [`Base`].
@@ -684,7 +682,8 @@ impl<S, A> StreamAction<S, A> {
     ///
     /// [`routes!`](crate::routes) checks `path` with
     /// [`StreamAction::check_path`] in a `const _` beside the constant, so a
-    /// path that does not start with `/` is a compile error.
+    /// path that does not start with `/`, holds a `{name}` segment, or holds
+    /// a byte the browser percent-encodes is a compile error.
     pub(crate) const fn at(base: Base, path: &'static str) -> Self {
         Self {
             base,
@@ -695,10 +694,7 @@ impl<S, A> StreamAction<S, A> {
 
     /// Why `path` cannot be a stream's path, if it cannot.
     pub(crate) const fn check_path(path: &'static str) -> Result<(), &'static str> {
-        if path.is_empty() || path.as_bytes()[0] != b'/' {
-            return Err("a stream path starts with `/`");
-        }
-        Ok(())
+        crate::route::check_handler_path(path, "a stream path starts with `/`")
     }
 
     /// The path the stream is served on, without its [`Base`].

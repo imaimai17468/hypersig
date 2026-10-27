@@ -1,0 +1,10 @@
+error[E0080]: evaluation panicked: a path holds ASCII letters, digits, `/`, and `-._~!$&'()*+,;=:@`, because the browser percent-encodes any other byte and the router then finds no match
+  --> tests/ui/fail/route_percent_encoded.rs:7:1
+   |
+ 7 | / hypersig::routes! {
+ 8 | |     fn pages(Router<()>);
+ 9 | |     const MEMBER: Route = "/café" => no_page;
+10 | | }
+   | |_^ evaluation of `_` failed here
+   |
+   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

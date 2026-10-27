@@ -172,10 +172,10 @@ mod tests {
     }
 
     #[test]
-    fn the_base_is_escaped_as_the_string_around_it() {
+    fn the_punctuation_a_base_may_hold_needs_no_escape_in_the_string() {
         assert_eq!(
-            css_under(r#"url("/a.png")"#, Base::new("/a\"b<c")),
-            r#"url("/a\"b\3c c/a.png")"#
+            css_under(r#"url("/a.png")"#, Base::new("/a'b(c)!$&*+,;=:@~")),
+            r#"url("/a'b(c)!$&*+,;=:@~/a.png")"#
         );
     }
 }
