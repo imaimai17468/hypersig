@@ -305,12 +305,13 @@ pub fn quoted(text: impl Into<String>) -> Quoted {
 
 /// A URL, written `url("...")`.
 ///
-/// The stylesheet writes a path that starts with a single `/` as given,
-/// whatever `Base` the page's routes are declared `under`, because a patch
-/// builds the rules it brings with no `Base`. So under `Base::new("/app")`
-/// the URL `/fonts/inter.woff2` loads the file at the root of the host. A
-/// URL relative to the page, such as `fonts/inter.woff2`, follows the page's
-/// own path.
+/// A path that starts with a single `/` names a file the application
+/// serves. hypersig's page and its patches write it under the `Base` the
+/// page's routes are declared `under`, as they write an `Asset`, so under
+/// `Base::new("/app")` the URL `/fonts/inter.woff2` loads
+/// `/app/fonts/inter.woff2`. A URL relative to the page, such as
+/// `fonts/inter.woff2`, follows the page's own path, and one on another host
+/// is written as given.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Url(&'static str);
 

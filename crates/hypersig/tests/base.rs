@@ -4,10 +4,12 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt as _;
-use hypersig::html::{a, button, p};
+use hypersig::html::{El, Id, a, button, p};
+use hypersig::style::value::url;
+use hypersig::style::{FontFace, Global, Style};
 use hypersig::{
-    Action, Base, Page, PageResponse, Patches, Route, RouterExt, Search, Signals, StreamAction,
-    Unserved,
+    Action, Base, Fragment, Page, PageResponse, Patches, Route, RouterExt, Search, Signals,
+    StreamAction, Unserved,
 };
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
@@ -51,10 +53,38 @@ hypersig::routes! {
         Patches::from(Shop::count().patch(count + 1)).navigate(REVIEW.url((count, 1)))
     };
     stream LIVE: StreamAction<Shop> = "/live" => |(), ()| futures::stream::empty::<Patches<Shop>>();
+    action SHOW: Action<Shop> = post "/show" => |(), ()| async { Patches::new().element(&Banner) };
+    stream SHOWN: StreamAction<Shop> = "/shown" =>
+        |(), ()| futures::stream::once(async { broadcast() });
 }
 
 fn shop(title: &str) -> Page<Shop> {
-    Page::new(title, Shop { count: 0 }).child(p().text(title))
+    let inter = FontFace::new("Inter", url("/inter.woff2"));
+    Page::new(title, Shop { count: 0 })
+        .global(Global::new().font(inter))
+        .child(p().text(title))
+        .child(hypersig::fragment(&Banner))
+}
+
+/// A batch built on another thread, as a task that broadcasts one batch to
+/// every page builds it, outside the stream that sends it.
+fn broadcast() -> Patches<Shop> {
+    std::thread::spawn(|| Patches::new().element(&Banner))
+        .join()
+        .expect("the thread renders")
+}
+
+/// A banner whose background is a file the application serves.
+struct Banner;
+
+impl Fragment for Banner {
+    type Signals = Shop;
+    const ID: Id = Id::new("banner");
+
+    fn render(&self) -> El<Shop> {
+        p().css(Style::new().background_image(url("/paper.png")))
+            .text("Sale")
+    }
 }
 
 async fn missing((): (), unserved: Unserved) -> Page<Shop> {
@@ -247,4 +277,35 @@ fn a_history_entry_points_under_the_base() {
         stream.contains(r#""/app/items/4""#) && stream.contains(r#""/app""#),
         "{stream}"
     );
+}
+
+#[tokio::test]
+async fn a_file_the_css_loads_goes_under_the_base() {
+    let (status, body, _) = get(Router::new().nest(APP.as_str(), app()), "/app").await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert!(body.contains(r#"src:url("/app/inter.woff2")"#), "{body}");
+    assert!(body.contains(r#"url("/app/paper.png")"#), "{body}");
+
+    for request in [
+        Request::post("/app/show")
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from("null")),
+        Request::get("/app/shown")
+            .header("hypersig-call", "1")
+            .body(Body::empty()),
+    ] {
+        let response = Router::new()
+            .nest(APP.as_str(), app())
+            .oneshot(request.expect("request"))
+            .await
+            .expect("the router is infallible");
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let body = String::from_utf8(body.to_vec()).expect("utf-8");
+        assert!(body.contains(r#"url(\"/app/paper.png\")"#), "{body}");
+    }
 }

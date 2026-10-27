@@ -1,9 +1,10 @@
-//! The files a page loads in `<head>`: its scripts, stylesheets, icon, and runtime.
+//! The files a page loads: its scripts, stylesheets, icon, and runtime in
+//! `<head>`, and the files its CSS loads with `url()`.
 
 use std::borrow::Cow;
 
 use crate::route::Base;
-use crate::style::value::{Url, url};
+use crate::style::value::{Url, quoted, url};
 
 /// The URL of a file a page loads.
 ///
@@ -76,9 +77,38 @@ impl Asset {
     }
 }
 
+/// `css` with each `url()` of a path the application serves under `base`.
+///
+/// The stylesheet writes a [`Url`] as `url("...")` with its text escaped, so
+/// `url("/` followed by anything but `/` is the start of a root path. A `"`
+/// inside a CSS string is written `\"`, so text inside a string cannot
+/// match. The base is escaped the way the string around it is.
+pub(crate) fn css_under(css: &str, base: Base) -> Cow<'_, str> {
+    const OPEN: &str = "url(\"/";
+    if base == Base::ROOT || !css.contains(OPEN) {
+        return Cow::Borrowed(css);
+    }
+    let escaped = quoted(base.as_str()).to_string();
+    let prefix = &escaped[1..escaped.len() - 1];
+    let mut out = String::with_capacity(css.len() + prefix.len());
+    let mut rest = css;
+    while let Some(at) = rest.find(OPEN) {
+        // `before` ends with `url("` and `path` starts with the `/`.
+        let (before, path) = rest.split_at(at + OPEN.len() - 1);
+        out.push_str(before);
+        if !path[1..].starts_with('/') {
+            out.push_str(prefix);
+        }
+        out.push('/');
+        rest = &path[1..];
+    }
+    out.push_str(rest);
+    Cow::Owned(out)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Asset;
+    use super::{Asset, css_under};
     use crate::route::Base;
 
     const APP: Base = Base::new("/app");
@@ -117,5 +147,35 @@ mod tests {
     #[should_panic(expected = "a URL a page loads is a path")]
     fn a_mail_address_panics() {
         let _ = Asset::new("mailto:a@example.com");
+    }
+
+    #[test]
+    fn a_root_path_in_css_goes_under_the_base() {
+        let css = r#"@font-face{src:url("/inter.woff2")}.a{background-image:url("/a.png")}"#;
+        assert_eq!(
+            css_under(css, APP),
+            r#"@font-face{src:url("/app/inter.woff2")}.a{background-image:url("/app/a.png")}"#
+        );
+        assert_eq!(css_under(css, Base::ROOT), css);
+    }
+
+    #[test]
+    fn a_relative_url_another_host_and_a_string_in_css_are_written_as_given() {
+        for css in [
+            r#".a{background-image:url("a.png")}"#,
+            r#".a{background-image:url("//cdn.example/a.png")}"#,
+            r#".a{background-image:url("https://cdn.example/a.png")}"#,
+            r#".a{content:"url(\"/a.png"}"#,
+        ] {
+            assert_eq!(css_under(css, APP), css);
+        }
+    }
+
+    #[test]
+    fn the_base_is_escaped_as_the_string_around_it() {
+        assert_eq!(
+            css_under(r#"url("/a.png")"#, Base::new("/a\"b<c")),
+            r#"url("/a\"b\3c c/a.png")"#
+        );
     }
 }

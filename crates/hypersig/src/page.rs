@@ -8,7 +8,7 @@ use std::fmt;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use crate::asset::Asset;
+use crate::asset::{Asset, css_under};
 use crate::expr::{IntoExpr, IntoStmt, Stmt};
 use crate::head::{LanguageTag, OpenGraph, Origin, meta};
 use crate::html::{
@@ -1114,14 +1114,14 @@ impl<S: Signals> Page<S> {
             out.push_str("<style data-hs-global");
             self.write_nonce(out);
             out.push('>');
-            out.push_str(&self.global.to_css());
+            out.push_str(&css_under(&self.global.to_css(), base));
             out.push_str("</style>");
         }
         if !self.theme.is_empty() {
             out.push_str("<style data-hs-theme");
             self.write_nonce(out);
             out.push('>');
-            out.push_str(&self.theme.to_css());
+            out.push_str(&css_under(&self.theme.to_css(), base));
             out.push_str("</style>");
         }
         let mut sheet = Sheet::new();
@@ -1133,7 +1133,7 @@ impl<S: Signals> Page<S> {
             write_attr(out, "data-hs-css", bucket.sort_key());
             self.write_nonce(out);
             out.push('>');
-            out.push_str(bucket.css());
+            out.push_str(&css_under(bucket.css(), base));
             out.push_str("</style>");
         }
         for href in &self.stylesheets {
@@ -1145,7 +1145,7 @@ impl<S: Signals> Page<S> {
             out.push_str("<style");
             self.write_nonce(out);
             out.push('>');
-            out.push_str(css);
+            out.push_str(&css_under(css, base));
             out.push_str("</style>");
         }
     }

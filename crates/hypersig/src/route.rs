@@ -1,6 +1,7 @@
 //! Pages served at typed paths, and the links that point to them.
 
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -125,8 +126,10 @@ pub struct Route<P = (), Q = ()> {
 /// answers with 404 inside `nest`.
 /// A page served by a router nested at a path other than its base answers
 /// with a 500 that names both. An [`Asset`](crate::Asset) path the
-/// application serves goes under the page's base, and nothing checks that
-/// the router serves it.
+/// application serves goes under the page's base, and so does one in a
+/// stylesheet's [`url`](crate::style::value::url), in the page and in the
+/// patches an action, a stream, or an upload sends. Nothing checks that the
+/// router serves the file.
 /// A [`Url`] already starts with the base, so a canonical URL takes an
 /// [`Origin`](crate::Origin) without [`Origin::under`](crate::Origin::under).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -180,6 +183,31 @@ impl Base {
             (base, path) => format!("{base}{path}"),
         }
     }
+}
+
+thread_local! {
+    static BASE: Cell<Base> = const { Cell::new(Base::ROOT) };
+}
+
+/// The base of the action, stream, or upload being answered, or
+/// [`Base::ROOT`] outside one.
+pub(crate) fn current_base() -> Base {
+    BASE.get()
+}
+
+/// Runs `body` with `base` as the base being answered.
+///
+/// The previous base is put back when `body` returns or panics.
+#[cfg(feature = "axum")]
+pub(crate) fn in_base<R>(base: Base, body: impl FnOnce() -> R) -> R {
+    struct Restore(Base);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            BASE.set(self.0);
+        }
+    }
+    let _restore = Restore(BASE.replace(base));
+    body()
 }
 
 impl<P, Q> Route<P, Q> {
