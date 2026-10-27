@@ -1499,7 +1499,7 @@ fn plain_css(value: &str) -> bool {
 /// Examples are an SVG element and a custom element.
 ///
 /// Use the named constructors such as [`div`] where one exists, and build
-/// `tag` with [`tag!`](hypersig::tag!). A tag the HTML standard lists as void,
+/// `tag` with [`tag!`](crate::tag!). A tag the HTML standard lists as void,
 /// such as `source` or `meta`, is written without children or a closing tag,
 /// as the browser parses it.
 #[must_use]
@@ -1509,7 +1509,7 @@ pub fn el<S>(tag: Tag) -> El<S> {
 
 /// The name of an element that [`el`] creates.
 ///
-/// [`tag!`](hypersig::tag!) builds one at compile time. A tag is ASCII letters,
+/// [`tag!`](crate::tag!) builds one at compile time. A tag is ASCII letters,
 /// digits, `-`, `_`, `.`, and `:`, starting with a letter, so the name cannot
 /// end the tag and start an attribute. It is never `script`, `style`,
 /// `base`, or `link`, in any case: the first two run their text as code,

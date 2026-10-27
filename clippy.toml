@@ -1,0 +1,3 @@
+# A panic in a test is its assertion, so `clippy::unwrap_used`, which the
+# library crates turn on, leaves `#[test]` functions and `#[cfg(test)]` modules alone.
+allow-unwrap-in-tests = true

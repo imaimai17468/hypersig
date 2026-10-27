@@ -5,6 +5,8 @@
 
 // A library's caller owns standard output and standard error, so the library writes to neither.
 #![warn(clippy::print_stdout, clippy::print_stderr)]
+// A library hands a failure back to its caller as an error, and marks `pub` only what it exports.
+#![warn(clippy::unwrap_used, unreachable_pub)]
 
 use proc_macro2::TokenStream;
 use quote::{quote, quote_spanned};

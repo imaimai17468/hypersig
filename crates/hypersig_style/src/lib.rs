@@ -18,6 +18,8 @@
 //! Use it through the `hypersig` crate.
 // A library's caller owns standard output and standard error, so the library writes to neither.
 #![warn(clippy::print_stdout, clippy::print_stderr)]
+// A library hands a failure back to its caller as an error, and marks `pub` only what it exports.
+#![warn(clippy::unwrap_used, unreachable_pub)]
 #![doc(
     html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
     html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"

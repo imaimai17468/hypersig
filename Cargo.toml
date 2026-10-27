@@ -63,6 +63,7 @@ trybuild = "1.0.122"
 
 # Lint set from the Pragmatic Rust Guidelines, M-STATIC-VERIFICATION.
 [workspace.lints.rust]
+rust_2018_idioms = { level = "warn", priority = -1 }
 missing_docs = "warn"
 ambiguous_negative_literals = "warn"
 missing_debug_implementations = "warn"
@@ -109,6 +110,9 @@ let_underscore_future = "warn"
 str_to_string = "warn"
 todo = "warn"
 unimplemented = "warn"
+panic_in_result_fn = "warn"
+rc_buffer = "warn"
+string_add = "warn"
 literal_string_with_formatting_args = "allow"
 # Transitive dependencies of axum and tokio pull several versions of the same crate.
 multiple_crate_versions = "allow"

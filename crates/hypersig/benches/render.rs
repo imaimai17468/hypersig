@@ -77,7 +77,7 @@ fn main() {
 }
 
 #[divan::bench(args = [100, 1_000, 10_000])]
-fn list_items(bencher: Bencher, len: i32) {
+fn list_items(bencher: Bencher<'_, '_>, len: i32) {
     let page = Page::new("bench", signals(len)).child(ul().child(list(
         Todos::items(),
         Todos::filter(),
@@ -89,7 +89,7 @@ fn list_items(bencher: Bencher, len: i32) {
 /// The items of `list_items` with atomic classes: five declarations under three
 /// conditions, and one toggled style.
 #[divan::bench(args = [100, 1_000, 10_000])]
-fn list_items_styled(bencher: Bencher, len: i32) {
+fn list_items_styled(bencher: Bencher<'_, '_>, len: i32) {
     let item = Style::new()
         .display(Display::Flex)
         .padding(rem(1))
@@ -110,7 +110,7 @@ fn list_items_styled(bencher: Bencher, len: i32) {
 
 /// Every item counts the whole list, so the work grows with the square of the length.
 #[divan::bench(args = [100, 1_000])]
-fn count_in_each_item(bencher: Bencher, len: i32) {
+fn count_in_each_item(bencher: Bencher<'_, '_>, len: i32) {
     let page = Page::new("bench", signals(len)).child(ul().child(list(
         Todos::items(),
         Todos::filter(),
@@ -127,7 +127,7 @@ fn count_in_each_item(bencher: Bencher, len: i32) {
 
 /// The same count as `count_in_each_item`, computed once by `Page::computed`.
 #[divan::bench(args = [100, 1_000])]
-fn count_computed_once(bencher: Bencher, len: i32) {
+fn count_computed_once(bencher: Bencher<'_, '_>, len: i32) {
     let signals = Counted {
         items: items(len),
         filter: "all".to_owned(),
