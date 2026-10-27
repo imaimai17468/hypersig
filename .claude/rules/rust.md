@@ -11,7 +11,7 @@ The IDs below come from Microsoft's Pragmatic Rust Guidelines. The full text, wi
 
 ## Gates
 
-**The lint set lives in `[workspace.lints]` and every crate opts in with `[lints] workspace = true`** (M-STATIC-VERIFICATION). Clippy's `pedantic` and `cargo` groups are on, so `cargo clippy --workspace --all-targets -- -D warnings` fails on what they flag.
+**The lint set lives in `[workspace.lints]` and every crate opts in with `[lints] workspace = true`** (M-STATIC-VERIFICATION). Clippy's `pedantic` and `cargo` groups are on, so `cargo clippy --workspace --all-targets -- -D warnings` fails on what they flag. The library crates' `lib.rs` add `print_stdout`, `print_stderr`, `unwrap_used`, and `unreachable_pub`, which a binary, the site, and the examples are free to break, and `clippy.toml` exempts tests from `unwrap_used`.
 
 **Override a lint with `#[expect(..., reason = "...")]`, never a bare `#[allow]`** (M-LINT-OVERRIDE-EXPECT). `#[expect]` warns once the lint stops firing, so a stale override does not survive. Code a proc macro emits is the exception: it uses `#[allow]`, because whether the lint fires depends on the user's input.
 
