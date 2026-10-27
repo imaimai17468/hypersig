@@ -850,6 +850,27 @@ fn operations(ast: &Value, out: &mut BTreeSet<String>) {
     }
 }
 
+/// `text` read as JSON, with the value of each case that uses `pow` or
+/// `log10` left out. Rust takes both from the platform's math library, and
+/// glibc and macOS round the last bit of `log10` differently, so the file
+/// written on one would fail the comparison on the other. `null` stands for
+/// a file that does not parse.
+fn portable(text: &str) -> Value {
+    let mut file: Value = serde_json::from_str(text).unwrap_or(Value::Null);
+    let groups = file.get_mut("groups").and_then(Value::as_array_mut);
+    for group in groups.into_iter().flatten() {
+        let cases = group.get_mut("cases").and_then(Value::as_array_mut);
+        for case in cases.into_iter().flatten() {
+            let mut used = BTreeSet::new();
+            operations(&case[0], &mut used);
+            if used.contains("pow") || used.contains("log10") {
+                case[1] = Value::Null;
+            }
+        }
+    }
+    file
+}
+
 #[test]
 #[cfg_attr(
     miri,
@@ -933,7 +954,7 @@ fn writes_what_the_server_evaluates_for_the_runtime_to_compare() {
     }
     let on_disk = std::fs::read_to_string(&path).unwrap_or_default();
     assert!(
-        on_disk == text,
+        portable(&on_disk) == portable(&text),
         "{} is out of date; rerun with HYPERSIG_FIXTURES=overwrite",
         path.display()
     );
