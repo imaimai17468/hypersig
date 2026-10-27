@@ -18,7 +18,8 @@ use crate::token;
 /// The signals a [`Combobox`] keeps.
 ///
 /// They hold the text, whether its list is open, which option the arrow keys
-/// reached, and whether the pointer is on the list.
+/// reached, whether the pointer is on the list, and whether the text field
+/// has focus.
 ///
 /// Put one in the page's signals for each combobox and read the chosen text
 /// from [`ComboboxState::text`].
@@ -44,6 +45,7 @@ pub struct ComboboxState {
     open: bool,
     active: String,
     pointer: bool,
+    focused: bool,
 }
 
 impl ComboboxState {
@@ -73,8 +75,8 @@ impl ComboboxState {
 /// ignoring case, the down arrow opens it, Enter chooses the option the
 /// arrows reached, and Escape closes the list or, when it is closed, clears
 /// the text. Choosing an option puts its label in the text field and closes
-/// the list, and so does leaving the field, unless the pointer is on the
-/// list.
+/// the list, and so does leaving the field. Where the pointer is on the
+/// list as focus leaves, the list closes once the pointer leaves it.
 ///
 /// Escape is taken by the combobox while focus is in its text field, so a
 /// dialog around it closes on Escape only from elsewhere. The visitor can
@@ -140,6 +142,7 @@ impl<S> Combobox<S> {
         let open = state.at(ComboboxState::open());
         let active = state.at(ComboboxState::active());
         let pointer = state.at(ComboboxState::pointer());
+        let focused = state.at(ComboboxState::focused());
         let field_ref = self.field;
         let list_ref = self.list;
         let query = text.to_lowercase();
@@ -175,32 +178,17 @@ impl<S> Combobox<S> {
             );
         }
 
-        let field = input()
-            .attr(attr::TYPE, "text")
-            .id(self.field.id())
-            .role(Role::Combobox)
-            .attr(attr::ARIA_AUTOCOMPLETE, "list")
-            .aria_controls(&[&self.list.id()])
-            .attr(attr::AUTOCOMPLETE, "off")
-            .bind_attr(attr::ARIA_EXPANDED, if_else(open, "true", "false"))
-            .bind(text)
-            .node_ref(field_ref)
-            .active_descendant(list_ref, active)
-            .on_input(open.set(true).then(active.set("")))
-            .on_key(Key::ArrowDown, open.set(true))
-            .on_key(
-                Key::Escape,
-                Stmt::if_else(open, close.clone(), text.set("")),
-            )
-            .on(Event::Blur, Stmt::when(!pointer, close))
-            .css(field_style().height(rem(2.25)));
+        let field = self.field(state, &close);
 
         // The message sits beside the listbox rather than in it, because a
         // listbox holds only options.
         let list = div()
             .show(open)
             .on(Event::MouseEnter, pointer.set(true))
-            .on(Event::MouseLeave, pointer.set(false))
+            .on(
+                Event::MouseLeave,
+                pointer.set(false).then(Stmt::when(!focused, close)),
+            )
             .css(drop_down_style())
             .child(
                 div()
@@ -241,6 +229,42 @@ impl<S> Combobox<S> {
                     .child(field)
                     .child(list),
             )
+    }
+
+    /// The text field of the combobox whose state is `state`, which runs
+    /// `close` to close the list.
+    fn field(self, state: Sig<S, ComboboxState>, close: &Stmt<S>) -> El<S> {
+        let text = state.at(ComboboxState::text());
+        let open = state.at(ComboboxState::open());
+        let active = state.at(ComboboxState::active());
+        let pointer = state.at(ComboboxState::pointer());
+        let focused = state.at(ComboboxState::focused());
+        input()
+            .attr(attr::TYPE, "text")
+            .id(self.field.id())
+            .role(Role::Combobox)
+            .attr(attr::ARIA_AUTOCOMPLETE, "list")
+            .aria_controls(&[&self.list.id()])
+            .attr(attr::AUTOCOMPLETE, "off")
+            .bind_attr(attr::ARIA_EXPANDED, if_else(open, "true", "false"))
+            .bind(text)
+            .node_ref(self.field)
+            .active_descendant(self.list, active)
+            .on_input(open.set(true).then(active.set("")))
+            .on_key(Key::ArrowDown, open.set(true))
+            .on_key(
+                Key::Escape,
+                Stmt::if_else(open, close.clone(), text.set("")),
+            )
+            // A click on an option blurs the field before the click lands,
+            // so the list stays open while the pointer is over it, and
+            // closes when the pointer leaves it if focus went elsewhere.
+            .on(Event::Focus, focused.set(true))
+            .on(
+                Event::Blur,
+                focused.set(false).then(Stmt::when(!pointer, close.clone())),
+            )
+            .css(field_style().height(rem(2.25)))
     }
 }
 
