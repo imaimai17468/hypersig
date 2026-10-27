@@ -1938,6 +1938,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "CalendarDate",
+                            "struct.CalendarDate.html",
+                            L {
+                                en: "A day of the calendar, with no time of day and no time zone.",
+                                ja: "時刻もタイムゾーンも持たない、暦の上の一日",
+                            },
+                        ),
+                        (
                             "format_date",
                             "struct.Expr.html#method.format_date",
                             L {

@@ -8,8 +8,8 @@ use serde_json::json;
 use crate::html::{Event, Id, attr, button, div, each, form, input, option, p, select, when};
 use crate::testing::nth;
 use crate::{
-    Action, Base, DialogRef, Expr, FileInput, Method, NodeRef, Page, Route, Signals, Stmt,
-    StreamAction, Upload,
+    Action, Base, CalendarDate, DialogRef, Expr, FileInput, Method, NodeRef, Page, Route, Signals,
+    Stmt, StreamAction, Upload,
 };
 
 #[derive(Signals, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -214,6 +214,40 @@ fn typing_writes_the_bound_signal_before_on_input_runs() {
     browser.input(OTHER, " ");
     assert_eq!(browser.value_of(Board::age()), None);
     assert_eq!(browser.element(FIELD).attr(attr::VALUE), Some("tea"));
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Trip {
+    start: CalendarDate,
+    end: Option<CalendarDate>,
+}
+
+#[test]
+fn typing_a_date_writes_it_only_where_it_is_a_date() {
+    const START: NodeRef<Trip> = NodeRef::new("START");
+    const END: NodeRef<Trip> = NodeRef::new("END");
+    let trip = Trip {
+        start: CalendarDate::new(2026, 1, 5),
+        end: Some(CalendarDate::new(2026, 1, 9)),
+    };
+    let page = Page::new("Trip", trip)
+        .child(input().node_ref(START).bind(Trip::start()))
+        .child(input().node_ref(END).bind(Trip::end()));
+    let mut browser = page.simulate();
+    assert_eq!(browser.element(START).attr(attr::VALUE), Some("2026-01-05"));
+    browser.input(START, "2026-02-01");
+    assert_eq!(
+        browser.value_of(Trip::start()),
+        CalendarDate::new(2026, 2, 1)
+    );
+    browser.input(START, "2026-02-30");
+    browser.input(START, "");
+    assert_eq!(
+        browser.value_of(Trip::start()),
+        CalendarDate::new(2026, 2, 1)
+    );
+    browser.input(END, "");
+    assert_eq!(browser.value_of(Trip::end()), None);
 }
 
 #[test]

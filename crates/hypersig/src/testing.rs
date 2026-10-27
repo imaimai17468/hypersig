@@ -243,7 +243,8 @@ impl<'p, S: Signals> Simulation<'p, S> {
     ///
     /// The control's [`bind`](crate::html::El::bind) reads `text` as the
     /// runtime does: a number control leaves its signal alone for text that
-    /// holds no number and truncates an `i32` or `i64`, an emptied `Option`
+    /// holds no number and truncates an `i32` or `i64`, a date control leaves
+    /// it alone for text that holds no `YYYY-MM-DD` date, an emptied `Option`
     /// control sets `None`, and a [`bind_select`](crate::html::El::bind_select)
     /// reads only on [`Simulation::change`]. Then the `on_input` statement of
     /// the control or the closest element around it runs. `on_change` does
@@ -432,6 +433,7 @@ impl<'p, S: Signals> Simulation<'p, S> {
             "json" if event == Event::Change => serde_json::from_str(text).ok(),
             "json" => None,
             "int" | "float" | "opt_int" | "opt_float" => read_number(text, kind),
+            "date" | "opt_date" => read_date(text, kind),
             "opt_text" if event == Event::Input || found.tag() == "select" => {
                 Some(if text.is_empty() {
                     Value::Null
@@ -497,6 +499,18 @@ fn read_number(text: &str, kind: &str) -> Option<Value> {
         number
     };
     Some(json_number(number))
+}
+
+/// The date the text of a date control holds, as `readDate` in
+/// `runtime/src/runtime/binding/control.ts` reads it: `null` for an emptied
+/// `Option`, and nothing for other text that holds no `YYYY-MM-DD` date.
+fn read_date(text: &str, kind: &str) -> Option<Value> {
+    if text.is_empty() {
+        return kind.starts_with("opt_").then_some(Value::Null);
+    }
+    crate::CalendarDate::parse(text)
+        .ok()
+        .map(|date| Value::from(date.to_string()))
 }
 
 /// `value` as JSON, an integer where it is one, as the store holds a number the runtime wrote.

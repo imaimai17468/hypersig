@@ -54,6 +54,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::action::NodeRef;
+use crate::date::CalendarDate;
 use crate::exact;
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
 use crate::href::{IntoHref, SafeUrl};
@@ -1410,16 +1411,19 @@ impl Orientation {
 /// A field type that a form control can be bound to with [`El::bind`].
 ///
 /// `String` binds to the value of a text field, `<textarea>`, or `<select>`,
-/// `bool` to `checked`, and `i32`, `i64`, and `f64` to a number or range
-/// field.
+/// `bool` to `checked`, `i32`, `i64`, and `f64` to a number or range
+/// field, and [`CalendarDate`] to a date field.
 ///
-/// An `Option` of `String`, `i32`, `i64`, or `f64` binds as the type it
-/// holds, with an empty field standing for `None` in both directions: `None`
-/// empties the field, and emptying the field sets `None`. A number field
-/// whose text is not a number leaves the signal as it was.
+/// An `Option` of `String`, `i32`, `i64`, `f64`, or `CalendarDate` binds as
+/// the type it holds, with an empty field standing for `None` in both
+/// directions: `None` empties the field, and emptying the field sets `None`.
+/// A number field whose text is not a number, and a date field whose text is
+/// not a `YYYY-MM-DD` date, leave the signal as it was. An emptied field
+/// bound to a plain number or date leaves it as it was too, because the
+/// type holds no empty value.
 #[diagnostic::on_unimplemented(
     message = "a form control cannot be bound to a `{Self}` signal",
-    note = "bind `String`, `bool`, `i32`, `i64`, `f64`, or an `Option` of one other than `bool`; for other types use `bind_select` or `bind_radio`"
+    note = "bind `String`, `bool`, `i32`, `i64`, `f64`, `CalendarDate`, or an `Option` of one other than `bool`; for other types use `bind_select` or `bind_radio`"
 )]
 pub trait Bindable: sealed::Sealed {}
 impl Bindable for String {}
@@ -1431,8 +1435,12 @@ impl Bindable for Option<String> {}
 impl Bindable for Option<i32> {}
 impl Bindable for Option<i64> {}
 impl Bindable for Option<f64> {}
+impl Bindable for CalendarDate {}
+impl Bindable for Option<CalendarDate> {}
 
 mod sealed {
+    use crate::date::CalendarDate;
+
     pub trait Sealed {
         const KIND: &'static str;
     }
@@ -1462,6 +1470,12 @@ mod sealed {
     }
     impl Sealed for Option<f64> {
         const KIND: &'static str = "opt_float";
+    }
+    impl Sealed for CalendarDate {
+        const KIND: &'static str = "date";
+    }
+    impl Sealed for Option<CalendarDate> {
+        const KIND: &'static str = "opt_date";
     }
 }
 
@@ -2905,9 +2919,10 @@ impl<S> El<S> {
                     computed.push(("checked", Cow::Borrowed("")));
                 }
                 Some("json") => selected = Some(ssr::js_json(value)),
-                Some("text" | "int" | "float" | "opt_text" | "opt_int" | "opt_float")
-                    if !value.is_null() =>
-                {
+                Some(
+                    "text" | "int" | "float" | "date" | "opt_text" | "opt_int" | "opt_float"
+                    | "opt_date",
+                ) if !value.is_null() => {
                     let text = ssr::js_str(Val::Ref(value));
                     match self.tag {
                         "textarea" => content = Some(text),

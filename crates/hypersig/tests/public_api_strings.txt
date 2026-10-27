@@ -4,6 +4,7 @@
 # an expression, or CSS (M-STRONG-TYPES), and adds the line.
 hypersig::Asset::new(url)
 hypersig::Base::new(path)
+hypersig::CalendarDate::parse(text)
 hypersig::Expr::text(value)
 hypersig::FieldErrors::add(message)
 hypersig::FileInput::new(name)

@@ -105,7 +105,9 @@ pub use axum::{
     ActionResponse, Handler, IntoActionResponse, PageResponse, PatchStream, RequestError,
     RequestKind, RouterExt, Unserved,
 };
-pub use date::{DateFormat, DateStyle, TimeStyle, TimeZone, Timestamp};
+pub use date::{
+    CalendarDate, CalendarDateError, DateFormat, DateStyle, TimeStyle, TimeZone, Timestamp,
+};
 pub use expr::{
     CharClass, Comparable, Expr, IntoExpr, IntoStmt, Number, NumberFormat, Stmt, Textual, if_else,
 };

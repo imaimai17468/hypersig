@@ -76,6 +76,8 @@ it("writes form values, attributes, and styles on the server", () => {
   expect($<HTMLInputElement>("#price").value).toBe("2.5");
   expect($<HTMLInputElement>("#note").value).toBe("gift wrap");
   expect($<HTMLInputElement>("#limit").hasAttribute("value")).toBe(false);
+  expect($<HTMLInputElement>("#due").value).toBe("2026-01-05");
+  expect($<HTMLInputElement>("#until").hasAttribute("value")).toBe(false);
   expect($<HTMLSelectElement>("#size").value).toBe('"Small"');
   expect($<HTMLInputElement>("#small").checked).toBe(true);
   expect($<HTMLInputElement>("#large").checked).toBe(false);
