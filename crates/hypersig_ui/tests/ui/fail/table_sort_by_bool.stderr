@@ -5,6 +5,7 @@ error[E0277]: the trait bound `bool: Comparable` is not satisfied
    |          ^^^^^^^^^^^^^^^ the trait `Comparable` is not implemented for `bool`
    |
    = help: the following other types implement trait `Comparable`:
+             CalendarDate
              String
              Timestamp
              f64

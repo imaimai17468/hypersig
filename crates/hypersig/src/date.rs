@@ -1,9 +1,11 @@
-//! Points in time, and the dates and relative times the browser writes for
-//! them with `Intl`.
+//! Points in time, calendar dates, and the dates and relative times the
+//! browser writes for them with `Intl`.
 
+use std::fmt;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use serde::{Deserialize, Serialize};
+use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
 
 use crate::expr::{Expr, IntoExpr};
@@ -96,6 +98,169 @@ impl<S> Expr<S, Timestamp> {
     pub fn timestamp_now() -> Self {
         Self::from_json(json!(["now"]))
     }
+}
+
+/// A day of the calendar, with no time of day and no time zone.
+///
+/// It is the value of an `<input type="date">`, which
+/// [`El::bind`](crate::html::El::bind) binds to it, and serializes as the
+/// text that field holds, such as `"2026-01-05"`. The year runs from 1 to
+/// 9999, which the field writes in four digits, so two dates compare in
+/// order as text too.
+///
+/// ```
+/// use hypersig::CalendarDate;
+///
+/// const NEW_YEAR: CalendarDate = CalendarDate::new(2026, 1, 1);
+/// assert_eq!(NEW_YEAR.to_string(), "2026-01-01");
+/// assert_eq!(CalendarDate::parse("2026-01-05").map(|date| date.day()), Ok(5));
+/// assert!(CalendarDate::parse("2026-02-29").is_err());
+/// assert!(NEW_YEAR < CalendarDate::new(2026, 1, 5));
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CalendarDate {
+    year: u16,
+    month: u8,
+    day: u8,
+}
+
+impl CalendarDate {
+    /// The day `day` of month `month` of year `year`, written in the program.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the year is not 1 to 9999, the month not 1 to 12, or the
+    /// month has no such day, as 30 February. In a `const` the panic is a
+    /// compile error.
+    #[must_use]
+    pub const fn new(year: u16, month: u8, day: u8) -> Self {
+        if let Err(reason) = check_date(year, month, day) {
+            panic!("{}", reason);
+        }
+        Self { year, month, day }
+    }
+
+    /// Reads a date written as `YYYY-MM-DD`, such as the value of a date field.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CalendarDateError`] where `text` is not shaped as
+    /// `YYYY-MM-DD`, or where [`CalendarDate::new`] would panic on its numbers.
+    pub fn parse(text: &str) -> Result<Self, CalendarDateError> {
+        let error = |reason| CalendarDateError {
+            text: text.to_owned(),
+            reason,
+        };
+        let bytes = text.as_bytes();
+        let shaped = bytes.len() == 10
+            && bytes[4] == b'-'
+            && bytes[7] == b'-'
+            && bytes
+                .iter()
+                .enumerate()
+                .all(|(at, byte)| at == 4 || at == 7 || byte.is_ascii_digit());
+        if !shaped {
+            return Err(error("it is not shaped as `YYYY-MM-DD`"));
+        }
+        let number = |range: std::ops::Range<usize>| {
+            bytes[range]
+                .iter()
+                .fold(0, |sum, digit| sum * 10 + u16::from(digit - b'0'))
+        };
+        let year = number(0..4);
+        // Two digits hold at most 99.
+        let [_, month] = number(5..7).to_be_bytes();
+        let [_, day] = number(8..10).to_be_bytes();
+        check_date(year, month, day).map_err(error)?;
+        Ok(Self { year, month, day })
+    }
+
+    /// The year, from 1 to 9999.
+    #[must_use]
+    pub const fn year(self) -> u16 {
+        self.year
+    }
+
+    /// The month, from 1 for January to 12 for December.
+    #[must_use]
+    pub const fn month(self) -> u8 {
+        self.month
+    }
+
+    /// The day of the month, from 1.
+    #[must_use]
+    pub const fn day(self) -> u8 {
+        self.day
+    }
+}
+
+impl fmt::Display for CalendarDate {
+    /// Writes the date as `YYYY-MM-DD`.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:04}-{:02}-{:02}", self.year, self.month, self.day)
+    }
+}
+
+impl Serialize for CalendarDate {
+    fn serialize<Ser: Serializer>(&self, serializer: Ser) -> Result<Ser::Ok, Ser::Error> {
+        serializer.collect_str(self)
+    }
+}
+
+impl<'de> Deserialize<'de> for CalendarDate {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Text;
+        impl Visitor<'_> for Text {
+            type Value = CalendarDate;
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a date written as `YYYY-MM-DD`")
+            }
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<CalendarDate, E> {
+                CalendarDate::parse(v).map_err(E::custom)
+            }
+        }
+        deserializer.deserialize_str(Text)
+    }
+}
+
+impl<S> IntoExpr<S, CalendarDate> for CalendarDate {
+    fn into_expr(self) -> Expr<S, CalendarDate> {
+        Expr::from_json(json!(["lit", self.to_string()]))
+    }
+}
+
+/// Text that [`CalendarDate::parse`] refused, with the rule it broke.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CalendarDateError {
+    text: String,
+    reason: &'static str,
+}
+
+impl fmt::Display for CalendarDateError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "`{}` is not a calendar date: {}", self.text, self.reason)
+    }
+}
+
+impl std::error::Error for CalendarDateError {}
+
+/// Whether `year`, `month`, and `day` name a day [`CalendarDate`] holds.
+const fn check_date(year: u16, month: u8, day: u8) -> Result<(), &'static str> {
+    if year < 1 || year > 9999 {
+        return Err("the year is not 1 to 9999");
+    }
+    let leap = year.is_multiple_of(4) && (!year.is_multiple_of(100) || year.is_multiple_of(400));
+    let days = match month {
+        2 if leap => 29,
+        2 => 28,
+        4 | 6 | 9 | 11 => 30,
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        _ => return Err("the month is not 1 to 12"),
+    };
+    if day < 1 || day > days {
+        return Err("the month has no such day");
+    }
+    Ok(())
 }
 
 /// How much of the date [`DateFormat`] writes, as `Intl.DateTimeFormat`'s `dateStyle`.
@@ -524,7 +689,7 @@ pub(crate) fn write_relative(locale: &str, millis: f64) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Timestamp, write_date, write_relative};
+    use super::{CalendarDate, Timestamp, write_date, write_relative};
 
     /// The output of Node 22 with ICU 78 for each case.
     #[test]
@@ -611,5 +776,32 @@ mod tests {
         assert_eq!(Timestamp::from(before).as_millis(), -2);
         let after = std::time::UNIX_EPOCH + std::time::Duration::from_micros(1500);
         assert_eq!(Timestamp::from(after).as_millis(), 1);
+    }
+
+    #[test]
+    fn reads_and_writes_calendar_dates() {
+        let leap = CalendarDate::parse("2024-02-29").expect("2024 is a leap year");
+        assert_eq!((leap.year(), leap.month(), leap.day()), (2024, 2, 29));
+        assert_eq!(CalendarDate::new(1, 1, 1).to_string(), "0001-01-01");
+        for text in [
+            "1900-02-29",
+            "2026-13-01",
+            "2026-04-31",
+            "0000-01-01",
+            "2026-1-05",
+            "2026/01/05",
+            "+2026-01-05",
+            "",
+        ] {
+            assert!(CalendarDate::parse(text).is_err(), "{text}");
+        }
+        let json = serde_json::to_string(&CalendarDate::new(2026, 1, 5)).expect("serializes");
+        assert_eq!(json, r#""2026-01-05""#);
+        serde_json::from_str::<CalendarDate>(r#""2026-02-30""#).unwrap_err();
+        let value = serde_json::json!("2000-02-29");
+        assert_eq!(
+            serde_json::from_value::<CalendarDate>(value).ok(),
+            Some(CalendarDate::new(2000, 2, 29))
+        );
     }
 }

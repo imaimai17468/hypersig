@@ -361,6 +361,10 @@ fn component_page(page: Component) -> Page {
                     en: "`NumberField` is an `<input type=\"number\">` bound to an `i32` or `f64` signal, with the same label, ids, and messages. Its `min`, `max`, and `step` take the signal's own type. A field whose minimum is 0 or more asks for a keyboard of digits.",
                     ja: "`NumberField` は `i32` か `f64` のシグナルに束縛した `<input type=\"number\">` で、ラベル、id、メッセージはテキストフィールドと同じです。`min`、`max`、`step` はシグナルと同じ型の値を取ります。最小値が 0 以上のフィールドは、数字のキーボードを求めます。",
                 },
+                L {
+                    en: "`DateField` is an `<input type=\"date\">` bound to a `CalendarDate` or `Option<CalendarDate>` signal, with the same label, ids, and messages. The browser draws its own date picker. Its `min` and `max` take a `CalendarDate`, and the field writes a day to the signal only when it is a real date.",
+                    ja: "`DateField` は `CalendarDate` か `Option<CalendarDate>` のシグナルに束縛した `<input type=\"date\">` で、ラベル、id、メッセージはテキストフィールドと同じです。日付の選択画面はブラウザが描きます。`min` と `max` は `CalendarDate` を取り、フィールドは実在する日付だけをシグナルに書き込みます。",
+                },
             ],
             keys: &[],
             items: &[
@@ -530,6 +534,30 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "A number type a `NumberField` can be bound to: `i32` or `f64`.",
                         ja: "`NumberField` を束縛できる数値の型（`i32` か `f64`）",
+                    },
+                ),
+                (
+                    "DateField::new",
+                    "hypersig_ui/struct.DateField.html#method.new",
+                    L {
+                        en: "A date field labeled `label`, bound to `value`.",
+                        ja: "`value` に束縛し、`label` をラベルに持つ日付フィールド",
+                    },
+                ),
+                (
+                    "DateField::in_form",
+                    "hypersig_ui/struct.DateField.html#method.in_form",
+                    L {
+                        en: "A date field labeled `label`, bound to `field` of `form`.",
+                        ja: "`form` の `field` に束縛し、`label` をラベルに持つ日付フィールド",
+                    },
+                ),
+                (
+                    "Dated",
+                    "hypersig_ui/trait.Dated.html",
+                    L {
+                        en: "A date type a `DateField` can be bound to: `CalendarDate` or `Option<CalendarDate>`.",
+                        ja: "`DateField` を束縛できる日付の型（`CalendarDate` か `Option<CalendarDate>`）",
                     },
                 ),
                 (

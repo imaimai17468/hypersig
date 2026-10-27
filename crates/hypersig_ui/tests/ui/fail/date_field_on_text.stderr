@@ -1,0 +1,38 @@
+error[E0277]: a date field cannot be bound to a `String` signal
+  --> tests/ui/fail/date_field_on_text.rs:12:39
+   |
+12 |     let _ = DateField::new("Arrival", Booking::arrival()).render();
+   |             --------------            ^^^^^^^^^^^^^^^^^^ the trait `Dated` is not implemented for `String`
+   |             |
+   |             required by a bound introduced by this call
+   |
+   = note: bind a `CalendarDate` or `Option<CalendarDate>` signal; text goes in a `TextField`
+help: the following other types implement trait `Dated`
+  --> src/date.rs
+   |
+   | impl Dated for CalendarDate {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `CalendarDate`
+   | impl Dated for Option<CalendarDate> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `std::option::Option<CalendarDate>`
+note: required by a bound in `DateField::<S, T>::new`
+  --> src/date.rs
+   |
+   | impl<S, T: Dated> DateField<S, T> {
+   |            ^^^^^ required by this bound in `DateField::<S, T>::new`
+...
+   |     pub fn new(label: impl Into<String>, value: Sig<S, T>) -> Self {
+   |            --- required by a bound in this associated function
+
+error[E0599]: the method `render` exists for struct `DateField<Booking, String>`, but its trait bounds were not satisfied
+  --> tests/ui/fail/date_field_on_text.rs:12:59
+   |
+12 |     let _ = DateField::new("Arrival", Booking::arrival()).render();
+   |                                                           ^^^^^^ method cannot be called on `DateField<Booking, String>` due to unsatisfied trait bounds
+   |
+  ::: $RUST/alloc/src/string.rs
+   |
+   | pub struct String {
+   | ----------------- doesn't satisfy `String: Dated`
+   |
+   = note: the following trait bounds were not satisfied:
+           `String: Dated`

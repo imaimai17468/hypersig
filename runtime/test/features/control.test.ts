@@ -52,6 +52,30 @@ it("binds an empty field to None in both directions for an Option signal", async
   expect($<HTMLInputElement>("#limit").value).toBe("7");
 });
 
+it("binds a date field, leaving a plain date as it was when the text is no date", async () => {
+  const runtime = mount("controls");
+  expect($<HTMLInputElement>("#due").value).toBe("2026-01-05");
+  expect($<HTMLInputElement>("#until").value).toBe("");
+
+  type($<HTMLInputElement>("#due"), "2026-03-01");
+  expect(runtime.store.get("due")).toBe("2026-03-01");
+  type($<HTMLInputElement>("#due"), "");
+  expect(runtime.store.get("due")).toBe("2026-03-01");
+
+  type($<HTMLInputElement>("#until"), "2024-02-29");
+  expect(runtime.store.get("until")).toBe("2024-02-29");
+  for (const text of ["2026-02-29", "2026-13-01", "0000-01-01", "2026-1-05", "tomorrow"]) {
+    type($<HTMLInputElement>("#until"), text);
+    expect(runtime.store.get("until")).toBe("2024-02-29");
+  }
+  type($<HTMLInputElement>("#until"), "");
+  expect(runtime.store.get("until")).toBe(null);
+
+  runtime.store.set("until", "2026-12-24");
+  await tick();
+  expect($<HTMLInputElement>("#until").value).toBe("2026-12-24");
+});
+
 it("binds attributes, boolean attributes, and styles", async () => {
   const runtime = mount("controls");
   const buy = $<HTMLButtonElement>("#buy");

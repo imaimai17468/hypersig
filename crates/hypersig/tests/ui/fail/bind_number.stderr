@@ -6,7 +6,7 @@ error[E0277]: a form control cannot be bound to a `u64` signal
    |                                |
    |                                required by a bound introduced by this call
    |
-   = note: bind `String`, `bool`, `i32`, `i64`, `f64`, or an `Option` of one other than `bool`; for other types use `bind_select` or `bind_radio`
+   = note: bind `String`, `bool`, `i32`, `i64`, `f64`, `CalendarDate`, or an `Option` of one other than `bool`; for other types use `bind_select` or `bind_radio`
 help: the following other types implement trait `Bindable`
   --> src/html.rs
    |

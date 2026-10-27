@@ -14,9 +14,10 @@ use hypersig::html::{
 use hypersig::style::value::{Color, pct, px};
 use hypersig::style::{Keyframes, Media, Property, PseudoClass, Style};
 use hypersig::{
-    Action, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment, IntlLocale, Page,
-    Part, Patches, PathSegment, PluralCategory, Rest, Route, Rules, SafeUrl, Search, Segment, Sig,
-    Signals, Stmt, StreamAction, TimeStyle, TimeZone, Timestamp, Upload, Validate, if_else,
+    Action, CalendarDate, CharClass, DateFormat, DateStyle, Expr, FileInput, Form, Fragment,
+    IntlLocale, Page, Part, Patches, PathSegment, PluralCategory, Rest, Route, Rules, SafeUrl,
+    Search, Segment, Sig, Signals, Stmt, StreamAction, TimeStyle, TimeZone, Timestamp, Upload,
+    Validate, if_else,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -159,6 +160,8 @@ struct Controls {
     gift: bool,
     note: Option<String>,
     limit: Option<i64>,
+    due: CalendarDate,
+    until: Option<CalendarDate>,
 }
 
 fn controls() -> (El<Controls>, Controls) {
@@ -189,6 +192,13 @@ fn controls() -> (El<Controls>, Controls) {
                 .attr(attr::TYPE, "number")
                 .bind(Controls::limit()),
         )
+        .child(
+            input()
+                .id(Id::new("due"))
+                .attr(attr::TYPE, "date")
+                .bind(Controls::due()),
+        )
+        .child(input().id(Id::new("until")).bind(Controls::until()))
         .child(input().id(Id::new("small")).bind_radio(size, &Size::Small))
         .child(input().id(Id::new("large")).bind_radio(size, &Size::Large))
         .child(
@@ -217,6 +227,8 @@ fn controls() -> (El<Controls>, Controls) {
         gift: false,
         note: Some("gift wrap".to_owned()),
         limit: None,
+        due: CalendarDate::new(2026, 1, 5),
+        until: None,
     };
     (el, signals)
 }

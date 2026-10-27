@@ -22,13 +22,14 @@ use hypersig::style::Style;
 use hypersig::style::pattern::{container, grid, hstack, stack, wrap};
 use hypersig::style::value::{FontWeight, JustifyContent, raw, rem};
 use hypersig::{
-    Action, Expr, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals, Url, if_else,
+    Action, CalendarDate, Expr, NumberFormat, Page, Patches, Route, RouterExt, Segment, Signals,
+    Url, if_else,
 };
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, Breadcrumb, ButtonSize, ButtonVariant,
-    Chart, Column, Combobox, ComboboxState, DataTable, Dialog, DonutChart, InputKind, Level,
-    Listbox, Menu, MenuItem, NavList, NumberField, PaginationText, ServerTable, Side, Slider,
-    SortOrder, TableState, Tabs, TextField, Toast, ToastVariant, Toaster, Tooltip, alert,
+    Chart, Column, Combobox, ComboboxState, DataTable, DateField, Dialog, DonutChart, InputKind,
+    Level, Listbox, Menu, MenuItem, NavList, NumberField, PaginationText, ServerTable, Side,
+    Slider, SortOrder, TableState, Tabs, TextField, Toast, ToastVariant, Toaster, Tooltip, alert,
     alert_description, alert_title, badge, button, card, card_content, card_description,
     card_footer, card_header, card_title, checkbox, dialog_footer, pagination, progress,
     radio_group, select_field, separator, skeleton, submit_button, switch, token,
@@ -128,6 +129,7 @@ struct Gallery {
     email: String,
     bio: String,
     seats: i32,
+    starts: CalendarDate,
     email_error: String,
     saving: bool,
     saved: String,
@@ -397,6 +399,17 @@ fn profile() -> El<Gallery> {
                             .min(1)
                             .max(8)
                             .description("Up to 8 seats."),
+                    )
+                    .child(
+                        DateField::new("Start date", Gallery::starts())
+                            .min(CalendarDate::new(2026, 1, 1))
+                            .max(CalendarDate::new(2026, 12, 31))
+                            .description("Any day in 2026."),
+                    )
+                    .child(
+                        span()
+                            .id(Id::new("starts"))
+                            .bind_text(Gallery::starts().to_text()),
                     ),
             )
             .child(
@@ -1020,6 +1033,7 @@ fn gallery() -> Page<Gallery> {
             email: String::new(),
             bio: String::new(),
             seats: 2,
+            starts: CalendarDate::new(2026, 3, 2),
             email_error: String::new(),
             saving: false,
             saved: String::new(),

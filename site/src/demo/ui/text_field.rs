@@ -3,8 +3,8 @@
 use hypersig::html::div;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::rem;
-use hypersig::{Page, Signals, if_else};
-use hypersig_ui::{Autocomplete, InputKind, NumberField, TextField};
+use hypersig::{CalendarDate, Page, Signals, if_else};
+use hypersig_ui::{Autocomplete, DateField, InputKind, NumberField, TextField};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
@@ -15,6 +15,7 @@ pub struct Signup {
     email: String,
     bio: String,
     guests: i32,
+    arrival: Option<CalendarDate>,
 }
 
 pub fn page(site: Site) -> Page<Signup> {
@@ -24,6 +25,7 @@ pub fn page(site: Site) -> Page<Signup> {
         email: String::new(),
         bio: String::new(),
         guests: 1,
+        arrival: None,
     };
     Page::new(
         site.t(L {
@@ -87,6 +89,21 @@ pub fn page(site: Site) -> Page<Signup> {
                 .description(site.t(L {
                     en: "Up to 10 people.",
                     ja: "最大 10 人です。",
+                })),
+            )
+            .child(
+                DateField::new(
+                    site.t(L {
+                        en: "Arrival",
+                        ja: "到着日",
+                    }),
+                    Signup::arrival(),
+                )
+                .min(CalendarDate::new(2026, 1, 1))
+                .max(CalendarDate::new(2026, 12, 31))
+                .description(site.t(L {
+                    en: "Any day in 2026.",
+                    ja: "2026 年中の日を選べます。",
                 })),
             ),
 

@@ -79,6 +79,8 @@ export class Controls {
       case "float":
       case "opt_int":
       case "opt_float":
+      case "date":
+      case "opt_date":
         readText(element.value, kind, set);
         break;
       default:
@@ -165,6 +167,10 @@ function readText(raw: string, kind: string, set: (value: unknown) => void): voi
     case "opt_float":
       readNumber(raw, kind, set);
       return;
+    case "date":
+    case "opt_date":
+      readDate(raw, kind, set);
+      return;
     case "opt_text":
       set(raw === "" ? null : raw);
       return;
@@ -201,4 +207,28 @@ function readNumber(raw: string, kind: string, set: (value: unknown) => void): v
   const number = Number(raw);
   if (!Number.isFinite(number)) return;
   set(kind.endsWith("int") ? Math.trunc(number) : number);
+}
+
+/**
+ * Sets the date `raw` holds, where it holds a `YYYY-MM-DD` date with a year
+ * from 1 to 9999, which the server's `CalendarDate` reads.
+ */
+function readDate(raw: string, kind: string, set: (value: unknown) => void): void {
+  // A date field holds "" while the visitor has filled only part of it, so an
+  // emptied field sets an `Option` signal to `None` and leaves a plain date as it was.
+  if (raw === "") {
+    if (kind === "opt_date") set(null);
+    return;
+  }
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/u.exec(raw);
+  if (match === null) return;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  const real =
+    year >= 1 &&
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+  if (real) set(raw);
 }
