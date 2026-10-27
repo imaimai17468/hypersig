@@ -14,10 +14,11 @@ pub fn upgrading(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The releases that changed a public signature, 0.5 through 0.11, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
-                ja: "公開しているシグネチャを変えた 0.5 から 0.11 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
+                en: "The releases that changed a public signature, 0.5 through 0.12, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
+                ja: "公開しているシグネチャを変えた 0.5 から 0.12 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
             },
         ),
+        to_0_12(site),
         to_0_11(site),
         to_0_10(site),
         to_0_9(site),
@@ -25,6 +26,50 @@ pub fn upgrading(site: Site) -> Part {
         to_0_7(site),
         to_0_6(site),
         to_0_5(site),
+    ])
+}
+
+fn to_0_12(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "From 0.11 to 0.12",
+                ja: "0.11 から 0.12 へ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`hypersig_ui`'s [`Dialog::dialog`](api:hypersig_ui/struct.Dialog.html#method.dialog) and `Dialog::sheet` take a [`DialogText`](api:hypersig_ui/struct.DialogText.html) as their last argument, and `Combobox::render` a [`ComboboxText`](api:hypersig_ui/struct.ComboboxText.html), as `pagination` takes a `PaginationText`. They hold the words the components wrote in English before: the name of the close button, the name of the list of options, and the text shown when no option matches. Pass `&Default::default()` to keep the English words, or the words of the page's language.",
+                ja: "`hypersig_ui` の [`Dialog::dialog`](api:hypersig_ui/struct.Dialog.html#method.dialog) と `Dialog::sheet` は最後の引数に [`DialogText`](api:hypersig_ui/struct.DialogText.html) を、`Combobox::render` は [`ComboboxText`](api:hypersig_ui/struct.ComboboxText.html) を受け取ります。`pagination` が `PaginationText` を受け取るのと同じ形です。どちらも、これまでコンポーネントが英語で書いていた言葉を持ちます。閉じるボタンの名前、選択肢の一覧の名前、一致する選択肢がないときの表示です。英語のままにするなら `&Default::default()` を、ほかの言語のページならその言語の言葉を渡してください。",
+            },
+        ),
+        show_change(Snippet::Upgrade012),
+        para(
+            site,
+            L {
+                en: "These mistakes compiled before and fail to compile now:",
+                ja: "次の間違いは、これまでコンパイルが通っていましたが、今はコンパイルエラーになります。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "A `Route` or `Base` path with a byte the browser percent-encodes, such as `\"/café\"` or `\"/a b\"`. Every link to such a route got 404, because the router compares the path as the browser encoded it. Write the segment in ASCII, or take it as a parameter.",
+                    ja: "`\"/café\"` や `\"/a b\"` のように、ブラウザがパーセントエンコードするバイトを含む `Route` や `Base` のパス。ルーターはブラウザがエンコードしたままのパスを比べるので、こうしたルートへのリンクはすべて 404 になっていました。そのセグメントは ASCII で書くか、パラメーターとして受け取ってください。",
+                },
+                L {
+                    en: "An `action`, `stream`, or `upload` path with `{` or `}`, whose handler takes no path parameters.",
+                    ja: "`{` や `}` を含む `action`、`stream`、`upload` のパス。これらのハンドラーはパスのパラメーターを受け取りません。",
+                },
+                L {
+                    en: "Two variants of a `#[derive(Segment)]` enum that serde writes as one segment.",
+                    ja: "serde が同じセグメントとして書く、`#[derive(Segment)]` の列挙型の 2 つのバリアント。",
+                },
+            ],
+        ),
     ])
 }
 

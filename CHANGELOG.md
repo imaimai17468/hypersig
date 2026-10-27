@@ -2,6 +2,34 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.12.0] - 2026-10-28
+
+### Breaking
+
+- A `Route` or `Base` path refuses a byte the browser percent-encodes: anything outside ASCII letters, digits, `/`, and `-._~!$&'()*+,;=:@`, such as a space, `?`, `#`, `%`, or a non-ASCII character. A route literal such as `"/café"` compiled before and every link to it got 404, and now fails to compile.
+- An `action`, `stream`, or `upload` path in `routes!` refuses `{` and `}` and the bytes a route refuses. `"/a/{"` compiled and panicked when the router was built, and `"/notes/{id}"` matched every path under `/notes/`.
+- `#[derive(Segment)]` refuses two variants with one segment. `rename_all` changes the case of ASCII letters only, as serde does, so a variant `Über` is the segment `Über` under `lowercase`.
+- `hypersig_ui`'s `Dialog::dialog` and `Dialog::sheet` take a `&DialogText` as their last argument, and `Combobox::render` a `&ComboboxText`, as `pagination` takes a `&PaginationText`. Pass `&Default::default()` for the English words.
+- `cargo hypersig new` refuses uppercase letters, a Rust keyword, `test`, the names of the directories under `target/debug`, and, for Cloudflare, `_`.
+
+### Added
+
+- `hypersig_ui::DialogText`, `hypersig_ui::ComboboxText`, and `Toaster::dismiss_label`.
+
+### Fixed
+
+- A page with search parameters no longer answers 400 for a value that is not UTF-8 under a key its struct does not have, such as `?utm=%FF`.
+- Two items of an `each_keyed` list with one key no longer leave a stale server-rendered row after hydration: the renderer renames a repeated key as the runtime does.
+- A bound style value with an unbalanced `[` is left for the runtime to set, so it no longer takes in the other rules of a page's `<style>` under a CSP nonce.
+- `<textarea>` and `<pre>` keep a leading newline of their content.
+- A server patch that puts an element before an element with an id or a foreign name keeps that element in the document, so an iframe inside it does not load again and a scrolled box keeps its place. Moves by id use `moveBefore` where the browser has it.
+- The warning about a repeated id or name after an element patch reads the page once per id and per attribute, where it read the page once per element of the patch.
+- A `Menu` whose first action is disabled focuses the first enabled action when it opens.
+- A `Combobox` closes its list when focus has left the field and the pointer leaves the list.
+- `cargo hypersig elements` leaves out every attribute `attr!` refuses, such as `poster`, and writes a `detail` field named `yield` as `r#yield`.
+- `cargo hypersig dev` finds the binary under the target directory when `build.build-dir` sets the build directory apart.
+- Every published crate holds `LICENSE`, and the README on crates.io links to the repository's files.
+
 ## [0.11.0] - 2026-10-27
 
 ### Breaking
