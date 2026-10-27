@@ -1559,6 +1559,21 @@ fn the_widget_fixtures_match_the_builder() {
 }
 
 #[test]
+fn the_duplicate_key_fixture_matches_the_builder() {
+    let (el, mut signals) = todos();
+    signals.todos = ["a", "b", "c"]
+        .into_iter()
+        .zip([1, 1, 2])
+        .map(|(title, id)| Todo {
+            id,
+            title: title.to_owned(),
+            done: false,
+        })
+        .collect();
+    check_page("duplicate_keys_page", el, signals);
+}
+
+#[test]
 fn fixtures_match_the_builder() {
     let (el, signals) = todos();
     check("todos", &el, &signals);

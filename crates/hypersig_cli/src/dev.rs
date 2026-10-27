@@ -134,6 +134,7 @@ fn blaze_installed() -> Result<(), Error> {
 /// Fails where Cargo cannot run, or the package has no binary or several,
 /// which no edit to the code changes.
 fn build(build_args: &[String]) -> Result<Option<Built>, Error> {
+    let dirs = Dirs::read(build_args)?;
     let mut check = Command::new(cargo())
         .arg("check")
         .arg("--message-format=json-render-diagnostics")
@@ -149,7 +150,7 @@ fn build(build_args: &[String]) -> Result<Option<Built>, Error> {
         .stderr(Stdio::null())
         .spawn()
         .map_err(|error| Error::new(format!("cannot run cargo blaze: {error}")))?;
-    let binaries = read_cargo(&mut check, checked_binary_of)?;
+    let binaries = read_cargo(&mut check, |line| checked_binary_of(line, &dirs))?;
     let checked = check
         .wait()
         .map_err(|error| Error::new(format!("cannot wait for cargo: {error}")))?;
@@ -194,7 +195,7 @@ fn build_with_cargo(build_args: &[String]) -> Result<Option<Built>, Error> {
 /// The binaries `binary` finds in the lines of Cargo's JSON output.
 fn read_cargo(
     child: &mut Child,
-    binary: fn(&str) -> Option<PathBuf>,
+    binary: impl Fn(&str) -> Option<PathBuf>,
 ) -> Result<Vec<PathBuf>, Error> {
     let stdout = child.stdout.take().expect("stdout is piped");
     let mut binaries = Vec::new();
@@ -258,13 +259,77 @@ fn binary_of(line: &str) -> Option<PathBuf> {
     is_bin.then(|| PathBuf::from(executable))
 }
 
+/// Where Cargo writes the files a build keeps and the ones it builds them from.
+#[derive(Debug, PartialEq)]
+struct Dirs {
+    /// The target directory, which holds the binary and its dep-info file.
+    target: PathBuf,
+    /// The build directory (`build.build-dir`), which holds the metadata files
+    /// a check writes. It is the target directory unless set apart.
+    build: PathBuf,
+}
+
+impl Dirs {
+    /// The directories `cargo metadata` reports, with a `--target-dir` of
+    /// `build_args` in place of the target directory, as the build takes it.
+    ///
+    /// # Errors
+    ///
+    /// Fails where `cargo metadata` cannot run or answers with no directories.
+    fn read(build_args: &[String]) -> Result<Self, Error> {
+        let mut command = Command::new(cargo());
+        command.args(["metadata", "--format-version", "1", "--no-deps"]);
+        if let Some(manifest) = value_of(build_args, "--manifest-path") {
+            command.args(["--manifest-path", manifest]);
+        }
+        let output = command
+            .stderr(Stdio::inherit())
+            .output()
+            .map_err(|error| Error::new(format!("cannot run cargo metadata: {error}")))?;
+        let metadata: Value = serde_json::from_slice(&output.stdout)
+            .map_err(|error| Error::new(format!("cannot read cargo metadata: {error}")))?;
+        let dir = |key: &str| metadata[key].as_str().map(PathBuf::from);
+        let target = dir("target_directory")
+            .ok_or_else(|| Error::new("cargo metadata names no target directory"))?;
+        let build = dir("build_directory").unwrap_or_else(|| target.clone());
+        // Cargo reads a relative `--target-dir` from the directory it runs in.
+        let given = value_of(build_args, "--target-dir").map(|given| {
+            std::env::current_dir().map_or_else(|_| PathBuf::from(given), |dir| dir.join(given))
+        });
+        Ok(match given {
+            // A build directory left unset follows the target directory.
+            Some(given) if build == target => Self {
+                target: given.clone(),
+                build: given,
+            },
+            Some(given) => Self {
+                target: given,
+                build,
+            },
+            None => Self { target, build },
+        })
+    }
+}
+
+/// The value of `flag` in `args`, written as `flag value` or `flag=value`.
+fn value_of<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
+    args.iter().enumerate().find_map(|(at, arg)| {
+        if arg == flag {
+            args.get(at + 1).map(String::as_str)
+        } else {
+            arg.strip_prefix(flag)?.strip_prefix('=')
+        }
+    })
+}
+
 /// The path a build writes the binary to, for a line of `cargo check`'s
 /// JSON output that reports a binary.
 ///
 /// A check reports no executable, only the metadata file it wrote under the
-/// profile's `deps` directory, and a build puts the binary in the directory
-/// above, under the target's name.
-fn checked_binary_of(line: &str) -> Option<PathBuf> {
+/// profile's `deps` directory in the build directory, and a build puts the
+/// binary in the same profile's directory of the target directory, under
+/// the target's name.
+fn checked_binary_of(line: &str, dirs: &Dirs) -> Option<PathBuf> {
     let message: Value = serde_json::from_str(line).ok()?;
     if message["reason"] != "compiler-artifact" {
         return None;
@@ -275,7 +340,11 @@ fn checked_binary_of(line: &str) -> Option<PathBuf> {
         .any(|kind| kind == "bin");
     let name = message["target"]["name"].as_str()?;
     let metadata = Path::new(message["filenames"].get(0)?.as_str()?);
-    let profile = metadata.parent()?.parent()?;
+    let built = metadata.parent()?.parent()?;
+    let profile = match built.strip_prefix(&dirs.build) {
+        Ok(profile) => dirs.target.join(profile),
+        Err(_) => built.to_owned(),
+    };
     is_bin.then(|| profile.join(format!("{name}{}", std::env::consts::EXE_SUFFIX)))
 }
 
@@ -455,9 +524,40 @@ mod tests {
         let bin = r#"{"reason":"compiler-artifact","target":{"kind":["bin"],"name":"my-app"},"filenames":["/p/target/debug/deps/libmy_app-0123.rmeta"],"executable":null}"#;
         let lib = r#"{"reason":"compiler-artifact","target":{"kind":["lib"],"name":"core"},"filenames":["/p/target/debug/deps/libcore-0123.rmeta"],"executable":null}"#;
         let expected = format!("/p/target/debug/my-app{}", std::env::consts::EXE_SUFFIX);
-        assert_eq!(checked_binary_of(bin), Some(PathBuf::from(expected)));
-        assert_eq!(checked_binary_of(lib), None);
-        assert_eq!(checked_binary_of("not json"), None);
+        let dirs = Dirs {
+            target: PathBuf::from("/p/target"),
+            build: PathBuf::from("/p/target"),
+        };
+        assert_eq!(checked_binary_of(bin, &dirs), Some(PathBuf::from(expected)));
+        assert_eq!(checked_binary_of(lib, &dirs), None);
+        assert_eq!(checked_binary_of("not json", &dirs), None);
+    }
+
+    #[test]
+    fn puts_the_binary_of_a_checked_bin_in_the_target_directory_when_the_build_directory_is_apart()
+    {
+        let bin = r#"{"reason":"compiler-artifact","target":{"kind":["bin"],"name":"app"},"filenames":["/p/bdir/x86_64-unknown-linux-gnu/debug/deps/libapp-0123.rmeta"],"executable":null}"#;
+        let dirs = Dirs {
+            target: PathBuf::from("/p/target"),
+            build: PathBuf::from("/p/bdir"),
+        };
+        let expected = format!(
+            "/p/target/x86_64-unknown-linux-gnu/debug/app{}",
+            std::env::consts::EXE_SUFFIX
+        );
+        assert_eq!(checked_binary_of(bin, &dirs), Some(PathBuf::from(expected)));
+    }
+
+    #[test]
+    fn reads_a_flag_written_with_a_space_or_an_equals_sign() {
+        let args = [
+            "--target-dir".to_owned(),
+            "t".to_owned(),
+            "--manifest-path=m".to_owned(),
+        ];
+        assert_eq!(value_of(&args, "--target-dir"), Some("t"));
+        assert_eq!(value_of(&args, "--manifest-path"), Some("m"));
+        assert_eq!(value_of(&args, "--bin"), None);
     }
 
     #[test]

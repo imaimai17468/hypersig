@@ -1211,7 +1211,7 @@ fn formatting_locales(ast: &Value, found: &mut BTreeSet<String>) {
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use crate::html::{Stylesheet, input, p, span};
+    use crate::html::{Stylesheet, input, p, pre, span, textarea};
     use crate::route::Base;
     use crate::style::value::Color;
     use crate::style::{Global, Property, Style, Theme, Token};
@@ -1237,6 +1237,23 @@ mod tests {
         );
         assert!(html.contains("<p data-hs-hide=\"\""));
         assert!(!html.contains("style=\""));
+    }
+
+    #[test]
+    fn a_leading_newline_in_a_textarea_or_pre_survives_the_parser() {
+        let html = Page::new(
+            "Search",
+            Search {
+                query: "\nfirst".to_owned(),
+            },
+        )
+        .child(textarea().bind(Search::query()))
+        .child(pre().text("\nsecond"))
+        .child(pre().text("third"))
+        .render();
+        assert!(html.contains(">\n\nfirst</textarea>"), "{html}");
+        assert!(html.contains("<pre>\n\nsecond</pre>"), "{html}");
+        assert!(html.contains("<pre>third</pre>"), "{html}");
     }
 
     #[test]

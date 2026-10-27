@@ -27,55 +27,11 @@ struct Places {
     svg: BTreeSet<String>,
 }
 
-/// Whether `Attr::new` in `src/html.rs` accepts `name`, by the same rules.
+/// Whether `attr!` accepts `name`.
 fn accepted(name: &str) -> bool {
-    let lower = name.to_ascii_lowercase();
-    !name.is_empty()
-        && name
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':'))
-        && !lower.starts_with("data-hs-")
-        && !lower.starts_with("on")
-        && !matches!(
-            lower.as_str(),
-            "id" | "class"
-                | "role"
-                | "for"
-                | "aria-labelledby"
-                | "aria-describedby"
-                | "aria-controls"
-                | "aria-owns"
-                | "aria-details"
-                | "aria-flowto"
-                | "aria-errormessage"
-                | "aria-activedescendant"
-                | "commandfor"
-                | "popovertarget"
-                | "list"
-                | "form"
-                | "headers"
-                | "itemref"
-                | "href"
-                | "src"
-                | "srcdoc"
-                | "action"
-                | "formaction"
-                | "xlink:href"
-                | "data"
-                | "http-equiv"
-                | "attributename"
-                | "poster"
-                | "srcset"
-                | "style"
-                | "ping"
-                | "imagesrcset"
-                | "background"
-                | "manifest"
-                | "codebase"
-                | "archive"
-                | "classid"
-                | "longdesc"
-        )
+    // `_private::attr` takes a `&'static str`, as `attr!` hands it one; the
+    // generator runs once, so leaking each name it checks costs nothing.
+    hypersig::_private::attr(Box::leak(name.into())).is_ok()
 }
 
 /// `aria-label` becomes `ARIA_LABEL`, `viewBox` `VIEW_BOX`, and `xml:lang`

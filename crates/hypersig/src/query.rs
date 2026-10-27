@@ -16,28 +16,30 @@ use crate::route::percent_escape;
 ///
 /// A field whose key is absent reads as an empty group, so a `Vec` is empty,
 /// an `Option` is `None`, and any other field is missing. A key the struct
-/// does not have is ignored, and so is a key that does not decode to UTF-8,
-/// which no field's name can match.
+/// does not have is ignored, with its value, and so is a key that does not
+/// decode to UTF-8, which no field's name can match. A value that does not
+/// decode to UTF-8 is an error only under a field's key.
 pub(crate) fn parse_query<T: DeserializeOwned>(query: &str) -> Result<T, Error> {
-    let pairs = query
+    let pairs: Vec<Pair<'_>> = query
         .split('&')
         .filter(|pair| !pair.is_empty())
         .filter_map(|pair| {
             let (name, value) = pair.split_once('=').unwrap_or((pair, ""));
-            let name = decode(name).ok()?;
-            Some(decode(value).map(|value| (name, value)))
+            Some((decode(name)?, decode(value).ok_or(value)))
         })
-        .collect::<Result<Vec<(String, String)>, Error>>()?;
+        .collect();
     T::deserialize(Query { pairs: &pairs })
 }
 
+/// A decoded key and its value, or the value as written where it does not
+/// decode to UTF-8.
+type Pair<'q> = (String, Result<String, &'q str>);
+
 /// Percent-decodes `text` as a form does, with `+` standing for a space.
 ///
-/// # Errors
-///
-/// Returns an error where the bytes are not UTF-8, which a browser never
+/// Returns `None` where the bytes are not UTF-8, which a browser never
 /// sends for text a visitor typed.
-fn decode(text: &str) -> Result<String, Error> {
+fn decode(text: &str) -> Option<String> {
     let bytes = text.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
     let mut index = 0;
@@ -57,13 +59,11 @@ fn decode(text: &str) -> Result<String, Error> {
             }
         }
     }
-    String::from_utf8(out).map_err(|error| {
-        de::Error::custom(format_args!("`{text}` does not decode to UTF-8: {error}"))
-    })
+    String::from_utf8(out).ok()
 }
 
 struct Query<'q> {
-    pairs: &'q [(String, String)],
+    pairs: &'q [Pair<'q>],
 }
 
 impl<'de> Deserializer<'de> for Query<'_> {
@@ -97,7 +97,7 @@ impl<'de> Deserializer<'de> for Query<'_> {
 
 /// Each declared field of the struct, with the values of its key.
 struct Fields<'q> {
-    pairs: &'q [(String, String)],
+    pairs: &'q [Pair<'q>],
     names: std::slice::Iter<'static, &'static str>,
     current: &'static str,
 }
@@ -123,8 +123,13 @@ impl<'de> MapAccess<'de> for Fields<'_> {
             .pairs
             .iter()
             .filter(|(name, _)| name == field)
-            .map(|(_, value)| value.as_str())
-            .collect();
+            .map(|(_, value)| match value {
+                Ok(value) => Ok(value.as_str()),
+                Err(raw) => Err(de::Error::custom(format_args!(
+                    "`{raw}` does not decode to UTF-8"
+                ))),
+            })
+            .collect::<Result<_, Error>>()?;
         seed.deserialize(Group { field, values })
     }
 }
@@ -394,10 +399,16 @@ mod tests {
     }
 
     #[test]
-    fn ignores_a_key_that_is_not_utf_8_and_refuses_such_a_value() {
+    fn ignores_a_key_that_is_not_utf_8_and_refuses_such_a_value_only_under_a_field() {
         assert_eq!(
             parse_query::<Price>("%FF=1&max=2")
                 .expect("key ignored")
+                .max,
+            2.0
+        );
+        assert_eq!(
+            parse_query::<Price>("utm=%FF&max=2&ref=%E9t%E9")
+                .expect("a value under a key the struct does not have is ignored")
                 .max,
             2.0
         );

@@ -86,3 +86,17 @@ it("writes form values, attributes, and styles on the server", () => {
   expect($("#total").textContent).toBe("small");
   expect($("#price-label").textContent).toBe("$2,500.00");
 });
+
+it("adopts each server-rendered item of a list whose keys repeat", async () => {
+  serve("duplicate_keys_page");
+  const items = $$("#list li");
+  expect(items.map((li) => li.querySelector("label")!.textContent)).toEqual(["a", "b", "c"]);
+  const runtime = start();
+  await tick();
+  runtime.store.set("todos.0.title", "A");
+  runtime.store.set("todos.1.title", "B");
+  runtime.store.set("todos.2.title", "C");
+  await tick();
+  expect($$("#list li")).toEqual(items);
+  expect($$("#list li label").map((label) => label.textContent)).toEqual(["A", "B", "C"]);
+});

@@ -27,12 +27,12 @@ use hypersig::{
 };
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, Breadcrumb, ButtonSize, ButtonVariant,
-    Chart, Column, Combobox, ComboboxState, DataTable, DateField, Dialog, DonutChart, InputKind,
-    Level, Listbox, Menu, MenuItem, NavList, NumberField, PaginationText, ServerTable, Side,
-    Slider, SortOrder, TableState, Tabs, TextField, Toast, ToastVariant, Toaster, Tooltip, alert,
-    alert_description, alert_title, badge, button, card, card_content, card_description,
-    card_footer, card_header, card_title, checkbox, dialog_footer, pagination, progress,
-    radio_group, select_field, separator, skeleton, submit_button, switch, token,
+    Chart, Column, Combobox, ComboboxState, ComboboxText, DataTable, DateField, Dialog, DialogText,
+    DonutChart, InputKind, Level, Listbox, Menu, MenuItem, NavList, NumberField, PaginationText,
+    ServerTable, Side, Slider, SortOrder, TableState, Tabs, TextField, Toast, ToastVariant,
+    Toaster, Tooltip, alert, alert_description, alert_title, badge, button, card, card_content,
+    card_description, card_footer, card_header, card_title, checkbox, dialog_footer, pagination,
+    progress, radio_group, select_field, separator, skeleton, submit_button, switch, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -489,6 +489,7 @@ fn pickers() -> El<Gallery> {
                             "Brazil", "Canada", "France", "Germany", "India", "Japan", "Kenya",
                             "Mexico", "Norway", "Spain",
                         ],
+                        &ComboboxText::default(),
                     ))
                     .child(
                         Slider::new("Volume", volume)
@@ -554,6 +555,7 @@ fn filters() -> El<Gallery> {
                         .text("Apply"),
                 ),
             ),
+        &DialogText::default(),
     )
 }
 
@@ -623,6 +625,7 @@ fn overlays() -> El<Gallery> {
                                     .text("Done"),
                             ),
                     ),
+                &DialogText::default(),
             ),
         )
         .child(filters())

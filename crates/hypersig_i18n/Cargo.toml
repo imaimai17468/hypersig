@@ -10,7 +10,7 @@ description = "Typed translations for hypersig, where a missing translation is a
 keywords = ["i18n", "translation", "locale", "hypersig", "axum"]
 categories = ["internationalization", "web-programming"]
 readme = "../../README.md"
-include = ["src/**/*.rs"]
+include = ["src/**/*.rs", "LICENSE"]
 
 [features]
 default = ["axum"]

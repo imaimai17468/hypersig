@@ -4,7 +4,7 @@ use hypersig::html::div;
 use hypersig::style::Style;
 use hypersig::style::value::rem;
 use hypersig::{Page, Signals};
-use hypersig_ui::{Combobox, ComboboxState};
+use hypersig_ui::{Combobox, ComboboxState, ComboboxText};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
@@ -57,6 +57,20 @@ pub fn page(site: Site) -> Page<Shipping> {
                         "メキシコ",
                     ],
                 }),
+                &ComboboxText {
+                    list: site
+                        .t(L {
+                            en: "Suggestions",
+                            ja: "候補",
+                        })
+                        .into(),
+                    empty: site
+                        .t(L {
+                            en: "No matches",
+                            ja: "一致する国はありません",
+                        })
+                        .into(),
+                },
             )),
     )
 }

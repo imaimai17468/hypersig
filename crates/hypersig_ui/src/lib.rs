@@ -127,9 +127,9 @@ pub use choice::{
     checkbox, checkbox_in_form, radio_group, radio_group_in_form, switch, switch_in_form,
 };
 pub use collapsible::Collapsible;
-pub use combobox::{Combobox, ComboboxState};
+pub use combobox::{Combobox, ComboboxState, ComboboxText};
 pub use date::{DateField, Dated};
-pub use dialog::{Dialog, Side, dialog_footer};
+pub use dialog::{Dialog, DialogText, Side, dialog_footer};
 pub use donut::DonutChart;
 pub use field::{Autocomplete, InputKind, InputMode, TextField};
 pub use kbd::kbd;

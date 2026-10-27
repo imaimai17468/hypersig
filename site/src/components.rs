@@ -1053,6 +1053,14 @@ fn component_page(page: Component) -> Page {
                         ja: "テキストフィールドに `text` が入った、閉じたコンボボックス",
                     },
                 ),
+                (
+                    "ComboboxText",
+                    "hypersig_ui/struct.ComboboxText.html",
+                    L {
+                        en: "The words `Combobox::render` names the list with and shows when no option matches.",
+                        ja: "`Combobox::render` が一覧の名前に使い、一致する選択肢がないときに表示する言葉",
+                    },
+                ),
             ],
         },
         Component::Tabs => Page {
@@ -1897,6 +1905,14 @@ fn component_page(page: Component) -> Page {
                     },
                 ),
                 (
+                    "DialogText",
+                    "hypersig_ui/struct.DialogText.html",
+                    L {
+                        en: "The words `Dialog::dialog` and `Dialog::sheet` name their close button with.",
+                        ja: "`Dialog::dialog` と `Dialog::sheet` が閉じるボタンの名前に使う言葉",
+                    },
+                ),
+                (
                     "Side",
                     "hypersig_ui/enum.Side.html",
                     L {
@@ -2212,6 +2228,14 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "Names the region for assistive technology, in place of \"Notifications\".",
                         ja: "「Notifications」の代わりに、支援技術に向けた領域の名前を付けます。",
+                    },
+                ),
+                (
+                    "dismiss_label",
+                    "hypersig_ui/struct.Toaster.html#method.dismiss_label",
+                    L {
+                        en: "Names the button that removes a toast, in place of \"Dismiss\".",
+                        ja: "「Dismiss」の代わりに、トーストを取り除くボタンの名前を付けます。",
                     },
                 ),
                 (

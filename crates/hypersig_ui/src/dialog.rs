@@ -36,7 +36,7 @@ use crate::token;
 /// ```
 /// use hypersig::{DialogRef, Signals};
 /// use hypersig::html::p;
-/// use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, dialog_footer};
+/// use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, DialogText, dialog_footer};
 /// use serde::{Deserialize, Serialize};
 ///
 /// #[derive(Signals, Serialize, Deserialize)]
@@ -51,6 +51,7 @@ use crate::token;
 ///     "Edit profile",
 ///     "Changes are saved when you press Save.",
 ///     dialog_footer().child(EDIT.close(ButtonVariant::Default, ButtonSize::Default).text("Save")),
+///     &DialogText::default(),
 /// );
 /// let labelled = format!(r#"aria-labelledby="{}::EDIT_PROFILE-title""#, module_path!());
 /// assert!(open.render().contains(r#"command="show-modal""#));
@@ -108,6 +109,8 @@ impl<S> Dialog<S> {
     /// The dialog, with `title`, `description`, `content`, and a close button
     /// in its corner.
     ///
+    /// `text` names the close button.
+    ///
     /// A click on the backdrop closes it as Escape does (`closedby="any"`),
     /// in a browser that supports `closedby`. Focus moves to the first
     /// control in `content` when it opens, and the corner button comes after
@@ -118,19 +121,21 @@ impl<S> Dialog<S> {
         title: impl Into<String>,
         description: impl Into<String>,
         content: impl Into<Node<S>>,
+        text: &DialogText,
     ) -> El<S> {
         self.closable(
             dialog_style(),
             title.into(),
             description.into(),
             content.into(),
+            text,
         )
     }
 
     /// A sheet: a dialog along the `side` edge of the viewport.
     ///
     /// It holds `title`, `description`, `content`, and a close button in its
-    /// corner.
+    /// corner, which `text` names.
     ///
     /// It is the same modal `<dialog>` as [`Dialog::dialog`], opened by
     /// [`Dialog::trigger`], with the same focus, Escape, and backdrop
@@ -141,7 +146,7 @@ impl<S> Dialog<S> {
     /// ```
     /// use hypersig::{DialogRef, Signals};
     /// use hypersig::html::p;
-    /// use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, Side};
+    /// use hypersig_ui::{ButtonSize, ButtonVariant, Dialog, DialogText, Side};
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Signals, Serialize, Deserialize)]
@@ -152,7 +157,13 @@ impl<S> Dialog<S> {
     ///
     /// # fn main() {
     /// let open = CART.trigger(ButtonVariant::Outline, ButtonSize::Default).text("Cart");
-    /// let sheet = CART.sheet(Side::Right, "Cart", "Two items.", p().text("Tea, cups"));
+    /// let sheet = CART.sheet(
+    ///     Side::Right,
+    ///     "Cart",
+    ///     "Two items.",
+    ///     p().text("Tea, cups"),
+    ///     &DialogText::default(),
+    /// );
     /// let labelled = format!(r#"aria-labelledby="{}::CART_SHEET-title""#, module_path!());
     /// assert!(sheet.render().contains(&labelled));
     /// # let _ = open;
@@ -165,24 +176,33 @@ impl<S> Dialog<S> {
         title: impl Into<String>,
         description: impl Into<String>,
         content: impl Into<Node<S>>,
+        text: &DialogText,
     ) -> El<S> {
         self.closable(
             sheet_style(side),
             title.into(),
             description.into(),
             content.into(),
+            text,
         )
     }
 
     /// The dialog in `style`, closed by a click on the backdrop, with a close
-    /// button in its corner after `content`.
-    fn closable(self, style: Style, title: String, description: String, content: Node<S>) -> El<S> {
+    /// button in its corner after `content`, which `text` names.
+    fn closable(
+        self,
+        style: Style,
+        title: String,
+        description: String,
+        content: Node<S>,
+        text: &DialogText,
+    ) -> El<S> {
         self.frame(style, title, description, content)
             .attr(attr::CLOSEDBY, "any")
             .child(
                 button_el()
                     .attr(attr::TYPE, "button")
-                    .attr(attr::ARIA_LABEL, "Close")
+                    .attr(attr::ARIA_LABEL, text.close.as_str())
                     .command_for(&self.id())
                     .attr(attr::COMMAND, "close")
                     .css(corner_style())
@@ -261,6 +281,33 @@ impl<S> Copy for Dialog<S> {}
 impl<S> fmt::Debug for Dialog<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Dialog").field(&self.dialog).finish()
+    }
+}
+
+/// The words [`Dialog::dialog`] and [`Dialog::sheet`] name their close button with.
+///
+/// They are English until replaced, so a page in another language passes
+/// its own:
+///
+/// ```
+/// use hypersig_ui::DialogText;
+///
+/// let japanese = DialogText {
+///     close: "閉じる".into(),
+/// };
+/// assert_ne!(japanese, DialogText::default());
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DialogText {
+    /// The name of the button in the corner, "Close".
+    pub close: String,
+}
+
+impl Default for DialogText {
+    fn default() -> Self {
+        Self {
+            close: "Close".to_owned(),
+        }
     }
 }
 

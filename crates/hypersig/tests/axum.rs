@@ -555,6 +555,24 @@ async fn a_query_string_that_does_not_deserialize_gets_400() {
 }
 
 #[tokio::test]
+async fn a_value_that_is_not_utf_8_under_a_key_the_page_does_not_read_is_ignored() {
+    let (status, _) = send(
+        Request::get("/teams/red?q=a&page=1&utm=%FF")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = send(
+        Request::get("/teams/red?q=%FF&page=1")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
 async fn a_redirect_writes_the_search_parameters_and_leaves_out_none() {
     let response = app()
         .oneshot(

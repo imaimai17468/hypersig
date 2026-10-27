@@ -144,8 +144,9 @@ impl Base {
     /// # Panics
     ///
     /// Panics if `path` does not start with `/`, ends with `/`, is `/`
-    /// alone, or holds `{`, `}`, `?`, `#`, `%`, or `//`. In a `const`, each
-    /// is a compile error.
+    /// alone, holds `{`, `}`, or `//`, or holds a byte the browser
+    /// percent-encodes, such as a space, `?`, `#`, `%`, or a non-ASCII
+    /// character. In a `const`, each is a compile error.
     #[must_use]
     pub const fn new(path: &'static str) -> Self {
         let bytes = path.as_bytes();
@@ -153,11 +154,14 @@ impl Base {
             bytes.len() > 1 && bytes[0] == b'/' && bytes[bytes.len() - 1] != b'/',
             "a base path starts with `/`, does not end with `/`, and is not `/` alone"
         );
+        if let Err(reason) = check_literal(path) {
+            panic!("{}", reason);
+        }
         let mut i = 0;
         while i < bytes.len() {
             assert!(
-                !matches!(bytes[i], b'{' | b'}' | b'?' | b'#' | b'%'),
-                "a base path is literal segments, without `{{`, `}}`, `?`, `#`, or `%`"
+                !matches!(bytes[i], b'{' | b'}'),
+                "a base path is literal segments, without `{{` or `}}`"
             );
             assert!(
                 !(bytes[i] == b'/' && i + 1 < bytes.len() && bytes[i + 1] == b'/'),
@@ -267,13 +271,17 @@ impl<P: Params, Q: Search> Route<P, Q> {
 
     /// Why `path` cannot be the path of a route with parameters `P`, if it cannot.
     ///
-    /// It cannot where it does not start with `/`, where a `{` or `}` does
-    /// not enclose a whole segment with a name, where the number of such
+    /// It cannot where it does not start with `/`, where it holds a byte
+    /// [`check_literal`] refuses, where a `{` or `}` does not enclose a whole
+    /// segment with a name, where the number of such
     /// segments differs from the number of values in `P`, or where a `Rest`
     /// and a `{*name}` segment are not both last.
     pub(crate) const fn check(path: &'static str) -> Result<(), &'static str> {
         if path.is_empty() || path.as_bytes()[0] != b'/' {
             return Err("a route path starts with `/`");
+        }
+        if let Err(reason) = check_literal(path) {
+            return Err(reason);
         }
         match count_params(path) {
             Ok(count) if count == P::COUNT => {}
@@ -866,6 +874,78 @@ impl<P, Q> fmt::Debug for Route<P, Q> {
             .field("path", &self.path)
             .finish()
     }
+}
+
+/// Why `path` holds a byte that a browser percent-encodes, if it does.
+///
+/// The router compares a request's path as the browser encoded it, so a
+/// path written with a space, `?`, `#`, `%`, a non-ASCII character, or
+/// another byte outside RFC 3986's `pchar` gets links that reach no
+/// handler. `/`, `{`, and `}` pass, and [`count_params`] checks the braces.
+pub(crate) const fn check_literal(path: &str) -> Result<(), &'static str> {
+    let bytes = path.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if !matches!(
+            bytes[i],
+            b'a'..=b'z'
+                | b'A'..=b'Z'
+                | b'0'..=b'9'
+                | b'-'
+                | b'.'
+                | b'_'
+                | b'~'
+                | b'!'
+                | b'$'
+                | b'&'
+                | b'\''
+                | b'('
+                | b')'
+                | b'*'
+                | b'+'
+                | b','
+                | b';'
+                | b'='
+                | b':'
+                | b'@'
+                | b'/'
+                | b'{'
+                | b'}'
+        ) {
+            return Err(
+                "a path holds ASCII letters, digits, `/`, and `-._~!$&'()*+,;=:@`, because the browser percent-encodes any other byte and the router then finds no match",
+            );
+        }
+        i += 1;
+    }
+    Ok(())
+}
+
+/// Why `path` cannot be the path of an action, a stream, or an upload, if it cannot.
+///
+/// Its handler takes no path parameters, so the path has no `{name}`
+/// segment, and its bytes are those [`check_literal`] lets through.
+pub(crate) const fn check_handler_path(
+    path: &'static str,
+    starts_with_slash: &'static str,
+) -> Result<(), &'static str> {
+    if path.is_empty() || path.as_bytes()[0] != b'/' {
+        return Err(starts_with_slash);
+    }
+    if let Err(reason) = check_literal(path) {
+        return Err(reason);
+    }
+    let bytes = path.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'{' || bytes[i] == b'}' {
+            return Err(
+                "the path of an action, a stream, or an upload has no `{name}` segment, because its handler takes no path parameters",
+            );
+        }
+        i += 1;
+    }
+    Ok(())
 }
 
 /// The number of `{name}` segments in `path`, or why a brace does not
@@ -1981,6 +2061,35 @@ mod tests {
         assert!(reason.contains("starts with `/`"), "{reason}");
         let reason = Route::<(Rest, i32)>::check("/files/{*rest}/{id}").expect_err("a rest first");
         assert!(reason.contains("`{*name}`"), "{reason}");
+    }
+
+    #[test]
+    fn refuses_a_byte_the_browser_percent_encodes() {
+        for path in [
+            "/café",
+            "/a b",
+            "/search?x",
+            "/x#y",
+            "/100%",
+            "/a\\b",
+            "/\"q\"",
+        ] {
+            let reason = Route::<()>::check(path).expect_err(path);
+            assert!(reason.contains("percent-encodes"), "{path}: {reason}");
+        }
+        assert_eq!(Route::<()>::check("/a-b_c.d~e/!$&'()*+,;=:@"), Ok(()));
+    }
+
+    #[test]
+    fn refuses_a_parameter_in_a_handler_path() {
+        let reason = check_handler_path("/notes/{id}", "slash").expect_err("a parameter");
+        assert!(reason.contains("no `{name}` segment"), "{reason}");
+        let reason = check_handler_path("/a/{", "slash").expect_err("an open brace");
+        assert!(reason.contains("no `{name}` segment"), "{reason}");
+        let reason = check_handler_path("/save note", "slash").expect_err("a space");
+        assert!(reason.contains("percent-encodes"), "{reason}");
+        assert_eq!(check_handler_path("save", "slash"), Err("slash"));
+        assert_eq!(check_handler_path("/notes/save", "slash"), Ok(()));
     }
 
     #[test]

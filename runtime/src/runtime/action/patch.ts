@@ -90,35 +90,49 @@ export class Patches {
    * runtime can reach also carries. The server checks a page when it renders
    * it, but a patched element is rendered alone, so only the browser sees it
    * next to the rest of the page.
+   *
+   * The page is read once per id and per attribute of `NAMES`, rather than
+   * once per element, so a patch of a long list costs a pass over the page.
    */
   #warnDuplicates(element: Element): void {
-    for (const el of [element, ...element.querySelectorAll("*")]) {
-      if (el.id !== "" && document.querySelectorAll(`[id="${CSS.escape(el.id)}"]`).length > 1) {
-        console.warn(
-          `hypersig: the patch for #${element.id} adds a second element with the id "${el.id}"`,
-        );
+    const inside = [element, ...element.querySelectorAll("*")];
+    const warn = (what: string) =>
+      console.warn(`hypersig: the patch for #${element.id} adds a second element with ${what}`);
+    const withId = inside.filter((el) => el.id !== "");
+    if (withId.length > 0) {
+      const ids = count(document.querySelectorAll("[id]"), (el) => el.id);
+      for (const el of withId) if (ids.get(el.id)! > 1) warn(`the id "${el.id}"`);
+    }
+    for (const attribute of NAMES) {
+      const named = inside.filter((el) => el.hasAttribute(attribute));
+      if (named.length === 0) continue;
+      const all = Array.from(this.#rt.root.querySelectorAll(`[${attribute}]`));
+      const first = new Map<string, Element>();
+      for (const other of all) {
+        const name = other.getAttribute(attribute)!;
+        if (!first.has(name)) first.set(name, other);
       }
-      for (const attribute of NAMES) {
-        const name = el.getAttribute(attribute);
-        if (name !== null && this.#named(attribute, name, el))
-          console.warn(
-            `hypersig: the patch for #${element.id} adds a second element with ${attribute}="${name}"`,
-          );
+      const onPage = count(
+        all.filter((other) => !inCopy(other)),
+        (other) => other.getAttribute(attribute)!,
+      );
+      for (const el of named) {
+        const name = el.getAttribute(attribute)!;
+        // A lookup from inside a list item meets the page's elements too, so
+        // one page element is too many there, and two are too many outside.
+        if (
+          this.#rt.bindings.refs.find(attribute, name, el, first) !== el ||
+          (onPage.get(name) ?? 0) > (inCopy(el) ? 0 : 1)
+        )
+          warn(`${attribute}="${name}"`);
       }
     }
   }
+}
 
-  /** Whether another element the runtime can reach from `el` also has `attribute` set to `name`. */
-  #named(attribute: string, name: string, el: Element): boolean {
-    const selector = `[${attribute}="${CSS.escape(name)}"]`;
-    const onPage = Array.from(this.#rt.root.querySelectorAll(selector)).filter(
-      (other) => !inCopy(other),
-    );
-    // A lookup from inside a list item meets the page's elements too, so
-    // one page element is too many there, and two are too many outside.
-    return (
-      this.#rt.bindings.refs.find(attribute, name, el) !== el ||
-      onPage.length > (inCopy(el) ? 0 : 1)
-    );
-  }
+/** How many of `elements` give each key. */
+function count(elements: Iterable<Element>, key: (el: Element) => string): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const el of elements) counts.set(key(el), (counts.get(key(el)) ?? 0) + 1);
+  return counts;
 }

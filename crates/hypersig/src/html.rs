@@ -43,8 +43,9 @@
 //! ```
 
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt;
+use std::hash::{BuildHasherDefault, Hasher};
 use std::io;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -1533,26 +1534,90 @@ pub(crate) const HIDE: &str = "data-hs-hide";
 /// [`El::bind_style`] values, on a page with a CSP nonce.
 pub(crate) const INLINE: &str = "data-hs-inline";
 
+/// The keys a list has written, so that a repeated one can be told apart.
+///
+/// The keys share one buffer and are found by their FNV-1a hash, so a list
+/// allocates for its keys a few times in all, not once per item.
+#[derive(Default)]
+struct SeenKeys {
+    text: String,
+    ends: Vec<usize>,
+    hashes: HashSet<u64, BuildHasherDefault<Fnv>>,
+}
+
+impl SeenKeys {
+    fn reserve(&mut self, items: usize) {
+        self.ends.reserve(items);
+        self.hashes.reserve(items);
+    }
+
+    /// Records `key`, and says whether it was recorded before.
+    fn repeated(&mut self, key: &str) -> bool {
+        let new_hash = self.hashes.insert(fnv(key));
+        let repeated = !new_hash && {
+            let mut start = 0;
+            self.ends.iter().any(|&end| {
+                let written = &self.text[start..end];
+                start = end;
+                written == key
+            })
+        };
+        self.text.push_str(key);
+        self.ends.push(self.text.len());
+        repeated
+    }
+}
+
+/// FNV-1a over the bytes of `text`.
+fn fnv(text: &str) -> u64 {
+    text.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+        (hash ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3)
+    })
+}
+
+/// Hands the `u64` that [`fnv`] already computed to the `HashSet` as it is.
+#[derive(Default)]
+struct Fnv(u64);
+
+impl Hasher for Fnv {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        for &byte in bytes {
+            self.0 = (self.0 ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3);
+        }
+    }
+
+    fn write_u64(&mut self, i: u64) {
+        self.0 = i;
+    }
+}
+
 /// Whether `value` can sit inside a declaration in a `<style>` element
 /// without ending the declaration, the rule, a string, or the element.
 ///
-/// An unclosed `(` would let a `url(` token run on into the next rules, so
-/// the parentheses have to balance.
+/// An unclosed `(` would let a `url(` token run on into the next rules, and
+/// an unclosed `[` opens a block that takes in the rules after it, so the
+/// parentheses and the square brackets have to balance and nest.
 fn plain_css(value: &str) -> bool {
-    let mut depth = 0_usize;
+    let mut open: Vec<char> = Vec::new();
     for c in value.chars() {
         match c {
-            '(' => depth += 1,
-            ')' => match depth.checked_sub(1) {
-                Some(less) => depth = less,
-                None => return false,
-            },
+            '(' => open.push(')'),
+            '[' => open.push(']'),
+            ')' | ']' => {
+                if open.pop() != Some(c) {
+                    return false;
+                }
+            }
             '{' | '}' | ';' | '<' | '>' | '\\' | '"' | '\'' => return false,
             c if c.is_control() => return false,
             _ => {}
         }
     }
-    depth == 0 && !value.contains("/*")
+    open.is_empty() && !value.contains("/*")
 }
 
 /// Creates an element with a tag that has no named constructor.
@@ -2867,12 +2932,24 @@ impl<S> El<S> {
             return;
         };
         let mut key = String::new();
+        let mut seen = SeenKeys::default();
+        if self.key.is_some() {
+            seen.reserve(items.size_hint().0);
+        }
         ctx.for_each_item(depth, items, |item, index| {
             key.clear();
             match &self.key {
                 None => ssr::write_into(&mut key, format_args!("#{index}")),
                 Some(expr) => match ssr::evaluate(expr, item) {
-                    Some(value) => ssr::write_js_json(&mut key, &value),
+                    Some(value) => {
+                        ssr::write_js_json(&mut key, &value);
+                        // The runtime files a repeated key under this name
+                        // (`match.ts`) and records the new name in its place.
+                        if seen.repeated(&key) {
+                            ssr::write_into(&mut key, format_args!("#{index}"));
+                            seen.repeated(&key);
+                        }
+                    }
                     None => return Some(()),
                 },
             }
@@ -3032,6 +3109,7 @@ impl<S> El<S> {
         if self.void {
             return;
         }
+        let start = out.len();
         if let Some(text) = content {
             escape_into(out, &text, Escape::Text);
         } else {
@@ -3049,6 +3127,11 @@ impl<S> El<S> {
                     _ => child.write(out, ctx),
                 }
             }
+        }
+        // The HTML parser drops one newline right after the start tag of
+        // these elements, so a second one keeps the content's own.
+        if matches!(self.tag, "pre" | "textarea" | "listing") && out[start..].starts_with('\n') {
+            out.insert(start, '\n');
         }
         out.push_str("</");
         out.push_str(self.tag);
@@ -3475,12 +3558,41 @@ mod tests {
     }
 
     #[test]
+    fn attr_and_tag_refuse_the_names_that_run_a_script_or_load_a_url() {
+        for name in [
+            "srcdoc",
+            "action",
+            "formaction",
+            "xlink:href",
+            "data",
+            "http-equiv",
+            "attributename",
+            "background",
+            "manifest",
+            "codebase",
+            "archive",
+            "classid",
+            "longdesc",
+            "ping",
+            "imagesrcset",
+            "SrcDoc",
+        ] {
+            assert!(Attr::check(name).is_err(), "{name}");
+        }
+        for tag in ["script", "style", "base", "link", "STYLE"] {
+            assert!(super::Tag::check(tag).is_err(), "{tag}");
+        }
+    }
+
+    #[test]
     fn a_plain_css_value_cannot_leave_its_declaration() {
         for value in [
             "50%",
             "calc(100% - var(--a, 1px))",
             "rgb(0 0 0 / 50%)",
             "#fff",
+            "[a] 1fr [b]",
+            "repeat(2, [a] 1fr)",
         ] {
             assert!(super::plain_css(value), "{value}");
         }
@@ -3490,6 +3602,9 @@ mod tests {
             "</style>",
             "url(x",
             "a)",
+            "calc(1px + [)",
+            "a]",
+            "([)]",
             "\"",
             "/* x",
             "a\\b",

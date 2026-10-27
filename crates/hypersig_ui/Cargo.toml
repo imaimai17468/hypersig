@@ -10,7 +10,7 @@ description = "Accessible components for hypersig, styled after shadcn/ui"
 keywords = ["hypermedia", "components", "accessibility", "ui", "hypersig"]
 categories = ["web-programming", "gui"]
 readme = "../../README.md"
-include = ["src/**/*.rs"]
+include = ["src/**/*.rs", "LICENSE"]
 
 [dependencies]
 hypersig = { path = "../hypersig", version = "=0.11.0", default-features = false }

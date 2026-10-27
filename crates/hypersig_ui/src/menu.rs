@@ -26,8 +26,9 @@ use crate::token;
 /// each action `role="menuitem"`. The menu is a `popover`, so the browser
 /// puts it above the page, closes it on Escape or on a click outside, and
 /// returns focus to the button. When it opens, focus moves to the first
-/// action. The arrow keys, Home, and End move between actions, an action
-/// runs its statement and closes the menu, and Tab closes it.
+/// action that is not disabled. The arrow keys, Home, and End move between
+/// actions, an action runs its statement and closes the menu, and Tab
+/// closes it.
 ///
 /// The menu is placed under the button with CSS anchor positioning and flips
 /// above it where there is no room below. The menu carries the node ref, so
@@ -106,7 +107,7 @@ impl<S> Menu<S> {
             .on_key(Key::Tab, node_ref.hide_popover())
             .on_key(Key::Tab.shift(), node_ref.hide_popover())
             .css(menu_style(self.anchor()))
-            .children(items.into_iter().enumerate().map(|(index, item)| {
+            .children(items.into_iter().map(|item| {
                 let mut action = button_el()
                     .attr(attr::TYPE, "button")
                     .role(Role::MenuItem)
@@ -116,12 +117,11 @@ impl<S> Menu<S> {
                     // `command`, because a statement that disables this item
                     // makes the browser skip a disabled button's command.
                     .on_click(item.run.then(node_ref.hide_popover()))
-                    .text(item.label);
-                // The browser focuses an element with `autofocus` inside a
-                // popover as the popover opens.
-                if index == 0 {
-                    action = action.attr(attr::AUTOFOCUS, "");
-                }
+                    .text(item.label)
+                    // As the popover opens, the browser focuses the first
+                    // element with `autofocus` that can take focus, which is
+                    // the first action not disabled at that moment.
+                    .attr(attr::AUTOFOCUS, "");
                 if let Some(disabled) = item.disabled {
                     action = action.disabled(disabled);
                 }
@@ -240,12 +240,30 @@ fn item_style(destructive: bool) -> Style {
 mod tests {
     use hypersig::html::div;
 
-    use super::Menu;
+    use super::{Menu, MenuItem};
 
     struct Page;
 
     hypersig::node_ref!(const MENU: NodeRef<Page>);
     const ACTIONS: Menu<Page> = Menu::new(MENU);
+
+    #[derive(hypersig::Signals, serde::Serialize, serde::Deserialize)]
+    struct Doc {
+        archived: bool,
+    }
+
+    hypersig::node_ref!(const DOC_MENU: NodeRef<Doc>);
+
+    #[test]
+    fn every_action_carries_autofocus_so_a_disabled_first_one_passes_focus_on() {
+        let html = Menu::new(DOC_MENU)
+            .menu([
+                MenuItem::new("Archive", Doc::archived().set(true)).disabled(Doc::archived()),
+                MenuItem::new("Delete", Doc::archived().set(false)),
+            ])
+            .render();
+        assert_eq!(html.matches("autofocus=\"\"").count(), 2, "{html}");
+    }
 
     #[test]
     #[should_panic(expected = "`hypersig_ui::menu::tests::MENU` where the runtime can reach both")]

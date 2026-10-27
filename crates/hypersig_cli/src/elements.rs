@@ -206,11 +206,16 @@ fn refused(name: &str) -> Option<&'static str> {
         | "itemref" => "its value names an element, so the `El` method that takes an `Id` sets it.",
         "href" => "set it with `El::href`, which takes a `Link` or a `SafeUrl`.",
         "src" => "set it with `El::src`, which takes a `SafeUrl`.",
+        "poster" => "set it with `El::poster`, which takes a `SafeUrl`.",
+        "srcset" => "set it with `El::srcset`, which takes `SafeUrl`s.",
+        "style" => "set it with `El::css` or `El::bind_style`.",
         "attributename" => "`hypersig::attr!` refuses it, because its value could name `href`.",
         _ if lower.starts_with("data-hs-") => "hypersig writes the `data-hs-` attributes.",
         "srcdoc" | "action" | "formaction" | "xlink:href" | "data" | "http-equiv" => {
             "its value can run a script, so `hypersig::attr!` refuses it."
         }
+        "ping" | "imagesrcset" | "background" | "manifest" | "codebase" | "archive" | "classid"
+        | "longdesc" => "its value loads a URL, so `hypersig::attr!` refuses it.",
         _ if lower.starts_with("on") => {
             "its value can run a script, so `hypersig::attr!` refuses it."
         }
@@ -407,12 +412,12 @@ fn field_ident(name: &str) -> Option<String> {
 }
 
 /// The keywords of Rust 2024 that a raw identifier can spell.
-const KEYWORDS: [&str; 47] = [
+pub(crate) const KEYWORDS: [&str; 48] = [
     "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "do", "dyn",
     "else", "enum", "extern", "false", "final", "fn", "for", "gen", "if", "impl", "in", "let",
     "loop", "macro", "match", "mod", "move", "mut", "override", "priv", "pub", "ref", "return",
     "static", "struct", "trait", "true", "try", "type", "typeof", "unsafe", "unsized", "use",
-    "virtual", "where", "while",
+    "virtual", "where", "while", "yield",
 ];
 
 /// Whether `tag` is a custom element name as the HTML standard defines one,
@@ -712,5 +717,48 @@ mod tests {
         for name in ["value", "open", "data-value", "aria-label"] {
             assert!(refused(name).is_none(), "{name}");
         }
+    }
+
+    /// Every name `Attr::check` in hypersig's `html.rs` compares against, so
+    /// a name added there and not here fails this test.
+    ///
+    /// It reads `html.rs` from the repository when it runs, so that the
+    /// published crate, which holds no copy of it, still compiles its tests.
+    #[test]
+    fn refuses_every_name_attr_names() {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../hypersig/src/html.rs");
+        let Ok(html) = std::fs::read_to_string(path) else {
+            eprintln!("skipped: {path} is not here, as in the published crate");
+            return;
+        };
+        let check = html
+            .split_once(
+                "pub(crate) const fn check(name: &'static str) -> Result<Self, &'static str> {",
+            )
+            .and_then(|(_, rest)| rest.split_once("Ok(Self(name))"))
+            .expect("`Attr::check` in html.rs")
+            .0;
+        let elements = html
+            .split_once("const fn points_at_an_element(name: &[u8]) -> bool {")
+            .and_then(|(_, rest)| rest.split_once("\n}"))
+            .expect("`points_at_an_element` in html.rs")
+            .0;
+        let mut names = Vec::new();
+        for call in format!("{check}{elements}").split("is(").skip(1) {
+            if let Some((_, rest)) = call.split_once(", \"") {
+                names.push(rest.split_once('"').expect("a closing quote").0.to_owned());
+            }
+        }
+        assert!(names.len() > 30, "{names:?}");
+        for name in names {
+            // `starts_with(bytes, "on")` refuses a prefix.
+            let name = if name == "on" { "onx".to_owned() } else { name };
+            assert!(refused(&name).is_some(), "{name}");
+        }
+    }
+
+    #[test]
+    fn spells_yield_as_a_raw_identifier() {
+        assert_eq!(field_ident("yield").as_deref(), Some("r#yield"));
     }
 }

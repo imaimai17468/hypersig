@@ -59,10 +59,9 @@ it("collects the elements it takes out of the document", () => {
     removed,
   );
   expect(document.body.innerHTML).toBe('<div id="root"><b>z</b><span id="a">A</span></div>');
-  // The span is replaced at the first position, then moved back by its id.
-  expect(removed.length).toBe(3);
-  [a, p, i].forEach((child, index) => expect(removed[index]).toBe(child));
-  expect(a!.isConnected).toBe(true);
+  // The <b> goes in before the span, which `to` still has, so the span never leaves the document.
+  expect(removed).toEqual([p, i]);
+  expect(document.querySelector("#a")).toBe(a);
 });
 
 it("keeps a foreign element's attributes and children, and finds it by its name", () => {
@@ -212,4 +211,31 @@ it("focuses the input with the same name, where the focused one was replaced", (
   expect(now).not.toBe(old);
   expect(document.activeElement).toBe(now);
   expect([now.selectionStart, now.selectionEnd]).toEqual([1, 1]);
+});
+
+it("keeps an element with an id in the document when a new element goes in before it", () => {
+  let disconnected = 0;
+  customElements.define(
+    "hs-kept-probe",
+    class extends HTMLElement {
+      disconnectedCallback(): void {
+        disconnected++;
+      }
+    },
+  );
+  document.body.innerHTML =
+    '<div id="root"><section id="a"><hs-kept-probe></hs-kept-probe></section></div>';
+  const removed: Element[] = [];
+  morph(
+    document.querySelector("#root")!,
+    element(
+      '<div id="root"><p>new</p><section id="a"><hs-kept-probe></hs-kept-probe></section></div>',
+    ),
+    removed,
+  );
+  expect(document.body.innerHTML).toBe(
+    '<div id="root"><p>new</p><section id="a"><hs-kept-probe></hs-kept-probe></section></div>',
+  );
+  expect(removed).toEqual([]);
+  expect(disconnected).toBe(0);
 });

@@ -1,0 +1,15 @@
+error: `En` and `English` are both the segment `en`, so a URL with it could not say which one it means
+  --> tests/ui/fail/segment_duplicate.rs:11:5
+   |
+11 |     English,
+   |     ^^^^^^^
+
+warning: unreachable pattern
+  --> tests/ui/fail/segment_duplicate.rs:10:22
+   |
+ 9 |     En,
+   |     -- matches all the relevant values
+10 |     #[serde(rename = "en")]
+   |                      ^^^^ no value can reach this
+   |
+   = note: `#[warn(unreachable_patterns)]` (part of `#[warn(unused)]`) on by default

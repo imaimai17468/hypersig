@@ -2,7 +2,7 @@
 
 # hypersig
 
-[日本語](README.ja.md) | [Documentation](https://imaimai17468.github.io/hypersig/)
+[日本語](https://github.com/imaimai17468/hypersig/blob/main/README.ja.md) | [Documentation](https://imaimai17468.github.io/hypersig/)
 
 **Server-owned state, type-checked strings.**
 
@@ -92,7 +92,7 @@ The test app is a 2000-item TodoMVC that stores every add, toggle, and delete on
 | Total Blocking Time | 3 ms (0–37) | 318 ms (311–351) | 16 ms (11–23) | 14 ms (9–16) | 0 ms (0–0) | 36 ms (29–42) | 20 ms (17–23) | 47 ms (42–57) | 122 ms (114–126) |
 | Interaction to Next Paint | 24 ms (24–24) | 24 ms (24–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (16–24) | 24 ms (24–24) | 16 ms (16–16) | 24 ms (16–24) | 72 ms (72–80) |
 
-The apps and the harness are in [`bench/compare`](bench/compare), measured at commit 7d031d0. Leptos and Dioxus load most of their code as WebAssembly, which the Wasm row counts. [`bench/js-framework-benchmark`](bench/js-framework-benchmark/results.md) has the results of js-framework-benchmark, and the [`hypersig_style` README](crates/hypersig_style/README.md#benchmarks) compares the styling crates. On the same machine, [`examples/todomvc`](examples/todomvc) (485 lines) builds from an empty target directory in 13.4 s and rebuilds after a one-line change in 1.3 s (`cargo build`, Rust 1.99.0).
+The apps and the harness are in [`bench/compare`](https://github.com/imaimai17468/hypersig/tree/main/bench/compare), measured at commit 7d031d0. Leptos and Dioxus load most of their code as WebAssembly, which the Wasm row counts. [`bench/js-framework-benchmark`](https://github.com/imaimai17468/hypersig/blob/main/bench/js-framework-benchmark/results.md) has the results of js-framework-benchmark, and the [`hypersig_style` README](https://github.com/imaimai17468/hypersig/blob/main/crates/hypersig_style/README.md#benchmarks) compares the styling crates. On the same machine, [`examples/todomvc`](https://github.com/imaimai17468/hypersig/tree/main/examples/todomvc) (485 lines) builds from an empty target directory in 13.4 s and rebuilds after a one-line change in 1.3 s (`cargo build`, Rust 1.99.0).
 
 ## Deploying and security
 
@@ -124,7 +124,7 @@ Without the server, the browser runs only the operations hypersig provides and t
 
 ## Development
 
-[`CONTRIBUTING.md`](CONTRIBUTING.md) covers bug reports and pull requests, and [`AGENTS.md`](AGENTS.md) describes the repository layout and the checks a change runs.
+[`CONTRIBUTING.md`](https://github.com/imaimai17468/hypersig/blob/main/CONTRIBUTING.md) covers bug reports and pull requests, and [`AGENTS.md`](https://github.com/imaimai17468/hypersig/blob/main/AGENTS.md) describes the repository layout and the checks a change runs.
 
 ## License
 

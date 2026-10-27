@@ -1,0 +1,10 @@
+error[E0080]: evaluation panicked: the path of an action, a stream, or an upload has no `{name}` segment, because its handler takes no path parameters
+  --> tests/ui/fail/action_path_with_parameter.rs:18:1
+   |
+18 | / hypersig::routes! {
+19 | |     fn actions(Router<()>);
+20 | |     action BAD: Action<Counter> = post "/notes/{id}" => |(), ()| async { Patches::<Counter>::new() };
+21 | | }
+   | |_^ evaluation of `_` failed here
+   |
+   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::routes` (in Nightly builds, run with -Z macro-backtrace for more info)

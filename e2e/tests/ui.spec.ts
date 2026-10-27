@@ -326,6 +326,18 @@ test("a combobox keeps focus in its field while the arrow keys reach the options
   await expect(field).toHaveAttribute("aria-expanded", "false");
 });
 
+test("a combobox closes its list once focus has left and the pointer leaves the list", async ({ page }) => {
+  const field = page.getByRole("combobox", { name: "Country" });
+  const list = page.getByRole("listbox", { name: "Suggestions" });
+  await field.fill("an");
+  await list.hover();
+  await page.keyboard.press("Tab");
+  await expect(field).not.toBeFocused();
+  await page.mouse.move(0, 0);
+  await expect(list).toBeHidden();
+  await expect(field).toHaveAttribute("aria-expanded", "false");
+});
+
 test("a slider is a native range with a value text", async ({ page }) => {
   const slider = page.getByRole("slider", { name: "Volume" });
   await expect(slider).toHaveValue("40");

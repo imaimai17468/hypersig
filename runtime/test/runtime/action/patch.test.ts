@@ -50,7 +50,7 @@ it("keeps the bindings of an element that a patch moved by its id", async () => 
   );
   await tick();
   const kept = $("#kept");
-  // The morph replaces the span at the first position with the <b>, then finds it by id and moves it to the second.
+  // The morph puts the <b> in before the span, which the patch still has, so the span stays in the document.
   runtime.apply({
     event: "hs-element",
     data: JSON.stringify({
@@ -86,4 +86,33 @@ it("applies the events after one whose data does not parse", async () => {
   await tick();
   expect($("p").textContent).toBe("b");
   expect(error).toHaveBeenCalledTimes(1);
+});
+
+/** A list of `n` rows, each with an id and a node ref name. */
+function rows(n: number): string {
+  return Array.from(
+    { length: n },
+    (_, i) => `<li id="row-${i}"><input data-hs-ref="row-${i}"></li>`,
+  ).join("");
+}
+
+/** The calls among `calls` that select by an id or a `data-hs-` name. */
+function pageQueries(calls: unknown[][]): unknown[][] {
+  return calls.filter(([selector]) => /^\[(id|data-hs-)/u.test(String(selector)));
+}
+
+it("reads the page once per id and per name when it checks a long patched list", async () => {
+  const runtime = mount(`<ul id="frag">${rows(300)}</ul>`, {});
+  await tick();
+  const all = vi.spyOn(Document.prototype, "querySelectorAll");
+  const one = vi.spyOn(Element.prototype, "querySelectorAll");
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  runtime.apply({
+    event: "hs-element",
+    data: JSON.stringify({ html: `<ul id="frag">${rows(301)}</ul>` }),
+  });
+  expect(warn).not.toHaveBeenCalled();
+  expect(
+    pageQueries(all.mock.calls).length + pageQueries(one.mock.calls).length,
+  ).toBeLessThanOrEqual(3);
 });

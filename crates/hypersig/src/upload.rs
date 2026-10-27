@@ -76,7 +76,8 @@ impl<S, A> Upload<S, A> {
     ///
     /// [`routes!`](crate::routes) checks `path` with [`Upload::check_path`]
     /// in a `const _` beside the constant, so a path that does not start
-    /// with `/` is a compile error.
+    /// with `/`, holds a `{name}` segment, or holds a byte the browser
+    /// percent-encodes is a compile error.
     pub(crate) const fn at(base: Base, path: &'static str, max_bytes: usize) -> Self {
         Self {
             base,
@@ -88,10 +89,7 @@ impl<S, A> Upload<S, A> {
 
     /// Why `path` cannot be an upload's path, if it cannot.
     pub(crate) const fn check_path(path: &'static str) -> Result<(), &'static str> {
-        if path.is_empty() || path.as_bytes()[0] != b'/' {
-            return Err("an upload path starts with `/`");
-        }
-        Ok(())
+        crate::route::check_handler_path(path, "an upload path starts with `/`")
     }
 
     /// The path the upload is served on, without its [`Base`].
