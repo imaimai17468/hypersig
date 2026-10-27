@@ -2,30 +2,14 @@ error[E0080]: evaluation panicked: `El::srcset` sets `srcset` from `SafeUrl`s
  --> tests/ui/fail/attr_url_list.rs:4:30
   |
 4 |     let _ = img::<()>().attr(hypersig::attr!("srcset"), "javascript:alert(1) 1x");
-  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed here
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::ATTR` failed here
   |
   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-note: erroneous constant encountered
- --> tests/ui/fail/attr_url_list.rs:4:30
-  |
-4 |     let _ = img::<()>().attr(hypersig::attr!("srcset"), "javascript:alert(1) 1x");
-  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this note originates in the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0080]: evaluation panicked: the value of this attribute can run a script or load a URL
  --> tests/ui/fail/attr_url_list.rs:5:30
   |
 5 |     let _ = img::<()>().attr(hypersig::attr!("ping"), "https://tracker.example");
-  |                              ^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#1}` failed here
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::ATTR` failed here
   |
   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-note: erroneous constant encountered
- --> tests/ui/fail/attr_url_list.rs:5:30
-  |
-5 |     let _ = img::<()>().attr(hypersig::attr!("ping"), "https://tracker.example");
-  |                              ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this note originates in the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)

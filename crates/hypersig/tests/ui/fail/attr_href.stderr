@@ -2,14 +2,6 @@ error[E0080]: evaluation panicked: `El::href`, `El::src`, and `El::poster` set `
  --> tests/ui/fail/attr_href.rs:4:28
   |
 4 |     let _ = a::<()>().attr(hypersig::attr!("HREF"), "javascript:alert(1)");
-  |                            ^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed here
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::ATTR` failed here
   |
   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-note: erroneous constant encountered
- --> tests/ui/fail/attr_href.rs:4:28
-  |
-4 |     let _ = a::<()>().attr(hypersig::attr!("HREF"), "javascript:alert(1)");
-  |                            ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this note originates in the macro `hypersig::attr` (in Nightly builds, run with -Z macro-backtrace for more info)

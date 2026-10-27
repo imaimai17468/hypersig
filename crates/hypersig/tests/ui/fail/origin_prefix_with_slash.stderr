@@ -14,9 +14,3 @@ note: inside `Origin::under`
   |
   |             panic!("{}", reason);
   |             -------------------- in this macro invocation
-
-note: erroneous constant encountered
- --> tests/ui/fail/origin_prefix_with_slash.rs:7:13
-  |
-7 |     let _ = BLOG;
-  |             ^^^^

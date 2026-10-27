@@ -17,9 +17,3 @@ note: inside `Stylesheet::class`
    | |             "the stylesheet has no selector for this class"
    | |         );
    | |_________- in this macro invocation
-
-note: erroneous constant encountered
-  --> tests/ui/fail/class_missing_from_stylesheet.rs:16:37
-   |
-16 |     let _ = span::<Counter>().class(BIG);
-   |                                     ^^^
