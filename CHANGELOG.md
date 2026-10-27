@@ -2,6 +2,22 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.11.0] - 2026-10-27
+
+### Breaking
+
+- `hypersig_style::value::url` takes a `&'static str` and is a `const fn`. It panics on an empty URL, a space or a control character, or a scheme other than `http` or `https`, which is a compile error in a `const`, as `Asset::new` does. A URL built at run time no longer compiles. `Url` is `Copy` and has `as_str`, and `Asset` panics with the message of `url`.
+
+### Added
+
+- `hypersig_ui::DateField`, an `<input type="date">` bound to a `CalendarDate` or an `Option<CalendarDate>` signal, with a `CalendarDate` for `min` and `max`.
+
+### Changed
+
+- A root path in a stylesheet's `url(..)` is written under the routes' `Base`, in the page and in the patches an action, a stream, or an upload sends, as an `Asset` path is. A batch built outside the handler, such as a broadcast, goes under the base of the stream that sends it.
+- `Page::render` panics where an expression reads the item of one list inside another list at the same depth, whose item the browser read in its place.
+- In a debug build, `Page::render` and `Page::simulate` panic where `Page::lang` names the language of an `IntlLocale` and the page formats its plurals and dates only with other ones.
+
 ## [0.10.0] - 2026-10-27
 
 ### Breaking

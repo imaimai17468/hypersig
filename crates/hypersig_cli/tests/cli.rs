@@ -21,7 +21,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-hypersig = "0.10"
+hypersig = "0.11"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
@@ -265,7 +265,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-hypersig = "0.10"
+hypersig = "0.11"
 axum = { version = "0.8", default-features = false }
 serde = { version = "1", features = ["derive"] }
 tower-service = "0.3"
@@ -423,7 +423,7 @@ fn elements_prints_a_module_that_a_page_checks_against() {
     std::fs::write(
         dir.join("Cargo.toml"),
         "[package]\nname = \"elements\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n\
-         [dependencies]\nhypersig = \"0.10\"\nserde = { version = \"1\", features = [\"derive\"] }\n\n\
+         [dependencies]\nhypersig = \"0.11\"\nserde = { version = \"1\", features = [\"derive\"] }\n\n\
          [lints.clippy]\npedantic = { level = \"warn\", priority = -1 }\n",
     )
     .unwrap();
