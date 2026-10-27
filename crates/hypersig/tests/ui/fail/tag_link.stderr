@@ -2,14 +2,6 @@ error[E0080]: evaluation panicked: `link` loads from the host its `href` names; 
  --> tests/ui/fail/tag_link.rs:4:22
   |
 4 |     let _ = el::<()>(hypersig::tag!("link"));
-  |                      ^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::{constant#0}` failed here
+  |                      ^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::TAG` failed here
   |
   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `hypersig::tag` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-note: erroneous constant encountered
- --> tests/ui/fail/tag_link.rs:4:22
-  |
-4 |     let _ = el::<()>(hypersig::tag!("link"));
-  |                      ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: this note originates in the macro `hypersig::tag` (in Nightly builds, run with -Z macro-backtrace for more info)

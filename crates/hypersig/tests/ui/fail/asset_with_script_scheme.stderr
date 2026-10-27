@@ -19,9 +19,3 @@ note: inside `Asset::new`
   | |             "an asset is a path or an `http` or `https` URL, with no space or control character"
   | |         );
   | |_________- in this macro invocation
-
-note: erroneous constant encountered
- --> tests/ui/fail/asset_with_script_scheme.rs:7:13
-  |
-7 |     let _ = PAYLOAD;
-  |             ^^^^^^^

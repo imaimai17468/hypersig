@@ -14,9 +14,3 @@ note: inside `SafeUrl::new`
   |
   |             panic!("{}", reason);
   |             -------------------- in this macro invocation
-
-note: erroneous constant encountered
- --> tests/ui/fail/safe_url_with_script_scheme.rs:6:13
-  |
-6 |     let _ = LINK;
-  |             ^^^^

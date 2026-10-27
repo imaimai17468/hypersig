@@ -14,9 +14,3 @@ note: inside `Id::new`
   |
   |             assert!(!bytes[i].is_ascii_whitespace(), "an id holds no whitespace");
   |             --------------------------------------------------------------------- in this macro invocation
-
-note: erroneous constant encountered
- --> tests/ui/fail/id_with_whitespace.rs:6:13
-  |
-6 |     let _ = EMAIL;
-  |             ^^^^^

@@ -17,9 +17,3 @@ note: inside `Class::new`
    | |                 "a class name holds no whitespace; declare one `Class` per name"
    | |             );
    | |_____________- in this macro invocation
-
-note: erroneous constant encountered
-  --> tests/ui/fail/class_with_space.rs:15:37
-   |
-15 |     let _ = span::<Counter>().class(BIG);
-   |                                     ^^^
