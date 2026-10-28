@@ -6,15 +6,12 @@ mod database;
 mod deploying;
 mod forms;
 mod javascript;
+mod quality;
 mod requests;
-mod security;
 mod server;
 mod sessions;
 pub mod snippet;
 mod state;
-mod testing;
-mod troubleshooting;
-mod upgrading;
 mod why;
 
 use crate::Site;
@@ -76,12 +73,12 @@ pub fn content(site: Site, page: Learn) -> Part {
         | Learn::EscapeHatches => server::escape_hatches(site),
         Learn::JavaScript => javascript::javascript(site),
         // Quality and operations
-        Learn::Security => security::security(site),
-        Learn::Testing | Learn::TestingPages => testing::testing(site),
-        Learn::CompileErrors | Learn::Debugging | Learn::Troubleshooting => {
-            troubleshooting::troubleshooting(site)
-        }
-        Learn::Upgrading => upgrading::upgrading(site),
+        Learn::Security => quality::security::page(site),
+        Learn::Testing => quality::testing::page(site),
+        Learn::TestingPages => quality::testing_pages::page(site),
+        Learn::CompileErrors => quality::compile_errors::page(site),
+        Learn::Debugging => quality::debugging::page(site),
+        Learn::Upgrading => quality::upgrading::page(site),
         // Deploy
         Learn::Deploying => deploying::deploying(site),
         Learn::DeployContainer => deploying::container::page(site),

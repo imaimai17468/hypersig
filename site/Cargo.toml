@@ -29,6 +29,7 @@ aws-config.workspace = true
 aws-sdk-dynamodb.workspace = true
 axum.workspace = true
 futures.workspace = true
+getrandom.workspace = true
 http-body-util.workspace = true
 reqwest = { workspace = true, features = ["json", "rustls"] }
 rusqlite = { workspace = true, features = ["bundled"] }
@@ -44,13 +45,14 @@ tracing-subscriber.workspace = true
 workspace = true
 
 # The samples of `snippets/database.rs`, `dynamodb.rs`, `api.rs`,
-# `sessions.rs`, `testing_sessions.rs`, `logging.rs`, and `static_files.rs`
-# are the only users of these crates, and cargo-udeps does not see a crate
-# that only doctests use.
+# `sessions.rs`, `quality/testing_sessions.rs`, `quality/csp.rs`,
+# `logging.rs`, and `static_files.rs` are the only users of these crates, and
+# cargo-udeps does not see a crate that only doctests use.
 [package.metadata.cargo-udeps.ignore]
 development = [
     "aws-config",
     "aws-sdk-dynamodb",
+    "getrandom",
     "reqwest",
     "rusqlite",
     "tower-http",

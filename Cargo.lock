@@ -2879,6 +2879,7 @@ dependencies = [
  "aws-sdk-dynamodb",
  "axum",
  "futures",
+ "getrandom 0.4.3",
  "http-body-util",
  "hypersig",
  "hypersig_i18n",
