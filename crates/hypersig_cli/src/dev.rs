@@ -93,7 +93,7 @@ struct Built {
 }
 
 /// The install line `dev` prints where blaze is missing. blaze's own
-/// installer puts `cargo-blaze` on the path.
+/// installer puts `blaze` on the path.
 const INSTALL_BLAZE: &str =
     "curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh";
 
@@ -101,14 +101,14 @@ fn cargo() -> OsString {
     std::env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"))
 }
 
-/// Fails where `cargo blaze` does not run, before the first build.
+/// Fails where `blaze` does not run, before the first build.
 ///
 /// # Errors
 ///
-/// Fails with the install line where Cargo finds no `blaze` command.
+/// Fails with the install line where no `blaze` command runs.
 fn blaze_installed() -> Result<(), Error> {
-    let runs = Command::new(cargo())
-        .args(["blaze", "--version"])
+    let runs = Command::new("blaze")
+        .arg("--version")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
@@ -122,7 +122,7 @@ fn blaze_installed() -> Result<(), Error> {
     }
 }
 
-/// Runs `cargo check` and `cargo blaze build` at once, and finds the one
+/// Runs `cargo check` and `blaze build` at once, and finds the one
 /// binary the build wrote, or `None` where the check failed.
 ///
 /// rustc's check decides what is an error, so a mistake that blaze would
@@ -143,20 +143,20 @@ fn build(build_args: &[String]) -> Result<Option<Built>, Error> {
         .spawn()
         .map_err(|error| Error::new(format!("cannot run cargo: {error}")))?;
     // blaze's own lines repeat what the check prints, so they are dropped.
-    let mut blaze = Command::new(cargo())
-        .args(["blaze", "build"])
+    let mut blaze = Command::new("blaze")
+        .arg("build")
         .args(build_args)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map_err(|error| Error::new(format!("cannot run cargo blaze: {error}")))?;
+        .map_err(|error| Error::new(format!("cannot run blaze: {error}")))?;
     let binaries = read_cargo(&mut check, |line| checked_binary_of(line, &dirs))?;
     let checked = check
         .wait()
         .map_err(|error| Error::new(format!("cannot wait for cargo: {error}")))?;
     let blazed = blaze
         .wait()
-        .map_err(|error| Error::new(format!("cannot wait for cargo blaze: {error}")))?;
+        .map_err(|error| Error::new(format!("cannot wait for blaze: {error}")))?;
     if !checked.success() {
         return Ok(None);
     }

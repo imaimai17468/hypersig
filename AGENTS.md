@@ -28,7 +28,7 @@ The wire format between the two halves is defined twice, once in `crates/hypersi
 
 ## Edit loop
 
-While editing, build with [blaze](https://github.com/indexable-inc/blaze), which compiles only the functions an edit changed: `cargo blaze build`, `cargo blaze run -p <package>`, and `cargo blaze test -p <crate>`. After an edit to `html.rs`, `cargo blaze build -p site` took 0.36 s on one Mac where `cargo build` took 4.4 s. Install it with `curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh`, and leave `blaze enable` off, because it links `cargo clippy` to blaze's own 24 lints.
+While editing, build with [blaze](https://github.com/indexable-inc/blaze), which compiles only the functions an edit changed: `blaze build`, `blaze run -p <package>`, and `blaze test -p <crate>`. After an edit to `html.rs`, `blaze build -p site` took 0.36 s on one Mac where `cargo build` took 4.4 s. Install it with `curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh`, and leave `blaze enable` off, because it links `cargo clippy` to blaze's own 24 lints.
 
 blaze compiles some code that rustc rejects (the `ra-jit` build its installer gives today compiles a use after move), so run `cargo check` before reporting, and run the list below with cargo. Two commands stay on cargo while editing too. `cargo test --doc`: blaze runs one rustc per example where cargo merges them, 82 s against 1.3 s for `hypersig`'s 126. `cargo test --workspace`: blaze 0.1.0 fails to load the whole workspace for tests and hands every run to cargo.
 
