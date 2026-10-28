@@ -17,6 +17,19 @@ mod generated;
 pub use generated::*;
 
 /// A number with a unit, or a `var()` that stands for one.
+/// `value`, for a declaration that writes it as a CSS number.
+///
+/// # Panics
+///
+/// Panics if `value` is NaN or infinite, which CSS cannot write.
+pub(crate) fn number(value: f64) -> f64 {
+    assert!(
+        value.is_finite(),
+        "a CSS number is finite, and this one is {value}"
+    );
+    value
+}
+
 #[derive(Debug, Clone, PartialEq)]
 enum Amount {
     Unit(f64, &'static str),
@@ -30,12 +43,7 @@ impl Amount {
     ///
     /// Panics if `value` is NaN or infinite, which CSS cannot write.
     fn unit(value: impl Into<f64>, unit: &'static str) -> Self {
-        let value = value.into();
-        assert!(
-            value.is_finite(),
-            "a CSS number is finite, and this one is {value}"
-        );
-        Self::Unit(value, unit)
+        Self::Unit(number(value.into()), unit)
     }
 
     /// Writes the amount, leaving the unit off zero where `zero_bare` is set,
@@ -571,5 +579,17 @@ mod tests {
     #[should_panic(expected = "a CSS number is finite")]
     fn a_length_of_nan_panics_where_it_is_built() {
         let _ = px(f64::NAN);
+    }
+
+    #[test]
+    #[should_panic(expected = "a CSS number is finite")]
+    fn an_opacity_of_nan_panics_where_it_is_set() {
+        let _ = crate::Style::new().opacity(super::Opacity::Number(f64::NAN));
+    }
+
+    #[test]
+    #[should_panic(expected = "a CSS number is finite")]
+    fn an_infinite_flex_grow_panics_where_it_is_set() {
+        let _ = crate::Style::new().flex_grow(f64::INFINITY);
     }
 }
