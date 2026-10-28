@@ -1868,7 +1868,7 @@ tuple_params!(6: A a 0, B b 1, C c 2, D d 3, E e 4, F f 5; last F);
 /// }
 /// ```
 ///
-/// Two `f64` and `f32` values do not reach the handler as they were written.
+/// Two kinds of `f64` or `f32` value do not reach the handler as written.
 /// `String` writes `-0.0` as `0`, so it arrives as `0.0`. serde writes a NaN
 /// or an infinity as `null`, so [`Route::url`] leaves its field out, and a
 /// required field answers 400 where an `Option` arrives as `None`.
