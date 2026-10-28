@@ -904,8 +904,8 @@ impl Doc {
                     ja: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) には、よく使うレイアウトのスタイルを返す関数があります。返されたスタイルは自分のスタイルと `merge` して使います。",
                 },
                 StylePage::Animation => L {
-                    en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element.",
-                    ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。",
+                    en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element. The move from one page to the next animates with the browser's view transitions.",
+                    ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。ページから次のページへの移動は、ブラウザの View Transitions でアニメーションできます。",
                 },
                 StylePage::Unchecked => L {
                     en: "A few forms reach the browser without a check. Each has its own name, so searching for that name finds every place that uses an unchecked value.",
