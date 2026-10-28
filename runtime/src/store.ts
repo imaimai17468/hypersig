@@ -206,7 +206,13 @@ export class Store {
     this.#listeners.add(listener);
   }
 
+  /** Notifies the listeners of the writes since the last notification now, rather than in a microtask. */
+  flush(): void {
+    this.#notify();
+  }
+
   #notify(): void {
+    if (this.#changes.size === 0) return;
     const changes = this.#changes;
     this.#changes = new Map();
     for (const listener of this.#listeners) listener(changes);

@@ -5,11 +5,12 @@ use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::fmt;
 
+use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
 use crate::asset::{Asset, css_under};
-use crate::expr::{IntoExpr, IntoStmt, Stmt};
+use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt};
 use crate::head::{LanguageTag, OpenGraph, Origin, meta};
 use crate::html::{
     Escape, HIDE, INLINE, IntoNode, Node, Shortcut, Stylesheet, assert_items_open,
@@ -20,7 +21,7 @@ use crate::intl::IntlLocale;
 use crate::route::{Base, Url};
 use crate::signal::{FromPage, IsComputed, Sig, Signals};
 use crate::ssr::{self, Ctx, Val};
-use crate::style::{Global, Sheet, Theme};
+use crate::style::{Global, Sheet, Style, Theme};
 use crate::tape::{Ref, Tape};
 
 /// A full HTML document for a page whose signals are `S`.
@@ -44,6 +45,11 @@ pub struct Page<S> {
     computed: Vec<(String, Value)>,
     body: Vec<Node<S>>,
     keys: Vec<(Shortcut, Stmt<S>)>,
+    /// The dotted paths of the signals `Page::persist` names.
+    persisted: Vec<String>,
+    /// The styles `Page::css_when` puts on `<body>`, each with its toggled
+    /// class names and its condition.
+    css_when: Vec<(Style, Vec<String>, Expr<S, bool>)>,
     /// The path given to [`Page::runtime_src`], if any.
     runtime: Option<Asset>,
     lang: Option<LanguageTag>,
@@ -134,6 +140,8 @@ impl<S: Signals> Page<S> {
             computed: Vec::new(),
             body: Vec::new(),
             keys: Vec::new(),
+            persisted: Vec::new(),
+            css_when: Vec::new(),
             runtime: None,
             lang: None,
             description: None,
@@ -677,6 +685,126 @@ impl<S: Signals> Page<S> {
         self
     }
 
+    /// Adds `style` to `<body>` while `when` is true.
+    ///
+    /// It does what [`El::css_when`](crate::html::El::css_when) does, on the
+    /// element that holds the whole page. Tokens set this way reach every
+    /// element of the page and the background of `<body>` itself, which a
+    /// style on an element inside it cannot reach.
+    ///
+    /// ```
+    /// use hypersig::style::Style;
+    /// use hypersig::style::value::Color;
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Settings {
+    ///     dark: bool,
+    /// }
+    ///
+    /// let html = Page::new("Settings", Settings { dark: true })
+    ///     .css_when(Style::new().background_color(Color::BLACK), Settings::dark())
+    ///     .render();
+    /// assert!(html.contains("<body class=\""));
+    /// assert!(html.contains(" data-hs-class="));
+    /// ```
+    #[must_use]
+    pub fn css_when(mut self, style: Style, when: impl IntoExpr<S, bool>) -> Self {
+        let names = style.toggled_class_names().collect();
+        self.css_when.push((style, names, when.into_expr()));
+        self
+    }
+
+    /// Adds to `<body>` the style of the case whose value `value` equals.
+    ///
+    /// It does what [`El::css_match`](crate::html::El::css_match) does, on
+    /// `<body>`, and nothing checks that the cases cover every value of `T`.
+    ///
+    /// ```
+    /// use hypersig::style::Style;
+    /// use hypersig::style::value::Color;
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+    /// enum Scheme {
+    ///     Light,
+    ///     Dark,
+    /// }
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Settings {
+    ///     scheme: Scheme,
+    /// }
+    ///
+    /// let html = Page::new("Settings", Settings { scheme: Scheme::Dark })
+    ///     .css_match(
+    ///         Settings::scheme(),
+    ///         [
+    ///             (Scheme::Light, Style::new().background_color(Color::WHITE)),
+    ///             (Scheme::Dark, Style::new().background_color(Color::BLACK)),
+    ///         ],
+    ///     )
+    ///     .render();
+    /// assert!(html.contains("<body class=\""));
+    /// ```
+    #[must_use]
+    pub fn css_match<T: PartialEq + Serialize>(
+        mut self,
+        value: impl IntoExpr<S, T>,
+        cases: impl IntoIterator<Item = (T, Style)>,
+    ) -> Self {
+        let value = value.into_expr();
+        for (case, style) in cases {
+            self = self.css_when(style, value.equals(&case));
+        }
+        self
+    }
+
+    /// Keeps `signal` in the browser's `localStorage`, so the next page load starts from it.
+    ///
+    /// Each write to the signal in the browser stores its value as JSON, and
+    /// the runtime starts the next page that persists the same path from the
+    /// stored value in place of the one `Page::new` was given. The key is
+    /// `hypersig:` followed by the base the page renders under and the
+    /// signal's path, so the pages of one application share it.
+    ///
+    /// Until the runtime has started, the page is hidden where a stored value
+    /// differs from the initial one, so a visitor never sees the page drawn
+    /// from the initial value first. A small script in `<head>` hides it, and
+    /// the page shows after one second if the runtime fails to start.
+    ///
+    /// The runtime checks only that the stored value has the JSON type of
+    /// the initial one (a string, a number, a boolean, an array, an object,
+    /// or null), so a value written by an older build, such as an enum
+    /// variant since removed, reaches the page as it was stored. The server
+    /// never sees the stored value, so an action's answer is rendered from
+    /// the signals the browser sends.
+    ///
+    /// ```
+    /// use hypersig::{Page, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Settings {
+    ///     dark: bool,
+    /// }
+    ///
+    /// let html = Page::new("Settings", Settings { dark: false })
+    ///     .persist(Settings::dark())
+    ///     .render();
+    /// assert!(html.contains(r#"data-hs-persist="[[&quot;dark&quot;,&quot;hypersig:/dark&quot;]]""#));
+    /// ```
+    #[must_use]
+    pub fn persist<T>(mut self, signal: Sig<S, T>) -> Self {
+        let path = signal.path();
+        if !self.persisted.contains(&path) {
+            self.persisted.push(path);
+        }
+        self
+    }
+
     /// Appends a node to `<body>`.
     #[must_use]
     pub fn child(mut self, child: impl IntoNode<S>) -> Self {
@@ -980,7 +1108,8 @@ impl<S: Signals> Page<S> {
             .iter()
             .map(|(_, value)| value)
             .chain(&self.bound_title)
-            .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()));
+            .chain(self.keys.iter().map(|(_, stmt)| stmt.as_json()))
+            .chain(self.css_when.iter().map(|(_, _, when)| when.as_json()));
         for ast in page {
             assert_items_open(ast, 0);
         }
@@ -1020,6 +1149,7 @@ impl<S: Signals> Page<S> {
         self.write_metadata(&mut out);
         let styles_at = out.len();
         self.write_styles(&mut out, base);
+        self.write_restore(&mut out, &ctx, base);
         out.push_str("<script type=\"module\"");
         let runtime: Cow<'_, str> = match self.runtime {
             Some(src) => src.under(base),
@@ -1036,7 +1166,7 @@ impl<S: Signals> Page<S> {
             out.push_str("></script>");
         }
         out.push_str("</head><body");
-        self.write_body_attrs(&mut out, &root, dev);
+        self.write_body_attrs(&mut out, &ctx, base, dev);
         out.push('>');
         let body_at = out.len();
         for child in &self.body {
@@ -1049,6 +1179,70 @@ impl<S: Signals> Page<S> {
         }
         out.push_str("</body></html>");
         out
+    }
+
+    /// Writes the classes of the styles of `Page::css_when` whose condition
+    /// `ctx` makes true, and the conditions the runtime switches them by.
+    fn write_body_classes(&self, out: &mut String, ctx: &Ctx<'_>) {
+        if self.css_when.is_empty() {
+            return;
+        }
+        let mut any = false;
+        for (_, names, when) in &self.css_when {
+            if !ssr::evaluate(when.as_json(), ctx).is_some_and(|value| ssr::truthy(&value)) {
+                continue;
+            }
+            for name in names {
+                out.push_str(if any { " " } else { " class=\"" });
+                escape_into(out, name, Escape::Attribute);
+                any = true;
+            }
+        }
+        if any {
+            out.push('"');
+        }
+        let pairs: Vec<(&str, &Value)> = self
+            .css_when
+            .iter()
+            .flat_map(|(_, names, when)| {
+                names
+                    .iter()
+                    .map(move |name| (name.as_str(), when.as_json()))
+            })
+            .collect();
+        write_json_attr(out, "data-hs-class", &pairs);
+    }
+
+    /// Writes the script and the rule that hide the page until the runtime
+    /// starts, where a persisted signal's stored value differs from its
+    /// initial value, which `ctx` reads.
+    ///
+    /// The script runs before `<body>` is parsed, so it can only mark
+    /// `<html>`, and `runtime/src/persist.ts` removes the mark once the
+    /// runtime has rendered the stored values.
+    fn write_restore(&self, out: &mut String, ctx: &Ctx<'_>, base: Base) {
+        if self.persisted.is_empty() {
+            return;
+        }
+        let initial: Vec<[String; 2]> = self
+            .persisted
+            .iter()
+            .map(|path| {
+                let value = serde_json::to_string(&ctx.get(path))
+                    .expect("the signals serialized once already, for data-hs-signals");
+                [storage_key(base, path), value]
+            })
+            .collect();
+        let initial = serde_json::to_string(&initial)
+            .expect("a list of strings serializes")
+            .replace('<', "\\u003c");
+        out.push_str("<style");
+        self.write_nonce(out);
+        out.push_str(">html[data-hs-restoring]{visibility:hidden;animation:hs-restoring 0s 1s forwards}@keyframes hs-restoring{to{visibility:visible}}</style><script");
+        self.write_nonce(out);
+        out.push('>');
+        ssr::write_into(out, format_args!("{RESTORE}({initial})"));
+        out.push_str("</script>");
     }
 
     /// The `<style>` that stands in for the `style` attributes of the body:
@@ -1074,10 +1268,19 @@ impl<S: Signals> Page<S> {
     }
 
     /// Writes the attributes of `<body>`, which the runtime reads when it starts.
-    fn write_body_attrs(&self, out: &mut String, root: &Tape, dev: Option<&str>) {
+    fn write_body_attrs(&self, out: &mut String, ctx: &Ctx<'_>, base: Base, dev: Option<&str>) {
+        self.write_body_classes(out, ctx);
         // `write_json_attr` reads all of `out` once, which here holds only
         // the head, because the body attributes come before the body.
-        write_json_attr(out, "data-hs-signals", &root.root());
+        write_json_attr(out, "data-hs-signals", &ctx.root);
+        if !self.persisted.is_empty() {
+            let persisted: Vec<[String; 2]> = self
+                .persisted
+                .iter()
+                .map(|path| [path.clone(), storage_key(base, path)])
+                .collect();
+            write_json_attr(out, "data-hs-persist", &persisted);
+        }
         if !self.computed.is_empty() {
             let computed: Vec<Value> = self
                 .computed
@@ -1125,6 +1328,9 @@ impl<S: Signals> Page<S> {
             out.push_str("</style>");
         }
         let mut sheet = Sheet::new();
+        for (style, _, _) in &self.css_when {
+            sheet.add_toggled(style);
+        }
         for child in &self.body {
             child.collect_css(&mut sheet);
         }
@@ -1205,6 +1411,15 @@ fn formatting_locales(ast: &Value, found: &mut BTreeSet<String>) {
     for part in parts {
         formatting_locales(part, found);
     }
+}
+
+/// The script `Page::write_restore` writes, which takes `[key, initial]`
+/// pairs and marks `<html>` when a stored value differs from its initial one.
+const RESTORE: &str = "(function(p){try{for(var i=0;i<p.length;i++){var v=localStorage.getItem(p[i][0]);if(v!==null&&v!==p[i][1]){document.documentElement.setAttribute(\"data-hs-restoring\",\"\");return}}}catch(e){}})";
+
+/// The `localStorage` key of the persisted signal at `path` on a page under `base`.
+fn storage_key(base: Base, path: &str) -> String {
+    format!("hypersig:{}/{path}", base.as_str())
 }
 
 #[cfg(test)]
@@ -1577,6 +1792,40 @@ mod tests {
             robots(page().nofollow().render()).as_deref(),
             Some("nofollow")
         );
+    }
+
+    #[test]
+    fn a_persisted_signal_is_keyed_under_the_base_and_hides_the_page_until_restored() {
+        const DOCS: Base = Base::new("/docs");
+        let html = Page::new(
+            "Search",
+            Search {
+                query: "</script>".to_owned(),
+            },
+        )
+        .csp_nonce("n0")
+        .persist(Search::query())
+        .persist(Search::query())
+        .render_under(DOCS);
+        assert!(html.contains(
+            r#"data-hs-persist="[[&quot;query&quot;,&quot;hypersig:/docs/query&quot;]]""#
+        ));
+        assert!(
+            html.contains(r#"<script nonce="n0">(function(p){"#),
+            "{html}"
+        );
+        assert!(
+            html.contains(r#"})([["hypersig:/docs/query","\"\u003c/script>\""]])</script>"#),
+            "{html}"
+        );
+        assert!(html.contains("html[data-hs-restoring]{visibility:hidden"));
+    }
+
+    #[test]
+    fn a_page_without_persisted_signals_has_no_restore_script() {
+        let html = Page::new("Search", Search::default()).render();
+        assert!(!html.contains("data-hs-restoring"));
+        assert!(!html.contains("data-hs-persist"));
     }
 
     #[test]

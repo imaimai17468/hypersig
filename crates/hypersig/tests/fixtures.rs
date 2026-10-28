@@ -1198,6 +1198,46 @@ fn shortcuts_page() -> String {
 }
 
 #[derive(Signals, Serialize, Deserialize)]
+struct Prefs {
+    dark: bool,
+    clicks: i32,
+}
+
+/// A page that keeps `dark` in `localStorage`, colors `<body>` by it, and
+/// flips it inside a view transition, with a counter it does not keep.
+fn persisted_page() -> String {
+    Page::new(
+        "persisted",
+        Prefs {
+            dark: false,
+            clicks: 0,
+        },
+    )
+    .runtime_src(RUNTIME_SRC)
+    .persist(Prefs::dark())
+    .css_when(Style::new().color(Color::RED), Prefs::dark())
+    .child(
+        main()
+            .child(
+                span()
+                    .id(Id::new("dark"))
+                    .bind_text(Prefs::dark().to_text()),
+            )
+            .child(
+                button()
+                    .id(Id::new("flip"))
+                    .on_click(Stmt::view_transition(
+                        Prefs::dark()
+                            .toggle()
+                            .then(Prefs::clicks().set(Prefs::clicks() + 1)),
+                    ))
+                    .text("Flip"),
+            ),
+    )
+    .render()
+}
+
+#[derive(Signals, Serialize, Deserialize)]
 struct Styled {
     on: bool,
 }
@@ -1653,6 +1693,14 @@ fn fixtures_match_the_builder() {
     let document = computed_page();
     write_or_compare(
         "computed_page",
+        &format!(
+            "{}\n",
+            serde_json::to_string_pretty(&json!({ "document": document })).expect("fixture JSON")
+        ),
+    );
+    let document = persisted_page();
+    write_or_compare(
+        "persisted_page",
         &format!(
             "{}\n",
             serde_json::to_string_pretty(&json!({ "document": document })).expect("fixture JSON")

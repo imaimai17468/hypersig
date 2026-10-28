@@ -73,4 +73,21 @@ export class Runtime implements Host {
   debounce(origin: Element | undefined, key: string, ms: number, action: () => void): void {
     this.bindings.timers.debounce(origin, key, ms, action);
   }
+
+  transition(update: () => void): void {
+    // The browser calls the callback once it has taken its picture of the
+    // page, and takes the second picture once the callback returns, so the
+    // writes render inside it rather than in the store's microtask.
+    if (typeof document.startViewTransition !== "function") {
+      update();
+      return;
+    }
+    document.startViewTransition(() => {
+      try {
+        update();
+      } finally {
+        this.store.flush();
+      }
+    });
+  }
 }
