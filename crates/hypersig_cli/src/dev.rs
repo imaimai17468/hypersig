@@ -3,7 +3,9 @@
 //!
 //! blaze writes the binary, and `cargo check` decides whether the code
 //! compiles. After an edit, blaze compiles only the functions that changed,
-//! so the wait is the check's.
+//! so the wait is the check's. Cargo builds the first server, and each edit
+//! until blaze's first build ends, because that build compiles every
+//! dependency where blaze's store does not hold it yet.
 //!
 //! A page that a debug build of hypersig serves keeps a stream to the server
 //! open and reloads once a new server answers in its place, so the browser
@@ -30,8 +32,8 @@ const POLL: Duration = Duration::from_millis(50);
 /// write that comes later still starts another build, as any change does.
 const SETTLE: Duration = Duration::from_millis(50);
 
-/// Builds with `cargo build` and `build_args`, runs the binary with
-/// `program_args`, and repeats both after each change until interrupted.
+/// Builds with `build_args`, runs the binary with `program_args`, and
+/// repeats both after each change until interrupted.
 pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> {
     let dir = std::env::current_dir()
         .map_err(|error| Error::new(format!("cannot read the current directory: {error}")))?;
@@ -48,7 +50,11 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
     // `dev` started again.
     let dirs = Dirs::read(build_args)?;
     let before = snapshot(&dir, None);
-    let mut built = build(build_args, &dirs)?;
+    // blaze's first build on a machine compiles every dependency, which
+    // took 57 s for an example where Cargo took 12 s, so the first server
+    // comes from Cargo and blaze builds beside it until it is ready.
+    let mut warming = Some(blaze(build_args)?);
+    let mut built = build_with_cargo(build_args)?;
     let mut seen = as_built(&before, snapshot(&dir, built.as_ref()));
     eprintln!("{}", watching(&dir, before.len(), seen.len()));
     let mut server = match &built {
@@ -68,9 +74,20 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
         }
         std::thread::sleep(SETTLE);
         let before = snapshot(&dir, built.as_ref());
+        if warming
+            .as_mut()
+            .is_some_and(|child| !matches!(child.try_wait(), Ok(None)))
+        {
+            warming = None;
+        }
+        let next = if warming.is_some() {
+            build_with_cargo(build_args)?
+        } else {
+            build(build_args, &dirs)?
+        };
         // A build that fails leaves the server of the last build running
         // until the next change, after Cargo has printed the errors.
-        if let Some(next) = build(build_args, &dirs)? {
+        if let Some(next) = next {
             // A change that compiles to the same binary, such as one to a
             // file the binary is not built from, leaves the server running.
             let same = built.as_ref().is_some_and(|built| {
@@ -125,6 +142,22 @@ fn blaze_installed() -> Result<(), Error> {
     }
 }
 
+/// Starts `blaze build` with `build_args`.
+///
+/// # Errors
+///
+/// Fails where blaze cannot run.
+fn blaze(build_args: &[String]) -> Result<Child, Error> {
+    // blaze's own lines repeat what the check prints, so they are dropped.
+    Command::new("blaze")
+        .arg("build")
+        .args(build_args)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|error| Error::new(format!("cannot run blaze: {error}")))
+}
+
 /// Runs `cargo check` and `blaze build` at once, and finds the one
 /// binary the build wrote, or `None` where the check failed.
 ///
@@ -144,14 +177,7 @@ fn build(build_args: &[String], dirs: &Dirs) -> Result<Option<Built>, Error> {
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|error| Error::new(format!("cannot run cargo: {error}")))?;
-    // blaze's own lines repeat what the check prints, so they are dropped.
-    let mut blaze = Command::new("blaze")
-        .arg("build")
-        .args(build_args)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|error| Error::new(format!("cannot run blaze: {error}")))?;
+    let mut blaze = blaze(build_args)?;
     let binaries = read_cargo(&mut check, |line| checked_binary_of(line, dirs))?;
     let checked = check
         .wait()
