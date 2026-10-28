@@ -85,6 +85,8 @@ export class Runtime implements Host {
     document.startViewTransition(() => {
       try {
         update();
+      } catch (error) {
+        console.error("hypersig:", error);
       } finally {
         this.store.flush();
       }
