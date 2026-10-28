@@ -14494,8 +14494,6 @@ impl fmt::Display for ScrollTargetGroup {
 pub enum ScrollbarColor {
     /// `auto`.
     Auto,
-    /// A color.
-    Color(Color),
     /// Any other value, passed through unchecked.
     Raw(Raw),
 }
@@ -14504,15 +14502,8 @@ impl fmt::Display for ScrollbarColor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Auto => f.write_str("auto"),
-            Self::Color(v) => v.fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
-    }
-}
-
-impl From<Color> for ScrollbarColor {
-    fn from(v: Color) -> Self {
-        Self::Color(v)
     }
 }
 

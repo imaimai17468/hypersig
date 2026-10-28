@@ -479,6 +479,11 @@ impl Data {
                     },
                 }
             }
+            // `<color>{2}` takes two colors, so one color alone is not a value.
+            Node::Repeat(_, min, _) if *min > 1 => Singles {
+                atoms: BTreeSet::new(),
+                complete: false,
+            },
             Node::Repeat(inner, _, max) => {
                 let s = self.singles(inner, seen);
                 Singles {

@@ -486,6 +486,20 @@ impl fmt::Display for CssWideKeyword {
     }
 }
 
+/// The two colors `scrollbar-color` takes, the thumb's and then the track's.
+///
+/// ```
+/// use hypersig_style::value::{Color, ScrollbarColor};
+///
+/// let value = ScrollbarColor::from((Color::GRAY, Color::TRANSPARENT));
+/// assert_eq!(value.to_string(), "gray transparent");
+/// ```
+impl From<(Color, Color)> for ScrollbarColor {
+    fn from((thumb, track): (Color, Color)) -> Self {
+        Self::Raw(Raw(format!("{thumb} {track}")))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{is_loaded_url, px, quoted, raw, stays_in_declaration, url};
