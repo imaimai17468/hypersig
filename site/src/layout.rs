@@ -9,12 +9,12 @@ use hypersig::style::value::{
     WhiteSpace, ZIndex, px, raw, rem,
 };
 use hypersig::style::{Element, Global, Media, PseudoClass, Style};
-use hypersig::{OpenGraph, OpenGraphType, Page, SafeUrl, if_else};
+use hypersig::{OpenGraph, OpenGraphType, Page, SafeUrl, Stmt, if_else};
 use hypersig_ui::{ButtonVariant, icon_button, token};
 
 use crate::doc::{Doc, Library};
 use crate::lang::{L, Lang};
-use crate::prose::{self, Docs, Part, href};
+use crate::prose::{self, Docs, Part, Scheme, href};
 use crate::{Site, code, own};
 use hypersig_i18n::{Locale as _, locales};
 
@@ -24,18 +24,23 @@ pub const REPOSITORY: SafeUrl = SafeUrl::new("https://github.com/imaimai17468/hy
 /// The id of the sidebar, which the menu button controls.
 const SIDEBAR: Id = Id::new("sidebar");
 
-/// The move from one page of the site to the next, which a browser with
-/// cross-document view transitions plays: the old page lifts away and
-/// blurs, and the new one rises in, revealed from its top edge. The header
-/// has a name of its own, which `top_bar` gives it, so it stays in place
-/// while the page under it moves. A visitor who asks for reduced motion
-/// gets the browser's plain change.
+/// The animations of the site's view transitions.
+///
+/// A move from one page to the next has the type `page`: the old page lifts
+/// away and blurs, and the new one rises in, revealed from its top edge.
+/// The header has a name of its own, which `top_bar` gives it, so it stays
+/// in place while the page under it moves. Any other transition is the
+/// theme button's, whose new colors spread in a circle from the top right
+/// corner over the old ones. A visitor who asks for reduced motion gets the
+/// browser's plain change.
 const TRANSITIONS: Stylesheet = Stylesheet::new(
     "
-@view-transition { navigation: auto; }
+@view-transition { navigation: auto; types: page; }
 @media (prefers-reduced-motion: no-preference) {
-  ::view-transition-old(root) { animation: 260ms cubic-bezier(0.4, 0, 1, 1) both hs-page-out; }
-  ::view-transition-new(root) { animation: 560ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both hs-page-in; }
+  html:active-view-transition-type(page)::view-transition-old(root) { animation: 260ms cubic-bezier(0.4, 0, 1, 1) both hs-page-out; }
+  html:active-view-transition-type(page)::view-transition-new(root) { animation: 560ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both hs-page-in; }
+  html:not(:active-view-transition-type(page))::view-transition-old(*) { animation: none; }
+  html:not(:active-view-transition-type(page))::view-transition-new(*) { animation: 650ms cubic-bezier(0.65, 0, 0.35, 1) both hs-theme-in; }
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
@@ -44,6 +49,10 @@ const TRANSITIONS: Stylesheet = Stylesheet::new(
 @keyframes hs-page-in {
   from { opacity: 0; transform: translateY(2.5rem); clip-path: inset(0 0 100% 0); }
   to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+@keyframes hs-theme-in {
+  from { clip-path: circle(0 at 100% 0); }
+  to { clip-path: circle(150vmax at 100% 0); }
 }
 ",
 );
@@ -119,6 +128,15 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
         )
         .theme(hypersig_ui::theme())
         .theme(code::theme())
+        .persist(Docs::scheme())
+        // The tokens go on `<body>`, so they reach its own background too.
+        .css_match(
+            Docs::scheme(),
+            [
+                (Scheme::Light, hypersig_ui::light().merge(code::light())),
+                (Scheme::Dark, hypersig_ui::dark().merge(code::dark())),
+            ],
+        )
         .child(top_bar(site, doc))
         .child(body)
         .render_under(site.base())
@@ -227,7 +245,8 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                                 .text("GitHub"),
                         ),
                 )
-                .child(other_language(site, doc)),
+                .child(other_language(site, doc))
+                .child(theme_button(site)),
         )
         .children((!doc.has_sidebar()).then(|| menu(site, doc)))
 }
@@ -469,6 +488,85 @@ fn menu_button(site: Site) -> Part {
                     .map(|d| el(hypersig::tag!("path")).attr(attr::D, d)),
             ),
     )
+}
+
+/// The button that moves the color scheme from the system's to light, to
+/// dark, and back, inside a view transition. It shows the icon of the
+/// scheme in use.
+fn theme_button(site: Site) -> Part {
+    let scheme = Docs::scheme();
+    let next = if_else(
+        scheme.equals(&Scheme::System),
+        &Scheme::Light,
+        if_else(
+            scheme.equals(&Scheme::Light),
+            &Scheme::Dark,
+            &Scheme::System,
+        ),
+    );
+    let name = |system: &'static str, light: &'static str, dark: &'static str| {
+        if_else(
+            scheme.equals(&Scheme::System),
+            system,
+            if_else(scheme.equals(&Scheme::Light), light, dark),
+        )
+    };
+    let icon = |shown: Scheme, paths: &[&'static str]| {
+        el(hypersig::tag!("svg"))
+            .attr(attr::VIEW_BOX, "0 0 24 24")
+            .attr(attr::FILL, "none")
+            .attr(attr::STROKE, "currentColor")
+            .attr(attr::STROKE_WIDTH, "2")
+            .attr(attr::STROKE_LINECAP, "round")
+            .attr(attr::STROKE_LINEJOIN, "round")
+            .attr(attr::ARIA_HIDDEN, "true")
+            .css(Style::new().width(rem(1.125)).height(rem(1.125)))
+            .show(scheme.equals(&shown))
+            .children(
+                paths
+                    .iter()
+                    .map(|&d| el(hypersig::tag!("path")).attr(attr::D, d)),
+            )
+    };
+    icon_button(
+        ButtonVariant::Ghost,
+        site.t(L {
+            en: "Change the color theme",
+            ja: "配色を切り替える",
+        }),
+    )
+    .bind_attr(
+        attr::TITLE,
+        match site.lang() {
+            Lang::En => name("Theme: system", "Theme: light", "Theme: dark"),
+            Lang::Ja => name("配色: システム", "配色: ライト", "配色: ダーク"),
+        },
+    )
+    .on_click(Stmt::view_transition(scheme.set(next)))
+    .css(Style::new().margin_right(rem(-0.5)).flex_shrink(0.0))
+    .child(icon(
+        Scheme::System,
+        &[
+            "M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z",
+            "M8 20h8",
+            "M12 16v4",
+        ],
+    ))
+    .child(icon(
+        Scheme::Light,
+        &[
+            "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z",
+            "M12 2v2",
+            "M12 20v2",
+            "m4.93 4.93 1.41 1.41",
+            "m17.66 17.66 1.41 1.41",
+            "M2 12h2",
+            "M20 12h2",
+            "m6.34 17.66-1.41 1.41",
+            "m19.07 4.93-1.41 1.41",
+        ],
+    ))
+    .child(icon(Scheme::Dark, &["M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"]))
 }
 
 fn sidebar(site: Site, doc: Doc) -> Part {

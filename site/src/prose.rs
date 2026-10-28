@@ -30,6 +30,19 @@ use crate::{Site, own};
 pub struct Docs {
     /// Whether the sidebar is open on a narrow screen.
     pub menu: bool,
+    /// The color scheme the visitor picked with the button in the header,
+    /// which `Page::persist` keeps from one page to the next.
+    pub scheme: Scheme,
+}
+
+/// A color scheme of the site.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Scheme {
+    /// The scheme the system prefers, through `prefers-color-scheme`.
+    #[default]
+    System,
+    Light,
+    Dark,
 }
 
 /// An element of a documentation page.

@@ -54,6 +54,24 @@ macro_rules! syntax {
                 .set(&removed(), Color::hex(0x0025_171c));
             Theme::new().on(Media::Dark, dark)
         }
+
+        /// The light values of the syntax colors, for `<body>` while the
+        /// visitor picks the light theme.
+        pub fn light() -> Style {
+            Style::new()
+                $(.token(&Token::new($name, Color::hex($light)), Color::hex($light)))*
+                .token(&added(), Color::hex(0x00da_fbe1))
+                .token(&removed(), Color::hex(0x00ff_ebe9))
+        }
+
+        /// The dark values of the syntax colors, for `<body>` while the
+        /// visitor picks the dark theme.
+        pub fn dark() -> Style {
+            Style::new()
+                $(.token(&Token::new($name, Color::hex($light)), Color::hex($dark)))*
+                .token(&added(), Color::hex(0x0012_261e))
+                .token(&removed(), Color::hex(0x0025_171c))
+        }
     };
 }
 
