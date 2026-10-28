@@ -206,7 +206,7 @@ fn hydration(site: Site) -> [Part; 3] {
             site,
             L {
                 en: "`Page::render` also evaluates each binding with the initial values, so the HTML already shows `0` and the link already points to `/history/0`. The page displays correctly before the runtime loads, and the runtime is the same file for every page, embedded in the crate: about 60 KB, or about 20 KB gzipped. `RouterExt::hypersig_runtime` sends a Brotli copy of about 18 KB to a browser that accepts it.",
-                ja: "`Page::render` は束縛も初期値で評価するので、HTML の時点で `0` が表示され、リンクも `/history/0` を指しています。ランタイムを読み込む前からページは正しく表示され、ランタイムはどのページでも同じファイルです。ランタイムはクレートに埋め込まれていて、大きさは約 60 KB（gzip で約 20 KB）です。Brotli を受け付けるブラウザには、`RouterExt::hypersig_runtime` が約 18 KB に圧縮した版を送ります。",
+                ja: "`Page::render` は束縛も初期値で評価するので、HTML の時点で `0` が表示され、リンクも `/history/0` を指しています。ランタイムを読み込む前からページは正しく表示され、ランタイムはどのページでも同じファイルです。ランタイムはクレートに埋め込まれており、大きさは約 60 KB（gzip で約 20 KB）です。Brotli を受け付けるブラウザには、`RouterExt::hypersig_runtime` が約 18 KB に圧縮した版を送ります。",
             },
         ),
     ]
@@ -472,7 +472,7 @@ fn unchecked(site: Site) -> [Part; 3] {
                         "入力欄にラベルが付きません",
                     ],
                     &[
-                        "hypersig の外のスクリプトが `El::foreign` の値で要素を探していて、その定数の名前を変える",
+                        "hypersig の外のスクリプトが `El::foreign` の値で要素を探しており、その定数の名前を変える",
                         "スクリプトが要素を見つけられません。`Id` で探してください",
                     ],
                     &[

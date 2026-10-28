@@ -83,7 +83,7 @@ fn logging(site: Site) -> Part {
             site,
             L {
                 en: "The samples on this site write the server's side of an error with `eprintln!` to stay short. An application logs with [`tracing`](https://docs.rs/tracing/0.1): a handler writes an event with `tracing::warn!` or `tracing::error!`, and `tracing-subscriber` writes the events to stderr. [`TraceLayer`](https://docs.rs/tower-http/0.7/tower_http/trace/struct.TraceLayer.html) from `tower-http`, put on the router with `layer`, adds a line for each request with the answer's status and how long it took. Add the three crates to `Cargo.toml`:",
-                ja: "このサイトのサンプルは、短く保つためにエラーのサーバー側の内容を `eprintln!` で書いています。アプリケーションでは [`tracing`](https://docs.rs/tracing/0.1) でログを書きます。ハンドラは `tracing::warn!` や `tracing::error!` でイベントを書き、`tracing-subscriber` がイベントを標準エラー出力に書きます。`tower-http` の [`TraceLayer`](https://docs.rs/tower-http/0.7/tower_http/trace/struct.TraceLayer.html) を `layer` でルーターに付けると、リクエストごとに、応答のステータスとかかった時間を書いた行が加わります。`Cargo.toml` に 3 つのクレートを足してください。",
+                ja: "このサイトのサンプルは、短く保つためにエラーのサーバー側の内容を `eprintln!` で書いています。アプリケーションでは [`tracing`](https://docs.rs/tracing/0.1) でログを書きます。ハンドラは `tracing::warn!` や `tracing::error!` でイベントを書き、`tracing-subscriber` がイベントを標準エラー出力に書きます。`tower-http` の [`TraceLayer`](https://docs.rs/tower-http/0.7/tower_http/trace/struct.TraceLayer.html) を `layer` でルーターに付けると、リクエストごとに、応答のステータスとかかった時間を書いた行が加わります。`Cargo.toml` に 3 つのクレートを追加してください。",
             },
         ),
         code::block(

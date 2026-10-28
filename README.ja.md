@@ -8,7 +8,7 @@
 
 Rust だけで書く[ハイパーメディア](https://imaimai17468.github.io/hypersig/ja/learn/why/#hypermedia)の Web フレームワークです。画面もブラウザでの動きもサーバーの処理も Rust で書き、axum の上で動きます。状態はサーバーが持ってブラウザにパッチを送り、ブラウザが扱う文字列（シグナルの名前、式、アクションの URL、リンク）はすべて Rust の型から作るので、その書き間違いはコンパイルエラーになります。
 
-- `cargo build` だけでビルドでき、Node も wasm も要りません。
+- `cargo build` だけでビルドでき、Node も wasm も必要ありません。
 - 最初の HTML にページの状態が入っているので、ハイドレーションはありません。アクションは変わった値だけを返します（[hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/)）。
 - フォームの検証規則、CSS、翻訳もコンパイラが検査します。shadcn/ui の見た目のコンポーネント集も付いています（[フォーム](https://imaimai17468.github.io/hypersig/ja/learn/forms/)、[スタイル](https://imaimai17468.github.io/hypersig/ja/style/)、[多言語化](https://imaimai17468.github.io/hypersig/ja/i18n/)、[コンポーネント](https://imaimai17468.github.io/hypersig/ja/components/)）。
 
@@ -82,7 +82,7 @@ async fn main() -> std::io::Result<()> {
 
 ## ベンチマーク
 
-追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 10 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を足しています。括弧の中は 10 回のうち最も速い回と遅い回の値です。
+追加、チェック、削除をサーバーに保存する 2000 件の TodoMVC を、Apple M4 Max の Chrome 155 で 10 回測った中央値です。CPU を 4 倍に減速し、通信のたびに 50 ms の遅延を加えています。括弧の中は 10 回のうち最も速い回と遅い回の値です。
 
 | | hypersig | Topcoat | React | Next.js | TanStack Start | Nuxt | Datastar | Leptos | Dioxus |
 |---|---|---|---|---|---|---|---|---|---|
@@ -96,7 +96,7 @@ async fn main() -> std::io::Result<()> {
 
 ## デプロイとセキュリティ
 
-`cargo hypersig new my-app --host server|cloudflare|vercel` は、コンテナのホスト、Cloudflare Workers、Vercel の関数のどれかで動くプロジェクトを作ります。既存のプロジェクトには `cargo hypersig add <ホスト>` で足せます（[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/)）。hypersig がリクエストごとに確かめることと、アクションを誰が呼んでよいかをはじめアプリが自分で確かめることは、[セキュリティ](https://imaimai17468.github.io/hypersig/ja/learn/security/) のページにまとめています。
+`cargo hypersig new my-app --host server|cloudflare|vercel` は、コンテナのホスト、Cloudflare Workers、Vercel の関数のどれかで動くプロジェクトを作ります。既存のプロジェクトには `cargo hypersig add <ホスト>` で追加できます（[デプロイ](https://imaimai17468.github.io/hypersig/ja/learn/deploying/)）。hypersig がリクエストごとに確かめることと、アクションを誰が呼んでよいかをはじめアプリが自分で確かめることは、[セキュリティ](https://imaimai17468.github.io/hypersig/ja/learn/security/) のページにまとめています。
 
 ## コンパイラが検査しないこと
 
@@ -109,7 +109,7 @@ async fn main() -> std::io::Result<()> {
 | `Base` の下のページが、`Base` のない `routes!` ブロックのアクションを呼ぶ | 呼び出しが 404 になります |
 | 同じ `node_ref!`、`dialog_ref!`、`Id`、`FileInput` の名前を 2 つの要素に付ける。リストのテンプレートの中で `El::id` を使う | ページの描画が panic します。`Id::from_text` で作った同じ id どうしは検出されず、その id を指す参照は先にある要素に届きます |
 | `label_for` などの参照が、どの要素にもない `Id` を指す | 入力欄にラベルが付きません |
-| hypersig の外のスクリプトが `El::foreign` の値で要素を探していて、その定数の名前を変える | スクリプトが要素を見つけられません。`Id` で探してください |
+| hypersig の外のスクリプトが `El::foreign` の値で要素を探しており、その定数の名前を変える | スクリプトが要素を見つけられません。`Id` で探してください |
 | `#[signals(computed)]` を付けたフィールドを `Page::computed` に渡し忘れる | ページの描画が panic します。入れ子の構造体のフィールドで panic するのは、ページがそのフィールドを読む場合だけです |
 | リストの項目を、渡されたクロージャの外で使う | ページの組み立てか描画が panic します |
 | シグナルに ±2^53 を超える整数を入れる | ページの描画か差分の作成が panic します |

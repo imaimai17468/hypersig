@@ -31,7 +31,7 @@ fn compile_errors(site: Site) -> Part {
             site,
             L {
                 en: "Most mistakes in a hypersig page fail to compile, and hypersig writes the first line of the error for its own traits, so that line names the mistake in the page's terms. The `note:` lines below it say what the trait accepts. The `help:` lines and the `required by a bound` notes point into hypersig's source, and you can skip them until the first line is not enough.",
-                ja: "hypersig のページの間違いはたいていコンパイルエラーになります。hypersig は自分のトレイトについてエラーの 1 行目を書いているので、1 行目がページの言葉で間違いを指します。その下の `note:` の行は、トレイトが受け取るものを書いています。`help:` の行と `required by a bound` の注記は hypersig のソースを指しているので、1 行目で足りないときまで読み飛ばしてかまいません。",
+                ja: "hypersig のページの間違いは多くの場合コンパイルエラーになります。hypersig は自分のトレイトについてエラーの 1 行目を書いているので、1 行目がページの言葉で間違いを指します。その下の `note:` の行は、トレイトが受け取るものを書いています。`help:` の行と `required by a bound` の注記は hypersig のソースを指しているので、1 行目で足りないときまで読み飛ばしてかまいません。",
             },
         ),
         subheading(
@@ -162,7 +162,7 @@ hypersig: no element with id \"todo-3\" to patch",
             site,
             L {
                 en: "A debug build serves `/_hypersig/dev.js` beside the runtime, and each page it serves loads it. The script keeps a stream open to the server, and when a new server answers in place of the one that rendered the page, as after `cargo hypersig dev` rebuilds it, the page reloads and keeps the signals the visitor changed, where the route and the struct's fields are the same. A release build serves neither the script nor the stream, so the reload and the kept signals stop there.",
-                ja: "デバッグビルドはランタイムの隣に `/_hypersig/dev.js` を配信し、配信する各ページがそれを読み込みます。このスクリプトはサーバーへのストリームを開いたままにし、`cargo hypersig dev` がビルドし直したあとのように、ページを描画したサーバーに代わって新しいサーバーが答えると、ページを読み込み直します。ルートと構造体のフィールドが同じなら、訪問者が変えたシグナルはそのまま残ります。リリースビルドはスクリプトもストリームも配信しないので、読み込み直しもシグナルの引き継ぎもありません。",
+                ja: "デバッグビルドはランタイムの隣に `/_hypersig/dev.js` を配信し、配信する各ページがそれを読み込みます。このスクリプトはサーバーへのストリームを開いたままにし、`cargo hypersig dev` がビルドし直したあとのように、ページを描画したサーバーに代わって新しいサーバーが答えると、ページを読み込み直します。ルートと構造体のフィールドが同じなら、訪問者が変えたシグナルはそのまま保持されます。リリースビルドはスクリプトもストリームも配信しないので、読み込み直しもシグナルの引き継ぎもありません。",
             },
         ),
     ])

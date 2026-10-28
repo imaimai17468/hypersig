@@ -39,7 +39,7 @@ fn vercel(site: Site) -> Part {
             site,
             L {
                 en: "These commands need a Vercel account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `vercel`, Vercel's command-line tool, which `npx` fetches on first use. `cargo install` installs `cargo hypersig` from crates.io, and `cargo hypersig new` writes the Vercel template into `my-app` and names the package after it. The templates are compiled into `cargo hypersig`, and a version published on crates.io cannot change, so the `buildCommand` in `vercel.json` is the same in every project one version makes.",
-                ja: "このコマンドを実行するには、Vercel のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Vercel のコマンドラインツール `vercel` を動かすために使い、`npx` が最初の実行時にダウンロードします。`cargo install` は crates.io から `cargo hypersig` をインストールし、`cargo hypersig new` は Vercel のテンプレートを `my-app` に書き出して、パッケージにその名前を付けます。テンプレートは `cargo hypersig` に埋め込まれていて、crates.io に公開した版は書き換えられません。そのため、`vercel.json` の `buildCommand` は、同じ版で作ったどのプロジェクトでも同じです。",
+                ja: "このコマンドを実行するには、Vercel のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Vercel のコマンドラインツール `vercel` を動かすために使い、`npx` が最初の実行時にダウンロードします。`cargo install` は crates.io から `cargo hypersig` をインストールし、`cargo hypersig new` は Vercel のテンプレートを `my-app` に書き出して、パッケージにその名前を付けます。テンプレートは `cargo hypersig` に埋め込まれており、crates.io に公開した版は書き換えられません。そのため、`vercel.json` の `buildCommand` は、同じ版で作ったどのプロジェクトでも同じです。",
             },
         ),
         code::block(
@@ -182,7 +182,7 @@ cargo hypersig add vercel",
                 },
                 L {
                     en: "It moves `src/main.rs` to `api/app.rs`, and removes `src/` when nothing else is left in it. A `mod` in `api/app.rs` reads its file from `api/`, so where `src/` holds other files, the list at the end says to move them too.",
-                    ja: "`src/main.rs` を `api/app.rs` に移し、`src/` にほかに何も残らなければ `src/` を消します。`api/app.rs` の `mod` は `api/` からファイルを読むので、`src/` にほかのファイルがあれば、最後の一覧にそれも移すように表示します。",
+                    ja: "`src/main.rs` を `api/app.rs` に移し、`src/` にほかに何も残らなければ `src/` を削除します。`api/app.rs` の `mod` は `api/` からファイルを読むので、`src/` にほかのファイルがあれば、最後の一覧にそれも移すように表示します。",
                 },
             ],
         ),
@@ -234,7 +234,7 @@ fn on_vercel(site: Site) -> Part {
                 },
                 L {
                     en: "Vercel ends a request at the function's maximum duration, which counts the time a stream stays open. The limit is 300 seconds by default and on the Hobby plan, and the Pro plan raises it to 800 seconds with `maxDuration`. At the limit Vercel closes the response before the `hs-end` event the server sends when the handler's stream finishes, so a call with `reconnect()` counts the stream as broken off and opens it again after 1 second. On a deployment of this template, the clock's stream opened again 301 seconds after the page loaded and the clock kept going. The cut is a failure like any other. It goes to the console and to `hs-error`, the `CustomEvent` the runtime dispatches on `<body>` for each failed call with the `status` and `message` in its `detail`, and the call's `error` signal holds it until the stream opens again. A page that shows a message on `hs-error` therefore shows one each time the limit passes.",
-                    ja: "Vercel は関数の最大実行時間でリクエストを終えます。この時間にはストリームを開いている時間も含まれます。上限は既定で 300 秒で、Hobby プランでは 300 秒より延ばせません。Pro プランでは `maxDuration` で 800 秒まで延ばせます。サーバーはハンドラのストリームが終わると最後に `hs-end` のイベントを送ります。上限に達した Vercel はその前にレスポンスを閉じるので、`reconnect()` を付けた呼び出しはストリームが途中で切れたものとして扱い、1 秒後に開き直します。このテンプレートをデプロイして確かめると、時計のストリームはページを開いてから 301 秒で開き直り、時計は進み続けました。切れたことはほかの失敗と同じように扱われ、コンソールと `hs-error` に送られます。`hs-error` は、呼び出しが失敗するたびにランタイムが `<body>` に送る `CustomEvent` で、`detail` に `status` と `message` を持ちます。呼び出しの `error` のシグナルにも、ストリームが開き直るまで残ります。`hs-error` でメッセージを出すページでは、上限を迎えるたびにメッセージが出ます。",
+                    ja: "Vercel は関数の最大実行時間でリクエストを終えます。この時間にはストリームを開いている時間も含まれます。上限は既定で 300 秒で、Hobby プランでは 300 秒より延ばせません。Pro プランでは `maxDuration` で 800 秒まで延ばせます。サーバーはハンドラのストリームが終わると最後に `hs-end` のイベントを送ります。上限に達した Vercel はその前にレスポンスを閉じるので、`reconnect()` を付けた呼び出しはストリームが途中で切れたものとして扱い、1 秒後に開き直します。このテンプレートをデプロイして確かめると、時計のストリームはページを開いてから 301 秒で開き直り、時計は進み続けました。切れたことはほかの失敗と同じように扱われ、コンソールと `hs-error` に送られます。`hs-error` は、呼び出しが失敗するたびにランタイムが `<body>` に送る `CustomEvent` で、`detail` に `status` と `message` を持ちます。呼び出しの `error` のシグナルにも、ストリームが開き直るまで保持されます。`hs-error` でメッセージを出すページでは、上限を迎えるたびにメッセージが出ます。",
                 },
                 L {
                     en: "Vercel may run more than one instance of the function and stops an idle one, so a value kept in memory may be gone at the next request. Keep the state requests share in a database the function reaches over the network, as [Storing data](learn/database/) describes.",

@@ -322,7 +322,7 @@ fn llms(site: Site) -> String {
         site.t(Doc::Home.leads()),
         site.t(L {
             en: "Each page's Rust samples are compiled by the repository's tests. The pages follow the main branch, which can be ahead of the release on crates.io, so confirm an API in the source or on docs.rs of the version a project uses.",
-            ja: "各ページの Rust のサンプルは、リポジトリのテストでコンパイルされています。ページはメインブランチに合わせて書かれていて、crates.io の最新リリースより先に進んでいることがあります。API は、プロジェクトが使うバージョンのソースか docs.rs で確かめてください。",
+            ja: "各ページの Rust のサンプルは、リポジトリのテストでコンパイルされています。ページはメインブランチに合わせて書かれており、crates.io の最新リリースより先に進んでいることがあります。API は、プロジェクトが使うバージョンのソースか docs.rs で確かめてください。",
         }),
     );
     let list = |text: &mut String, docs: &[Doc]| {

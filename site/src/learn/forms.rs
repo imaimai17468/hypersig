@@ -87,7 +87,7 @@ pub fn forms(site: Site) -> Part {
             site,
             L {
                 en: "`rules` is generic over the page `S`, so the same code builds the expressions twice. On the page, the browser evaluates them as the visitor types. In the handler, `Form::validate` evaluates them with the evaluator that writes the first HTML, so a value the browser accepted passes on the server too. What only the server can check, such as an address that is already taken, goes back as `FieldErrors` through `reject`, and its message stays until the next submit.",
-                ja: "`rules` はページの型 `S` について総称的なので、同じコードから式を 2 回作ります。ページでは、訪問者の入力に合わせてブラウザが式を評価します。ハンドラでは、`Form::validate` が最初の HTML を書く評価器で同じ式を評価するので、ブラウザが受け付けた値はサーバーでも通ります。登録済みのメールアドレスのようにサーバーにしか検査できないことは、`FieldErrors` にして `reject` で返します。そのメッセージは次の送信まで残ります。",
+                ja: "`rules` はページの型 `S` について総称的なので、同じコードから式を 2 回作ります。ページでは、訪問者の入力に合わせてブラウザが式を評価します。ハンドラでは、`Form::validate` が最初の HTML を書く評価器で同じ式を評価するので、ブラウザが受け付けた値はサーバーでも通ります。登録済みのメールアドレスのようにサーバーにしか検査できないことは、`FieldErrors` にして `reject` で返します。そのメッセージは次の送信まで保持されます。",
             },
         ),
         show(Snippet::Forms),

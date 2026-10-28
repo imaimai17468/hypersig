@@ -770,7 +770,7 @@ impl Doc {
             }
             Self::UseCases => L {
                 en: "Applications that hypersig suits. For each feature added to one of them, the page shows the change in hypersig and in Next.js.",
-                ja: "hypersig に向くアプリと、そのアプリに仕様を 1 つ足すごとに、hypersig と Next.js でコードがどう変わるかを並べます。",
+                ja: "hypersig に向くアプリと、そのアプリに仕様を 1 つ追加するごとに、hypersig と Next.js でコードがどう変わるかを並べます。",
             },
             Self::Learn(page) => match page {
                 Learn::QuickStart => L {
@@ -787,7 +787,7 @@ impl Doc {
                 },
                 Learn::Database => L {
                     en: "A handler keeps data shared across requests in a database that its own Rust code connects to, so the data outlives the process and every instance of the server reads the same values.",
-                    ja: "ハンドラはリクエストをまたいで使うデータを、自分の Rust のコードからつなぐデータベースに置きます。データはプロセスが終わっても残り、サーバーのどのインスタンスも同じ値を読みます。",
+                    ja: "ハンドラはリクエストをまたいで使うデータを、自分の Rust のコードからつなぐデータベースに置きます。データはプロセスが終わっても保持され、サーバーのどのインスタンスも同じ値を読みます。",
                 },
                 Learn::Api => L {
                     en: "A handler can call another service's HTTP API and answer the browser with what it returned, so the service's address and token stay on the server.",
@@ -929,7 +929,7 @@ impl Doc {
             Self::Components(page) => match page {
                 Component::Installation => L {
                     en: "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
-                    ja: "`hypersig_ui` は、見た目が shadcn/ui に似ていて、振る舞いはブラウザのネイティブ要素と WAI-ARIA Authoring Practices に従うコンポーネント集です。",
+                    ja: "`hypersig_ui` は、見た目が shadcn/ui に似ており、振る舞いはブラウザのネイティブ要素と WAI-ARIA Authoring Practices に従うコンポーネント集です。",
                 },
                 Component::Theming => L {
                     en: "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",

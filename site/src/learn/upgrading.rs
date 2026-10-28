@@ -135,7 +135,7 @@ fn to_0_11(site: Site) -> Part {
             site,
             L {
                 en: "These changes need no edit and may change what a page does:",
-                ja: "次の変更は書き換えが要りませんが、ページの動きが変わることがあります。",
+                ja: "次の変更は書き換えが不要ですが、ページの動きが変わることがあります。",
             },
         ),
         bullets(
@@ -151,7 +151,7 @@ fn to_0_11(site: Site) -> Part {
                 },
                 L {
                     en: "In a debug build, `Page::render` panics where `Page::lang` names the language of an `IntlLocale` and the page formats its plurals and dates only with other ones.",
-                    ja: "デバッグビルドでは、`Page::lang` が `IntlLocale` のある言語を指していて、ページが複数形と日付をほかの `IntlLocale` だけで書くと、`Page::render` がパニックします。",
+                    ja: "デバッグビルドでは、`Page::lang` が `IntlLocale` のある言語を指しており、ページが複数形と日付をほかの `IntlLocale` だけで書くと、`Page::render` がパニックします。",
                 },
             ],
         ),
@@ -247,7 +247,7 @@ fn to_0_9(site: Site) -> Part {
                 },
                 L {
                     en: "A test that builds a GET action request by hand adds the `hypersig-call` header, or uses `Action::request`, which adds it.",
-                    ja: "GET のアクションのリクエストをテストで手作りしている場合は、`hypersig-call` のヘッダーを付けるか、ヘッダーを付ける `Action::request` を使ってください。",
+                    ja: "GET のアクションのリクエストをテストで手で組み立てている場合は、`hypersig-call` のヘッダーを付けるか、ヘッダーを付ける `Action::request` を使ってください。",
                 },
                 L {
                     en: "Two elements with one `Id::with_key` id, a `Page::computed` signal named twice or read before it is computed, a form rule that reads `Expr::now`, and a list item read outside its list now panic while the page is built.",

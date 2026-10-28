@@ -72,7 +72,7 @@ fn output(site: Site) -> Part {
                     ],
                     &[
                         "`javascript:` のようなリンクがスクリプトを動かす",
-                        "`El::href` と `El::src` はルートへの `Link` か `SafeUrl` を受け取ります。`SafeUrl` が持てるのは `http:`、`https:`、`mailto:` か相対 URL だけです。訪問者が入力した URL は `SafeUrl::parse` で確かめ、シグナルの `SafeUrl` のフィールドはデシリアライズのときにもう一度確かめます。カスタムイベントの `detail` のようにブラウザで作られた `SafeUrl` は、シグナルが `href`、`src`、`poster` に書くときにランタイムが確かめ、拒否するスキームなら属性を取り除きます。`attr`、`bind_attr`、`attr_when` は名前を `Attr` で受け取ります。`href`、`src`、`poster`、`srcset`、`style`、`on*` のハンドラ、`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`、`attributeName`、`ping`、`imagesrcset`、`background`、`manifest`、`codebase`、`archive`、`classid`、`longdesc` と、英数字、`-`、`_`、`.`、`:` 以外を含む名前には、大文字と小文字にかかわらず `Attr` がありません。`html::attr` の定数はこれらの名前を除いていて、`attr!` はコンパイル時に拒否します。`el` はタグを `tag!` がコンパイル時に検査する `Tag` で受け取ります。`Tag` は属性を始める空白、引用符、`=` を含まず、`script`、`style`、`base`、`link` にもなりません。",
+                        "`El::href` と `El::src` はルートへの `Link` か `SafeUrl` を受け取ります。`SafeUrl` が持てるのは `http:`、`https:`、`mailto:` か相対 URL だけです。訪問者が入力した URL は `SafeUrl::parse` で確かめ、シグナルの `SafeUrl` のフィールドはデシリアライズのときにもう一度確かめます。カスタムイベントの `detail` のようにブラウザで作られた `SafeUrl` は、シグナルが `href`、`src`、`poster` に書くときにランタイムが確かめ、拒否するスキームなら属性を取り除きます。`attr`、`bind_attr`、`attr_when` は名前を `Attr` で受け取ります。`href`、`src`、`poster`、`srcset`、`style`、`on*` のハンドラ、`srcdoc`、`action`、`formaction`、`xlink:href`、`data`、`http-equiv`、`attributeName`、`ping`、`imagesrcset`、`background`、`manifest`、`codebase`、`archive`、`classid`、`longdesc` と、英数字、`-`、`_`、`.`、`:` 以外を含む名前には、大文字と小文字にかかわらず `Attr` がありません。`html::attr` の定数はこれらの名前を除いており、`attr!` はコンパイル時に拒否します。`el` はタグを `tag!` がコンパイル時に検査する `Tag` で受け取ります。`Tag` は属性を始める空白、引用符、`=` を含まず、`script`、`style`、`base`、`link` にもなりません。",
                     ],
                     &[
                         "URL がブラウザを別のホストへ送る",
@@ -179,7 +179,7 @@ fn requests(site: Site) -> Part {
             site,
             L {
                 en: "The body of each refusal is one fixed sentence. What the parser said about the arguments or a page's query string names the fields of the type and quotes what the visitor sent, so it stays in the `source` of the `RequestError` or the `Unserved` and is not sent back.",
-                ja: "拒否の本文はどれも決まった一文です。引数やページのクエリ文字列についてパーサーが出すメッセージには、型のフィールドと訪問者が送った値が含まれます。そのためこのメッセージは送り返さず、`RequestError` や `Unserved` の `source` に残します。",
+                ja: "拒否の本文はどれも決まった一文です。引数やページのクエリ文字列についてパーサーが出すメッセージには、型のフィールドと訪問者が送った値が含まれます。そのためこのメッセージは送り返さず、`RequestError` や `Unserved` の `source` に保持します。",
             },
         ),
         para(
@@ -263,7 +263,7 @@ fn application(site: Site) -> Part {
                 },
                 L {
                     en: "The values of the signals. The browser holds them and can change them, so a price, a role, or an owner the server relies on is read again on the server.",
-                    ja: "シグナルの値。ブラウザが持っていて書き換えられるので、サーバーが頼る価格、役割、持ち主は、サーバーで読み直してください。",
+                    ja: "シグナルの値。ブラウザが持っており、書き換えられるので、サーバーが頼る価格、役割、持ち主は、サーバーで読み直してください。",
                 },
                 L {
                     en: "The `Content-Security-Policy` header. `Page::csp_nonce` puts the nonce on the page's elements, and the application sends the header with a nonce of at least 128 random bits per response. The page's `frame-ancestors` goes out as a header of its own beside the application's policy, and the browser enforces both.",

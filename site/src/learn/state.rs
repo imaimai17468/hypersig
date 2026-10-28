@@ -60,7 +60,7 @@ pub fn signals(site: Site) -> Part {
             site,
             L {
                 en: "A component of `hypersig_ui` that keeps state of its own, such as `Combobox` or `DataTable`, takes it as a `Sig` of its state struct, so that state is a field of the page's struct too. Gather those fields into one struct that derives `Default`, and the page's struct gains one field, set with `Default::default()`. Adding a component then adds a field to that struct and leaves the page's initializer as it is. `ComboboxState` and `TableState`, the state structs of `hypersig_ui`, implement `Default`, which gives an empty, closed combobox and an unfiltered, unsorted table on its first page.",
-                ja: "`Combobox` や `DataTable` のように自分の状態を持つ `hypersig_ui` の部品は、その状態を状態用の構造体の `Sig` で受け取るので、その状態もページの構造体のフィールドになります。こうしたフィールドを `Default` を実装する 1 つの構造体にまとめると、ページの構造体に増えるフィールドは 1 つで、初期化は `Default::default()` で済みます。部品を足すときはその構造体にフィールドを足すだけで、ページの初期化は変わりません。`hypersig_ui` の状態用の構造体である `ComboboxState` と `TableState` は `Default` を実装しています。その値は、空で閉じたコンボボックスと、絞り込みも並べ替えもない 1 ページ目の表です。",
+                ja: "`Combobox` や `DataTable` のように自分の状態を持つ `hypersig_ui` の部品は、その状態を状態用の構造体の `Sig` で受け取るので、その状態もページの構造体のフィールドになります。こうしたフィールドを `Default` を実装する 1 つの構造体にまとめると、ページの構造体に増えるフィールドは 1 つで、初期化は `Default::default()` で済みます。部品を追加するときはその構造体にフィールドを追加するだけで、ページの初期化は変わりません。`hypersig_ui` の状態用の構造体である `ComboboxState` と `TableState` は `Default` を実装しています。その値は、空で閉じたコンボボックスと、絞り込みも並べ替えもない 1 ページ目の表です。",
             },
         ),
         show(Snippet::ComponentState),
@@ -96,7 +96,7 @@ fn persisted(site: Site) -> Part {
             site,
             L {
                 en: "Signals kept across page loads",
-                ja: "ページを読み込み直しても残るシグナル",
+                ja: "ページを読み込み直しても保持されるシグナル",
             },
         ),
         para(
@@ -127,7 +127,7 @@ fn persisted(site: Site) -> Part {
                 },
                 L {
                     en: "Every script on the page's origin can read and write `localStorage`, and the value stays after the visitor signs out, so persist a preference and leave a token or personal data out.",
-                    ja: "`localStorage` は、ページと同じオリジンのスクリプトならどれでも読み書きでき、訪問者がサインアウトしても値が残ります。保存するのは表示の設定のようなものにして、トークンや個人の情報は保存しないでください。",
+                    ja: "`localStorage` は、ページと同じオリジンのスクリプトならどれでも読み書きでき、訪問者がサインアウトしても値が保持されます。保存するのは表示の設定のようなものにして、トークンや個人の情報は保存しないでください。",
                 },
                 L {
                     en: "An action receives the signals the browser sends, so it sees the stored value once the runtime has started.",
