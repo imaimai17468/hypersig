@@ -44,8 +44,11 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
         );
     }
     blaze_installed()?;
+    // Read once: a change to the target directory while `dev` runs needs
+    // `dev` started again.
+    let dirs = Dirs::read(build_args)?;
     let before = snapshot(&dir, None);
-    let mut built = build(build_args)?;
+    let mut built = build(build_args, &dirs)?;
     let mut seen = as_built(&before, snapshot(&dir, built.as_ref()));
     eprintln!("{}", watching(&dir, before.len(), seen.len()));
     let mut server = match &built {
@@ -67,7 +70,7 @@ pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> 
         let before = snapshot(&dir, built.as_ref());
         // A build that fails leaves the server of the last build running
         // until the next change, after Cargo has printed the errors.
-        if let Some(next) = build(build_args)? {
+        if let Some(next) = build(build_args, &dirs)? {
             // A change that compiles to the same binary, such as one to a
             // file the binary is not built from, leaves the server running.
             let same = built.as_ref().is_some_and(|built| {
@@ -133,8 +136,7 @@ fn blaze_installed() -> Result<(), Error> {
 ///
 /// Fails where Cargo cannot run, or the package has no binary or several,
 /// which no edit to the code changes.
-fn build(build_args: &[String]) -> Result<Option<Built>, Error> {
-    let dirs = Dirs::read(build_args)?;
+fn build(build_args: &[String], dirs: &Dirs) -> Result<Option<Built>, Error> {
     let mut check = Command::new(cargo())
         .arg("check")
         .arg("--message-format=json-render-diagnostics")
@@ -150,7 +152,7 @@ fn build(build_args: &[String]) -> Result<Option<Built>, Error> {
         .stderr(Stdio::null())
         .spawn()
         .map_err(|error| Error::new(format!("cannot run blaze: {error}")))?;
-    let binaries = read_cargo(&mut check, |line| checked_binary_of(line, &dirs))?;
+    let binaries = read_cargo(&mut check, |line| checked_binary_of(line, dirs))?;
     let checked = check
         .wait()
         .map_err(|error| Error::new(format!("cannot wait for cargo: {error}")))?;
