@@ -135,6 +135,7 @@ snippets! {
     TroubleComputed => "troubleshooting/computed.rs", "compile_fail,E0277";
     TroubleCallError => "troubleshooting/call_error.rs";
     // The samples added for the Learn group Get started.
+    KeptSignals => "start/kept_signals.rs";
     // The samples added for the Learn group Building the page.
     // The samples added for the Learn group Browser state.
     // The samples added for the Learn group Talking to the server.

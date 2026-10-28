@@ -1013,7 +1013,10 @@ impl Doc {
                     en: "hypersig renders the page on the server and writes its behavior into the HTML. Every string the browser acts on comes from a Rust type, so the page needs no browser build, no hydration, and no string typed by hand.",
                     ja: "hypersig はページをサーバーで描画し、その動きを HTML に書き込みます。ブラウザが扱う文字列はすべて Rust の型から作られるので、ブラウザ向けのビルドもハイドレーションも不要で、手で書く文字列もありません。",
                 },
-                Learn::DevServer => Doc::Learn(Learn::QuickStart).leads(),
+                Learn::DevServer => L {
+                    en: "`cargo hypersig dev` builds and restarts the server after each change, and the open tab reloads with the signals the visitor changed. `cargo hypersig new` writes a project to start from.",
+                    ja: "`cargo hypersig dev` は変更のたびにサーバーをビルドして起動し直し、開いているタブは訪問者が変えたシグナルを保ったまま読み込み直されます。`cargo hypersig new` は最初のプロジェクトを書き出します。",
+                },
                 // Building the page
                 Learn::Elements | Learn::ThePage | Learn::Bindings | Learn::Components => {
                     Doc::Learn(Learn::DescribingThePage).leads()

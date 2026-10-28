@@ -105,8 +105,8 @@ fn hypermedia(site: Site) -> [Part; 4] {
         para(
             site,
             L {
-                en: "hypersig is a hypermedia framework in this sense. The server answers with HTML that holds the page's controls, the action URLs its buttons call, and its links, and an action answers with fragments of HTML or new signal values. The runtime in the browser runs what the attributes say and knows none of the application's URLs. htmx and Datastar build on the same idea, and the next section shows what hypersig adds to it.",
-                ja: "hypersig はこの意味でのハイパーメディアのフレームワークです。サーバーはページの操作部品、ボタンが呼び出すアクションの URL、リンクを含む HTML を返し、アクションは HTML の断片かシグナルの新しい値を返します。ブラウザのランタイムは属性に書かれたとおりに動くだけで、アプリケーションの URL を 1 つも知りません。htmx と Datastar も同じ考え方に立っています。hypersig がそこに何を加えるかは次の節で説明します。",
+                en: "hypersig is a hypermedia framework in this sense. The server answers with HTML that holds the page's controls, the action URLs its buttons call, and its links, and an action answers with fragments of HTML or new signal values. The runtime in the browser runs what the attributes say, and its file holds none of the application's URLs. htmx and Datastar build on the same idea, and the next section shows what hypersig adds to it.",
+                ja: "hypersig はこの意味でのハイパーメディアのフレームワークです。サーバーはページの操作部品、ボタンが呼び出すアクションの URL、リンクを含む HTML を返し、アクションは HTML の断片かシグナルの新しい値を返します。ブラウザのランタイムは属性に書かれたとおりに動くだけで、そのファイルにはアプリケーションの URL が 1 つも入っていません。htmx と Datastar も同じ考え方に立っています。hypersig がそこに何を加えるかは次の節で説明します。",
             },
         ),
     ]
@@ -232,28 +232,28 @@ fn typed(site: Site) -> [Part; 4] {
             site,
             &[
                 L {
-                    en: "Signal names come from `#[derive(Signals)]`, which adds one typed accessor per field.",
-                    ja: "シグナルの名前は `#[derive(Signals)]` から作られます。この derive はフィールドごとに型付きのアクセサを 1 つ追加します。",
+                    en: "Signal names come from [`#[derive(Signals)]`](api:hypersig/derive.Signals.html), which adds one typed accessor per field.",
+                    ja: "シグナルの名前は [`#[derive(Signals)]`](api:hypersig/derive.Signals.html) から作られます。この derive はフィールドごとに型付きのアクセサを 1 つ追加します。",
                 },
                 L {
-                    en: "Expressions and statements are `Expr` and `Stmt` values, whose operators check the types of both sides.",
-                    ja: "式と文は `Expr` と `Stmt` の値で、その演算子は両辺の型を検査します。",
+                    en: "Expressions and statements are [`Expr`](api:hypersig/struct.Expr.html) and [`Stmt`](api:hypersig/struct.Stmt.html) values, whose operators check the types of both sides.",
+                    ja: "式と文は [`Expr`](api:hypersig/struct.Expr.html) と [`Stmt`](api:hypersig/struct.Stmt.html) の値で、その演算子は両辺の型を検査します。",
                 },
                 L {
-                    en: "Action URLs come from `Action<S, A>`, declared in `routes!` on the line that names its handler, so an action without a handler does not compile. The type also fixes the page an action belongs to and the type of its arguments.",
-                    ja: "アクションの URL は `Action<S, A>` から作られます。アクションはハンドラと同じ行に `routes!` で宣言するので、ハンドラのないアクションはコンパイルが通りません。この型は、アクションが属するページと引数の型も決めます。",
+                    en: "Action URLs come from [`Action<S, A>`](api:hypersig/struct.Action.html), declared in `routes!` on the line that names its handler, so an action without a handler does not compile. The type also fixes the page an action belongs to and the type of its arguments.",
+                    ja: "アクションの URL は [`Action<S, A>`](api:hypersig/struct.Action.html) から作られます。アクションはハンドラと同じ行に `routes!` で宣言するので、ハンドラのないアクションはコンパイルが通りません。この型は、アクションが属するページと引数の型も決めます。",
                 },
                 L {
-                    en: "Page links come from `Route<P, Q>`, declared in `routes!` with the handler that serves it, so a link carries the right path parameters and query.",
-                    ja: "ページへのリンクは `Route<P, Q>` から作られます。ルートは配信するハンドラと一緒に `routes!` で宣言するので、リンクは正しいパスのパラメータとクエリを持ちます。",
+                    en: "Page links come from [`Route<P, Q>`](api:hypersig/struct.Route.html), declared in `routes!` with the handler that serves it, so a link carries the right path parameters and query.",
+                    ja: "ページへのリンクは [`Route<P, Q>`](api:hypersig/struct.Route.html) から作られます。ルートは配信するハンドラと一緒に `routes!` で宣言するので、リンクは正しいパスのパラメータとクエリを持ちます。",
                 },
                 L {
-                    en: "Patch targets come from `Fragment::ID`, which the page and the patch read from the same constant.",
-                    ja: "差分を適用する先は `Fragment::ID` から作られます。ページと差分は同じ定数を読みます。",
+                    en: "Patch targets come from [`Fragment::ID`](api:hypersig/trait.Fragment.html#associatedconstant.ID), which the page and the patch read from the same constant.",
+                    ja: "差分を適用する先は [`Fragment::ID`](api:hypersig/trait.Fragment.html#associatedconstant.ID) から作られます。ページと差分は同じ定数を読みます。",
                 },
                 L {
-                    en: "Element names for DOM calls come from `NodeRef`, which `node_ref!` names after the constant's path, so two constants never share one.",
-                    ja: "DOM の呼び出しで使う要素の名前は `NodeRef` から作られます。`node_ref!` が定数のパスから名前を付けるので、2 つの定数が同じ名前になることはありません。",
+                    en: "Element names for DOM calls come from [`NodeRef`](api:hypersig/struct.NodeRef.html), which [`node_ref!`](api:hypersig/macro.node_ref.html) names after the constant's path, so two constants never share one.",
+                    ja: "DOM の呼び出しで使う要素の名前は [`NodeRef`](api:hypersig/struct.NodeRef.html) から作られます。[`node_ref!`](api:hypersig/macro.node_ref.html) が定数のパスから名前を付けるので、2 つの定数が同じ名前になることはありません。",
                 },
             ],
         ),
@@ -273,8 +273,8 @@ fn state(site: Site) -> [Part; 2] {
         para(
             site,
             L {
-                en: "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML that replaces an element of the page. A statement runs in the browser at once, and an action call sent with it reaches the server afterwards, so the page changes before the server answers, with no extra code. [Talking to the server](learn/server/) covers actions, patches, and streams.",
-                ja: "ブラウザはページの上で変わるものをシグナルとして持ち、データはサーバーが持ちます。アクションは Server-Sent Events で差分を返します。差分はシグナルの新しい値か、ページの要素と差し替える HTML の断片です。文はブラウザでただちに実行され、一緒に送ったアクションの呼び出しはそのあとでサーバーに届くので、サーバーの応答を待たずに画面が変わります。そのための追加のコードは不要です。アクション、差分、ストリームは [サーバーとのやり取り](learn/server/) で説明します。",
+                en: "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML that replaces an element of the page. A statement runs in the browser at once, and an action call sent with it reaches the server afterwards, so the page changes before the server answers, with no extra code. [Actions](learn/actions/), [Patches](learn/patches/), and [Streams](learn/streams/) cover each of them.",
+                ja: "ブラウザはページの上で変わるものをシグナルとして持ち、データはサーバーが持ちます。アクションは Server-Sent Events で差分を返します。差分はシグナルの新しい値か、ページの要素と差し替える HTML の断片です。文はブラウザでただちに実行され、一緒に送ったアクションの呼び出しはそのあとでサーバーに届くので、サーバーの応答を待たずに画面が変わります。そのための追加のコードは不要です。それぞれ [アクション](learn/actions/)、[差分](learn/patches/)、[ストリーム](learn/streams/) で説明します。",
             },
         ),
     ]

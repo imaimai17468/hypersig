@@ -1,13 +1,14 @@
 //! The quick start: a first program, run with `cargo run`, and what each of
 //! its parts does.
 
+use super::super::snippet::{Snippet, show};
 use super::super::{Program, program};
 use crate::Site;
 use crate::code::{self, Lang};
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
-use crate::prose::{Part, bullets, heading, lead, note, para, parts, title};
+use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
 pub fn page(site: Site) -> Part {
     parts(vec![
@@ -77,34 +78,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "While you edit, run the server with `cargo hypersig dev` in place of `cargo run`. It builds with [blaze](https://github.com/indexable-inc/blaze), an incremental build tool for Rust. Install both first:",
-                ja: "コードを書き換えながら動かすときは、`cargo run` の代わりに `cargo hypersig dev` でサーバーを起動します。`cargo hypersig dev` は Rust の差分ビルドツールの [blaze](https://github.com/indexable-inc/blaze) でビルドします。先に両方をインストールしてください。",
-            },
-        ),
-        code::block(
-            Lang::Shell,
-            None,
-            "cargo install --locked hypersig_cli\ncurl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh\ncargo hypersig dev",
-        ),
-        para(
-            site,
-            L {
-                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. After a change, blaze compiles only the functions that changed, and `cargo check` runs beside it to decide whether the code compiles, so a compile error stops the restart and leaves the last server running. blaze's first build on a machine compiles every dependency and takes longer than Cargo's, so Cargo builds the first server, and each change until that build ends. The state the server holds in memory starts over at each restart.",
-                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。変更のあと、blaze は変わった関数だけをコンパイルし、同時に走る `cargo check` が、コードをコンパイルできるかどうかを判定します。コンパイルエラーがあれば起動し直さず、前のサーバーが動き続けます。そのマシンで初めての blaze のビルドは依存クレートをすべてコンパイルするので、Cargo より時間がかかります。そのため、最初のサーバーと、そのビルドが終わるまでの変更は Cargo がビルドします。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "The reloaded tab keeps the signals the visitor changed, such as a half-typed draft. Just before the reload, the page saves in the tab's `sessionStorage` each top-level signal whose value differs from the server's last write of it, in the page or in a patch. The new page puts those back over the new server's values, and every other signal, such as a list the server patched, takes the new server's value. It does so only where the new page shows the same path and query and its signal struct has the same field names and types, which `#[derive(Signals)]` writes into the page in a debug build. A change inside a nested struct alone is not detected. Otherwise the page starts from the server's values. The code that does this is a script of its own, which only a debug build serves, so a release build's runtime carries none of it.",
-                ja: "読み込み直したタブは、訪問者が変えたシグナル（書きかけの入力など）を保ちます。ページは読み込み直す直前に、最上位のシグナルのうち、サーバーが最後に書いた値（ページに書き込んだ値か差分で送った値）と異なるものをタブの `sessionStorage` に保存します。新しいページはそれを新しいサーバーの値の上に戻し、ほかのシグナル（サーバーが差分で書き換えた一覧など）には新しいサーバーの値を使います。戻すのは、新しいページのパスとクエリが同じで、シグナル構造体のフィールド名と型も同じときだけです。フィールド名と型は、デバッグビルドで `#[derive(Signals)]` がページに書き込みます。入れ子の構造体の中だけが変わった場合は検出されません。条件に合わないときは、ページはサーバーの値から始まります。この処理は独立したスクリプトにあり、デバッグビルドだけが配信するので、リリースビルドのランタイムには含まれません。",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "The same command can also start a project. `cargo hypersig new counter --host server` writes a directory `counter` with a counter like the one above and a Dockerfile, in place of `cargo new` and the two files written by hand. `--host cloudflare` and `--host vercel` write a project for those hosts, which [Choosing a host](learn/deploying/) compares.",
-                ja: "このコマンドでプロジェクトを作ることもできます。`cargo hypersig new counter --host server` は、上と同じようなカウンターと Dockerfile を入れたディレクトリ `counter` を書き出すので、`cargo new` と、手で書いた 2 つのファイルの代わりになります。`--host cloudflare` と `--host vercel` はそれぞれのホスト向けのプロジェクトを書き出します。ホストの違いは [デプロイ先の選び方](learn/deploying/) で比べています。",
+                en: "While you edit the code, run `cargo hypersig dev` in place of `cargo run`. It builds and starts the server again after each change, and the open tab reloads with the signals the visitor changed. [The development server](learn/dev-server/) covers installing it, and `cargo hypersig new`, which writes a project like this one.",
+                ja: "コードを書き換えながら動かすときは、`cargo run` の代わりに `cargo hypersig dev` を使います。変更のたびにサーバーをビルドして起動し直し、開いているタブは訪問者が変えたシグナルを保ったまま読み込み直されます。インストールの方法と、このようなプロジェクトを書き出す `cargo hypersig new` は [開発サーバー](learn/dev-server/) で説明します。",
             },
         ),
         heading(
@@ -118,34 +93,103 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
             site,
             &[
                 L {
-                    en: "`#[derive(Signals)]` on `Counter` adds `Counter::count()`, a `Sig<Counter, i32>` that names the field. A misspelled field is a compile error.",
-                    ja: "`Counter` に付けた `#[derive(Signals)]` は、フィールドを指す `Sig<Counter, i32>` を返す `Counter::count()` を追加します。フィールド名を打ち間違えるとコンパイルエラーになります。",
+                    en: "`#[derive(Signals)]` on `Counter` adds `Counter::count()`, a [`Sig<Counter, i32>`](api:hypersig/struct.Sig.html) that names the field. A misspelled field is a compile error.",
+                    ja: "`Counter` に付けた `#[derive(Signals)]` はフィールドを指す [`Sig<Counter, i32>`](api:hypersig/struct.Sig.html) を返す `Counter::count()` を追加します。フィールド名を打ち間違えるとコンパイルエラーになります。",
                 },
                 L {
-                    en: "`count.set(count + 1)` is a statement, a change to the signals that runs in the browser. `on_click` puts it into the page, and the runtime runs it on each click without a request. [Expressions and statements](learn/expressions/) covers what a statement can do.",
-                    ja: "`count.set(count + 1)` は文（ブラウザで実行する、シグナルへの変更）です。`on_click` がこの文をページに書き込み、ランタイムはクリックのたびにリクエストを送らずに実行します。文で書けることは [式と文](learn/expressions/) で説明します。",
+                    en: "`count.set(count + 1)` is a statement, a [`Stmt<Counter>`](api:hypersig/struct.Stmt.html) that changes the signals in the browser. [`on_click`](api:hypersig/html/struct.El.html#method.on_click) puts it into the page, and the runtime runs it on each click without a request. [Statements](learn/statements/) covers what a statement can do.",
+                    ja: "`count.set(count + 1)` は文で、ブラウザでシグナルを変える [`Stmt<Counter>`](api:hypersig/struct.Stmt.html) です。[`on_click`](api:hypersig/html/struct.El.html#method.on_click) がこの文をページに書き込み、ランタイムはクリックのたびにリクエストを送らずに実行します。文で書けることは [文](learn/statements/) で説明します。",
                 },
                 L {
-                    en: "`span().bind_text(count.to_text())` keeps the text equal to the count. `Page::render` evaluates it with the initial values, so the HTML already shows `0`.",
-                    ja: "`span().bind_text(count.to_text())` はテキストをカウントの値に合わせ続けます。`Page::render` が初期値でこの式を評価するので、HTML の時点で `0` が表示されています。",
+                    en: "`span().bind_text(count.to_text())` keeps the text equal to the count. [`Page::render`](api:hypersig/struct.Page.html#method.render) evaluates it with the initial values, so the HTML already shows `0`.",
+                    ja: "`span().bind_text(count.to_text())` はテキストをカウントの値に合わせ続けます。[`Page::render`](api:hypersig/struct.Page.html#method.render) が初期値でこの式を評価するので、HTML の時点で `0` が表示されています。",
                 },
                 L {
-                    en: "`INDEX` is a `Route`, the page at `/`. `routes!` declares it on one line with its handler `index`. The first line, `fn pages(Router<()>);`, names the function the macro writes. That function registers every route of the block on a router, and `Router<()>` is a router without state. `main` calls `pages(Router::new())`, and a link to the page is `INDEX.link()`. [Pages and links](learn/pages/) covers routes with parameters.",
-                    ja: "`INDEX` は `/` のページを表す `Route` です。`routes!` は、このルートをハンドラ `index` と同じ行で宣言します。1 行目の `fn pages(Router<()>);` はマクロが生成する関数の名前で、この関数がブロック内のルートをすべてルーターに登録します。`Router<()>` は状態を持たないルーターです。`main` は `pages(Router::new())` を呼び出し、このページへのリンクは `INDEX.link()` で作ります。パラメータを持つルートは [ページとリンク](learn/pages/) で説明します。",
+                    en: "`INDEX` is a [`Route`](api:hypersig/struct.Route.html), the page at `/`. [`routes!`](api:hypersig/macro.routes.html) declares it on one line with its handler `index`. The first line, `fn pages(Router<()>);`, names the function the macro writes. That function registers every route of the block on a router, and `Router<()>` is a router without state. `main` calls `pages(Router::new())`, and a link to the page is `INDEX.link()`. [Routes](learn/routes/) covers routes with parameters.",
+                    ja: "`INDEX` は `/` のページを表す [`Route`](api:hypersig/struct.Route.html) です。[`routes!`](api:hypersig/macro.routes.html) は、このルートをハンドラ `index` と同じ行で宣言します。1 行目の `fn pages(Router<()>);` はマクロが生成する関数の名前で、この関数がブロック内のルートをすべてルーターに登録します。`Router<()>` は状態を持たないルーターです。`main` は `pages(Router::new())` を呼び出し、このページへのリンクは `INDEX.link()` で作ります。パラメータを持つルートは [ルート](learn/routes/) で説明します。",
                 },
                 L {
-                    en: "`RESET` is an `Action<Counter>`, declared in the same block on one line with its handler `reset`, so `pages` serves it too. The page calls it with `RESET.call()`, so both sides share its path, its method, its argument type, and the page it belongs to.",
-                    ja: "`RESET` は `Action<Counter>` で、同じブロックにハンドラ `reset` と同じ行で宣言するので、`pages` がこれも配信します。ページは `RESET.call()` で呼び出すので、パス、メソッド、引数の型、属するページを両側で共有します。",
+                    en: "`RESET` is an [`Action<Counter>`](api:hypersig/struct.Action.html), declared in the same block on one line with its handler `reset`, so `pages` serves it too. The page calls it with `RESET.call()`, so both sides share its path, its method, its argument type, and the page it belongs to.",
+                    ja: "`RESET` は [`Action<Counter>`](api:hypersig/struct.Action.html) で、同じブロックにハンドラ `reset` と同じ行で宣言するので、`pages` がこれも配信します。ページは `RESET.call()` で呼び出すので、パス、メソッド、引数の型、属するページを両側で共有します。",
                 },
                 L {
-                    en: "A page handler and an action handler both take two arguments: the router's state, then what the request carries, which is the route's parameters for a page and the call's arguments for an action. This program has no state, the route `/` has no parameters, and `RESET.call()` sends no arguments, so each of them is `()`, and `(): ()` is an argument that receives `()`. [Talking to the server](learn/server/) adds state and arguments.",
-                    ja: "ページのハンドラもアクションのハンドラも、引数を 2 つ取ります。1 つ目はルーターの状態、2 つ目はリクエストが運ぶ値で、ページならルートのパラメータ、アクションなら呼び出しの引数が 2 つ目に入ります。このプログラムには状態がなく、ルート `/` にはパラメータがなく、`RESET.call()` は引数を送らないので、どれも `()` です。`(): ()` は `()` を受け取る引数の書き方です。状態と引数を使う例は [サーバーとのやり取り](learn/server/) にあります。",
+                    en: "A page handler and an action handler both take two arguments: the router's state, then what the request carries, which is the route's parameters for a page and the call's arguments for an action. This program has no state, the route `/` has no parameters, and `RESET.call()` sends no arguments, so each of them is `()`, and `(): ()` is an argument that receives `()`. [Actions](learn/actions/) adds state and arguments.",
+                    ja: "ページのハンドラもアクションのハンドラも、引数を 2 つ取ります。1 つ目はルーターの状態、2 つ目はリクエストが運ぶ値で、ページならルートのパラメータ、アクションなら呼び出しの引数が 2 つ目に入ります。このプログラムには状態がなく、ルート `/` にはパラメータがなく、`RESET.call()` は引数を送らないので、どれも `()` です。`(): ()` は `()` を受け取る引数の書き方です。状態と引数を使う例は [アクション](learn/actions/) にあります。",
                 },
                 L {
-                    en: "The handler returns `Counter::count().patch(0)`, a patch: a new value for one signal. The server sends it in the response, and the runtime writes the value into the signal, which rewrites the text.",
-                    ja: "ハンドラは差分 `Counter::count().patch(0)`（シグナル 1 つの新しい値）を返します。サーバーはこれを応答で送り、ランタイムが値をシグナルに書き込むと、テキストが書き換わります。",
+                    en: "The handler returns `Counter::count().patch(0)`, a patch: a new value for one signal, which converts into [`Patches<Counter>`](api:hypersig/struct.Patches.html). The server sends it in the response, and the runtime writes the value into the signal, which rewrites the text.",
+                    ja: "ハンドラは差分 `Counter::count().patch(0)`（シグナル 1 つの新しい値）を [`Patches<Counter>`](api:hypersig/struct.Patches.html) に変換して返します。サーバーはこれを応答で送り、ランタイムが値をシグナルに書き込むと、テキストが書き換わります。",
+                },
+                L {
+                    en: "[`hypersig_runtime()`](api:hypersig/trait.RouterExt.html#tymethod.hypersig_runtime) adds the route that serves the runtime's file at [`RUNTIME_PATH`](api:hypersig/constant.RUNTIME_PATH.html), the path each page's `<script>` loads.",
+                    ja: "[`hypersig_runtime()`](api:hypersig/trait.RouterExt.html#tymethod.hypersig_runtime) は、ランタイムのファイルを [`RUNTIME_PATH`](api:hypersig/constant.RUNTIME_PATH.html) で配信するルートを追加します。各ページの `<script>` はこのパスから読み込みます。",
                 },
             ],
+        ),
+        heading(
+            site,
+            L {
+                en: "A mistake the compiler stops",
+                ja: "コンパイラが止めるミス",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`Counter::count()` exists because `Counter` has a field `count`. A misspelled name is a method that does not exist, so `cargo run` stops before the server starts:",
+                ja: "`Counter::count()` があるのは、`Counter` に `count` というフィールドがあるからです。名前を打ち間違えると存在しないメソッドを呼ぶことになるので、`cargo run` はサーバーを起動する前に止まります。",
+            },
+        ),
+        show(Snippet::WrongField),
+        para(
+            site,
+            L {
+                en: "Setting `count` to a value of another type, such as `count.set(\"zero\")`, stops the build the same way. [Why hypersig](learn/why/) lists each string in the page and the type it comes from.",
+                ja: "`count.set(\"zero\")` のように型の違う値を代入しても、同じようにビルドが止まります。ページの中の文字列と、それぞれを作る型の一覧は [hypersig を選ぶ理由](learn/why/) にあります。",
+            },
+        ),
+        heading(
+            site,
+            L {
+                en: "Mistakes that still compile",
+                ja: "コンパイルが通ってしまうミス",
+            },
+        ),
+        table_of(
+            site,
+            L {
+                en: &["Mistake", "What happens"],
+                ja: &["ミス", "起きること"],
+            },
+            L {
+                en: &[
+                    &[
+                        "`main` leaves out `.hypersig_runtime()`",
+                        "The page shows `0`, but the request for `RUNTIME_PATH` answers 404, so the buttons do nothing",
+                    ],
+                    &[
+                        "`main` serves `Router::new()` without passing it to `pages`",
+                        "`/` and `/reset` answer 404",
+                    ],
+                ],
+                ja: &[
+                    &[
+                        "`main` で `.hypersig_runtime()` を書き忘れる",
+                        "ページには `0` が表示されますが、`RUNTIME_PATH` へのリクエストが 404 になるので、ボタンを押しても何も起きません",
+                    ],
+                    &[
+                        "`main` が `Router::new()` を `pages` に渡さずに配信する",
+                        "`/` と `/reset` が 404 を返します",
+                    ],
+                ],
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "[What the compiler does not check](learn/why/#what-the-compiler-does-not-check) lists the others.",
+                ja: "ほかのものは [コンパイラが検査しないこと](learn/why/#what-the-compiler-does-not-check) にまとめています。",
+            },
         ),
         heading(
             site,
@@ -169,12 +213,29 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                 ja: "このサイトは GitHub Pages に置いた静的ファイルなので、デモはシグナルだけで動き、アクションを呼び出すものはありません。",
             },
         ),
-        para(
+        heading(
             site,
             L {
-                en: "Next, [Why hypersig](learn/why/) shows the HTML this program writes and compares hypersig with other frameworks. The guide itself starts at [Building the page](learn/describing-the-page/), which shows how the HTML is built.",
-                ja: "次の [hypersig を選ぶ理由](learn/why/) では、このプログラムが書き出す HTML を示し、ほかのフレームワークと比べます。ガイドの本編は HTML の組み立て方を説明する [ページを組み立てる](learn/describing-the-page/) から始まります。",
+                en: "Next",
+                ja: "次に読むページ",
             },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "[Why hypersig](learn/why/) shows the HTML this program writes and compares hypersig with other frameworks.",
+                    ja: "[hypersig を選ぶ理由](learn/why/) では、このプログラムが書き出す HTML を示し、ほかのフレームワークと比べます。",
+                },
+                L {
+                    en: "[The development server](learn/dev-server/) runs the program again after each change.",
+                    ja: "[開発サーバー](learn/dev-server/) は変更のたびにこのプログラムを動かし直します。",
+                },
+                L {
+                    en: "[Elements and attributes](learn/elements/) starts the guide, with how the HTML is built.",
+                    ja: "ガイドの本編は HTML の組み立て方を説明する [要素と属性](learn/elements/) から始まります。",
+                },
+            ],
         ),
     ])
 }
