@@ -2,6 +2,14 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.13.1] - 2026-10-28
+
+### Fixed
+
+- `cargo hypersig dev` runs `blaze` itself, so it starts with the blaze its installer gives today, which puts no `cargo-blaze` on the path.
+- `cargo hypersig dev` builds its first server with Cargo while blaze builds beside it, and each change with Cargo until that build ends. On a machine whose blaze store was empty, the first page of an example came 23.7 s after the start, where it came after 64.5 s.
+- `cargo hypersig dev` reads `cargo metadata` once, which took 0.17 s of each rebuild.
+
 ## [0.13.0] - 2026-10-28
 
 ### Breaking
