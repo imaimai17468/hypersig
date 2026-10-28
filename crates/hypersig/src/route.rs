@@ -1297,7 +1297,9 @@ pub(crate) fn encode_uri_component(text: &str) -> String {
 /// The fields are written in the order of their names, compared byte by byte.
 /// A `null` field is left out, a list writes its name once per item in item
 /// order, and each name and value is percent-encoded as `encodeURIComponent`
-/// does, after the value is written as `String` would.
+/// does, after the value is written as `String` would. An integer is written
+/// with its own digits, which `String` writes too for every integer the
+/// browser holds exactly, so one past 2^53 reaches the handler unrounded.
 pub(crate) fn query_string(value: &Value) -> String {
     let Value::Object(fields) = value else {
         return String::new();
@@ -1315,7 +1317,11 @@ pub(crate) fn query_string(value: &Value) -> String {
             out.push(if out.is_empty() { '?' } else { '&' });
             out.push_str(&encode_uri_component(name));
             out.push('=');
-            out.push_str(&encode_uri_component(&crate::ssr::js_string(value)));
+            let text = match value {
+                Value::Number(n) if n.is_i64() || n.is_u64() => n.to_string(),
+                value => crate::ssr::js_string(value),
+            };
+            out.push_str(&encode_uri_component(&text));
         }
     }
     out
@@ -1834,7 +1840,9 @@ tuple_params!(6: A a 0, B b 1, C c 2, D d 3, E e 4, F f 5; last F);
 /// their names, as `?name=value&...`. A field that is `None` is left out,
 /// and a `Vec` field writes its name once per item, as
 /// `?color=red&color=blue`, and nothing when it is empty. A value is written
-/// as JavaScript's `String` writes it. `#[derive(Search)]` requires each
+/// as JavaScript's `String` writes it, apart from an `i64` or `u64` past 2^53,
+/// which [`Route::url`] writes with its exact digits, so the handler receives
+/// it exactly, as it does from a path segment. `#[derive(Search)]` requires each
 /// field's type to implement [`SearchValue`], so a struct in a field, or a
 /// list of lists, is a compile error. The server reads the struct back,
 /// with a key that appears more than once read into a `Vec` field, and
@@ -1859,6 +1867,11 @@ tuple_params!(6: A a 0, B b 1, C c 2, D d 3, E e 4, F f 5; last F);
 ///     color: Vec<Color>,
 /// }
 /// ```
+///
+/// Two `f64` and `f32` values do not reach the handler as they were written.
+/// `String` writes `-0.0` as `0`, so it arrives as `0.0`. serde writes a NaN
+/// or an infinity as `null`, so [`Route::url`] leaves its field out, and a
+/// required field answers 400 where an `Option` arrives as `None`.
 ///
 /// The server and the browser compare field names by their UTF-8 bytes and
 /// UTF-16 units, which agree for ASCII names. A `#[serde(rename)]` to a name
@@ -2189,6 +2202,10 @@ mod tests {
         let search = json!({ "q": "a b&c", "page": 2, "open": true, "tag": null, "x": 1.5 });
         assert_eq!(query_string(&search), "?open=true&page=2&q=a%20b%26c&x=1.5");
         assert_eq!(query_string(&json!({ "tag": null })), "");
+        assert_eq!(
+            query_string(&json!({ "id": u64::MAX, "low": i64::MIN })),
+            "?id=18446744073709551615&low=-9223372036854775808"
+        );
         assert_eq!(
             query_string(&json!({ "color": ["red", "a b"], "size": [], "q": "x" })),
             "?color=red&color=a%20b&q=x"
