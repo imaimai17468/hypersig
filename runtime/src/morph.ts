@@ -192,20 +192,27 @@ function like(a: Element, b: Element): boolean {
 }
 
 /**
- * The first element from `start` on that has no key and is `like` `model`.
- * For any other element the search stops at a `<template>`, because the
- * elements the runtime drew after one belong to it rather than to the
- * siblings around it. A `<template>` model is looked for past them, among
- * the templates with the same attributes and content.
+ * Where `ahead` looks: among the children of `from`, which hold the
+ * elements the runtime drew after each `<template>`, or among the children
+ * of `to`, a server patch, which holds each template alone.
  */
-function ahead(start: ChildNode | null, model: Element): Element | null {
+type Side = "from" | "to";
+
+/**
+ * The first element from `start` on that has no key and is `like` `model`.
+ * On the `from` side the search for any other element stops at a
+ * `<template>`, because the elements the runtime drew after one belong to
+ * it rather than to the siblings around it. A `<template>` model is looked
+ * for past them, among the templates with the same attributes and content.
+ */
+function ahead(start: ChildNode | null, model: Element, side: Side): Element | null {
   if (keyOf(model) !== "") return null;
   const template = model instanceof HTMLTemplateElement;
   for (let node = start; node !== null; node = node.nextSibling) {
     if (!(node instanceof Element)) continue;
     if (node instanceof HTMLTemplateElement) {
       if (template && keyOf(node) === "" && sameTemplate(node, model)) return node;
-      if (!template) return null;
+      if (!template && side === "from") return null;
     } else if (!template && keyOf(node) === "" && like(node, model)) return node;
   }
   return null;
@@ -238,7 +245,7 @@ function morphChild(
     if (current.textContent !== next.textContent) current.textContent = next.textContent;
     return current;
   }
-  const match = next instanceof Element ? ahead(current, next) : null;
+  const match = next instanceof Element ? ahead(current, next, "from") : null;
   if (match !== null && next instanceof Element) {
     // The siblings before the match left `to`, and the loop after it removes them.
     // A template takes the elements drawn after it along.
@@ -252,7 +259,7 @@ function morphChild(
   }
   if (
     current instanceof Element &&
-    (kept.has(keyOf(current)) || ahead(next.nextSibling, current) !== null)
+    (kept.has(keyOf(current)) || ahead(next.nextSibling, current, "to") !== null)
   ) {
     // `next` is new before an element `to` still has, which keeps its place and its state.
     from.insertBefore(next, current);

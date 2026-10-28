@@ -15,13 +15,7 @@ import { generate, random, show, type ElementModel, type Model } from "./morph/g
  * these passes, and each must still occur, so a fix to `morph` fails this
  * test until its entry is deleted here.
  */
-const KNOWN = [
-  {
-    finding:
-      "a <template> inserted before an input with no id stops the lookahead, so the input is replaced (#117)",
-    matches: (problem: string) => problem.startsWith("input matched by name"),
-  },
-];
+const KNOWN: { finding: string; matches: (problem: string) => boolean }[] = [];
 
 const SEED = 20_261_028;
 const PAIRS = 10_000;
@@ -94,7 +88,7 @@ it("keeps a template and its items when an element is inserted before it", () =>
   expect(check({ from: [{ ...template("a"), drawn: 1 }], to })).toEqual([]);
 });
 
-it.fails("keeps an input with no id when a template is inserted before it", () => {
+it("keeps an input with no id when a template is inserted before it", () => {
   // from: <div id="root"><input name="q"></div>
   // to:   <div id="root"><p></p><template data-hs-each="[]">a</template><input name="q"></div>
   const input: Model = { kind: "element", tag: "input", attrs: [["name", "q"]], children: [] };
