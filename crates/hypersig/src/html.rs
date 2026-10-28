@@ -246,6 +246,91 @@ enum NodeKind<S> {
     },
 }
 
+/// The start tags at which the HTML parser ends an open `p`, from "close a
+/// `p` element" in the tree construction rules of the HTML standard for a
+/// document in no-quirks mode, which `Page::render` writes.
+const ENDS_PARAGRAPH: [&str; 41] = [
+    "address",
+    "article",
+    "aside",
+    "blockquote",
+    "center",
+    "dd",
+    "details",
+    "dialog",
+    "dir",
+    "div",
+    "dl",
+    "dt",
+    "fieldset",
+    "figcaption",
+    "figure",
+    "footer",
+    "form",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "header",
+    "hgroup",
+    "hr",
+    "li",
+    "listing",
+    "main",
+    "menu",
+    "nav",
+    "ol",
+    "p",
+    "plaintext",
+    "pre",
+    "search",
+    "section",
+    "summary",
+    "table",
+    "ul",
+    "xmp",
+];
+
+/// The elements a `p` outside them is not ended by, because the parser
+/// looks for the `p` in "button scope", which stops at each of them. The
+/// `table` of that scope is left out, since it ends a `p` itself.
+const KEEPS_PARAGRAPH_OPEN: [&str; 16] = [
+    "button",
+    "applet",
+    "caption",
+    "td",
+    "th",
+    "marquee",
+    "object",
+    "template",
+    "foreignObject",
+    "desc",
+    "title",
+    "mi",
+    "mo",
+    "mn",
+    "ms",
+    "mtext",
+];
+
+impl<S> Node<S> {
+    /// The first element of this node at which the HTML parser ends an open
+    /// `p`. A template's content is parsed apart from the page, and the
+    /// copy the server draws after it stands where the node does, so `when`
+    /// and `each` are read through their element.
+    fn ends_paragraph(&self) -> Option<&'static str> {
+        match &self.0 {
+            NodeKind::Element(el) => el.ends_paragraph(),
+            NodeKind::Text(_) => None,
+            NodeKind::Each { template, .. } | NodeKind::When { template, .. } => {
+                template.ends_paragraph()
+            }
+        }
+    }
+}
+
 impl<S> fmt::Debug for Node<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
@@ -2351,18 +2436,54 @@ impl<S> El<S> {
     }
 
     /// Appends a child element, text, or template.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this element is a `p` and `child` holds an element at
+    /// which the HTML parser ends a paragraph, such as a `div`, a `ul`, or
+    /// another `p`, outside a `button`, a `table`, or a template. The
+    /// browser would end the `p` there and move the element after it.
     #[must_use]
     pub fn child(mut self, child: impl IntoNode<S>) -> Self {
-        self.children.push(child.into_node());
+        self.push(child.into_node());
         self
     }
 
     /// Appends several children. An `Option` counts as zero or one child.
+    ///
+    /// # Panics
+    ///
+    /// Panics where [`El::child`] panics, for any of `children`.
     #[must_use]
     pub fn children<N: IntoNode<S>>(mut self, children: impl IntoIterator<Item = N>) -> Self {
-        self.children
-            .extend(children.into_iter().map(IntoNode::into_node));
+        for child in children {
+            self.push(child.into_node());
+        }
         self
+    }
+
+    fn push(&mut self, child: Node<S>) {
+        if self.tag == "p"
+            && let Some(tag) = child.ends_paragraph()
+        {
+            panic!(
+                "a `p` holds no `{tag}`: the HTML parser ends the paragraph at `<{tag}>` and \
+                 moves it after the `p`, so write the `p` as a `div`"
+            );
+        }
+        self.children.push(child);
+    }
+
+    /// The first element of this element and those inside it at which the
+    /// HTML parser ends an open `p`, as [`Node::ends_paragraph`] finds it.
+    fn ends_paragraph(&self) -> Option<&'static str> {
+        if ENDS_PARAGRAPH.contains(&self.tag) {
+            return Some(self.tag);
+        }
+        if KEEPS_PARAGRAPH_OPEN.contains(&self.tag) {
+            return None;
+        }
+        self.children.iter().find_map(Node::ends_paragraph)
     }
 
     /// Appends static text. Shorthand for `.child(text)`.
@@ -3378,6 +3499,37 @@ mod tests {
 
     fn site() -> Sig<Page, SafeUrl> {
         sig("site")
+    }
+
+    fn on() -> Sig<Page, bool> {
+        sig("on")
+    }
+
+    #[test]
+    #[should_panic(expected = "a `p` holds no `div`")]
+    fn a_div_in_a_paragraph_panics() {
+        let _ = super::p::<Page>().child(div());
+    }
+
+    #[test]
+    #[should_panic(expected = "a `p` holds no `ul`")]
+    fn a_list_inside_a_span_of_a_paragraph_panics() {
+        let _ = super::p::<Page>().children([span().child(super::ul())]);
+    }
+
+    #[test]
+    #[should_panic(expected = "a `p` holds no `div`")]
+    fn a_div_a_condition_draws_in_a_paragraph_panics() {
+        let _ = super::p::<Page>().child(super::when(on(), div().text("in stock")));
+    }
+
+    #[test]
+    fn a_paragraph_holds_text_level_elements_and_a_button_holding_a_div() {
+        let html = super::p::<Page>()
+            .child(span().text("a"))
+            .child(button().child(div()))
+            .render();
+        assert_eq!(html, "<p><span>a</span><button><div></div></button></p>");
     }
 
     #[test]
