@@ -14,10 +14,11 @@ pub fn upgrading(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The releases that changed a public signature, 0.5 through 0.12, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
-                ja: "公開しているシグネチャを変えた 0.5 から 0.12 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
+                en: "The releases that changed a public signature, 0.5 through 0.13, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
+                ja: "公開しているシグネチャを変えた 0.5 から 0.13 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
             },
         ),
+        to_0_13(site),
         to_0_12(site),
         to_0_11(site),
         to_0_10(site),
@@ -26,6 +27,46 @@ pub fn upgrading(site: Site) -> Part {
         to_0_7(site),
         to_0_6(site),
         to_0_5(site),
+    ])
+}
+
+fn to_0_13(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "From 0.12 to 0.13",
+                ja: "0.12 から 0.13 へ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`Style::scrollbar_color` takes the thumb's color and the track's color as a pair. It took one color before, and wrote `scrollbar-color:red`, which the browser drops, because the property needs both.",
+                ja: "`Style::scrollbar_color` はつまみの色とトラックの色を組で受け取ります。これまでは色を 1 つ受け取って `scrollbar-color:red` と書いていました。このプロパティは 2 色を必要とするので、ブラウザはその宣言を捨てていました。",
+            },
+        ),
+        show_change(Snippet::Upgrade013),
+        para(
+            site,
+            L {
+                en: "These mistakes compiled and did nothing visible before, and panic now where the page is built:",
+                ja: "次の間違いは、これまでコンパイルが通り、画面には何も起きませんでした。今はページを組み立てるところでパニックします。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "An element inside a `p` at which the HTML parser ends the paragraph, such as a `div`, a `ul`, or another `p`. The parser moved it after the paragraph, so a condition or a list in it was drawn twice.",
+                    ja: "`div`、`ul`、別の `p` のように、HTML パーサーが段落を閉じる要素を `p` の中に置くこと。パーサーはその要素を段落の後ろに移すので、中の条件やリストが二重に描かれていました。",
+                },
+                L {
+                    en: "A NaN or an infinite number given to a style property, such as `flex_grow(f64::INFINITY)`. The stylesheet held `inf`, which the browser drops.",
+                    ja: "`flex_grow(f64::INFINITY)` のように、スタイルのプロパティに NaN や無限大を渡すこと。スタイルシートには `inf` と書かれ、ブラウザはそれを捨てていました。",
+                },
+            ],
+        ),
     ])
 }
 
