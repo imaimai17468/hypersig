@@ -361,7 +361,7 @@ impl fmt::Display for Animation {
             Self::Running => f.write_str("running"),
             Self::StepEnd => f.write_str("step-end"),
             Self::StepStart => f.write_str("step-start"),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Time(v) => v.fmt(f),
             Self::Quoted(v) => v.fmt(f),
             Self::Raw(v) => v.fmt(f),
@@ -579,7 +579,7 @@ impl fmt::Display for AnimationIterationCount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Infinite => f.write_str("infinite"),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -804,7 +804,7 @@ impl fmt::Display for AspectRatio {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Auto => f.write_str("auto"),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -2486,7 +2486,7 @@ impl fmt::Display for BorderImageOutset {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Length(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -2628,7 +2628,7 @@ impl fmt::Display for BorderImageWidth {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -6504,7 +6504,7 @@ impl fmt::Display for FillOpacity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -6617,7 +6617,7 @@ impl fmt::Display for Flex {
             Self::None => f.write_str("none"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -6855,7 +6855,7 @@ impl fmt::Display for FloodOpacity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -7202,7 +7202,7 @@ impl fmt::Display for FontSizeAdjust {
         match self {
             Self::FromFont => f.write_str("from-font"),
             Self::None => f.write_str("none"),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -7785,7 +7785,7 @@ impl fmt::Display for FontWeight {
             Self::Bolder => f.write_str("bolder"),
             Self::Lighter => f.write_str("lighter"),
             Self::Normal => f.write_str("normal"),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -8659,7 +8659,7 @@ impl fmt::Display for InitialLetter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Normal => f.write_str("normal"),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -9485,7 +9485,7 @@ impl fmt::Display for LineHeight {
             Self::Normal => f.write_str("normal"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -10392,7 +10392,7 @@ impl fmt::Display for MaskBorder {
             Self::Space => f.write_str("space"),
             Self::Stretch => f.write_str("stretch"),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Url(v) => v.fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
@@ -10464,7 +10464,7 @@ impl fmt::Display for MaskBorderOutset {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Length(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -10544,7 +10544,7 @@ impl fmt::Display for MaskBorderSlice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -10630,7 +10630,7 @@ impl fmt::Display for MaskBorderWidth {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -11956,7 +11956,7 @@ impl fmt::Display for Opacity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -13792,7 +13792,7 @@ impl fmt::Display for Scale {
         match self {
             Self::None => f.write_str("none"),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -14494,8 +14494,6 @@ impl fmt::Display for ScrollTargetGroup {
 pub enum ScrollbarColor {
     /// `auto`.
     Auto,
-    /// A color.
-    Color(Color),
     /// Any other value, passed through unchecked.
     Raw(Raw),
 }
@@ -14504,15 +14502,8 @@ impl fmt::Display for ScrollbarColor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Auto => f.write_str("auto"),
-            Self::Color(v) => v.fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
-    }
-}
-
-impl From<Color> for ScrollbarColor {
-    fn from(v: Color) -> Self {
-        Self::Color(v)
     }
 }
 
@@ -14583,7 +14574,7 @@ impl fmt::Display for ShapeImageThreshold {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -14722,7 +14713,7 @@ impl fmt::Display for StopOpacity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -14816,7 +14807,7 @@ impl fmt::Display for StrokeDasharray {
             Self::None => f.write_str("none"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -14869,7 +14860,7 @@ impl fmt::Display for StrokeDashoffset {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -14962,7 +14953,7 @@ impl fmt::Display for StrokeOpacity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -15002,7 +14993,7 @@ impl fmt::Display for StrokeWidth {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
         }
     }
 }
@@ -17741,7 +17732,7 @@ impl fmt::Display for Zoom {
             Self::Normal => f.write_str("normal"),
             Self::Reset => f.write_str("reset"),
             Self::Percentage(v) => v.fmt(f),
-            Self::Number(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
     }

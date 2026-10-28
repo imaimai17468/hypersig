@@ -2036,6 +2036,10 @@ impl Style {
     /// Sets [`animation`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/animation).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn animation(self, value: impl Into<crate::value::Animation>) -> Self {
         self.with(Property::Animation, value.into().to_string())
@@ -2084,6 +2088,10 @@ impl Style {
     /// Sets [`animation-iteration-count`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/animation-iteration-count).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn animation_iteration_count(self, value: impl Into<crate::value::AnimationIterationCount>) -> Self {
         self.with(Property::AnimationIterationCount, value.into().to_string())
@@ -2130,6 +2138,10 @@ impl Style {
     /// Sets [`aspect-ratio`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/aspect-ratio).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn aspect_ratio(self, value: impl Into<crate::value::AspectRatio>) -> Self {
         self.with(Property::AspectRatio, value.into().to_string())
@@ -2438,6 +2450,10 @@ impl Style {
     /// Sets [`border-image-outset`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-image-outset).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn border_image_outset(self, value: impl Into<crate::value::BorderImageOutset>) -> Self {
         self.with(Property::BorderImageOutset, value.into().to_string())
@@ -2470,6 +2486,10 @@ impl Style {
     /// Sets [`border-image-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-image-width).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn border_image_width(self, value: impl Into<crate::value::BorderImageWidth>) -> Self {
         self.with(Property::BorderImageWidth, value.into().to_string())
@@ -3220,6 +3240,10 @@ impl Style {
     }
 
     /// Sets [`fill-opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/fill-opacity).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn fill_opacity(self, value: impl Into<crate::value::FillOpacity>) -> Self {
         self.with(Property::FillOpacity, value.into().to_string())
@@ -3242,6 +3266,10 @@ impl Style {
     /// Sets [`flex`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/flex).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn flex(self, value: impl Into<crate::value::Flex>) -> Self {
         self.with(Property::Flex, value.into().to_string())
@@ -3270,9 +3298,13 @@ impl Style {
     }
 
     /// Sets [`flex-grow`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/flex-grow).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn flex_grow(self, value: impl Into<f64>) -> Self {
-        self.with(Property::FlexGrow, value.into().to_string())
+        self.with(Property::FlexGrow, crate::value::number(value.into()).to_string())
     }
 
     /// Sets [`flex-line-count`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/flex-line-count).
@@ -3282,9 +3314,13 @@ impl Style {
     }
 
     /// Sets [`flex-shrink`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/flex-shrink).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn flex_shrink(self, value: impl Into<f64>) -> Self {
-        self.with(Property::FlexShrink, value.into().to_string())
+        self.with(Property::FlexShrink, crate::value::number(value.into()).to_string())
     }
 
     /// Sets [`flex-wrap`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/flex-wrap).
@@ -3308,6 +3344,10 @@ impl Style {
     }
 
     /// Sets [`flood-opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/flood-opacity).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn flood_opacity(self, value: impl Into<crate::value::FloodOpacity>) -> Self {
         self.with(Property::FloodOpacity, value.into().to_string())
@@ -3372,6 +3412,10 @@ impl Style {
     /// Sets [`font-size-adjust`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-size-adjust).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn font_size_adjust(self, value: impl Into<crate::value::FontSizeAdjust>) -> Self {
         self.with(Property::FontSizeAdjust, value.into().to_string())
@@ -3478,6 +3522,10 @@ impl Style {
     }
 
     /// Sets [`font-weight`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-weight).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn font_weight(self, value: impl Into<crate::value::FontWeight>) -> Self {
         self.with(Property::FontWeight, value.into().to_string())
@@ -3676,6 +3724,10 @@ impl Style {
     /// Sets [`initial-letter`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/initial-letter).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn initial_letter(self, value: impl Into<crate::value::InitialLetter>) -> Self {
         self.with(Property::InitialLetter, value.into().to_string())
@@ -3834,6 +3886,10 @@ impl Style {
     }
 
     /// Sets [`line-height`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/line-height).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn line_height(self, value: impl Into<crate::value::LineHeight>) -> Self {
         self.with(Property::LineHeight, value.into().to_string())
@@ -3992,6 +4048,10 @@ impl Style {
     /// Sets [`mask-border`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/mask-border).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn mask_border(self, value: impl Into<crate::value::MaskBorder>) -> Self {
         self.with(Property::MaskBorder, value.into().to_string())
@@ -4006,6 +4066,10 @@ impl Style {
     /// Sets [`mask-border-outset`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/mask-border-outset).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn mask_border_outset(self, value: impl Into<crate::value::MaskBorderOutset>) -> Self {
         self.with(Property::MaskBorderOutset, value.into().to_string())
@@ -4022,6 +4086,10 @@ impl Style {
     /// Sets [`mask-border-slice`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/mask-border-slice).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn mask_border_slice(self, value: impl Into<crate::value::MaskBorderSlice>) -> Self {
         self.with(Property::MaskBorderSlice, value.into().to_string())
@@ -4038,6 +4106,10 @@ impl Style {
     /// Sets [`mask-border-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/mask-border-width).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn mask_border_width(self, value: impl Into<crate::value::MaskBorderWidth>) -> Self {
         self.with(Property::MaskBorderWidth, value.into().to_string())
@@ -4258,6 +4330,10 @@ impl Style {
     }
 
     /// Sets [`opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/opacity).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn opacity(self, value: impl Into<crate::value::Opacity>) -> Self {
         self.with(Property::Opacity, value.into().to_string())
@@ -4656,6 +4732,10 @@ impl Style {
     /// Sets [`scale`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scale).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn scale(self, value: impl Into<crate::value::Scale>) -> Self {
         self.with(Property::Scale, value.into().to_string())
@@ -4874,6 +4954,10 @@ impl Style {
     }
 
     /// Sets [`shape-image-threshold`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/shape-image-threshold).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn shape_image_threshold(self, value: impl Into<crate::value::ShapeImageThreshold>) -> Self {
         self.with(Property::ShapeImageThreshold, value.into().to_string())
@@ -4906,6 +4990,10 @@ impl Style {
     }
 
     /// Sets [`stop-opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stop-opacity).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn stop_opacity(self, value: impl Into<crate::value::StopOpacity>) -> Self {
         self.with(Property::StopOpacity, value.into().to_string())
@@ -4922,12 +5010,20 @@ impl Style {
     /// Sets [`stroke-dasharray`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-dasharray).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn stroke_dasharray(self, value: impl Into<crate::value::StrokeDasharray>) -> Self {
         self.with(Property::StrokeDasharray, value.into().to_string())
     }
 
     /// Sets [`stroke-dashoffset`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-dashoffset).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn stroke_dashoffset(self, value: impl Into<crate::value::StrokeDashoffset>) -> Self {
         self.with(Property::StrokeDashoffset, value.into().to_string())
@@ -4946,18 +5042,30 @@ impl Style {
     }
 
     /// Sets [`stroke-miterlimit`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-miterlimit).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn stroke_miterlimit(self, value: impl Into<f64>) -> Self {
-        self.with(Property::StrokeMiterlimit, value.into().to_string())
+        self.with(Property::StrokeMiterlimit, crate::value::number(value.into()).to_string())
     }
 
     /// Sets [`stroke-opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-opacity).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn stroke_opacity(self, value: impl Into<crate::value::StrokeOpacity>) -> Self {
         self.with(Property::StrokeOpacity, value.into().to_string())
     }
 
     /// Sets [`stroke-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-width).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn stroke_width(self, value: impl Into<crate::value::StrokeWidth>) -> Self {
         self.with(Property::StrokeWidth, value.into().to_string())
@@ -5520,6 +5628,10 @@ impl Style {
     /// Sets [`zoom`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/zoom).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn zoom(self, value: impl Into<crate::value::Zoom>) -> Self {
         self.with(Property::Zoom, value.into().to_string())

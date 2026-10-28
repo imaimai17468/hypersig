@@ -479,6 +479,11 @@ impl Data {
                     },
                 }
             }
+            // `<color>{2}` takes two colors, so one color alone is not a value.
+            Node::Repeat(_, min, _) if *min > 1 => Singles {
+                atoms: BTreeSet::new(),
+                complete: false,
+            },
             Node::Repeat(inner, _, max) => {
                 let s = self.singles(inner, seen);
                 Singles {
@@ -785,11 +790,12 @@ fn generate() -> (String, String) {
                 );
             }
             for kind in &kinds {
-                let _ = writeln!(
-                    enums,
-                    "            Self::{}(v) => v.fmt(f),",
-                    kind.variant()
-                );
+                let write = if *kind == Kind::Number {
+                    "crate::value::number(*v).fmt(f)"
+                } else {
+                    "v.fmt(f)"
+                };
+                let _ = writeln!(enums, "            Self::{}(v) => {write},", kind.variant());
             }
             if raw {
                 enums.push_str("            Self::Raw(v) => v.fmt(f),\n");
@@ -818,11 +824,22 @@ fn generate() -> (String, String) {
             }
             format!("crate::value::{ty}")
         };
+        let panics = if kinds.contains(&Kind::Number) {
+            "\n    ///\n    /// # Panics\n    ///\n    /// Panics if the value is a number that is NaN or \
+             infinite, which CSS cannot write."
+        } else {
+            ""
+        };
+        let value = if arg == "f64" {
+            "crate::value::number(value.into())"
+        } else {
+            "value.into()"
+        };
         let _ = writeln!(
             methods,
-            "    /// Sets [`{name}`]({url}).{unchecked}\n    #[must_use]\n    \
+            "    /// Sets [`{name}`]({url}).{unchecked}{panics}\n    #[must_use]\n    \
              pub fn {method}(self, value: impl Into<{arg}>) -> Self {{\n        \
-             self.with(Property::{property}, value.into().to_string())\n    }}\n"
+             self.with(Property::{property}, {value}.to_string())\n    }}\n"
         );
     }
     methods.push_str("}\n\n");

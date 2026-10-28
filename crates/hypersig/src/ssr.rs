@@ -280,8 +280,10 @@ fn js_round(value: f64) -> f64 {
 /// Both round the exact value of the double to `digits` places, and differ
 /// only on an exact halfway value, which Rust rounds to even and
 /// JavaScript away from zero. A halfway value is `m / 2^(digits + 1)` for
-/// an odd `m`, so it is found exactly by scaling by that power of two,
-/// and the next double up rounds the way JavaScript does.
+/// an odd `m`, so it is found exactly by scaling by that power of two.
+/// Its exact expansion to one more place ends in `5`, and that digit is
+/// rounded up by hand, because the digits of the double above it differ
+/// from the value's own once `digits` reaches past its last bit.
 pub(crate) fn js_fixed(value: f64, digits: u8) -> String {
     if !value.is_finite() || value.abs() >= 1e21 {
         return js_number(value);
@@ -290,18 +292,39 @@ pub(crate) fn js_fixed(value: f64, digits: u8) -> String {
     // Doubling is exact, where `powi` may round.
     let scaled = (0..=digits).fold(magnitude, |scaled, _| scaled * 2.0);
     let halfway = scaled.fract() == 0.0 && (scaled / 2.0).fract() != 0.0;
-    let rounded = if halfway {
-        magnitude.next_up()
+    let text = if halfway {
+        let mut longer = format!("{:.*}", usize::from(digits) + 1, magnitude);
+        longer.pop();
+        if digits == 0 {
+            longer.pop();
+        }
+        round_up_last_digit(&longer)
     } else {
-        magnitude
+        format!("{:.*}", usize::from(digits), magnitude)
     };
-    let text = format!("{:.*}", usize::from(digits), rounded);
     // `(-0.001).toFixed(2)` is "-0.00", and `(-0).toFixed(2)` is "0.00".
     if value < 0.0 {
         format!("-{text}")
     } else {
         text
     }
+}
+
+/// The decimal `text`, such as `"2.49"`, with one added to its last digit.
+fn round_up_last_digit(text: &str) -> String {
+    let mut digits = text.as_bytes().to_vec();
+    for at in (0..digits.len()).rev() {
+        match digits[at] {
+            b'.' => {}
+            b'9' => digits[at] = b'0',
+            digit => {
+                digits[at] = digit + 1;
+                return String::from_utf8(digits).expect("ASCII digits");
+            }
+        }
+    }
+    digits.insert(0, b'1');
+    String::from_utf8(digits).expect("ASCII digits")
 }
 
 /// `value` written as `format` in `runtime/src/eval.ts` writes it.
@@ -896,6 +919,17 @@ mod tests {
         assert_eq!(js_fixed(-0.001, 2), "-0.00");
         assert_eq!(js_fixed(-0.0, 2), "0.00");
         assert_eq!(js_fixed(1e21, 2), "1e+21");
+        assert_eq!(js_fixed(9.5, 0), "10");
+        assert_eq!(js_fixed(99.95, 1), "100.0");
+    }
+
+    #[test]
+    fn rounds_a_halfway_value_up_past_its_last_bit_as_to_fixed_does() {
+        // `toFixed(100)` in V8 writes the exact value rounded up at the last place.
+        assert_eq!(
+            js_fixed(-1.778_429_746_627_808e-15, 100),
+            "-0.0000000000000017784297466278078070749163046679492164720405664862790118263546901289373636245727539063"
+        );
     }
 
     #[test]
