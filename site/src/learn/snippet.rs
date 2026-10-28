@@ -65,11 +65,11 @@ snippets! {
     HandlerErrors => "handler_errors.rs";
     Logging => "logging.rs";
     Uploads => "uploads.rs";
-    Sessions => "sessions.rs";
+    Sessions => "data/sessions.rs";
     TestingSessions => "testing_sessions.rs";
-    Database => "database.rs", "no_run";
-    DynamoDb => "dynamodb.rs", "no_run";
-    Api => "api.rs", "no_run";
+    Database => "data/database.rs", "no_run";
+    DynamoDb => "data/dynamodb.rs", "no_run";
+    Api => "data/api.rs", "no_run";
     Links => "links.rs";
     WrongRoute => "wrong_route.rs", "compile_fail,E0080";
     ChildRoutes => "child_routes.rs";
@@ -141,6 +141,17 @@ snippets! {
     // The samples added for the Learn group Pages and routing.
     // The samples added for the Learn group Forms and requests.
     // The samples added for the Learn group Data and sign-in.
+    WrongState => "data/wrong_state.rs", "compile_fail,E0277";
+    ErrorWithoutResponse => "data/error_without_response.rs", "compile_fail,E0277";
+    SqlxPool => "data/sqlx_pool.rs", "no_run";
+    PgListen => "data/listen.rs", "no_run";
+    PostgresBuild => "../../examples/postgres/build.rs";
+    ApiRefusal => "data/api_refusal.rs", "no_run";
+    WrongErrorSignal => "data/wrong_error_signal.rs", "compile_fail,E0308";
+    Members => "data/members.rs";
+    NavigateText => "data/navigate_text.rs", "compile_fail,E0308";
+    RedirectText => "data/redirect_text.rs", "compile_fail,E0308";
+    SessionExpiry => "data/session_expiry.rs";
     // The samples added for the Learn group Browser features.
     // The samples added for the Learn group Quality and operations.
 }
