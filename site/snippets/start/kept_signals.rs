@@ -32,5 +32,4 @@ async fn add((): (), text: String) -> Patches<Notes> {
         .list(Notes::notes().patch_append(&[text]))
         .signals(Notes::draft().patch(String::new()))
 }
-# assert_eq!(Notes::SHAPE, "draft:String,notes:Vec < String >");
 # let _ = pages;

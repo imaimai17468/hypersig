@@ -20,15 +20,6 @@ const OUTPUT: &str =
 Started `target/debug/counter`
 Restarted `target/debug/counter`";
 
-/// The attributes the quick start's page carries on `<body>` when a debug
-/// build serves it, as the tests of `hypersig_runtime` assert them.
-const DEV_BODY: &str = r#"<body data-hs-signals="..." data-hs-dev="/_hypersig/dev?since=..." data-hs-shape="count:i32">"#;
-
-/// What the page of `Snippet::KeptSignals` leaves in `sessionStorage` under
-/// `hypersig-dev` while it reloads, with the visitor's half-typed draft.
-const KEPT: &str =
-    r#"{"route":"/","shape":"draft:String,notes:Vec < String >","values":{"draft":"Buy mi"}}"#;
-
 pub fn page(site: Site) -> Part {
     parts(
         intro(site)
@@ -119,8 +110,8 @@ fn watched(site: Site) -> [Part; 3] {
         para(
             site,
             L {
-                en: "`cargo hypersig dev` reads the modification time of these files every 50 ms:",
-                ja: "`cargo hypersig dev` は、次のファイルの更新時刻を 50 ms ごとに読みます。",
+                en: "A change to one of these files starts a build:",
+                ja: "次のファイルが変わると、ビルドが始まります。",
             },
         ),
         bullets(
@@ -135,8 +126,8 @@ fn watched(site: Site) -> [Part; 3] {
                     ja: "前回のビルドが読んだファイル。たとえば `include_str!` でバイナリに入れたスタイルシートです。Cargo のホームディレクトリにあるダウンロード済みのクレートは除きます。`Watching` の行ではこれらを「more files the build read」として数えます。",
                 },
                 L {
-                    en: "A change waits 50 ms more for the rest of an editor's writes, then starts a build. A file saved while a build runs starts the next one.",
-                    ja: "変更を見つけると、エディタの残りの書き込みを待つために 50 ms 待ってからビルドを始めます。ビルド中に保存したファイルは、次のビルドを始めます。",
+                    en: "A file saved while a build runs starts the next one.",
+                    ja: "ビルド中に保存したファイルは、次のビルドを始めます。",
                 },
                 L {
                     en: "A change that builds the same binary, such as an edit to a file the server is not built from, leaves the running server as it is.",
@@ -219,7 +210,7 @@ fn options(site: Site) -> [Part; 4] {
                     ],
                     &[
                         "The options include `--release`, `-r`, or `--profile`",
-                        "Prints a warning that pages will not reload, because only a debug build serves the stream they reload from",
+                        "Prints a warning that pages will not reload, because only a debug build reloads them",
                     ],
                     &[
                         "The options change the target directory",
@@ -237,7 +228,7 @@ fn options(site: Site) -> [Part; 4] {
                     ],
                     &[
                         "オプションに `--release`、`-r`、`--profile` がある",
-                        "読み込み直しに使うストリームはデバッグビルドしか配信しないので、ページが読み込み直されないという警告を表示します",
+                        "ページを読み込み直すのはデバッグビルドだけなので、ページが読み込み直されないという警告を表示します",
                     ],
                     &[
                         "オプションでターゲットディレクトリを変える",
@@ -249,7 +240,7 @@ fn options(site: Site) -> [Part; 4] {
     ]
 }
 
-fn reload(site: Site) -> [Part; 6] {
+fn reload(site: Site) -> [Part; 3] {
     [
         heading(
             site,
@@ -261,46 +252,21 @@ fn reload(site: Site) -> [Part; 6] {
         para(
             site,
             L {
-                en: "In a debug build, [`hypersig_runtime()`](api:hypersig/trait.RouterExt.html#tymethod.hypersig_runtime) also serves a stream at `/_hypersig/dev`, and each page names it on `<body>`:",
-                ja: "デバッグビルドでは、[`hypersig_runtime()`](api:hypersig/trait.RouterExt.html#tymethod.hypersig_runtime) が `/_hypersig/dev` でストリームも配信し、各ページは `<body>` にそのパスを書きます。",
+                en: "When the server serves its pages from a debug build, with [`hypersig_runtime()`](api:hypersig/trait.RouterExt.html#tymethod.hypersig_runtime) on its router, each open tab reloads by itself once a new server has started in place of the one that rendered it. Any restart of a debug build does this, including `cargo run` run again by hand, and so does a page under a [`Base`](api:hypersig/struct.Base.html).",
+                ja: "デバッグビルドのサーバーがルーターに [`hypersig_runtime()`](api:hypersig/trait.RouterExt.html#tymethod.hypersig_runtime) を付けてページを配信しているときは、ページを描画したサーバーに代わって新しいサーバーが起動すると、開いているタブが自動で読み込み直されます。デバッグビルドならどの再起動でもこうなり、手で `cargo run` を実行し直した場合や、[`Base`](api:hypersig/struct.Base.html) の下のページでも同じです。",
             },
-        ),
-        code::block(Lang::Html, None, DEV_BODY),
-        para(
-            site,
-            L {
-                en: "The page loads `/_hypersig/dev.js` once, beside the runtime, and keeps a request to the `data-hs-dev` URL open. In the browser's network panel, the request closes after two seconds and a new one opens, so a server that shuts down gracefully waits for it no longer than that. `since` names the server process that rendered the page. When another process answers the same URL, as after a restart, it sends the event `hs-reload`, and the page reloads from it. Any restart of a debug build does this, including `cargo run` run again by hand.",
-                ja: "ページはランタイムの隣にある `/_hypersig/dev.js` を 1 回読み込み、`data-hs-dev` の URL へのリクエストを開いたままにします。ブラウザのネットワークパネルでは、リクエストが 2 秒で閉じて新しいリクエストが開くのが見えます。そのため、グレースフルに終了するサーバーがこのリクエストを待つのは長くても 2 秒です。`since` はページを描画したサーバーのプロセスを表します。再起動のあとのように別のプロセスが同じ URL に応答すると、そのプロセスはイベント `hs-reload` を送り、ページはそのプロセスから読み込み直されます。デバッグビルドならどの再起動でもこうなり、手で `cargo run` を実行し直した場合も同じです。",
-            },
-        ),
-        bullets(
-            site,
-            &[
-                L {
-                    en: "While no server answers, the page asks again every 50 ms, and every second after three seconds. Each refused request writes an error to the console.",
-                    ja: "どのサーバーも応答しない間、ページは 50 ms ごとに問い合わせ直し、3 秒たつと 1 秒ごとになります。拒否されたリクエストはそのたびにコンソールにエラーを書きます。",
-                },
-                L {
-                    en: "A page under a [`Base`](api:hypersig/struct.Base.html) reads the stream under its base, as `/app/_hypersig/dev`.",
-                    ja: "[`Base`](api:hypersig/struct.Base.html) の下のページは `/app/_hypersig/dev` のように接頭辞の下のストリームを読みます。",
-                },
-                L {
-                    en: "When the stream answers 404, as on a server that serves the runtime's file some other way, the page stops asking.",
-                    ja: "ランタイムのファイルを別の方法で配信するサーバーのように、ストリームが 404 を返すと、ページは問い合わせをやめます。",
-                },
-            ],
         ),
         note(
             site,
             L {
-                en: "A release build, and a build for wasm32-unknown-unknown such as a Cloudflare Worker, serves no stream, and its pages carry no `data-hs-dev` and open no request.",
-                ja: "リリースビルドと、Cloudflare Workers のような wasm32-unknown-unknown 向けのビルドはストリームを配信しません。そのページには `data-hs-dev` がなく、リクエストも開きません。",
+                en: "A release build, and a build for wasm32-unknown-unknown such as a Cloudflare Worker, does not reload open tabs.",
+                ja: "リリースビルドと、Cloudflare Workers のような wasm32-unknown-unknown 向けのビルドでは、開いているタブは読み込み直されません。",
             },
         ),
     ]
 }
 
-fn kept(site: Site) -> [Part; 9] {
+fn kept(site: Site) -> [Part; 7] {
     [
         heading(
             site,
@@ -320,23 +286,15 @@ fn kept(site: Site) -> [Part; 9] {
         para(
             site,
             L {
-                en: "Just before the reload, the page saves in the tab's `sessionStorage`, under the key `hypersig-dev`, each top-level signal whose value differs from the server's last write of it, in the page or in a patch. After the visitor adds one note and types `Buy mi`, `notes` still holds what the server's patch wrote and `draft` does not, so only `draft` is saved:",
-                ja: "ページは読み込み直す直前に、最上位のシグナルのうち、サーバーが最後に書いた値（ページに書き込んだ値か差分で送った値）と異なるものを、タブの `sessionStorage` にキー `hypersig-dev` で保存します。訪問者がメモを 1 つ追加してから `Buy mi` と入力した場合、`notes` はサーバーの差分が書いた値のままで、`draft` はそうではないので、保存されるのは `draft` だけです。",
-            },
-        ),
-        code::block(Lang::JavaScript, None, KEPT),
-        para(
-            site,
-            L {
-                en: "The new page puts the saved values back over the new server's values, and every other signal takes the new server's value. Here the input shows `Buy mi` again, and the list is empty, because this server keeps no notes and its page starts with none. The entry is removed as it is read, so a later visit starts from the server's values.",
-                ja: "新しいページは保存した値を新しいサーバーの値の上に戻し、ほかのシグナルには新しいサーバーの値を使います。この例では入力欄に `Buy mi` が戻り、一覧は空になります。このサーバーはメモを保存せず、ページは空の一覧から始まるからです。保存した値は読んだときに削除されるので、次に開いたときはサーバーの値から始まります。",
+                en: "The tab keeps each top-level signal whose value differs from the value the server last wrote into it, in the page or in a patch, and every other signal takes the new server's value. Say the visitor adds one note and then types `Buy mi`. `notes` still holds what the server's patch wrote, and `draft` does not. After the reload, the input shows `Buy mi` again and the list is empty, because this server keeps no notes and its page starts with none. A later visit to the page starts from the server's values.",
+                ja: "タブが保つのは、最上位のシグナルのうち、サーバーが最後に書いた値（ページに書き込んだ値か差分で送った値）と異なるものです。ほかのシグナルには新しいサーバーの値を使います。訪問者がメモを 1 つ追加してから `Buy mi` と入力したとします。`notes` はサーバーの差分が書いた値のままですが、`draft` はそうではありません。読み込み直したあと、入力欄には `Buy mi` が戻り、一覧は空になります。このサーバーはメモを保存せず、ページは空の一覧から始まるからです。あとで改めてページを開いたときは、サーバーの値から始まります。",
             },
         ),
         para(
             site,
             L {
-                en: "The values go back only where the new page shows the same path and query, and its signal struct has the same [`Signals::SHAPE`](api:hypersig/trait.Signals.html#associatedconstant.SHAPE), the list of its field names and types. Otherwise the page starts from the server's values.",
-                ja: "値を戻すのは、新しいページのパスとクエリが同じで、シグナル構造体の [`Signals::SHAPE`](api:hypersig/trait.Signals.html#associatedconstant.SHAPE)（フィールド名と型の一覧）も同じときだけです。条件に合わないときは、ページはサーバーの値から始まります。",
+                en: "The values go back only where the new page shows the same path and query, and its signal struct has the same field names and field types. Otherwise the page starts from the server's values.",
+                ja: "値を戻すのは、新しいページのパスとクエリが同じで、シグナル構造体のフィールド名とフィールドの型も同じときだけです。条件に合わないときは、ページはサーバーの値から始まります。",
             },
         ),
         para(
@@ -350,16 +308,16 @@ fn kept(site: Site) -> [Part; 9] {
             site,
             &[
                 L {
-                    en: "A field whose type is another `Signals` struct adds only that type's name to `SHAPE`. A change inside the nested struct alone is not detected, and the value restored into that field keeps its old fields until the next reload.",
-                    ja: "型が別の `Signals` 構造体であるフィールドは、`SHAPE` にその型の名前しか加えません。入れ子の構造体の中だけが変わった場合は検出されず、そのフィールドに戻した値は、次に読み込み直すまで古いフィールドのままです。",
+                    en: "For a field whose type is another `Signals` struct, only that type's name is compared. A change inside the nested struct alone is not detected, and the value restored into that field keeps its old fields until the next reload.",
+                    ja: "型が別の `Signals` 構造体であるフィールドは、その型の名前しか比べません。入れ子の構造体の中だけが変わった場合は検出されず、そのフィールドに戻した値は、次に読み込み直すまで古いフィールドのままです。",
                 },
                 L {
-                    en: "A `Signals` impl written by hand leaves `SHAPE` empty, and its page restores nothing.",
-                    ja: "手で書いた `Signals` の実装は `SHAPE` を空のままにするので、そのページは何も戻しません。",
+                    en: "A page whose signal struct implements `Signals` by hand, without `#[derive(Signals)]`, restores nothing.",
+                    ja: "`#[derive(Signals)]` を使わずに `Signals` を手で実装したシグナル構造体のページは、何も戻しません。",
                 },
                 L {
-                    en: "Where `sessionStorage` is full or blocked, nothing is saved, and the reloaded page starts from the server's values.",
-                    ja: "`sessionStorage` がいっぱいか使えない環境では何も保存されず、読み込み直したページはサーバーの値から始まります。",
+                    en: "Where the browser blocks `sessionStorage` or it is full, nothing is kept, and the reloaded page starts from the server's values.",
+                    ja: "ブラウザが `sessionStorage` を使わせないか、いっぱいのときは何も保たれず、読み込み直したページはサーバーの値から始まります。",
                 },
             ],
         ),
