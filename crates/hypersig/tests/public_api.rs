@@ -1,5 +1,5 @@
-//! Checks the public API of the library crates against the rules of
-//! `.claude/rules/rust.md` that rustdoc's JSON output can decide.
+//! Checks the public API of the library crates against the rules that
+//! rustdoc's JSON output can decide.
 //!
 //! The JSON comes from a nightly rustdoc, so the check is ignored by default.
 //! Write the JSON of each crate in `CRATES` with
@@ -30,8 +30,8 @@ const CRATES: [&str; 4] = ["hypersig", "hypersig_ui", "hypersig_style", "hypersi
 /// writes.
 const FORMAT_VERSION: u64 = 61;
 
-/// The public types with a third type parameter, each justified in
-/// `.claude/rules/rust.md` under M-SIMPLE-ABSTRACTIONS.
+/// The public types with a third type parameter, each justified below
+/// (M-SIMPLE-ABSTRACTIONS).
 const THREE_TYPE_PARAMETERS: [&str; 1] = [
     // `R` records whether the path starts at the page or at a list item,
     // whether the field is computed, and whether the signal is a read-only
@@ -51,9 +51,8 @@ const WORKSPACE: [&str; 5] = [
     "hypersig_proc",
 ];
 
-/// The third-party items `.claude/rules/rust.md` allows in the public API
-/// under M-DONT-LEAK-TYPES, as the crate that defines each and its path
-/// there. `serde_core::*` allows every trait of that crate, which is where
+/// The third-party items allowed in the public API (M-DONT-LEAK-TYPES), as
+/// the crate that defines each and its path there. `serde_core::*` allows every trait of that crate, which is where
 /// `serde` defines its traits.
 const THIRD_PARTY: [&str; 14] = [
     "serde_core::*",
