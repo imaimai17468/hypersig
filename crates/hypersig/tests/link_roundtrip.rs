@@ -70,15 +70,10 @@ struct Sparse {
 /// Each case lists the findings its values can run into, and the test
 /// skips a failure only where the case lists one. Each finding must still
 /// fail at least one case, so a fixed finding fails the test until its
-/// entry here goes.
-/// The findings of this test that `Route::url` still has, filed as #119.
+/// entry here goes. Both are the float values that the docs of `Search`
+/// list as not reaching the handler.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Finding {
-    /// An `i64` or `u64` search value past 2^53 is written with the digits
-    /// of the nearest double, as `String(number)` in JavaScript writes it.
-    /// `n: (1 << 53) + 1` arrives as `1 << 53`, and `i64::MAX`, `i64::MIN`,
-    /// and `u64::MAX` are written as digits outside the type, which answer 400.
-    WideInteger,
     /// A NaN or infinite float search value is written as `null` and left
     /// out of the query, so a required field answers 400 and an `Option`
     /// field arrives as `None`.
@@ -87,19 +82,11 @@ enum Finding {
     NegativeZero,
 }
 
-const SKIPS: [Finding; 3] = [
-    Finding::WideInteger,
-    Finding::NonFinite,
-    Finding::NegativeZero,
-];
+const SKIPS: [Finding; 2] = [Finding::NonFinite, Finding::NegativeZero];
 
 impl Filter {
     fn findings(&self) -> Vec<Finding> {
-        const EXACT: u64 = 1 << 53;
         let mut found = Vec::new();
-        if self.big.unsigned_abs() > EXACT || self.huge > EXACT {
-            found.push(Finding::WideInteger);
-        }
         if !self.ratio.is_finite() || !self.share.is_finite() {
             found.push(Finding::NonFinite);
         }
