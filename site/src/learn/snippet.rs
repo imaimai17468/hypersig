@@ -37,9 +37,9 @@ macro_rules! snippets {
 
 snippets! {
     Elements => "elements.rs";
-    Foreign => "foreign.rs";
+    Foreign => "browser/foreign.rs";
     ElementsModule => "elements_module.rs";
-    ElementsPage => "elements_page.rs";
+    ElementsPage => "browser/elements_page.rs";
     Component => "component.rs";
     Bindings => "bindings.rs";
     SignalPaths => "signal_paths.rs";
@@ -78,8 +78,8 @@ snippets! {
     Head => "head.rs";
     SearchParams => "search_params.rs";
     Styles => "styles.rs";
-    Effects => "effects.rs";
-    StaticPage => "static_page.rs";
+    Effects => "browser/effects.rs";
+    StaticPage => "browser/static_page.rs";
     UiSetup => "ui_setup.rs";
     UiTheme => "ui_theme.rs";
     UiScheme => "ui_scheme.rs";
@@ -114,8 +114,8 @@ snippets! {
     // The code `cargo hypersig add server` prints, so the page and the CLI
     // show one text.
     Listen => "../../crates/hypersig_cli/steps/server.rs";
-    SafeUrl => "safe_url.rs";
-    StaticFiles => "static_files.rs";
+    SafeUrl => "browser/safe_url.rs";
+    StaticFiles => "browser/static_files.rs";
     ErrorPage => "error_page.rs";
     LoadMore => "load_more.rs";
     EditState => "edit_state.rs";
@@ -142,6 +142,28 @@ snippets! {
     // The samples added for the Learn group Forms and requests.
     // The samples added for the Learn group Data and sign-in.
     // The samples added for the Learn group Browser features.
+    NodeRefDeclare => "browser/node_ref.rs";
+    NodeRefInFn => "browser/node_ref_in_fn.rs", "compile_fail,E0425";
+    NodeRefOtherPage => "browser/node_ref_other_page.rs", "compile_fail,E0308";
+    NodeRefList => "browser/node_ref_list.rs";
+    NodeRefTwice => "browser/node_ref_twice.rs", "should_panic";
+    DialogRefs => "browser/dialog_ref.rs";
+    Timers => "browser/timers.rs";
+    IntervalMillis => "browser/interval_millis.rs", "compile_fail,E0308";
+    EffectWatch => "browser/effect.rs";
+    Clock => "browser/clock.rs";
+    RovingFocus => "browser/roving_focus.rs";
+    ActiveDescendant => "browser/active_descendant.rs";
+    ActiveDescendantType => "browser/active_descendant_type.rs", "compile_fail,E0308";
+    SearchKeys => "browser/search_keys.rs";
+    CustomEventPage => "browser/custom_event.rs";
+    CustomEventType => "browser/custom_event_type.rs", "compile_fail,E0277";
+    HrefString => "browser/href_string.rs", "compile_fail,E0277";
+    SafeUrlScript => "browser/safe_url_script.rs", "compile_fail,E0080";
+    AttrHref => "browser/attr_href.rs", "compile_fail,E0080";
+    AttrValue => "browser/attr_value.rs";
+    RenderUnder => "browser/render_under.rs";
+    RuntimeSrcText => "browser/runtime_src_text.rs", "compile_fail,E0308";
     // The samples added for the Learn group Quality and operations.
 }
 

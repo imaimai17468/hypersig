@@ -89,7 +89,6 @@ pub enum Learn {
     JavaScript,
     UncheckedValues,
     StaticPages,
-    EscapeHatches,
     // Quality and operations
     Security,
     Testing,
@@ -424,7 +423,6 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::JavaScript),
             Doc::Learn(Learn::UncheckedValues),
             Doc::Learn(Learn::StaticPages),
-            Doc::Learn(Learn::EscapeHatches),
         ],
     },
     Group {
@@ -730,7 +728,6 @@ impl Doc {
         Self::Learn(Learn::JavaScript),
         Self::Learn(Learn::UncheckedValues),
         Self::Learn(Learn::StaticPages),
-        Self::Learn(Learn::EscapeHatches),
         // Quality and operations
         Self::Learn(Learn::Security),
         Self::Learn(Learn::Testing),
@@ -908,10 +905,6 @@ impl Doc {
                 Learn::JavaScript => ("JavaScript libraries", "JavaScript のライブラリ"),
                 Learn::UncheckedValues => ("Values the types do not check", "型で検査しない値"),
                 Learn::StaticPages => ("Static pages", "静的ページ"),
-                Learn::EscapeHatches => (
-                    "When bindings and statements are not enough",
-                    "束縛と文で足りないとき",
-                ),
                 // Quality and operations
                 Learn::Security => ("Security", "セキュリティ"),
                 Learn::Testing => ("Testing", "テストを書く"),
@@ -1103,18 +1096,29 @@ impl Doc {
                     ja: "`tower-sessions` のレイヤーがブラウザごとのセッションを Cookie の向こうに持ち、エクストラクタがそこからサインイン中のメンバーを読みます。サインインしていなければ、ページはサインインのページへ移り、アクションには 401 を返します。",
                 },
                 // Browser features
-                Learn::NodeRefs
-                | Learn::Timers
-                | Learn::Keyboard
-                | Learn::UncheckedValues
-                | Learn::StaticPages => Doc::Learn(Learn::EscapeHatches).leads(),
+                Learn::NodeRefs => L {
+                    en: "A node ref names one element, so that a statement can focus it, select its text, scroll it into view, or open it as a popover or a dialog. The page covers declaring one, its statements, and the mistakes that rendering catches.",
+                    ja: "ノード参照は要素を 1 つ指す名前で、文はこれを使って要素にフォーカスしたり、テキストを選択したり、見える位置までスクロールしたり、ポップオーバーやダイアログとして開いたりします。宣言の仕方、使える文、描画で見つかるミスを説明します。",
+                },
+                Learn::Timers => L {
+                    en: "Statements that run on a timer, when an element is added to the document, or when a signal changes, and the browser's clock and random numbers that they can read.",
+                    ja: "タイマーで、要素が文書に追加されたときに、またはシグナルが変わったときに実行される文と、それらの文が読めるブラウザの時計と乱数を説明します。",
+                },
+                Learn::Keyboard => L {
+                    en: "Focus that moves between items with the arrow keys, the active option of a listbox while focus stays in a text field, and shortcuts that move focus through node refs.",
+                    ja: "矢印キーで項目間を移るフォーカス、フォーカスをテキスト欄に置いたまま動かすリストボックスのアクティブな選択肢、ノード参照を通してフォーカスを動かすショートカットを説明します。",
+                },
                 Learn::JavaScript => L {
                     en: "A map, a chart, or a rich text editor runs in the browser as a JavaScript library. Wrapped in a custom element, it takes values from the page's signals and hands its events back as typed values.",
                     ja: "地図、グラフ、リッチテキストエディタは、ブラウザで JavaScript のライブラリとして動きます。カスタム要素で包むと、ページのシグナルから値を受け取り、イベントを型付きの値としてページに返せます。",
                 },
-                Learn::EscapeHatches => L {
-                    en: "Most pages need only bindings and statements. The pages here cover focus, timers, and reactions to a change, links outside the router, and serving a page as a static file.",
-                    ja: "たいていのページは束縛と文だけで書けます。ここで扱うのは、フォーカス、タイマー、変化への反応、ルーターの外へのリンク、ページを静的ファイルとして配信する方法です。",
+                Learn::UncheckedValues => L {
+                    en: "Some values pass the type check while their content goes unchecked: the host of a URL, the value of an attribute or a CSS property, and the path of a file the page loads. For each, what is checked and what the browser does with a wrong value.",
+                    ja: "型の検査は通っても、中身は検査されない値があります。URL のホスト、属性や CSS プロパティの値、ページが読み込むファイルのパスです。それぞれについて、何が検査され、間違った値をブラウザがどう扱うかを説明します。",
+                },
+                Learn::StaticPages => L {
+                    en: "A page that calls no action can be written to a file and served by any static host, with the runtime next to it. The page also covers rendering under a path prefix and what a static host leaves out.",
+                    ja: "アクションを呼ばないページは、ファイルに書き出して、ランタイムと一緒に静的なホストで配信できます。パスの接頭辞の下での描画と、静的なホストで抜け落ちるものも説明します。",
                 },
                 // Quality and operations
                 Learn::Security => L {
@@ -1366,7 +1370,6 @@ impl Learn {
             Self::JavaScript => "javascript",
             Self::UncheckedValues => "unchecked-values",
             Self::StaticPages => "static-pages",
-            Self::EscapeHatches => "escape-hatches",
             // Quality and operations
             Self::Security => "security",
             Self::Testing => "testing",

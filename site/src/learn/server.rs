@@ -315,8 +315,8 @@ fn fragments(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A [`Fragment`](api:hypersig/trait.Fragment.html) is a part of the page the server can render again on its own. It owns its element id, so the id in the first page and the id in a later patch cannot differ. `fragment(&value)` renders it in the page, and `Patches::new().element(&value)` sends it again. The runtime compares the HTML it receives with the element that has that id and rewrites only the parts that differ. An element without an id is matched with the next one of the same tag and `name`, so a message inserted before an input leaves the input and its text in place. Where a patch does replace the element that has focus, focus and the text selection move to the new element with the same id or `name`. It leaves the `open` attribute of a `<details>` and a `<dialog>` alone, so a section the visitor opened or a dialog a script showed stays as it was. A patch includes the CSS rules its elements use. The server renders a fragment sent again on its own, so it cannot compare its ids with the rest of the page. The browser compares them once the patch is applied and writes a warning to the console when the patch adds an id that another element already carries. The same holds for the name of a `NodeRef`, which [When bindings and statements are not enough](learn/escape-hatches/) covers. The server sends the fragment's whole HTML each time, so a list that changes one item at a time costs less as a list signal drawn with `each_keyed`, which a [list patch](learn/calls/#list-patches) changes one item at a time, as `examples/todo` does.",
-                ja: "[`Fragment`](api:hypersig/trait.Fragment.html) は、サーバーが単独で描画し直せるページの一部です。フラグメントが要素の id を持つので、最初のページの id とあとの差分の id が食い違うことはありません。`fragment(&value)` はページの中にフラグメントを描画し、`Patches::new().element(&value)` はそれをもう一度送ります。ランタイムは送られた HTML とその id の要素を突き合わせ、違う部分だけを書き換えます。id のない要素は、タグと `name` が同じ次の要素と対応づけるので、入力欄の前にメッセージが加わっても、入力欄も中の文字もそのまま保持されます。フォーカスのある要素を差分が置き換えたときは、同じ id か `name` を持つ新しい要素にフォーカスと選択範囲を移します。`<details>` と `<dialog>` の `open` 属性には触れないので、訪問者が開いた項目やスクリプトが表示したダイアログはそのまま保持されます。差分にはその要素が使う CSS のルールも含まれます。サーバーは送り直すフラグメントを単独で描画するので、ページの残りの部分とは比べられません。そこでブラウザが差分を適用したあとに比べ、ほかの要素がすでに持つ id を差分が追加したときは、コンソールに警告を書きます。[束縛と文で足りないとき](learn/escape-hatches/) で説明する `NodeRef` の名前も同じです。サーバーはフラグメントの HTML を毎回まるごと送ります。項目が 1 件ずつ変わるリストは、`each_keyed` で描くリストのシグナルにして [リストの差分](learn/calls/#list-patches) で 1 件ずつ変えるほうが送る量が少なくなります。`examples/todo` はこの形です。",
+                en: "A [`Fragment`](api:hypersig/trait.Fragment.html) is a part of the page the server can render again on its own. It owns its element id, so the id in the first page and the id in a later patch cannot differ. `fragment(&value)` renders it in the page, and `Patches::new().element(&value)` sends it again. The runtime compares the HTML it receives with the element that has that id and rewrites only the parts that differ. An element without an id is matched with the next one of the same tag and `name`, so a message inserted before an input leaves the input and its text in place. Where a patch does replace the element that has focus, focus and the text selection move to the new element with the same id or `name`. It leaves the `open` attribute of a `<details>` and a `<dialog>` alone, so a section the visitor opened or a dialog a script showed stays as it was. A patch includes the CSS rules its elements use. The server renders a fragment sent again on its own, so it cannot compare its ids with the rest of the page. The browser compares them once the patch is applied and writes a warning to the console when the patch adds an id that another element already carries. The same holds for the name of a `NodeRef`, which [Node refs](learn/node-refs/) covers. The server sends the fragment's whole HTML each time, so a list that changes one item at a time costs less as a list signal drawn with `each_keyed`, which a [list patch](learn/calls/#list-patches) changes one item at a time, as `examples/todo` does.",
+                ja: "[`Fragment`](api:hypersig/trait.Fragment.html) は、サーバーが単独で描画し直せるページの一部です。フラグメントが要素の id を持つので、最初のページの id とあとの差分の id が食い違うことはありません。`fragment(&value)` はページの中にフラグメントを描画し、`Patches::new().element(&value)` はそれをもう一度送ります。ランタイムは送られた HTML とその id の要素を突き合わせ、違う部分だけを書き換えます。id のない要素は、タグと `name` が同じ次の要素と対応づけるので、入力欄の前にメッセージが加わっても、入力欄も中の文字もそのまま保持されます。フォーカスのある要素を差分が置き換えたときは、同じ id か `name` を持つ新しい要素にフォーカスと選択範囲を移します。`<details>` と `<dialog>` の `open` 属性には触れないので、訪問者が開いた項目やスクリプトが表示したダイアログはそのまま保持されます。差分にはその要素が使う CSS のルールも含まれます。サーバーは送り直すフラグメントを単独で描画するので、ページの残りの部分とは比べられません。そこでブラウザが差分を適用したあとに比べ、ほかの要素がすでに持つ id を差分が追加したときは、コンソールに警告を書きます。[ノード参照](learn/node-refs/) で説明する `NodeRef` の名前も同じです。サーバーはフラグメントの HTML を毎回まるごと送ります。項目が 1 件ずつ変わるリストは、`each_keyed` で描くリストのシグナルにして [リストの差分](learn/calls/#list-patches) で 1 件ずつ変えるほうが送る量が少なくなります。`examples/todo` はこの形です。",
             },
         ),
         program(Program::Fragments),
@@ -479,8 +479,8 @@ pub fn pages(site: Site) -> Part {
                         ja: "リンクは通常の `<a href>` なので、たどると次のページをサーバーから読み込み、離れたページのシグナルは失われます。",
                     },
                     L {
-                        en: "A link to another site or to a `#fragment` is a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), which [When bindings and statements are not enough](learn/escape-hatches/) covers. It checks the URL's scheme, and nothing checks that the address it names exists.",
-                        ja: "ほかのサイトや `#fragment` へのリンクには [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を使います。これは [束縛と文で足りないとき](learn/escape-hatches/) で説明します。`SafeUrl` が検査するのは URL のスキームだけで、その先のアドレスがあるかどうかは検査されません。",
+                        en: "A link to another site or to a `#fragment` is a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), which [Values the types do not check](learn/unchecked-values/) covers. It checks the URL's scheme, and nothing checks that the address it names exists.",
+                        ja: "ほかのサイトや `#fragment` へのリンクには [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を使います。これは [型で検査しない値](learn/unchecked-values/) で説明します。`SafeUrl` が検査するのは URL のスキームだけで、その先のアドレスがあるかどうかは検査されません。",
                     },
                 ],
             ),
@@ -593,143 +593,6 @@ pub fn styling(site: Site) -> Part {
                 en: "The [`style`](https://github.com/imaimai17468/hypersig/tree/main/examples/style) example in the repository puts each feature on one page, and the [`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) example shows the components of `hypersig_ui`, which are built with these features.",
                 ja: "リポジトリの [`style`](https://github.com/imaimai17468/hypersig/tree/main/examples/style) の例はそれぞれの機能を 1 つのページにまとめています。[`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) の例は、これらの機能を使って作った `hypersig_ui` のコンポーネントを示します。",
             },
-        ),
-    ])
-}
-
-pub fn escape_hatches(site: Site) -> Part {
-    parts(vec![
-        title(Doc::Learn(Learn::EscapeHatches).title(site)),
-        lead(site, Doc::Learn(Learn::EscapeHatches).leads()),
-        heading(
-            site,
-            L {
-                en: "Node refs",
-                ja: "ノード参照",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "A [`NodeRef`](api:hypersig/struct.NodeRef.html) names one element for a DOM call that no binding covers. Declare it with [`node_ref!`](api:hypersig/macro.node_ref.html), attach it with `El::node_ref`, and use its statements: `focus`, `blur`, `select`, `scroll_into_view`, `show_popover`, and `hide_popover`. `node_ref!` names the constant after its module and identifier, so two constants never share a name. Each item of a list may carry the same constant. One constant on any other two elements, or one fixed id from `El::id` on two elements, makes `Page::render` panic, so a test that renders the page finds the second. The reset button below stops the stopwatch and moves focus to the start button.",
-                ja: "[`NodeRef`](api:hypersig/struct.NodeRef.html) は、束縛では扱えない DOM の呼び出しのために要素を 1 つ指す名前です。[`node_ref!`](api:hypersig/macro.node_ref.html) で宣言し、`El::node_ref` で要素に付け、`focus`、`blur`、`select`、`scroll_into_view`、`show_popover`、`hide_popover` の文を使います。`node_ref!` はモジュールと識別子から定数の名前を作るので、2 つの定数が同じ名前になることはありません。リストの項目ごとに同じ定数を付けるのはかまいません。それ以外で 2 つの要素に同じ定数や、`El::id` で同じ固定の id を付けると `Page::render` が panic するので、ページを描画するテストで見つかります。下のリセットボタンはストップウォッチを止め、フォーカスをスタートボタンに移します。",
-            },
-        ),
-        demo::show(site, Demo::Stopwatch),
-        heading(
-            site,
-            L {
-                en: "Timers and reactions",
-                ja: "タイマーと変化への反応",
-            },
-        ),
-        bullets(
-            site,
-            &[
-                L {
-                    en: "`on_interval(period, stmt)` runs a statement while the element is in the document, and `on_timeout(delay, stmt)` runs one once.",
-                    ja: "`on_interval(period, stmt)` は要素が文書にある間、文を繰り返し実行し、`on_timeout(delay, stmt)` は文を 1 回だけ実行します。",
-                },
-                L {
-                    en: "`on_load(stmt)` runs once when the element enters the document.",
-                    ja: "`on_load(stmt)` は、要素が文書に入ったときに 1 回実行します。",
-                },
-                L {
-                    en: "`effect(stmt)` runs when the element enters the document and again whenever a signal the statement reads changes.",
-                    ja: "`effect(stmt)` は、要素が文書に入ったときと、文が読むシグナルが変わるたびに実行します。",
-                },
-                L {
-                    en: "`on_signal_change(sig, stmt)` runs whenever the signal, or any field inside it, changes, whatever changed it.",
-                    ja: "`on_signal_change(sig, stmt)` は、シグナルかその中のフィールドが変わるたびに、何が変えたかにかかわらず実行します。",
-                },
-                L {
-                    en: "`Expr::now()` reads the browser's clock, and `Expr::random_below(n)` returns a random integer.",
-                    ja: "`Expr::now()` はブラウザの時計を読み、`Expr::random_below(n)` はランダムな整数を返します。",
-                },
-            ],
-        ),
-        show(Snippet::Effects),
-        heading(
-            site,
-            L {
-                en: "Keyboard patterns",
-                ja: "キーボード操作のパターン",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "`roving_focus` moves focus between the items inside an element with the arrow keys, Home, and End, as a tab list or a menu needs. `active_descendant` keeps focus on a text field while the up and down arrows move through the options of a listbox, as a combobox needs. `hypersig_ui` builds its tabs, menus, listbox, and combobox with them.",
-                ja: "`roving_focus` は、タブの一覧やメニューが必要とするように、矢印キーと Home、End で要素の中の項目間にフォーカスを動かします。`active_descendant` は、コンボボックスが必要とするように、フォーカスをテキスト欄に置いたまま上下の矢印キーでリストボックスの選択肢を移動させます。`hypersig_ui` のタブ、メニュー、リストボックス、コンボボックスは、この 2 つを使って作っています。",
-            },
-        ),
-        heading(
-            site,
-            L {
-                en: "Links the router does not serve",
-                ja: "ルーターが配信しないページへのリンク",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "`El::href` and `El::src` take a link built from a [`Route`](learn/pages/), or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html) for an address the router does not serve, such as another site or a `#fragment` on the same page. A `SafeUrl` holds only a URL whose scheme cannot run a script: `http:`, `https:`, `mailto:`, or none at all. `SafeUrl::new` takes a URL written in the program, and in a `const` a `javascript:` URL fails to compile. `SafeUrl::parse` reads a URL from outside the program, such as one a visitor typed, and returns an [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) error where `SafeUrl::new` would refuse it. `attr` panics on `href` and `src`, so neither can be written from a plain string.",
-                ja: "`El::href` と `El::src` は、[`Route`](learn/pages/) から作ったリンクのほかに、ルーターが配信しないアドレスのための [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を受け取ります。ほかのサイトや、同じページの `#fragment` へのリンクがこれにあたります。`SafeUrl` に入るのは、スクリプトを実行できないスキーム（`http:`、`https:`、`mailto:`）の URL と、スキームのない URL だけです。`SafeUrl::new` はプログラムに書いた URL を受け取り、`const` の中では `javascript:` の URL がコンパイルエラーになります。`SafeUrl::parse` は訪問者が入力したものなど、プログラムの外から来た URL を読み、`SafeUrl::new` が受け付けない URL には [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) のエラーを返します。`attr` は `href` と `src` を渡すとパニックするので、どちらも素の文字列からは書けません。",
-            },
-        ),
-        show(Snippet::SafeUrl),
-        para(
-            site,
-            L {
-                en: "The host is not checked, so `https://evil.example/a.js` is a `SafeUrl` too. A visitor's URL suits a link the visitor follows, and not the `src` of an `<iframe>`, which would show whatever page the host serves inside this one.",
-                ja: "ホストは検査しないので、`https://evil.example/a.js` も `SafeUrl` です。訪問者の URL は訪問者自身がたどるリンクには使えますが、`<iframe>` の `src` には使えません。そのホストが配信するページを、このページの中にそのまま表示するからです。",
-            },
-        ),
-        heading(
-            site,
-            L {
-                en: "Static pages",
-                ja: "静的なページ",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "A page that calls no action needs no server. `Page::runtime_src` loads the runtime from another URL, and `RUNTIME_JS` holds its source to write next to the page. `Page::render_under` renders a page for a site served under a `Base`, such as a GitHub Pages project site at `/hypersig`. This site is built that way: a Rust program renders each page with hypersig and writes the files that GitHub Pages serves. A static file carries none of the headers a served page has, `X-Frame-Options` and `frame-ancestors` among them, and a `<meta>` cannot carry `frame-ancestors`, so set them in the host's configuration where the host allows it.",
-                ja: "アクションを呼び出さないページにはサーバーは不要です。`Page::runtime_src` は別の URL からランタイムを読み込み、`RUNTIME_JS` はページの隣に書き出すランタイムのソースを持ちます。`Page::render_under` は、`/hypersig` にある GitHub Pages のプロジェクトサイトのように `Base` の下で配信するサイトのページを描画します。このサイトもその方法で作っています。Rust のプログラムが hypersig で各ページを描画し、GitHub Pages が配信するファイルを書き出します。静的なファイルには、配信するページに付く `X-Frame-Options` や `frame-ancestors` のヘッダーが付きません。`<meta>` では `frame-ancestors` を指定できないので、ヘッダーを設定できるホストではホストの設定で送ってください。",
-            },
-        ),
-        show(Snippet::StaticPage),
-        heading(
-            site,
-            L {
-                en: "Where hypersig does not fit",
-                ja: "hypersig が向かない場面",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "The server holds the state, and the browser runs only the operations hypersig provides and the scripts a page loads. It does not suit these applications:",
-                ja: "状態はサーバーが持ち、ブラウザは hypersig が用意した操作と、ページが読み込んだスクリプトしか実行しません。そのため、次のようなアプリケーションには向きません。",
-            },
-        ),
-        bullets(
-            site,
-            &[
-                L {
-                    en: "An application whose main work runs inside a JavaScript library, such as a drawing tool or a spreadsheet. hypersig only passes values in and out of the library, as [JavaScript libraries](learn/javascript/) shows, and the state the library keeps is not among the page's signals.",
-                    ja: "作図ツールや表計算ソフトのように、主な処理が JavaScript のライブラリの中で動くアプリケーション。hypersig は [JavaScript のライブラリ](learn/javascript/) で示すようにライブラリと値をやり取りするだけで、ライブラリが持つ状態はページのシグナルに入りません。",
-                },
-                L {
-                    en: "An application that works without a connection to the server, such as one used offline.",
-                    ja: "オフラインで使うものなど、サーバーにつながらなくても動くアプリケーション。",
-                },
-                L {
-                    en: "A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so a form calls an action only through the runtime, which keeps the browser from submitting any form itself. A browser that does not run the runtime shows the first HTML, and submitting a form there loads the page's own URL again with the form's named fields in the query, which runs no action.",
-                    ja: "JavaScript を無効にしても、ボタンやフォームが動く必要のあるページ。ページには `action` 属性も `formaction` 属性も書けないので、フォームからアクションを呼べるのはランタイムだけです。ランタイムは、ブラウザがフォームを自分で送ることも止めます。ランタイムを実行しないブラウザは最初の HTML を表示します。そこでフォームを送ると、名前の付いたフィールドをクエリに入れて同じページの URL を読み込み直すだけで、アクションは実行されません。",
-                },
-            ],
         ),
     ])
 }

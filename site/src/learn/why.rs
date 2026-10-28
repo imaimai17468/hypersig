@@ -32,7 +32,8 @@ pub fn why(site: Site) -> Part {
             .chain(state(site))
             .chain(fetching(site))
             .chain(unchecked(site))
-            .chain(costs(site)),
+            .chain(costs(site))
+            .chain(poor_fit(site)),
     )
 }
 
@@ -514,8 +515,8 @@ fn costs(site: Site) -> [Part; 3] {
             site,
             &[
                 L {
-                    en: "The browser runs only what `Expr` and `Stmt` express: arithmetic, comparisons, text, lists, conditions, and calls to the server and the DOM. A computation outside that set runs on the server. [When bindings and statements are not enough](learn/escape-hatches/) covers the browser features a page reaches beyond them, and the applications that need a JavaScript library and fit hypersig poorly.",
-                    ja: "ブラウザで実行できるのは、`Expr` と `Stmt` で書けることだけです。四則演算、比較、テキスト、リスト、条件、サーバーと DOM の呼び出しが書けます。それ以外の計算はサーバーで実行します。束縛と文のほかにページから使えるブラウザの機能と、JavaScript のライブラリが必要で hypersig に向かないアプリケーションは、[束縛と文で足りないとき](learn/escape-hatches/) で説明します。",
+                    en: "The browser runs only what `Expr` and `Stmt` express: arithmetic, comparisons, text, lists, conditions, and calls to the server and the DOM. A computation outside that set runs on the server. [Node refs](learn/node-refs/) and the pages after it cover the browser features a page reaches beyond them, and [Where hypersig does not fit](learn/why/#where-hypersig-does-not-fit) the applications that need a JavaScript library and fit hypersig poorly.",
+                    ja: "ブラウザで実行できるのは、`Expr` と `Stmt` で書けることだけです。四則演算、比較、テキスト、リスト、条件、サーバーと DOM の呼び出しが書けます。それ以外の計算はサーバーで実行します。束縛と文のほかにページから使えるブラウザの機能は [ノード参照](learn/node-refs/) とそれに続くページで、JavaScript のライブラリが必要で hypersig に向かないアプリケーションは [hypersig が向かない場面](learn/why/#where-hypersig-does-not-fit) で説明します。",
                 },
                 L {
                     en: "Signal values cross as JSON, so a signal's type implements serde's traits. The browser holds integers exactly only from -2^53 to 2^53, so the server panics before it sends an integer past that in a page, a patch, or a literal, and an identifier or an amount that large belongs in a `String`. Arithmetic in the browser that leaves the range is not checked and loses precision.",
@@ -537,6 +538,42 @@ fn costs(site: Site) -> [Part; 3] {
                 en: "Next, [Building the page](learn/describing-the-page/) shows how the HTML is built.",
                 ja: "HTML の組み立て方は次の [ページを組み立てる](learn/describing-the-page/) で説明します。",
             },
+        ),
+    ]
+}
+
+fn poor_fit(site: Site) -> [Part; 3] {
+    [
+        heading(
+            site,
+            L {
+                en: "Where hypersig does not fit",
+                ja: "hypersig が向かない場面",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The server holds the state, and the browser runs only the operations hypersig provides and the scripts a page loads. It does not suit these applications:",
+                ja: "状態はサーバーが持ち、ブラウザは hypersig が用意した操作と、ページが読み込んだスクリプトしか実行しません。そのため、次のようなアプリケーションには向きません。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "An application whose main work runs inside a JavaScript library, such as a drawing tool or a spreadsheet. hypersig only passes values in and out of the library, as [JavaScript libraries](learn/javascript/) shows, and the state the library keeps is not among the page's signals.",
+                    ja: "作図ツールや表計算ソフトのように、主な処理が JavaScript のライブラリの中で動くアプリケーション。hypersig は [JavaScript のライブラリ](learn/javascript/) で示すようにライブラリと値をやり取りするだけで、ライブラリが持つ状態はページのシグナルに入りません。",
+                },
+                L {
+                    en: "An application that works without a connection to the server, such as one used offline.",
+                    ja: "オフラインで使うものなど、サーバーにつながらなくても動くアプリケーション。",
+                },
+                L {
+                    en: "A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so a form calls an action only through the runtime, which keeps the browser from submitting any form itself. A browser that does not run the runtime shows the first HTML, and submitting a form there loads the page's own URL again with the form's named fields in the query, which runs no action.",
+                    ja: "JavaScript を無効にしても、ボタンやフォームが動く必要のあるページ。ページには `action` 属性も `formaction` 属性も書けないので、フォームからアクションを呼べるのはランタイムだけです。ランタイムは、ブラウザがフォームを自分で送ることも止めます。ランタイムを実行しないブラウザは最初の HTML を表示します。そこでフォームを送ると、名前の付いたフィールドをクエリに入れて同じページの URL を読み込み直すだけで、アクションは実行されません。",
+                },
+            ],
         ),
     ]
 }

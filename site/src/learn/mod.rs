@@ -2,10 +2,10 @@
 
 mod api;
 mod basics;
+mod browser;
 mod database;
 mod deploying;
 mod forms;
-mod javascript;
 mod requests;
 mod security;
 mod server;
@@ -68,13 +68,12 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::Api => api::api(site),
         Learn::Sessions => sessions::sessions(site),
         // Browser features
-        Learn::NodeRefs
-        | Learn::Timers
-        | Learn::Keyboard
-        | Learn::UncheckedValues
-        | Learn::StaticPages
-        | Learn::EscapeHatches => server::escape_hatches(site),
-        Learn::JavaScript => javascript::javascript(site),
+        Learn::NodeRefs => browser::node_refs::page(site),
+        Learn::Timers => browser::timers::page(site),
+        Learn::Keyboard => browser::keyboard::page(site),
+        Learn::JavaScript => browser::javascript::page(site),
+        Learn::UncheckedValues => browser::unchecked_values::page(site),
+        Learn::StaticPages => browser::static_pages::page(site),
         // Quality and operations
         Learn::Security => security::security(site),
         Learn::Testing | Learn::TestingPages => testing::testing(site),

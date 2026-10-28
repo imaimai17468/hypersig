@@ -232,8 +232,8 @@ pub fn describing_the_page(site: Site) -> Part {
                     ja: "`data-hs-` で始まる名前。ランタイムがこの属性を読むので、型付きのメソッドだけが書きます。",
                 },
                 L {
-                    en: "`href`, `src`, `poster`, and `srcset`, which `El::href`, `El::src`, `El::poster`, and `El::srcset` set from a `Link` or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), a URL whose scheme cannot run a script. [When bindings and statements are not enough](learn/escape-hatches/) covers `SafeUrl`.",
-                    ja: "`href`、`src`、`poster`、`srcset`。`El::href`、`El::src`、`El::poster`、`El::srcset` が、`Link` か、スクリプトを実行できないスキームの URL を持つ [`SafeUrl`](api:hypersig/struct.SafeUrl.html) から設定します。`SafeUrl` は [束縛と文で足りないとき](learn/escape-hatches/) で説明します。",
+                    en: "`href`, `src`, `poster`, and `srcset`, which `El::href`, `El::src`, `El::poster`, and `El::srcset` set from a `Link` or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), a URL whose scheme cannot run a script. [Values the types do not check](learn/unchecked-values/) covers `SafeUrl`.",
+                    ja: "`href`、`src`、`poster`、`srcset`。`El::href`、`El::src`、`El::poster`、`El::srcset` が、`Link` か、スクリプトを実行できないスキームの URL を持つ [`SafeUrl`](api:hypersig/struct.SafeUrl.html) から設定します。`SafeUrl` は [型で検査しない値](learn/unchecked-values/) で説明します。",
                 },
                 L {
                     en: "A name starting with `on`, such as `onclick`. The `on_*` methods, such as `on_click`, attach a statement in its place.",
