@@ -267,6 +267,16 @@ pub(crate) fn open_block(
     out.push('{');
 }
 
+/// Writes `@media `, then the queries of `media` joined by ` and `, then
+/// the `{` that opens the block. A media query names its media type before
+/// any feature, and the browser reads `(min-width: 48rem) and print` as
+/// `not all`, so `print` comes first.
+pub(crate) fn open_media(out: &mut String, media: &[Media]) {
+    let types = media.iter().filter(|m| **m == Media::Print);
+    let features = media.iter().filter(|m| **m != Media::Print);
+    open_block(out, "@media ", types.chain(features).map(|m| m.query()));
+}
+
 fn insert_ranked(list: &mut Vec<(usize, PseudoClass)>, p: PseudoClass) {
     let key = (p.rank(), p);
     if let Err(at) = list.binary_search(&key) {
@@ -336,7 +346,7 @@ impl Conditions {
     pub(crate) fn open(&self, out: &mut String) -> usize {
         let mut open = 0;
         if !self.media.is_empty() {
-            open_block(out, "@media ", self.media.iter().map(|m| m.query()));
+            open_media(out, &self.media);
             open += 1;
         }
         if !self.container.is_empty() {

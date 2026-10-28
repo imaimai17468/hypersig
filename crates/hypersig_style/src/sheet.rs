@@ -351,6 +351,20 @@ mod tests {
     }
 
     #[test]
+    fn writes_print_before_the_features_it_nests_in() {
+        let mut sheet = Sheet::new();
+        sheet.add(&Style::new().on(
+            Media::Md,
+            Style::new().on(Media::Print, Style::new().color(Color::RED)),
+        ));
+        assert!(
+            css(&sheet)[0].ends_with(
+                r"{@media print and (min-width: 48rem){.md\:print\:color_red{color:red}}}"
+            )
+        );
+    }
+
+    #[test]
     fn writes_group_and_peer_conditions_before_the_class() {
         let style = Style::new()
             .on(

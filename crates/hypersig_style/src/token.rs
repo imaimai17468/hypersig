@@ -3,7 +3,7 @@
 
 use std::fmt::{self, Write as _};
 
-use crate::condition::{Media, open_block};
+use crate::condition::{Media, open_media};
 use crate::sheet::{ORDER, TOKEN_LAYER};
 use crate::value::{Angle, Color, Length, Percentage, Time};
 
@@ -164,7 +164,7 @@ impl Theme {
         let mut out = format!("{ORDER}@layer {TOKEN_LAYER}{{");
         for media in groups {
             if !media.is_empty() {
-                open_block(&mut out, "@media ", media.iter().map(|m| m.query()));
+                open_media(&mut out, media);
             }
             out.push_str(":root{");
             let mut first = true;
@@ -224,6 +224,20 @@ mod tests {
             "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
              @layer hypersig-tokens{:root{--brand:navy;--gap:8px}\
              @media (prefers-color-scheme: dark){:root{--brand:white}}}"
+        );
+    }
+
+    #[test]
+    fn writes_print_first_in_a_theme_block() {
+        let brand = Token::new("brand", Color::RED);
+        let theme = Theme::new().on(
+            Media::Dark,
+            Theme::new().on(Media::Print, Theme::new().set(&brand, Color::BLACK)),
+        );
+        assert!(
+            theme
+                .to_css()
+                .contains("@media print and (prefers-color-scheme: dark){:root{--brand:black}}")
         );
     }
 
