@@ -2,6 +2,23 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.13.0] - 2026-10-28
+
+### Breaking
+
+- `Style::scrollbar_color` takes a `(thumb, track)` pair of colors, and `ScrollbarColor::Color` is gone. One color wrote `scrollbar-color:red`, which the browser drops.
+- `El::child` and `El::children` on a `p` panic on an element at which the HTML parser ends the paragraph, such as a `div`, a `ul`, or another `p`, anywhere inside the child outside a `button` or a template. The parser moved such an element after the paragraph, so a condition in it was drawn twice and the first copy stayed.
+- A style number that is NaN or infinite panics in the call that sets it, as a length, a duration, and an angle already did. `opacity(Opacity::Number(f64::NAN))` and `flex_grow(f64::INFINITY)` wrote `NaN` or `inf`, which the browser drops.
+
+### Fixed
+
+- A server patch that adds or removes an element before a list or a condition in the same parent keeps the list's template and the items the runtime drew after it, with the text typed into them and their focus.
+- A server patch that inserts a template before an input without an id keeps that input.
+- `Route::url` writes an `i64` or `u64` search value past 2^53 with its exact digits, so the handler receives it exactly. The docs of `Search` say that `-0.0` arrives as `0.0` and that a NaN or an infinity is left out.
+- A `print` rule nested in a breakpoint, a color scheme, or reduced motion writes `print` first, which Chrome needs to apply it.
+- `fixed` with many digits writes a value exactly halfway as `toFixed` does.
+- The docs of `El::bind` say what a bound field shows for a signal that holds a carriage return.
+
 ## [0.12.0] - 2026-10-28
 
 ### Breaking

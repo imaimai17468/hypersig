@@ -18,7 +18,7 @@ axum = ["dep:axum", "hypersig/axum"]
 
 [dependencies]
 axum = { version = "0.8.9", optional = true, default-features = false }
-hypersig = { path = "../hypersig", version = "=0.12.0", default-features = false }
+hypersig = { path = "../hypersig", version = "=0.13.0", default-features = false }
 serde.workspace = true
 serde_json.workspace = true
 
