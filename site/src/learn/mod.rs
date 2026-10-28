@@ -11,11 +11,11 @@ mod security;
 mod server;
 mod sessions;
 pub mod snippet;
+mod start;
 mod state;
 mod testing;
 mod troubleshooting;
 mod upgrading;
-mod why;
 
 use crate::Site;
 use crate::code::{self, Lang};
@@ -26,8 +26,9 @@ use crate::prose::Part;
 pub fn content(site: Site, page: Learn) -> Part {
     match page {
         // Get started
-        Learn::QuickStart | Learn::DevServer => basics::quick_start(site),
-        Learn::Why => why::why(site),
+        Learn::QuickStart => start::quick_start::page(site),
+        Learn::Why => start::why::page(site),
+        Learn::DevServer => start::dev_server::page(site),
         // Building the page
         Learn::Elements
         | Learn::ThePage

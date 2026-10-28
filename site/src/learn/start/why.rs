@@ -1,7 +1,7 @@
 //! Why hypersig: what hypermedia is, the problem hypersig addresses, how the
 //! HTML carries the page's behavior, and what that costs.
 
-use super::snippet::{Snippet, show};
+use super::super::snippet::{Snippet, show};
 use crate::Site;
 use crate::code::{self, Lang};
 use crate::doc::{Doc, Learn};
@@ -20,7 +20,7 @@ const COUNTER_HTML: &str = r#"<body data-hs-signals='{"count":0}'>
   </div>
 </body>"#;
 
-pub fn why(site: Site) -> Part {
+pub fn page(site: Site) -> Part {
     parts(
         intro(site)
             .into_iter()
