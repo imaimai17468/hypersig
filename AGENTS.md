@@ -28,9 +28,9 @@ The wire format between the two halves is defined twice, once in `crates/hypersi
 
 ## Edit loop
 
-While editing, build with [blaze](https://github.com/indexable-inc/blaze), which compiles only the functions an edit changed: `blaze build`, `blaze run -p <package>`, and `blaze test -p <crate>`. After an edit to `html.rs`, `blaze build -p site` took 0.36 s on one Mac where `cargo build` took 4.4 s. Install it with `curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh`, and leave `blaze enable` off, because it links `cargo clippy` to blaze's own 24 lints.
+While editing, build with [blaze](https://github.com/indexable-inc/blaze), which compiles only the functions an edit changed: `blaze build`, `blaze run -p <package>`, and `blaze test -p <crate>`. After an edit to a function body in `html.rs`, `blaze build -p site` took 0.7 to 0.9 s on one Mac where `cargo build` took 5.7 to 7.2 s. Install it with `curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh`, and leave `blaze enable` off, because it links `cargo clippy` to blaze's own 24 lints.
 
-blaze compiles some code that rustc rejects (the `ra-jit` build its installer gives today compiles a use after move), so run `cargo check` before reporting, and run the list below with cargo. Two commands stay on cargo while editing too. `cargo test --doc`: blaze runs one rustc per example where cargo merges them, 82 s against 1.3 s for `hypersig`'s 126. `cargo test --workspace`: blaze 0.1.0 fails to load the whole workspace for tests and hands every run to cargo.
+blaze builds with its own toolchain (Rust nightly-2026-10-27 for blaze 0.20261027.0), not the 1.99 that `rust-toolchain.toml` pins, so run `cargo check` before reporting, and run the list below with cargo. `cargo test --doc` stays on cargo while editing too: blaze 0.20261027.0 took 105 s for `hypersig`'s 128 doctests where cargo took 17 s, and failed the two marked `compile_fail`, in which it found no error.
 
 The tests that start another program run outside blaze 0.1.0's sandbox, by `[package.metadata.blaze.sandbox]` in `crates/hypersig/Cargo.toml`, `crates/hypersig_ui/Cargo.toml` (trybuild starts cargo), and `crates/hypersig_cli/Cargo.toml` (its tests start `cargo-hypersig`).
 
