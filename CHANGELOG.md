@@ -2,6 +2,12 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.13.2] - 2026-10-28
+
+### Fixed
+
+- On macOS, `cargo hypersig dev` builds a project from `cargo hypersig new` with blaze. blaze refused such a project unless its dev profile set `split-debuginfo`, so `dev` built every change with Cargo after blaze failed: a median of 13.7 s from a save to the new page, where it is now 1.1 s.
+
 ## [0.13.1] - 2026-10-28
 
 ### Fixed
