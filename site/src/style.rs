@@ -493,6 +493,49 @@ fn animation(site: Site, head: Part) -> Part {
                 ja: "同じ名前の 2 つの `Keyframes` は、ブラウザにとっては 1 つのルールとして扱われ、スタイルシートで後にある方が使われます。名前が重複していないかは検査されません。",
             },
         ),
+        heading(
+            site,
+            L {
+                en: "Page transitions",
+                ja: "ページ遷移",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A link from one page to another loads the new page, so the browser's cross-document view transitions animate the change. A page opts in with the CSS rule `@view-transition { navigation: auto; }`, and both the page left and the page reached need it. The browser takes a picture of the old page, shows the new one, and fades between the two unless `::view-transition-old(root)` and `::view-transition-new(root)` set other animations. `Style` has no at-rule or pseudo-element for these, so they go in a [`Stylesheet`](api:hypersig/html/struct.Stylesheet.html), which `Page::style` adds to `<head>`.",
+                ja: "あるページから別のページへのリンクは新しいページを読み込むので、その切り替わりはブラウザのクロスドキュメントの View Transitions でアニメーションできます。ページは CSS の `@view-transition { navigation: auto; }` で有効にし、移る前のページと移った先のページの両方にこのルールが要ります。ブラウザは前のページの画像を撮って新しいページを表示し、`::view-transition-old(root)` と `::view-transition-new(root)` で別のアニメーションを指定しない限り、2 つをクロスフェードでつなぎます。`Style` にはこのアットルールも擬似要素もないので、[`Stylesheet`](api:hypersig/html/struct.Stylesheet.html) に書き、`Page::style` で `<head>` に入れます。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "An element with a `view-transition-name` moves on its own, from where it was on the old page to where it is on the new one. `Style::view_transition_name` sets the name, and an element that keeps its place on both pages, such as a header, then stays still while the rest of the page changes.",
+                ja: "`view-transition-name` を持つ要素は、前のページでの位置から新しいページでの位置へ、ほかとは別に動きます。名前は `Style::view_transition_name` で付けます。ヘッダーのように両方のページで同じ位置にある要素に名前を付けると、その要素はページのほかの部分が切り替わるあいだ動きません。",
+            },
+        ),
+        show(Snippet::ViewTransitions),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "The name goes through `raw(...)`, and nothing checks it. Two elements of one page with the same name make the browser skip the transition.",
+                    ja: "名前は `raw(...)` で渡し、検査はされません。1 つのページで 2 つの要素が同じ名前を持つと、ブラウザは遷移を飛ばします。",
+                },
+                L {
+                    en: "A patch from the server changes the page in place and loads no page, so it plays no view transition.",
+                    ja: "サーバーからのパッチはページをその場で書き換え、ページを読み込まないので、View Transitions は起きません。",
+                },
+                L {
+                    en: "Chrome and Edge play cross-document view transitions from version 126, and Safari from 18.2. A browser without them changes the page as usual.",
+                    ja: "クロスドキュメントの View Transitions は、Chrome と Edge では 126 から、Safari では 18.2 から動きます。対応していないブラウザでは、ページは普通に切り替わります。",
+                },
+                L {
+                    en: "Put the animations under `@media (prefers-reduced-motion: no-preference)`, and set `animation: none` on the view transition pseudo-elements under `@media (prefers-reduced-motion: reduce)`. Without the second rule, a visitor who asks for reduced motion still sees the browser's default cross-fade. This site does the same.",
+                    ja: "アニメーションは `@media (prefers-reduced-motion: no-preference)` の中に書き、`@media (prefers-reduced-motion: reduce)` の中で View Transitions の擬似要素に `animation: none` を指定します。後者がないと、動きを減らすよう求める訪問者にもブラウザ既定のクロスフェードが表示されます。このサイトも同じように書いています。",
+                },
+            ],
+        ),
     ])
 }
 

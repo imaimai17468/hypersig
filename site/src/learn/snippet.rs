@@ -91,6 +91,7 @@ snippets! {
     GlobalRules => "global_rules.rs";
     Patterns => "patterns.rs";
     Animation => "animation.rs";
+    ViewTransitions => "view_transitions.rs";
     Unchecked => "unchecked.rs";
     I18nLocale => "i18n_locale.rs";
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";
