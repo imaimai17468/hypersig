@@ -25,32 +25,68 @@ use crate::prose::Part;
 /// The article of `page`.
 pub fn content(site: Site, page: Learn) -> Part {
     match page {
+        // Get started
+        Learn::QuickStart | Learn::DevServer => basics::quick_start(site),
         Learn::Why => why::why(site),
-        Learn::QuickStart => basics::quick_start(site),
-        Learn::DescribingThePage => basics::describing_the_page(site),
-        Learn::Signals => state::signals(site),
-        Learn::Expressions => state::expressions(site),
-        Learn::Lists => state::lists(site),
-        Learn::Server => server::server(site),
-        Learn::CallsInDepth => server::calls_in_depth(site),
-        Learn::Forms => forms::forms(site),
-        Learn::Requests => requests::requests(site),
-        Learn::Sessions => sessions::sessions(site),
+        // Building the page
+        Learn::Elements
+        | Learn::ThePage
+        | Learn::Bindings
+        | Learn::Components
+        | Learn::DescribingThePage => basics::describing_the_page(site),
+        Learn::Styling => server::styling(site),
+        // Browser state
+        Learn::Signals
+        | Learn::NestedSignals
+        | Learn::ComputedSignals
+        | Learn::PersistedSignals => state::signals(site),
+        Learn::Expressions | Learn::Statements | Learn::Events | Learn::BindingInputs => {
+            state::expressions(site)
+        }
+        Learn::Lists | Learn::ListItems => state::lists(site),
+        // Talking to the server
+        Learn::Actions
+        | Learn::CallStatus
+        | Learn::Optimistic
+        | Learn::Patches
+        | Learn::Fragments
+        | Learn::Streams
+        | Learn::Server => server::server(site),
+        Learn::OverlappingCalls | Learn::ListPatches | Learn::CallsInDepth => {
+            server::calls_in_depth(site)
+        }
+        // Pages and routing
+        Learn::Routes | Learn::SearchParams | Learn::ErrorPages | Learn::BasePath => {
+            server::routes_in_depth(site)
+        }
+        Learn::Links | Learn::ChildPages | Learn::Pages => server::pages(site),
+        // Forms and requests
+        Learn::Forms | Learn::FormValidation => forms::forms(site),
+        Learn::Requests | Learn::Errors | Learn::Uploads => requests::requests(site),
+        // Data and sign-in
         Learn::Database => database::database(site),
         Learn::Api => api::api(site),
-        Learn::Pages => server::pages(site),
-        Learn::RoutesInDepth => server::routes_in_depth(site),
-        Learn::Styling => server::styling(site),
-        Learn::EscapeHatches => server::escape_hatches(site),
+        Learn::Sessions => sessions::sessions(site),
+        // Browser features
+        Learn::NodeRefs
+        | Learn::Timers
+        | Learn::Keyboard
+        | Learn::UncheckedValues
+        | Learn::StaticPages
+        | Learn::EscapeHatches => server::escape_hatches(site),
         Learn::JavaScript => javascript::javascript(site),
+        // Quality and operations
+        Learn::Security => security::security(site),
+        Learn::Testing | Learn::TestingPages => testing::testing(site),
+        Learn::CompileErrors | Learn::Debugging | Learn::Troubleshooting => {
+            troubleshooting::troubleshooting(site)
+        }
+        Learn::Upgrading => upgrading::upgrading(site),
+        // Deploy
         Learn::Deploying => deploying::deploying(site),
         Learn::DeployContainer => deploying::container::page(site),
         Learn::DeployCloudflare => deploying::cloudflare::page(site),
         Learn::DeployVercel => deploying::vercel::page(site),
-        Learn::Security => security::security(site),
-        Learn::Testing => testing::testing(site),
-        Learn::Troubleshooting => troubleshooting::troubleshooting(site),
-        Learn::Upgrading => upgrading::upgrading(site),
     }
 }
 

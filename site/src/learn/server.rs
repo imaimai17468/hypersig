@@ -159,8 +159,8 @@ pub fn calls_in_depth(site: Site) -> Part {
 
 pub fn routes_in_depth(site: Site) -> Part {
     parts(vec![
-        title(Doc::Learn(Learn::RoutesInDepth).title(site)),
-        lead(site, Doc::Learn(Learn::RoutesInDepth).leads()),
+        title(Doc::Learn(Learn::Routes).title(site)),
+        lead(site, Doc::Learn(Learn::Routes).leads()),
         heading(
             site,
             L {

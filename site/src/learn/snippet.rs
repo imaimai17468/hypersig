@@ -134,6 +134,15 @@ snippets! {
     TroubleId => "troubleshooting/id.rs", "compile_fail,E0080";
     TroubleComputed => "troubleshooting/computed.rs", "compile_fail,E0277";
     TroubleCallError => "troubleshooting/call_error.rs";
+    // The samples added for the Learn group Get started.
+    // The samples added for the Learn group Building the page.
+    // The samples added for the Learn group Browser state.
+    // The samples added for the Learn group Talking to the server.
+    // The samples added for the Learn group Pages and routing.
+    // The samples added for the Learn group Forms and requests.
+    // The samples added for the Learn group Data and sign-in.
+    // The samples added for the Learn group Browser features.
+    // The samples added for the Learn group Quality and operations.
 }
 
 /// The lines of `snippet` that the page shows.
