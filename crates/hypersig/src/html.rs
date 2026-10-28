@@ -2549,6 +2549,15 @@ impl<S> El<S> {
     ///
     /// The signal can be a page signal or a field of a list item.
     ///
+    /// The browser shows each line break of a `<textarea>` as `\n`, and an
+    /// `<input>` drops line breaks. A signal that holds `\r\n` for a
+    /// textarea, or a line break for an input, keeps it until the visitor
+    /// edits the field, so its length differs from what the field shows
+    /// and an untouched field sends it back as it came, as a controlled
+    /// `<textarea>` in React does. Text saved by a plain HTML form holds
+    /// `\r\n`, because a browser submits a textarea's line breaks so. Replace `\r\n` with `\n`
+    /// where the text enters the page's signals to keep the two the same.
+    ///
     /// # Panics
     ///
     /// Panics on an element other than `<input>`, `<textarea>`, and
