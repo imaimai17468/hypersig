@@ -52,8 +52,8 @@ const WORKSPACE: [&str; 5] = [
 ];
 
 /// The third-party items allowed in the public API (M-DONT-LEAK-TYPES), as
-/// the crate that defines each and its path there. `serde_core::*` allows every trait of that crate, which is where
-/// `serde` defines its traits.
+/// the crate that defines each and its path there. `serde_core::*` allows
+/// every trait of that crate, which is where `serde` defines its traits.
 const THIRD_PARTY: [&str; 14] = [
     "serde_core::*",
     "futures_core::stream::Stream",
