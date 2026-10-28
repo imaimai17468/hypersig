@@ -202,7 +202,7 @@ pub fn describing_the_page(site: Site) -> Part {
             site,
             L {
                 en: "`div::<Profile>()` names the page's signal struct because nothing else in this code tells the compiler which page the element belongs to. An element passed to `Page::new(...).child(...)`, or to a function that takes an `El<Profile>`, gets its `S` from there, which is why the Quick start writes `div()`. The children of an element take its `S` the same way, so only the outermost element of a tree written on its own needs the `::<Profile>`.",
-                ja: "`div::<Profile>()` とページのシグナル構造体を書いているのは、このコードにはこの要素がどのページのものかをコンパイラに伝えるものがほかにないからです。`Page::new(...).child(...)` や `El<Profile>` を受け取る関数に渡す要素は、渡し先から `S` が推論されます。クイックスタートが `div()` と書けるのはそのためです。子要素も親から同じように `S` を受け取るので、単独で書いた木でも `::<Profile>` が要るのはいちばん外側の要素だけです。",
+                ja: "`div::<Profile>()` とページのシグナル構造体を書いているのは、このコードにはこの要素がどのページのものかをコンパイラに伝えるものがほかにないからです。`Page::new(...).child(...)` や `El<Profile>` を受け取る関数に渡す要素は、渡し先から `S` が推論されます。クイックスタートが `div()` と書けるのはそのためです。子要素も親から同じように `S` を受け取るので、単独で書いた木でも `::<Profile>` が必要なのはいちばん外側の要素だけです。",
             },
         ),
         para(

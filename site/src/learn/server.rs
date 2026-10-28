@@ -61,7 +61,7 @@ pub fn server(site: Site) -> Part {
             site,
             L {
                 en: "A statement before the call changes the page at once, and the request follows: `count.set(count + 1).then(LIKE.call())`. The handler's patch then sets the count the server stored. When the server answers with an error, the change stays in the browser. `error` can show the failure, but nothing rolls the value back.",
-                ja: "呼び出しの前に文を置くと、ページがすぐに変わり、そのあとにリクエストが送られます。`count.set(count + 1).then(LIKE.call())` のように書きます。続いて、サーバーが保存したカウントをハンドラの差分が設定します。サーバーがエラーを返した場合、変更はブラウザに残ります。`error` で失敗を表示できますが、値を元に戻す処理はありません。",
+                ja: "呼び出しの前に文を置くと、ページがすぐに変わり、そのあとにリクエストが送られます。`count.set(count + 1).then(LIKE.call())` のように書きます。続いて、サーバーが保存したカウントをハンドラの差分が設定します。サーバーがエラーを返した場合、変更はブラウザに保持されます。`error` で失敗を表示できますが、値を元に戻す処理はありません。",
             },
         ),
         subheading(
@@ -187,7 +187,7 @@ pub fn routes_in_depth(site: Site) -> Part {
             site,
             L {
                 en: "A list whose filter, sort, and page live in the query string can keep the page loaded while they change. `link.push_url()` is a statement that shows the link's URL in the address bar as a new history entry, and `link.replace_url()` shows it in place of the current one, for a change the Back button should skip, such as each letter typed into a search field. The page keeps its signals and its focus, so the statement runs beside the call that loads the rows. An action does the same with `Patches::push_url(url)` and `Patches::replace_url(url)`, and the patches after them are applied. When the visitor presses Back or Forward, the browser loads the page at that entry's URL from the server, which renders it from the query string.",
-                ja: "フィルター、並び順、ページ番号をクエリ文字列に持つリストは、それらが変わってもページを読み込み直さずに済みます。`link.push_url()` はリンクの URL を新しい履歴の項目としてアドレスバーに出す文です。`link.replace_url()` は今の URL と置き換えるので、検索欄に打つ 1 文字ごとのように、戻るボタンで飛ばしたい変更に使います。ページのシグナルとフォーカスはそのまま残るので、この文は行を読み込む呼び出しと並べて書きます。アクションでは `Patches::push_url(url)` と `Patches::replace_url(url)` で同じことをし、その後の差分も適用されます。訪問者が戻るボタンや進むボタンを押すと、ブラウザはその項目の URL のページをサーバーから読み込み、サーバーはクエリ文字列からページを描きます。",
+                ja: "フィルター、並び順、ページ番号をクエリ文字列に持つリストは、それらが変わってもページを読み込み直さずに済みます。`link.push_url()` はリンクの URL を新しい履歴の項目としてアドレスバーに出す文です。`link.replace_url()` は今の URL と置き換えるので、検索欄に打つ 1 文字ごとのように、戻るボタンで飛ばしたい変更に使います。ページのシグナルとフォーカスはそのまま保持されるので、この文は行を読み込む呼び出しと並べて書きます。アクションでは `Patches::push_url(url)` と `Patches::replace_url(url)` で同じことをし、その後の差分も適用されます。訪問者が戻るボタンや進むボタンを押すと、ブラウザはその項目の URL のページをサーバーから読み込み、サーバーはクエリ文字列からページを描きます。",
             },
         ),
         show(Snippet::History),
@@ -266,7 +266,7 @@ fn calls(site: Site) -> Part {
             site,
             L {
                 en: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) opens a stream again when its connection fails, it breaks off, or the server answers with a 5xx status, as the clock on [Talking to the server](learn/server/) does. It waits up to 1 second, then up to twice as long each time, to at most 30 seconds. Each wait ends at a random point past its half, so pages that lost the server together come back spread over that time, and it ends early when the browser comes back online or the page becomes visible. The server sends the event `hs-end` last once the handler's stream finishes, so a response a host closes at its time limit, which ends before `hs-end`, counts as broken off. `reconnect` does not open the stream again after `hs-end` or a 4xx answer, or once the element has left the page. Each attempt evaluates the arguments again, so a stream that takes a signal its patches keep current, such as the id of the last message, can send only what came after it. A stream whose arguments stay the same should start with the current values, and the page catches up with what it missed. Only a call to a `StreamAction`, which is always served on `GET`, has `reconnect`, because sending a `POST` again could repeat a change.",
-                ja: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) は、接続が失敗したとき、ストリームが途中で切れたとき、サーバーが 5xx を返したときに、ストリームを開き直します。[サーバーとのやり取り](learn/server/) の時計がこの例です。最初は最大 1 秒待ち、そのあとは待ち時間の上限を倍にしながら 30 秒まで延ばします。実際に待つ長さは上限の半分から上限までのうちランダムに決まるので、同時にサーバーを失ったページが開き直す時刻はばらけます。ブラウザがオンラインに戻ったときや、ページが表示されたときは、待つのをやめてすぐに開き直します。サーバーはハンドラのストリームが終わると最後に `hs-end` のイベントを送ります。ホストが時間の上限で閉じたレスポンスは `hs-end` の前で終わるので、途中で切れたものとして扱います。`hs-end` で終わったとき、4xx の応答を受けたとき、要素がページから外れたときは、開き直しません。開き直すたびに引数を評価し直します。最後に受け取ったメッセージの id のように、ストリームの差分が更新し続けるシグナルを引数に渡せば、ハンドラはそれより後の分だけを送れます。引数が変わらないストリームでは、初めに現在の値を送ってください。そうすればページは見逃した変更に追いつきます。`POST` を送り直すと変更が繰り返されることがあるので、`reconnect` があるのは、常に `GET` で配信する `StreamAction` の呼び出しだけです。",
+                ja: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) は、接続が失敗したとき、ストリームが途中で切れたとき、サーバーが 5xx を返したときに、ストリームを開き直します。[サーバーとのやり取り](learn/server/) の時計がこの例です。最初は最大 1 秒待ち、そのあとは待ち時間の上限を倍にしながら 30 秒まで延ばします。実際に待つ長さは上限の半分から上限までのうちランダムに決まるので、同時にサーバーを失ったページが開き直す時刻はばらつきます。ブラウザがオンラインに戻ったときや、ページが表示されたときは、待つのをやめてすぐに開き直します。サーバーはハンドラのストリームが終わると最後に `hs-end` のイベントを送ります。ホストが時間の上限で閉じたレスポンスは `hs-end` の前で終わるので、途中で切れたものとして扱います。`hs-end` で終わったとき、4xx の応答を受けたとき、要素がページから外れたときは、開き直しません。開き直すたびに引数を評価し直します。最後に受け取ったメッセージの id のように、ストリームの差分が更新し続けるシグナルを引数に渡せば、ハンドラはそれより後の分だけを送れます。引数が変わらないストリームでは、初めに現在の値を送ってください。そうすればページは見逃した変更に追いつきます。`POST` を送り直すと変更が繰り返されることがあるので、`reconnect` があるのは、常に `GET` で配信する `StreamAction` の呼び出しだけです。",
             },
         ),
     ])
@@ -316,7 +316,7 @@ fn fragments(site: Site) -> Part {
             site,
             L {
                 en: "A [`Fragment`](api:hypersig/trait.Fragment.html) is a part of the page the server can render again on its own. It owns its element id, so the id in the first page and the id in a later patch cannot differ. `fragment(&value)` renders it in the page, and `Patches::new().element(&value)` sends it again. The runtime compares the HTML it receives with the element that has that id and rewrites only the parts that differ. An element without an id is matched with the next one of the same tag and `name`, so a message inserted before an input leaves the input and its text in place. Where a patch does replace the element that has focus, focus and the text selection move to the new element with the same id or `name`. It leaves the `open` attribute of a `<details>` and a `<dialog>` alone, so a section the visitor opened or a dialog a script showed stays as it was. A patch includes the CSS rules its elements use. The server renders a fragment sent again on its own, so it cannot compare its ids with the rest of the page. The browser compares them once the patch is applied and writes a warning to the console when the patch adds an id that another element already carries. The same holds for the name of a `NodeRef`, which [When bindings and statements are not enough](learn/escape-hatches/) covers. The server sends the fragment's whole HTML each time, so a list that changes one item at a time costs less as a list signal drawn with `each_keyed`, which a [list patch](learn/calls/#list-patches) changes one item at a time, as `examples/todo` does.",
-                ja: "[`Fragment`](api:hypersig/trait.Fragment.html) は、サーバーが単独で描画し直せるページの一部です。フラグメントが要素の id を持つので、最初のページの id とあとの差分の id が食い違うことはありません。`fragment(&value)` はページの中にフラグメントを描画し、`Patches::new().element(&value)` はそれをもう一度送ります。ランタイムは送られた HTML とその id の要素を突き合わせ、違う部分だけを書き換えます。id のない要素は、タグと `name` が同じ次の要素と対応づけるので、入力欄の前にメッセージが加わっても、入力欄も中の文字もそのまま残ります。フォーカスのある要素を差分が置き換えたときは、同じ id か `name` を持つ新しい要素にフォーカスと選択範囲を移します。`<details>` と `<dialog>` の `open` 属性には触れないので、訪問者が開いた項目やスクリプトが表示したダイアログはそのまま残ります。差分にはその要素が使う CSS のルールも含まれます。サーバーは送り直すフラグメントを単独で描画するので、ページの残りの部分とは比べられません。そこでブラウザが差分を適用したあとに比べ、ほかの要素がすでに持つ id を差分が追加したときは、コンソールに警告を書きます。[束縛と文で足りないとき](learn/escape-hatches/) で説明する `NodeRef` の名前も同じです。サーバーはフラグメントの HTML を毎回まるごと送ります。項目が 1 件ずつ変わるリストは、`each_keyed` で描くリストのシグナルにして [リストの差分](learn/calls/#list-patches) で 1 件ずつ変えるほうが送る量が少なくなります。`examples/todo` はこの形です。",
+                ja: "[`Fragment`](api:hypersig/trait.Fragment.html) は、サーバーが単独で描画し直せるページの一部です。フラグメントが要素の id を持つので、最初のページの id とあとの差分の id が食い違うことはありません。`fragment(&value)` はページの中にフラグメントを描画し、`Patches::new().element(&value)` はそれをもう一度送ります。ランタイムは送られた HTML とその id の要素を突き合わせ、違う部分だけを書き換えます。id のない要素は、タグと `name` が同じ次の要素と対応づけるので、入力欄の前にメッセージが加わっても、入力欄も中の文字もそのまま保持されます。フォーカスのある要素を差分が置き換えたときは、同じ id か `name` を持つ新しい要素にフォーカスと選択範囲を移します。`<details>` と `<dialog>` の `open` 属性には触れないので、訪問者が開いた項目やスクリプトが表示したダイアログはそのまま保持されます。差分にはその要素が使う CSS のルールも含まれます。サーバーは送り直すフラグメントを単独で描画するので、ページの残りの部分とは比べられません。そこでブラウザが差分を適用したあとに比べ、ほかの要素がすでに持つ id を差分が追加したときは、コンソールに警告を書きます。[束縛と文で足りないとき](learn/escape-hatches/) で説明する `NodeRef` の名前も同じです。サーバーはフラグメントの HTML を毎回まるごと送ります。項目が 1 件ずつ変わるリストは、`each_keyed` で描くリストのシグナルにして [リストの差分](learn/calls/#list-patches) で 1 件ずつ変えるほうが送る量が少なくなります。`examples/todo` はこの形です。",
             },
         ),
         program(Program::Fragments),
@@ -452,7 +452,7 @@ pub fn pages(site: Site) -> Part {
                 site,
                 L {
                     en: "A page handler that cannot build its page, such as one whose database does not answer, returns an error page of its own with [`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status). The browser shows the page, and the status tells a crawler or a monitor that the request failed. A handler that returns `PageResponse` converts its usual page with `.into()`. The page for a path no route matches is named once in `routes!`, as [Routes in depth](learn/routes/#pages-for-missing-paths) shows.",
-                    ja: "データベースが応答しないときのように、ページを組み立てられなかったハンドラは、[`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status) で自分のエラーのページを返します。ブラウザはそのページを表示し、ステータスはクローラーや監視の仕組みにリクエストの失敗を伝えます。`PageResponse` を返すハンドラは、ふだんのページを `.into()` で変換します。どのルートにも合わないパスのページは、[ルートの詳細](learn/routes/#pages-for-missing-paths) のとおり `routes!` の中で 1 回だけ指定します。",
+                    ja: "データベースが応答しないときのように、ページを組み立てられなかったハンドラは、[`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status) で自分のエラーのページを返します。ブラウザはそのページを表示し、ステータスはクローラーや監視の仕組みにリクエストの失敗を伝えます。`PageResponse` を返すハンドラは、通常のページを `.into()` で変換します。どのルートにも合わないパスのページは、[ルートの詳細](learn/routes/#pages-for-missing-paths) のとおり `routes!` の中で 1 回だけ指定します。",
                 },
             ),
             show(Snippet::ErrorPage),
@@ -476,7 +476,7 @@ pub fn pages(site: Site) -> Part {
                     },
                     L {
                         en: "A link is a plain `<a href>`, so following it loads the next page from the server, and the signals of the page you leave are gone.",
-                        ja: "リンクは普通の `<a href>` なので、たどると次のページをサーバーから読み込み、離れたページのシグナルは失われます。",
+                        ja: "リンクは通常の `<a href>` なので、たどると次のページをサーバーから読み込み、離れたページのシグナルは失われます。",
                     },
                     L {
                         en: "A link to another site or to a `#fragment` is a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), which [When bindings and statements are not enough](learn/escape-hatches/) covers. It checks the URL's scheme, and nothing checks that the address it names exists.",
@@ -519,7 +519,7 @@ fn head(site: Site) -> Part {
             site,
             L {
                 en: "`Page::bind_title(expr)` makes the tab's title follow a `String` expression, such as an unread count. The server writes its first value into `<title>`, and the runtime writes each later value into `document.title`. The card of `OpenGraph` keeps the title given to `Page::new`.",
-                ja: "`Page::bind_title(expr)` は未読の件数のように変わる `String` の式にタブのタイトルを合わせます。最初の値はサーバーが `<title>` に書き、その後の値はランタイムが `document.title` に書きます。`OpenGraph` のカードには `Page::new` に渡したタイトルが残ります。",
+                ja: "`Page::bind_title(expr)` は未読の件数のように変わる `String` の式にタブのタイトルを合わせます。最初の値はサーバーが `<title>` に書き、その後の値はランタイムが `document.title` に書きます。`OpenGraph` のカードには `Page::new` に渡したタイトルが保持されます。",
             },
         ),
     ])
@@ -727,7 +727,7 @@ pub fn escape_hatches(site: Site) -> Part {
                 },
                 L {
                     en: "A page whose buttons and forms must work with JavaScript turned off. A page cannot set the `action` or `formaction` attribute, so a form calls an action only through the runtime, which keeps the browser from submitting any form itself. A browser that does not run the runtime shows the first HTML, and submitting a form there loads the page's own URL again with the form's named fields in the query, which runs no action.",
-                    ja: "JavaScript を切っても、ボタンやフォームが動く必要のあるページ。ページには `action` 属性も `formaction` 属性も書けないので、フォームからアクションを呼べるのはランタイムだけです。ランタイムは、ブラウザがフォームを自分で送ることも止めます。ランタイムを実行しないブラウザは最初の HTML を表示します。そこでフォームを送ると、名前の付いたフィールドをクエリに入れて同じページの URL を読み込み直すだけで、アクションは実行されません。",
+                    ja: "JavaScript を無効にしても、ボタンやフォームが動く必要のあるページ。ページには `action` 属性も `formaction` 属性も書けないので、フォームからアクションを呼べるのはランタイムだけです。ランタイムは、ブラウザがフォームを自分で送ることも止めます。ランタイムを実行しないブラウザは最初の HTML を表示します。そこでフォームを送ると、名前の付いたフィールドをクエリに入れて同じページの URL を読み込み直すだけで、アクションは実行されません。",
                 },
             ],
         ),

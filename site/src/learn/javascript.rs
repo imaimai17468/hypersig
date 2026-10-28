@@ -51,7 +51,7 @@ pub fn javascript(site: Site) -> Part {
             site,
             L {
                 en: "`Page::script`, `Page::stylesheet`, and `Page::icon` take an [`Asset`](api:hypersig/struct.Asset.html), a constant such as `Asset::new(\"/star-rating.js\")`, and write its path into the page under the routes' `Base`. They serve nothing, so the router needs a service at each path. tower-http serves files from disk: `ServeFile` one file at one path, and `ServeDir` each file under a directory. Add it with its `fs` feature:",
-                ja: "`Page::script`、`Page::stylesheet`、`Page::icon` は `Asset::new(\"/star-rating.js\")` のような定数の [`Asset`](api:hypersig/struct.Asset.html) を受け取り、そのパスをルートの `Base` の下に付けてページに書きます。ページにパスを書くだけでファイルは配信しないので、ルーターにはそれぞれのパスで配信するサービスが要ります。ディスクのファイルは tower-http で配信します。`ServeFile` は 1 つのファイルを 1 つのパスで、`ServeDir` はディレクトリの下のファイルをそれぞれ配信します。`fs` フィーチャーを有効にして追加してください。",
+                ja: "`Page::script`、`Page::stylesheet`、`Page::icon` は `Asset::new(\"/star-rating.js\")` のような定数の [`Asset`](api:hypersig/struct.Asset.html) を受け取り、そのパスをルートの `Base` の下に付けてページに書きます。ページにパスを書くだけでファイルは配信しないので、ルーターにはそれぞれのパスで配信するサービスが必要です。ディスクのファイルは tower-http で配信します。`ServeFile` は 1 つのファイルを 1 つのパスで、`ServeDir` はディレクトリの下のファイルをそれぞれ配信します。`fs` フィーチャーを有効にして追加してください。",
             },
         ),
         code::block(
@@ -127,7 +127,7 @@ pub fn javascript(site: Site) -> Part {
             site,
             L {
                 en: "A library that is not a custom element, such as Leaflet, draws into the element it is given and adds children, classes, and inline styles to it. A server patch that reaches the element would set it back to what the server rendered. Mark the element with `El::foreign`, and a patch keeps it as it is while its bindings keep running. Give the element an [`Id`](api:hypersig/html/struct.Id.html) as well, and the script finds it with `document.getElementById(\"map\")`. A patch keeps that id, and among its siblings it finds the element by it, so an element added before it does not make the map start over. Without an id, a patch finds the element by its node ref's name, which `node_ref!` writes into `data-hs-foreign` as the constant's full path, such as `office::MAP`. That path changes when the module or the constant is renamed, so a script should not look the element up by it.",
-                ja: "Leaflet のようにカスタム要素ではないライブラリは、渡された要素の中に描き、子要素やクラス、インラインスタイルを追加します。サーバーのパッチがその要素に届くと、サーバーが描いた形に戻してしまいます。`El::foreign` を付けると、パッチはその要素をそのまま残し、要素の束縛は動き続けます。要素には [`Id`](api:hypersig/html/struct.Id.html) も付けてください。スクリプトは `document.getElementById(\"map\")` で要素を見つけます。パッチはその id を残し、兄弟要素の中でもその id で要素を見つけるので、前に要素が増えても地図は作り直されません。id がない場合、パッチは node ref の名前で要素を見つけます。この名前は `node_ref!` が `office::MAP` のような定数の完全なパスとして `data-hs-foreign` に書くもので、モジュールや定数の名前を変えると変わるので、スクリプトからはこの値で要素を探さないでください。",
+                ja: "Leaflet のようにカスタム要素ではないライブラリは、渡された要素の中に描き、子要素やクラス、インラインスタイルを追加します。サーバーのパッチがその要素に届くと、サーバーが描いた形に戻してしまいます。`El::foreign` を付けると、パッチはその要素をそのまま残し、要素の束縛は動き続けます。要素には [`Id`](api:hypersig/html/struct.Id.html) も付けてください。スクリプトは `document.getElementById(\"map\")` で要素を見つけます。パッチはその id を保持し、兄弟要素の中でもその id で要素を見つけるので、前に要素が増えても地図は作り直されません。id がない場合、パッチは node ref の名前で要素を見つけます。この名前は `node_ref!` が `office::MAP` のような定数の完全なパスとして `data-hs-foreign` に書くもので、モジュールや定数の名前を変えると変わるので、スクリプトからはこの値で要素を探さないでください。",
             },
         ),
         show(Snippet::Foreign),

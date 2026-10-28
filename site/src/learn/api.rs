@@ -67,7 +67,7 @@ fn failures(site: Site) -> Part {
             site,
             L {
                 en: "The `api` example comes with a stand-in for the service, `cargo run -p example-api --bin notes-backend`, which keeps notes behind a bearer token and refuses a note longer than 80 characters with a 422. Its end-to-end test checks that the refusal's message reaches the page and that the draft stays.",
-                ja: "`api` の例にはサービスの代役 `cargo run -p example-api --bin notes-backend` が付いています。代役は bearer トークンの裏でメモを保持し、80 文字を超えるメモは 422 で拒否します。E2E テストは、拒否のメッセージがページに表示され、入力した下書きが残ることを確かめます。",
+                ja: "`api` の例にはサービスの代役 `cargo run -p example-api --bin notes-backend` が付いています。代役は bearer トークンの裏でメモを保持し、80 文字を超えるメモは 422 で拒否します。E2E テストは、拒否のメッセージがページに表示され、入力した下書きが保持されることを確かめます。",
             },
         ),
     ])
@@ -101,7 +101,7 @@ fn elsewhere(site: Site) -> Part {
             site,
             L {
                 en: "The service's paths and the shape of its JSON are outside what hypersig checks, as a plain SQL string is: a wrong path or field fails when the call runs. Where the service publishes an OpenAPI description, a client generated from it, such as one from the `progenitor` crate, turns them into Rust types.",
-                ja: "サービスのパスと JSON の形は、ただの文字列で書いた SQL と同じく、hypersig が検査する範囲の外です。パスやフィールドを間違えると、呼び出しを実行したときに失敗します。サービスが OpenAPI の定義を公開していれば、そこから生成したクライアント（たとえば `progenitor` クレートで生成したもの）で、それらを Rust の型にできます。",
+                ja: "サービスのパスと JSON の形は、単なる文字列で書いた SQL と同じく、hypersig が検査する範囲の外です。パスやフィールドを間違えると、呼び出しを実行したときに失敗します。サービスが OpenAPI の定義を公開していれば、そこから生成したクライアント（たとえば `progenitor` クレートで生成したもの）で、それらを Rust の型にできます。",
             },
         ),
         heading(

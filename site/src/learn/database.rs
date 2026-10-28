@@ -36,14 +36,14 @@ fn places(site: Site) -> Part {
             site,
             L {
                 en: "hypersig has no storage of its own. An action's handler is a Rust function that reads and writes the data however its code says, and hypersig sends the `Page` or `Patches` it returns to the browser. Which store fits depends on how long the data has to last and where the server runs.",
-                ja: "hypersig 自体にはデータを保存する仕組みがありません。アクションのハンドラは Rust の関数で、データの読み書きはそのコードに書いたとおりに行われます。hypersig はハンドラが返す `Page` や `Patches` をブラウザに送るだけです。どこに置くかは、データをどれだけ残す必要があるかと、サーバーをどこで動かすかで決まります。",
+                ja: "hypersig 自体にはデータを保存する仕組みがありません。アクションのハンドラは Rust の関数で、データの読み書きはそのコードに書いたとおりに行われます。hypersig はハンドラが返す `Page` や `Patches` をブラウザに送るだけです。どこに置くかは、データをどれだけ保持する必要があるかと、サーバーをどこで動かすかで決まります。",
             },
         ),
         table_of(
             site,
             L {
                 en: &["Store", "Lasts", "Example"],
-                ja: &["置き場所", "残る期間", "例"],
+                ja: &["置き場所", "保持される期間", "例"],
             },
             L {
                 en: &[
@@ -76,12 +76,12 @@ fn places(site: Site) -> Part {
                     ],
                     &[
                         "サーバーがドライバで開くデータベース（SQLite、PostgreSQL、MySQL、DynamoDB）",
-                        "再起動しても残り、同じデータベースを使うどのプロセスも読めます",
+                        "再起動しても保持され、同じデータベースを使うどのプロセスも読めます",
                         "`database`（SQLite）、`postgres`",
                     ],
                     &[
                         "ホストが Worker に結び付けるデータベース（D1、KV、Durable Object）",
-                        "再起動しても残り、どの isolate も読めます",
+                        "再起動しても保持され、どの isolate も読めます",
                         "Cloudflare のテンプレート",
                     ],
                     &[
@@ -138,7 +138,7 @@ rusqlite = { version = "0.39", features = ["bundled"] }"#,
             site,
             L {
                 en: "This sample uses [rusqlite](https://docs.rs/rusqlite/0.39), whose calls block the thread until SQLite answers. The thread it blocks would be one of the tokio workers that serve every request, so each query runs in `tokio::task::spawn_blocking`, on threads kept for blocking work. sqlx, which [`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) uses, has `async` functions, so a handler awaits the query and needs no `spawn_blocking`. Its pool, `PgPool`, goes in the state as the SQLite connection does here. For MySQL, turn on sqlx's `mysql` feature in place of `postgres`, use a `MySqlPool` and a `mysql://` URL, and write `?` in place of `$1` in the queries.",
-                ja: "このサンプルは [rusqlite](https://docs.rs/rusqlite/0.39) を使います。rusqlite の呼び出しは、SQLite が答えるまでスレッドを止めます。止まるのはすべてのリクエストを処理する tokio のワーカーなので、クエリは `tokio::task::spawn_blocking` で、スレッドを止める処理のために用意された別のスレッドで動かします。[`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) が使う sqlx の関数は `async` なので、ハンドラはクエリを `.await` するだけで済み、`spawn_blocking` は要りません。sqlx のプール `PgPool` は、ここでの SQLite の接続と同じように状態に置きます。MySQL では、sqlx の feature を `postgres` の代わりに `mysql` にし、`MySqlPool` と `mysql://` の URL を使って、クエリの `$1` を `?` に書き換えます。",
+                ja: "このサンプルは [rusqlite](https://docs.rs/rusqlite/0.39) を使います。rusqlite の呼び出しは、SQLite が答えるまでスレッドを止めます。止まるのはすべてのリクエストを処理する tokio のワーカーなので、クエリは `tokio::task::spawn_blocking` で、スレッドを止める処理のために用意された別のスレッドで動かします。[`examples/postgres`](https://github.com/imaimai17468/hypersig/tree/main/examples/postgres) が使う sqlx の関数は `async` なので、ハンドラはクエリを `.await` するだけで済み、`spawn_blocking` は不要です。sqlx のプール `PgPool` は、ここでの SQLite の接続と同じように状態に置きます。MySQL では、sqlx の feature を `postgres` の代わりに `mysql` にし、`MySqlPool` と `mysql://` の URL を使って、クエリの `$1` を `?` に書き換えます。",
             },
         ),
         subheading(
@@ -244,7 +244,7 @@ fn hosted(site: Site) -> Part {
                         "RDS、Aurora",
                         "パスワードか、`aws-sdk-rds` の `auth_token::AuthTokenGenerator` で作る IAM のトークン",
                         "`sslmode=verify-full` と AWS の CA のファイル",
-                        "トークンの有効期間は 15 分なので、プールが新しく開く接続ごとに新しいトークンが要ります",
+                        "トークンの有効期間は 15 分なので、プールが新しく開く接続ごとに新しいトークンが必要です",
                     ],
                 ],
             },
@@ -287,7 +287,7 @@ fn processes(site: Site) -> Part {
             site,
             L {
                 en: "Without PostgreSQL, a service that delivers each message to every subscriber can take its place. `examples/redis` keeps the todos in Redis, and each write is a Lua script that changes the keys and runs `PUBLISH` on one channel. Redis runs the script with no other command in between, so no write reaches the keys without telling the other processes. In each process a task spawned in `main`, as `listen` is in `examples/postgres`, subscribes with `SUBSCRIBE` and sends on `changed` for each message. The streams are the same code in both examples. Redis keeps no message for a subscriber that is not connected, so after the subscription breaks, the task subscribes again and sends on `changed` once more, and the streams read the list again.",
-                ja: "PostgreSQL を使わないときは、購読しているすべての相手にメッセージを届けるサービスで代わりができます。`examples/redis` は todo を Redis に置き、書き込みはどれも、キーを変更して 1 つのチャネルに `PUBLISH` する Lua スクリプトです。Redis はスクリプトの途中にほかのコマンドを挟まずに実行するので、ほかのプロセスに知らせずにキーを変える書き込みはありません。各プロセスでは、`examples/postgres` の `listen` と同じように `main` で起動したタスクが `SUBSCRIBE` で購読し、メッセージを受け取るたびに `changed` に送ります。ストリームのコードは 2 つの例で同じです。Redis は接続していない購読者にメッセージを残さないので、購読が切れるとタスクは購読し直し、もう一度 `changed` に送ります。ストリームはそこで一覧を読み直します。",
+                ja: "PostgreSQL を使わないときは、購読しているすべての相手にメッセージを届けるサービスで代わりができます。`examples/redis` は todo を Redis に置き、書き込みはどれも、キーを変更して 1 つのチャネルに `PUBLISH` する Lua スクリプトです。Redis はスクリプトの途中にほかのコマンドを挟まずに実行するので、ほかのプロセスに知らせずにキーを変える書き込みはありません。各プロセスでは、`examples/postgres` の `listen` と同じように `main` で起動したタスクが `SUBSCRIBE` で購読し、メッセージを受け取るたびに `changed` に送ります。ストリームのコードは 2 つの例で同じです。Redis は接続していない購読者向けにメッセージを保存しないので、購読が切れるとタスクは購読し直し、もう一度 `changed` に送ります。ストリームはそこで一覧を読み直します。",
             },
         ),
         note(

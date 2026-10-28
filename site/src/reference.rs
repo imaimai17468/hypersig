@@ -382,7 +382,7 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "testing/struct.Simulation.html#method.submit",
                             L {
                                 en: "Submits the `<form>` `target` names, which runs the closest `on_submit` from it up.",
-                                ja: "`target` が指す `<form>` を送信し、そこから外側へ向かっていちばん近い `on_submit` を実行します。",
+                                ja: "`target` が指す `<form>` を送信し、そこから外側へ向かって最も近い `on_submit` を実行します。",
                             },
                         ),
                         (

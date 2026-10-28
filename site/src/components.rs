@@ -1188,7 +1188,7 @@ fn component_page(page: Component) -> Page {
                 },
                 L {
                     en: "The button and the region are separate elements, so the button can sit in a heading or a toolbar away from the region. An `Accordion` is built on `<details>` instead, and no signal holds which of its sections is open.",
-                    ja: "ボタンと領域は別の要素なので、ボタンを領域から離れた見出しやツールバーに置けます。`Accordion` は代わりに `<details>` の上に作られていて、どのセクションが開いているかはシグナルに入りません。",
+                    ja: "ボタンと領域は別の要素なので、ボタンを領域から離れた見出しやツールバーに置けます。`Accordion` は代わりに `<details>` の上に作られており、どのセクションが開いているかはシグナルに入りません。",
                 },
             ],
             keys: &[(
@@ -1497,7 +1497,7 @@ fn component_page(page: Component) -> Page {
                 },
                 L {
                     en: "A column is built from a field of the row type, so a field of another struct does not compile, and the key that `sortable_column` sorts by must be a number or a string. The table keeps its filter text, page, and sort column in a `TableState` field of the page's signals, and sorting reorders the list signal itself. The selection is a list of the selected rows' keys in another signal of the page, so the row type holds no field for it and a `ServerTable` keeps it across pages.",
-                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。`sortable_column` で並べ替えるキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。選択は、選んだ行のキーのリストとしてページの別のシグナルに持つので、行の型に選択用のフィールドは不要です。`ServerTable` ではページを移っても選択が残ります。",
+                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。`sortable_column` で並べ替えるキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。選択は、選んだ行のキーのリストとしてページの別のシグナルに持つので、行の型に選択用のフィールドは不要です。`ServerTable` ではページを移っても選択が保持されます。",
                 },
                 L {
                     en: "The browser counts the rows on each change, and with a filter and pagination both on, the work grows with the square of the number of rows. A list of thousands of rows belongs in a `ServerTable`. Its filter field, sortable headers, and page buttons write the `TableState` and then call an action with it, and the action answers with a patch of the page's rows and the total. A sortable column takes an enum with `#[derive(Segment)]` as its key, and the server reads it back from the state with `TableState::sorting`. The demo below runs in the browser alone, since this site has no server, and `examples/ui` has a `ServerTable` beside its `DataTable`.",
@@ -1505,7 +1505,7 @@ fn component_page(page: Component) -> Page {
                 },
                 L {
                     en: "To keep a `ServerTable`'s state in the URL, give the page a route whose search parameters are the application's own struct with `#[derive(Search)]` and `Option` fields, so the address without a query string still loads. The page handler builds the `TableState` from it with `TableState::with_sorting`, and the action answers with `Patches::replace_url` of the URL its state names, so a reload or a shared link shows the same page of rows. `TableState` itself is not a search struct, because a URL without one of its fields would get a 400.",
-                    ja: "`ServerTable` の状態を URL に残すには、`Option` のフィールドを持ち `#[derive(Search)]` を付けたアプリケーション自身の構造体を、ページのルートのクエリパラメータにします。こうするとクエリ文字列のないアドレスも読み込めます。ページのハンドラはそこから `TableState::with_sorting` で `TableState` を作り、アクションは状態が指す URL を `Patches::replace_url` で応答に含めます。再読み込みしても、共有したリンクを開いても、同じページの行が出ます。`TableState` そのものをクエリパラメータにしないのは、フィールドが 1 つでも欠けた URL に 400 が返るためです。",
+                    ja: "`ServerTable` の状態を URL に保存するには、`Option` のフィールドを持ち `#[derive(Search)]` を付けたアプリケーション自身の構造体を、ページのルートのクエリパラメータにします。こうするとクエリ文字列のないアドレスも読み込めます。ページのハンドラはそこから `TableState::with_sorting` で `TableState` を作り、アクションは状態が指す URL を `Patches::replace_url` で応答に含めます。再読み込みしても、共有したリンクを開いても、同じページの行が出ます。`TableState` そのものをクエリパラメータにしないのは、フィールドが 1 つでも欠けた URL に 400 が返るためです。",
                 },
             ],
             keys: &[
@@ -2139,7 +2139,7 @@ fn component_page(page: Component) -> Page {
             built_on: &[
                 L {
                     en: "The panel is a `popover=\"auto\"` with `role=\"dialog\"`, named by its button through `aria-labelledby`. The button has `aria-haspopup=\"dialog\"` and opens and closes it with `commandfor` and `command`, so the browser puts the panel above the page, closes it on Escape or on a click outside, and returns focus to the button when focus was inside the panel.",
-                    ja: "パネルは `role=\"dialog\"` を持つ `popover=\"auto\"` で、`aria-labelledby` によってボタンのテキストがパネルの名前になります。ボタンは `aria-haspopup=\"dialog\"` を持ち、`commandfor` と `command` でパネルを開け閉めします。そのため、ブラウザがパネルをページの上に表示し、Escape かパネルの外のクリックで閉じ、フォーカスがパネルの中にあった場合はボタンに戻します。",
+                    ja: "パネルは `role=\"dialog\"` を持つ `popover=\"auto\"` で、`aria-labelledby` によってボタンのテキストがパネルの名前になります。ボタンは `aria-haspopup=\"dialog\"` を持ち、`commandfor` と `command` でパネルを開閉します。そのため、ブラウザがパネルをページの上に表示し、Escape かパネルの外のクリックで閉じ、フォーカスがパネルの中にあった場合はボタンに戻します。",
                 },
                 L {
                     en: "Focus stays on the button as the panel opens, so place the panel right after its button, where Tab moves from the button into it. A statement closes it with `NodeRef::hide_popover` on the node ref the popover is built from.",
@@ -2182,7 +2182,7 @@ fn component_page(page: Component) -> Page {
                     "hypersig_ui/struct.Popover.html#method.trigger",
                     L {
                         en: "The button that opens and closes the panel.",
-                        ja: "パネルを開け閉めするボタン",
+                        ja: "パネルを開閉するボタン",
                     },
                 ),
                 (

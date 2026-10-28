@@ -35,7 +35,7 @@ fn handlers(site: Site) -> Part {
             site,
             L {
                 en: "A handler is an `async fn` that takes the router's state and the arguments, so a test calls it as a function and reads what it returned. The tests below need two crates the server does not, added to `Cargo.toml`:",
-                ja: "ハンドラはルーターの状態と引数を受け取る `async fn` なので、テストは関数として呼び出して戻り値を読めます。下のテストは、サーバーが使わないクレートを 2 つ使います。`Cargo.toml` に次の節を足してください。",
+                ja: "ハンドラはルーターの状態と引数を受け取る `async fn` なので、テストは関数として呼び出して戻り値を読めます。下のテストは、サーバーが使わないクレートを 2 つ使います。`Cargo.toml` に次の節を追加してください。",
             },
         ),
         code::block(
@@ -85,7 +85,7 @@ fn router(site: Site) -> Part {
             site,
             L {
                 en: "The last two tests send a request to the `Router` with `oneshot` from `tower::ServiceExt`, which runs it in the process without opening a port. Write a test at this level for what the router adds to the handler: an extractor that refuses a visitor, the status of a refusal, the page for a URL no route matches, and the 400 for arguments that do not deserialize. The action's request comes from `LIKE.request(&3)`, and a page's URL from `Route::url`, so a renamed action or route moves the test with it.",
-                ja: "最後の 2 つのテストは、`tower::ServiceExt` の `oneshot` で `Router` にリクエストを送ります。`oneshot` はポートを開かずにプロセスの中でリクエストを処理します。このレベルのテストは、ルーターがハンドラに足すものを確かめるために書きます。訪問者を拒否するエクストラクタ、拒否したときのステータス、どのルートにも合わない URL のページ、変換できない引数への 400 です。アクションのリクエストは `LIKE.request(&3)` から、ページの URL は `Route::url` から作るので、アクションやルートの名前を変えるとテストも一緒に変わります。",
+                ja: "最後の 2 つのテストは、`tower::ServiceExt` の `oneshot` で `Router` にリクエストを送ります。`oneshot` はポートを開かずにプロセスの中でリクエストを処理します。このレベルのテストは、ルーターがハンドラに加えるものを確かめるために書きます。訪問者を拒否するエクストラクタ、拒否したときのステータス、どのルートにも合わない URL のページ、変換できない引数への 400 です。アクションのリクエストは `LIKE.request(&3)` から、ページの URL は `Route::url` から作るので、アクションやルートの名前を変えるとテストも一緒に変わります。",
             },
         ),
         para(
@@ -106,7 +106,7 @@ fn router(site: Site) -> Part {
             site,
             L {
                 en: "A handler that takes an extractor, such as the `Session` of [Signing in](learn/sessions/), is called with a value the test builds, as the tests below do for that page's `sign_in`. `Session::new(None, Arc::new(MemoryStore::default()), None)` makes an empty session with a store of its own, and the test reads what the handler wrote with `Session::get`. What the layer adds, the cookie in the answer, shows only through the router, so a second test sends the action through `oneshot` on the router with its `SessionManagerLayer`.",
-                ja: "[サインインとセッション](learn/sessions/) の `Session` のようなエクストラクタを受け取るハンドラは、テストが作った値を渡して呼び出します。下のテストはそのページの `sign_in` をこうして呼びます。`Session::new(None, Arc::new(MemoryStore::default()), None)` は自分専用のストアを持つ空のセッションを作り、テストはハンドラが書いた値を `Session::get` で読みます。レイヤーが足すもの（応答の Cookie）はルーターを通さないと現れないので、2 つ目のテストは `SessionManagerLayer` を付けたルーターに `oneshot` でアクションを送ります。",
+                ja: "[サインインとセッション](learn/sessions/) の `Session` のようなエクストラクタを受け取るハンドラは、テストが作った値を渡して呼び出します。下のテストはそのページの `sign_in` をこうして呼びます。`Session::new(None, Arc::new(MemoryStore::default()), None)` は自分専用のストアを持つ空のセッションを作り、テストはハンドラが書いた値を `Session::get` で読みます。レイヤーが加えるもの（応答の Cookie）はルーターを通さないと現れないので、2 つ目のテストは `SessionManagerLayer` を付けたルーターに `oneshot` でアクションを送ります。",
             },
         ),
         show(Snippet::TestingSessions),
@@ -142,7 +142,7 @@ fn simulation(site: Site) -> Part {
             site,
             L {
                 en: "A statement that needs the server or the browser is recorded in the [`Effects`](api:hypersig/testing/struct.Effects.html) the event returns, and not run. `calls(&SAVE)` returns the arguments of each call to `SAVE`, `navigates_to`, `pushes_url`, and `replaces_url` the URL of a link statement, and `runs_in_browser(FIELD.focus())` whether the event asked the browser to focus `FIELD`. The simulation makes the writes the runtime makes when it sends a call, so the indicator turns `true` and the error signal `\"\"`, and it never answers the call. A test that needs the answer calls the handler as above. A statement that reads `Expr::now`, `Expr::random_below`, or a date in the visitor's zone makes the simulation panic, because only the browser has that value.",
-                ja: "サーバーかブラウザが必要な文は実行せず、イベントが返す [`Effects`](api:hypersig/testing/struct.Effects.html) に記録します。`calls(&SAVE)` は `SAVE` の呼び出しごとの引数を、`navigates_to`、`pushes_url`、`replaces_url` はリンクの文の URL を返します。`runs_in_browser(FIELD.focus())` は、イベントがブラウザに `FIELD` へのフォーカスを求めたかどうかを返します。シミュレーションは、ランタイムが呼び出しを送るときと同じ書き込みをするので、インジケーターは `true` に、エラーのシグナルは `\"\"` になります。呼び出しに答えは返りません。答えが必要なテストは、上の節のようにハンドラを呼びます。`Expr::now`、`Expr::random_below`、訪問者のタイムゾーンでの日付を読む文では、シミュレーションはパニックします。その値はブラウザにしかないからです。",
+                ja: "サーバーかブラウザが必要な文は実行せず、イベントが返す [`Effects`](api:hypersig/testing/struct.Effects.html) に記録します。`calls(&SAVE)` は `SAVE` の呼び出しごとの引数を、`navigates_to`、`pushes_url`、`replaces_url` はリンクの文の URL を返します。`runs_in_browser(FIELD.focus())` は、イベントがブラウザに `FIELD` へのフォーカスを求めたかどうかを返します。シミュレーションは、ランタイムが呼び出しを送るときと同じ書き込みをするので、インジケーターは `true` に、エラーのシグナルは `\"\"` になります。呼び出しに応答は返りません。応答が必要なテストは、上の節のようにハンドラを呼びます。`Expr::now`、`Expr::random_below`、訪問者のタイムゾーンでの日付を読む文では、シミュレーションはパニックします。その値はブラウザにしかないからです。",
             },
         ),
     ])

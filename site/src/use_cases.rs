@@ -31,7 +31,7 @@ pub fn render(site: Site) -> String {
                 }),
                 site.t(L {
                     en: "A screen built with hypersig can look and behave like one built with Next.js. The difference is in which files change and what has to be written by hand when one more feature is added. Each hypersig change below is code that `cargo test` compiles, beside the work the same feature takes in Next.js 16 with the App Router.",
-                    ja: "hypersig で作った画面も Next.js で作った画面も、見た目と動きは同じにできます。差が出るのは、あとから仕様を 1 つ足すときに、どのファイルが変わり、何を手で書くかです。下の hypersig の差分は `cargo test` がコンパイルしているコードで、それぞれに Next.js 16 の App Router で同じ仕様を足すのに要る作業を並べています。",
+                    ja: "hypersig で作った画面も Next.js で作った画面も、見た目と動きは同じにできます。差が出るのは、あとから仕様を 1 つ追加するときに、どのファイルが変わり、何を手で書くかです。下の hypersig の差分は `cargo test` がコンパイルしているコードで、それぞれに Next.js 16 の App Router で同じ仕様を追加するのに必要な作業を並べています。",
                 }),
                 &[
                     (
@@ -63,7 +63,7 @@ pub fn render(site: Site) -> String {
                         site,
                         L {
                             en: "The features on this page fall into three kinds, by what the framework handles for them. The Next.js work starts from the shape of the TodoMVC in `bench/compare/next`, where a Server Component reads the data and a Client Component holds it in `useState`. In each hypersig change, a green line was added and a red line removed.",
-                            ja: "このページで足す仕様は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は `bench/compare/next` の TodoMVC と同じ構成から始めた場合のものです。その構成では、Server Component がデータを読み、Client Component がそれを `useState` に持ちます。hypersig の差分では、緑の行は足した行、赤の行は消した行です。",
+                            ja: "このページで追加する仕様は、フレームワークが何を受け持つかで 3 種類に分かれます。Next.js の作業は `bench/compare/next` の TodoMVC と同じ構成から始めた場合のものです。その構成では、Server Component がデータを読み、Client Component がそれを `useState` に持ちます。hypersig の差分では、緑の行は追加した行、赤の行は削除した行です。",
                         },
                     ),
                     div().children(CONCEPTS.iter().map(|concept| concept_section(site, concept))),
@@ -80,7 +80,7 @@ pub fn render(site: Site) -> String {
                         site,
                         L {
                             en: "Several features of the kinds above are added to each application below. Open one to read the change that one of those features makes.",
-                            ja: "下のアプリには上の種類の仕様をいくつも足します。開くと、そのうち 1 つを足したときの差分を読めます。",
+                            ja: "下のアプリには上の種類の仕様をいくつも追加します。開くと、そのうち 1 つを追加したときの差分を読めます。",
                         },
                     ),
                     div()
@@ -425,17 +425,17 @@ const CONCEPTS: &[Concept] = &[
         kind: Kind::Push,
         text: L {
             en: "Another visitor's write, a job's progress, or a deadline changes the screen while the visitor does nothing. A Server Action answers only the tab that called it, so in Next.js these changes need a second path: a stream of their own, and client code that merges what arrives into the state. In hypersig, a stream sends the same `Patches` an action answers with, and the runtime applies both the same way. [Talking to the server](learn/server/) covers streams.",
-            ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が要ります。専用のストリームと、届いた値を状態に取り込むクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [サーバーとのやり取り](learn/server/) で説明しています。",
+            ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が必要です。専用のストリームと、届いた値を状態に取り込むクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [サーバーとのやり取り](learn/server/) で説明しています。",
         },
         feature: L {
             en: "Show the tasks other people add, without a reload.",
-            ja: "ほかの人が足したタスクも、読み込み直さずに出してください。",
+            ja: "ほかの人が追加したタスクも、読み込み直さずに出してください。",
         },
         detail: Detail {
             next: &[
                 L {
                     en: "Add a Route Handler such as `app/api/tasks/stream/route.ts` that returns a `ReadableStream` with the `text/event-stream` content type. Keep the open streams in a list, and write to each of them after a Server Action saves a task.",
-                    ja: "`app/api/tasks/stream/route.ts` のような Route Handler を足し、`text/event-stream` の `ReadableStream` を返します。開いているストリームを一覧に持ち、Server Action がタスクを保存するたびに、その全部へ書き込みます。",
+                    ja: "`app/api/tasks/stream/route.ts` のような Route Handler を追加し、`text/event-stream` の `ReadableStream` を返します。開いているストリームを一覧に持ち、Server Action がタスクを保存するたびに、その全部へ書き込みます。",
                 },
                 L {
                     en: "In the Client Component, open an `EventSource` in `useEffect`, read each event with `JSON.parse`, and put the result into `useState`. `JSON.parse` returns `any`, so the shape of what arrives is not checked.",
@@ -443,7 +443,7 @@ const CONCEPTS: &[Concept] = &[
                 },
                 L {
                     en: "`EventSource` reconnects by itself, and the changes made while it was away are lost unless the handler sends them again, from the `Last-Event-ID` header or from a fresh read of the list.",
-                    ja: "`EventSource` は自分でつなぎ直します。ただ、切れていた間の変更は、ハンドラが `Last-Event-ID` ヘッダーを読むか一覧を読み直して送らない限り失われます。",
+                    ja: "`EventSource` は自分でつなぎ直します。ただし、切れていた間の変更は、ハンドラが `Last-Event-ID` ヘッダーを読むか一覧を読み直して送らない限り失われます。",
                 },
             ],
             change: Snippet::UseOthersChanges,
@@ -527,7 +527,7 @@ const CASES: &[Case] = &[
         },
         scene: L {
             en: "Many visitors watch one item, and each bid changes the price on every screen.",
-            ja: "大勢が 1 つの品物を見ていて、入札のたびに全員の画面の価格が変わります。",
+            ja: "大勢が 1 つの品物を見ており、入札のたびに全員の画面の価格が変わります。",
         },
         before: &[(
             Kind::Push,
@@ -571,7 +571,7 @@ const CASES: &[Case] = &[
                 },
                 L {
                     en: "Add `leading` to the state the `EventSource` handler merges in the Client Component, and render it.",
-                    ja: "Client Component では、`EventSource` のハンドラが取り込む状態に `leading` を足し、表示します。",
+                    ja: "Client Component では、`EventSource` のハンドラが取り込む状態に `leading` を追加し、表示します。",
                 },
             ],
             change: Snippet::UseAuction,
@@ -688,7 +688,7 @@ const CASES: &[Case] = &[
             Kind::Push,
             L {
                 en: "Mark a seat as taken on every screen once someone holds it.",
-                ja: "だれかが押さえた席は、すぐ全員の画面で埋まった表示にしてください。",
+                ja: "だれかが押さえた席は、すぐに全員の画面で埋まった表示にしてください。",
             },
         )],
         detailed: (
@@ -724,7 +724,7 @@ const CASES: &[Case] = &[
         },
         scene: L {
             en: "Employees file expenses, and approvers work through the list of the ones waiting.",
-            ja: "社員が経費を申請し、承認する人が待っている申請の一覧を順に片付けます。",
+            ja: "社員が経費を申請し、承認する人が待っている申請の一覧を順に処理します。",
         },
         before: &[
             (
@@ -797,7 +797,7 @@ const CASES: &[Case] = &[
             Kind::Names,
             L {
                 en: "Add an English version of each page.",
-                ja: "各ページに英語版を足してください。",
+                ja: "各ページに英語版を追加してください。",
             },
         ),
         after: &[],
@@ -809,7 +809,7 @@ const CASES: &[Case] = &[
                 },
                 L {
                     en: "Put the pages under a `[locale]` segment, and pick the language for a visitor who opens `/`.",
-                    ja: "ページを `[locale]` のセグメントの下に移し、`/` を開いた訪問者の言語を選ぶ処理を足します。",
+                    ja: "ページを `[locale]` のセグメントの下に移し、`/` を開いた訪問者の言語を選ぶ処理を追加します。",
                 },
                 L {
                     en: "Unless the project's types check every language's file, a key missing from one file is not a type error, and shows up as a missing text at run time.",
@@ -819,7 +819,7 @@ const CASES: &[Case] = &[
             change: Snippet::UseTranslations,
             caption: L {
                 en: "A text holds its translations in one struct, so a text without its English fails to compile, and a language added to `Lang` fails to compile until every text has it. [i18n](i18n/) covers the crate.",
-                ja: "文言は訳を 1 つの構造体に持つので、英語のない文言はコンパイルエラーになります。`Lang` に言語を足すと、すべての文言に訳が入るまでコンパイルが通りません。クレートは [多言語化](i18n/) で説明しています。",
+                ja: "文言は訳を 1 つの構造体に持つので、英語のない文言はコンパイルエラーになります。`Lang` に言語を追加すると、すべての文言に訳が入るまでコンパイルが通りません。クレートは [多言語化](i18n/) で説明しています。",
             },
         },
     },

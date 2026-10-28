@@ -40,7 +40,7 @@ fn workers(site: Site) -> Part {
             site,
             L {
                 en: "These commands need a Cloudflare account, Rust 1.99 or later, and Node.js 22 or later. Node.js runs `wrangler`, Cloudflare's command-line tool, which is published only on npm, and `npx` fetches it on first use, so the project has no `package.json`. `cargo install` installs `cargo hypersig` from crates.io, and `cargo hypersig new` writes the Workers template into `my-worker` and names the package and the worker after it. The templates are compiled into `cargo hypersig`, and a version published on crates.io cannot change, so the build command in `wrangler.toml` is the same in every project one version makes.",
-                ja: "このコマンドを実行するには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Cloudflare のコマンドラインツール `wrangler` を動かすためだけに使います。`wrangler` は npm でしか配布されていません。`npx` が最初の実行時にダウンロードするので、プロジェクトに `package.json` はありません。`cargo install` は crates.io から `cargo hypersig` をインストールし、`cargo hypersig new` は Workers のテンプレートを `my-worker` に書き出して、パッケージと Worker にその名前を付けます。テンプレートは `cargo hypersig` に埋め込まれていて、crates.io に公開した版は書き換えられません。そのため、`wrangler.toml` のビルドのコマンドは、同じ版で作ったどのプロジェクトでも同じです。",
+                ja: "このコマンドを実行するには、Cloudflare のアカウント、Rust 1.99 以降、Node.js 22 以降が必要です。Node.js は Cloudflare のコマンドラインツール `wrangler` を動かすためだけに使います。`wrangler` は npm でしか配布されていません。`npx` が最初の実行時にダウンロードするので、プロジェクトに `package.json` はありません。`cargo install` は crates.io から `cargo hypersig` をインストールし、`cargo hypersig new` は Workers のテンプレートを `my-worker` に書き出して、パッケージと Worker にその名前を付けます。テンプレートは `cargo hypersig` に埋め込まれており、crates.io に公開した版は書き換えられません。そのため、`wrangler.toml` のビルドのコマンドは、同じ版で作ったどのプロジェクトでも同じです。",
             },
         ),
         code::block(
@@ -187,7 +187,7 @@ worker = { version = "0.8", features = ["http", "axum", "d1"] }"#,
             site,
             L {
                 en: "Code that uses tokio changes too. A stream that waits with `tokio::time::sleep` waits with `worker::Delay`, as the clock above does, and state in the router's state does not outlast the isolate, as the next section says. Then `npx wrangler dev` runs the project.",
-                ja: "tokio を使うコードも書き換えが必要です。`tokio::time::sleep` で待つストリームは、上の時計と同じように `worker::Delay` で待ちます。ルーターの状態に置いた値は、次の節のとおり isolate より長くは残りません。そのあとプロジェクトで `npx wrangler dev` を実行してください。",
+                ja: "tokio を使うコードも書き換えが必要です。`tokio::time::sleep` で待つストリームは、上の時計と同じように `worker::Delay` で待ちます。ルーターの状態に置いた値は、次の節のとおり isolate より長くは保持されません。そのあとプロジェクトで `npx wrangler dev` を実行してください。",
             },
         ),
     ])

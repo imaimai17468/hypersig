@@ -57,7 +57,7 @@ docker run --rm -p 3000:3000 my-app",
             site,
             L {
                 en: "The templates are compiled into `cargo hypersig`, and a version published on crates.io cannot change, so a project made with one version holds the same files every time, the `RUN` line of the `Dockerfile` included. `cargo install` checks the download against the checksum crates.io recorded.",
-                ja: "テンプレートは `cargo hypersig` に埋め込まれていて、crates.io に公開した版は書き換えられません。そのため、同じ版で作ったプロジェクトは、`Dockerfile` の `RUN` の行も含めて毎回同じファイルになります。`cargo install` は、ダウンロードしたものを crates.io が記録したチェックサムと照らし合わせます。",
+                ja: "テンプレートは `cargo hypersig` に埋め込まれており、crates.io に公開した版は書き換えられません。そのため、同じ版で作ったプロジェクトは、`Dockerfile` の `RUN` の行も含めて毎回同じファイルになります。`cargo install` は、ダウンロードしたものを crates.io が記録したチェックサムと照らし合わせます。",
             },
         ),
         para(
