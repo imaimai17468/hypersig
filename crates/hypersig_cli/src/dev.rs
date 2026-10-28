@@ -117,6 +117,9 @@ struct Built {
 const INSTALL_BLAZE: &str =
     "curl -fsSL https://raw.githubusercontent.com/indexable-inc/blaze/main/install.sh | sh";
 
+/// The variable that sets `split-debuginfo` of Cargo's dev profile.
+const SPLIT_DEBUGINFO: &str = "CARGO_PROFILE_DEV_SPLIT_DEBUGINFO";
+
 fn cargo() -> OsString {
     std::env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"))
 }
@@ -148,8 +151,16 @@ fn blaze_installed() -> Result<(), Error> {
 ///
 /// Fails where blaze cannot run.
 fn blaze(build_args: &[String]) -> Result<Child, Error> {
+    let mut command = Command::new("blaze");
+    // On macOS, blaze 0.20261027.0 refused a project whose dev profile left
+    // `split-debuginfo` at its default, at a static of std's thread locals,
+    // and built it with the key set. The variable reaches only this build,
+    // so Cargo's builds and the project's manifest keep their own value.
+    if cfg!(target_os = "macos") && std::env::var_os(SPLIT_DEBUGINFO).is_none() {
+        command.env(SPLIT_DEBUGINFO, "packed");
+    }
     // blaze's own lines repeat what the check prints, so they are dropped.
-    Command::new("blaze")
+    command
         .arg("build")
         .args(build_args)
         .stdout(Stdio::null())
