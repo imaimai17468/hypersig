@@ -27,6 +27,10 @@ async fn publish((): (), (): ()) -> Patches<Draft> {
     Patches::from(Draft::saving().patch(false)).navigate(POST.url(id))
 }
 
+// A test reads the page an action's answer sends the browser to.
+let sent = Patches::<Draft>::new().navigate(POST.url(7));
+assert_eq!(sent.navigates_to().map(|url| url.as_str()), Some("/posts/7"));
+
 // A button leaves the page after setting a signal.
 let _back = button::<Draft>().on_click(Draft::saving().set(false).then(POST.link_with(&1).navigate()));
 # let _ = (pages, PUBLISH);

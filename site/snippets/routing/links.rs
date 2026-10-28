@@ -1,7 +1,7 @@
 # use hypersig::Signals;
 # use serde::{Deserialize, Serialize};
-use hypersig::{PathSegment, Route};
 use hypersig::html::a;
+use hypersig::{Page, PathSegment, Route};
 
 #[derive(Signals, Serialize, Deserialize)]
 struct Search {
@@ -20,5 +20,7 @@ assert_eq!(fixed.render(), r#"<a href="/teams/red%20team/members/7"></a>"#);
 
 // A parameter that reads a signal is kept up to date in the browser.
 let bound = a().href(MEMBER.link_with((Search::team(), 7)));
-assert!(bound.render().contains("data-hs-attr"));
+let page = Page::new("Team", Search { team: PathSegment::new("red") }).child(bound);
+// The page's first HTML holds the URL of the signal's first value.
+assert!(page.render().contains(r#"<a href="/teams/red/members/7""#));
 # let _ = pages;

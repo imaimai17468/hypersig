@@ -7,6 +7,7 @@ mod deploying;
 mod forms;
 mod javascript;
 mod requests;
+mod routing;
 mod security;
 mod server;
 mod sessions;
@@ -56,10 +57,12 @@ pub fn content(site: Site, page: Learn) -> Part {
             server::calls_in_depth(site)
         }
         // Pages and routing
-        Learn::Routes | Learn::SearchParams | Learn::ErrorPages | Learn::BasePath => {
-            server::routes_in_depth(site)
-        }
-        Learn::Links | Learn::ChildPages | Learn::Pages => server::pages(site),
+        Learn::Routes => routing::routes::page(site),
+        Learn::Links => routing::links::page(site),
+        Learn::ChildPages => routing::child_pages::page(site),
+        Learn::SearchParams => routing::search_params::page(site),
+        Learn::ErrorPages => routing::error_pages::page(site),
+        Learn::BasePath => routing::base_path::page(site),
         // Forms and requests
         Learn::Forms | Learn::FormValidation => forms::forms(site),
         Learn::Requests | Learn::Errors | Learn::Uploads => requests::requests(site),

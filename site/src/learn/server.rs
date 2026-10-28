@@ -157,79 +157,6 @@ pub fn calls_in_depth(site: Site) -> Part {
     ])
 }
 
-pub fn routes_in_depth(site: Site) -> Part {
-    parts(vec![
-        title(Doc::Learn(Learn::Routes).title(site)),
-        lead(site, Doc::Learn(Learn::Routes).leads()),
-        heading(
-            site,
-            L {
-                en: "Search parameters",
-                ja: "クエリパラメータ",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "A route's second type, `Route<P, Q>`, types its query string. `Q` is a struct with `#[derive(Signals, Search)]`, and a link and the handler then take `(P, Q)`, or `Q` alone for a path without parameters. `#[derive(Search)]` requires each field to be a [`SearchValue`](api:hypersig/trait.SearchValue.html): a string, a number, a `bool`, an enum with `#[derive(Segment)]`, or an `Option` or a `Vec` of one, so a struct or a list of lists in a field is a compile error. A `Vec` field writes its name once per item, as `?color=red&color=blue`, and the server reads the repeated key back into the list. A field whose type checks its value in `Deserialize`, such as a newtype with `#[serde(try_from = \"i32\")]`, validates the query string, and an `Option` field with `unwrap_or` in the handler gives a default. The query string lists the fields in the order of their names and leaves out a field that is `None`, on the server and in the browser alike. A query string that does not deserialize into `Q` gets a 400.",
-                ja: "ルートの 2 つ目の型 `Route<P, Q>` は、クエリ文字列の型です。`Q` は `#[derive(Signals, Search)]` を付けた構造体で、リンクとハンドラは `(P, Q)` を受け取ります。パラメータのないパスでは `Q` だけを受け取ります。`#[derive(Search)]` は、各フィールドが [`SearchValue`](api:hypersig/trait.SearchValue.html) であることを求めます。`SearchValue` は文字列、数値、`bool`、`#[derive(Segment)]` を付けた列挙型、またはそれらの `Option` か `Vec` なので、フィールドに構造体やリストのリストを置くとコンパイルエラーになります。`Vec` のフィールドは `?color=red&color=blue` のように要素ごとに名前を書き、サーバーは繰り返されたキーをリストに読み戻します。`#[serde(try_from = \"i32\")]` を付けた newtype のように `Deserialize` で値を検査する型のフィールドは、クエリ文字列を検証します。`Option` のフィールドにハンドラで `unwrap_or` を使えば、既定値を決められます。クエリ文字列はフィールドを名前の順に並べ、`None` のフィールドは書きません。これはサーバーでもブラウザでも同じです。`Q` にデシリアライズできないクエリ文字列には 400 を返します。",
-            },
-        ),
-        show(Snippet::SearchParams),
-        heading(
-            site,
-            L {
-                en: "Changing the URL without loading a page",
-                ja: "ページを読み込まずに URL を変える",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "A list whose filter, sort, and page live in the query string can keep the page loaded while they change. `link.push_url()` is a statement that shows the link's URL in the address bar as a new history entry, and `link.replace_url()` shows it in place of the current one, for a change the Back button should skip, such as each letter typed into a search field. The page keeps its signals and its focus, so the statement runs beside the call that loads the rows. An action does the same with `Patches::push_url(url)` and `Patches::replace_url(url)`, and the patches after them are applied. When the visitor presses Back or Forward, the browser loads the page at that entry's URL from the server, which renders it from the query string.",
-                ja: "フィルター、並び順、ページ番号をクエリ文字列に持つリストは、それらが変わってもページを読み込み直さずに済みます。`link.push_url()` はリンクの URL を新しい履歴の項目としてアドレスバーに出す文です。`link.replace_url()` は今の URL と置き換えるので、検索欄に打つ 1 文字ごとのように、戻るボタンで飛ばしたい変更に使います。ページのシグナルとフォーカスはそのまま保持されるので、この文は行を読み込む呼び出しと並べて書きます。アクションでは `Patches::push_url(url)` と `Patches::replace_url(url)` で同じことをし、その後の差分も適用されます。訪問者が戻るボタンや進むボタンを押すと、ブラウザはその項目の URL のページをサーバーから読み込み、サーバーはクエリ文字列からページを描きます。",
-            },
-        ),
-        show(Snippet::History),
-        heading(
-            site,
-            L {
-                en: "Pages for missing paths",
-                ja: "見つからないパスのページ",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "`fn pages(Router<State>) else missing;` on the first line of `routes!` names a handler for each page request that reaches no page: a path no route matches, a segment that does not parse, a handler that answers `None`, and a query string that does not deserialize. The handler receives an [`Unserved`](api:hypersig/struct.Unserved.html) and may take an extractor, and its page is sent with the 404 or 400 that `Unserved::status` names. `Unserved::within(HOME)` reads the parameters of `HOME` from the start of the path, so a site under `/{lang}` shows the page in the language of the path. A page with another status is `PageResponse::with_status(status, page)`.",
-                ja: "`routes!` の 1 行目に `fn pages(Router<State>) else missing;` と書くと、どのページにも届かなかったページのリクエストを受け取るハンドラを指定できます。対象は、どのルートにも合わないパス、パースできないセグメント、`None` を返したハンドラ、デシリアライズできないクエリ文字列です。ハンドラは [`Unserved`](api:hypersig/struct.Unserved.html) を受け取り、extractor も受け取れます。返したページは `Unserved::status` が示す 404 か 400 で送られます。`Unserved::within(HOME)` はパスの先頭から `HOME` のパラメータを読むので、`/{lang}` の下にあるサイトはパスの言語でページを出せます。ほかのステータスで返すページは `PageResponse::with_status(status, page)` で返します。",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "Nothing checks that the URL `push_url` or `replace_url` shows belongs to the page on screen. The URL of another page shows over this page's content, and reloading it loads the other page.",
-                ja: "`push_url` や `replace_url` が出す URL が、画面のページのものかどうかは検査されません。別のページの URL を出すと、このページの内容のままその URL が表示され、再読み込みすると別のページが読み込まれます。",
-            },
-        ),
-        head(site),
-        heading(
-            site,
-            L {
-                en: "Serving under a path prefix",
-                ja: "パスの接頭辞の下で配信する",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "An application served under a path prefix, such as `/app` behind a proxy, names it once as a [`Base`](api:hypersig/struct.Base.html) constant: `fn pages(Router<State>) under APP;` on the first line of `routes!`. Links, URLs, redirects, the calls to the block's actions, streams, and uploads, the path a page loads the runtime from, each `Asset` path the page loads, and each root path in a stylesheet's `url(..)`, in the page and in the patches the block's handlers send, then start with `/app`, and the router still registers each path without it. The same router then runs inside `Router::nest(APP.as_str(), ...)` or behind a proxy that strips `/app`. The prefix is a constant because the routes and actions it prefixes are, so it is chosen when the program is built. A page served by a router nested under any other path answers every request with a 500 whose body names neither path, and the compiler does not check that an action a page calls comes from a block under the same base.",
-                ja: "プロキシの裏の `/app` のようにパスの接頭辞の下で配信するアプリケーションは、接頭辞を [`Base`](api:hypersig/struct.Base.html) の定数として 1 か所で宣言します。`routes!` の 1 行目に `fn pages(Router<State>) under APP;` と書きます。するとリンク、URL、リダイレクト、そのブロックのアクション、ストリーム、アップロードの呼び出し、ページがランタイムを読み込むパス、ページが読み込む `Asset` のパス、スタイルシートの `url(..)` に書いたルートからのパス（ページの中と、ブロックのハンドラが送る差分の中の両方）が `/app` で始まり、ルーターは各パスを接頭辞なしのまま登録します。同じルーターを `Router::nest(APP.as_str(), ...)` の中でも、`/app` を取り除くプロキシの裏でも動かせます。接頭辞を付けるルートとアクションが定数なので、接頭辞も定数で、プログラムをビルドするときに決まります。ほかのパスに `nest` したルーターのページは、どのリクエストにも 500 を返します。本文にはどちらのパスも書きません。ページが呼ぶアクションが同じ接頭辞のブロックで宣言されているかどうかを、コンパイラは検査しません。",
-            },
-        ),
-    ])
-}
-
 /// The sections on calls that overlap and streams that drop.
 fn calls(site: Site) -> Part {
     parts([
@@ -358,146 +285,13 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time"]
     ])
 }
 
-pub fn pages(site: Site) -> Part {
-    parts(
-        [
-            title(Doc::Learn(Learn::Pages).title(site)),
-            lead(site, Doc::Learn(Learn::Pages).leads()),
-            heading(
-                site,
-                L {
-                    en: "Routes",
-                    ja: "ルート",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "A [`Route<P>`](api:hypersig/struct.Route.html) is a path whose parameters are `P`. A parameter is a whole segment written `{name}`, as in axum, and `P` is `()` for a path without one, one [`Segment`](api:hypersig/trait.Segment.html) for one, and a tuple for two to six, in path order. A `Segment` is an integer, a [`PathSegment`](api:hypersig/struct.PathSegment.html), or an enum with `#[derive(Segment)]` whose variants have no fields. A `PathSegment` holds any text but an empty one, `.`, and `..`, because axum does not match an empty segment and the browser removes a dot segment from a link. `PathSegment::new` refuses those three at compile time, `PathSegment::parse` returns an error for text read from data, and a request whose segment decodes to one, such as `/orgs/%2E%2E`, gets a 404 before the handler runs. A variant's segment is the string serde writes for it, so `#[serde(rename_all = \"lowercase\")]` gives `/ja/`. A last segment written `{*name}` takes the rest of the path, `/`s included, into a [`Rest`](api:hypersig/struct.Rest.html), as in `\"/files/{*path}\"`. A `Rest` is not empty and has no part that is `.` or `..`, for the same reasons. Declare it in [`routes!`](api:hypersig/macro.routes.html), on a line that names the handler serving it, so a route without a handler cannot be declared. The macro counts the segments, so a path whose count differs from `P` fails to compile. `routes!` needs the `axum` feature, which is on by default.",
-                    ja: "[`Route<P>`](api:hypersig/struct.Route.html) は、パラメータが `P` のパスです。パラメータは axum と同じく `{name}` と書いたセグメント 1 つ分です。`P` は、パラメータのないパスでは `()`、1 つなら [`Segment`](api:hypersig/trait.Segment.html) 1 つ、2 つから 6 つならパスの順に並べたタプルです。`Segment` になるのは整数、[`PathSegment`](api:hypersig/struct.PathSegment.html)、そしてフィールドのないヴァリアントだけを持ち `#[derive(Segment)]` を付けた列挙型です。`PathSegment` は、空の文字列、`.`、`..` を除く文字列を持ちます。axum は空のセグメントに一致せず、ブラウザはリンクから `.` と `..` のセグメントを取り除くためです。`PathSegment::new` はこの 3 つをコンパイル時に拒否し、データから読んだ文字列には `PathSegment::parse` がエラーを返します。`/orgs/%2E%2E` のように、デコードするとこの 3 つのどれかになるセグメントを持つリクエストには、ハンドラを呼ぶ前に 404 を返します。列挙型のセグメントは serde がそのヴァリアントに対して書き出す文字列なので、`#[serde(rename_all = \"lowercase\")]` を付けると `/ja/` になります。最後のセグメントを `{*name}` と書くと、`\"/files/{*path}\"` のように、`/` を含むパスの残りを [`Rest`](api:hypersig/struct.Rest.html) で受け取ります。`Rest` も同じ理由で、空にならず、`.` や `..` の部分を持ちません。ルートは [`routes!`](api:hypersig/macro.routes.html) の中で、それを配信するハンドラを書いた行に宣言します。そのため、ハンドラのないルートは宣言できません。マクロがセグメントを数えるので、数が `P` と合わないパスはコンパイルが通りません。`routes!` には `axum` フィーチャーが必要です。このフィーチャーはデフォルトで有効です。",
-                },
-            ),
-            show(Snippet::WrongRoute),
-            para(
-                site,
-                L {
-                    en: "The first line of `routes!` names a function and the router state, and the function registers each route on `GET` with its handler. A handler receives the router state and the parameters, already parsed, and returns the `Page`. A path whose segments do not parse into the parameter types gets a 404, and so does a handler that returns `None`, as `member` does below for an id it does not know.",
-                    ja: "`routes!` の 1 行目には関数の名前とルーターの状態を書き、その関数が各ルートをハンドラと一緒に `GET` に登録します。ハンドラはルーターの状態と解析済みのパラメータを受け取り、`Page` を返します。セグメントをパラメータの型に解析できないパスには 404 を返し、`None` を返したハンドラにも 404 を返します。下の `member` は知らない id に対して `None` を返します。",
-                },
-            ),
-            program(Program::Pages),
-            heading(
-                site,
-                L {
-                    en: "Links",
-                    ja: "リンク",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "`El::href` takes a [`Link`](api:hypersig/struct.Link.html) for a page the router serves, which `link()` builds for a route without parameters and `link_with(params)` for one with them. The parameters are expressions of the route's types, as the arguments of an action call are. Literals give a fixed `href`. A parameter that reads a signal or a list item, as on the team page above, is evaluated in the browser and kept up to date. Both sides percent-encode a value as `encodeURIComponent` does, so the first HTML and the runtime write the same URL.",
-                    ja: "`El::href` は、ルーターが配信するページへの [`Link`](api:hypersig/struct.Link.html) を受け取ります。パラメータのないルートでは `link()` が、パラメータのあるルートでは `link_with(params)` がリンクを作ります。パラメータは、アクションを呼び出すときの引数と同じく、ルートの型の式です。リテラルを渡すと `href` は固定になります。上のチームのページのようにシグナルやリストの項目を読むパラメータは、ブラウザで評価され、値が変わるたびに更新されます。両側とも `encodeURIComponent` と同じ方法で値をパーセントエンコードするので、最初の HTML とランタイムは同じ URL を書きます。",
-                },
-            ),
-            show(Snippet::Links),
-            heading(
-                site,
-                L {
-                    en: "Pages under a page",
-                    ja: "ページの下のページ",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "`in PARENT` after the path declares a route under the page of an earlier line. Its path is the parent's path followed by more segments, and its parameters are the parent's followed by its own, so a link to the child needs the parent's values too. A path that does not continue the parent's, or parameters that do not start with the parent's, fail to compile.",
-                    ja: "パスのあとに `in PARENT` と書くと、それより前の行のページの下にルートを宣言します。子のパスは親のパスにセグメントを続けたもので、パラメータは親のパラメータに自分のパラメータを続けたものです。そのため、子へのリンクには親の値も必要です。親のパスの続きになっていないパスや、親のパラメータで始まらないパラメータは、コンパイルが通りません。",
-                },
-            ),
-            show(Snippet::ChildRoutes),
-        ]
-        .into_iter()
-        .chain([
-            heading(
-                site,
-                L {
-                    en: "Redirects and navigation",
-                    ja: "リダイレクトとページの移動",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "The server writes a page's URL with `url(params)`, which takes the route's parameter values themselves and encodes them as a link does. A page handler that sends the browser elsewhere returns a [`PageResponse`](api:hypersig/struct.PageResponse.html), built with `PageResponse::redirect(url)` or converted from a `Page`. An action does the same with `Patches::navigate(url)`, which the browser follows once the patches before it are applied.",
-                    ja: "サーバーは `url(params)` でページの URL を書きます。`url` はルートのパラメータの値そのものを受け取り、リンクと同じ方法でエンコードします。ブラウザを別のページへ送るページのハンドラは、[`PageResponse`](api:hypersig/struct.PageResponse.html) を返します。`PageResponse` は `PageResponse::redirect(url)` で作るか、`Page` から変換します。アクションでは `Patches::navigate(url)` で同じことをし、ブラウザはそれより前の差分を適用してから移動します。",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "In the browser, `link.navigate()` is a statement that loads the linked page, for a handler that should leave the page after it runs other statements.",
-                    ja: "ブラウザでは、`link.navigate()` がリンク先のページを読み込む文です。ほかの文を実行してからページを離れるハンドラに使います。",
-                },
-            ),
-            show(Snippet::Navigation),
-            heading(
-                site,
-                L {
-                    en: "Error pages",
-                    ja: "エラーのページ",
-                },
-            ),
-            para(
-                site,
-                L {
-                    en: "A page handler that cannot build its page, such as one whose database does not answer, returns an error page of its own with [`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status). The browser shows the page, and the status tells a crawler or a monitor that the request failed. A handler that returns `PageResponse` converts its usual page with `.into()`. The page for a path no route matches is named once in `routes!`, as [Routes in depth](learn/routes/#pages-for-missing-paths) shows.",
-                    ja: "データベースが応答しないときのように、ページを組み立てられなかったハンドラは、[`PageResponse::with_status(status, page)`](api:hypersig/struct.PageResponse.html#method.with_status) で自分のエラーのページを返します。ブラウザはそのページを表示し、ステータスはクローラーや監視の仕組みにリクエストの失敗を伝えます。`PageResponse` を返すハンドラは、通常のページを `.into()` で変換します。どのルートにも合わないパスのページは、[ルートの詳細](learn/routes/#pages-for-missing-paths) のとおり `routes!` の中で 1 回だけ指定します。",
-                },
-            ),
-            show(Snippet::ErrorPage),
-            heading(
-                site,
-                L {
-                    en: "What routes leave unchecked",
-                    ja: "ルートが検査しないこと",
-                },
-            ),
-            bullets(
-                site,
-                &[
-                    L {
-                        en: "Nothing checks that the function `routes!` writes is called, so declare every page of the application in one `routes!` block and call its one function. A block whose function is never called answers 404 on every page, and rustc reports its handler functions as never used, though not the function itself or a handler written as a closure.",
-                        ja: "`routes!` が書く関数が呼び出されているかどうかは検査されません。アプリケーションのページはすべて 1 つの `routes!` ブロックに宣言し、その関数 1 つを呼び出してください。関数が一度も呼び出されないブロックは、どのページにも 404 を返します。このとき rustc はハンドラの関数が使われていないと報告しますが、関数そのものとクロージャで書いたハンドラは報告しません。",
-                    },
-                    L {
-                        en: "A parent after `in` is a page itself, so a path prefix with no page of its own cannot be one.",
-                        ja: "`in` のあとに書く親はそれ自体がページなので、自分のページを持たないパスの接頭辞は親にできません。",
-                    },
-                    L {
-                        en: "A link is a plain `<a href>`, so following it loads the next page from the server, and the signals of the page you leave are gone.",
-                        ja: "リンクは通常の `<a href>` なので、たどると次のページをサーバーから読み込み、離れたページのシグナルは失われます。",
-                    },
-                    L {
-                        en: "A link to another site or to a `#fragment` is a [`SafeUrl`](api:hypersig/struct.SafeUrl.html), which [When bindings and statements are not enough](learn/escape-hatches/) covers. It checks the URL's scheme, and nothing checks that the address it names exists.",
-                        ja: "ほかのサイトや `#fragment` へのリンクには [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を使います。これは [束縛と文で足りないとき](learn/escape-hatches/) で説明します。`SafeUrl` が検査するのは URL のスキームだけで、その先のアドレスがあるかどうかは検査されません。",
-                    },
-                ],
-            ),
-            para(
-                site,
-                L {
-                    en: "[Routes in depth](learn/routes/) covers typed query strings, URLs that change without loading a page, pages for missing paths, what search results and link previews show, and an application served under a path prefix.",
-                    ja: "型の付いたクエリ文字列、ページを読み込まずに変える URL、存在しないパスのページ、検索結果とリンクのプレビューに出る内容、パスの接頭辞の下で配信するアプリは [ルートの詳細](learn/routes/) で説明します。",
-                },
-            ),
-        ]),
-    )
-}
-
 /// The section on what a page tells search engines and link previews,
 /// apart from `pages` because clippy rejects an array of parts larger than
 /// 16 KiB on the stack.
+#[expect(
+    dead_code,
+    reason = "the Learn group Building the page moves it to its page"
+)]
 fn head(site: Site) -> Part {
     parts([
         heading(
@@ -673,8 +467,8 @@ pub fn escape_hatches(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`El::href` and `El::src` take a link built from a [`Route`](learn/pages/), or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html) for an address the router does not serve, such as another site or a `#fragment` on the same page. A `SafeUrl` holds only a URL whose scheme cannot run a script: `http:`, `https:`, `mailto:`, or none at all. `SafeUrl::new` takes a URL written in the program, and in a `const` a `javascript:` URL fails to compile. `SafeUrl::parse` reads a URL from outside the program, such as one a visitor typed, and returns an [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) error where `SafeUrl::new` would refuse it. `attr` panics on `href` and `src`, so neither can be written from a plain string.",
-                ja: "`El::href` と `El::src` は、[`Route`](learn/pages/) から作ったリンクのほかに、ルーターが配信しないアドレスのための [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を受け取ります。ほかのサイトや、同じページの `#fragment` へのリンクがこれにあたります。`SafeUrl` に入るのは、スクリプトを実行できないスキーム（`http:`、`https:`、`mailto:`）の URL と、スキームのない URL だけです。`SafeUrl::new` はプログラムに書いた URL を受け取り、`const` の中では `javascript:` の URL がコンパイルエラーになります。`SafeUrl::parse` は訪問者が入力したものなど、プログラムの外から来た URL を読み、`SafeUrl::new` が受け付けない URL には [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) のエラーを返します。`attr` は `href` と `src` を渡すとパニックするので、どちらも素の文字列からは書けません。",
+                en: "`El::href` and `El::src` take a link built from a [`Route`](learn/routes/), or a [`SafeUrl`](api:hypersig/struct.SafeUrl.html) for an address the router does not serve, such as another site or a `#fragment` on the same page. A `SafeUrl` holds only a URL whose scheme cannot run a script: `http:`, `https:`, `mailto:`, or none at all. `SafeUrl::new` takes a URL written in the program, and in a `const` a `javascript:` URL fails to compile. `SafeUrl::parse` reads a URL from outside the program, such as one a visitor typed, and returns an [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) error where `SafeUrl::new` would refuse it. `attr` panics on `href` and `src`, so neither can be written from a plain string.",
+                ja: "`El::href` と `El::src` は、[`Route`](learn/routes/) から作ったリンクのほかに、ルーターが配信しないアドレスのための [`SafeUrl`](api:hypersig/struct.SafeUrl.html) を受け取ります。ほかのサイトや、同じページの `#fragment` へのリンクがこれにあたります。`SafeUrl` に入るのは、スクリプトを実行できないスキーム（`http:`、`https:`、`mailto:`）の URL と、スキームのない URL だけです。`SafeUrl::new` はプログラムに書いた URL を受け取り、`const` の中では `javascript:` の URL がコンパイルエラーになります。`SafeUrl::parse` は訪問者が入力したものなど、プログラムの外から来た URL を読み、`SafeUrl::new` が受け付けない URL には [`UnsafeUrl`](api:hypersig/struct.UnsafeUrl.html) のエラーを返します。`attr` は `href` と `src` を渡すとパニックするので、どちらも素の文字列からは書けません。",
             },
         ),
         show(Snippet::SafeUrl),
