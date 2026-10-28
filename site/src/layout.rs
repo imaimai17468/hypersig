@@ -1,7 +1,7 @@
 //! The frame around every page: the header, the sidebar, and the links to
 //! the previous and the next page.
 
-use hypersig::html::{Id, a, attr, div, el, footer, header, img, main, nav, p, span};
+use hypersig::html::{Id, Stylesheet, a, attr, div, el, footer, header, img, main, nav, p, span};
 use hypersig::style::pattern::{container, hstack, stack};
 use hypersig::style::value::{
     AlignItems, BorderBottomStyle, BorderStyle, BorderTopStyle, Color, Display, FlexWrap,
@@ -23,6 +23,30 @@ pub const REPOSITORY: SafeUrl = SafeUrl::new("https://github.com/imaimai17468/hy
 
 /// The id of the sidebar, which the menu button controls.
 const SIDEBAR: Id = Id::new("sidebar");
+
+/// The move from one page of the site to the next, which a browser with
+/// cross-document view transitions plays: the old page lifts away and
+/// blurs, and the new one rises in, revealed from its top edge. The header
+/// has a name of its own, which `top_bar` gives it, so it stays in place
+/// while the page under it moves. A visitor who asks for reduced motion
+/// gets the browser's plain change.
+const TRANSITIONS: Stylesheet = Stylesheet::new(
+    "
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: 260ms cubic-bezier(0.4, 0, 1, 1) both hs-page-out; }
+  ::view-transition-new(root) { animation: 560ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both hs-page-in; }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
+}
+@keyframes hs-page-out { to { opacity: 0; transform: translateY(-1.5rem); filter: blur(8px); } }
+@keyframes hs-page-in {
+  from { opacity: 0; transform: translateY(2.5rem); clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+",
+);
 
 /// A page of `doc` with the header and `body` below it, full width.
 pub fn document(site: Site, doc: Doc, body: Part) -> String {
@@ -81,6 +105,7 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
         card = card.alternate_locale(lang.og_locale());
     }
     page.open_graph(card)
+        .style(TRANSITIONS)
         .runtime_src(crate::RUNTIME)
         .icon(crate::ICON)
         .global(hypersig_ui::global())
@@ -141,7 +166,9 @@ fn top_bar(site: Site, doc: Doc) -> Part {
                 .border_bottom_width(px(1))
                 .border_bottom_style(BorderBottomStyle::Solid)
                 .border_bottom_color(token::border().var())
-                .background_color(token::background().var()),
+                .background_color(token::background().var())
+                // A name of its own keeps the header out of the page's transition.
+                .view_transition_name(raw("top-bar")),
         )
         .child(
             div()
