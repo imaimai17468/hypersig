@@ -244,6 +244,14 @@ fn theming(site: Site) -> Part {
             },
         ),
         demo::show(site, Demo::Theme),
+        para(
+            site,
+            L {
+                en: "For a picker that colors the whole page, put the style on `<body>` with `Page::css_match`, so the tokens reach the background of `<body>` too, and keep the choice with [`Page::persist`](learn/signals/#signals-kept-across-page-loads), so the next page starts from it. Running the change inside `Stmt::view_transition` animates it, as the theme button in this site's header does. The page's own scrollbar follows `color-scheme` on `<html>`, which `hypersig_ui::global()` sets to `light dark`, so it keeps the system's scheme while `<body>` shows the picked one.",
+                ja: "ページ全体の配色を選ぶには、`Page::css_match` でスタイルを `<body>` に付けます。こうすると、トークンが `<body>` 自身の背景にも届きます。選んだ配色は [`Page::persist`](learn/signals/#signals-kept-across-page-loads) で保存すると、次のページもその配色で始まります。切り替えを `Stmt::view_transition` の中で実行すると、変化がアニメーションになります。このサイトのヘッダーにある配色のボタンも同じ作りです。ページ自体のスクロールバーは `<html>` の `color-scheme` に従います。`hypersig_ui::global()` はこれを `light dark` にするので、`<body>` が選ばれた配色になっても、スクロールバーはシステムの配色のままです。",
+            },
+        ),
+        show(Snippet::UiScheme),
         note(
             site,
             L {

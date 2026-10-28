@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+  --> tests/ui/fail/computed_persist.rs:19:18
+   |
+19 |         .persist(Cart::total());
+   |          ------- ^^^^^^^^^^^^^ expected `Sig<Cart, _>`, found `Sig<Cart, f64, Computed>`
+   |          |
+   |          arguments to this method are incorrect
+   |
+   = note: expected struct `Sig<Cart, _, hypersig::Root>`
+              found struct `Sig<Cart, f64, Computed>`
+note: method defined here
+  --> src/page.rs
+   |
+   |     pub fn persist<T>(mut self, signal: Sig<S, T>) -> Self {
+   |            ^^^^^^^

@@ -77,6 +77,8 @@ export interface Host {
   navigate(url: string): void;
   history(url: string, replace: boolean): void;
   debounce(origin: Element | undefined, key: string, ms: number, action: () => void): void;
+  /** Runs `update` and renders what it wrote inside a view transition, where the browser has them. */
+  transition(update: () => void): void;
 }
 
 export type Compiled = (ctx: Context) => unknown;

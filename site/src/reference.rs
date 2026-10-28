@@ -174,6 +174,30 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "persist",
+                            "struct.Page.html#method.persist",
+                            L {
+                                en: "Keeps `signal` in the browser's `localStorage`, so the next page load starts from it.",
+                                ja: "`signal` をブラウザの `localStorage` に保存し、次にページを読み込んだときはその値から始めます。",
+                            },
+                        ),
+                        (
+                            "css_when",
+                            "struct.Page.html#method.css_when",
+                            L {
+                                en: "Adds `style` to `<body>` while `when` is true.",
+                                ja: "`when` が真のあいだ、`<body>` に `style` を追加します。",
+                            },
+                        ),
+                        (
+                            "css_match",
+                            "struct.Page.html#method.css_match",
+                            L {
+                                en: "Adds to `<body>` the style of the case whose value `value` equals.",
+                                ja: "`value` と等しい値のケースのスタイルを `<body>` に追加します。",
+                            },
+                        ),
+                        (
                             "theme",
                             "struct.Page.html#method.theme",
                             L {
@@ -2195,6 +2219,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         L {
                             en: "Runs `then` while `cond` is true and `otherwise` while it is false.",
                             ja: "`cond` が真なら `then` を、偽なら `otherwise` を実行します。",
+                        },
+                    ),
+                    (
+                        "Stmt::view_transition",
+                        "struct.Stmt.html#method.view_transition",
+                        L {
+                            en: "Runs `body` inside a view transition, so the browser animates its change.",
+                            ja: "`body` を View Transitions の中で実行し、その変化をブラウザにアニメーションさせます。",
                         },
                     ),
                     (

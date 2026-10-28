@@ -61,6 +61,8 @@ impl<'p, S: Signals> Simulation<'p, S> {
                     self.run(step, scope, vars, effects);
                 }
             }
+            // The browser animates the change; the writes are the same.
+            "transition" => self.run(arg(1), scope, vars, effects),
             "debounce" => {
                 let key = format!(
                     "{}|{}",

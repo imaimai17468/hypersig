@@ -45,6 +45,7 @@ snippets! {
     SignalPaths => "signal_paths.rs";
     WrongField => "wrong_field.rs", "compile_fail,E0599";
     Nested => "nested.rs";
+    Persist => "persist.rs";
     ComponentState => "component_state.rs";
     Operators => "operators.rs";
     WrongType => "wrong_type.rs", "compile_fail,E0277";
@@ -81,6 +82,7 @@ snippets! {
     StaticPage => "static_page.rs";
     UiSetup => "ui_setup.rs";
     UiTheme => "ui_theme.rs";
+    UiScheme => "ui_scheme.rs";
     ToastServer => "toast_server.rs";
     StyleBasics => "style_basics.rs";
     StyleValues => "style_values.rs";
@@ -92,6 +94,7 @@ snippets! {
     Patterns => "patterns.rs";
     Animation => "animation.rs";
     ViewTransitions => "view_transitions.rs";
+    ViewTransitionStmt => "view_transition_stmt.rs";
     Unchecked => "unchecked.rs";
     I18nLocale => "i18n_locale.rs";
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";

@@ -163,8 +163,9 @@ pub enum Local {}
 /// `#[derive(Signals)]` gives a field marked `#[signals(computed)]` an
 /// accessor that returns a `Sig<S, T, Computed>`. Such a signal can be read
 /// like any other, but it has no `set`, `toggle`, list statement, or `patch`,
-/// because the browser would overwrite the written value the next time a
-/// signal the expression reads changes.
+/// and [`Page::persist`](crate::Page::persist) refuses it, because the
+/// browser would overwrite the written value the next time a signal the
+/// expression reads changes.
 ///
 /// ```compile_fail
 /// use hypersig::Signals;
@@ -189,7 +190,8 @@ pub enum Computed {}
 /// calls [`Sig::read`] to keep it as a `Sig<S, T, Read>`, whose type no
 /// longer says which of the two it was. The view has the reads of the
 /// signal it came from and no `set`, list statement, `bind`, or `patch`,
-/// and [`Page::computed`](crate::Page::computed) refuses it.
+/// and [`Page::computed`](crate::Page::computed) and
+/// [`Page::persist`](crate::Page::persist) refuse it.
 ///
 /// ```compile_fail
 /// use hypersig::Signals;

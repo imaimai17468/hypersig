@@ -1,7 +1,7 @@
 import { evaluate, run, type Statement } from "../../eval.ts";
 import { resolve } from "../scope.ts";
 
-/** The statements that write a signal, choose, name a value, run in order, or wait. */
+/** The statements that write a signal, choose, name a value, run in order, wait, or animate. */
 export const flows: Record<string, Statement> = {
   set: ([place, valueAst], ctx) => ctx.store.set(resolve(place, ctx), evaluate(valueAst, ctx)),
   if: ([condAst, then, otherwise], ctx, host) =>
@@ -17,6 +17,7 @@ export const flows: Record<string, Statement> = {
       run(step, ctx, host);
     });
   },
+  transition: ([stmt], ctx, host) => host.transition(() => run(stmt, ctx, host)),
   debounce: ([ms, stmt], ctx, host) => {
     host.debounce(ctx.origin, JSON.stringify(stmt), ms as number, () => {
       try {

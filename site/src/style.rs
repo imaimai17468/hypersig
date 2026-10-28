@@ -523,8 +523,8 @@ fn animation(site: Site, head: Part) -> Part {
                     ja: "名前は `raw(...)` で渡し、検査はされません。1 つのページで 2 つの要素が同じ名前を持つと、ブラウザは遷移を飛ばします。",
                 },
                 L {
-                    en: "A patch from the server changes the page in place and loads no page, so it plays no view transition.",
-                    ja: "サーバーからのパッチはページをその場で書き換え、ページを読み込まないので、View Transitions は起きません。",
+                    en: "A patch from the server changes the page in place and loads no page, so it plays no view transition. A statement plays one inside `Stmt::view_transition`, which the next section covers.",
+                    ja: "サーバーからのパッチはページをその場で書き換え、ページを読み込まないので、View Transitions は起きません。文の場合は `Stmt::view_transition` の中で実行すると起きます。次の節で説明します。",
                 },
                 L {
                     en: "Chrome and Edge play cross-document view transitions from version 126, and Safari from 18.2. A browser without them changes the page as usual.",
@@ -533,6 +533,34 @@ fn animation(site: Site, head: Part) -> Part {
                 L {
                     en: "Put the animations under `@media (prefers-reduced-motion: no-preference)`, and set `animation: none` on the view transition pseudo-elements under `@media (prefers-reduced-motion: reduce)`. Without the second rule, a visitor who asks for reduced motion still sees the browser's default cross-fade. This site does the same.",
                     ja: "アニメーションは `@media (prefers-reduced-motion: no-preference)` の中に書き、`@media (prefers-reduced-motion: reduce)` の中で View Transitions の擬似要素に `animation: none` を指定します。後者がないと、動きを減らすよう求める訪問者にもブラウザ既定のクロスフェードが表示されます。このサイトも同じように書いています。",
+                },
+            ],
+        ),
+        heading(
+            site,
+            L {
+                en: "Transitions within a page",
+                ja: "ページ内の遷移",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A statement changes the page without loading another, so the browser animates it only when the runtime starts the transition. [`Stmt::view_transition`](api:hypersig/struct.Stmt.html#method.view_transition) wraps a statement: the browser takes a picture of the page, the runtime runs the statement and renders what it wrote, and the two pictures cross-fade unless the page's CSS sets other animations. The theme button in this site's header changes its colors this way.",
+                ja: "文は別のページを読み込まずにページを書き換えるので、ブラウザがアニメーションするのは、ランタイムが遷移を始めたときだけです。[`Stmt::view_transition`](api:hypersig/struct.Stmt.html#method.view_transition) は文を包みます。ブラウザがページの画像を撮り、ランタイムが文を実行して書き込んだ内容を描画すると、ページの CSS で別のアニメーションを指定しない限り、2 つの画像がクロスフェードでつながります。このサイトのヘッダーにある配色のボタンも、この方法で色を切り替えています。",
+            },
+        ),
+        show(Snippet::ViewTransitionStmt),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "To animate the move between pages and the change within a page differently, give the navigation a type with `@view-transition { navigation: auto; types: page; }` and put its animations under `html:active-view-transition-type(page)`. A transition from `Stmt::view_transition` has no type, so `html:not(:active-view-transition-type(page))` selects it. This site writes its two animations that way.",
+                    ja: "ページ間の移動とページ内の変化に別のアニメーションを付けるには、`@view-transition { navigation: auto; types: page; }` で移動に種類を付け、そのアニメーションを `html:active-view-transition-type(page)` の下に書きます。`Stmt::view_transition` の遷移には種類がないので、`html:not(:active-view-transition-type(page))` で選べます。このサイトも 2 つのアニメーションをそのように書いています。",
+                },
+                L {
+                    en: "Chrome and Edge run `document.startViewTransition` from version 111, Safari from 18, and Firefox from 144, according to MDN's compatibility data. A browser without it runs the statement with no animation. `:active-view-transition-type()` needs Chrome 125, Safari 18.2, or Firefox 147.",
+                    ja: "MDN の互換性データによると、`document.startViewTransition` は Chrome と Edge では 111 から、Safari では 18 から、Firefox では 144 から動きます。対応していないブラウザでは、文はアニメーションなしで実行されます。`:active-view-transition-type()` には Chrome 125、Safari 18.2、Firefox 147 以降が要ります。",
                 },
             ],
         ),

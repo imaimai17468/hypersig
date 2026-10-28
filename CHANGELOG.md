@@ -2,6 +2,14 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [Unreleased]
+
+### Added
+
+- `Page::persist` keeps a page signal in the browser's `localStorage`, and the runtime starts the next page that persists the same path from the stored value. A script in `<head>` hides the page until the runtime has rendered a stored value that differs from the initial one, so the first frame is not drawn from the initial value, and shows it after one second if the runtime fails to start.
+- `Stmt::view_transition` runs a statement inside `document.startViewTransition`, so the browser animates what it changes on the page. A browser without view transitions runs the statement with no animation.
+- `Page::css_when` and `Page::css_match` put a style on `<body>`, so a token a signal picks reaches every element of the page and the background of `<body>` itself.
+
 ## [0.13.2] - 2026-10-28
 
 ### Fixed

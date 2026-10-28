@@ -17,5 +17,6 @@ export function host() {
     navigate: vi.fn<Host["navigate"]>(),
     history: vi.fn<Host["history"]>(),
     debounce: vi.fn<Host["debounce"]>(),
+    transition: vi.fn<Host["transition"]>((update) => update()),
   } satisfies Host;
 }

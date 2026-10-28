@@ -56,6 +56,7 @@
 //! | `link.navigate()` | `["navigate",url]` |
 //! | `link.push_url()`, `link.replace_url()` | `["history","push",url]`, `["history","replace",url]` |
 //! | `s1.then(s2)` | `["seq",[s1,s2]]` |
+//! | `Stmt::view_transition(s)` | `["transition",s]` |
 //! | `a.let_in(\|v\| e)`, and `v` inside `e` | `["let",a,depth,e]`, `["var",depth]` |
 //! | `a.let_in_stmt(\|v\| s)` | `["let",a,depth,s]` |
 //! | `el.on_custom(event, \|detail\| s)`, and `detail` inside `s` | `[name,depth,s]`, one entry of `data-hs-on-custom`, and `["var",depth]` |
@@ -1148,6 +1149,34 @@ impl<S> Stmt<S> {
             steps.push(next.into_stmt().take(scopes));
             json!(["seq", steps])
         })
+    }
+
+    /// Runs `body` inside a view transition, so the browser animates its change.
+    ///
+    /// The browser takes a picture of the page, runs `body` and renders what
+    /// it changed, then plays the animations of the `::view-transition-*`
+    /// pseudo-elements between the two. Without CSS of its own, the old and
+    /// the new page cross-fade. A browser without `document.startViewTransition`
+    /// runs `body` with no animation.
+    ///
+    /// ```
+    /// use hypersig::html::button;
+    /// use hypersig::{Page, Signals, Stmt};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Settings {
+    ///     dark: bool,
+    /// }
+    ///
+    /// let html = Page::new("Settings", Settings { dark: false })
+    ///     .child(button().on_click(Stmt::view_transition(Settings::dark().toggle())).text("Theme"))
+    ///     .render();
+    /// assert!(html.contains("transition"));
+    /// ```
+    #[must_use]
+    pub fn view_transition(body: impl IntoStmt<S>) -> Self {
+        Self::build(|scopes| json!(["transition", body.into_stmt().take(scopes)]))
     }
 
     /// The tree, with this statement's item scopes added to `scopes`.
