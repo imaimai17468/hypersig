@@ -531,8 +531,8 @@ fn animation(site: Site, head: Part) -> Part {
                     ja: "クロスドキュメントの View Transitions は、Chrome と Edge では 126 から、Safari では 18.2 から動きます。対応していないブラウザでは、ページは普通に切り替わります。",
                 },
                 L {
-                    en: "Put the animations under `@media (prefers-reduced-motion: no-preference)`, so a visitor who asks for reduced motion gets the plain change. This site does the same.",
-                    ja: "アニメーションは `@media (prefers-reduced-motion: no-preference)` の中に書きます。こうすると、動きを減らすよう求める訪問者には普通の切り替わりになります。このサイトも同じように書いています。",
+                    en: "Put the animations under `@media (prefers-reduced-motion: no-preference)`, and set `animation: none` on the view transition pseudo-elements under `@media (prefers-reduced-motion: reduce)`. Without the second rule, a visitor who asks for reduced motion still sees the browser's default cross-fade. This site does the same.",
+                    ja: "アニメーションは `@media (prefers-reduced-motion: no-preference)` の中に書き、`@media (prefers-reduced-motion: reduce)` の中で View Transitions の擬似要素に `animation: none` を指定します。後者がないと、動きを減らすよう求める訪問者にもブラウザ既定のクロスフェードが表示されます。このサイトも同じように書いています。",
                 },
             ],
         ),

@@ -15,6 +15,9 @@ const TRANSITIONS: Stylesheet = Stylesheet::new(
   ::view-transition-old(root) { animation: 250ms ease-in both fade-out; }
   ::view-transition-new(root) { animation: 400ms ease-out both fade-in; }
 }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
+}
 @keyframes fade-out { to { opacity: 0; } }
 @keyframes fade-in { from { opacity: 0; } }
 ",
