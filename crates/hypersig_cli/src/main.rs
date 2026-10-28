@@ -40,7 +40,7 @@ Hosts:
   vercel       A Vercel Function
 
 `add` writes no file that is already there unless it is given --force.
-`dev` passes <build options>, such as -p or --bin, to `cargo check` and `cargo blaze build`, and <args> to the server.
+`dev` passes <build options>, such as -p or --bin, to `cargo check` and `blaze build`, and <args> to the server.
 `elements` prints the module, which a redirect such as `> src/shoelace.rs` saves.";
 
 /// A failure to report to the person running the command, as one message.

@@ -89,8 +89,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
         para(
             site,
             L {
-                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. After a change, blaze compiles only the functions that changed, and `cargo check` runs beside it to decide whether the code compiles, so a compile error stops the restart and leaves the last server running. The state the server holds in memory starts over at each restart.",
-                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。変更のあと、blaze は変わった関数だけをコンパイルし、同時に走る `cargo check` が、コードをコンパイルできるかどうかを判定します。コンパイルエラーがあれば起動し直さず、前のサーバーが動き続けます。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。",
+                en: "`cargo hypersig dev` starts the server as `cargo run` does, and builds and starts it again each time a file it is built from changes. In a debug build, each open page keeps a stream to the server, so the tab reloads from the new server on its own. After a change, blaze compiles only the functions that changed, and `cargo check` runs beside it to decide whether the code compiles, so a compile error stops the restart and leaves the last server running. blaze's first build on a machine compiles every dependency and takes longer than Cargo's, so Cargo builds the first server, and each change until that build ends. The state the server holds in memory starts over at each restart.",
+                ja: "`cargo hypersig dev` は `cargo run` と同じようにサーバーを起動し、ビルド元のファイルが変わるたびにビルドして起動し直します。デバッグビルドでは開いているページがサーバーへのストリームを保つので、タブは新しいサーバーから自動で読み込み直されます。変更のあと、blaze は変わった関数だけをコンパイルし、同時に走る `cargo check` が、コードをコンパイルできるかどうかを判定します。コンパイルエラーがあれば起動し直さず、前のサーバーが動き続けます。そのマシンで初めての blaze のビルドは依存クレートをすべてコンパイルするので、Cargo より時間がかかります。そのため、最初のサーバーと、そのビルドが終わるまでの変更は Cargo がビルドします。サーバーがメモリに持つ状態は、起動し直すたびに初期化されます。",
             },
         ),
         para(
