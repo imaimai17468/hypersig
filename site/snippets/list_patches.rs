@@ -33,5 +33,5 @@ let edit: Patches<Room> = messages
     .and(messages.patch_remove(&[7], by_id))
     .into();
 
-assert!(new.to_event_stream().starts_with("event: hs-list"));
+assert_eq!(new.items_of(messages)[0].body, "hello");
 # let _ = (page, edit);

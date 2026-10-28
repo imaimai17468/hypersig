@@ -273,8 +273,8 @@ fn state(site: Site) -> [Part; 2] {
         para(
             site,
             L {
-                en: "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML that replaces an element of the page. A statement runs in the browser at once, and an action call sent with it reaches the server afterwards, so the page changes before the server answers, with no extra code. [Talking to the server](learn/server/) covers actions, patches, and streams.",
-                ja: "ブラウザはページの上で変わるものをシグナルとして持ち、データはサーバーが持ちます。アクションは Server-Sent Events で差分を返します。差分はシグナルの新しい値か、ページの要素と差し替える HTML の断片です。文はブラウザでただちに実行され、一緒に送ったアクションの呼び出しはそのあとでサーバーに届くので、サーバーの応答を待たずに画面が変わります。そのための追加のコードは不要です。アクション、差分、ストリームは [サーバーとのやり取り](learn/server/) で説明します。",
+                en: "The browser keeps signals for what changes on the page, and the server keeps the data. An action answers with patches over Server-Sent Events: new signal values, or a fragment of HTML that replaces an element of the page. A statement runs in the browser at once, and an action call sent with it reaches the server afterwards, so the page changes before the server answers, with no extra code. [Actions](learn/actions/), [Patches](learn/patches/), and [Streams](learn/streams/) cover them.",
+                ja: "ブラウザはページの上で変わるものをシグナルとして持ち、データはサーバーが持ちます。アクションは Server-Sent Events で差分を返します。差分はシグナルの新しい値か、ページの要素と差し替える HTML の断片です。文はブラウザでただちに実行され、一緒に送ったアクションの呼び出しはそのあとでサーバーに届くので、サーバーの応答を待たずに画面が変わります。そのための追加のコードは不要です。アクション、差分、ストリームは、それぞれ [アクション](learn/actions/)、[差分](learn/patches/)、[ストリーム](learn/streams/) で説明します。",
             },
         ),
     ]

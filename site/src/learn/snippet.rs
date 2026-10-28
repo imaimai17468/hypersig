@@ -138,6 +138,28 @@ snippets! {
     // The samples added for the Learn group Building the page.
     // The samples added for the Learn group Browser state.
     // The samples added for the Learn group Talking to the server.
+    TalkDeclare => "talking/declare.rs";
+    TalkCall => "talking/call.rs";
+    TalkWrongArgs => "talking/wrong_args.rs", "compile_fail,E0277";
+    TalkRequest => "talking/request.rs";
+    TalkReply => "talking/reply.rs";
+    TalkWrongReply => "talking/wrong_reply.rs", "compile_fail,E0277";
+    TalkCallStatus => "talking/call_status.rs";
+    TalkWrongIndicator => "talking/wrong_indicator.rs", "compile_fail,E0308";
+    TalkOutcomes => "talking/outcomes.rs";
+    TalkOptimistic => "talking/optimistic.rs";
+    TalkWrongRollback => "talking/wrong_rollback.rs", "compile_fail,E0277";
+    TalkExclusive => "talking/exclusive.rs";
+    TalkStreamTimeout => "talking/stream_timeout.rs", "compile_fail,E0599";
+    TalkPatchPaths => "talking/patch_paths.rs";
+    TalkWrongPatch => "talking/wrong_patch.rs", "compile_fail,E0308";
+    TalkItemPatch => "talking/item_patch.rs", "compile_fail,E0599";
+    TalkFragment => "talking/fragment.rs";
+    TalkWrongFragment => "talking/wrong_fragment.rs", "compile_fail,E0271";
+    TalkSince => "talking/since.rs";
+    TalkStreamAsync => "talking/stream_async.rs", "compile_fail,E0277";
+    TalkReconnectOnAction => "talking/reconnect_on_action.rs", "compile_fail,E0599";
+    TalkInbox => "talking/inbox.rs";
     // The samples added for the Learn group Pages and routing.
     // The samples added for the Learn group Forms and requests.
     // The samples added for the Learn group Data and sign-in.

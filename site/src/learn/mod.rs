@@ -12,6 +12,7 @@ mod server;
 mod sessions;
 pub mod snippet;
 mod state;
+mod talking;
 mod testing;
 mod troubleshooting;
 mod upgrading;
@@ -45,16 +46,14 @@ pub fn content(site: Site, page: Learn) -> Part {
         }
         Learn::Lists | Learn::ListItems => state::lists(site),
         // Talking to the server
-        Learn::Actions
-        | Learn::CallStatus
-        | Learn::Optimistic
-        | Learn::Patches
-        | Learn::Fragments
-        | Learn::Streams
-        | Learn::Server => server::server(site),
-        Learn::OverlappingCalls | Learn::ListPatches | Learn::CallsInDepth => {
-            server::calls_in_depth(site)
-        }
+        Learn::Actions => talking::actions::page(site),
+        Learn::CallStatus => talking::call_status::page(site),
+        Learn::Optimistic => talking::optimistic::page(site),
+        Learn::OverlappingCalls => talking::overlapping_calls::page(site),
+        Learn::Patches => talking::patches::page(site),
+        Learn::ListPatches => talking::list_patches::page(site),
+        Learn::Fragments => talking::fragments::page(site),
+        Learn::Streams => talking::streams::page(site),
         // Pages and routing
         Learn::Routes | Learn::SearchParams | Learn::ErrorPages | Learn::BasePath => {
             server::routes_in_depth(site)

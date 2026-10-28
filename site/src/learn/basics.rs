@@ -138,8 +138,8 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }"#,
                     ja: "`RESET` は `Action<Counter>` で、同じブロックにハンドラ `reset` と同じ行で宣言するので、`pages` がこれも配信します。ページは `RESET.call()` で呼び出すので、パス、メソッド、引数の型、属するページを両側で共有します。",
                 },
                 L {
-                    en: "A page handler and an action handler both take two arguments: the router's state, then what the request carries, which is the route's parameters for a page and the call's arguments for an action. This program has no state, the route `/` has no parameters, and `RESET.call()` sends no arguments, so each of them is `()`, and `(): ()` is an argument that receives `()`. [Talking to the server](learn/server/) adds state and arguments.",
-                    ja: "ページのハンドラもアクションのハンドラも、引数を 2 つ取ります。1 つ目はルーターの状態、2 つ目はリクエストが運ぶ値で、ページならルートのパラメータ、アクションなら呼び出しの引数が 2 つ目に入ります。このプログラムには状態がなく、ルート `/` にはパラメータがなく、`RESET.call()` は引数を送らないので、どれも `()` です。`(): ()` は `()` を受け取る引数の書き方です。状態と引数を使う例は [サーバーとのやり取り](learn/server/) にあります。",
+                    en: "A page handler and an action handler both take two arguments: the router's state, then what the request carries, which is the route's parameters for a page and the call's arguments for an action. This program has no state, the route `/` has no parameters, and `RESET.call()` sends no arguments, so each of them is `()`, and `(): ()` is an argument that receives `()`. [Actions](learn/actions/) adds state and arguments.",
+                    ja: "ページのハンドラもアクションのハンドラも、引数を 2 つ取ります。1 つ目はルーターの状態、2 つ目はリクエストが運ぶ値で、ページならルートのパラメータ、アクションなら呼び出しの引数が 2 つ目に入ります。このプログラムには状態がなく、ルート `/` にはパラメータがなく、`RESET.call()` は引数を送らないので、どれも `()` です。`(): ()` は `()` を受け取る引数の書き方です。状態と引数を使う例は [アクション](learn/actions/) にあります。",
                 },
                 L {
                     en: "The handler returns `Counter::count().patch(0)`, a patch: a new value for one signal. The server sends it in the response, and the runtime writes the value into the signal, which rewrites the text.",

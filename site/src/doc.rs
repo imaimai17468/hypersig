@@ -62,8 +62,6 @@ pub enum Learn {
     ListPatches,
     Fragments,
     Streams,
-    Server,
-    CallsInDepth,
     // Pages and routing
     Routes,
     Links,
@@ -369,8 +367,6 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::ListPatches),
             Doc::Learn(Learn::Fragments),
             Doc::Learn(Learn::Streams),
-            Doc::Learn(Learn::Server),
-            Doc::Learn(Learn::CallsInDepth),
         ],
     },
     Group {
@@ -703,8 +699,6 @@ impl Doc {
         Self::Learn(Learn::ListPatches),
         Self::Learn(Learn::Fragments),
         Self::Learn(Learn::Streams),
-        Self::Learn(Learn::Server),
-        Self::Learn(Learn::CallsInDepth),
         // Pages and routing
         Self::Learn(Learn::Routes),
         Self::Learn(Learn::Links),
@@ -875,8 +869,6 @@ impl Doc {
                 Learn::ListPatches => ("List patches", "リストの差分"),
                 Learn::Fragments => ("Fragments", "フラグメント"),
                 Learn::Streams => ("Streams", "ストリーム"),
-                Learn::Server => ("Talking to the server", "サーバーとのやり取り"),
-                Learn::CallsInDepth => ("Calls in depth", "呼び出しの詳細"),
                 // Pages and routing
                 Learn::Routes => ("Routes", "ルート"),
                 Learn::Links => ("Links and redirects", "リンクとリダイレクト"),
@@ -1048,22 +1040,37 @@ impl Doc {
                 },
                 Learn::ListItems => Doc::Learn(Learn::Lists).leads(),
                 // Talking to the server
-                Learn::Actions
-                | Learn::CallStatus
-                | Learn::Optimistic
-                | Learn::Patches
-                | Learn::Fragments
-                | Learn::Streams => Doc::Learn(Learn::Server).leads(),
-                Learn::OverlappingCalls | Learn::ListPatches => {
-                    Doc::Learn(Learn::CallsInDepth).leads()
-                }
-                Learn::Server => L {
-                    en: "The browser calls an action, and the server answers with patches: new values for signals, or new HTML for a part of the page.",
-                    ja: "ブラウザがアクションを呼び出すと、サーバーは差分を返します。差分はシグナルの新しい値か、ページの一部の新しい HTML です。",
+                Learn::Actions => L {
+                    en: "An action is a server endpoint a page calls with typed arguments. This page covers declaring one, calling it, and the request and the answer that go over the network.",
+                    ja: "アクションは、ページが型付きの引数で呼び出すサーバーのエンドポイントです。宣言のしかた、呼び出し方、ネットワークを流れるリクエストと応答を扱います。",
                 },
-                Learn::CallsInDepth => L {
-                    en: "Patches that send only the items of a list that change, calls that overlap, streams that reconnect, and parts that several pages share.",
-                    ja: "リストの変わった項目だけを送る差分、重なった呼び出し、つなぎ直すストリーム、複数のページで使う部品を扱います。",
+                Learn::CallStatus => L {
+                    en: "A call can set a signal while it waits, write the error text when it fails, and run a statement on failure or success.",
+                    ja: "呼び出しは応答を待つ間にシグナルを設定し、失敗したときにエラーの文言を書き込み、失敗や成功のときに文を実行できます。",
+                },
+                Learn::Optimistic => L {
+                    en: "A statement before a call changes the page at once, and the server's answer then sets the value it stored.",
+                    ja: "呼び出しの前に置いた文はすぐにページを変え、そのあとサーバーの応答が保存した値を設定します。",
+                },
+                Learn::OverlappingCalls => L {
+                    en: "What happens when a call is sent while an earlier call to the same action still waits, and how to keep the newest answer, send one at a time, or give up after a time limit.",
+                    ja: "同じアクションへの前の呼び出しが応答を待っている間に次の呼び出しを送ったときの動きと、最新の応答を採る、一度に 1 つだけ送る、一定の時間で打ち切る方法を扱います。",
+                },
+                Learn::Patches => L {
+                    en: "A handler answers with a batch of patches: new values for signals, list changes, fragments, and URLs. The browser receives them as Server-Sent Events and applies them in order.",
+                    ja: "ハンドラは差分のまとまりで応答します。中身はシグナルの新しい値、リストの変更、フラグメント、URL です。ブラウザはそれを Server-Sent Events として受け取り、順に適用します。",
+                },
+                Learn::ListPatches => L {
+                    en: "Patches that add, replace, or remove items of a list without sending the rest of it, and a feed that loads more items as the visitor scrolls.",
+                    ja: "リストの残りを送らずに項目を加える、置き換える、取り除く差分と、スクロールに合わせて項目を読み足すフィードを扱います。",
+                },
+                Learn::Fragments => L {
+                    en: "A fragment is a part of the page the server renders again and sends as HTML, which the browser merges into the element with the fragment's id.",
+                    ja: "フラグメントは、サーバーが描画し直して HTML として送るページの一部です。ブラウザはそれを、フラグメントの id を持つ要素に取り込みます。",
+                },
+                Learn::Streams => L {
+                    en: "A stream keeps its response open and sends patches as changes happen on the server, and opens again when the connection drops.",
+                    ja: "ストリームは応答を開いたままにして、サーバーで変化が起きるたびに差分を送り、接続が切れたら開き直します。",
                 },
                 // Pages and routing
                 Learn::Routes => L {
@@ -1339,8 +1346,6 @@ impl Learn {
             Self::ListPatches => "list-patches",
             Self::Fragments => "fragments",
             Self::Streams => "streams",
-            Self::Server => "server",
-            Self::CallsInDepth => "calls",
             // Pages and routing
             Self::Routes => "routes",
             Self::Links => "links",
