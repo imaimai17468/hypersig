@@ -5,7 +5,7 @@ use crate::Site;
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
-use crate::prose::{Part, heading, lead, note, para, parts, subheading, table_of, title};
+use crate::prose::{Part, bullets, heading, lead, note, para, parts, subheading, table_of, title};
 
 pub fn signals(site: Site) -> Part {
     parts([
@@ -85,7 +85,56 @@ pub fn signals(site: Site) -> Part {
                 ja: "`Page::new` が初期値を受け取り、`Page::render` がその値ですべての束縛を評価します。テキスト、表示と非表示、クラス、属性、フォームの値、リストの項目は、ランタイムを読み込む前から HTML に入っています。ランタイムはそれらの要素を作り直さず、そのまま使います。データは `<body>` に置いたシグナル構造体の JSON なので、ブラウザはページを表示するために何も取得しません。",
             },
         ),
+        persisted(site),
         computed(site),
+    ])
+}
+
+fn persisted(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Signals kept across page loads",
+                ja: "ページを読み込み直しても残るシグナル",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "A page loads with the values `Page::new` was given, so a choice the visitor made in the browser, such as a color theme or a list's density, is gone on the next page. [`Page::persist`](api:hypersig/struct.Page.html#method.persist) keeps one signal in the browser's `localStorage`. The runtime stores the signal's value as JSON after each write, and the next page that persists the same path starts from the stored value.",
+                ja: "ページは `Page::new` に渡した値で読み込まれるので、配色やリストの表示密度のように訪問者がブラウザで選んだものは、次のページでは元に戻ります。[`Page::persist`](api:hypersig/struct.Page.html#method.persist) は、1 つのシグナルをブラウザの `localStorage` に保存します。ランタイムはシグナルに書き込むたびにその値を JSON で保存し、同じパスを保存する次のページは、保存された値から始めます。",
+            },
+        ),
+        show(Snippet::Persist),
+        para(
+            site,
+            L {
+                en: "The server renders the first HTML from the initial value, because it never sees the stored one. Where the two differ, a script that `Page::persist` adds to `<head>` hides the page until the runtime has rendered the stored value, so the visitor does not see the initial value drawn first. The page shows after one second if the runtime fails to start.",
+                ja: "サーバーは保存された値を受け取らないので、最初の HTML は初期値で描画します。保存された値が初期値と異なる場合は、`Page::persist` が `<head>` に追加するスクリプトが、ランタイムが保存された値を描画し終えるまでページを隠します。そのため、訪問者が初期値で描画された画面を先に目にすることはありません。ランタイムが起動しない場合、ページは 1 秒後に表示されます。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "The key is `hypersig:` followed by the base the page renders under and the signal's path, so every page of one application under one base shares it. Two pages that persist the same path with different types share the key too, and nothing checks that.",
+                    ja: "キーは `hypersig:` に、ページを描画するときのベースとシグナルのパスを続けたものです。同じベースの下にある 1 つのアプリケーションのページは、すべて同じキーを使います。同じパスを別の型で保存するページ同士も同じキーを使い、そのことは検査されません。",
+                },
+                L {
+                    en: "The runtime checks only that a stored value has the JSON type of the initial value: a string, a number, a boolean, an array, an object, or null. A value that does not parse or has another JSON type is skipped. An enum variant that an older build wrote and that was since removed is still a string, so it reaches the page as stored.",
+                    ja: "ランタイムが確かめるのは、保存された値の JSON の型（文字列、数値、真偽値、配列、オブジェクト、null）が初期値と同じかどうかだけです。解釈できない値や JSON の型が違う値は使いません。以前のビルドが書き込み、その後削除された列挙型のバリアントは文字列のままなので、保存されたとおりにページに入ります。",
+                },
+                L {
+                    en: "Every script on the page's origin can read and write `localStorage`, and the value stays after the visitor signs out, so persist a preference and leave a token or personal data out.",
+                    ja: "`localStorage` は、ページと同じオリジンのスクリプトならどれでも読み書きでき、訪問者がサインアウトしても値が残ります。保存するのは表示の設定のようなものにして、トークンや個人の情報は保存しないでください。",
+                },
+                L {
+                    en: "An action receives the signals the browser sends, so it sees the stored value once the runtime has started.",
+                    ja: "アクションはブラウザが送るシグナルを受け取るので、ランタイムが起動したあとは保存された値を受け取ります。",
+                },
+            ],
+        ),
     ])
 }
 
