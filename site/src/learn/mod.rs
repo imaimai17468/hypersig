@@ -1,8 +1,8 @@
 //! The Learn section, a guide read from top to bottom.
 
+mod browser;
 mod data;
 mod deploying;
-mod javascript;
 mod page;
 mod requests;
 mod routing;
@@ -79,13 +79,12 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::SessionCookie => data::cookie::page(site),
         Learn::SessionStores => data::stores::page(site),
         // Browser features
-        Learn::NodeRefs
-        | Learn::Timers
-        | Learn::Keyboard
-        | Learn::UncheckedValues
-        | Learn::StaticPages
-        | Learn::EscapeHatches => server::escape_hatches(site),
-        Learn::JavaScript => javascript::javascript(site),
+        Learn::NodeRefs => browser::node_refs::page(site),
+        Learn::Timers => browser::timers::page(site),
+        Learn::Keyboard => browser::keyboard::page(site),
+        Learn::JavaScript => browser::javascript::page(site),
+        Learn::UncheckedValues => browser::unchecked_values::page(site),
+        Learn::StaticPages => browser::static_pages::page(site),
         // Quality and operations
         Learn::Security => security::security(site),
         Learn::Testing | Learn::TestingPages => testing::testing(site),
