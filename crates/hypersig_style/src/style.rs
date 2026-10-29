@@ -163,12 +163,25 @@ impl Style {
     ///
     /// It sets `animation-name` to its name, and carries the `@keyframes` rule
     /// to the page.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the style already carries other keyframes with the same
+    /// name and other steps.
     #[must_use]
     pub fn keyframes(mut self, keyframes: &Keyframes) -> Self {
-        if !self.keyframes.iter().any(|k| k.name() == keyframes.name()) {
-            self.keyframes.push(keyframes.clone());
-        }
+        self.carry(keyframes.clone());
         self.with(Property::AnimationName, keyframes.name().to_owned())
+    }
+
+    /// Adds `keyframes` to the rules the style carries, once per name.
+    fn carry(&mut self, keyframes: Keyframes) {
+        match self.keyframes.iter().find(|k| k.name() == keyframes.name()) {
+            Some(old) => {
+                Keyframes::assert_one_rule(old.name(), &old.to_css(), &keyframes.to_css());
+            }
+            None => self.keyframes.push(keyframes),
+        }
     }
 
     fn insert(&mut self, atom: Atom) {
@@ -213,12 +226,19 @@ impl Style {
     }
 
     /// Adds the declarations of `style`, which win over this style's own.
+    ///
+    /// # Panics
+    ///
+    /// Panics if both styles carry keyframes with one name and other steps,
+    /// as [`Style::keyframes`] does.
     #[must_use]
     pub fn merge(mut self, style: Self) -> Self {
         for atom in style.atoms {
             self.insert(atom);
         }
-        self.keyframes.extend(style.keyframes);
+        for keyframes in style.keyframes {
+            self.carry(keyframes);
+        }
         for marker in style.markers {
             self.mark(marker);
         }
@@ -237,6 +257,10 @@ impl Style {
     /// apply under both. The stylesheet writes the pseudo-classes of one
     /// declaration in a fixed order, so `on(Hover, on(Focus, ..))` and
     /// `on(Focus, on(Hover, ..))` produce the same class.
+    ///
+    /// # Panics
+    ///
+    /// Panics as [`Style::merge`] does.
     #[must_use]
     pub fn on(mut self, condition: impl Into<Condition>, style: Self) -> Self {
         let condition = condition.into();
@@ -244,7 +268,9 @@ impl Style {
             atom.conditions.add(condition);
             self.insert(atom);
         }
-        self.keyframes.extend(style.keyframes);
+        for keyframes in style.keyframes {
+            self.carry(keyframes);
+        }
         self
     }
 
@@ -257,7 +283,8 @@ impl Style {
     /// # Panics
     ///
     /// Panics if `style` already places a declaration on a pseudo-element,
-    /// because CSS has no pseudo-element of a pseudo-element.
+    /// because CSS has no pseudo-element of a pseudo-element, and as
+    /// [`Style::merge`] does.
     #[must_use]
     pub fn pseudo(mut self, element: PseudoElement, style: Self) -> Self {
         for mut atom in style.atoms {
@@ -268,7 +295,9 @@ impl Style {
             atom.conditions.element = Some(element);
             self.insert(atom);
         }
-        self.keyframes.extend(style.keyframes);
+        for keyframes in style.keyframes {
+            self.carry(keyframes);
+        }
         self
     }
 

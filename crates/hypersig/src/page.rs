@@ -1075,7 +1075,9 @@ impl<S: Signals> Page<S> {
     /// computed signal reads itself or one declared after it, or if the page
     /// reads a computed field of a nested struct that no call names, or if an
     /// expression or statement reads a list item outside every list that
-    /// renders it. In a debug build it also panics if [`Page::lang`] names
+    /// renders it, or if two elements animate with
+    /// [`Keyframes`](crate::style::Keyframes) of one name and other steps.
+    /// In a debug build it also panics if [`Page::lang`] names
     /// the language of an `IntlLocale` and the page formats only with others.
     #[must_use]
     pub fn render(&self) -> String {

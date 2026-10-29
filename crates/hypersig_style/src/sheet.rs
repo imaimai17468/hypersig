@@ -1,9 +1,11 @@
 //! [`Sheet`], which collects styles and writes their rules.
 
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 
 use crate::condition::Conditions;
+use crate::keyframes::Keyframes;
 use crate::style::{Prop, Style, class_name};
 
 /// The cascade layer of the classes from [`Sheet::add`].
@@ -117,11 +119,18 @@ impl Sheet {
         Self::default()
     }
 
+    fn add_keyframes(&mut self, name: &'static str, css: String) {
+        match self.keyframes.entry(name) {
+            Entry::Vacant(entry) => {
+                entry.insert(css);
+            }
+            Entry::Occupied(entry) => Keyframes::assert_one_rule(name, entry.get(), &css),
+        }
+    }
+
     fn insert(&mut self, style: &Style, toggled: bool) {
         for keyframes in style.keyframes_used() {
-            self.keyframes
-                .entry(keyframes.name())
-                .or_insert_with(|| keyframes.to_css());
+            self.add_keyframes(keyframes.name(), keyframes.to_css());
         }
         for atom in style.atoms() {
             self.rules.insert(Key {
@@ -135,20 +144,34 @@ impl Sheet {
     }
 
     /// Adds the rules for the classes [`Style::class_names`] lists.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `style` animates with [`Keyframes`] whose name the sheet
+    /// already holds with other steps.
     pub fn add(&mut self, style: &Style) {
         self.insert(style, false);
     }
 
     /// Adds the rules for the classes [`Style::toggled_class_names`] lists.
+    ///
+    /// # Panics
+    ///
+    /// Panics as [`Sheet::add`] does.
     pub fn add_toggled(&mut self, style: &Style) {
         self.insert(style, true);
     }
 
     /// Adds every rule of `other`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `other` holds a `@keyframes` rule whose name this sheet
+    /// holds with other steps.
     pub fn extend(&mut self, other: &Self) {
         self.rules.extend(other.rules.iter().cloned());
         for (name, css) in &other.keyframes {
-            self.keyframes.entry(name).or_insert_with(|| css.clone());
+            self.add_keyframes(name, css.clone());
         }
     }
 
@@ -277,8 +300,8 @@ fn escape_class(name: &str, out: &mut String) {
 #[cfg(test)]
 mod tests {
     use super::{Sheet, escape_class};
-    use crate::value::{All, Color, Display, pct, px, quoted, raw, rem};
-    use crate::{Condition, Container, Media, PseudoClass, PseudoElement, Style, Token};
+    use crate::value::{All, Color, Display, Opacity, pct, px, quoted, raw, rem};
+    use crate::{Condition, Container, Keyframes, Media, PseudoClass, PseudoElement, Style, Token};
 
     fn css(sheet: &Sheet) -> Vec<String> {
         sheet.buckets().map(|b| b.css().to_owned()).collect()
@@ -474,6 +497,42 @@ mod tests {
                 .to_css()
                 .contains(".picker\\(select\\)\\:color_red::picker(select){color:red}")
         );
+    }
+
+    #[test]
+    fn writes_one_rule_for_keyframes_shared_by_two_styles() {
+        let fade = || Keyframes::new("fade").at(0, Style::new().opacity(Opacity::Number(0.0)));
+        let mut sheet = Sheet::new();
+        sheet.add(&Style::new().keyframes(&fade()));
+        sheet.add(&Style::new().keyframes(&fade()).color(Color::RED));
+        assert_eq!(sheet.to_css().matches("@keyframes fade{").count(), 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "two Keyframes named \"fade\" have different steps")]
+    fn keyframes_with_one_name_and_other_steps_panic_in_a_sheet() {
+        let mut sheet = Sheet::new();
+        sheet.add(
+            &Style::new().keyframes(
+                &Keyframes::new("fade").at(0, Style::new().opacity(Opacity::Number(0.0))),
+            ),
+        );
+        sheet.add(&Style::new().keyframes(
+            &Keyframes::new("fade").at(100, Style::new().opacity(Opacity::Number(0.0))),
+        ));
+    }
+
+    #[test]
+    #[should_panic(expected = "two Keyframes named \"fade\" have different steps")]
+    fn keyframes_with_one_name_and_other_steps_panic_in_a_style() {
+        let _ = Style::new()
+            .keyframes(&Keyframes::new("fade").at(0, Style::new().opacity(Opacity::Number(0.0))))
+            .on(
+                Media::Md,
+                Style::new().keyframes(
+                    &Keyframes::new("fade").at(100, Style::new().opacity(Opacity::Number(0.0))),
+                ),
+            );
     }
 
     #[test]
