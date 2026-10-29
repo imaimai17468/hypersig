@@ -14,10 +14,11 @@ pub fn page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The releases that changed a public signature, 0.5 through 0.13, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
-                ja: "公開しているシグネチャを変えた 0.5 から 0.13 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
+                en: "The releases that changed a public signature, 0.5 through 0.14, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
+                ja: "公開しているシグネチャを変えた 0.5 から 0.14 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
             },
         ),
+        to_0_14(site),
         to_0_13(site),
         to_0_12(site),
         to_0_11(site),
@@ -27,6 +28,54 @@ pub fn page(site: Site) -> Part {
         to_0_7(site),
         to_0_6(site),
         to_0_5(site),
+    ])
+}
+
+fn to_0_14(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "From 0.13 to 0.14",
+                ja: "0.13 から 0.14 へ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`Style::line_height` takes a multiplier as an `f64` and no longer takes an integer. `line_height(16)` wrote 16 times the font size where a length of 16px was most likely meant, so it is now a compile error: write `line_height(2.0)` for a multiplier, or `line_height(px(16))` for a length. `Color::hex` takes six hex digits, and a translucent color goes through the new `Color::hex_alpha`, which writes all eight.",
+                ja: "`Style::line_height` は倍率を `f64` で受け取り、整数は受け取らなくなりました。`line_height(16)` は 16px の長さを意図した書き方であることが多いのに、フォントサイズの 16 倍を書いていました。そのため、`line_height(16)` はコンパイルエラーになります。倍率なら `line_height(2.0)`、長さなら `line_height(px(16))` と書いてください。`Color::hex` は 16 進数 6 桁を受け取ります。半透明の色は新しい `Color::hex_alpha` で書き、8 桁がそのまま出力されます。",
+            },
+        ),
+        show_change(Snippet::Upgrade014),
+        para(
+            site,
+            L {
+                en: "These mistakes compiled before and wrote a style or an attribute the browser ignored. They now panic where the page is built:",
+                ja: "次の書き方は、これまでコンパイルが通り、ブラウザが無視するスタイルや属性になっていました。今はページを組み立てるところでパニックします。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "Two `Keyframes` with one name and different steps on one page, including one used by a `Global` rule. Only the first was written, so the other animation played the wrong steps. Give each its own name.",
+                    ja: "1 つのページで、名前が同じでステップの違う `Keyframes` を 2 つ使うこと。`Global` のルールが使うものも含みます。これまでは最初の 1 つだけが書かれ、もう一方のアニメーションは違うステップで再生されていました。それぞれに別の名前を付けてください。",
+                },
+                L {
+                    en: "`Color::hex` with more than six hex digits, such as `0x2563_eb80`. It dropped the top byte and wrote `#63eb80`.",
+                    ja: "`0x2563_eb80` のように、16 進数 6 桁を超える値を `Color::hex` に渡すこと。これまでは上位のバイトが落ち、`#63eb80` と書かれていました。",
+                },
+                L {
+                    en: "`FontFace::weights` with a value outside 1 to 1000, or with the larger value first.",
+                    ja: "1 から 1000 の範囲外の値や、大きいほうを先にした値を `FontFace::weights` に渡すこと。",
+                },
+                L {
+                    en: "A second call of `El::aria_describedby`, `El::aria_activedescendant`, or `El::popover_target` on one element. The browser read only the first attribute.",
+                    ja: "1 つの要素で `El::aria_describedby`、`El::aria_activedescendant`、`El::popover_target` を 2 回呼ぶこと。ブラウザは最初の属性だけを読んでいました。",
+                },
+            ],
+        ),
     ])
 }
 

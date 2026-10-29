@@ -124,6 +124,7 @@ snippets! {
     Upgrade011 => "upgrading/v0_11.rs";
     Upgrade012 => "upgrading/v0_12.rs";
     Upgrade013 => "upgrading/v0_13.rs";
+    Upgrade014 => "upgrading/v0_14.rs";
     ErrorHandler => "quality/error_handler.rs", "compile_fail,E0277";
     ErrorId => "quality/error_id.rs", "compile_fail,E0080";
     ErrorComputed => "quality/error_computed.rs", "compile_fail,E0277";
