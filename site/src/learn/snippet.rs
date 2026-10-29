@@ -91,7 +91,6 @@ snippets! {
     GroupPeer => "group_peer.rs";
     Tokens => "tokens.rs";
     GlobalRules => "global_rules.rs";
-    Unchecked => "unchecked.rs";
     I18nLocale => "i18n_locale.rs";
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";
     I18nPages => "i18n_pages.rs";
@@ -312,6 +311,12 @@ snippets! {
     ViewTransitionName => "style/animation/view_transition_name.rs", "compile_fail,E0277";
     ReducedMotion => "style/animation/reduced_motion.rs";
     ReducedMotionVariant => "style/animation/reduced_motion_variant.rs", "compile_fail,E0599";
+    Raw => "style/unchecked/raw.rs";
+    RawPanic => "style/unchecked/raw_panic.rs", "should_panic";
+    Unchecked => "style/unchecked/stylesheet.rs";
+    StylesheetClass => "style/unchecked/stylesheet_class.rs", "compile_fail,E0080";
+    LinkedStylesheet => "style/unchecked/linked_stylesheet.rs";
+    StyleAttr => "style/unchecked/style_attr.rs", "compile_fail,E0080";
 }
 
 /// The lines of `snippet` that the page shows.

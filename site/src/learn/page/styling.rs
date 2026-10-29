@@ -160,8 +160,8 @@ fn unchecked(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Stylesheet::new` fails to compile in a `const` when the CSS holds `</style`, in any case, which would end the `<style>` element.",
-                ja: "`const` の中の `Stylesheet::new` は、大文字と小文字を問わず CSS が `</style` を含むとコンパイルエラーになります。`<style>` 要素を終わらせてしまうからです。",
+                en: "`Stylesheet::new` fails to compile in a `const` when the CSS holds `</style`, in any case, which would end the `<style>` element. [Unchecked values](style/unchecked/) lists every form that reaches the CSS without a check.",
+                ja: "`const` の中の `Stylesheet::new` は、大文字と小文字を問わず CSS が `</style` を含むとコンパイルエラーになります。`<style>` 要素を終わらせてしまうからです。検査なしで CSS に入る書き方は、[検査しない値](style/unchecked/)にすべて挙げてあります。",
             },
         ),
     ])
