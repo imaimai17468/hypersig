@@ -405,6 +405,28 @@ snippets! {
     UiPagination => "components/navigation/pagination.rs";
     UiPaginationLink => "components/navigation/pagination_link.rs", "compile_fail,E0308";
     UiPaginationPast => "components/navigation/pagination_past.rs", "should_panic";
+    UiDataTable => "components/data/data_table.rs";
+    UiColumnType => "components/data/column_type.rs", "compile_fail,E0308";
+    UiColumnOtherRow => "components/data/column_other_row.rs", "compile_fail,E0308";
+    UiTableSorting => "components/data/table_sorting.rs";
+    UiSortKey => "components/data/sort_key.rs", "compile_fail,E0277";
+    UiSortingState => "components/data/sorting_state.rs";
+    UiTableFiltering => "components/data/table_filtering.rs";
+    UiFilterNumber => "components/data/filter_number.rs", "compile_fail,E0277";
+    UiVisibleType => "components/data/visible_type.rs", "compile_fail,E0277";
+    UiPaginateZero => "components/data/paginate_zero.rs", "should_panic";
+    UiTableSelection => "components/data/table_selection.rs";
+    UiSelectionKey => "components/data/selection_key.rs", "compile_fail,E0277";
+    UiServerTable => "components/data/server_table.rs";
+    UiServerRequest => "components/data/server_request.rs";
+    UiServerSortKey => "components/data/server_sort_key.rs", "compile_fail,E0277";
+    UiChart => "components/data/chart.rs";
+    UiChartSeries => "components/data/chart_series.rs", "compile_fail,E0277";
+    UiChartLabels => "components/data/chart_labels.rs", "should_panic";
+    UiBarChart => "components/data/bar_chart.rs";
+    UiBarColor => "components/data/bar_color.rs", "compile_fail,E0308";
+    UiDonutChart => "components/data/donut_chart.rs";
+    UiDonutValue => "components/data/donut_value.rs", "compile_fail,E0277";
     // The samples of the Components pages under Overlays and Display.
 }
 

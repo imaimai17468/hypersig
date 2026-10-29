@@ -13,6 +13,7 @@ use crate::lang::{L, Text};
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
+mod data;
 mod layout;
 mod navigation;
 
@@ -74,14 +75,14 @@ pub fn content(site: Site, page: Component) -> Part {
         Component::Breadcrumb => navigation::breadcrumb::page(site, head),
         Component::Pagination => navigation::pagination::page(site, head),
         // Data
-        Component::DataTable
-        | Component::TableSorting
-        | Component::TableFiltering
-        | Component::TableSelection
-        | Component::ServerTable
-        | Component::Chart
-        | Component::BarChart
-        | Component::DonutChart => carved(site, page),
+        Component::DataTable => data::data_table::page(site, head),
+        Component::TableSorting => data::table_sorting::page(site, head),
+        Component::TableFiltering => data::table_filtering::page(site, head),
+        Component::TableSelection => data::table_selection::page(site, head),
+        Component::ServerTable => data::server_table::page(site, head),
+        Component::Chart => data::chart::page(site, head),
+        Component::BarChart => data::bar_chart::page(site, head),
+        Component::DonutChart => data::donut_chart::page(site, head),
         // Overlays
         Component::Dialog
         | Component::AlertDialog
@@ -124,13 +125,6 @@ fn carved_from(page: Component) -> Component {
         }
         // Form fields
         Component::Switch => Component::Checkbox,
-        // Data
-        Component::TableSorting
-        | Component::TableFiltering
-        | Component::TableSelection
-        | Component::ServerTable => Component::DataTable,
-        // Data
-        Component::BarChart | Component::DonutChart => Component::Chart,
         // Overlays
         Component::AlertDialog | Component::Sheet => Component::Dialog,
         // Overlays
@@ -388,12 +382,6 @@ fn component_page(page: Component) -> Page {
         | Component::DateField
         | Component::Switch
         | Component::FormFields
-        | Component::TableSorting
-        | Component::TableFiltering
-        | Component::TableSelection
-        | Component::ServerTable
-        | Component::BarChart
-        | Component::DonutChart
         | Component::AlertDialog
         | Component::Sheet
         | Component::ServerToasts
@@ -405,7 +393,15 @@ fn component_page(page: Component) -> Page {
         | Component::Separator
         | Component::Navigation
         | Component::Breadcrumb
-        | Component::Pagination => unreachable!("written in its own file"),
+        | Component::Pagination
+        | Component::DataTable
+        | Component::TableSorting
+        | Component::TableFiltering
+        | Component::TableSelection
+        | Component::ServerTable
+        | Component::Chart
+        | Component::BarChart
+        | Component::DonutChart => unreachable!("written in its own file"),
         Component::Button => Page {
             lead: L {
                 en: "A button in one of six variants and three sizes.",
@@ -1293,327 +1289,6 @@ fn component_page(page: Component) -> Page {
                     ja: "`label` を名前に持ち、長さのわからない処理を示す回転する輪",
                 },
             )],
-        },
-        Component::DataTable => Page {
-            lead: L {
-                en: "A table of the rows of a list signal under typed columns, which sorts, filters, pages, and selects rows in the browser, or asks the server for one page at a time.",
-                ja: "リストのシグナルの行を、型の付いた列の下に並べる表です。並べ替え、絞り込み、ページ送り、行の選択をブラウザで行うほか、1 ページずつサーバーに求めることもできます。",
-            },
-            demo: Demo::DataTable,
-            built_on: &[
-                L {
-                    en: "It is a `<table>` whose headers have `scope=\"col\"`. A sortable column's header holds a button and carries `aria-sort`, which says whether the rows are sorted by that column in ascending order, in descending order, or not at all. The header checkbox is a button with `role=\"checkbox\"` whose `aria-checked` is `mixed` while some rows are selected, because a native checkbox's indeterminate state is a property that no attribute can set.",
-                    ja: "見出しに `scope=\"col\"` を付けた `<table>` です。並べ替えられる列の見出しはボタンを持ち、その列で昇順か降順に並んでいるか、並んでいないかを `aria-sort` で伝えます。見出しのチェックボックスは `role=\"checkbox\"` のボタンで、一部の行が選ばれている間は `aria-checked` が `mixed` になります。ネイティブのチェックボックスの中間状態はプロパティで、属性からは設定できないためです。",
-                },
-                L {
-                    en: "A column is built from a field of the row type, so a field of another struct does not compile, and the key that `sortable_column` sorts by must be a number or a string. The table keeps its filter text, page, and sort column in a `TableState` field of the page's signals, and sorting reorders the list signal itself. The selection is a list of the selected rows' keys in another signal of the page, so the row type holds no field for it and a `ServerTable` keeps it across pages.",
-                    ja: "列は行の型のフィールドから作るので、別の構造体のフィールドを渡すとコンパイルエラーになります。`sortable_column` で並べ替えるキーは数値か文字列に限られます。表は絞り込みの文字列、ページ、並べ替えた列を、ページのシグナルにある `TableState` のフィールドに持ちます。並べ替えはリストのシグナルそのものの順序を変えます。選択は、選んだ行のキーのリストとしてページの別のシグナルに持つので、行の型に選択用のフィールドは不要です。`ServerTable` ではページを移っても選択が保持されます。",
-                },
-                L {
-                    en: "The browser counts the rows on each change, and with a filter and pagination both on, the work grows with the square of the number of rows. A list of thousands of rows belongs in a `ServerTable`. Its filter field, sortable headers, and page buttons write the `TableState` and then call an action with it, and the action answers with a patch of the page's rows and the total. A sortable column takes an enum with `#[derive(Segment)]` as its key, and the server reads it back from the state with `TableState::sorting`. The demo below runs in the browser alone, since this site has no server, and `examples/ui` has a `ServerTable` beside its `DataTable`.",
-                    ja: "ブラウザは変更のたびに行を数え直し、絞り込みとページ送りを両方使うと、その手間は行数の 2 乗で増えます。数千行のリストには `ServerTable` を使ってください。絞り込みの欄、並べ替えの見出し、ページのボタンが `TableState` を書き換えてから、それを引数にアクションを呼びます。アクションは、そのページの行と総数をパッチで返します。並べ替えられる列は `#[derive(Segment)]` を付けた列挙型をキーに取り、サーバーは `TableState::sorting` で状態からキーを読み戻します。このサイトにはサーバーがないので下のデモはブラウザだけで動き、`examples/ui` には `DataTable` と並べて `ServerTable` を置いています。",
-                },
-                L {
-                    en: "To keep a `ServerTable`'s state in the URL, give the page a route whose search parameters are the application's own struct with `#[derive(Search)]` and `Option` fields, so the address without a query string still loads. The page handler builds the `TableState` from it with `TableState::with_sorting`, and the action answers with `Patches::replace_url` of the URL its state names, so a reload or a shared link shows the same page of rows. `TableState` itself is not a search struct, because a URL without one of its fields would get a 400.",
-                    ja: "`ServerTable` の状態を URL に保存するには、`Option` のフィールドを持ち `#[derive(Search)]` を付けたアプリケーション自身の構造体を、ページのルートのクエリパラメータにします。こうするとクエリ文字列のないアドレスも読み込めます。ページのハンドラはそこから `TableState::with_sorting` で `TableState` を作り、アクションは状態が指す URL を `Patches::replace_url` で応答に含めます。再読み込みしても、共有したリンクを開いても、同じページの行が出ます。`TableState` そのものをクエリパラメータにしないのは、フィールドが 1 つでも欠けた URL に 400 が返るためです。",
-                },
-            ],
-            keys: &[
-                (
-                    L {
-                        en: "Space",
-                        ja: "Space",
-                    },
-                    L {
-                        en: "Toggles the focused checkbox. On the header checkbox, selects every row, or clears them once all are selected.",
-                        ja: "フォーカスのあるチェックボックスを切り替えます。見出しのチェックボックスでは、すべての行を選び、すべて選ばれていれば選択を外します。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Enter, Space",
-                        ja: "Enter、Space",
-                    },
-                    L {
-                        en: "On a column header, sorts the rows by that column. On the button at the start of a row, shows or hides the row's details.",
-                        ja: "列の見出しで押すと、その列で行を並べ替えます。行の先頭のボタンで押すと、その行の詳細を開閉します。",
-                    },
-                ),
-            ],
-            items: &[
-                (
-                    "DataTable::new",
-                    "hypersig_ui/struct.DataTable.html#method.new",
-                    L {
-                        en: "An empty table named `label`, listing `rows` by `key`, with its state in `state`.",
-                        ja: "`label` を名前に持ち、`rows` を `key` で並べ、状態を `state` に持つ空の表",
-                    },
-                ),
-                (
-                    "column",
-                    "hypersig_ui/struct.DataTable.html#method.column",
-                    L {
-                        en: "Adds `column` after the columns added so far.",
-                        ja: "それまでに追加した列の後ろに `column` を追加します。",
-                    },
-                ),
-                (
-                    "sortable_column",
-                    "hypersig_ui/struct.DataTable.html#method.sortable_column",
-                    L {
-                        en: "Adds `column`, whose header sorts the rows by `key`.",
-                        ja: "見出しで行を `key` の順に並べ替える列 `column` を追加します。",
-                    },
-                ),
-                (
-                    "selectable",
-                    "hypersig_ui/struct.DataTable.html#method.selectable",
-                    L {
-                        en: "Adds a first column of checkboxes that keep selected rows in `selected`.",
-                        ja: "選んだ行を `selected` に持つチェックボックスの列を先頭に追加します。",
-                    },
-                ),
-                (
-                    "expandable",
-                    "hypersig_ui/struct.DataTable.html#method.expandable",
-                    L {
-                        en: "Adds a first column of buttons that show `details` of a row under it.",
-                        ja: "行の下に `details` を開閉するボタンの列を先頭に追加します。",
-                    },
-                ),
-                (
-                    "filter",
-                    "hypersig_ui/struct.DataTable.html#method.filter",
-                    L {
-                        en: "Adds a field named `label` that shows the rows whose `text` contains its text.",
-                        ja: "`label` を名前に持つ欄を追加し、`text` がその欄の文字列を含む行だけを表示します。",
-                    },
-                ),
-                (
-                    "paginate",
-                    "hypersig_ui/struct.DataTable.html#method.paginate",
-                    L {
-                        en: "Shows `size` rows at a time, with buttons for the previous and next page.",
-                        ja: "一度に `size` 行を表示し、前と次のページに移るボタンを置きます。",
-                    },
-                ),
-                (
-                    "max_height",
-                    "hypersig_ui/struct.DataTable.html#method.max_height",
-                    L {
-                        en: "Keeps the table at most `height` high.",
-                        ja: "表の高さを `height` までに抑えます。",
-                    },
-                ),
-                (
-                    "Column::text",
-                    "hypersig_ui/struct.Column.html#method.text",
-                    L {
-                        en: "A column headed `header` that shows the text field `field` of each row.",
-                        ja: "見出しが `header` で、各行の文字列のフィールド `field` を表示する列",
-                    },
-                ),
-                (
-                    "Column::number",
-                    "hypersig_ui/struct.Column.html#method.number",
-                    L {
-                        en: "A column headed `header` that shows the number field `field`, aligned to the end.",
-                        ja: "見出しが `header` で、数値のフィールド `field` を行末に揃えて表示する列",
-                    },
-                ),
-                (
-                    "Column::formatted",
-                    "hypersig_ui/struct.Column.html#method.formatted",
-                    L {
-                        en: "A column headed `header` that shows the number field `field` written in `format`.",
-                        ja: "見出しが `header` で、数値のフィールド `field` を `format` の形で表示する列",
-                    },
-                ),
-                (
-                    "Column::custom",
-                    "hypersig_ui/struct.Column.html#method.custom",
-                    L {
-                        en: "A column headed `header` whose cells hold what `render` returns for each row.",
-                        ja: "見出しが `header` で、各行に対して `render` が返す要素をセルに入れる列",
-                    },
-                ),
-                (
-                    "visible",
-                    "hypersig_ui/struct.Column.html#method.visible",
-                    L {
-                        en: "Shows the column only while `when` is true.",
-                        ja: "`when` が真の間だけ列を表示します。",
-                    },
-                ),
-                (
-                    "TableState",
-                    "hypersig_ui/struct.TableState.html",
-                    L {
-                        en: "The signals a `DataTable` or `ServerTable` keeps: filter text, page, and sort.",
-                        ja: "`DataTable` と `ServerTable` が持つシグナル。絞り込みの文字列、ページ、並べ替え",
-                    },
-                ),
-                (
-                    "TableText",
-                    "hypersig_ui/struct.TableText.html",
-                    L {
-                        en: "The words a `DataTable` or `ServerTable` shows or names its controls with.",
-                        ja: "`DataTable` と `ServerTable` が表示する言葉と、操作部品に付ける名前",
-                    },
-                ),
-                (
-                    "ServerTable::new",
-                    "hypersig_ui/struct.ServerTable.html#method.new",
-                    L {
-                        en: "An empty table named `label`, listing `rows` by `key`.",
-                        ja: "`label` を名前に持ち、`rows` を `key` で並べる空の表",
-                    },
-                ),
-                (
-                    "ServerTable::sortable_column",
-                    "hypersig_ui/struct.ServerTable.html#method.sortable_column",
-                    L {
-                        en: "Adds `column`, whose header asks the server to sort by `key`.",
-                        ja: "見出しでサーバーに `key` での並べ替えを求める列 `column` を追加します。",
-                    },
-                ),
-                (
-                    "ServerTable::selectable",
-                    "hypersig_ui/struct.ServerTable.html#method.selectable",
-                    L {
-                        en: "Adds a first column of checkboxes that keep selected rows in `selected`.",
-                        ja: "選んだ行を `selected` に持つチェックボックスの列を先頭に追加します。",
-                    },
-                ),
-                (
-                    "ServerTable::filter",
-                    "hypersig_ui/struct.ServerTable.html#method.filter",
-                    L {
-                        en: "Adds a field named `label` whose text the server filters the rows by.",
-                        ja: "`label` を名前に持つ欄を追加し、サーバーがその文字列で行を絞り込みます。",
-                    },
-                ),
-                (
-                    "ServerTable::paginate",
-                    "hypersig_ui/struct.ServerTable.html#method.paginate",
-                    L {
-                        en: "Shows pages of `size` rows out of `total`.",
-                        ja: "`total` 行のうち `size` 行ずつのページを表示します。",
-                    },
-                ),
-                (
-                    "TableState::sorting",
-                    "hypersig_ui/struct.TableState.html#method.sorting",
-                    L {
-                        en: "The key of the column a `ServerTable` is sorted by, and its order.",
-                        ja: "`ServerTable` が並べ替えている列のキーと、その向き",
-                    },
-                ),
-            ],
-        },
-        Component::Chart => Page {
-            lead: L {
-                en: "Bar, stacked bar, horizontal bar, line, area, and donut charts of the rows of a list signal, on a scale the browser fits to the values.",
-                ja: "リストのシグナルの行を、棒、積み上げ棒、横棒、折れ線、面、ドーナツで描くチャートです。値の軸の目盛りはブラウザが値に合わせて決めます。",
-            },
-            demo: Demo::Chart,
-            built_on: &[
-                L {
-                    en: "The drawing is an `<svg>` with `viewBox=\"0 0 100 100\"` and `preserveAspectRatio=\"none\"`, so it stretches to its box, and its lines keep their width with `vector-effect=\"non-scaling-stroke\"`. The axis labels, the legend, and the box that shows a row's values under the pointer are HTML, which does not stretch. A `DonutChart` draws each row as a circle with `pathLength=\"100\"`, whose `stroke-dasharray` is the row's share of the total in hundredths.",
-                    ja: "描画は `viewBox=\"0 0 100 100\"` と `preserveAspectRatio=\"none\"` を持つ `<svg>` で、枠に合わせて伸び縮みします。線は `vector-effect=\"non-scaling-stroke\"` で太さを保ちます。軸のラベル、凡例、ポインタの下に出る行の値は、伸び縮みしない HTML で置きます。`DonutChart` は各行を `pathLength=\"100\"` の円で描き、その `stroke-dasharray` に合計に占める行の割合を百分率で書きます。",
-                },
-                L {
-                    en: "The drawing is hidden from assistive technology. A screen reader reads a visually hidden `<table>` of the same rows, captioned with the chart's name, and the values under the pointer have no keyboard equivalent beyond that table.",
-                    ja: "描画は支援技術から隠します。スクリーンリーダーは、チャートの名前をキャプションに持つ、視覚的に隠した同じ行の `<table>` を読みます。ポインタの下に出る値をキーボードで見る手段は、この表のほかにありません。",
-                },
-                L {
-                    en: "A series reads a number field of the row type, so a field of another struct or a text field does not compile. The scale runs from a round number at or below the smallest value, or 0, to one at or above the largest, with grid lines on a step of 1, 2, 2.5, or 5 times a power of ten. The browser computes it with `max_of`, `min_of`, and `let_in`, so a statement or a patch that changes the rows refits it, and a negative value draws its bar down from the line at 0. Each bar and grid line computes the scale from every row, so the work of a change grows with the square of the number of rows.",
-                    ja: "系列は行の型の数値のフィールドを読むので、別の構造体のフィールドや文字列のフィールドを渡すとコンパイルエラーになります。目盛りは、最小値か 0 の小さいほう以下の切りのよい数から、最大値以上の切りのよい数までで、刻み幅は 10 の累乗の 1、2、2.5、5 倍です。ブラウザが `max_of`、`min_of`、`let_in` で計算するので、文やパッチで行が変わると目盛りも合わせ直され、負の値の棒は 0 の線から下に伸びます。棒や目盛りの線はそれぞれ全行から目盛りを計算するので、変更 1 回の手間は行数の 2 乗で増えます。",
-                },
-            ],
-            keys: &[],
-            items: &[
-                (
-                    "Chart::bar",
-                    "hypersig_ui/struct.Chart.html#method.bar",
-                    L {
-                        en: "A bar chart named `label` of `rows`, labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける棒グラフ",
-                    },
-                ),
-                (
-                    "Chart::stacked_bar",
-                    "hypersig_ui/struct.Chart.html#method.stacked_bar",
-                    L {
-                        en: "A stacked bar chart named `label` of `rows`, labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける積み上げ棒グラフ",
-                    },
-                ),
-                (
-                    "Chart::horizontal_bar",
-                    "hypersig_ui/struct.Chart.html#method.horizontal_bar",
-                    L {
-                        en: "A horizontal bar chart named `label` of `rows`, labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける横棒グラフ",
-                    },
-                ),
-                (
-                    "Chart::line",
-                    "hypersig_ui/struct.Chart.html#method.line",
-                    L {
-                        en: "A line chart named `label` of `rows`, labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける折れ線グラフ",
-                    },
-                ),
-                (
-                    "Chart::area",
-                    "hypersig_ui/struct.Chart.html#method.area",
-                    L {
-                        en: "An area chart named `label` of `rows`, labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` を描き、`category` でラベルを付ける面グラフ",
-                    },
-                ),
-                (
-                    "series",
-                    "hypersig_ui/struct.Chart.html#method.series",
-                    L {
-                        en: "Adds a series named `name` that draws the number field `field` in `color`.",
-                        ja: "数値のフィールド `field` を `color` で描く、`name` という名前の系列を追加します。",
-                    },
-                ),
-                (
-                    "max_labels",
-                    "hypersig_ui/struct.Chart.html#method.max_labels",
-                    L {
-                        en: "Labels at most `count` rows along the axis of the categories, 12 until set.",
-                        ja: "カテゴリの軸にラベルを付ける行を最大 `count` 個にします。設定しなければ 12 個です。",
-                    },
-                ),
-                (
-                    "format",
-                    "hypersig_ui/struct.Chart.html#method.format",
-                    L {
-                        en: "Writes the values and the axis labels in `format`.",
-                        ja: "値と軸のラベルを `format` の形で書きます。",
-                    },
-                ),
-                (
-                    "DonutChart::new",
-                    "hypersig_ui/struct.DonutChart.html#method.new",
-                    L {
-                        en: "A donut chart named `label` of `rows`, with slices of `value` labeled by `category`.",
-                        ja: "`label` を名前に持ち、`rows` の `value` を `category` でラベルを付けた弧で描くドーナツグラフ",
-                    },
-                ),
-                (
-                    "token::chart_1",
-                    "hypersig_ui/token/fn.chart_1.html",
-                    L {
-                        en: "The first series of a chart.",
-                        ja: "チャートの 1 つめの系列の色",
-                    },
-                ),
-            ],
         },
         Component::Dialog => Page {
             lead: L {

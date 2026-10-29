@@ -1,10 +1,10 @@
-//! Bar, stacked bar, horizontal bar, and donut charts, for the chart page.
+//! Line and area charts of the same months, for the chart page.
 
 use hypersig::html::div;
 use hypersig::style::pattern::stack;
 use hypersig::style::value::rem;
 use hypersig::{Page, Segment, Signals};
-use hypersig_ui::{ButtonSize, ButtonVariant, Chart, DonutChart, Tabs, button, token};
+use hypersig_ui::{ButtonSize, ButtonVariant, Chart, Tabs, button, token};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
@@ -12,10 +12,8 @@ use crate::lang::L;
 
 #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Kind {
-    Bar,
-    Stacked,
-    Horizontal,
-    Donut,
+    Line,
+    Area,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -26,20 +24,13 @@ pub struct Month {
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Browser {
-    name: String,
-    visitors: i32,
-}
-
-#[derive(Signals, Serialize, Deserialize)]
 pub struct Traffic {
     kind: Kind,
     months: Vec<Month>,
-    browsers: Vec<Browser>,
 }
 
 pub fn page(site: Site) -> Page<Traffic> {
-    // Each kind of chart draws the same two series of the same months.
+    // Both kinds of chart draw the same two series of the same months.
     let visitors = |chart: Chart<Traffic, Month>| {
         chart
             .series(
@@ -80,68 +71,32 @@ pub fn page(site: Site) -> Page<Traffic> {
             mobile,
         })
         .collect();
-    let browsers = ["Chrome", "Safari", "Firefox", "Edge"]
-        .into_iter()
-        .map(str::to_owned)
-        .chain([site
-            .t(L {
-                en: "Other",
-                ja: "その他",
-            })
-            .to_owned()])
-        .zip([275, 200, 187, 173, 90])
-        .map(|(name, visitors)| Browser { name, visitors })
-        .collect();
     let grow = Traffic::months().update_where(
         |month| month.index().equals(3),
         Month::desktop(),
         |month| month.at(Month::desktop()) + 400,
     );
     let tabs = Tabs::new(label, Traffic::kind(), |kind| match kind {
-        Kind::Bar => (
+        Kind::Line => (
             site.t(L {
-                en: "Bar",
-                ja: "棒",
+                en: "Line",
+                ja: "折れ線",
             }),
-            visitors(Chart::bar(label, Traffic::months(), Month::name())).render(),
+            visitors(Chart::line(label, Traffic::months(), Month::name())).render(),
         ),
-        Kind::Stacked => (
+        Kind::Area => (
             site.t(L {
-                en: "Stacked",
-                ja: "積み上げ",
+                en: "Area",
+                ja: "面",
             }),
-            visitors(Chart::stacked_bar(label, Traffic::months(), Month::name())).render(),
-        ),
-        Kind::Horizontal => (
-            site.t(L {
-                en: "Horizontal",
-                ja: "横棒",
-            }),
-            visitors(Chart::horizontal_bar(label, Traffic::months(), Month::name())).render(),
-        ),
-        Kind::Donut => (
-            site.t(L {
-                en: "Donut",
-                ja: "ドーナツ",
-            }),
-            DonutChart::new(
-                site.t(L {
-                    en: "Visitors by browser",
-                    ja: "ブラウザごとの訪問者数",
-                }),
-                Traffic::browsers(),
-                Browser::name(),
-                Browser::visitors(),
-            )
-            .render(),
+            visitors(Chart::area(label, Traffic::months(), Month::name())).render(),
         ),
     });
     Page::new(
         label,
         Traffic {
-            kind: Kind::Bar,
+            kind: Kind::Line,
             months,
-            browsers,
         },
     )
     .child(
