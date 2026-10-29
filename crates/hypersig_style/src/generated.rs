@@ -1984,6 +1984,8 @@ use crate::value::{Color, Length};
 
 impl Style {
     /// Sets [`accent-color`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/accent-color).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn accent_color(self, value: impl Into<crate::value::AccentColor>) -> Self {
         self.with(Property::AccentColor, value.into().to_string())
@@ -2014,12 +2016,16 @@ impl Style {
     }
 
     /// Sets [`alignment-baseline`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/alignment-baseline).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn alignment_baseline(self, value: impl Into<crate::value::AlignmentBaseline>) -> Self {
         self.with(Property::AlignmentBaseline, value.into().to_string())
     }
 
     /// Sets [`all`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/all).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn all(self, value: impl Into<crate::value::All>) -> Self {
         self.with(Property::All, value.into().to_string())
@@ -2130,6 +2136,8 @@ impl Style {
     }
 
     /// Sets [`appearance`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/appearance).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn appearance(self, value: impl Into<crate::value::Appearance>) -> Self {
         self.with(Property::Appearance, value.into().to_string())
@@ -2156,6 +2164,8 @@ impl Style {
     }
 
     /// Sets [`backface-visibility`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/backface-visibility).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn backface_visibility(self, value: impl Into<crate::value::BackfaceVisibility>) -> Self {
         self.with(Property::BackfaceVisibility, value.into().to_string())
@@ -2256,12 +2266,16 @@ impl Style {
     }
 
     /// Sets [`baseline-shift`]().
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn baseline_shift(self, value: impl Into<crate::value::BaselineShift>) -> Self {
         self.with(Property::BaselineShift, value.into().to_string())
     }
 
     /// Sets [`baseline-source`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/baseline-source).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn baseline_source(self, value: impl Into<crate::value::BaselineSource>) -> Self {
         self.with(Property::BaselineSource, value.into().to_string())
@@ -2314,12 +2328,16 @@ impl Style {
     }
 
     /// Sets [`border-block-end-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-block-end-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_block_end_style(self, value: impl Into<crate::value::BorderBlockEndStyle>) -> Self {
         self.with(Property::BorderBlockEndStyle, value.into().to_string())
     }
 
     /// Sets [`border-block-end-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-block-end-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_block_end_width(self, value: impl Into<crate::value::BorderBlockEndWidth>) -> Self {
         self.with(Property::BorderBlockEndWidth, value.into().to_string())
@@ -2340,12 +2358,16 @@ impl Style {
     }
 
     /// Sets [`border-block-start-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-block-start-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_block_start_style(self, value: impl Into<crate::value::BorderBlockStartStyle>) -> Self {
         self.with(Property::BorderBlockStartStyle, value.into().to_string())
     }
 
     /// Sets [`border-block-start-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-block-start-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_block_start_width(self, value: impl Into<crate::value::BorderBlockStartWidth>) -> Self {
         self.with(Property::BorderBlockStartWidth, value.into().to_string())
@@ -2398,18 +2420,24 @@ impl Style {
     }
 
     /// Sets [`border-bottom-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-bottom-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_bottom_style(self, value: impl Into<crate::value::BorderBottomStyle>) -> Self {
         self.with(Property::BorderBottomStyle, value.into().to_string())
     }
 
     /// Sets [`border-bottom-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-bottom-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_bottom_width(self, value: impl Into<crate::value::BorderBottomWidth>) -> Self {
         self.with(Property::BorderBottomWidth, value.into().to_string())
     }
 
     /// Sets [`border-collapse`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-collapse).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_collapse(self, value: impl Into<crate::value::BorderCollapse>) -> Self {
         self.with(Property::BorderCollapse, value.into().to_string())
@@ -2526,12 +2554,16 @@ impl Style {
     }
 
     /// Sets [`border-inline-end-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-inline-end-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_inline_end_style(self, value: impl Into<crate::value::BorderInlineEndStyle>) -> Self {
         self.with(Property::BorderInlineEndStyle, value.into().to_string())
     }
 
     /// Sets [`border-inline-end-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-inline-end-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_inline_end_width(self, value: impl Into<crate::value::BorderInlineEndWidth>) -> Self {
         self.with(Property::BorderInlineEndWidth, value.into().to_string())
@@ -2552,12 +2584,16 @@ impl Style {
     }
 
     /// Sets [`border-inline-start-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-inline-start-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_inline_start_style(self, value: impl Into<crate::value::BorderInlineStartStyle>) -> Self {
         self.with(Property::BorderInlineStartStyle, value.into().to_string())
     }
 
     /// Sets [`border-inline-start-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-inline-start-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_inline_start_width(self, value: impl Into<crate::value::BorderInlineStartWidth>) -> Self {
         self.with(Property::BorderInlineStartWidth, value.into().to_string())
@@ -2594,12 +2630,16 @@ impl Style {
     }
 
     /// Sets [`border-left-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-left-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_left_style(self, value: impl Into<crate::value::BorderLeftStyle>) -> Self {
         self.with(Property::BorderLeftStyle, value.into().to_string())
     }
 
     /// Sets [`border-left-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-left-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_left_width(self, value: impl Into<crate::value::BorderLeftWidth>) -> Self {
         self.with(Property::BorderLeftWidth, value.into().to_string())
@@ -2628,12 +2668,16 @@ impl Style {
     }
 
     /// Sets [`border-right-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-right-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_right_style(self, value: impl Into<crate::value::BorderRightStyle>) -> Self {
         self.with(Property::BorderRightStyle, value.into().to_string())
     }
 
     /// Sets [`border-right-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-right-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_right_width(self, value: impl Into<crate::value::BorderRightWidth>) -> Self {
         self.with(Property::BorderRightWidth, value.into().to_string())
@@ -2710,12 +2754,16 @@ impl Style {
     }
 
     /// Sets [`border-top-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-top-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_top_style(self, value: impl Into<crate::value::BorderTopStyle>) -> Self {
         self.with(Property::BorderTopStyle, value.into().to_string())
     }
 
     /// Sets [`border-top-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-top-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn border_top_width(self, value: impl Into<crate::value::BorderTopWidth>) -> Self {
         self.with(Property::BorderTopWidth, value.into().to_string())
@@ -2738,6 +2786,8 @@ impl Style {
     }
 
     /// Sets [`box-decoration-break`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/box-decoration-break).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn box_decoration_break(self, value: impl Into<crate::value::BoxDecorationBreak>) -> Self {
         self.with(Property::BoxDecorationBreak, value.into().to_string())
@@ -2752,30 +2802,40 @@ impl Style {
     }
 
     /// Sets [`box-sizing`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/box-sizing).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn box_sizing(self, value: impl Into<crate::value::BoxSizing>) -> Self {
         self.with(Property::BoxSizing, value.into().to_string())
     }
 
     /// Sets [`break-after`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/break-after).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn break_after(self, value: impl Into<crate::value::BreakAfter>) -> Self {
         self.with(Property::BreakAfter, value.into().to_string())
     }
 
     /// Sets [`break-before`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/break-before).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn break_before(self, value: impl Into<crate::value::BreakBefore>) -> Self {
         self.with(Property::BreakBefore, value.into().to_string())
     }
 
     /// Sets [`break-inside`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/break-inside).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn break_inside(self, value: impl Into<crate::value::BreakInside>) -> Self {
         self.with(Property::BreakInside, value.into().to_string())
     }
 
     /// Sets [`caption-side`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/caption-side).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn caption_side(self, value: impl Into<crate::value::CaptionSide>) -> Self {
         self.with(Property::CaptionSide, value.into().to_string())
@@ -2790,24 +2850,32 @@ impl Style {
     }
 
     /// Sets [`caret-animation`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/caret-animation).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn caret_animation(self, value: impl Into<crate::value::CaretAnimation>) -> Self {
         self.with(Property::CaretAnimation, value.into().to_string())
     }
 
     /// Sets [`caret-color`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/caret-color).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn caret_color(self, value: impl Into<crate::value::CaretColor>) -> Self {
         self.with(Property::CaretColor, value.into().to_string())
     }
 
     /// Sets [`caret-shape`]().
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn caret_shape(self, value: impl Into<crate::value::CaretShape>) -> Self {
         self.with(Property::CaretShape, value.into().to_string())
     }
 
     /// Sets [`clear`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/clear).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn clear(self, value: impl Into<crate::value::Clear>) -> Self {
         self.with(Property::Clear, value.into().to_string())
@@ -2822,6 +2890,8 @@ impl Style {
     }
 
     /// Sets [`clip-rule`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/clip-rule).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn clip_rule(self, value: impl Into<crate::value::ClipRule>) -> Self {
         self.with(Property::ClipRule, value.into().to_string())
@@ -2834,6 +2904,8 @@ impl Style {
     }
 
     /// Sets [`color-interpolation-filters`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/color-interpolation-filters).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn color_interpolation_filters(self, value: impl Into<crate::value::ColorInterpolationFilters>) -> Self {
         self.with(Property::ColorInterpolationFilters, value.into().to_string())
@@ -2848,24 +2920,32 @@ impl Style {
     }
 
     /// Sets [`column-count`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-count).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_count(self, value: impl Into<crate::value::ColumnCount>) -> Self {
         self.with(Property::ColumnCount, value.into().to_string())
     }
 
     /// Sets [`column-fill`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-fill).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_fill(self, value: impl Into<crate::value::ColumnFill>) -> Self {
         self.with(Property::ColumnFill, value.into().to_string())
     }
 
     /// Sets [`column-gap`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-gap).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_gap(self, value: impl Into<crate::value::ColumnGap>) -> Self {
         self.with(Property::ColumnGap, value.into().to_string())
     }
 
     /// Sets [`column-height`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-height).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_height(self, value: impl Into<crate::value::ColumnHeight>) -> Self {
         self.with(Property::ColumnHeight, value.into().to_string())
@@ -2886,30 +2966,40 @@ impl Style {
     }
 
     /// Sets [`column-rule-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-rule-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_rule_style(self, value: impl Into<crate::value::ColumnRuleStyle>) -> Self {
         self.with(Property::ColumnRuleStyle, value.into().to_string())
     }
 
     /// Sets [`column-rule-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-rule-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_rule_width(self, value: impl Into<crate::value::ColumnRuleWidth>) -> Self {
         self.with(Property::ColumnRuleWidth, value.into().to_string())
     }
 
     /// Sets [`column-span`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-span).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_span(self, value: impl Into<crate::value::ColumnSpan>) -> Self {
         self.with(Property::ColumnSpan, value.into().to_string())
     }
 
     /// Sets [`column-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_width(self, value: impl Into<crate::value::ColumnWidth>) -> Self {
         self.with(Property::ColumnWidth, value.into().to_string())
     }
 
     /// Sets [`column-wrap`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-wrap).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn column_wrap(self, value: impl Into<crate::value::ColumnWrap>) -> Self {
         self.with(Property::ColumnWrap, value.into().to_string())
@@ -3004,6 +3094,8 @@ impl Style {
     }
 
     /// Sets [`content-visibility`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/content-visibility).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn content_visibility(self, value: impl Into<crate::value::ContentVisibility>) -> Self {
         self.with(Property::ContentVisibility, value.into().to_string())
@@ -3178,12 +3270,16 @@ impl Style {
     }
 
     /// Sets [`cx`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/cx).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn cx(self, value: impl Into<crate::value::Cx>) -> Self {
         self.with(Property::Cx, value.into().to_string())
     }
 
     /// Sets [`cy`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/cy).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn cy(self, value: impl Into<crate::value::Cy>) -> Self {
         self.with(Property::Cy, value.into().to_string())
@@ -3198,6 +3294,8 @@ impl Style {
     }
 
     /// Sets [`direction`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/direction).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn direction(self, value: impl Into<crate::value::Direction>) -> Self {
         self.with(Property::Direction, value.into().to_string())
@@ -3212,6 +3310,8 @@ impl Style {
     }
 
     /// Sets [`dominant-baseline`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/dominant-baseline).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn dominant_baseline(self, value: impl Into<crate::value::DominantBaseline>) -> Self {
         self.with(Property::DominantBaseline, value.into().to_string())
@@ -3226,6 +3326,8 @@ impl Style {
     }
 
     /// Sets [`empty-cells`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/empty-cells).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn empty_cells(self, value: impl Into<crate::value::EmptyCells>) -> Self {
         self.with(Property::EmptyCells, value.into().to_string())
@@ -3241,6 +3343,8 @@ impl Style {
 
     /// Sets [`fill-opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/fill-opacity).
     ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
     /// # Panics
     ///
     /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
@@ -3250,6 +3354,8 @@ impl Style {
     }
 
     /// Sets [`fill-rule`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/fill-rule).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn fill_rule(self, value: impl Into<crate::value::FillRule>) -> Self {
         self.with(Property::FillRule, value.into().to_string())
@@ -3284,6 +3390,8 @@ impl Style {
     }
 
     /// Sets [`flex-direction`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/flex-direction).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn flex_direction(self, value: impl Into<crate::value::FlexDirection>) -> Self {
         self.with(Property::FlexDirection, value.into().to_string())
@@ -3332,6 +3440,8 @@ impl Style {
     }
 
     /// Sets [`float`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/float).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn float(self, value: impl Into<crate::value::Float>) -> Self {
         self.with(Property::Float, value.into().to_string())
@@ -3344,6 +3454,8 @@ impl Style {
     }
 
     /// Sets [`flood-opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/flood-opacity).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     ///
     /// # Panics
     ///
@@ -3378,18 +3490,24 @@ impl Style {
     }
 
     /// Sets [`font-kerning`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-kerning).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_kerning(self, value: impl Into<crate::value::FontKerning>) -> Self {
         self.with(Property::FontKerning, value.into().to_string())
     }
 
     /// Sets [`font-language-override`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-language-override).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_language_override(self, value: impl Into<crate::value::FontLanguageOverride>) -> Self {
         self.with(Property::FontLanguageOverride, value.into().to_string())
     }
 
     /// Sets [`font-optical-sizing`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-optical-sizing).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_optical_sizing(self, value: impl Into<crate::value::FontOpticalSizing>) -> Self {
         self.with(Property::FontOpticalSizing, value.into().to_string())
@@ -3404,6 +3522,8 @@ impl Style {
     }
 
     /// Sets [`font-size`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-size).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_size(self, value: impl Into<crate::value::FontSize>) -> Self {
         self.with(Property::FontSize, value.into().to_string())
@@ -3438,18 +3558,24 @@ impl Style {
     }
 
     /// Sets [`font-synthesis-small-caps`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-synthesis-small-caps).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_synthesis_small_caps(self, value: impl Into<crate::value::FontSynthesisSmallCaps>) -> Self {
         self.with(Property::FontSynthesisSmallCaps, value.into().to_string())
     }
 
     /// Sets [`font-synthesis-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-synthesis-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_synthesis_style(self, value: impl Into<crate::value::FontSynthesisStyle>) -> Self {
         self.with(Property::FontSynthesisStyle, value.into().to_string())
     }
 
     /// Sets [`font-synthesis-weight`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-synthesis-weight).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_synthesis_weight(self, value: impl Into<crate::value::FontSynthesisWeight>) -> Self {
         self.with(Property::FontSynthesisWeight, value.into().to_string())
@@ -3472,6 +3598,8 @@ impl Style {
     }
 
     /// Sets [`font-variant-caps`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-variant-caps).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_variant_caps(self, value: impl Into<crate::value::FontVariantCaps>) -> Self {
         self.with(Property::FontVariantCaps, value.into().to_string())
@@ -3486,6 +3614,8 @@ impl Style {
     }
 
     /// Sets [`font-variant-emoji`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-variant-emoji).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_variant_emoji(self, value: impl Into<crate::value::FontVariantEmoji>) -> Self {
         self.with(Property::FontVariantEmoji, value.into().to_string())
@@ -3508,6 +3638,8 @@ impl Style {
     }
 
     /// Sets [`font-variant-position`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-variant-position).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn font_variant_position(self, value: impl Into<crate::value::FontVariantPosition>) -> Self {
         self.with(Property::FontVariantPosition, value.into().to_string())
@@ -3523,6 +3655,8 @@ impl Style {
 
     /// Sets [`font-weight`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/font-weight).
     ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
     /// # Panics
     ///
     /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
@@ -3532,12 +3666,16 @@ impl Style {
     }
 
     /// Sets [`forced-color-adjust`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/forced-color-adjust).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn forced_color_adjust(self, value: impl Into<crate::value::ForcedColorAdjust>) -> Self {
         self.with(Property::ForcedColorAdjust, value.into().to_string())
     }
 
     /// Sets [`frame-sizing`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/frame-sizing).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn frame_sizing(self, value: impl Into<crate::value::FrameSizing>) -> Self {
         self.with(Property::FrameSizing, value.into().to_string())
@@ -3688,6 +3826,8 @@ impl Style {
     }
 
     /// Sets [`hyphenate-character`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/hyphenate-character).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn hyphenate_character(self, value: impl Into<crate::value::HyphenateCharacter>) -> Self {
         self.with(Property::HyphenateCharacter, value.into().to_string())
@@ -3702,6 +3842,8 @@ impl Style {
     }
 
     /// Sets [`hyphens`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/hyphens).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn hyphens(self, value: impl Into<crate::value::Hyphens>) -> Self {
         self.with(Property::Hyphens, value.into().to_string())
@@ -3716,6 +3858,8 @@ impl Style {
     }
 
     /// Sets [`image-rendering`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/image-rendering).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn image_rendering(self, value: impl Into<crate::value::ImageRendering>) -> Self {
         self.with(Property::ImageRendering, value.into().to_string())
@@ -3798,6 +3942,8 @@ impl Style {
     }
 
     /// Sets [`interactivity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/interactivity).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn interactivity(self, value: impl Into<crate::value::Interactivity>) -> Self {
         self.with(Property::Interactivity, value.into().to_string())
@@ -3812,18 +3958,24 @@ impl Style {
     }
 
     /// Sets [`interest-delay-end`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/interest-delay-end).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn interest_delay_end(self, value: impl Into<crate::value::InterestDelayEnd>) -> Self {
         self.with(Property::InterestDelayEnd, value.into().to_string())
     }
 
     /// Sets [`interest-delay-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/interest-delay-start).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn interest_delay_start(self, value: impl Into<crate::value::InterestDelayStart>) -> Self {
         self.with(Property::InterestDelayStart, value.into().to_string())
     }
 
     /// Sets [`isolation`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/isolation).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn isolation(self, value: impl Into<crate::value::Isolation>) -> Self {
         self.with(Property::Isolation, value.into().to_string())
@@ -3862,6 +4014,8 @@ impl Style {
     }
 
     /// Sets [`letter-spacing`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/letter-spacing).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn letter_spacing(self, value: impl Into<crate::value::LetterSpacing>) -> Self {
         self.with(Property::LetterSpacing, value.into().to_string())
@@ -3874,18 +4028,24 @@ impl Style {
     }
 
     /// Sets [`line-break`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/line-break).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn line_break(self, value: impl Into<crate::value::LineBreak>) -> Self {
         self.with(Property::LineBreak, value.into().to_string())
     }
 
     /// Sets [`line-clamp`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/line-clamp).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn line_clamp(self, value: impl Into<crate::value::LineClamp>) -> Self {
         self.with(Property::LineClamp, value.into().to_string())
     }
 
     /// Sets [`line-height`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/line-height).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     ///
     /// # Panics
     ///
@@ -3912,6 +4072,8 @@ impl Style {
     }
 
     /// Sets [`list-style-position`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/list-style-position).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn list_style_position(self, value: impl Into<crate::value::ListStylePosition>) -> Self {
         self.with(Property::ListStylePosition, value.into().to_string())
@@ -4014,24 +4176,32 @@ impl Style {
     }
 
     /// Sets [`marker`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/marker).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn marker(self, value: impl Into<crate::value::Marker>) -> Self {
         self.with(Property::Marker, value.into().to_string())
     }
 
     /// Sets [`marker-end`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/marker-end).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn marker_end(self, value: impl Into<crate::value::MarkerEnd>) -> Self {
         self.with(Property::MarkerEnd, value.into().to_string())
     }
 
     /// Sets [`marker-mid`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/marker-mid).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn marker_mid(self, value: impl Into<crate::value::MarkerMid>) -> Self {
         self.with(Property::MarkerMid, value.into().to_string())
     }
 
     /// Sets [`marker-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/marker-start).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn marker_start(self, value: impl Into<crate::value::MarkerStart>) -> Self {
         self.with(Property::MarkerStart, value.into().to_string())
@@ -4058,6 +4228,8 @@ impl Style {
     }
 
     /// Sets [`mask-border-mode`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/mask-border-mode).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn mask_border_mode(self, value: impl Into<crate::value::MaskBorderMode>) -> Self {
         self.with(Property::MaskBorderMode, value.into().to_string())
@@ -4180,6 +4352,8 @@ impl Style {
     }
 
     /// Sets [`mask-type`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/mask-type).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn mask_type(self, value: impl Into<crate::value::MaskType>) -> Self {
         self.with(Property::MaskType, value.into().to_string())
@@ -4194,6 +4368,8 @@ impl Style {
     }
 
     /// Sets [`math-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/math-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn math_style(self, value: impl Into<crate::value::MathStyle>) -> Self {
         self.with(Property::MathStyle, value.into().to_string())
@@ -4264,12 +4440,16 @@ impl Style {
     }
 
     /// Sets [`mix-blend-mode`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/mix-blend-mode).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn mix_blend_mode(self, value: impl Into<crate::value::MixBlendMode>) -> Self {
         self.with(Property::MixBlendMode, value.into().to_string())
     }
 
     /// Sets [`object-fit`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/object-fit).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn object_fit(self, value: impl Into<crate::value::ObjectFit>) -> Self {
         self.with(Property::ObjectFit, value.into().to_string())
@@ -4300,6 +4480,8 @@ impl Style {
     }
 
     /// Sets [`offset-distance`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/offset-distance).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn offset_distance(self, value: impl Into<crate::value::OffsetDistance>) -> Self {
         self.with(Property::OffsetDistance, value.into().to_string())
@@ -4331,6 +4513,8 @@ impl Style {
 
     /// Sets [`opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/opacity).
     ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
     /// # Panics
     ///
     /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
@@ -4360,6 +4544,8 @@ impl Style {
     }
 
     /// Sets [`outline-color`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/outline-color).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn outline_color(self, value: impl Into<crate::value::OutlineColor>) -> Self {
         self.with(Property::OutlineColor, value.into().to_string())
@@ -4372,12 +4558,16 @@ impl Style {
     }
 
     /// Sets [`outline-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/outline-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn outline_style(self, value: impl Into<crate::value::OutlineStyle>) -> Self {
         self.with(Property::OutlineStyle, value.into().to_string())
     }
 
     /// Sets [`outline-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/outline-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn outline_width(self, value: impl Into<crate::value::OutlineWidth>) -> Self {
         self.with(Property::OutlineWidth, value.into().to_string())
@@ -4392,12 +4582,16 @@ impl Style {
     }
 
     /// Sets [`overflow-anchor`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overflow-anchor).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overflow_anchor(self, value: impl Into<crate::value::OverflowAnchor>) -> Self {
         self.with(Property::OverflowAnchor, value.into().to_string())
     }
 
     /// Sets [`overflow-block`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overflow-block).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overflow_block(self, value: impl Into<crate::value::OverflowBlock>) -> Self {
         self.with(Property::OverflowBlock, value.into().to_string())
@@ -4412,24 +4606,32 @@ impl Style {
     }
 
     /// Sets [`overflow-inline`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overflow-inline).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overflow_inline(self, value: impl Into<crate::value::OverflowInline>) -> Self {
         self.with(Property::OverflowInline, value.into().to_string())
     }
 
     /// Sets [`overflow-wrap`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overflow-wrap).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overflow_wrap(self, value: impl Into<crate::value::OverflowWrap>) -> Self {
         self.with(Property::OverflowWrap, value.into().to_string())
     }
 
     /// Sets [`overflow-x`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overflow-x).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overflow_x(self, value: impl Into<crate::value::OverflowX>) -> Self {
         self.with(Property::OverflowX, value.into().to_string())
     }
 
     /// Sets [`overflow-y`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overflow-y).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overflow_y(self, value: impl Into<crate::value::OverflowY>) -> Self {
         self.with(Property::OverflowY, value.into().to_string())
@@ -4444,24 +4646,32 @@ impl Style {
     }
 
     /// Sets [`overscroll-behavior-block`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overscroll-behavior-block).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overscroll_behavior_block(self, value: impl Into<crate::value::OverscrollBehaviorBlock>) -> Self {
         self.with(Property::OverscrollBehaviorBlock, value.into().to_string())
     }
 
     /// Sets [`overscroll-behavior-inline`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overscroll-behavior-inline).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overscroll_behavior_inline(self, value: impl Into<crate::value::OverscrollBehaviorInline>) -> Self {
         self.with(Property::OverscrollBehaviorInline, value.into().to_string())
     }
 
     /// Sets [`overscroll-behavior-x`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overscroll-behavior-x).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overscroll_behavior_x(self, value: impl Into<crate::value::OverscrollBehaviorX>) -> Self {
         self.with(Property::OverscrollBehaviorX, value.into().to_string())
     }
 
     /// Sets [`overscroll-behavior-y`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overscroll-behavior-y).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn overscroll_behavior_y(self, value: impl Into<crate::value::OverscrollBehaviorY>) -> Self {
         self.with(Property::OverscrollBehaviorY, value.into().to_string())
@@ -4484,18 +4694,24 @@ impl Style {
     }
 
     /// Sets [`padding-block-end`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-block-end).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn padding_block_end(self, value: impl Into<crate::value::PaddingBlockEnd>) -> Self {
         self.with(Property::PaddingBlockEnd, value.into().to_string())
     }
 
     /// Sets [`padding-block-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-block-start).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn padding_block_start(self, value: impl Into<crate::value::PaddingBlockStart>) -> Self {
         self.with(Property::PaddingBlockStart, value.into().to_string())
     }
 
     /// Sets [`padding-bottom`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-bottom).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn padding_bottom(self, value: impl Into<crate::value::PaddingBottom>) -> Self {
         self.with(Property::PaddingBottom, value.into().to_string())
@@ -4510,30 +4726,40 @@ impl Style {
     }
 
     /// Sets [`padding-inline-end`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-inline-end).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn padding_inline_end(self, value: impl Into<crate::value::PaddingInlineEnd>) -> Self {
         self.with(Property::PaddingInlineEnd, value.into().to_string())
     }
 
     /// Sets [`padding-inline-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-inline-start).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn padding_inline_start(self, value: impl Into<crate::value::PaddingInlineStart>) -> Self {
         self.with(Property::PaddingInlineStart, value.into().to_string())
     }
 
     /// Sets [`padding-left`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-left).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn padding_left(self, value: impl Into<crate::value::PaddingLeft>) -> Self {
         self.with(Property::PaddingLeft, value.into().to_string())
     }
 
     /// Sets [`padding-right`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-right).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn padding_right(self, value: impl Into<crate::value::PaddingRight>) -> Self {
         self.with(Property::PaddingRight, value.into().to_string())
     }
 
     /// Sets [`padding-top`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-top).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn padding_top(self, value: impl Into<crate::value::PaddingTop>) -> Self {
         self.with(Property::PaddingTop, value.into().to_string())
@@ -4564,6 +4790,8 @@ impl Style {
     }
 
     /// Sets [`perspective`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/perspective).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn perspective(self, value: impl Into<crate::value::Perspective>) -> Self {
         self.with(Property::Perspective, value.into().to_string())
@@ -4602,12 +4830,16 @@ impl Style {
     }
 
     /// Sets [`pointer-events`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/pointer-events).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn pointer_events(self, value: impl Into<crate::value::PointerEvents>) -> Self {
         self.with(Property::PointerEvents, value.into().to_string())
     }
 
     /// Sets [`position`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/position).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn position(self, value: impl Into<crate::value::Position>) -> Self {
         self.with(Property::Position, value.into().to_string())
@@ -4638,6 +4870,8 @@ impl Style {
     }
 
     /// Sets [`print-color-adjust`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/print-color-adjust).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn print_color_adjust(self, value: impl Into<crate::value::PrintColorAdjust>) -> Self {
         self.with(Property::PrintColorAdjust, value.into().to_string())
@@ -4652,12 +4886,16 @@ impl Style {
     }
 
     /// Sets [`r`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/r).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn r(self, value: impl Into<crate::value::R>) -> Self {
         self.with(Property::R, value.into().to_string())
     }
 
     /// Sets [`reading-flow`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/reading-flow).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn reading_flow(self, value: impl Into<crate::value::ReadingFlow>) -> Self {
         self.with(Property::ReadingFlow, value.into().to_string())
@@ -4670,6 +4908,8 @@ impl Style {
     }
 
     /// Sets [`resize`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/resize).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn resize(self, value: impl Into<crate::value::Resize>) -> Self {
         self.with(Property::Resize, value.into().to_string())
@@ -4692,18 +4932,24 @@ impl Style {
     }
 
     /// Sets [`row-gap`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/row-gap).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn row_gap(self, value: impl Into<crate::value::RowGap>) -> Self {
         self.with(Property::RowGap, value.into().to_string())
     }
 
     /// Sets [`ruby-align`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/ruby-align).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn ruby_align(self, value: impl Into<crate::value::RubyAlign>) -> Self {
         self.with(Property::RubyAlign, value.into().to_string())
     }
 
     /// Sets [`ruby-overhang`]().
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn ruby_overhang(self, value: impl Into<crate::value::RubyOverhang>) -> Self {
         self.with(Property::RubyOverhang, value.into().to_string())
@@ -4718,12 +4964,16 @@ impl Style {
     }
 
     /// Sets [`rx`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/rx).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn rx(self, value: impl Into<crate::value::Rx>) -> Self {
         self.with(Property::Rx, value.into().to_string())
     }
 
     /// Sets [`ry`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/ry).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn ry(self, value: impl Into<crate::value::Ry>) -> Self {
         self.with(Property::Ry, value.into().to_string())
@@ -4742,12 +4992,16 @@ impl Style {
     }
 
     /// Sets [`scroll-axis-lock`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-axis-lock).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_axis_lock(self, value: impl Into<crate::value::ScrollAxisLock>) -> Self {
         self.with(Property::ScrollAxisLock, value.into().to_string())
     }
 
     /// Sets [`scroll-behavior`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-behavior).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_behavior(self, value: impl Into<crate::value::ScrollBehavior>) -> Self {
         self.with(Property::ScrollBehavior, value.into().to_string())
@@ -4826,6 +5080,8 @@ impl Style {
     }
 
     /// Sets [`scroll-marker-group`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-marker-group).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_marker_group(self, value: impl Into<crate::value::ScrollMarkerGroup>) -> Self {
         self.with(Property::ScrollMarkerGroup, value.into().to_string())
@@ -4848,18 +5104,24 @@ impl Style {
     }
 
     /// Sets [`scroll-padding-block-end`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-block-end).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_padding_block_end(self, value: impl Into<crate::value::ScrollPaddingBlockEnd>) -> Self {
         self.with(Property::ScrollPaddingBlockEnd, value.into().to_string())
     }
 
     /// Sets [`scroll-padding-block-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-block-start).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_padding_block_start(self, value: impl Into<crate::value::ScrollPaddingBlockStart>) -> Self {
         self.with(Property::ScrollPaddingBlockStart, value.into().to_string())
     }
 
     /// Sets [`scroll-padding-bottom`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-bottom).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_padding_bottom(self, value: impl Into<crate::value::ScrollPaddingBottom>) -> Self {
         self.with(Property::ScrollPaddingBottom, value.into().to_string())
@@ -4874,30 +5136,40 @@ impl Style {
     }
 
     /// Sets [`scroll-padding-inline-end`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-inline-end).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_padding_inline_end(self, value: impl Into<crate::value::ScrollPaddingInlineEnd>) -> Self {
         self.with(Property::ScrollPaddingInlineEnd, value.into().to_string())
     }
 
     /// Sets [`scroll-padding-inline-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-inline-start).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_padding_inline_start(self, value: impl Into<crate::value::ScrollPaddingInlineStart>) -> Self {
         self.with(Property::ScrollPaddingInlineStart, value.into().to_string())
     }
 
     /// Sets [`scroll-padding-left`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-left).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_padding_left(self, value: impl Into<crate::value::ScrollPaddingLeft>) -> Self {
         self.with(Property::ScrollPaddingLeft, value.into().to_string())
     }
 
     /// Sets [`scroll-padding-right`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-right).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_padding_right(self, value: impl Into<crate::value::ScrollPaddingRight>) -> Self {
         self.with(Property::ScrollPaddingRight, value.into().to_string())
     }
 
     /// Sets [`scroll-padding-top`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-top).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_padding_top(self, value: impl Into<crate::value::ScrollPaddingTop>) -> Self {
         self.with(Property::ScrollPaddingTop, value.into().to_string())
@@ -4912,6 +5184,8 @@ impl Style {
     }
 
     /// Sets [`scroll-snap-stop`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-snap-stop).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_snap_stop(self, value: impl Into<crate::value::ScrollSnapStop>) -> Self {
         self.with(Property::ScrollSnapStop, value.into().to_string())
@@ -4926,6 +5200,8 @@ impl Style {
     }
 
     /// Sets [`scroll-target-group`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-target-group).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scroll_target_group(self, value: impl Into<crate::value::ScrollTargetGroup>) -> Self {
         self.with(Property::ScrollTargetGroup, value.into().to_string())
@@ -4948,12 +5224,16 @@ impl Style {
     }
 
     /// Sets [`scrollbar-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scrollbar-width).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn scrollbar_width(self, value: impl Into<crate::value::ScrollbarWidth>) -> Self {
         self.with(Property::ScrollbarWidth, value.into().to_string())
     }
 
     /// Sets [`shape-image-threshold`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/shape-image-threshold).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     ///
     /// # Panics
     ///
@@ -4964,6 +5244,8 @@ impl Style {
     }
 
     /// Sets [`shape-margin`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/shape-margin).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn shape_margin(self, value: impl Into<crate::value::ShapeMargin>) -> Self {
         self.with(Property::ShapeMargin, value.into().to_string())
@@ -4978,6 +5260,8 @@ impl Style {
     }
 
     /// Sets [`shape-rendering`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/shape-rendering).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn shape_rendering(self, value: impl Into<crate::value::ShapeRendering>) -> Self {
         self.with(Property::ShapeRendering, value.into().to_string())
@@ -4990,6 +5274,8 @@ impl Style {
     }
 
     /// Sets [`stop-opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stop-opacity).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     ///
     /// # Panics
     ///
@@ -5021,6 +5307,8 @@ impl Style {
 
     /// Sets [`stroke-dashoffset`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-dashoffset).
     ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
     /// # Panics
     ///
     /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
@@ -5030,12 +5318,16 @@ impl Style {
     }
 
     /// Sets [`stroke-linecap`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-linecap).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn stroke_linecap(self, value: impl Into<crate::value::StrokeLinecap>) -> Self {
         self.with(Property::StrokeLinecap, value.into().to_string())
     }
 
     /// Sets [`stroke-linejoin`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-linejoin).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn stroke_linejoin(self, value: impl Into<crate::value::StrokeLinejoin>) -> Self {
         self.with(Property::StrokeLinejoin, value.into().to_string())
@@ -5053,6 +5345,8 @@ impl Style {
 
     /// Sets [`stroke-opacity`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-opacity).
     ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
     /// # Panics
     ///
     /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
@@ -5063,6 +5357,8 @@ impl Style {
 
     /// Sets [`stroke-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-width).
     ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
     /// # Panics
     ///
     /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
@@ -5072,30 +5368,40 @@ impl Style {
     }
 
     /// Sets [`tab-size`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/tab-size).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn tab_size(self, value: impl Into<crate::value::TabSize>) -> Self {
         self.with(Property::TabSize, value.into().to_string())
     }
 
     /// Sets [`table-layout`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/table-layout).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn table_layout(self, value: impl Into<crate::value::TableLayout>) -> Self {
         self.with(Property::TableLayout, value.into().to_string())
     }
 
     /// Sets [`text-align`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-align).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_align(self, value: impl Into<crate::value::TextAlign>) -> Self {
         self.with(Property::TextAlign, value.into().to_string())
     }
 
     /// Sets [`text-align-last`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-align-last).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_align_last(self, value: impl Into<crate::value::TextAlignLast>) -> Self {
         self.with(Property::TextAlignLast, value.into().to_string())
     }
 
     /// Sets [`text-anchor`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-anchor).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_anchor(self, value: impl Into<crate::value::TextAnchor>) -> Self {
         self.with(Property::TextAnchor, value.into().to_string())
@@ -5126,6 +5432,8 @@ impl Style {
     }
 
     /// Sets [`text-box-trim`]().
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_box_trim(self, value: impl Into<crate::value::TextBoxTrim>) -> Self {
         self.with(Property::TextBoxTrim, value.into().to_string())
@@ -5170,18 +5478,24 @@ impl Style {
     }
 
     /// Sets [`text-decoration-skip-ink`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-decoration-skip-ink).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_decoration_skip_ink(self, value: impl Into<crate::value::TextDecorationSkipInk>) -> Self {
         self.with(Property::TextDecorationSkipInk, value.into().to_string())
     }
 
     /// Sets [`text-decoration-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-decoration-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_decoration_style(self, value: impl Into<crate::value::TextDecorationStyle>) -> Self {
         self.with(Property::TextDecorationStyle, value.into().to_string())
     }
 
     /// Sets [`text-decoration-thickness`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-decoration-thickness).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_decoration_thickness(self, value: impl Into<crate::value::TextDecorationThickness>) -> Self {
         self.with(Property::TextDecorationThickness, value.into().to_string())
@@ -5234,12 +5548,16 @@ impl Style {
     }
 
     /// Sets [`text-justify`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-justify).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_justify(self, value: impl Into<crate::value::TextJustify>) -> Self {
         self.with(Property::TextJustify, value.into().to_string())
     }
 
     /// Sets [`text-orientation`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-orientation).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_orientation(self, value: impl Into<crate::value::TextOrientation>) -> Self {
         self.with(Property::TextOrientation, value.into().to_string())
@@ -5254,6 +5572,8 @@ impl Style {
     }
 
     /// Sets [`text-rendering`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-rendering).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_rendering(self, value: impl Into<crate::value::TextRendering>) -> Self {
         self.with(Property::TextRendering, value.into().to_string())
@@ -5276,6 +5596,8 @@ impl Style {
     }
 
     /// Sets [`text-underline-offset`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-underline-offset).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_underline_offset(self, value: impl Into<crate::value::TextUnderlineOffset>) -> Self {
         self.with(Property::TextUnderlineOffset, value.into().to_string())
@@ -5298,12 +5620,16 @@ impl Style {
     }
 
     /// Sets [`text-wrap-mode`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-wrap-mode).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_wrap_mode(self, value: impl Into<crate::value::TextWrapMode>) -> Self {
         self.with(Property::TextWrapMode, value.into().to_string())
     }
 
     /// Sets [`text-wrap-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/text-wrap-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn text_wrap_style(self, value: impl Into<crate::value::TextWrapStyle>) -> Self {
         self.with(Property::TextWrapStyle, value.into().to_string())
@@ -5406,6 +5732,8 @@ impl Style {
     }
 
     /// Sets [`transform-box`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/transform-box).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn transform_box(self, value: impl Into<crate::value::TransformBox>) -> Self {
         self.with(Property::TransformBox, value.into().to_string())
@@ -5420,6 +5748,8 @@ impl Style {
     }
 
     /// Sets [`transform-style`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/transform-style).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn transform_style(self, value: impl Into<crate::value::TransformStyle>) -> Self {
         self.with(Property::TransformStyle, value.into().to_string())
@@ -5490,24 +5820,32 @@ impl Style {
     }
 
     /// Sets [`unicode-bidi`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/unicode-bidi).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn unicode_bidi(self, value: impl Into<crate::value::UnicodeBidi>) -> Self {
         self.with(Property::UnicodeBidi, value.into().to_string())
     }
 
     /// Sets [`user-select`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/user-select).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn user_select(self, value: impl Into<crate::value::UserSelect>) -> Self {
         self.with(Property::UserSelect, value.into().to_string())
     }
 
     /// Sets [`vector-effect`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/vector-effect).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn vector_effect(self, value: impl Into<crate::value::VectorEffect>) -> Self {
         self.with(Property::VectorEffect, value.into().to_string())
     }
 
     /// Sets [`vertical-align`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/vertical-align).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn vertical_align(self, value: impl Into<crate::value::VerticalAlign>) -> Self {
         self.with(Property::VerticalAlign, value.into().to_string())
@@ -5530,12 +5868,16 @@ impl Style {
     }
 
     /// Sets [`view-transition-scope`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/view-transition-scope).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn view_transition_scope(self, value: impl Into<crate::value::ViewTransitionScope>) -> Self {
         self.with(Property::ViewTransitionScope, value.into().to_string())
     }
 
     /// Sets [`visibility`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/visibility).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn visibility(self, value: impl Into<crate::value::Visibility>) -> Self {
         self.with(Property::Visibility, value.into().to_string())
@@ -5550,6 +5892,8 @@ impl Style {
     }
 
     /// Sets [`white-space-collapse`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/white-space-collapse).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn white_space_collapse(self, value: impl Into<crate::value::WhiteSpaceCollapse>) -> Self {
         self.with(Property::WhiteSpaceCollapse, value.into().to_string())
@@ -5578,48 +5922,64 @@ impl Style {
     }
 
     /// Sets [`window-drag`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/window-drag).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn window_drag(self, value: impl Into<crate::value::WindowDrag>) -> Self {
         self.with(Property::WindowDrag, value.into().to_string())
     }
 
     /// Sets [`word-break`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/word-break).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn word_break(self, value: impl Into<crate::value::WordBreak>) -> Self {
         self.with(Property::WordBreak, value.into().to_string())
     }
 
     /// Sets [`word-spacing`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/word-spacing).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn word_spacing(self, value: impl Into<crate::value::WordSpacing>) -> Self {
         self.with(Property::WordSpacing, value.into().to_string())
     }
 
     /// Sets [`word-wrap`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/overflow-wrap).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn word_wrap(self, value: impl Into<crate::value::WordWrap>) -> Self {
         self.with(Property::WordWrap, value.into().to_string())
     }
 
     /// Sets [`writing-mode`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/writing-mode).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn writing_mode(self, value: impl Into<crate::value::WritingMode>) -> Self {
         self.with(Property::WritingMode, value.into().to_string())
     }
 
     /// Sets [`x`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/x).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn x(self, value: impl Into<crate::value::X>) -> Self {
         self.with(Property::X, value.into().to_string())
     }
 
     /// Sets [`y`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/y).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn y(self, value: impl Into<crate::value::Y>) -> Self {
         self.with(Property::Y, value.into().to_string())
     }
 
     /// Sets [`z-index`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/z-index).
+    ///
+    /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
     #[must_use]
     pub fn z_index(self, value: impl Into<crate::value::ZIndex>) -> Self {
         self.with(Property::ZIndex, value.into().to_string())

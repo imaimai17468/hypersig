@@ -33,7 +33,10 @@ pub(crate) fn number(value: f64) -> f64 {
 #[derive(Debug, Clone, PartialEq)]
 enum Amount {
     Unit(f64, &'static str),
-    Var(String),
+    /// A `var()` or a math function, written as it stands.
+    Css(String),
+    /// The expression inside a `calc()`, written without it.
+    Calc(String),
 }
 
 impl Amount {
@@ -57,7 +60,22 @@ impl Amount {
                 }
                 Ok(())
             }
-            Self::Var(css) => f.write_str(css),
+            Self::Css(css) => f.write_str(css),
+            Self::Calc(expression) => write!(f, "calc({expression})"),
+        }
+    }
+
+    /// The amount as an argument of a math function.
+    ///
+    /// The unit stays on zero, because a bare `0` there is a number and not
+    /// a length. An expression is put in parentheses where `grouped` is set,
+    /// so that `a - (b + c)` keeps its meaning.
+    fn term(&self, grouped: bool) -> String {
+        match self {
+            Self::Unit(n, unit) => format!("{n}{unit}"),
+            Self::Css(css) => css.clone(),
+            Self::Calc(expression) if grouped => format!("({expression})"),
+            Self::Calc(expression) => expression.clone(),
         }
     }
 }
@@ -68,10 +86,10 @@ pub struct Length(Amount);
 
 impl Length {
     /// A length of zero, written `0`.
-    pub const ZERO: Self = Self(Amount::Unit(0.0, ""));
+    pub const ZERO: Self = Self(Amount::Unit(0.0, "px"));
 
     pub(crate) fn var(css: String) -> Self {
-        Self(Amount::Var(css))
+        Self(Amount::Css(css))
     }
 }
 
@@ -122,7 +140,7 @@ pub struct Percentage(Amount);
 
 impl Percentage {
     pub(crate) fn var(css: String) -> Self {
-        Self(Amount::Var(css))
+        Self(Amount::Css(css))
     }
 }
 
@@ -148,7 +166,7 @@ pub struct Time(Amount);
 
 impl Time {
     pub(crate) fn var(css: String) -> Self {
-        Self(Amount::Var(css))
+        Self(Amount::Css(css))
     }
 }
 
@@ -184,7 +202,7 @@ pub struct Angle(Amount);
 
 impl Angle {
     pub(crate) fn var(css: String) -> Self {
-        Self(Amount::Var(css))
+        Self(Amount::Css(css))
     }
 }
 
@@ -212,6 +230,136 @@ pub fn deg(value: impl Into<f64>) -> Angle {
 #[must_use]
 pub fn turn(value: impl Into<f64>) -> Angle {
     Angle(Amount::unit(value, "turn"))
+}
+
+/// A value type that `calc()`, `min()`, `max()`, and `clamp()` combine.
+///
+/// It is implemented for [`Length`], [`Percentage`], [`Time`], and [`Angle`].
+/// Each math function takes values of one type and returns that type, so a
+/// length and a percentage cannot be mixed, as `calc(100% - 2rem)` would;
+/// such a value goes through [`Raw`].
+///
+/// ```
+/// use hypersig_style::value::{clamp, max, pct, px, rem, vw};
+///
+/// assert_eq!(clamp(rem(1.5), vw(4), rem(3)).to_string(), "clamp(1.5rem, 4vw, 3rem)");
+/// assert_eq!((px(100) - rem(2) * 2.0).to_string(), "calc(100px - (2rem * 2))");
+/// assert_eq!(max(pct(50), pct(20) + pct(10)).to_string(), "max(50%, 20% + 10%)");
+/// ```
+pub trait Quantity: fmt::Display + quantity::Sealed {}
+
+mod quantity {
+    pub trait Sealed: Sized {
+        /// The value as an argument of a math function.
+        fn into_term(self) -> String;
+        /// The value written as `css`.
+        fn from_css(css: String) -> Self;
+    }
+}
+
+macro_rules! quantities {
+    ($($ty:ident),*) => {$(
+        impl quantity::Sealed for $ty {
+            fn into_term(self) -> String {
+                self.0.term(false)
+            }
+
+            fn from_css(css: String) -> Self {
+                Self(Amount::Css(css))
+            }
+        }
+
+        impl Quantity for $ty {}
+
+        /// The sum, written `calc(a + b)`.
+        impl std::ops::Add for $ty {
+            type Output = Self;
+
+            fn add(self, other: Self) -> Self {
+                Self(Amount::Calc(format!("{} + {}", self.0.term(false), other.0.term(true))))
+            }
+        }
+
+        /// The difference, written `calc(a - b)`.
+        impl std::ops::Sub for $ty {
+            type Output = Self;
+
+            fn sub(self, other: Self) -> Self {
+                Self(Amount::Calc(format!("{} - {}", self.0.term(false), other.0.term(true))))
+            }
+        }
+
+        /// The value times a number, written `calc(a * n)`.
+        ///
+        /// # Panics
+        ///
+        /// Panics if `factor` is NaN or infinite.
+        impl std::ops::Mul<f64> for $ty {
+            type Output = Self;
+
+            fn mul(self, factor: f64) -> Self {
+                let factor = number(factor);
+                Self(Amount::Calc(format!("{} * {factor}", self.0.term(true))))
+            }
+        }
+
+        /// The value divided by a number, written `calc(a / n)`.
+        ///
+        /// # Panics
+        ///
+        /// Panics if `divisor` is zero, NaN, or infinite.
+        impl std::ops::Div<f64> for $ty {
+            type Output = Self;
+
+            fn div(self, divisor: f64) -> Self {
+                let divisor = number(divisor);
+                assert!(divisor != 0.0, "a CSS calc() divides by a number other than zero");
+                Self(Amount::Calc(format!("{} / {divisor}", self.0.term(true))))
+            }
+        }
+    )*};
+}
+
+quantities!(Length, Percentage, Time, Angle);
+
+/// The CSS math function `name` over `terms`. A sum among them is written
+/// without its `calc()`, which a math function reads as one argument.
+fn math<T: Quantity, const N: usize>(name: &str, terms: [T; N]) -> T {
+    let terms: Vec<String> = terms.into_iter().map(quantity::Sealed::into_term).collect();
+    T::from_css(format!("{name}({})", terms.join(", ")))
+}
+
+/// `preferred`, kept between `min` and `max`, written `clamp()`.
+#[must_use]
+pub fn clamp<T: Quantity>(min: T, preferred: T, max: T) -> T {
+    math("clamp", [min, preferred, max])
+}
+
+/// The smaller of `a` and `b`, written `min()`.
+#[must_use]
+pub fn min<T: Quantity>(a: T, b: T) -> T {
+    math("min", [a, b])
+}
+
+/// The larger of `a` and `b`, written `max()`.
+#[must_use]
+pub fn max<T: Quantity>(a: T, b: T) -> T {
+    math("max", [a, b])
+}
+
+/// A length from `raw`, for a form the typed lengths leave out.
+///
+/// ```
+/// use hypersig_style::Style;
+/// use hypersig_style::value::raw;
+///
+/// let style = Style::new().scroll_margin_top(raw("calc(1rem + env(safe-area-inset-top))"));
+/// # let _ = style;
+/// ```
+impl From<Raw> for Length {
+    fn from(raw: Raw) -> Self {
+        Self(Amount::Css(raw.0))
+    }
 }
 
 /// A color.
@@ -266,6 +414,63 @@ impl Color {
         Self(Cow::Owned(format!("rgb({red} {green} {blue})")))
     }
 
+    /// The color from a hue and percentages of saturation and lightness.
+    ///
+    /// ```
+    /// use hypersig_style::value::{Color, deg, pct};
+    ///
+    /// assert_eq!(Color::hsl(deg(210), pct(50), pct(40)).to_string(), "hsl(210deg 50% 40%)");
+    /// ```
+    #[must_use]
+    pub fn hsl(hue: Angle, saturation: Percentage, lightness: Percentage) -> Self {
+        Self::function("hsl", [hue.0, saturation.0, lightness.0])
+    }
+
+    /// The color in OKLCH from lightness, chroma, and hue.
+    ///
+    /// `chroma` is about 0 to 0.4, where 0 is gray.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `chroma` is NaN or infinite.
+    ///
+    /// ```
+    /// use hypersig_style::value::{Color, deg, pct};
+    ///
+    /// assert_eq!(Color::oklch(pct(70), 0.1, deg(210)).to_string(), "oklch(70% 0.1 210deg)");
+    /// ```
+    #[must_use]
+    pub fn oklch(lightness: Percentage, chroma: f64, hue: Angle) -> Self {
+        let chroma = Amount::unit(chroma, "");
+        Self::function("oklch", [lightness.0, chroma, hue.0])
+    }
+
+    /// The color in Oklab from lightness and the `a` and `b` axes.
+    ///
+    /// `a` runs from green to red and `b` from blue to yellow, each about
+    /// -0.4 to 0.4.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `a` or `b` is NaN or infinite.
+    #[must_use]
+    pub fn oklab(lightness: Percentage, a: f64, b: f64) -> Self {
+        Self::function(
+            "oklab",
+            [lightness.0, Amount::unit(a, ""), Amount::unit(b, "")],
+        )
+    }
+
+    fn function(name: &str, channels: [Amount; 3]) -> Self {
+        // A channel is not an argument of a math function, so a sum keeps
+        // its `calc()` there.
+        let [x, y, z] = channels.map(|c| match c {
+            Amount::Calc(expression) => format!("calc({expression})"),
+            c => c.term(false),
+        });
+        Self(Cow::Owned(format!("{name}({x} {y} {z})")))
+    }
+
     /// This color at `opacity` percent, mixed with `transparent` in sRGB.
     #[must_use]
     pub fn opacity(&self, opacity: u8) -> Self {
@@ -282,6 +487,21 @@ impl Color {
         Self(Cow::Owned(format!(
             "color-mix(in srgb, {self} {weight}%, {other})"
         )))
+    }
+}
+
+/// A color from `raw`, for a form the constructors leave out.
+///
+/// ```
+/// use hypersig_style::Style;
+/// use hypersig_style::value::raw;
+///
+/// let style = Style::new().color(raw("color(display-p3 1 0.5 0)"));
+/// # let _ = style;
+/// ```
+impl From<Raw> for Color {
+    fn from(raw: Raw) -> Self {
+        Self(Cow::Owned(raw.0))
     }
 }
 
@@ -427,8 +647,9 @@ const fn same_ascii(url: &[u8], len: usize, scheme: &[u8]) -> bool {
 
 /// A value written into the stylesheet as given.
 ///
-/// It is for the forms a property's generated type leaves out, such as `margin:
-/// 0 auto`.
+/// It is for the forms the typed values leave out, such as `margin: 0 auto`,
+/// a `calc()` that mixes a length and a percentage, or a `calc()` of numbers.
+/// Every generated value enum, [`Color`], and [`Length`] convert from it.
 ///
 /// Nothing checks that the browser accepts it. A value it rejects drops the
 /// declaration, and the element renders as if the property were not set.
@@ -623,6 +844,81 @@ mod tests {
     #[should_panic(expected = "a CSS number is finite")]
     fn an_opacity_of_nan_panics_where_it_is_set() {
         let _ = crate::Style::new().opacity(super::Opacity::Number(f64::NAN));
+    }
+
+    #[test]
+    fn math_keeps_units_on_zero_and_groups_an_inner_sum() {
+        use super::{Length, clamp, min, ms, rem, vw};
+        assert_eq!((Length::ZERO + px(4)).to_string(), "calc(0px + 4px)");
+        assert_eq!(Length::ZERO.to_string(), "0");
+        assert_eq!(
+            (rem(1) - (px(2) + vw(1))).to_string(),
+            "calc(1rem - (2px + 1vw))"
+        );
+        assert_eq!(
+            clamp(rem(1), vw(2) + rem(0.5), rem(2)).to_string(),
+            "clamp(1rem, 2vw + 0.5rem, 2rem)"
+        );
+        assert_eq!((ms(300) / 2.0).to_string(), "calc(300ms / 2)");
+        assert_eq!(
+            (min(px(10), px(20)) * 2.0).to_string(),
+            "calc(min(10px, 20px) * 2)"
+        );
+        let css = crate::Global::new()
+            .rule(
+                crate::Selector::Root,
+                crate::Style::new().font_size(clamp(rem(1.5), vw(4), rem(3))),
+            )
+            .to_css();
+        assert!(css.contains("font-size:clamp(1.5rem, 4vw, 3rem)"), "{css}");
+    }
+
+    #[test]
+    #[should_panic(expected = "divides by a number other than zero")]
+    fn a_division_by_zero_panics_where_it_is_built() {
+        let _ = px(4) / 0.0;
+    }
+
+    #[test]
+    fn a_color_function_writes_its_channels() {
+        use super::{Color, deg, pct};
+        assert_eq!(
+            Color::hsl(deg(0), pct(0), pct(100)).to_string(),
+            "hsl(0deg 0% 100%)"
+        );
+        assert_eq!(
+            Color::oklab(pct(60), -0.1, 0.05).to_string(),
+            "oklab(60% -0.1 0.05)"
+        );
+        assert_eq!(
+            Color::hsl(deg(10) + deg(5), pct(50), pct(40)).to_string(),
+            "hsl(calc(10deg + 5deg) 50% 40%)"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "a CSS number is finite")]
+    fn a_chroma_of_nan_panics_where_it_is_built() {
+        let _ = super::Color::oklch(super::pct(50), f64::NAN, super::deg(0));
+    }
+
+    #[test]
+    fn a_property_without_a_typed_form_for_a_value_takes_it_raw() {
+        let css = crate::Global::new()
+            .rule(
+                crate::Selector::Root,
+                crate::Style::new()
+                    .font_size(raw("clamp(1.5rem, 4vw, 3rem)"))
+                    .opacity(raw("calc(var(--x) / 2)"))
+                    .z_index(raw("calc(var(--layer) + 1)"))
+                    .padding_top(raw("calc(100% - 2rem)"))
+                    .color(raw("light-dark(black, white)")),
+            )
+            .to_css();
+        assert!(css.contains("font-size:clamp(1.5rem, 4vw, 3rem)"), "{css}");
+        assert!(css.contains("z-index:calc(var(--layer) + 1)"), "{css}");
+        assert!(css.contains("padding-top:calc(100% - 2rem)"), "{css}");
+        assert!(css.contains("color:light-dark(black, white)"), "{css}");
     }
 
     #[test]

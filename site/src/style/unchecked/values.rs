@@ -21,16 +21,16 @@ pub fn page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`raw(css: impl Into<String>) -> Raw`](api:hypersig/style/value/fn.raw.html) writes a value as given. It is for the forms a property's generated type leaves out: a value of several parts such as `margin: 0 auto`, a shadow, a `calc()`, a `cubic-bezier()`, or a list of grid tracks. Each generated value type that has a `Raw` variant converts from a [`Raw`](api:hypersig/style/value/struct.Raw.html), so `raw` goes wherever a typed value would:",
-                ja: "[`raw(css: impl Into<String>) -> Raw`](api:hypersig/style/value/fn.raw.html) は値を渡されたとおりに書きます。`margin: 0 auto` のように複数の部分からなる値、影、`calc()`、`cubic-bezier()`、グリッドのトラックの一覧など、プロパティの生成された型に含まれない書き方に使います。生成された値の型のうち `Raw` バリアントを持つものはどれも [`Raw`](api:hypersig/style/value/struct.Raw.html) から変換できるので、`raw` は型の付いた値を渡す場所ならどこにでも渡せます。",
+                en: "[`raw(css: impl Into<String>) -> Raw`](api:hypersig/style/value/fn.raw.html) writes a value as given. It is for the forms a property's generated type leaves out: a value of several parts such as `margin: 0 auto`, a shadow, a `calc()` that mixes a length and a percentage, a `cubic-bezier()`, or a list of grid tracks. Every generated value type, `Color`, and `Length` convert from a [`Raw`](api:hypersig/style/value/struct.Raw.html), so `raw` goes wherever a typed value would:",
+                ja: "[`raw(css: impl Into<String>) -> Raw`](api:hypersig/style/value/fn.raw.html) は値を渡されたとおりに書きます。`margin: 0 auto` のように複数の部分からなる値、影、長さとパーセンテージを混ぜた `calc()`、`cubic-bezier()`、グリッドのトラックの一覧など、プロパティの生成された型に含まれない書き方に使います。生成された値の型と `Color`、`Length` はどれも [`Raw`](api:hypersig/style/value/struct.Raw.html) から変換できるので、`raw` は型の付いた値を渡す場所ならどこにでも渡せます。",
             },
         ),
         show(Snippet::Raw),
         para(
             site,
             L {
-                en: "The browser checks the value. If it rejects it, it drops the declaration, and the element renders as if the property were not set. A property whose type has no `Raw` variant, such as `visibility`, takes its keywords only.",
-                ja: "値を検査するのはブラウザです。ブラウザが受け付けない値なら、その宣言は捨てられ、要素はそのプロパティを設定していないかのように描画されます。`visibility` のように型に `Raw` バリアントがないプロパティは、そのキーワードしか受け取りません。",
+                en: "The browser checks the value. If it rejects it, it drops the declaration, and the element renders as if the property were not set. The methods that take a bare number, such as `flex_grow` and `order`, take no `raw`.",
+                ja: "値を検査するのはブラウザです。ブラウザが受け付けない値なら、その宣言は捨てられ、要素はそのプロパティを設定していないかのように描画されます。`flex_grow` や `order` のように数値をそのまま受け取るメソッドは `raw` を受け取りません。",
             },
         ),
         para(
