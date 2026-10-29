@@ -89,8 +89,8 @@ pub fn page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Style::keyframes` sets only the name. The other `animation-*` longhands are property methods with typed values:",
-                ja: "`Style::keyframes` が設定するのは名前だけです。ほかの `animation-*` の個別プロパティは型の付いた値を受け取るプロパティのメソッドで設定します。",
+                en: "`Style::keyframes` sets only the name. The other `animation-*` longhands are property methods with typed values, each of the shape `fn animation_duration(self, value: impl Into<AnimationDuration>) -> Style`:",
+                ja: "`Style::keyframes` が設定するのは名前だけです。ほかの `animation-*` の個別プロパティは型の付いた値を受け取るプロパティのメソッドで設定します。どれも `fn animation_duration(self, value: impl Into<AnimationDuration>) -> Style` と同じ形です。",
             },
         ),
         table_of(

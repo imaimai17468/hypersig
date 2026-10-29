@@ -153,7 +153,7 @@ pub fn page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Gap` converts from values of CSS types only. A string has no conversion into it, and neither has a bare number, which carries no unit, so `stack(\"1rem\")` and `stack(16)` are E0277:",
+                en: "`Gap` converts from values of CSS types only. A string has no conversion into it, and neither does a bare number, which carries no unit, so `stack(\"1rem\")` and `stack(16)` are E0277:",
                 ja: "`Gap` は CSS の型の値からだけ変換できます。文字列からも、単位を持たないただの数からも変換できないので、`stack(\"1rem\")` も `stack(16)` も E0277 になります。",
             },
         ),

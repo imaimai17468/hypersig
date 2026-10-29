@@ -84,8 +84,8 @@ pub fn page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Each method also takes `raw`. The list of properties has no type of its own: `TransitionProperty` has only `all` and `none`, so a list of named properties is `raw`, and so is a timing function such as `cubic-bezier(0.4, 0, 0.2, 1)`.",
-                ja: "どのメソッドも `raw` も受け取ります。プロパティの一覧には専用の型がありません。`TransitionProperty` にあるのは `all` と `none` だけなので、プロパティを名前で並べた一覧は `raw` で書きます。`cubic-bezier(0.4, 0, 0.2, 1)` のようなタイミング関数も `raw` で書きます。",
+                en: "Each method has the shape `fn transition_duration(self, value: impl Into<TransitionDuration>) -> Style`, with the value type named after the property, and each also takes `raw`. The list of properties has no type of its own: `TransitionProperty` has only `all` and `none`, so a list of named properties is `raw`, and so is a timing function such as `cubic-bezier(0.4, 0, 0.2, 1)`.",
+                ja: "どのメソッドも `fn transition_duration(self, value: impl Into<TransitionDuration>) -> Style` と同じ形で、値の型はプロパティにちなんだ名前です。どのメソッドも `raw` も受け取ります。プロパティの一覧には専用の型がありません。`TransitionProperty` にあるのは `all` と `none` だけなので、プロパティを名前で並べた一覧は `raw` で書きます。`cubic-bezier(0.4, 0, 0.2, 1)` のようなタイミング関数も `raw` で書きます。",
             },
         ),
         heading(
