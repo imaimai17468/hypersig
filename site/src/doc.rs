@@ -1469,12 +1469,21 @@ impl Doc {
                 },
                 // Animation
                 StylePage::Animation => L {
-                    en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element. The move from one page to the next animates with the browser's view transitions.",
-                    ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。ページから次のページへの移動は、ブラウザの View Transitions でアニメーションできます。",
+                    en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element.",
+                    ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。",
                 },
-                StylePage::Transitions | StylePage::PageTransitions | StylePage::ReducedMotion => {
-                    Doc::Style(StylePage::Animation).leads()
-                }
+                StylePage::Transitions => L {
+                    en: "A transition animates a property from its old value to its new one when a pseudo-class or a signal changes it.",
+                    ja: "トランジションは、擬似クラスやシグナルがプロパティの値を変えたときに、前の値から新しい値へアニメーションさせます。",
+                },
+                StylePage::PageTransitions => L {
+                    en: "The browser's view transitions animate the move from one page to the next, and `Stmt::view_transition` animates a change within a page.",
+                    ja: "ブラウザの View Transitions は、ページから次のページへの移動をアニメーションさせます。ページの中の変化は `Stmt::view_transition` でアニメーションさせます。",
+                },
+                StylePage::ReducedMotion => L {
+                    en: "`Media::ReducedMotion` applies a style for a visitor who asks the operating system for less motion, so an animation can stop, slow down, or become instant for them.",
+                    ja: "`Media::ReducedMotion` は、OS で動きを減らすよう設定した訪問者にだけスタイルを適用します。その訪問者に対してはアニメーションを止めたり、遅くしたり、すぐに終わらせたりできます。",
+                },
                 // Opting out of type checks
                 StylePage::Unchecked => L {
                     en: "A few forms reach the browser without a check. Each has its own name, so searching for that name finds every place that uses an unchecked value.",
