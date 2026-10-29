@@ -872,10 +872,7 @@ impl Doc {
                 // Forms and requests
                 Learn::Forms => ("Forms", "フォーム"),
                 Learn::FormValidation => ("Validating a form", "フォームの検証"),
-                Learn::Requests => (
-                    "Requests, cookies, and errors",
-                    "リクエスト、Cookie、エラー",
-                ),
+                Learn::Requests => ("Extractors and headers", "エクストラクタとヘッダー"),
                 Learn::Errors => ("Errors and logging", "エラーとログ"),
                 Learn::Uploads => ("Uploads", "アップロード"),
                 // Data and sign-in
@@ -1123,15 +1120,25 @@ impl Doc {
                 },
                 // Forms and requests
                 Learn::Forms => L {
+                    en: "A form on the page is a `Form<T>` field, which holds the values, the values they started from, and what the visitor has done to them. This page binds its controls, shows its messages, and submits it.",
+                    ja: "ページのフォームは `Form<T>` のフィールドで、値、開始時の値、訪問者がフォームでした操作を持ちます。このページではコントロールの束縛、メッセージの表示、送信を説明します。",
+                },
+                Learn::FormValidation => L {
                     en: "A form's rules are written once in Rust. The browser checks them as the visitor types, and the handler checks the same rules before it trusts the values.",
                     ja: "フォームのルールは Rust で 1 回だけ書きます。ブラウザは入力に合わせてそのルールを検査し、ハンドラは値を使う前に同じルールで検査します。",
                 },
-                Learn::FormValidation => Doc::Learn(Learn::Forms).leads(),
                 Learn::Requests => L {
-                    en: "A handler reads the request through an axum extractor, sets cookies by returning headers beside its answer, and fails with `?`.",
-                    ja: "ハンドラは axum の extractor でリクエストを読み、応答と一緒にヘッダーを返して Cookie を設定し、`?` で失敗を返します。",
+                    en: "A handler reads the request through an axum extractor and sets cookies by returning headers beside its answer. The router refuses some requests before any handler runs.",
+                    ja: "ハンドラは axum のエクストラクタでリクエストを読み、応答と一緒にヘッダーを返して Cookie を設定します。ハンドラが動く前にルーターが拒否するリクエストもあります。",
                 },
-                Learn::Errors | Learn::Uploads => Doc::Learn(Learn::Requests).leads(),
+                Learn::Errors => L {
+                    en: "A handler fails by returning an error that has a response, and the page shows that response's status and text. What the visitor should not see goes to the server's log through `tracing`.",
+                    ja: "ハンドラは応答を持つエラーを返して失敗し、ページはその応答のステータスと文言を表示します。訪問者に見せないことは、`tracing` でサーバーのログに書きます。",
+                },
+                Learn::Uploads => L {
+                    en: "An upload is an action that also receives the files picked in a file input. Its handler reads them into memory, or one chunk at a time for large files.",
+                    ja: "アップロードは、ファイル入力で選んだファイルも受け取るアクションです。ハンドラはファイルをメモリに読み込むか、大きなファイルなら少しずつ読みます。",
+                },
                 // Data and sign-in
                 Learn::Database => L {
                     en: "A handler keeps data shared across requests in a database that its own Rust code connects to, so the data outlives the process and every instance of the server reads the same values.",

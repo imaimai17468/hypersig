@@ -58,13 +58,13 @@ snippets! {
     ListPatches => "list_patches.rs";
     TestingListPatches => "testing_list_patches.rs";
     TestingSimulation => "testing_simulation.rs";
-    Forms => "forms.rs";
+    Forms => "requests/form_page.rs";
     Latest => "latest.rs";
     Parts => "page/parts.rs";
-    Extractors => "extractors.rs";
-    HandlerErrors => "handler_errors.rs";
-    Logging => "logging.rs";
-    Uploads => "uploads.rs";
+    Extractors => "requests/extractors.rs";
+    HandlerErrors => "requests/handler_errors.rs";
+    Logging => "requests/logging.rs";
+    Uploads => "requests/uploads.rs";
     Sessions => "sessions.rs";
     TestingSessions => "testing_sessions.rs";
     Database => "database.rs", "no_run";
@@ -239,6 +239,16 @@ snippets! {
     BasePath => "routing/base_path.rs";
     WrongBase => "routing/wrong_base.rs", "compile_fail,E0080";
     // The samples added for the Learn group Forms and requests.
+    FormWrongField => "requests/form_wrong_field.rs", "compile_fail,E0308";
+    FormComponent => "requests/form_component.rs";
+    FormRules => "requests/form_rules.rs";
+    FormRuleType => "requests/form_rule_type.rs", "compile_fail,E0277";
+    FormHandler => "requests/form_handler.rs";
+    Headers => "requests/headers.rs";
+    ExtractorOrder => "requests/extractor_order.rs", "compile_fail,E0277";
+    ErrorNotResponse => "requests/error_not_response.rs", "compile_fail,E0277";
+    UploadWrongPage => "requests/upload_wrong_page.rs", "compile_fail,E0308";
+    UploadStream => "requests/upload_stream.rs";
     // The samples added for the Learn group Data and sign-in.
     // The samples added for the Learn group Browser features.
     // The samples added for the Learn group Quality and operations.

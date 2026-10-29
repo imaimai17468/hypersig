@@ -3,7 +3,6 @@
 mod api;
 mod database;
 mod deploying;
-mod forms;
 mod javascript;
 mod page;
 mod requests;
@@ -65,8 +64,11 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::ErrorPages => routing::error_pages::page(site),
         Learn::BasePath => routing::base_path::page(site),
         // Forms and requests
-        Learn::Forms | Learn::FormValidation => forms::forms(site),
-        Learn::Requests | Learn::Errors | Learn::Uploads => requests::requests(site),
+        Learn::Forms => requests::forms::page(site),
+        Learn::FormValidation => requests::validation::page(site),
+        Learn::Requests => requests::extractors::page(site),
+        Learn::Errors => requests::errors::page(site),
+        Learn::Uploads => requests::uploads::page(site),
         // Data and sign-in
         Learn::Database => database::database(site),
         Learn::Api => api::api(site),
