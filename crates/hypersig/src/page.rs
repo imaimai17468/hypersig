@@ -1075,7 +1075,8 @@ impl<S: Signals> Page<S> {
     /// computed signal reads itself or one declared after it, or if the page
     /// reads a computed field of a nested struct that no call names, or if an
     /// expression or statement reads a list item outside every list that
-    /// renders it, or if two elements animate with
+    /// renders it, or if two elements, or an element and a
+    /// [`Page::global`] rule, animate with
     /// [`Keyframes`](crate::style::Keyframes) of one name and other steps.
     /// In a debug build it also panics if [`Page::lang`] names
     /// the language of an `IntlLocale` and the page formats only with others.
@@ -1315,11 +1316,16 @@ impl<S: Signals> Page<S> {
     /// Writes the global rules, the theme, the atomic classes of the body,
     /// and the page's stylesheets into `<head>`.
     fn write_styles(&self, out: &mut String, base: Base) {
+        // One sheet takes the keyframes of the global rules and of the body,
+        // so a name the two use with different steps panics here.
+        let mut sheet = Sheet::new();
         if !self.global.is_empty() {
             out.push_str("<style data-hs-global");
             self.write_nonce(out);
             out.push('>');
-            out.push_str(&css_under(&self.global.to_css(), base));
+            let mut global = String::new();
+            self.global.write_css(&mut global, &mut sheet);
+            out.push_str(&css_under(&global, base));
             out.push_str("</style>");
         }
         if !self.theme.is_empty() {
@@ -1329,7 +1335,6 @@ impl<S: Signals> Page<S> {
             out.push_str(&css_under(&self.theme.to_css(), base));
             out.push_str("</style>");
         }
-        let mut sheet = Sheet::new();
         for (style, _, _) in &self.css_when {
             sheet.add_toggled(style);
         }
@@ -1430,8 +1435,8 @@ mod tests {
 
     use crate::html::{Stylesheet, input, p, pre, span, textarea};
     use crate::route::Base;
-    use crate::style::value::Color;
-    use crate::style::{Global, Property, Style, Theme, Token};
+    use crate::style::value::{Color, Opacity};
+    use crate::style::{Element, Global, Keyframes, Property, Style, Theme, Token};
     use crate::{Asset, Expr, NodeRef, Page, Signals};
 
     #[derive(Signals, Serialize, Deserialize, Default)]
@@ -1537,6 +1542,30 @@ mod tests {
             html.matches(r#" nonce="n0nce">"#).count() - 1
         );
         assert_eq!(html.matches("<style").count(), 4);
+    }
+
+    fn fade(to: f64) -> Keyframes {
+        Keyframes::new("fade").at(100, Style::new().opacity(Opacity::Number(to)))
+    }
+
+    #[test]
+    fn a_global_rule_and_the_body_share_one_keyframes_rule() {
+        let html = Page::new("Search", Search::default())
+            .global(Global::new().rule(Element::Main, Style::new().keyframes(&fade(0.0))))
+            .child(p().css(Style::new().keyframes(&fade(0.0))))
+            .render();
+        assert!(html.contains("main{animation-name:fade}"));
+        assert_eq!(html.matches("@keyframes fade{").count(), 1);
+        assert!(html.contains(r#"<style data-hs-css="2 fade">"#));
+    }
+
+    #[test]
+    #[should_panic(expected = "two Keyframes named \"fade\" have different steps")]
+    fn a_global_rule_and_the_body_with_one_name_and_other_steps_panic() {
+        let _ = Page::new("Search", Search::default())
+            .global(Global::new().rule(Element::Main, Style::new().keyframes(&fade(0.0))))
+            .child(p().css(Style::new().keyframes(&fade(0.5))))
+            .render();
     }
 
     #[test]
