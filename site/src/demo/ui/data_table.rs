@@ -1,129 +1,103 @@
-//! A data table, for the data table page.
+//! A data table of text, number, formatted, and custom columns, for the
+//! data table page.
 
+use hypersig::style::value::rem;
 use hypersig::{NumberFormat, Page, Signals};
-use hypersig_ui::{Column, DataTable, TableState, TableText};
+use hypersig_ui::{BadgeVariant, Column, DataTable, TableState, badge};
 use serde::{Deserialize, Serialize};
 
 use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Payment {
-    id: i32,
+pub struct Invoice {
+    number: i32,
     email: String,
     amount: f64,
+    status: String,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Ledger {
-    payments: Vec<Payment>,
-    chosen: Vec<i32>,
+pub struct Billing {
+    invoices: Vec<Invoice>,
     table: TableState,
 }
 
-pub fn page(site: Site) -> Page<Ledger> {
-    let payments = [
-        ("ken99@example.com", 316.0),
-        ("abe45@example.com", 242.0),
-        ("monserrat44@example.com", 837.0),
-        ("silas22@example.com", 874.0),
-        ("carmella@example.com", 721.0),
-        ("jason78@example.com", 450.0),
-        ("sarah23@example.com", 120.5),
+const DOLLARS: NumberFormat = NumberFormat::new().digits(2).prefix("$");
+
+pub fn page(site: Site) -> Page<Billing> {
+    let paid = site.t(L {
+        en: "Paid",
+        ja: "支払い済み",
+    });
+    let pending = site.t(L {
+        en: "Pending",
+        ja: "未払い",
+    });
+    let invoices = [
+        ("ken99@example.com", 316.0, paid),
+        ("abe45@example.com", 242.0, pending),
+        ("monserrat44@example.com", 837.0, paid),
+        ("silas22@example.com", 874.0, paid),
+        ("carmella@example.com", 721.0, pending),
+        ("jason78@example.com", 1450.0, paid),
+        ("sarah23@example.com", 120.5, paid),
     ]
     .into_iter()
-    .zip(1..)
-    .map(|((email, amount), id)| Payment {
-        id,
+    .zip(1001..)
+    .map(|((email, amount, status), number)| Invoice {
+        number,
         email: email.to_owned(),
         amount,
+        status: status.to_owned(),
     })
     .collect();
     let table = DataTable::new(
         site.t(L {
-            en: "Payments",
-            ja: "支払い",
+            en: "Invoices",
+            ja: "請求書",
         }),
-        Ledger::table(),
-        Ledger::payments(),
-        |payment| payment.at(Payment::id()),
+        Billing::table(),
+        Billing::invoices(),
+        |invoice| invoice.at(Invoice::number()),
     )
-    .selectable(Ledger::chosen(), |payment| payment.at(Payment::id()))
-    .filter(
+    .column(Column::number(
         site.t(L {
-            en: "Filter emails",
-            ja: "メールアドレスで絞り込む",
+            en: "Number",
+            ja: "番号",
         }),
-        |payment| payment.at(Payment::email()),
-    )
-    .paginate(5)
-    .text(TableText {
-        empty: site
-            .t(L {
-                en: "No results.",
-                ja: "該当する行はありません。",
-            })
-            .to_owned(),
-        select_row: site
-            .t(L {
-                en: "Select row",
-                ja: "行を選ぶ",
-            })
-            .to_owned(),
-        select_all: site
-            .t(L {
-                en: "Select all rows",
-                ja: "すべての行を選ぶ",
-            })
-            .to_owned(),
-        previous_page: site
-            .t(L {
-                en: "Previous page",
-                ja: "前のページ",
-            })
-            .to_owned(),
-        next_page: site
-            .t(L {
-                en: "Next page",
-                ja: "次のページ",
-            })
-            .to_owned(),
-        expand_row: site
-            .t(L {
-                en: "Show row details",
-                ja: "行の詳細を表示",
-            })
-            .to_owned(),
-    })
-    .sortable_column(
-        Column::text(
-            site.t(L {
-                en: "Email",
-                ja: "メールアドレス",
-            }),
-            Payment::email(),
-        ),
-        |payment| payment.at(Payment::email()),
-    )
-    .sortable_column(
-        Column::formatted(
-            site.t(L {
-                en: "Amount",
-                ja: "金額",
-            }),
-            Payment::amount(),
-            NumberFormat::new().digits(2).prefix("$"),
-        ),
-        |payment| payment.at(Payment::amount()),
-    );
+        Invoice::number(),
+    ))
+    .column(Column::text(
+        site.t(L {
+            en: "Email",
+            ja: "メールアドレス",
+        }),
+        Invoice::email(),
+    ))
+    .column(Column::custom(
+        site.t(L {
+            en: "Status",
+            ja: "状態",
+        }),
+        |invoice| badge(BadgeVariant::Outline).bind_text(invoice.at(Invoice::status())),
+    ))
+    .column(Column::formatted(
+        site.t(L {
+            en: "Amount",
+            ja: "金額",
+        }),
+        Invoice::amount(),
+        DOLLARS,
+    ))
+    .max_height(rem(14));
     Page::new(
         site.t(L {
-            en: "Payments",
-            ja: "支払い",
+            en: "Invoices",
+            ja: "請求書",
         }),
-        Ledger {
-            payments,
-            chosen: Vec::new(),
+        Billing {
+            invoices,
             table: TableState::default(),
         },
     )

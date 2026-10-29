@@ -1820,7 +1820,73 @@ impl Doc {
                     en: "A key or a shortcut the visitor presses, drawn as a small cap in running text.",
                     ja: "訪問者が押すキーやショートカットを、文中に小さなキーの形で表示します。",
                 },
-                _ => components::component_lead(page),
+                // Layout
+                Component::Tabs => L {
+                    en: "A tab list that keeps the selected tab in a signal, with one panel per tab.",
+                    ja: "選ばれたタブをシグナルに持つタブの一覧です。タブごとに 1 つのパネルがあります。",
+                },
+                Component::Accordion => L {
+                    en: "A stack of sections that open and close, one at a time or each on its own.",
+                    ja: "開閉するセクションを縦に並べたものです。一度に 1 つだけ開く形と、それぞれが独立に開く形があります。",
+                },
+                Component::Collapsible => L {
+                    en: "A button that shows and hides one region, bound to a `bool` signal.",
+                    ja: "1 つの領域を表示したり隠したりするボタンです。`bool` のシグナルに束縛します。",
+                },
+                Component::Card => L {
+                    en: "A bordered box with a header, content, and a footer, whose title is a heading of the level you choose.",
+                    ja: "ヘッダー、中身、フッターを持つ枠線付きのボックスです。タイトルは、選んだレベルの見出しになります。",
+                },
+                Component::Separator => L {
+                    en: "A one-pixel line between groups of content, across or along.",
+                    ja: "内容のまとまりの間に引く、横向きか縦向きの 1 ピクセルの線です。",
+                },
+                // Navigation
+                Component::Navigation => L {
+                    en: "A list of links to the sections of an application, which marks the one the visitor is in.",
+                    ja: "アプリケーションのセクションへのリンクの一覧です。訪問者がいるセクションに印を付けます。",
+                },
+                Component::Breadcrumb => L {
+                    en: "A trail of links to the pages above the current one, ending at the current page.",
+                    ja: "今のページより上のページへのリンクを並べ、今のページで終わるパンくずリストです。",
+                },
+                Component::Pagination => L {
+                    en: "Links to the pages of a long list: the page before and after, the first and the last, and the pages next to the current one.",
+                    ja: "長い一覧のページへのリンクです。前後のページ、最初と最後のページ、今のページの隣のページを並べます。",
+                },
+                // Data
+                Component::DataTable => L {
+                    en: "A table of the rows of a list signal, under columns built from the fields of the row type.",
+                    ja: "リストのシグナルの行を、行の型のフィールドから作った列の下に並べる表です。",
+                },
+                Component::TableSorting => L {
+                    en: "Column headers that sort the rows of a table in the browser, ascending and then descending.",
+                    ja: "表の行をブラウザで並べ替える列の見出しです。押すたびに昇順と降順が切り替わります。",
+                },
+                Component::TableFiltering => L {
+                    en: "A field that filters the rows of a table, pages of a fixed number of rows, and columns shown only while a condition holds.",
+                    ja: "表の行を絞り込む入力欄、決まった行数ごとのページ、条件が成り立つ間だけ表示する列です。",
+                },
+                Component::TableSelection => L {
+                    en: "Checkboxes that keep the keys of the selected rows in a list signal, and buttons that open a row's details under it.",
+                    ja: "選んだ行のキーをリストのシグナルに持つチェックボックスと、行の下に詳細を開くボタンです。",
+                },
+                Component::ServerTable => L {
+                    en: "A table whose filter, sort, and page go to an action, which answers with one page of rows.",
+                    ja: "絞り込み、並べ替え、ページをアクションに送り、アクションが 1 ページ分の行を返す表です。",
+                },
+                Component::Chart => L {
+                    en: "Line and area charts of the rows of a list signal, on a scale that fits the values.",
+                    ja: "リストのシグナルの行を描く折れ線グラフと面グラフです。目盛りは値に合わせて決まります。",
+                },
+                Component::BarChart => L {
+                    en: "Bars, stacked bars, and horizontal bars of the rows of a list signal.",
+                    ja: "リストのシグナルの行を描く棒グラフ、積み上げ棒グラフ、横棒グラフです。",
+                },
+                Component::DonutChart => L {
+                    en: "A ring of arcs, each as long as one row's share of the total.",
+                    ja: "各行が合計に占める割合の長さの弧を並べた輪です。",
+                },
             },
             Self::Reference(Reference::Overview) => L {
                 en: "The items of the `hypersig` crate, grouped by what they build. Each name links to its full documentation.",
