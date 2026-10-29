@@ -1509,9 +1509,11 @@ impl Property {
     #[expect(clippy::too_many_lines, reason = "one arm per longhand")]
     pub(crate) fn rank(self) -> u32 {
         match self {
+            Self::All
+            | Self::Direction
+            | Self::UnicodeBidi => 0,
             Self::AccentColor
             | Self::AlignmentBaseline
-            | Self::All
             | Self::AnchorName
             | Self::Animation
             | Self::AnimationComposition
@@ -1587,7 +1589,6 @@ impl Property {
             | Self::Cx
             | Self::Cy
             | Self::D
-            | Self::Direction
             | Self::Display
             | Self::DominantBaseline
             | Self::DynamicRangeLimit
@@ -1781,7 +1782,6 @@ impl Property {
             | Self::Transition
             | Self::Translate
             | Self::TriggerScope
-            | Self::UnicodeBidi
             | Self::UserSelect
             | Self::VectorEffect
             | Self::VerticalAlign
@@ -1802,7 +1802,7 @@ impl Property {
             | Self::X
             | Self::Y
             | Self::ZIndex
-            | Self::Zoom => 0,
+            | Self::Zoom => 1,
             Self::AlignContent
             | Self::AlignItems
             | Self::AlignSelf
@@ -1974,8 +1974,8 @@ impl Property {
             | Self::TransitionDelay
             | Self::TransitionDuration
             | Self::TransitionProperty
-            | Self::TransitionTimingFunction => 1,
-            _ => 2,
+            | Self::TransitionTimingFunction => 2,
+            _ => 3,
         }
     }
 }

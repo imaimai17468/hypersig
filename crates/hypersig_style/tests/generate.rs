@@ -623,6 +623,9 @@ fn is_generated(name: &str, value: &Value) -> bool {
     (is_standard(value) || EXPERIMENTAL.contains(&name)) && !name.starts_with('-')
 }
 
+/// The properties `all` leaves alone, from CSS Cascade 5's definition of it.
+const NOT_RESET_BY_ALL: &[&str] = &["all", "direction", "unicode-bidi"];
+
 /// Longest chain of shorthands above each property, so that a shorthand is
 /// written before the longhands it sets.
 fn ranks(properties: &BTreeMap<&str, &Value>) -> BTreeMap<String, u32> {
@@ -632,6 +635,13 @@ fn ranks(properties: &BTreeMap<&str, &Value>) -> BTreeMap<String, u32> {
             for longhand in longhands.iter().filter_map(Value::as_str) {
                 parents.entry(longhand).or_default().push(name);
             }
+        }
+    }
+    // MDN's `computed` for `all` is a note rather than a list, so `all`
+    // would rank with the properties it resets and lose to them by name.
+    for &name in properties.keys() {
+        if !NOT_RESET_BY_ALL.contains(&name) {
+            parents.entry(name).or_default().push("all");
         }
     }
     let ranks: BTreeMap<String, u32> = properties

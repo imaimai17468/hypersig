@@ -14,7 +14,7 @@ pub fn page(site: Site, head: Part) -> Part {
         keywords(site),
         setting(site),
         errors(site),
-        unchecked(site),
+        reset(site),
         example(site),
     ])
 }
@@ -146,20 +146,20 @@ fn errors(site: Site) -> Part {
     ])
 }
 
-fn unchecked(site: Site) -> Part {
+fn reset(site: Site) -> Part {
     parts([
         heading(
             site,
             L {
-                en: "What is not checked",
-                ja: "検査されないこと",
+                en: "Resetting with `all`",
+                ja: "`all` によるリセット",
             },
         ),
         para(
             site,
             L {
-                en: "`all` is the shorthand of every property, and `keyword(Property::All, CssWideKeyword::Unset)` resets them all. Within one style, `all` is not always placed before the properties it resets, and which of the two wins does not follow the order of the calls. For most properties, such as `color`, `cursor`, or `font`, the other declaration wins, as in the example below. `accent-color` set in the same style as `all: unset` has no effect. Put such a reset in a [`Global`](style/global/) rule, which every `El::css` declaration overrides.",
-                ja: "`all` はすべてのプロパティのショートハンドで、`keyword(Property::All, CssWideKeyword::Unset)` はそのすべてを戻します。1 つのスタイルの中で、`all` が戻す対象のプロパティより前に置かれるとは限らず、どちらが勝つかは呼び出しの順序に従いません。下の例のように、`color`、`cursor`、`font` などほとんどのプロパティではほかの宣言が勝ちます。一方、`all: unset` と同じスタイルで設定した `accent-color` は効きません。このようなリセットは [`Global`](style/global/) のルールに書きます。`Global` のルールは、`El::css` のどの宣言にも上書きされます。",
+                en: "`all` is the shorthand of every property except `direction` and `unicode-bidi`, and `keyword(Property::All, CssWideKeyword::Unset)` resets them. The stylesheet writes `all` before the properties it resets, as it writes `padding` before `padding-top`, so in one style a declaration such as `color` or `accent-color` wins over `all: unset` whatever the order of the calls. The example below relies on that.",
+                ja: "`all` は `direction` と `unicode-bidi` を除くすべてのプロパティのショートハンドで、`keyword(Property::All, CssWideKeyword::Unset)` はそれらを戻します。スタイルシートは `padding` を `padding-top` より前に書くのと同じように、`all` を戻す対象のプロパティより前に書きます。そのため 1 つのスタイルの中では、呼び出しの順序にかかわらず、`color` や `accent-color` などの宣言が `all: unset` に勝ちます。下の例はこの順序を前提にしています。",
             },
         ),
     ])
