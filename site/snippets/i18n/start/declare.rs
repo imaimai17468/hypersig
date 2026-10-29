@@ -27,13 +27,4 @@ impl Locale for Lang {
     }
 }
 
-let greeting = ByLang { en: "Hello", ja: "こんにちは" };
-assert_eq!(Lang::Ja.pick(greeting), "こんにちは");
-assert_eq!(Lang::Ja.tag().as_str(), "ja");
-
-// A message that takes a value is a function per language.
-let items: ByLang<fn(u32) -> String> = ByLang {
-    en: |n| format!("{n} items"),
-    ja: |n| format!("{n} 件"),
-};
-assert_eq!(Lang::En.pick(items)(3), "3 items");
+assert_eq!(Lang::Ja.pick(ByLang { en: "Hello", ja: "こんにちは" }), "こんにちは");
