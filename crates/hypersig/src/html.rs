@@ -2140,8 +2140,7 @@ impl<S> El<S> {
     /// Names the elements whose text describes this one, through `aria-describedby`.
     #[must_use]
     pub fn aria_describedby(mut self, descriptions: &[&Id]) -> Self {
-        self.attrs
-            .push(("aria-describedby", id::list(descriptions)));
+        self.set_attr("aria-describedby", id::list(descriptions));
         self
     }
 
@@ -2187,8 +2186,7 @@ impl<S> El<S> {
     /// For a value that follows a signal, [`El::active_descendant`] binds it.
     #[must_use]
     pub fn aria_activedescendant(mut self, active: &Id) -> Self {
-        self.attrs
-            .push(("aria-activedescendant", active.as_str().to_owned()));
+        self.set_attr("aria-activedescendant", active.as_str().to_owned());
         self
     }
 
@@ -2202,8 +2200,7 @@ impl<S> El<S> {
     /// Names the popover this button shows and hides, through `popovertarget`.
     #[must_use]
     pub fn popover_target(mut self, popover: &Id) -> Self {
-        self.attrs
-            .push(("popovertarget", popover.as_str().to_owned()));
+        self.set_attr("popovertarget", popover.as_str().to_owned());
         self
     }
 
@@ -3545,6 +3542,13 @@ mod tests {
     #[should_panic(expected = "the attribute `title` is set twice on one `<div>`")]
     fn an_attribute_set_twice_panics() {
         let _ = div::<Page>().attr(attr::TITLE, "a").attr(attr::TITLE, "b");
+    }
+
+    #[test]
+    #[should_panic(expected = "the attribute `popovertarget` is set twice on one `<button>`")]
+    fn an_id_reference_set_twice_panics() {
+        let menu = super::Id::new("menu");
+        let _ = button::<Page>().popover_target(&menu).popover_target(&menu);
     }
 
     #[test]
