@@ -413,7 +413,9 @@ async fn content_security_policy(mut request: Request, next: Next) -> Response {
     );
     request.extensions_mut().insert(Nonce(nonce));
     let mut response = next.run(request).await;
-    response.headers_mut().insert(
+    // `append` keeps the page's own `frame-ancestors` policy, which `insert`
+    // would replace. A browser enforces each policy header it receives.
+    response.headers_mut().append(
         header::CONTENT_SECURITY_POLICY,
         HeaderValue::from_str(&policy).expect("the policy is ASCII"),
     );
