@@ -113,8 +113,8 @@ demos! {
     Accent => accent, "style/accent.rs", "15rem";
     Layout => layout, "style/layout.rs", "14rem";
     Spinner => spinner, "style/spinner.rs", "6rem";
-    Breadcrumb => breadcrumb, "ui/breadcrumb.rs", "4.5rem";
-    Pagination => pagination, "ui/pagination.rs", "5.5rem";
+    Breadcrumb => breadcrumb, "ui/breadcrumb.rs", "8rem";
+    Pagination => pagination, "ui/pagination.rs", "9rem";
 }
 
 /// The script of `<star-rating>`, which the rating demo loads and the page

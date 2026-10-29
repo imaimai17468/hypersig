@@ -1,6 +1,9 @@
 //! Pagination over the component pages of this site, for the pagination
 //! page.
 
+use hypersig::html::{div, h2};
+use hypersig::style::pattern::stack;
+use hypersig::style::value::rem;
 use hypersig::{Page, Rest, Signals};
 use hypersig_ui::{PaginationText, pagination};
 use serde::{Deserialize, Serialize};
@@ -10,7 +13,10 @@ use crate::lang::L;
 use crate::{PAGE, Site};
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Docs {}
+pub struct Docs {
+    /// The title of the page the demo stands on.
+    title: String,
+}
 
 /// The component pages the pagination steps through, this page fifth.
 const PAGES: [Component; 9] = [
@@ -63,7 +69,14 @@ pub fn page(site: Site) -> Page<Docs> {
             en: "Docs",
             ja: "ドキュメント",
         }),
-        Docs {},
+        Docs {
+            title: Doc::Components(Component::Pagination).title(site).into(),
+        },
     )
-    .child(pager)
+    .child(
+        div()
+            .css(stack(rem(1)))
+            .child(h2().bind_text(Docs::title()))
+            .child(pager),
+    )
 }

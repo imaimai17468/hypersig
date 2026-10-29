@@ -1,7 +1,8 @@
 //! A list of sections over pages of this site, for the navigation page.
 
 use hypersig::style::Style;
-use hypersig::style::value::rem;
+use hypersig::html::{div, h2};
+use hypersig::style::value::{Display, raw, rem};
 use hypersig::{Page, Rest, Signals};
 use hypersig_ui::NavList;
 use serde::{Deserialize, Serialize};
@@ -11,7 +12,10 @@ use crate::lang::L;
 use crate::{PAGE, Site};
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Docs {}
+pub struct Docs {
+    /// The title of the page the demo stands on.
+    title: String,
+}
 
 /// The path of `doc` inside this site, as `PAGE` takes it.
 fn at(site: Site, doc: Doc) -> Rest {
@@ -65,11 +69,19 @@ pub fn page(site: Site) -> Page<Docs> {
             en: "Docs",
             ja: "ドキュメント",
         }),
-        Docs {},
+        Docs {
+            title: Doc::Components(Component::Navigation).title(site).into(),
+        },
     )
     .child(
-        sections
-            .render()
-            .css(Style::new().max_width(rem(12))),
+        div()
+            .css(
+                Style::new()
+                    .display(Display::Grid)
+                    .grid_template_columns(raw("10rem 1fr"))
+                    .gap(rem(1.5)),
+            )
+            .child(sections)
+            .child(h2().bind_text(Docs::title())),
     )
 }
