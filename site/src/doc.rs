@@ -1420,17 +1420,35 @@ impl Doc {
                     en: "`hypersig::style` is typed atomic CSS. A misspelled property name or keyword, or a value of the wrong type, is a compile error. Each declaration becomes one class.",
                     ja: "`hypersig::style` は型の付いた atomic CSS です。プロパティ名やキーワードの綴りを間違えたり、型の違う値を渡したりするとコンパイルエラーになります。宣言は 1 つごとに 1 つのクラスになります。",
                 },
-                StylePage::Applying => Doc::Style(StylePage::Overview).leads(),
+                StylePage::Applying => L {
+                    en: "A `Style` is a value built one declaration at a time. `El::css` gives an element its classes, and a later declaration for the same property replaces an earlier one.",
+                    ja: "`Style` は宣言を 1 つずつ加えて組み立てる値です。`El::css` で要素にそのクラスを付けます。同じプロパティの宣言は後のものが前のものを置き換えます。",
+                },
                 // Values
                 StylePage::Values => L {
                     en: "Each property method takes its own value type, which has the property's keywords and accepts values in the units the property allows.",
                     ja: "プロパティのメソッドはそれぞれ専用の値の型を受け取ります。その型はプロパティのキーワードを持ち、プロパティで使える単位の値を受け付けます。",
                 },
-                StylePage::Lengths
-                | StylePage::Colors
-                | StylePage::AnglesAndTimes
-                | StylePage::UrlsAndStrings
-                | StylePage::Keywords => Doc::Style(StylePage::Values).leads(),
+                StylePage::Lengths => L {
+                    en: "`px`, `rem`, `pct`, and the other unit functions build a `Length` or a `Percentage`. A property's value type decides which of the two it accepts.",
+                    ja: "`px`、`rem`、`pct` などの単位の関数は `Length` か `Percentage` を作ります。どちらを受け付けるかは、プロパティの値の型で決まります。",
+                },
+                StylePage::Colors => L {
+                    en: "`Color` holds a named color, a hex or RGB value, or a mix of two colors. A color written as a string does not compile.",
+                    ja: "`Color` は名前付きの色、16 進数や RGB の値、2 つの色を混ぜた色を表します。文字列で書いた色はコンパイルできません。",
+                },
+                StylePage::AnglesAndTimes => L {
+                    en: "`deg` and `turn` build an `Angle`, and `ms` and `secs` build a `Time`. A bare number, or a time where an angle belongs, does not compile.",
+                    ja: "`deg` と `turn` は `Angle` を、`ms` と `secs` は `Time` を作ります。単位のない数値や、角度の場所に渡した時間はコンパイルできません。",
+                },
+                StylePage::UrlsAndStrings => L {
+                    en: "`url` names a file the page loads and refuses a script URL, and `quoted` writes text as an escaped CSS string.",
+                    ja: "`url` はページが読み込むファイルを指し、スクリプトの URL は受け付けません。`quoted` はテキストをエスケープした CSS の文字列として書きます。",
+                },
+                StylePage::Keywords => L {
+                    en: "`inherit`, `initial`, `unset`, `revert`, and `revert-layer` apply to every property, so `Style::keyword` takes the property as a `Property` value.",
+                    ja: "`inherit`、`initial`、`unset`、`revert`、`revert-layer` はどのプロパティにも使えるので、`Style::keyword` はプロパティを `Property` の値として受け取ります。",
+                },
                 // Conditions
                 StylePage::PseudoClasses
                 | StylePage::PseudoElements

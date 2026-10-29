@@ -84,9 +84,9 @@ snippets! {
     UiTheme => "ui_theme.rs";
     UiScheme => "ui_scheme.rs";
     ToastServer => "toast_server.rs";
-    StyleBasics => "style_basics.rs";
-    StyleValues => "style_values.rs";
-    WrongValue => "wrong_value.rs", "compile_fail,E0277";
+    StyleBasics => "style/start/basics.rs";
+    StyleValues => "style/values/properties.rs";
+    WrongValue => "style/values/wrong_value.rs", "compile_fail,E0277";
     Conditions => "conditions.rs";
     GroupPeer => "group_peer.rs";
     Tokens => "tokens.rs";
@@ -296,6 +296,39 @@ snippets! {
     DuplicateId => "quality/duplicate_id.rs", "should_panic";
     CallStatusType => "quality/call_status_type.rs", "compile_fail,E0308";
     // The samples of the Style pages under Get started and Values.
+    StyleOneRule => "style/start/one_rule.rs";
+    StyleMerge => "style/start/merge.rs";
+    StyleMoved => "style/start/moved.rs", "compile_fail,E0382";
+    StyleShorthand => "style/start/shorthand.rs";
+    StylePageStyle => "style/start/page_style.rs";
+    StyleButtons => "style/start/buttons.rs";
+    StyleMethodTypo => "style/values/method_typo.rs", "compile_fail,E0599";
+    StyleNumbers => "style/values/numbers.rs";
+    StyleNumberNan => "style/values/number_nan.rs", "should_panic";
+    StyleShorthands => "style/values/shorthands.rs";
+    StyleNoRaw => "style/values/no_raw.rs", "compile_fail,E0277";
+    StyleNotice => "style/values/notice.rs";
+    StyleLengths => "style/values/lengths.rs";
+    StyleLengthBare => "style/values/length_bare.rs", "compile_fail,E0277";
+    StyleBorderPct => "style/values/border_pct.rs", "compile_fail,E0277";
+    StyleLengthF32 => "style/values/length_f32.rs";
+    StyleArticle => "style/values/article.rs";
+    StyleColors => "style/values/colors.rs";
+    StyleColorString => "style/values/color_string.rs", "compile_fail,E0277";
+    StyleColorLimits => "style/values/color_limits.rs";
+    StyleBadge => "style/values/badge.rs";
+    StyleAnglesTimes => "style/values/angles_times.rs";
+    StyleTimeBare => "style/values/time_bare.rs", "compile_fail,E0277";
+    StyleAngleTimeSwap => "style/values/angle_time_swap.rs", "compile_fail,E0277";
+    StyleChevron => "style/values/chevron.rs";
+    StyleUrls => "style/values/urls.rs";
+    StyleUrlScript => "style/values/url_script.rs", "compile_fail,E0080";
+    StyleUrlString => "style/values/url_string.rs", "compile_fail,E0308";
+    StyleUrlBase => "style/values/url_base.rs";
+    StyleLinksList => "style/values/links_list.rs";
+    StyleKeywords => "style/values/keywords.rs";
+    StyleKeywordMethod => "style/values/keyword_method.rs", "compile_fail,E0277";
+    StyleTextButton => "style/values/text_button.rs";
     // The samples of the Style pages under Conditions, Tokens and themes, and Global styles.
     // The samples of the Style pages under Layout, Animation, and Opting out of type checks.
 }

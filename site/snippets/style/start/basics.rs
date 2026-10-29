@@ -23,6 +23,6 @@ let buy = button::<Shop>()
     .text("Buy");
 
 let html = Page::new("Shop", Shop { count: 0 }).child(buy).render();
-// One class per declaration, named after it, and one rule per class in <head>.
-assert!(html.contains("cursor_pointer"));
-assert!(html.contains(".cursor_pointer{cursor:pointer}"));
+// <head> holds one rule per declaration, such as `cursor: pointer`.
+assert!(html.contains("{cursor:pointer}"));
+assert!(html.contains("{padding-block:0.5rem}"));

@@ -31,8 +31,8 @@ fn atomic(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`Style`](api:hypersig/style/struct.Style.html) has one method per standard CSS property, generated from MDN's CSS data. `El::css(self, style: Style) -> Self` adds each declaration as one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. The page writes the rules its elements use into `<head>`, and a patch that contains new elements includes their rules.",
-                ja: "[`Style`](api:hypersig/style/struct.Style.html) には、標準の CSS プロパティごとに 1 つずつメソッドがあり、MDN の CSS データから生成しています。`El::css(self, style: Style) -> Self` は、Panda CSS や Tailwind CSS のアトミック CSS と同じく、宣言ごとにその宣言にちなんだ名前のクラスを 1 つ付けます。ページは要素が使うルールを `<head>` に書き、新しい要素を含む差分にはその要素のルールも含まれます。",
+                en: "[`Style`](api:hypersig/style/struct.Style.html) has one method per standard CSS property, generated from MDN's CSS data. `El::css(self, style: Style) -> Self` adds each declaration as one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. The page writes the rules its elements use into `<head>`, and a patch that contains new elements includes their rules. [Applying a style](style/applying/) covers how styles combine.",
+                ja: "[`Style`](api:hypersig/style/struct.Style.html) には、標準の CSS プロパティごとに 1 つずつメソッドがあり、MDN の CSS データから生成しています。`El::css(self, style: Style) -> Self` は、Panda CSS や Tailwind CSS のアトミック CSS と同じく、宣言ごとにその宣言にちなんだ名前のクラスを 1 つ付けます。ページは要素が使うルールを `<head>` に書き、新しい要素を含む差分にはその要素のルールも含まれます。スタイルの組み合わせ方は [スタイルを付ける](style/applying/) で説明します。",
             },
         ),
         show(Snippet::Styles),
@@ -75,8 +75,8 @@ fn typed(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Each property method takes the values that property accepts: a keyword of its own enum, or a value of a type in [`style::value`](api:hypersig/style/value/index.html), such as a length or a color. A misspelled keyword is an unknown variant:",
-                ja: "プロパティのメソッドはそれぞれ、そのプロパティが受け付ける値を受け取ります。プロパティ専用の列挙型のキーワードか、長さや色のような [`style::value`](api:hypersig/style/value/index.html) の型の値です。キーワードを書き間違えると、存在しないバリアントになります。",
+                en: "Each property method takes the values that property accepts: a keyword of its own enum, or a value of a type in [`style::value`](api:hypersig/style/value/index.html), such as a length or a color. [Properties](style/values/) lists the shapes these methods take. A misspelled keyword is an unknown variant:",
+                ja: "プロパティのメソッドはそれぞれ、そのプロパティが受け付ける値を受け取ります。プロパティ専用の列挙型のキーワードか、長さや色のような [`style::value`](api:hypersig/style/value/index.html) の型の値です。メソッドの形は [プロパティ](style/values/) にまとめてあります。キーワードを書き間違えると、存在しないバリアントになります。",
             },
         ),
         show(Snippet::StyleKeyword),
