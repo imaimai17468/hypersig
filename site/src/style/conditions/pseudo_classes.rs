@@ -121,11 +121,18 @@ pub fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "`PseudoClass` has one variant per standard pseudo-class without arguments, generated from MDN's CSS data, such as `Hover`, `Checked`, `PlaceholderShown`, `UserInvalid`, and `PopoverOpen`. A pseudo-class that does not exist is a compile error:",
-                ja: "`PseudoClass` には、引数を取らない標準の擬似クラスごとに 1 つのバリアントがあり、MDN の CSS データから生成しています。`Hover`、`Checked`、`PlaceholderShown`、`UserInvalid`、`PopoverOpen` などです。存在しない擬似クラスを書くとコンパイルエラーになります。",
+                en: "`PseudoClass` has one variant per standard pseudo-class without arguments that can match an element's class, generated from MDN's CSS data, such as `Hover`, `Checked`, `PlaceholderShown`, `UserInvalid`, and `PopoverOpen`. A pseudo-class that does not exist is a compile error:",
+                ja: "`PseudoClass` には、引数を取らない標準の擬似クラスのうち、要素のクラスに当てはまりうるものに 1 つずつバリアントがあり、MDN の CSS データから生成しています。`Hover`、`Checked`、`PlaceholderShown`、`UserInvalid`、`PopoverOpen` などです。存在しない擬似クラスを書くとコンパイルエラーになります。",
             },
         ),
         show(Snippet::PseudoClassTypo),
+        para(
+            site,
+            L {
+                en: "Six standard pseudo-classes without arguments have no variant, because a class on an element never matches them. `:root` and `:scope` match only `<html>`, and a [`Global`](style/global/) rule for `Selector::Root` styles that element instead. `:host` matches only from inside a shadow tree, and `:first`, `:left`, and `:right` select a page box in `@page`.",
+                ja: "引数を取らない標準の擬似クラスのうち 6 つは、要素のクラスに当てはまることがないので、バリアントがありません。`:root` と `:scope` が当てはまるのは `<html>` だけで、`<html>` には `Selector::Root` を対象にした [`Global`](style/global/) のルールでスタイルを付けます。`:host` はシャドウツリーの内側からしか当てはまらず、`:first`、`:left`、`:right` は `@page` のページボックスを選びます。",
+            },
+        ),
         heading(
             site,
             L {

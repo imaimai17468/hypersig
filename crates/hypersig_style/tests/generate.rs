@@ -72,12 +72,28 @@ const RUST_KEYWORDS: &[&str] = &[
     "typeof", "unsafe", "unsized", "use", "virtual", "where", "while", "yield",
 ];
 
-/// Pseudo-classes left out of `PseudoClass`: those that select a page box in
-/// `@page` (`:first`, `:left`, `:right`, `:blank`) or the document or shadow
-/// root (`:root`, `:scope`, `:host`), which a class on an element never matches.
-const SKIPPED_PSEUDO_CLASSES: &[&str] = &[
-    ":blank", ":first", ":host", ":left", ":right", ":root", ":scope",
+/// Pseudo-classes left out of `PseudoClass`, because a class on an element
+/// never matches them, each group with the reason the enum's rustdoc gives.
+/// `Page::render` writes `<html>` without a class, and the crate writes no
+/// `@scope` rule, so `:scope` means `:root` wherever a class rule sits.
+const SKIPPED_PSEUDO_CLASSES: &[(&[&str], &str)] = &[
+    (
+        &[":root", ":scope"],
+        "match only `<html>`; a [`Global`](crate::Global) rule for \
+         [`Selector::Root`](crate::Selector::Root) styles it instead",
+    ),
+    (&[":host"], "matches only from inside a shadow tree"),
+    (
+        &[":blank", ":first", ":left", ":right"],
+        "select a page box in `@page`",
+    ),
 ];
+
+fn is_skipped_pseudo_class(name: &str) -> bool {
+    SKIPPED_PSEUDO_CLASSES
+        .iter()
+        .any(|(names, _)| names.contains(&name))
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Kind {
@@ -860,10 +876,29 @@ fn generate() -> (String, String) {
         if let Some(el) = name.strip_prefix("::") {
             elements.push(el.to_owned());
         } else if let Some(class) = name.strip_prefix(':')
-            && !SKIPPED_PSEUDO_CLASSES.contains(&name.as_str())
+            && !is_skipped_pseudo_class(name)
         {
             classes.push(class.to_owned());
         }
+    }
+    let mut skipped_doc = String::from(
+        "///\n/// The standard ones a class on an element never matches are left out:\n///\n",
+    );
+    for (names, reason) in SKIPPED_PSEUDO_CLASSES {
+        let names: Vec<String> = names
+            .iter()
+            .filter(|name| selectors.get(**name).is_some_and(is_standard))
+            .map(|name| format!("`{name}`"))
+            .collect();
+        let names = match names.as_slice() {
+            [] => continue,
+            [one] => one.clone(),
+            [rest @ .., last] => {
+                let and = if rest.len() > 1 { ", and" } else { " and" };
+                format!("{}{and} {last}", rest.join(", "))
+            }
+        };
+        let _ = writeln!(skipped_doc, "/// - {names} {reason}.");
     }
     for (ty, prefix, names) in [
         ("PseudoClass", ":", &classes),
@@ -876,6 +911,7 @@ fn generate() -> (String, String) {
         };
         if prefix == ":" {
             let _ = writeln!(out, "/// A standard {what} without arguments.");
+            out.push_str(&skipped_doc);
         } else {
             let _ = writeln!(
                 out,
@@ -938,6 +974,32 @@ fn generated_code_matches_the_data() {
             on_disk == text,
             "{} is out of date; rerun with HYPERSIG_GENERATE=overwrite",
             path.display()
+        );
+    }
+}
+
+#[test]
+fn pseudo_class_names_every_standard_one_without_arguments() {
+    let (generated, _) = generate();
+    let start = generated
+        .find("/// A standard pseudo-class")
+        .expect("PseudoClass doc");
+    let end = start
+        + generated[start..]
+            .find("\n}\n")
+            .expect("end of PseudoClass");
+    let enum_text = &generated[start..end];
+    for (name, value) in &load("selectors.json") {
+        if !is_standard(value)
+            || !name.starts_with(':')
+            || name.starts_with("::")
+            || name.ends_with(')')
+        {
+            continue;
+        }
+        assert!(
+            enum_text.contains(&format!("`{name}`")),
+            "`PseudoClass` neither has `{name}` nor names it as left out"
         );
     }
 }
