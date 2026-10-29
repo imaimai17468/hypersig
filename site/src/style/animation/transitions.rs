@@ -8,7 +8,7 @@ use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, para, parts, table_of, title};
 
 pub fn page(site: Site) -> Part {
-    parts([
+    parts(vec![
         title(Doc::Style(StylePage::Transitions).title(site)),
         lead(site, Doc::Style(StylePage::Transitions).leads()),
         heading(
