@@ -15,7 +15,7 @@ let over = Player::over();
 
 let hit = lives
     .set(lives - 1)
-    .then(Stmt::when(lives.le(1), over.set(true)));
+    .then(Stmt::when(lives.le(0), over.set(true)));
 let bonus = Stmt::if_else(over, Stmt::none(), score.set(score + 100));
 
 let play = button::<Player>().on_click(bonus.then(hit)).text("Play");

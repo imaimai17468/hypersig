@@ -36,14 +36,16 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::Components => page::components::page(site),
         Learn::Styling => page::styling::page(site),
         // Browser state
-        Learn::Signals
-        | Learn::NestedSignals
-        | Learn::ComputedSignals
-        | Learn::PersistedSignals => state::signals(site),
-        Learn::Expressions | Learn::Statements | Learn::Events | Learn::BindingInputs => {
-            state::expressions(site)
-        }
-        Learn::Lists | Learn::ListItems => state::lists(site),
+        Learn::Signals => state::signals::page(site),
+        Learn::NestedSignals => state::nested::page(site),
+        Learn::Expressions => state::expressions::page(site),
+        Learn::Statements => state::statements::page(site),
+        Learn::Events => state::events::page(site),
+        Learn::BindingInputs => state::inputs::page(site),
+        Learn::ComputedSignals => state::computed::page(site),
+        Learn::PersistedSignals => state::persisted::page(site),
+        Learn::Lists => state::lists::page(site),
+        Learn::ListItems => state::list_items::page(site),
         // Talking to the server
         Learn::Actions
         | Learn::CallStatus

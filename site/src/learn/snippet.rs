@@ -42,18 +42,18 @@ snippets! {
     ElementsPage => "elements_page.rs";
     Component => "page/component.rs";
     Bindings => "page/bindings.rs";
-    SignalPaths => "signal_paths.rs";
-    WrongField => "wrong_field.rs", "compile_fail,E0599";
-    Nested => "nested.rs";
-    Persist => "persist.rs";
-    ComponentState => "component_state.rs";
-    Operators => "operators.rs";
+    SignalPaths => "state/signal_paths.rs";
+    WrongField => "state/wrong_field.rs", "compile_fail,E0599";
+    Nested => "state/nested.rs";
+    Persist => "state/persist.rs";
+    ComponentState => "state/component_state.rs";
+    Operators => "state/operators.rs";
     WrongType => "wrong_type.rs", "compile_fail,E0277";
     WhyCounter => "why_counter.rs";
-    Statements => "statements.rs";
-    Events => "events.rs";
-    Each => "each.rs";
-    ListStatements => "list_statements.rs";
+    Statements => "state/statements.rs";
+    Events => "state/events.rs";
+    Each => "state/each.rs";
+    ListStatements => "state/list_statements.rs";
     Patches => "patches.rs";
     ListPatches => "list_patches.rs";
     TestingListPatches => "testing_list_patches.rs";
@@ -118,7 +118,7 @@ snippets! {
     StaticFiles => "static_files.rs";
     ErrorPage => "error_page.rs";
     LoadMore => "load_more.rs";
-    EditState => "edit_state.rs";
+    EditState => "state/edit_state.rs";
     // The upgrading page shows each release's breaking changes as the code
     // after them, so the doctest compiles what the release accepts.
     Upgrade05 => "upgrading/v0_5.rs";
@@ -159,6 +159,50 @@ snippets! {
     StyleKeyword => "page/style_keyword.rs", "compile_fail,E0599";
     BindStyle => "page/bind_style.rs";
     // The samples added for the Learn group Browser state.
+    StateFirstRender => "state/first_render.rs";
+    StateOtherPage => "state/other_page.rs", "compile_fail,E0277";
+    StateSerdeAttribute => "state/serde_attribute.rs", "compile_fail";
+    StateNestedWrongStruct => "state/nested_wrong_struct.rs", "compile_fail,E0308";
+    StateStructValues => "state/struct_values.rs";
+    StateOptions => "state/options.rs";
+    StateIntegerDivision => "state/integer_division.rs", "compile_fail,E0369";
+    StateStrings => "state/strings.rs";
+    StateNumberFormat => "state/number_format.rs";
+    StateLetIn => "state/let_in.rs";
+    StateThenOrder => "state/then_order.rs";
+    StateEnumByValue => "state/enum_by_value.rs", "compile_fail,E0277";
+    StateLetInStmt => "state/let_in_stmt.rs";
+    StateEventsClick => "state/events_click.rs";
+    StateEventsText => "state/events_text.rs";
+    StateEventsSubmit => "state/events_submit.rs";
+    StateEventsFocus => "state/events_focus.rs";
+    StateEventsPointer => "state/events_pointer.rs";
+    StateEventsLoad => "state/events_load.rs";
+    StateEventsDebounce => "state/events_debounce.rs";
+    StateEventsTwice => "state/events_twice.rs";
+    StateEventsKeys => "state/events_keys.rs";
+    StateEventsPageKey => "state/events_page_key.rs";
+    StateEventsWrongPage => "state/events_wrong_page.rs", "compile_fail,E0277";
+    StateInputsBind => "state/inputs_bind.rs";
+    StateInputsRadio => "state/inputs_radio.rs";
+    StateInputsSelect => "state/inputs_select.rs";
+    StateInputsBindEnum => "state/inputs_bind_enum.rs", "compile_fail,E0277";
+    StateInputsExample => "state/inputs_example.rs";
+    StateComputed => "state/computed.rs";
+    StateComputedOrder => "state/computed_order.rs";
+    StateComputedSet => "state/computed_set.rs", "compile_fail,E0599";
+    StateComputedNotMarked => "state/computed_not_marked.rs", "compile_fail,E0277";
+    StateComputedRead => "state/computed_read.rs";
+    StateComputedNested => "state/computed_nested.rs";
+    StatePersistComputed => "state/persist_computed.rs", "compile_fail,E0308";
+    StateListRender => "state/list_render.rs";
+    StateListExpressions => "state/list_expressions.rs";
+    StatePushWrongType => "state/push_wrong_type.rs", "compile_fail,E0277";
+    StateKeyOutside => "state/key_outside.rs", "compile_fail,E0599";
+    StateItemFields => "state/item_fields.rs";
+    StatePatchOnItem => "state/patch_on_item.rs", "compile_fail,E0599";
+    StateItemBranch => "state/item_branch.rs";
+    StateNestedLists => "state/nested_lists.rs";
     // The samples added for the Learn group Talking to the server.
     // The samples added for the Learn group Pages and routing.
     // The samples added for the Learn group Forms and requests.
