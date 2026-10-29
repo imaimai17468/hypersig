@@ -119,7 +119,7 @@ impl Sheet {
         Self::default()
     }
 
-    fn add_keyframes(&mut self, name: &'static str, css: String) {
+    fn insert_keyframes(&mut self, name: &'static str, css: String) {
         match self.keyframes.entry(name) {
             Entry::Vacant(entry) => {
                 entry.insert(css);
@@ -128,10 +128,16 @@ impl Sheet {
         }
     }
 
-    fn insert(&mut self, style: &Style, toggled: bool) {
+    /// Adds the `@keyframes` rules `style` animates with, and none of its
+    /// declarations.
+    pub(crate) fn add_keyframes(&mut self, style: &Style) {
         for keyframes in style.keyframes_used() {
-            self.add_keyframes(keyframes.name(), keyframes.to_css());
+            self.insert_keyframes(keyframes.name(), keyframes.to_css());
         }
+    }
+
+    fn insert(&mut self, style: &Style, toggled: bool) {
+        self.add_keyframes(style);
         for atom in style.atoms() {
             self.rules.insert(Key {
                 toggled,
@@ -171,7 +177,7 @@ impl Sheet {
     pub fn extend(&mut self, other: &Self) {
         self.rules.extend(other.rules.iter().cloned());
         for (name, css) in &other.keyframes {
-            self.add_keyframes(name, css.clone());
+            self.insert_keyframes(name, css.clone());
         }
     }
 

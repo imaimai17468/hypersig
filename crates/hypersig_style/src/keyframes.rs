@@ -13,7 +13,8 @@ use crate::style::Style;
 ///
 /// Two `Keyframes` with the same name are one rule to the browser, so the
 /// styles and the [`Sheet`](crate::Sheet) that meet both panic unless their steps are
-/// the same. The check covers one page or one patch. A later patch whose
+/// the same. The check covers a page's [`Global`](crate::Global) rules and
+/// body styles together, and one patch. A later patch whose
 /// keyframes reuse a name of the page with other steps is not compared,
 /// and the browser plays the steps the patch brought.
 ///

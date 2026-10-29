@@ -4,7 +4,7 @@ use std::fmt::Write as _;
 
 use crate::Property;
 use crate::condition::Conditions;
-use crate::sheet::{BASE_LAYER, ORDER};
+use crate::sheet::{BASE_LAYER, ORDER, Sheet};
 use crate::style::Style;
 use crate::value::{
     BoxSizing, Color, CssWideKeyword, Display, FontFamily, LineHeight, Quoted, Url, pct, px, quoted,
@@ -269,7 +269,25 @@ impl Global {
         self.rules.is_empty() && self.fonts.is_empty()
     }
 
-    /// The rules in [`BASE_LAYER`], then the `@font-face` rules.
+    /// The rules in [`BASE_LAYER`], the `@font-face` rules, then the rules' `@keyframes`.
+    ///
+    /// # Panics
+    ///
+    /// Panics where [`Global::write_css`] does.
+    #[must_use]
+    pub fn to_css(&self) -> String {
+        let mut out = String::new();
+        let mut keyframes = Sheet::new();
+        self.write_css(&mut out, &mut keyframes);
+        keyframes.write_css(&mut out);
+        out
+    }
+
+    /// Writes the rules in [`BASE_LAYER`] and the `@font-face` rules.
+    ///
+    /// The `@keyframes` rules the rules' styles animate with go into
+    /// `keyframes` instead, so that a page checks and writes them with the
+    /// keyframes of its elements.
     ///
     /// # Panics
     ///
@@ -277,11 +295,13 @@ impl Global {
     /// [`Selector::Everything`], which already names `::before` and
     /// `::after`, or a [`Condition::Group`](crate::Condition::Group) or
     /// [`Condition::Peer`](crate::Condition::Peer), which need a marked
-    /// element the selector does not name.
-    #[must_use]
-    pub fn to_css(&self) -> String {
-        let mut out = format!("{ORDER}@layer {BASE_LAYER}{{");
+    /// element the selector does not name. It also panics if `keyframes`
+    /// holds a name a rule's keyframes use with other steps.
+    pub fn write_css(&self, out: &mut String, keyframes: &mut Sheet) {
+        out.push_str(ORDER);
+        let _ = write!(out, "@layer {BASE_LAYER}{{");
         for (selector, style) in &self.rules {
+            keyframes.add_keyframes(style);
             let mut sorted: Vec<_> = style.atoms().iter().collect();
             sorted.sort_by(|a, b| {
                 (&a.conditions, a.property.rank(), a.property).cmp(&(
@@ -310,8 +330,8 @@ impl Global {
                     suffix.push_str("::");
                     suffix.push_str(e.name());
                 }
-                let open = conditions.open(&mut out);
-                selector.write(&mut out, &suffix);
+                let open = conditions.open(out);
+                selector.write(out, &suffix);
                 out.push('{');
                 let mut first = true;
                 while i < sorted.len() && sorted[i].conditions == *conditions {
@@ -319,27 +339,26 @@ impl Global {
                         out.push(';');
                     }
                     first = false;
-                    sorted[i].property.write_name(&mut out);
+                    sorted[i].property.write_name(out);
                     let _ = write!(out, ":{}", sorted[i].value);
                     i += 1;
                 }
                 out.push('}');
-                Conditions::close(open, &mut out);
+                Conditions::close(open, out);
             }
         }
         out.push('}');
         for font in &self.fonts {
-            font.write(&mut out);
+            font.write(out);
         }
-        out
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{Element, FontFace, Global, Selector};
-    use crate::value::{Color, url};
-    use crate::{Media, Style};
+    use crate::value::{Color, Opacity, url};
+    use crate::{Keyframes, Media, Style};
 
     #[test]
     fn writes_the_preflight_in_the_base_layer() {
@@ -386,5 +405,20 @@ mod tests {
     #[should_panic(expected = "not 0 to 400")]
     fn a_weight_of_0_panics() {
         let _ = FontFace::new("Inter", url("/inter.woff2")).weights(0, 400);
+    }
+
+    #[test]
+    fn writes_the_keyframes_a_rule_animates_with() {
+        let fade = Keyframes::new("fade").at(0, Style::new().opacity(Opacity::Number(0.0)));
+        let css = Global::new()
+            .rule(Element::Main, Style::new().keyframes(&fade))
+            .rule(
+                Element::Aside,
+                Style::new().on(Media::Md, Style::new().keyframes(&fade)),
+            )
+            .to_css();
+        assert!(css.contains("main{animation-name:fade}"));
+        assert_eq!(css.matches("@keyframes fade{0%{opacity:0}}").count(), 1);
+        assert!(!css.contains("hypersig-base{@keyframes"));
     }
 }

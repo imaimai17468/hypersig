@@ -74,8 +74,8 @@ pub fn page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The `@keyframes` rule is written only where the style is used. The page writes it into `<head>` when an element of the page uses the style through `El::css`, `El::css_when`, `El::css_match`, or `Page::css_when`, and a patch whose new elements use it brings the rule with them. A page that never shows the spinner sends no `@keyframes spin`.",
-                ja: "`@keyframes` のルールは、そのスタイルを使う場所にだけ書かれます。ページの要素が `El::css`、`El::css_when`、`El::css_match`、`Page::css_when` でそのスタイルを使うと、ページはそのルールを `<head>` に書きます。新しい要素がそのスタイルを使うパッチも、ルールを一緒に届けます。スピナーを一度も表示しないページは `@keyframes spin` を送りません。",
+                en: "The `@keyframes` rule is written only where the style is used. The page writes it into `<head>` when an element of the page uses the style through `El::css`, `El::css_when`, `El::css_match`, or `Page::css_when`, or when a [`Global`](style/global/) rule uses it. A patch whose new elements use the style brings the rule with them. A page that never shows the spinner sends no `@keyframes spin`.",
+                ja: "`@keyframes` のルールはそのスタイルを使う場所にだけ書かれます。ページの要素が `El::css`、`El::css_when`、`El::css_match`、`Page::css_when` でそのスタイルを使うときと、[`Global`](style/global/) のルールがそのスタイルを使うときに、ページはそのルールを `<head>` に書きます。新しい要素がそのスタイルを使うパッチも、ルールを一緒に届けます。スピナーを一度も表示しないページは `@keyframes spin` を送りません。",
             },
         ),
         demo::show(site, Demo::Spinner),
@@ -218,12 +218,8 @@ pub fn page(site: Site) -> Part {
                     ja: "段階の中の条件。キーフレームにはセレクタもメディアクエリも書けないので、`at` は `style` のうち条件の付かない宣言だけを書き、`on` や `pseudo` の下の宣言は警告なしに捨てます。",
                 },
                 L {
-                    en: "Unique names across patches, at run time. Two `Keyframes` with one name and different steps panic where a style combines them and where `Page::render` or a patch writes both. One `Keyframes` that many elements use is written once. A patch is checked only against itself, so a patch whose keyframes reuse a name of the page with other steps replaces the steps for every element that uses the name.",
-                    ja: "パッチをまたいだ名前の重複（実行時）。同じ名前で段階の違う 2 つの `Keyframes` は、スタイルが両方を組み合わせたところと、`Page::render` やパッチが両方を書くところで panic します。多くの要素が使う 1 つの `Keyframes` は 1 回だけ書かれます。パッチはそのパッチの中でしか検査されないので、ページと同じ名前で段階の違うキーフレームを持つパッチが届くと、その名前を使うすべての要素の段階がパッチのものに置き換わります。",
-                },
-                L {
-                    en: "Keyframes in a [`Global`](style/global/) rule. A style passed to `Global::rule` writes `animation-name`, but the page gets no `@keyframes` rule from it, so the elements it selects do not animate. Put the style on the elements with `El::css`.",
-                    ja: "[`Global`](style/global/) のルールの中のキーフレーム。`Global::rule` に渡したスタイルは `animation-name` を書きますが、ページにはそこから `@keyframes` のルールが入りません。そのため、選ばれた要素はアニメーションしません。スタイルは `El::css` で要素に付けます。",
+                    en: "Unique names across patches, at run time. Two `Keyframes` with one name and different steps panic where a style combines them and where `Page::render` or a patch writes both. `Page::render` checks the page's `Global` rules and its elements together. One `Keyframes` that many elements use is written once. A patch is checked only against itself, so a patch whose keyframes reuse a name of the page with other steps replaces the steps for every element that uses the name.",
+                    ja: "パッチをまたいだ名前の重複（実行時）。同じ名前で段階の違う 2 つの `Keyframes` は、スタイルが両方を組み合わせたところと、`Page::render` やパッチが両方を書くところで panic します。`Page::render` はページの `Global` のルールと要素をまとめて検査します。多くの要素が使う 1 つの `Keyframes` は 1 回だけ書かれます。パッチはそのパッチの中でしか検査されないので、ページと同じ名前で段階の違うキーフレームを持つパッチが届くと、その名前を使うすべての要素の段階がパッチのものに置き換わります。",
                 },
                 L {
                     en: "A name in `raw`. `animation_name(raw(\"spin\"))` and `animation(raw(\"spin 1s linear infinite\"))` write the name without the rule, which [Unchecked values](style/unchecked/) covers.",
