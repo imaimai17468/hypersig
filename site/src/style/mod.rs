@@ -56,4 +56,3 @@ pub fn content(site: Site, page: StylePage) -> Part {
         StylePage::Unchecked => unchecked::values::page(site),
     }
 }
-
