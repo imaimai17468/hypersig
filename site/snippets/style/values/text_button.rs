@@ -28,3 +28,4 @@ let html = Page::new("Terms", Terms {})
 # for css in ["{all:unset}", "{color:inherit}", "{font:inherit}"] {
 #     assert!(html.contains(css), "{css}");
 # }
+# assert!(html.find("{all:unset}") < html.find("{color:inherit}"));

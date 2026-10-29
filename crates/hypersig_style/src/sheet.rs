@@ -48,9 +48,9 @@ pub(crate) const ORDER: &str =
 ///     css,
 ///     [
 ///         "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-///          @layer hypersig-atoms.k-----00{.color_crimson{color:crimson}.padding_8px{padding:8px}}",
+///          @layer hypersig-atoms.k-----01{.color_crimson{color:crimson}.padding_8px{padding:8px}}",
 ///         "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-///          @layer hypersig-atoms.k----4019-00{.hover\\:color_red:hover{color:red}}",
+///          @layer hypersig-atoms.k----4019-01{.hover\\:color_red:hover{color:red}}",
 ///     ]
 /// );
 /// ```
@@ -277,8 +277,8 @@ fn escape_class(name: &str, out: &mut String) {
 #[cfg(test)]
 mod tests {
     use super::{Sheet, escape_class};
-    use crate::value::{Color, Display, pct, px, quoted, raw, rem};
-    use crate::{Condition, Container, Media, PseudoClass, PseudoElement, Style};
+    use crate::value::{All, Color, Display, pct, px, quoted, raw, rem};
+    use crate::{Condition, Container, Media, PseudoClass, PseudoElement, Style, Token};
 
     fn css(sheet: &Sheet) -> Vec<String> {
         sheet.buckets().map(|b| b.css().to_owned()).collect()
@@ -404,6 +404,21 @@ mod tests {
     }
 
     #[test]
+    fn writes_all_before_the_properties_it_resets() {
+        let mut sheet = Sheet::new();
+        sheet.add(
+            &Style::new()
+                .accent_color(Color::RED)
+                .all(All::Unset)
+                .token(&Token::new("gap", px(4)), px(8)),
+        );
+        let css = css(&sheet);
+        assert_eq!(css.len(), 2);
+        assert!(css[0].ends_with("{.all_unset{all:unset}.--gap_8px{--gap:8px}}"));
+        assert!(css[1].ends_with("{.accent-color_red{accent-color:red}}"));
+    }
+
+    #[test]
     fn writes_active_after_hover() {
         let mut sheet = Sheet::new();
         sheet.add(
@@ -427,7 +442,7 @@ mod tests {
         assert_eq!(
             sheet.to_css(),
             "@layer hypersig-tokens,hypersig-base,hypersig-atoms,hypersig-toggled;\
-             @layer hypersig-toggled.k-----00{.when\\:color_red{color:red}}"
+             @layer hypersig-toggled.k-----01{.when\\:color_red{color:red}}"
         );
     }
 
