@@ -7,7 +7,10 @@ use crate::lang::L;
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
+mod conditions;
+mod global;
 mod start;
+mod tokens;
 mod values;
 
 pub use start::overview::benchmarks;
@@ -27,17 +30,19 @@ pub fn content(site: Site, page: StylePage) -> Part {
         StylePage::UrlsAndStrings => values::urls_and_strings::page(site, head),
         StylePage::Keywords => values::keywords::page(site, head),
         // Conditions
-        StylePage::PseudoClasses
-        | StylePage::PseudoElements
-        | StylePage::Media
-        | StylePage::Containers
-        | StylePage::GroupAndPeer
-        | StylePage::Toggled
-        | StylePage::Conditions => conditions(site, head),
+        StylePage::PseudoClasses => conditions::pseudo_classes::page(site, head),
+        StylePage::PseudoElements => conditions::pseudo_elements::page(site, head),
+        StylePage::Media => conditions::media::page(site, head),
+        StylePage::Containers => conditions::containers::page(site, head),
+        StylePage::GroupAndPeer => conditions::group_and_peer::page(site, head),
+        StylePage::Toggled => conditions::toggled::page(site, head),
         // Tokens and themes
-        StylePage::Tokens | StylePage::Themes | StylePage::DarkMode => tokens(site, head),
+        StylePage::Tokens => tokens::token::page(site, head),
+        StylePage::Themes => tokens::themes::page(site, head),
+        StylePage::DarkMode => tokens::dark_mode::page(site, head),
         // Global styles
-        StylePage::Global | StylePage::Fonts => global(site, head),
+        StylePage::Global => global::rules::page(site, head),
+        StylePage::Fonts => global::fonts::page(site, head),
         // Layout
         StylePage::Stacks | StylePage::Grids | StylePage::Patterns => patterns(site, head),
         // Animation
@@ -48,155 +53,6 @@ pub fn content(site: Site, page: StylePage) -> Part {
         // Opting out of type checks
         StylePage::Unchecked => unchecked(site, head),
     }
-}
-
-fn conditions(site: Site, head: Part) -> Part {
-    parts([
-        head,
-        lead(site, Doc::Style(StylePage::Conditions).leads()),
-        heading(
-            site,
-            L {
-                en: "Pseudo-classes, media, and containers",
-                ja: "擬似クラス、メディア、コンテナ",
-            },
-        ),
-        show(Snippet::Conditions),
-        bullets(
-            site,
-            &[
-                L {
-                    en: "[`PseudoClass`](api:hypersig_style/enum.PseudoClass.html) and [`PseudoElement`](api:hypersig_style/enum.PseudoElement.html) are generated from MDN's data. `pseudo` puts declarations on a pseudo-element. A pseudo-class written inside it applies to the element itself, so `pseudo(Before, Style::new().on(Hover, ..))` becomes `:hover::before`.",
-                    ja: "[`PseudoClass`](api:hypersig_style/enum.PseudoClass.html) と [`PseudoElement`](api:hypersig_style/enum.PseudoElement.html) は MDN のデータから生成しています。`pseudo` は擬似要素に宣言を付けます。その中に書いた擬似クラスは元の要素に対して適用されるので、`pseudo(Before, Style::new().on(Hover, ..))` は `:hover::before` になります。",
-                },
-                L {
-                    en: "The user-action pseudo-classes are written to the stylesheet in a fixed order. As a result, `:active` takes precedence over `:hover` while a button is pressed, and `:disabled` takes precedence over all of them.",
-                    ja: "ユーザー操作の擬似クラスは決まった順でスタイルシートに書かれます。そのため、ボタンを押している間は `:active` が `:hover` より優先され、`:disabled` はそのどれよりも優先されます。",
-                },
-                L {
-                    en: "[`Media`](api:hypersig_style/enum.Media.html) has the breakpoints `Sm`, `Md`, `Lg`, `Xl`, and `Xxl`, min-width queries at 40, 48, 64, 80, and 96rem, the widths Tailwind CSS and Panda CSS use. It also has `Dark`, `Light`, `ReducedMotion`, `Print`, `Landscape`, `Portrait`, `CanHover`, `CoarsePointer`, `ForcedColors`, and `MoreContrast`.",
-                    ja: "[`Media`](api:hypersig_style/enum.Media.html) にはブレークポイント `Sm`、`Md`、`Lg`、`Xl`、`Xxl` があり、それぞれ 40、48、64、80、96rem の min-width のメディアクエリです。幅は Tailwind CSS と Panda CSS が使うものと同じです。ほかに `Dark`、`Light`、`ReducedMotion`、`Print`、`Landscape`、`Portrait`、`CanHover`、`CoarsePointer`、`ForcedColors`、`MoreContrast` があります。",
-                },
-                L {
-                    en: "[`Container`](api:hypersig_style/enum.Container.html) has Panda CSS's container sizes from 16rem to 90rem. An ancestor becomes a query container with `container_type`, and without one the condition never matches.",
-                    ja: "[`Container`](api:hypersig_style/enum.Container.html) には、Panda CSS と同じ 16rem から 90rem までのコンテナの大きさがあります。祖先は `container_type` でクエリコンテナになります。そうした祖先がなければ、条件は一度も当てはまりません。",
-                },
-                L {
-                    en: "Conditions can be nested. A style passed to `on` can use `on` itself, and the inner declarations then apply when both conditions hold.",
-                    ja: "条件は入れ子にできます。`on` に渡すスタイルの中でも `on` を使えます。その場合、内側の宣言は両方の条件が成り立つときに適用されます。",
-                },
-            ],
-        ),
-        heading(
-            site,
-            L {
-                en: "Group and peer",
-                ja: "group と peer",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "`Style::group` marks an ancestor, and `Condition::Group(PseudoClass::Hover)` applies a style only while that ancestor is hovered. `Style::peer` marks an earlier sibling, and `Condition::Peer(PseudoClass::Checked)` applies a style only while that sibling is checked. Both work like the `group` and `peer` of Tailwind CSS and Panda CSS.",
-                ja: "`Style::group` は祖先に印を付け、`Condition::Group(PseudoClass::Hover)` はその祖先がホバーされている間だけスタイルを適用します。`Style::peer` は前にある兄弟に印を付け、`Condition::Peer(PseudoClass::Checked)` はその兄弟がチェックされている間だけスタイルを適用します。どちらも Tailwind CSS や Panda CSS の `group` と `peer` と同じように動きます。",
-            },
-        ),
-        show(Snippet::GroupPeer),
-        demo::show(site, Demo::Hover),
-    ])
-}
-
-fn tokens(site: Site, head: Part) -> Part {
-    parts([
-        head,
-        lead(site, Doc::Style(StylePage::Tokens).leads()),
-        heading(
-            site,
-            L {
-                en: "Tokens",
-                ja: "トークン",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "[`Token::new(name, default)`](api:hypersig_style/struct.Token.html) creates a token of a value type: `Color`, `Length`, `Percentage`, `Time`, or `Angle`. `var()` refers to the token as `var(--name, default)`, so a page that sets no value uses the default. The result of `var()` can be passed anywhere a value of that type is accepted.",
-                ja: "[`Token::new(name, default)`](api:hypersig_style/struct.Token.html) は、`Color`、`Length`、`Percentage`、`Time`、`Angle` のどれかの型のトークンを作ります。`var()` はトークンを `var(--name, default)` の形で参照するので、値を何も設定しないページでは既定値が使われます。`var()` の結果はその型の値を受け取る場所ならどこにでも渡せます。",
-            },
-        ),
-        show(Snippet::Tokens),
-        bullets(
-            site,
-            &[
-                L {
-                    en: "`Page::theme` takes a [`Theme`](api:hypersig_style/struct.Theme.html), whose values are written on `:root`. `Theme::on(Media::Dark, ..)` sets values under a media condition, and a later `theme` call adds to the earlier one.",
-                    ja: "`Page::theme` は [`Theme`](api:hypersig_style/struct.Theme.html) を受け取り、その値を `:root` に書きます。`Theme::on(Media::Dark, ..)` はメディアの条件の下で値を設定します。`theme` を後からもう一度呼ぶと、前の呼び出しの値に追加されます。",
-                },
-                L {
-                    en: "`Style::token` sets a token on one element and those inside it, in place of the default and the page's theme.",
-                    ja: "`Style::token` は 1 つの要素とその内側の要素にトークンを設定し、既定値とページのテーマの値を置き換えます。",
-                },
-                L {
-                    en: "`El::bind_token` keeps a token's value equal to the value of a string expression over the signals. As with `El::bind_style`, the value is not checked.",
-                    ja: "`El::bind_token` は、トークンの値をシグナルから作る文字列の式の値と常に同じにします。`El::bind_style` と同じく、値は検査しません。",
-                },
-            ],
-        ),
-        para(
-            site,
-            L {
-                en: "The swatches and the button below read the same token. `bind_token` sets that token's value from the radio group's signal.",
-                ja: "下の色見本とボタンは同じトークンを読みます。このトークンの値は、`bind_token` がラジオグループのシグナルから設定します。",
-            },
-        ),
-        demo::show(site, Demo::Accent),
-        note(
-            site,
-            L {
-                en: "Two tokens with the same name are one custom property to the browser. Duplicate names are not checked. The components of `hypersig_ui` read the tokens in the same crate's [`token`](api:hypersig_ui/token/index.html) module, which [Theming](components/theming/) covers.",
-                ja: "同じ名前の 2 つのトークンは、ブラウザにとっては 1 つのカスタムプロパティです。名前が重複していないかは検査されません。`hypersig_ui` のコンポーネントは同じクレートの [`token`](api:hypersig_ui/token/index.html) モジュールにあるトークンを読みます。このモジュールは[テーマ](components/theming/)で説明しています。",
-            },
-        ),
-    ])
-}
-
-fn global(site: Site, head: Part) -> Part {
-    parts([
-        head,
-        lead(site, Doc::Style(StylePage::Global).leads()),
-        heading(
-            site,
-            L {
-                en: "Rules by tag",
-                ja: "タグごとのルール",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) adds a style to every element a selector matches. The selector can be an `Element`, which selects by tag, `Selector::Root`, or `Selector::Everything`. The rules are in the base cascade layer, before the classes of `El::css`, so an element's own style overrides them. Conditions in a rule's style apply to the selector as they do to a class.",
-                ja: "[`Global::rule`](api:hypersig_style/struct.Global.html#method.rule) はセレクタに当てはまるすべての要素にスタイルを追加します。セレクタにはタグで選ぶ `Element`、`Selector::Root`、`Selector::Everything` を使えます。これらのルールは `El::css` のクラスより前の base のカスケードレイヤーに入るので、要素自身のスタイルがこれらのルールを上書きします。ルールのスタイルにある条件は、クラスの場合と同じようにセレクタに対して適用されます。",
-            },
-        ),
-        show(Snippet::GlobalRules),
-        bullets(
-            site,
-            &[
-                L {
-                    en: "A `Global` made with `Global::preflight()` starts with a small reset. The reset sizes every element with `border-box`, removes default margins, makes form controls use the page's font, and shrinks images and videos to fit their box.",
-                    ja: "`Global::preflight()` で作った `Global` には、最初から小さなリセットが入っています。このリセットは、すべての要素の大きさを `border-box` で測り、既定のマージンを消し、フォームのコントロールにページのフォントを使わせ、画像や動画を枠に収まるまで縮めます。",
-                },
-                L {
-                    en: "`FontFace::new(family, url(..))` loads a font as `@font-face`, with `weights` for a variable font and `italic` for an italic face. `family()` returns the value `font-family` takes.",
-                    ja: "`FontFace::new(family, url(..))` はフォントを `@font-face` として読み込みます。可変フォントには `weights` を、イタリック体には `italic` を使います。`family()` は `font-family` に渡す値を返します。",
-                },
-                L {
-                    en: "`Page::global` adds the rules to the page. A later call adds to the earlier rules. `hypersig_ui::global()` is a `Global` built this way.",
-                    ja: "`Page::global` はルールをページに追加します。後からもう一度呼ぶと、前のルールに追加されます。`hypersig_ui::global()` は、このようにして組み立てた `Global` です。",
-                },
-            ],
-        ),
-    ])
 }
 
 fn patterns(site: Site, head: Part) -> Part {

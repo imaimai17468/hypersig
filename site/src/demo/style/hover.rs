@@ -1,5 +1,5 @@
 //! Styles under pseudo-classes, a marked ancestor, and a marked sibling,
-//! for the page on conditions.
+//! for the page on group and peer.
 
 use hypersig::html::{a, div, input, label, p, span, attr};
 use hypersig::style::pattern::stack;

@@ -87,10 +87,9 @@ snippets! {
     StyleBasics => "style/start/basics.rs";
     StyleValues => "style/values/properties.rs";
     WrongValue => "style/values/wrong_value.rs", "compile_fail,E0277";
-    Conditions => "conditions.rs";
-    GroupPeer => "group_peer.rs";
-    Tokens => "tokens.rs";
-    GlobalRules => "global_rules.rs";
+    GroupPeer => "style/conditions/group_peer.rs";
+    Tokens => "style/tokens/tokens.rs";
+    GlobalRules => "style/global/rules.rs";
     Patterns => "patterns.rs";
     Animation => "animation.rs";
     ViewTransitions => "view_transitions.rs";
@@ -330,6 +329,36 @@ snippets! {
     StyleKeywordMethod => "style/values/keyword_method.rs", "compile_fail,E0277";
     StyleTextButton => "style/values/text_button.rs";
     // The samples of the Style pages under Conditions, Tokens and themes, and Global styles.
+    PseudoClasses => "style/conditions/pseudo_classes.rs";
+    PseudoClassTypo => "style/conditions/pseudo_class_typo.rs", "compile_fail,E0599";
+    NestedConditions => "style/conditions/nested.rs";
+    PseudoElements => "style/conditions/pseudo_elements.rs";
+    PseudoElementCondition => "style/conditions/pseudo_element_condition.rs", "compile_fail,E0277";
+    PseudoElementNested => "style/conditions/pseudo_element_nested.rs", "should_panic";
+    MediaQueries => "style/conditions/media.rs";
+    MediaOrder => "style/conditions/media_order.rs";
+    MediaTypo => "style/conditions/media_typo.rs", "compile_fail,E0599";
+    ContainerQueries => "style/conditions/containers.rs";
+    ContainerWidth => "style/conditions/container_width.rs", "compile_fail,E0599";
+    GroupCondition => "style/conditions/group_condition.rs", "compile_fail,E0308";
+    CssWhen => "style/conditions/css_when.rs";
+    CssMatch => "style/conditions/css_match.rs";
+    ServerMatch => "style/conditions/server_match.rs";
+    CssWhenType => "style/conditions/css_when_type.rs", "compile_fail,E0277";
+    TokenType => "style/tokens/token_type.rs", "compile_fail,E0277";
+    TokenValue => "style/tokens/token_value.rs", "compile_fail,E0277";
+    TokenName => "style/tokens/token_name.rs", "should_panic";
+    TokenScope => "style/tokens/token_scope.rs";
+    BindToken => "style/tokens/bind_token.rs";
+    Themes => "style/tokens/theme.rs";
+    ThemeCondition => "style/tokens/theme_condition.rs", "compile_fail,E0308";
+    DarkSystem => "style/tokens/dark_system.rs";
+    DarkPicker => "style/tokens/dark_picker.rs";
+    SelectorString => "style/global/selector_string.rs", "compile_fail,E0277";
+    RuleGroup => "style/global/rule_group.rs", "should_panic";
+    Fonts => "style/global/fonts.rs";
+    FontSrc => "style/global/font_src.rs", "compile_fail,E0308";
+    FontUrl => "style/global/font_url.rs", "compile_fail,E0080";
     // The samples of the Style pages under Layout, Animation, and Opting out of type checks.
 }
 
