@@ -31,8 +31,8 @@ fn atomic(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`Style`](api:hypersig/style/struct.Style.html) has one method per standard CSS property, generated from MDN's CSS data. `El::css(self, style: Style) -> Self` adds each declaration as one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. The page writes the rules its elements use into `<head>`, and a patch that contains new elements includes their rules.",
-                ja: "[`Style`](api:hypersig/style/struct.Style.html) には、標準の CSS プロパティごとに 1 つずつメソッドがあり、MDN の CSS データから生成しています。`El::css(self, style: Style) -> Self` は、Panda CSS や Tailwind CSS のアトミック CSS と同じく、宣言ごとにその宣言にちなんだ名前のクラスを 1 つ付けます。ページは要素が使うルールを `<head>` に書き、新しい要素を含む差分にはその要素のルールも含まれます。",
+                en: "[`Style`](api:hypersig/style/struct.Style.html) has one method per standard CSS property, generated from MDN's CSS data. `El::css(self, style: Style) -> Self` adds each declaration as one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. The page writes the rules its elements use into `<head>`, and a patch that contains new elements includes their rules. [Applying a style](style/applying/) covers how styles combine.",
+                ja: "[`Style`](api:hypersig/style/struct.Style.html) には、標準の CSS プロパティごとに 1 つずつメソッドがあり、MDN の CSS データから生成しています。`El::css(self, style: Style) -> Self` は、Panda CSS や Tailwind CSS のアトミック CSS と同じく、宣言ごとにその宣言にちなんだ名前のクラスを 1 つ付けます。ページは要素が使うルールを `<head>` に書き、新しい要素を含む差分にはその要素のルールも含まれます。スタイルの組み合わせ方は [スタイルを付ける](style/applying/) で説明します。",
             },
         ),
         show(Snippet::Styles),
@@ -47,16 +47,16 @@ fn atomic(site: Site) -> Part {
             site,
             &[
                 L {
-                    en: "`on(PseudoClass::Hover, ...)` and `on(Media::Md, ...)` apply a style under a condition. Conditions cover pseudo-classes and pseudo-elements, media features, container sizes, and the state of a marked ancestor or sibling (`group` and `peer`). [Conditions](style/conditions/) lists them.",
-                    ja: "`on(PseudoClass::Hover, ...)` や `on(Media::Md, ...)` は条件付きでスタイルを適用します。条件には、疑似クラスと疑似要素、メディア特性、コンテナのサイズ、印を付けた祖先や兄弟の状態（`group` と `peer`）があります。一覧は [条件](style/conditions/) にあります。",
+                    en: "`on(PseudoClass::Hover, ...)` and `on(Media::Md, ...)` apply a style under a condition. Conditions cover pseudo-classes and pseudo-elements, media features, container sizes, and the state of a marked ancestor or sibling (`group` and `peer`). The Conditions pages, from [Pseudo-classes](style/pseudo-classes/) to [Group and peer](style/group-and-peer/), cover each kind.",
+                    ja: "`on(PseudoClass::Hover, ...)` や `on(Media::Md, ...)` は条件付きでスタイルを適用します。条件には、疑似クラスと疑似要素、メディア特性、コンテナのサイズ、印を付けた祖先や兄弟の状態（`group` と `peer`）があります。条件の種類ごとの説明は、[擬似クラス](style/pseudo-classes/)から[グループとピア](style/group-and-peer/)までの「条件」のページにあります。",
                 },
                 L {
-                    en: "A `Token` is a CSS custom property with a typed value. `Page::theme` sets tokens for the page, for example under `Media::Dark`. [Tokens](style/tokens/) covers them.",
-                    ja: "`Token` は型の付いた値を持つ CSS カスタムプロパティです。`Page::theme` はたとえば `Media::Dark` のもとでのトークンをページに設定します。詳しくは [トークン](style/tokens/) で説明します。",
+                    en: "A `Token` is a CSS custom property with a typed value. `Page::theme` sets tokens for the page, for example under `Media::Dark`. [Tokens](style/tokens/) and [Themes](style/themes/) cover them.",
+                    ja: "`Token` は型の付いた値を持つ CSS カスタムプロパティです。`Page::theme` はたとえば `Media::Dark` のもとでのトークンをページに設定します。詳しくは [トークン](style/tokens/) と [テーマ](style/themes/) で説明します。",
                 },
                 L {
-                    en: "`Global` holds rules for elements by tag with a small reset, `@font-face`, and `@keyframes`, and `Page::global` adds them to the page. `hypersig::style::pattern` has layouts such as `stack` and `grid`.",
-                    ja: "`Global` はタグで指定する要素のルールを、小さなリセット、`@font-face`、`@keyframes` と一緒に持ち、`Page::global` がそれをページに加えます。`hypersig::style::pattern` には `stack` や `grid` のようなレイアウトがあります。",
+                    en: "`Global` holds rules for elements by tag with a small reset and `@font-face`, and `Page::global` adds them to the page, as [Rules by tag](style/global/) and [Fonts](style/fonts/) cover. `hypersig::style::pattern` has layouts such as `stack` and `grid`.",
+                    ja: "`Global` はタグで指定する要素のルールを、小さなリセットや `@font-face` と一緒に持ち、`Page::global` がそれをページに加えます。詳しくは [タグ単位のルール](style/global/) と [フォント](style/fonts/) で説明します。`hypersig::style::pattern` には `stack` や `grid` のようなレイアウトがあります。",
                 },
             ],
         ),
@@ -75,8 +75,8 @@ fn typed(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Each property method takes the values that property accepts: a keyword of its own enum, or a value of a type in [`style::value`](api:hypersig/style/value/index.html), such as a length or a color. A misspelled keyword is an unknown variant:",
-                ja: "プロパティのメソッドはそれぞれ、そのプロパティが受け付ける値を受け取ります。プロパティ専用の列挙型のキーワードか、長さや色のような [`style::value`](api:hypersig/style/value/index.html) の型の値です。キーワードを書き間違えると、存在しないバリアントになります。",
+                en: "Each property method takes the values that property accepts: a keyword of its own enum, or a value of a type in [`style::value`](api:hypersig/style/value/index.html), such as a length or a color. [Properties](style/values/) lists the shapes these methods take. A misspelled keyword is an unknown variant:",
+                ja: "プロパティのメソッドはそれぞれ、そのプロパティが受け付ける値を受け取ります。プロパティ専用の列挙型のキーワードか、長さや色のような [`style::value`](api:hypersig/style/value/index.html) の型の値です。メソッドの形は [プロパティ](style/values/) にまとめてあります。キーワードを書き間違えると、存在しないバリアントになります。",
             },
         ),
         show(Snippet::StyleKeyword),
@@ -103,8 +103,8 @@ fn following(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`css_when(style, cond)` adds a style while a signal condition holds, and `css_match(value, cases)` picks one style per value of a signal. While its condition holds, a style of `css_when` overrides the element's own declarations for the same property. Two styles switched on at once that set the same property are not checked against each other, and the one whose rule comes later in the stylesheet wins, whatever the order of the calls. `css_match` applies at most one case at a time, a value with no case adds nothing, and nothing checks that the cases cover every value. Where the value is known on the server, a function that returns a `Style` from a `match` is checked for every value by the compiler.",
-                ja: "`css_when(style, cond)` はシグナルの条件が成り立つ間だけスタイルを付け、`css_match(value, cases)` はシグナルの値ごとにスタイルを 1 つ選びます。条件が成り立つ間、`css_when` のスタイルは同じプロパティについて要素自身の宣言より優先されます。同時に有効になった 2 つのスタイルが同じプロパティを設定しても互いに検査されず、スタイルシートであとに来るルールが勝ちます。呼び出しの順序には左右されません。`css_match` が一度に適用するケースは 1 つまでで、どのケースにも当たらない値は何も加えません。ケースがすべての値を網羅しているかどうかは検査しません。値がサーバーで分かる場合は、`match` で `Style` を返す関数にすれば、すべての値をコンパイラが検査します。",
+                en: "`css_when(style, cond)` adds a style while a signal condition holds, and `css_match(value, cases)` picks one style per value of a signal. While its condition holds, a style of `css_when` overrides the element's own declarations for the same property. Two styles switched on at once that set the same property are not checked against each other, and the one whose rule comes later in the stylesheet wins, whatever the order of the calls. `css_match` applies at most one case at a time, a value with no case adds nothing, and nothing checks that the cases cover every value. Where the value is known on the server, a function that returns a `Style` from a `match` is checked for every value by the compiler. [Styles switched by a signal](style/toggled/) covers both in detail.",
+                ja: "`css_when(style, cond)` はシグナルの条件が成り立つ間だけスタイルを付け、`css_match(value, cases)` はシグナルの値ごとにスタイルを 1 つ選びます。条件が成り立つ間、`css_when` のスタイルは同じプロパティについて要素自身の宣言より優先されます。同時に有効になった 2 つのスタイルが同じプロパティを設定しても互いに検査されず、スタイルシートであとに来るルールが勝ちます。呼び出しの順序には左右されません。`css_match` が一度に適用するケースは 1 つまでで、どのケースにも当たらない値は何も加えません。ケースがすべての値を網羅しているかどうかは検査しません。値がサーバーで分かる場合は、`match` で `Style` を返す関数にすれば、すべての値をコンパイラが検査します。詳しくは [シグナルで切り替えるスタイル](style/toggled/) で説明します。",
             },
         ),
         para(
@@ -160,8 +160,8 @@ fn unchecked(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Stylesheet::new` fails to compile in a `const` when the CSS holds `</style`, in any case, which would end the `<style>` element.",
-                ja: "`const` の中の `Stylesheet::new` は、大文字と小文字を問わず CSS が `</style` を含むとコンパイルエラーになります。`<style>` 要素を終わらせてしまうからです。",
+                en: "`Stylesheet::new` fails to compile in a `const` when the CSS holds `</style`, in any case, which would end the `<style>` element. [Unchecked values](style/unchecked/) lists every form that reaches the CSS without a check.",
+                ja: "`const` の中の `Stylesheet::new` は、大文字と小文字を問わず CSS が `</style` を含むとコンパイルエラーになります。`<style>` 要素を終わらせてしまうからです。検査なしで CSS に入る書き方は、[検査しない値](style/unchecked/)にすべて挙げてあります。",
             },
         ),
     ])

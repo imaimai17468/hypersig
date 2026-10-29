@@ -234,7 +234,7 @@ pub fn style(site: Site) -> String {
                 [
                     para(
                         site,
-                        L { en: "The swatches read one token, and `bind_token` sets it from the radio group's signal. [Tokens and themes](style/tokens/) explains it.", ja: "色見本は 1 つのトークンを読み、`bind_token` がラジオグループのシグナルからそのトークンを設定します。詳しくは [トークンとテーマ](style/tokens/) で説明します。" },
+                        L { en: "The swatches read one token, and `bind_token` sets it from the radio group's signal. [Tokens](style/tokens/) explains it.", ja: "色見本は 1 つのトークンを読み、`bind_token` がラジオグループのシグナルからそのトークンを設定します。詳しくは [トークン](style/tokens/) で説明します。" },
                     ),
                     demo::show(site, Demo::Accent),
                 ],

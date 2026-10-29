@@ -1,4 +1,4 @@
-//! A token set from a signal, for the page on tokens and themes.
+//! A token set from a signal, for the page on tokens.
 
 use hypersig::html::div;
 use hypersig::style::pattern::{stack, wrap};
