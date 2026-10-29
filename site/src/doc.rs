@@ -127,33 +127,65 @@ pub enum Reference {
 /// The pages of the Components section: setup, then one page per component.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Component {
+    // Get started
     Installation,
     Theming,
+    Tokens,
+    Handles,
+    Translations,
+    // Buttons
     Button,
+    IconButton,
+    LinkButton,
+    Toggle,
+    ToggleGroup,
+    MultiToggleGroup,
+    // Form fields
     TextField,
+    NumberField,
+    DateField,
     Checkbox,
+    Switch,
     RadioGroup,
     Select,
     Slider,
-    Toggle,
+    FormFields,
+    // Pickers
     Listbox,
     Combobox,
+    // Layout
     Tabs,
     Accordion,
     Collapsible,
-    DataTable,
-    Chart,
     Card,
     Separator,
+    // Navigation
     Navigation,
+    Breadcrumb,
+    Pagination,
+    // Data
+    DataTable,
+    TableSorting,
+    TableFiltering,
+    TableSelection,
+    ServerTable,
+    Chart,
+    BarChart,
+    DonutChart,
+    // Overlays
     Dialog,
+    AlertDialog,
+    Sheet,
     Menu,
     Tooltip,
     Popover,
     Toast,
+    ServerToasts,
+    // Display
     Alert,
     Badge,
     Progress,
+    Skeleton,
     Spinner,
     Avatar,
     Kbd,
@@ -554,21 +586,40 @@ pub const COMPONENTS: &[Group] = &[
         docs: &[
             Doc::Components(Component::Installation),
             Doc::Components(Component::Theming),
+            Doc::Components(Component::Tokens),
+            Doc::Components(Component::Handles),
+            Doc::Components(Component::Translations),
         ],
     },
     Group {
         title: L {
-            en: "Forms",
-            ja: "フォーム",
+            en: "Buttons",
+            ja: "ボタン",
         },
         docs: &[
             Doc::Components(Component::Button),
+            Doc::Components(Component::IconButton),
+            Doc::Components(Component::LinkButton),
+            Doc::Components(Component::Toggle),
+            Doc::Components(Component::ToggleGroup),
+            Doc::Components(Component::MultiToggleGroup),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Form fields",
+            ja: "フォームの入力欄",
+        },
+        docs: &[
             Doc::Components(Component::TextField),
+            Doc::Components(Component::NumberField),
+            Doc::Components(Component::DateField),
             Doc::Components(Component::Checkbox),
+            Doc::Components(Component::Switch),
             Doc::Components(Component::RadioGroup),
             Doc::Components(Component::Select),
             Doc::Components(Component::Slider),
-            Doc::Components(Component::Toggle),
+            Doc::Components(Component::FormFields),
         ],
     },
     Group {
@@ -599,7 +650,11 @@ pub const COMPONENTS: &[Group] = &[
             en: "Navigation",
             ja: "ナビゲーション",
         },
-        docs: &[Doc::Components(Component::Navigation)],
+        docs: &[
+            Doc::Components(Component::Navigation),
+            Doc::Components(Component::Breadcrumb),
+            Doc::Components(Component::Pagination),
+        ],
     },
     Group {
         title: L {
@@ -608,7 +663,13 @@ pub const COMPONENTS: &[Group] = &[
         },
         docs: &[
             Doc::Components(Component::DataTable),
+            Doc::Components(Component::TableSorting),
+            Doc::Components(Component::TableFiltering),
+            Doc::Components(Component::TableSelection),
+            Doc::Components(Component::ServerTable),
             Doc::Components(Component::Chart),
+            Doc::Components(Component::BarChart),
+            Doc::Components(Component::DonutChart),
         ],
     },
     Group {
@@ -618,10 +679,13 @@ pub const COMPONENTS: &[Group] = &[
         },
         docs: &[
             Doc::Components(Component::Dialog),
+            Doc::Components(Component::AlertDialog),
+            Doc::Components(Component::Sheet),
             Doc::Components(Component::Menu),
             Doc::Components(Component::Tooltip),
             Doc::Components(Component::Popover),
             Doc::Components(Component::Toast),
+            Doc::Components(Component::ServerToasts),
         ],
     },
     Group {
@@ -630,20 +694,13 @@ pub const COMPONENTS: &[Group] = &[
             ja: "表示",
         },
         docs: &[
-            Doc::Components(Component::Avatar),
-            Doc::Components(Component::Kbd),
-        ],
-    },
-    Group {
-        title: L {
-            en: "Feedback",
-            ja: "フィードバック",
-        },
-        docs: &[
             Doc::Components(Component::Alert),
             Doc::Components(Component::Badge),
             Doc::Components(Component::Progress),
+            Doc::Components(Component::Skeleton),
             Doc::Components(Component::Spinner),
+            Doc::Components(Component::Avatar),
+            Doc::Components(Component::Kbd),
         ],
     },
 ];
@@ -876,33 +933,65 @@ impl Doc {
         Self::Reference(Reference::Patches),
         Self::Reference(Reference::Route),
         Self::Reference(Reference::RouterExt),
+        // Components: Get started
         Self::Components(Component::Installation),
         Self::Components(Component::Theming),
+        Self::Components(Component::Tokens),
+        Self::Components(Component::Handles),
+        Self::Components(Component::Translations),
+        // Components: Buttons
         Self::Components(Component::Button),
+        Self::Components(Component::IconButton),
+        Self::Components(Component::LinkButton),
+        Self::Components(Component::Toggle),
+        Self::Components(Component::ToggleGroup),
+        Self::Components(Component::MultiToggleGroup),
+        // Components: Form fields
         Self::Components(Component::TextField),
+        Self::Components(Component::NumberField),
+        Self::Components(Component::DateField),
         Self::Components(Component::Checkbox),
+        Self::Components(Component::Switch),
         Self::Components(Component::RadioGroup),
         Self::Components(Component::Select),
         Self::Components(Component::Slider),
-        Self::Components(Component::Toggle),
+        Self::Components(Component::FormFields),
+        // Components: Pickers
         Self::Components(Component::Listbox),
         Self::Components(Component::Combobox),
+        // Components: Layout
         Self::Components(Component::Tabs),
         Self::Components(Component::Accordion),
         Self::Components(Component::Collapsible),
         Self::Components(Component::Card),
         Self::Components(Component::Separator),
+        // Components: Navigation
         Self::Components(Component::Navigation),
+        Self::Components(Component::Breadcrumb),
+        Self::Components(Component::Pagination),
+        // Components: Data
         Self::Components(Component::DataTable),
+        Self::Components(Component::TableSorting),
+        Self::Components(Component::TableFiltering),
+        Self::Components(Component::TableSelection),
+        Self::Components(Component::ServerTable),
         Self::Components(Component::Chart),
+        Self::Components(Component::BarChart),
+        Self::Components(Component::DonutChart),
+        // Components: Overlays
         Self::Components(Component::Dialog),
+        Self::Components(Component::AlertDialog),
+        Self::Components(Component::Sheet),
         Self::Components(Component::Menu),
         Self::Components(Component::Tooltip),
         Self::Components(Component::Popover),
         Self::Components(Component::Toast),
+        Self::Components(Component::ServerToasts),
+        // Components: Display
         Self::Components(Component::Alert),
         Self::Components(Component::Badge),
         Self::Components(Component::Progress),
+        Self::Components(Component::Skeleton),
         Self::Components(Component::Spinner),
         Self::Components(Component::Avatar),
         Self::Components(Component::Kbd),
@@ -1121,33 +1210,67 @@ impl Doc {
                 Reference::RouterExt => ("RouterExt", "RouterExt"),
             },
             Self::Components(page) => match page {
+                // Get started
                 Component::Installation => ("Installation", "インストール"),
                 Component::Theming => ("Theming", "テーマ"),
+                Component::Tokens => ("Tokens", "トークン"),
+                Component::Handles => ("Handles", "ハンドル"),
+                Component::Translations => ("Text in other languages", "ほかの言語の文言"),
+                // Buttons
                 Component::Button => ("Button", "ボタン"),
+                Component::IconButton => ("Icon button", "アイコンボタン"),
+                Component::LinkButton => ("Link styled as a button", "ボタンの見た目のリンク"),
+                Component::Toggle => ("Toggle", "トグル"),
+                Component::ToggleGroup => ("Toggle group", "トグルグループ"),
+                Component::MultiToggleGroup => {
+                    ("Multiple-choice toggle group", "複数選択のトグルグループ")
+                }
+                // Form fields
                 Component::TextField => ("Text field", "テキストフィールド"),
-                Component::Checkbox => ("Checkbox and switch", "チェックボックスとスイッチ"),
+                Component::NumberField => ("Number field", "数値フィールド"),
+                Component::DateField => ("Date field", "日付フィールド"),
+                Component::Checkbox => ("Checkbox", "チェックボックス"),
+                Component::Switch => ("Switch", "スイッチ"),
                 Component::RadioGroup => ("Radio group", "ラジオグループ"),
                 Component::Select => ("Select", "セレクト"),
                 Component::Slider => ("Slider", "スライダー"),
-                Component::Toggle => ("Toggle and toggle group", "トグルとトグルグループ"),
+                Component::FormFields => ("Fields bound to a form", "フォームに結び付けた入力欄"),
+                // Pickers
                 Component::Listbox => ("Listbox", "リストボックス"),
                 Component::Combobox => ("Combobox", "コンボボックス"),
+                // Layout
                 Component::Tabs => ("Tabs", "タブ"),
                 Component::Accordion => ("Accordion", "アコーディオン"),
                 Component::Collapsible => ("Collapsible", "折りたたみ"),
                 Component::Card => ("Card", "カード"),
                 Component::Separator => ("Separator", "区切り線"),
+                // Navigation
                 Component::Navigation => ("Navigation", "ナビゲーション"),
+                Component::Breadcrumb => ("Breadcrumb", "パンくずリスト"),
+                Component::Pagination => ("Pagination", "ページネーション"),
+                // Data
                 Component::DataTable => ("Data table", "データテーブル"),
+                Component::TableSorting => ("Sorting a table", "テーブルの並べ替え"),
+                Component::TableFiltering => ("Filtering and pages", "絞り込みとページ分け"),
+                Component::TableSelection => ("Selecting and expanding rows", "行の選択と展開"),
+                Component::ServerTable => ("Server table", "サーバーテーブル"),
                 Component::Chart => ("Chart", "チャート"),
+                Component::BarChart => ("Bar chart", "棒グラフ"),
+                Component::DonutChart => ("Donut chart", "ドーナツチャート"),
+                // Overlays
                 Component::Dialog => ("Dialog", "ダイアログ"),
+                Component::AlertDialog => ("Alert dialog", "アラートダイアログ"),
+                Component::Sheet => ("Sheet", "シート"),
                 Component::Menu => ("Menu", "メニュー"),
                 Component::Tooltip => ("Tooltip", "ツールチップ"),
                 Component::Popover => ("Popover", "ポップオーバー"),
                 Component::Toast => ("Toast", "トースト"),
+                Component::ServerToasts => ("Toasts from the server", "サーバーからのトースト"),
+                // Display
                 Component::Alert => ("Alert", "アラート"),
                 Component::Badge => ("Badge", "バッジ"),
-                Component::Progress => ("Progress and skeleton", "プログレスとスケルトン"),
+                Component::Progress => ("Progress", "プログレス"),
+                Component::Skeleton => ("Skeleton", "スケルトン"),
                 Component::Spinner => ("Spinner", "スピナー"),
                 Component::Avatar => ("Avatar", "アバター"),
                 Component::Kbd => ("Kbd", "Kbd"),
@@ -1641,15 +1764,227 @@ impl Doc {
                 },
             },
             Self::Components(page) => match page {
+                // Get started
                 Component::Installation => L {
                     en: "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
                     ja: "`hypersig_ui` は、見た目が shadcn/ui に似ており、振る舞いはブラウザのネイティブ要素と WAI-ARIA Authoring Practices に従うコンポーネント集です。",
                 },
                 Component::Theming => L {
-                    en: "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
-                    ja: "コンポーネントは色と角の丸みをデザイントークンから読みます。トークンの値は、ページ全体にはテーマが、1 つの要素にはスタイルが設定します。",
+                    en: "The components are light by default and dark for a visitor whose system prefers dark. `light()` and `dark()` let a signal pick the scheme instead.",
+                    ja: "コンポーネントは既定でライトの配色になり、システムがダークを選んでいる訪問者にはダークの配色になります。`light()` と `dark()` を使うと、代わりにシグナルで配色を選べます。",
                 },
-                _ => components::component_lead(page),
+                Component::Tokens => L {
+                    en: "The components read their colors and their corner radius from the tokens of the `token` module, which a theme sets for the page and a style sets for one element.",
+                    ja: "コンポーネントは色と角の丸みを `token` モジュールのトークンから読みます。トークンの値は、ページ全体にはテーマが、1 つの要素にはスタイルが設定します。",
+                },
+                Component::Handles => L {
+                    en: "A dialog, a menu, a popover, a tooltip, and a combobox are `const` handles. The button that opens one and the element it opens are built from the same handle, so they agree on the element's id.",
+                    ja: "ダイアログ、メニュー、ポップオーバー、ツールチップ、コンボボックスは `const` のハンドルです。開くボタンと開かれる要素を同じハンドルから作るので、両者は要素の id で食い違いません。",
+                },
+                Component::Translations => L {
+                    en: "A few components show or announce words of their own, such as \"Close\" or \"No matches\". They are English by default, and each is a field of a struct that a page in another language fills in.",
+                    ja: "いくつかのコンポーネントは「Close」や「No matches」のような独自の文言を表示したり読み上げさせたりします。既定は英語で、どの文言も構造体のフィールドなので、ほかの言語のページはそれを埋めて渡します。",
+                },
+                // Buttons
+                Component::Button => L {
+                    en: "A native `<button>` in one of six variants and three sizes. `button` does not submit a form, and `submit_button` does.",
+                    ja: "6 つのバリアントと 3 つのサイズから選べるネイティブの `<button>` です。`button` はフォームを送信せず、`submit_button` は送信します。",
+                },
+                Component::IconButton => L {
+                    en: "A square button that shows only an icon. Its name for assistive technology is a required argument.",
+                    ja: "アイコンだけを表示する正方形のボタンです。支援技術に伝える名前は必須の引数です。",
+                },
+                Component::LinkButton => L {
+                    en: "`button_style` gives a link the look of a button. It stays an `<a>`, so it navigates and a screen reader announces it as a link.",
+                    ja: "`button_style` はリンクにボタンの見た目を与えます。要素は `<a>` のままなので、ページを移動し、スクリーンリーダーもリンクとして読み上げます。",
+                },
+                Component::Toggle => L {
+                    en: "A button that is pressed or not, bound to a `bool` signal. A click flips the signal.",
+                    ja: "押された状態と押されていない状態を持つボタンで、`bool` のシグナルに結び付きます。クリックするとシグナルが反転します。",
+                },
+                Component::ToggleGroup => L {
+                    en: "A row of toggles of which exactly one is on, bound to a signal that holds the chosen value.",
+                    ja: "常にちょうど 1 つだけがオンになるトグルの並びで、選んだ値を持つシグナルに結び付きます。",
+                },
+                Component::MultiToggleGroup => L {
+                    en: "A row of toggles, each bound to a `bool` signal of its own, that any number of can be on at once.",
+                    ja: "トグルの並びで、それぞれが自分の `bool` のシグナルに結び付きます。いくつでも同時にオンにできます。",
+                },
+                // Form fields
+                Component::TextField => L {
+                    en: "A labeled `<input>` or `<textarea>` bound to a `String` signal, with an optional description and error message tied to it.",
+                    ja: "ラベル付きの `<input>` または `<textarea>` で、`String` のシグナルに結び付きます。説明とエラーメッセージを付けると、それらも入力欄に結び付きます。",
+                },
+                Component::NumberField => L {
+                    en: "A labeled `<input type=\"number\">` bound to an `i32` or `f64` signal, whose `min`, `max`, and `step` take the signal's own type.",
+                    ja: "ラベル付きの `<input type=\"number\">` で、`i32` か `f64` のシグナルに結び付きます。`min`、`max`、`step` はシグナルと同じ型の値を受け取ります。",
+                },
+                Component::DateField => L {
+                    en: "A labeled `<input type=\"date\">` bound to a `CalendarDate` signal, which the browser fills from its own date picker.",
+                    ja: "ラベル付きの `<input type=\"date\">` で、`CalendarDate` のシグナルに結び付きます。値はブラウザ自身の日付ピッカーで入力します。",
+                },
+                Component::Checkbox => L {
+                    en: "A native checkbox inside the label that names it, bound to a `bool` signal.",
+                    ja: "名前を表すラベルの中に置いたネイティブのチェックボックスで、`bool` のシグナルに結び付きます。",
+                },
+                Component::Switch => L {
+                    en: "An on and off switch bound to a `bool` signal. It is a native checkbox with `role=\"switch\"`.",
+                    ja: "オンとオフを切り替えるスイッチで、`bool` のシグナルに結び付きます。`role=\"switch\"` を付けたネイティブのチェックボックスです。",
+                },
+                Component::RadioGroup => L {
+                    en: "A `<fieldset>` of radio buttons, one per option, that sets a signal to the chosen option's value.",
+                    ja: "選択肢ごとにラジオボタンを並べた `<fieldset>` で、選んだ選択肢の値をシグナルに設定します。",
+                },
+                Component::Select => L {
+                    en: "A labeled native `<select>` that sets a signal to the chosen option's value.",
+                    ja: "ラベル付きのネイティブの `<select>` で、選んだ選択肢の値をシグナルに設定します。",
+                },
+                Component::Slider => L {
+                    en: "A labeled `<input type=\"range\">` bound to an `i32` signal, drawn as a track and a thumb that look the same in every browser.",
+                    ja: "ラベル付きの `<input type=\"range\">` で、`i32` のシグナルに結び付きます。トラックとつまみを描画するので、どのブラウザでも同じ見た目になります。",
+                },
+                Component::FormFields => L {
+                    en: "Each form field has a variant that binds it to a field of a `Form`, shows the form's message for that field, and marks the field touched when the visitor leaves it.",
+                    ja: "どの入力欄にも `Form` のフィールドに結び付ける版があります。その版はフィールドに対するフォームのメッセージを表示し、訪問者が入力欄から離れるとフィールドを操作済みにします。",
+                },
+                // Pickers
+                Component::Listbox => L {
+                    en: "A list of options, one per variant of an enum, of which one is selected. The arrow keys move the selection.",
+                    ja: "列挙型のバリアントごとに選択肢を並べ、そのうち 1 つを選ぶリストです。矢印キーで選択を移します。",
+                },
+                Component::Combobox => L {
+                    en: "A text field with a list of options that narrows as the visitor types. Choosing an option puts it in the field.",
+                    ja: "入力に合わせて選択肢が絞り込まれるテキストフィールドです。選択肢を選ぶと、その文字列が入力欄に入ります。",
+                },
+                // Overlays
+                Component::Dialog => L {
+                    en: "A modal dialog that the browser opens and closes from buttons, with the rest of the page inert while it is open.",
+                    ja: "ボタンからブラウザが開閉するモーダルダイアログです。開いている間、ページのほかの部分は操作できません。",
+                },
+                Component::AlertDialog => L {
+                    en: "A modal dialog that asks the visitor to confirm or cancel before going on, and stays open until they answer.",
+                    ja: "先に進む前に、訪問者に確認か取り消しを求めるモーダルダイアログです。訪問者が答えるまで閉じません。",
+                },
+                Component::Sheet => L {
+                    en: "A modal dialog along one edge of the viewport, for content too long or too wide for a dialog in the middle.",
+                    ja: "ビューポートの端に沿って出るモーダルダイアログです。中央のダイアログには長すぎる内容や広すぎる内容に使います。",
+                },
+                Component::Menu => L {
+                    en: "A button that opens a list of actions, which the visitor moves through with the arrow keys.",
+                    ja: "操作の一覧を開くボタンです。訪問者は一覧の中を矢印キーで移動します。",
+                },
+                Component::Tooltip => L {
+                    en: "A short description of a button, shown while the button is hovered or focused.",
+                    ja: "ボタンの短い説明です。ボタンにポインタが重なっている間か、フォーカスがある間に表示します。",
+                },
+                Component::Popover => L {
+                    en: "A panel of content that a button opens beside itself, while the rest of the page stays usable.",
+                    ja: "ボタンが自分の横に開く、内容を入れるパネルです。開いている間もページのほかの部分は操作できます。",
+                },
+                Component::Toast => L {
+                    en: "Short notices in a corner of the page, which a statement in the browser adds to a list signal.",
+                    ja: "ページの隅に表示する短いお知らせです。ブラウザで実行する文が、リストのシグナルに追加します。",
+                },
+                Component::ServerToasts => L {
+                    en: "A handler adds a toast with a patch on the list of toasts, and a failed call can show the server's message as a toast.",
+                    ja: "ハンドラはトーストのリストへの差分でトーストを追加します。呼び出しが失敗したときは、サーバーのメッセージをトーストで表示できます。",
+                },
+                // Display
+                Component::Alert => L {
+                    en: "A bordered box for a message, with a title and a description, which a screen reader reads as a live region.",
+                    ja: "タイトルと説明を持つ、メッセージ用の枠線付きのボックスです。スクリーンリーダーはライブリージョンとして読み上げます。",
+                },
+                Component::Badge => L {
+                    en: "A short label, such as a status, drawn as a small pill in one of four looks.",
+                    ja: "状態などの短いラベルを、4 つの見た目のどれかで小さな丸い枠に表示します。",
+                },
+                Component::Progress => L {
+                    en: "A bar filled up to a percentage, which a screen reader reads with its label.",
+                    ja: "割合の分だけ塗りつぶされるバーです。スクリーンリーダーはラベルと一緒に割合を読み上げます。",
+                },
+                Component::Skeleton => L {
+                    en: "A pulsing block that stands in for content still loading, sized to the content it replaces.",
+                    ja: "読み込み中の内容の代わりに置く、明滅するブロックです。大きさは代わりに置く内容に合わせます。",
+                },
+                Component::Spinner => L {
+                    en: "A turning ring that marks work whose length is not known, named for a screen reader by its label.",
+                    ja: "どれだけかかるかわからない処理の途中であることを示す、回転する輪です。スクリーンリーダーにはラベルで名前を伝えます。",
+                },
+                Component::Avatar => L {
+                    en: "A round picture of a person, with their initials where there is no picture or it fails to load.",
+                    ja: "人を表す丸い画像です。画像がないときや読み込めないときは、イニシャルを表示します。",
+                },
+                Component::Kbd => L {
+                    en: "A key or a shortcut the visitor presses, drawn as a small cap in running text.",
+                    ja: "訪問者が押すキーやショートカットを、文中に小さなキーの形で表示します。",
+                },
+                // Layout
+                Component::Tabs => L {
+                    en: "A tab list that keeps the selected tab in a signal, with one panel per tab.",
+                    ja: "選ばれたタブをシグナルに持つタブの一覧です。タブごとに 1 つのパネルがあります。",
+                },
+                Component::Accordion => L {
+                    en: "A stack of sections that open and close, one at a time or each on its own.",
+                    ja: "開閉するセクションを縦に並べたものです。一度に 1 つだけ開く形と、それぞれが独立に開く形があります。",
+                },
+                Component::Collapsible => L {
+                    en: "A button that shows and hides one region, bound to a `bool` signal.",
+                    ja: "1 つの領域を表示したり隠したりするボタンです。`bool` のシグナルに束縛します。",
+                },
+                Component::Card => L {
+                    en: "A bordered box with a header, content, and a footer, whose title is a heading of the level you choose.",
+                    ja: "ヘッダー、中身、フッターを持つ枠線付きのボックスです。タイトルは、選んだレベルの見出しになります。",
+                },
+                Component::Separator => L {
+                    en: "A one-pixel line between groups of content, across or along.",
+                    ja: "内容のまとまりの間に引く、横向きか縦向きの 1 ピクセルの線です。",
+                },
+                // Navigation
+                Component::Navigation => L {
+                    en: "A list of links to the sections of an application, which marks the one the visitor is in.",
+                    ja: "アプリケーションのセクションへのリンクの一覧です。訪問者がいるセクションに印を付けます。",
+                },
+                Component::Breadcrumb => L {
+                    en: "A trail of links to the pages above the current one, ending at the current page.",
+                    ja: "今のページより上のページへのリンクを並べ、今のページで終わるパンくずリストです。",
+                },
+                Component::Pagination => L {
+                    en: "Links to the pages of a long list: the page before and after, the first and the last, and the pages next to the current one.",
+                    ja: "長い一覧のページへのリンクです。前後のページ、最初と最後のページ、今のページの隣のページを並べます。",
+                },
+                // Data
+                Component::DataTable => L {
+                    en: "A table of the rows of a list signal, under columns built from the fields of the row type.",
+                    ja: "リストのシグナルの行を、行の型のフィールドから作った列の下に並べる表です。",
+                },
+                Component::TableSorting => L {
+                    en: "Column headers that sort the rows of a table in the browser, ascending and then descending.",
+                    ja: "表の行をブラウザで並べ替える列の見出しです。押すたびに昇順と降順が切り替わります。",
+                },
+                Component::TableFiltering => L {
+                    en: "A field that filters the rows of a table, pages of a fixed number of rows, and columns shown only while a condition holds.",
+                    ja: "表の行を絞り込む入力欄、決まった行数ごとのページ、条件が成り立つ間だけ表示する列です。",
+                },
+                Component::TableSelection => L {
+                    en: "Checkboxes that keep the keys of the selected rows in a list signal, and buttons that open a row's details under it.",
+                    ja: "選んだ行のキーをリストのシグナルに持つチェックボックスと、行の下に詳細を開くボタンです。",
+                },
+                Component::ServerTable => L {
+                    en: "A table whose filter, sort, and page go to an action, which answers with one page of rows.",
+                    ja: "絞り込み、並べ替え、ページをアクションに送り、アクションが 1 ページ分の行を返す表です。",
+                },
+                Component::Chart => L {
+                    en: "Line and area charts of the rows of a list signal, on a scale that fits the values.",
+                    ja: "リストのシグナルの行を描く折れ線グラフと面グラフです。目盛りは値に合わせて決まります。",
+                },
+                Component::BarChart => L {
+                    en: "Bars, stacked bars, and horizontal bars of the rows of a list signal.",
+                    ja: "リストのシグナルの行を描く棒グラフ、積み上げ棒グラフ、横棒グラフです。",
+                },
+                Component::DonutChart => L {
+                    en: "A ring of arcs, each as long as one row's share of the total.",
+                    ja: "各行が合計に占める割合の長さの弧を並べた輪です。",
+                },
             },
             Self::Reference(Reference::Overview) => L {
                 en: "The items of the `hypersig` crate, grouped by what they build. Each name links to its full documentation.",
@@ -1857,33 +2192,65 @@ impl Reference {
 impl Component {
     fn slug(self) -> &'static str {
         match self {
+            // Get started
             Self::Installation => "installation",
             Self::Theming => "theming",
+            Self::Tokens => "tokens",
+            Self::Handles => "handles",
+            Self::Translations => "component-text",
+            // Buttons
             Self::Button => "button",
+            Self::IconButton => "icon-button",
+            Self::LinkButton => "link-button",
+            Self::Toggle => "toggle",
+            Self::ToggleGroup => "toggle-group",
+            Self::MultiToggleGroup => "multi-toggle-group",
+            // Form fields
             Self::TextField => "text-field",
+            Self::NumberField => "number-field",
+            Self::DateField => "date-field",
             Self::Checkbox => "checkbox",
+            Self::Switch => "switch",
             Self::RadioGroup => "radio-group",
             Self::Select => "select",
             Self::Slider => "slider",
-            Self::Toggle => "toggle",
+            Self::FormFields => "form-fields",
+            // Pickers
             Self::Listbox => "listbox",
             Self::Combobox => "combobox",
+            // Layout
             Self::Tabs => "tabs",
             Self::Accordion => "accordion",
             Self::Collapsible => "collapsible",
             Self::Card => "card",
             Self::Separator => "separator",
+            // Navigation
             Self::Navigation => "navigation",
+            Self::Breadcrumb => "breadcrumb",
+            Self::Pagination => "pagination",
+            // Data
             Self::DataTable => "data-table",
+            Self::TableSorting => "table-sorting",
+            Self::TableFiltering => "table-filtering",
+            Self::TableSelection => "table-selection",
+            Self::ServerTable => "server-table",
             Self::Chart => "chart",
+            Self::BarChart => "bar-chart",
+            Self::DonutChart => "donut-chart",
+            // Overlays
             Self::Dialog => "dialog",
+            Self::AlertDialog => "alert-dialog",
+            Self::Sheet => "sheet",
             Self::Menu => "menu",
             Self::Tooltip => "tooltip",
             Self::Popover => "popover",
             Self::Toast => "toast",
+            Self::ServerToasts => "server-toasts",
+            // Display
             Self::Alert => "alert",
             Self::Badge => "badge",
             Self::Progress => "progress",
+            Self::Skeleton => "skeleton",
             Self::Spinner => "spinner",
             Self::Avatar => "avatar",
             Self::Kbd => "kbd",

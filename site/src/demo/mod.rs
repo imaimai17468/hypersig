@@ -82,6 +82,7 @@ demos! {
     Signup => signup, "signup.rs", "38.5rem";
     Theme => theme, "ui/theme.rs", "21rem";
     Button => button, "ui/button.rs", "12rem";
+    LinkButton => link_button, "ui/link_button.rs", "8rem";
     TextField => text_field, "ui/text_field.rs", "20rem";
     Checkbox => checkbox, "ui/checkbox.rs", "9.5rem";
     RadioGroup => radio_group, "ui/radio_group.rs", "13.5rem";
@@ -101,18 +102,28 @@ demos! {
     Card => card, "ui/card.rs", "19rem";
     Alert => alert, "ui/alert.rs", "16rem";
     Badge => badge, "ui/badge.rs", "8rem";
-    Progress => progress, "ui/progress.rs", "10.5rem";
+    Progress => progress, "ui/progress.rs", "7rem";
     Loading => loading, "ui/loading.rs", "6rem";
     Avatar => avatar, "ui/avatar.rs", "5rem";
     Kbd => kbd, "ui/kbd.rs", "7rem";
     Separator => separator, "ui/separator.rs", "12.5rem";
-    Navigation => navigation, "ui/navigation.rs", "15rem";
-    DataTable => data_table, "ui/data_table.rs", "25rem";
-    Chart => chart, "ui/chart.rs", "29rem";
+    Navigation => navigation, "ui/navigation.rs", "12rem";
+    DataTable => data_table, "ui/data_table.rs", "17rem";
+    Chart => chart, "ui/chart.rs", "28rem";
     Hover => hover, "style/hover.rs", "12rem";
     Accent => accent, "style/accent.rs", "15rem";
     Layout => layout, "style/layout.rs", "14rem";
     Spinner => spinner, "style/spinner.rs", "6rem";
+    AlertDialog => alert_dialog, "ui/alert_dialog.rs", "16rem";
+    Sheet => sheet, "ui/sheet.rs", "18rem";
+    Skeleton => skeleton, "ui/skeleton.rs", "9rem";
+    Breadcrumb => breadcrumb, "ui/breadcrumb.rs", "8rem";
+    Pagination => pagination, "ui/pagination.rs", "9rem";
+    TableSorting => table_sorting, "ui/table_sorting.rs", "17.5rem";
+    TableFiltering => table_filtering, "ui/table_filtering.rs", "24rem";
+    TableSelection => table_selection, "ui/table_selection.rs", "21rem";
+    BarChart => bar_chart, "ui/bar_chart.rs", "24.5rem";
+    DonutChart => donut_chart, "ui/donut_chart.rs", "26rem";
 }
 
 /// The script of `<star-rating>`, which the rating demo loads and the page
