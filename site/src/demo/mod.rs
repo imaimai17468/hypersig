@@ -82,6 +82,7 @@ demos! {
     Signup => signup, "signup.rs", "38.5rem";
     Theme => theme, "ui/theme.rs", "21rem";
     Button => button, "ui/button.rs", "12rem";
+    LinkButton => link_button, "ui/link_button.rs", "8rem";
     TextField => text_field, "ui/text_field.rs", "20rem";
     Checkbox => checkbox, "ui/checkbox.rs", "9.5rem";
     RadioGroup => radio_group, "ui/radio_group.rs", "13.5rem";

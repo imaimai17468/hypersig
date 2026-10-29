@@ -80,9 +80,6 @@ snippets! {
     Styles => "page/styles.rs";
     Effects => "browser/effects.rs";
     StaticPage => "browser/static_page.rs";
-    UiSetup => "ui_setup.rs";
-    UiTheme => "ui_theme.rs";
-    UiScheme => "ui_scheme.rs";
     ToastServer => "toast_server.rs";
     StyleBasics => "style/start/basics.rs";
     StyleValues => "style/values/properties.rs";
@@ -384,6 +381,53 @@ snippets! {
     LinkedStylesheet => "style/unchecked/linked_stylesheet.rs";
     StyleAttr => "style/unchecked/style_attr.rs", "compile_fail,E0080";
     // The samples of the Components pages under Get started, Buttons, Form fields, and Pickers.
+    UiSetup => "components/start/setup.rs";
+    UiPreview => "components/start/preview.rs";
+    UiScheme => "components/start/scheme.rs";
+    UiTokens => "components/start/tokens.rs";
+    UiHandles => "components/start/handles.rs";
+    UiTexts => "components/start/texts.rs";
+    UiButton => "components/buttons/button.rs";
+    UiIconButton => "components/buttons/icon_button.rs";
+    UiLinkButton => "components/buttons/link_button.rs";
+    UiToggle => "components/buttons/toggle.rs";
+    UiToggleGroup => "components/buttons/toggle_group.rs";
+    UiMultiToggleGroup => "components/buttons/multi_toggle_group.rs";
+    UiTextField => "components/forms/text_field.rs";
+    UiNumberField => "components/forms/number_field.rs";
+    UiNumberBounds => "components/forms/number_bounds.rs", "should_panic";
+    UiDateField => "components/forms/date_field.rs";
+    UiCheckbox => "components/forms/checkbox.rs";
+    UiSwitch => "components/forms/switch.rs";
+    UiRadioGroup => "components/forms/radio_group.rs";
+    UiSelect => "components/forms/select.rs";
+    UiSlider => "components/forms/slider.rs";
+    UiFormFields => "components/forms/form_fields.rs";
+    UiListbox => "components/pickers/listbox.rs";
+    UiCombobox => "components/pickers/combobox.rs";
+    UiGlobalAsTheme =>"components/start/global_as_theme.rs", "compile_fail,E0308";
+    UiThemeAsStyle => "components/start/theme_as_style.rs", "compile_fail,E0308";
+    UiTokenWrongValue => "components/start/token_wrong_value.rs", "compile_fail,E0277";
+    UiComboboxSameRef => "components/start/combobox_same_ref.rs", "compile_fail,E0080";
+    UiHandleTwice => "components/start/handle_twice.rs", "should_panic";
+    UiTextMissingField => "components/start/text_missing_field.rs", "compile_fail,E0063";
+    UiVariantString => "components/buttons/variant_string.rs", "compile_fail,E0308";
+    UiIconWithoutLabel => "components/buttons/icon_without_label.rs", "compile_fail,E0061";
+    UiLinkHrefString => "components/buttons/link_href_string.rs", "compile_fail,E0277";
+    UiToggleComputed => "components/buttons/toggle_computed.rs", "compile_fail,E0277";
+    UiGroupWrongValue => "components/buttons/group_wrong_value.rs", "compile_fail,E0308";
+    UiMultiWrongSignal => "components/buttons/multi_wrong_signal.rs", "compile_fail,E0308";
+    UiTextFieldNumber => "components/forms/text_field_number.rs", "compile_fail,E0308";
+    UiNumberFieldText => "components/forms/number_field_text.rs", "compile_fail,E0277";
+    UiDateFieldText => "components/forms/date_field_text.rs", "compile_fail,E0277";
+    UiCheckboxComputed => "components/forms/checkbox_computed.rs", "compile_fail,E0277";
+    UiSwitchText => "components/forms/switch_text.rs", "compile_fail,E0308";
+    UiRadioWrongOption => "components/forms/radio_wrong_option.rs", "compile_fail,E0271";
+    UiSelectOtherEnum => "components/forms/select_other_enum.rs", "compile_fail,E0271";
+    UiSliderFloat => "components/forms/slider_float.rs", "compile_fail,E0308";
+    UiInFormOtherStruct => "components/forms/in_form_other_struct.rs", "compile_fail,E0308";
+    UiListboxNoSegment => "components/pickers/listbox_no_segment.rs", "compile_fail,E0277";
+    UiComboboxStringState => "components/pickers/combobox_string_state.rs", "compile_fail,E0308";
     // The samples of the Components pages under Layout, Navigation, and Data.
     // The samples of the Components pages under Overlays and Display.
 }

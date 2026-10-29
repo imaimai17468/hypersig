@@ -8,7 +8,9 @@ struct Signup {
 }
 
 let html = Page::new("Sign up", Signup { name: String::new() })
+    // The reset, the font, and the page colors.
     .global(hypersig_ui::global())
+    // The dark values of the tokens, for a system that prefers dark.
     .theme(hypersig_ui::theme())
     .child(
         card().child(
@@ -18,4 +20,5 @@ let html = Page::new("Sign up", Signup { name: String::new() })
         ),
     )
     .render();
-assert!(html.contains(r#"for="ui-name-input""#));
+# assert!(html.contains(":root{color-scheme:light dark}"));
+# assert!(html.contains("@media (prefers-color-scheme: dark){:root{--background:#09090b;"));
