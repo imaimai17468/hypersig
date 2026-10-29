@@ -2,6 +2,32 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.14.0] - 2026-10-29
+
+### Breaking
+
+- `Style::line_height` takes a multiplier as an `f64` and no longer converts from an integer. `line_height(16)` wrote 16 times the font size; write `line_height(2.0)` for a multiplier or `line_height(px(16))` for a length.
+- Two `Keyframes` with one name and different steps panic where their styles meet, including in `Page::render` and `Patches::element`. Only the first was written, so the other animation played the wrong steps. Identical keyframes are still written once.
+- `Color::hex` panics on a value above `0xffffff`. It dropped the top byte of an eight-digit value; `Color::hex_alpha` writes `#rrggbbaa`.
+- `FontFace::weights` panics on a value outside 1 to 1000 or on a range whose minimum is above its maximum, which the browser drops.
+- `El::aria_describedby`, `El::aria_activedescendant`, and `El::popover_target` panic when called twice on one element, as the other attributes that name an id do. The browser read only the first.
+
+### Added
+
+- `clamp`, `min`, `max`, and the `+`, `-`, `* f64`, and `/ f64` operators write `calc()` over one quantity type (`Length`, `Percentage`, `Time`, or `Angle`); mixing two is a compile error.
+- `Color::hsl`, `Color::oklch`, and `Color::oklab` with typed channels.
+- Every generated value enum ends in `Raw`, and `Color` and `Length` convert from `Raw`, for a value the types cannot write yet.
+- `ColorScheme::Light`, `Dark`, and `LightDark`, and the other single values MDN's grammar allows alone, such as `Display::ListItem` and `ScrollbarGutter::Stable`. The grid-line properties still refuse an integer.
+- `FontFamily::fallback` lists fallback families, also after `FontFace::family()`.
+- `Global::write_css` writes a `Global` into a page's stylesheet with the page's keyframes.
+
+### Fixed
+
+- A `Global` rule whose style carries `Style::keyframes` writes its `@keyframes` rule, and a page checks those keyframes with its elements' keyframes.
+- `all` is written before the properties it resets, so `accent-color` in the same style is no longer reset by `all: unset`.
+- `Length::ZERO` keeps its unit inside `calc()` and equals `px(0)`.
+- The docs of `PseudoClass` name the pseudo-classes it leaves out and why, and the docs of `Segment`, `Base`, and `routes!` describe the implementors and the 500 of a nested router as they are.
+
 ## [0.13.3] - 2026-10-28
 
 ### Added
