@@ -225,8 +225,8 @@ fn next(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[The i18n overview](i18n/overview/) covers writing every text of a page once per language with `hypersig_i18n`. [Combobox](components/combobox/), [Dialog](components/dialog/), [Pagination](components/pagination/), and [Data table](components/data-table/) show each struct in use.",
-                ja: "`hypersig_i18n` でページのすべての文言を言語ごとに書く方法は [i18n の概要](i18n/overview/)で説明しています。各構造体の使い方は[コンボボックス](components/combobox/)、[ダイアログ](components/dialog/)、[ページネーション](components/pagination/)、[データテーブル](components/data-table/)のページにあります。",
+                en: "[Writing a text](i18n/texts/) covers writing every text of a page once per language with `hypersig_i18n`. [Combobox](components/combobox/), [Dialog](components/dialog/), [Pagination](components/pagination/), and [Data table](components/data-table/) show each struct in use.",
+                ja: "`hypersig_i18n` でページのすべての文言を言語ごとに書く方法は[文を書く](i18n/texts/)で説明しています。各構造体の使い方は[コンボボックス](components/combobox/)、[ダイアログ](components/dialog/)、[ページネーション](components/pagination/)、[データテーブル](components/data-table/)のページにあります。",
             },
         ),
     ])
