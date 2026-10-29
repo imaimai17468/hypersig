@@ -766,7 +766,6 @@ fn generate() -> (String, String) {
                 Atom::Keyword(_) => None,
             })
             .collect();
-        let raw = !singles.complete;
         let method = snake(name);
         check_ident(&method, "property method");
         assert!(
@@ -778,15 +777,22 @@ fn generate() -> (String, String) {
             "two properties map to `{method}`"
         );
         let url = value["mdn_url"].as_str().unwrap_or("");
-        let unchecked = if raw {
-            "\n    ///\n    /// The single-value forms are typed. Any other value goes through \
-             [`Raw`](crate::value::Raw), which is passed to the browser unchecked."
-        } else {
-            ""
-        };
         let property = camel(name);
 
-        let arg = if keywords.is_empty() && !raw && kinds.len() == 1 {
+        // A property whose one value is a hand-written type takes that type.
+        // `Color` and `Length` take a `calc()` or another function through
+        // their own `From<Raw>`, and `f64` and `i32` take none. Every other
+        // property takes a generated enum, which ends in `Raw` for such a
+        // function and for the forms of more than one value.
+        let direct = keywords.is_empty() && singles.complete && kinds.len() == 1;
+        let unchecked = if direct {
+            ""
+        } else {
+            "\n    ///\n    /// The single-value forms are typed. Any other value goes through \
+             [`Raw`](crate::value::Raw), which is passed to the browser unchecked."
+        };
+
+        let arg = if direct {
             if !matches!(kinds[0], Kind::Number | Kind::Integer) {
                 single_kinds.insert(kinds[0].type_name());
             }
@@ -817,12 +823,8 @@ fn generate() -> (String, String) {
                     kind.type_name()
                 );
             }
-            if raw {
-                assert!(variants.insert("Raw".to_owned()), "{ty}::Raw twice");
-                enums.push_str(
-                    "    /// Any other value, passed through unchecked.\n    Raw(Raw),\n",
-                );
-            }
+            assert!(variants.insert("Raw".to_owned()), "{ty}::Raw twice");
+            enums.push_str("    /// Any other value, passed through unchecked.\n    Raw(Raw),\n");
             enums.push_str("}\n\n");
             let _ = writeln!(enums, "impl fmt::Display for {ty} {{");
             enums.push_str("    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n");
@@ -842,9 +844,7 @@ fn generate() -> (String, String) {
                 };
                 let _ = writeln!(enums, "            Self::{}(v) => {write},", kind.variant());
             }
-            if raw {
-                enums.push_str("            Self::Raw(v) => v.fmt(f),\n");
-            }
+            enums.push_str("            Self::Raw(v) => v.fmt(f),\n");
             enums.push_str("        }\n    }\n}\n\n");
             let has_integer = kinds.contains(&Kind::Integer);
             for kind in &kinds {
@@ -864,12 +864,10 @@ fn generate() -> (String, String) {
                     );
                 }
             }
-            if raw {
-                let _ = writeln!(
-                    enums,
-                    "impl From<Raw> for {ty} {{\n    fn from(v: Raw) -> Self {{\n        Self::Raw(v)\n    }}\n}}\n"
-                );
-            }
+            let _ = writeln!(
+                enums,
+                "impl From<Raw> for {ty} {{\n    fn from(v: Raw) -> Self {{\n        Self::Raw(v)\n    }}\n}}\n"
+            );
             format!("crate::value::{ty}")
         };
         let panics = if kinds.contains(&Kind::Number) {

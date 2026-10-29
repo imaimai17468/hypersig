@@ -73,6 +73,21 @@ fn building(site: Site) -> Part {
                         "`rgb(r g b)`",
                     ],
                     &[
+                        "[`Color::hsl`](api:hypersig/style/value/struct.Color.html#method.hsl)",
+                        "`fn hsl(hue: Angle, saturation: Percentage, lightness: Percentage) -> Color`",
+                        "`hsl(h s l)`",
+                    ],
+                    &[
+                        "[`Color::oklch`](api:hypersig/style/value/struct.Color.html#method.oklch)",
+                        "`fn oklch(lightness: Percentage, chroma: f64, hue: Angle) -> Color`",
+                        "`oklch(l c h)`",
+                    ],
+                    &[
+                        "[`Color::oklab`](api:hypersig/style/value/struct.Color.html#method.oklab)",
+                        "`fn oklab(lightness: Percentage, a: f64, b: f64) -> Color`",
+                        "`oklab(l a b)`",
+                    ],
+                    &[
                         "[`Color::opacity`](api:hypersig/style/value/struct.Color.html#method.opacity)",
                         "`fn opacity(&self, opacity: u8) -> Color`",
                         "`color-mix(in srgb, <color> <opacity>%, transparent)`",
@@ -113,6 +128,21 @@ fn building(site: Site) -> Part {
                         "[`Color::rgb`](api:hypersig/style/value/struct.Color.html#method.rgb)",
                         "`fn rgb(red: u8, green: u8, blue: u8) -> Color`",
                         "`rgb(r g b)`",
+                    ],
+                    &[
+                        "[`Color::hsl`](api:hypersig/style/value/struct.Color.html#method.hsl)",
+                        "`fn hsl(hue: Angle, saturation: Percentage, lightness: Percentage) -> Color`",
+                        "`hsl(h s l)`",
+                    ],
+                    &[
+                        "[`Color::oklch`](api:hypersig/style/value/struct.Color.html#method.oklch)",
+                        "`fn oklch(lightness: Percentage, chroma: f64, hue: Angle) -> Color`",
+                        "`oklch(l c h)`",
+                    ],
+                    &[
+                        "[`Color::oklab`](api:hypersig/style/value/struct.Color.html#method.oklab)",
+                        "`fn oklab(lightness: Percentage, a: f64, b: f64) -> Color`",
+                        "`oklab(l a b)`",
                     ],
                     &[
                         "[`Color::opacity`](api:hypersig/style/value/struct.Color.html#method.opacity)",
@@ -199,8 +229,8 @@ fn unchecked(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Color` has no constructor for `hsl()`, `oklch()`, or the other color functions, and `color` and `background_color` take no `raw` value. Such a color goes in a stylesheet of your own, which [Unchecked values](style/unchecked/) covers.",
-                ja: "`Color` には `hsl()` や `oklch()` などの色の関数を作るコンストラクタがなく、`color` と `background_color` は `raw` の値を受け取りません。そうした色は自分で書くスタイルシートに書きます。この方法は[検査しない値](style/unchecked/)で説明します。",
+                en: "`hsl`, `oklch`, and `oklab` take their channels as typed values, so a hue is an `Angle` such as `deg(210)` and a lightness a `Percentage`. A channel is not checked against its range, and the browser clamps a value outside it. A color function with no constructor, such as `lab()`, `color()`, or `light-dark()`, goes through `raw`, which `Color` converts from: `color(raw(\"color(display-p3 1 0.5 0)\"))`. [Unchecked values](style/unchecked/) covers `raw`.",
+                ja: "`hsl`、`oklch`、`oklab` はチャンネルを型の付いた値で受け取ります。色相は `deg(210)` のような `Angle`、明度は `Percentage` です。チャンネルが範囲に収まっているかは検査されず、範囲外の値はブラウザが範囲内に丸めます。`lab()`、`color()`、`light-dark()` のようにコンストラクタのない色の関数は `raw` で書きます。`Color` は `raw` から変換できるので、`color(raw(\"color(display-p3 1 0.5 0)\"))` と書けます。`raw` は[検査しない値](style/unchecked/)で説明します。",
             },
         ),
     ])

@@ -1,8 +1,11 @@
-use hypersig::style::value::Color;
+use hypersig::style::value::{Color, deg, pct};
 
 assert_eq!(Color::CRIMSON.to_string(), "crimson");
 assert_eq!(Color::hex(0x00b8_3f45).to_string(), "#b83f45");
 assert_eq!(Color::rgb(228, 228, 231).to_string(), "rgb(228 228 231)");
+assert_eq!(Color::hsl(deg(210), pct(50), pct(40)).to_string(), "hsl(210deg 50% 40%)");
+assert_eq!(Color::oklch(pct(70), 0.1, deg(210)).to_string(), "oklch(70% 0.1 210deg)");
+assert_eq!(Color::oklab(pct(70), -0.05, 0.1).to_string(), "oklab(70% -0.05 0.1)");
 assert_eq!(Color::CURRENT_COLOR.to_string(), "currentColor");
 assert_eq!(Color::TRANSPARENT.to_string(), "transparent");
 assert_eq!(

@@ -12,6 +12,8 @@ pub enum AccentColor {
     Auto,
     /// A color.
     Color(Color),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for AccentColor {
@@ -19,6 +21,7 @@ impl fmt::Display for AccentColor {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Color(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -26,6 +29,12 @@ impl fmt::Display for AccentColor {
 impl From<Color> for AccentColor {
     fn from(v: Color) -> Self {
         Self::Color(v)
+    }
+}
+
+impl From<Raw> for AccentColor {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -217,6 +226,8 @@ pub enum AlignmentBaseline {
     TextAfterEdge,
     /// `text-before-edge`.
     TextBeforeEdge,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for AlignmentBaseline {
@@ -230,7 +241,14 @@ impl fmt::Display for AlignmentBaseline {
             Self::Middle => f.write_str("middle"),
             Self::TextAfterEdge => f.write_str("text-after-edge"),
             Self::TextBeforeEdge => f.write_str("text-before-edge"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for AlignmentBaseline {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -248,6 +266,8 @@ pub enum All {
     RevertLayer,
     /// `unset`.
     Unset,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for All {
@@ -258,7 +278,14 @@ impl fmt::Display for All {
             Self::Revert => f.write_str("revert"),
             Self::RevertLayer => f.write_str("revert-layer"),
             Self::Unset => f.write_str("unset"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for All {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -765,6 +792,8 @@ pub enum Appearance {
     Textarea,
     /// `textfield`.
     Textfield,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Appearance {
@@ -784,7 +813,14 @@ impl fmt::Display for Appearance {
             Self::Searchfield => f.write_str("searchfield"),
             Self::Textarea => f.write_str("textarea"),
             Self::Textfield => f.write_str("textfield"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Appearance {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -870,6 +906,8 @@ pub enum BackfaceVisibility {
     Hidden,
     /// `visible`.
     Visible,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BackfaceVisibility {
@@ -877,7 +915,14 @@ impl fmt::Display for BackfaceVisibility {
         match self {
             Self::Hidden => f.write_str("hidden"),
             Self::Visible => f.write_str("visible"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BackfaceVisibility {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -1374,6 +1419,8 @@ pub enum BaselineShift {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BaselineShift {
@@ -1384,6 +1431,7 @@ impl fmt::Display for BaselineShift {
             Self::Super => f.write_str("super"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -1400,6 +1448,12 @@ impl From<Percentage> for BaselineShift {
     }
 }
 
+impl From<Raw> for BaselineShift {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`baseline-source`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/baseline-source).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -1410,6 +1464,8 @@ pub enum BaselineSource {
     First,
     /// `last`.
     Last,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BaselineSource {
@@ -1418,7 +1474,14 @@ impl fmt::Display for BaselineSource {
             Self::Auto => f.write_str("auto"),
             Self::First => f.write_str("first"),
             Self::Last => f.write_str("last"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BaselineSource {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -1766,6 +1829,8 @@ pub enum BorderBlockEndStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderBlockEndStyle {
@@ -1781,7 +1846,14 @@ impl fmt::Display for BorderBlockEndStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderBlockEndStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -1797,6 +1869,8 @@ pub enum BorderBlockEndWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderBlockEndWidth {
@@ -1806,6 +1880,7 @@ impl fmt::Display for BorderBlockEndWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -1813,6 +1888,12 @@ impl fmt::Display for BorderBlockEndWidth {
 impl From<Length> for BorderBlockEndWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for BorderBlockEndWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -1919,6 +2000,8 @@ pub enum BorderBlockStartStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderBlockStartStyle {
@@ -1934,7 +2017,14 @@ impl fmt::Display for BorderBlockStartStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderBlockStartStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -1950,6 +2040,8 @@ pub enum BorderBlockStartWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderBlockStartWidth {
@@ -1959,6 +2051,7 @@ impl fmt::Display for BorderBlockStartWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -1966,6 +2059,12 @@ impl fmt::Display for BorderBlockStartWidth {
 impl From<Length> for BorderBlockStartWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for BorderBlockStartWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -2244,6 +2343,8 @@ pub enum BorderBottomStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderBottomStyle {
@@ -2259,7 +2360,14 @@ impl fmt::Display for BorderBottomStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderBottomStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -2275,6 +2383,8 @@ pub enum BorderBottomWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderBottomWidth {
@@ -2284,6 +2394,7 @@ impl fmt::Display for BorderBottomWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -2291,6 +2402,12 @@ impl fmt::Display for BorderBottomWidth {
 impl From<Length> for BorderBottomWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for BorderBottomWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -2302,6 +2419,8 @@ pub enum BorderCollapse {
     Collapse,
     /// `separate`.
     Separate,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderCollapse {
@@ -2309,7 +2428,14 @@ impl fmt::Display for BorderCollapse {
         match self {
             Self::Collapse => f.write_str("collapse"),
             Self::Separate => f.write_str("separate"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderCollapse {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -2877,6 +3003,8 @@ pub enum BorderInlineEndStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderInlineEndStyle {
@@ -2892,7 +3020,14 @@ impl fmt::Display for BorderInlineEndStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderInlineEndStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -2908,6 +3043,8 @@ pub enum BorderInlineEndWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderInlineEndWidth {
@@ -2917,6 +3054,7 @@ impl fmt::Display for BorderInlineEndWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -2924,6 +3062,12 @@ impl fmt::Display for BorderInlineEndWidth {
 impl From<Length> for BorderInlineEndWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for BorderInlineEndWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -3030,6 +3174,8 @@ pub enum BorderInlineStartStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderInlineStartStyle {
@@ -3045,7 +3191,14 @@ impl fmt::Display for BorderInlineStartStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderInlineStartStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -3061,6 +3214,8 @@ pub enum BorderInlineStartWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderInlineStartWidth {
@@ -3070,6 +3225,7 @@ impl fmt::Display for BorderInlineStartWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -3077,6 +3233,12 @@ impl fmt::Display for BorderInlineStartWidth {
 impl From<Length> for BorderInlineStartWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for BorderInlineStartWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -3275,6 +3437,8 @@ pub enum BorderLeftStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderLeftStyle {
@@ -3290,7 +3454,14 @@ impl fmt::Display for BorderLeftStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderLeftStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -3306,6 +3477,8 @@ pub enum BorderLeftWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderLeftWidth {
@@ -3315,6 +3488,7 @@ impl fmt::Display for BorderLeftWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -3322,6 +3496,12 @@ impl fmt::Display for BorderLeftWidth {
 impl From<Length> for BorderLeftWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for BorderLeftWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -3468,6 +3648,8 @@ pub enum BorderRightStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderRightStyle {
@@ -3483,7 +3665,14 @@ impl fmt::Display for BorderRightStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderRightStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -3499,6 +3688,8 @@ pub enum BorderRightWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderRightWidth {
@@ -3508,6 +3699,7 @@ impl fmt::Display for BorderRightWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -3515,6 +3707,12 @@ impl fmt::Display for BorderRightWidth {
 impl From<Length> for BorderRightWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for BorderRightWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -3889,6 +4087,8 @@ pub enum BorderTopStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderTopStyle {
@@ -3904,7 +4104,14 @@ impl fmt::Display for BorderTopStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BorderTopStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -3920,6 +4127,8 @@ pub enum BorderTopWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BorderTopWidth {
@@ -3929,6 +4138,7 @@ impl fmt::Display for BorderTopWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -3936,6 +4146,12 @@ impl fmt::Display for BorderTopWidth {
 impl From<Length> for BorderTopWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for BorderTopWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4030,6 +4246,8 @@ pub enum BoxDecorationBreak {
     Clone,
     /// `slice`.
     Slice,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BoxDecorationBreak {
@@ -4037,7 +4255,14 @@ impl fmt::Display for BoxDecorationBreak {
         match self {
             Self::Clone => f.write_str("clone"),
             Self::Slice => f.write_str("slice"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BoxDecorationBreak {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4074,6 +4299,8 @@ pub enum BoxSizing {
     BorderBox,
     /// `content-box`.
     ContentBox,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BoxSizing {
@@ -4081,7 +4308,14 @@ impl fmt::Display for BoxSizing {
         match self {
             Self::BorderBox => f.write_str("border-box"),
             Self::ContentBox => f.write_str("content-box"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BoxSizing {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4117,6 +4351,8 @@ pub enum BreakAfter {
     Right,
     /// `verso`.
     Verso,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BreakAfter {
@@ -4136,7 +4372,14 @@ impl fmt::Display for BreakAfter {
             Self::Region => f.write_str("region"),
             Self::Right => f.write_str("right"),
             Self::Verso => f.write_str("verso"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BreakAfter {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4172,6 +4415,8 @@ pub enum BreakBefore {
     Right,
     /// `verso`.
     Verso,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BreakBefore {
@@ -4191,7 +4436,14 @@ impl fmt::Display for BreakBefore {
             Self::Region => f.write_str("region"),
             Self::Right => f.write_str("right"),
             Self::Verso => f.write_str("verso"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BreakBefore {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4209,6 +4461,8 @@ pub enum BreakInside {
     AvoidPage,
     /// `avoid-region`.
     AvoidRegion,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for BreakInside {
@@ -4219,7 +4473,14 @@ impl fmt::Display for BreakInside {
             Self::AvoidColumn => f.write_str("avoid-column"),
             Self::AvoidPage => f.write_str("avoid-page"),
             Self::AvoidRegion => f.write_str("avoid-region"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for BreakInside {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4231,6 +4492,8 @@ pub enum CaptionSide {
     Bottom,
     /// `top`.
     Top,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for CaptionSide {
@@ -4238,7 +4501,14 @@ impl fmt::Display for CaptionSide {
         match self {
             Self::Bottom => f.write_str("bottom"),
             Self::Top => f.write_str("top"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for CaptionSide {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4296,6 +4566,8 @@ pub enum CaretAnimation {
     Auto,
     /// `manual`.
     Manual,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for CaretAnimation {
@@ -4303,7 +4575,14 @@ impl fmt::Display for CaretAnimation {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Manual => f.write_str("manual"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for CaretAnimation {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4315,6 +4594,8 @@ pub enum CaretColor {
     Auto,
     /// A color.
     Color(Color),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for CaretColor {
@@ -4322,6 +4603,7 @@ impl fmt::Display for CaretColor {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Color(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -4329,6 +4611,12 @@ impl fmt::Display for CaretColor {
 impl From<Color> for CaretColor {
     fn from(v: Color) -> Self {
         Self::Color(v)
+    }
+}
+
+impl From<Raw> for CaretColor {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4344,6 +4632,8 @@ pub enum CaretShape {
     Block,
     /// `underscore`.
     Underscore,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for CaretShape {
@@ -4353,7 +4643,14 @@ impl fmt::Display for CaretShape {
             Self::Bar => f.write_str("bar"),
             Self::Block => f.write_str("block"),
             Self::Underscore => f.write_str("underscore"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for CaretShape {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4373,6 +4670,8 @@ pub enum Clear {
     None,
     /// `right`.
     Right,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Clear {
@@ -4384,7 +4683,14 @@ impl fmt::Display for Clear {
             Self::Left => f.write_str("left"),
             Self::None => f.write_str("none"),
             Self::Right => f.write_str("right"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Clear {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4451,6 +4757,8 @@ pub enum ClipRule {
     Evenodd,
     /// `nonzero`.
     Nonzero,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ClipRule {
@@ -4458,7 +4766,14 @@ impl fmt::Display for ClipRule {
         match self {
             Self::Evenodd => f.write_str("evenodd"),
             Self::Nonzero => f.write_str("nonzero"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ClipRule {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4472,6 +4787,8 @@ pub enum ColorInterpolationFilters {
     LinearRGB,
     /// `sRGB`.
     SRGB,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColorInterpolationFilters {
@@ -4480,7 +4797,14 @@ impl fmt::Display for ColorInterpolationFilters {
             Self::Auto => f.write_str("auto"),
             Self::LinearRGB => f.write_str("linearRGB"),
             Self::SRGB => f.write_str("sRGB"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ColorInterpolationFilters {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4517,6 +4841,8 @@ pub enum ColumnCount {
     Auto,
     /// An integer.
     Integer(i32),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnCount {
@@ -4524,6 +4850,7 @@ impl fmt::Display for ColumnCount {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Integer(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -4531,6 +4858,12 @@ impl fmt::Display for ColumnCount {
 impl From<i32> for ColumnCount {
     fn from(v: i32) -> Self {
         Self::Integer(v)
+    }
+}
+
+impl From<Raw> for ColumnCount {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4542,6 +4875,8 @@ pub enum ColumnFill {
     Auto,
     /// `balance`.
     Balance,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnFill {
@@ -4549,7 +4884,14 @@ impl fmt::Display for ColumnFill {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Balance => f.write_str("balance"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ColumnFill {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4563,6 +4905,8 @@ pub enum ColumnGap {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnGap {
@@ -4571,6 +4915,7 @@ impl fmt::Display for ColumnGap {
             Self::Normal => f.write_str("normal"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -4587,6 +4932,12 @@ impl From<Percentage> for ColumnGap {
     }
 }
 
+impl From<Raw> for ColumnGap {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`column-height`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/column-height).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -4595,6 +4946,8 @@ pub enum ColumnHeight {
     Auto,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnHeight {
@@ -4602,6 +4955,7 @@ impl fmt::Display for ColumnHeight {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -4609,6 +4963,12 @@ impl fmt::Display for ColumnHeight {
 impl From<Length> for ColumnHeight {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for ColumnHeight {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4715,6 +5075,8 @@ pub enum ColumnRuleStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnRuleStyle {
@@ -4730,7 +5092,14 @@ impl fmt::Display for ColumnRuleStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ColumnRuleStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4746,6 +5115,8 @@ pub enum ColumnRuleWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnRuleWidth {
@@ -4755,6 +5126,7 @@ impl fmt::Display for ColumnRuleWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -4762,6 +5134,12 @@ impl fmt::Display for ColumnRuleWidth {
 impl From<Length> for ColumnRuleWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for ColumnRuleWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4773,6 +5151,8 @@ pub enum ColumnSpan {
     All,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnSpan {
@@ -4780,7 +5160,14 @@ impl fmt::Display for ColumnSpan {
         match self {
             Self::All => f.write_str("all"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ColumnSpan {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4792,6 +5179,8 @@ pub enum ColumnWidth {
     Auto,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnWidth {
@@ -4799,6 +5188,7 @@ impl fmt::Display for ColumnWidth {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -4806,6 +5196,12 @@ impl fmt::Display for ColumnWidth {
 impl From<Length> for ColumnWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for ColumnWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -4819,6 +5215,8 @@ pub enum ColumnWrap {
     Nowrap,
     /// `wrap`.
     Wrap,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ColumnWrap {
@@ -4827,7 +5225,14 @@ impl fmt::Display for ColumnWrap {
             Self::Auto => f.write_str("auto"),
             Self::Nowrap => f.write_str("nowrap"),
             Self::Wrap => f.write_str("wrap"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ColumnWrap {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -5242,6 +5647,8 @@ pub enum ContentVisibility {
     Hidden,
     /// `visible`.
     Visible,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ContentVisibility {
@@ -5250,7 +5657,14 @@ impl fmt::Display for ContentVisibility {
             Self::Auto => f.write_str("auto"),
             Self::Hidden => f.write_str("hidden"),
             Self::Visible => f.write_str("visible"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ContentVisibility {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -6147,6 +6561,8 @@ pub enum Cx {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Cx {
@@ -6154,6 +6570,7 @@ impl fmt::Display for Cx {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -6170,6 +6587,12 @@ impl From<Percentage> for Cx {
     }
 }
 
+impl From<Raw> for Cx {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`cy`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/cy).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -6178,6 +6601,8 @@ pub enum Cy {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Cy {
@@ -6185,6 +6610,7 @@ impl fmt::Display for Cy {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -6198,6 +6624,12 @@ impl From<Length> for Cy {
 impl From<Percentage> for Cy {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for Cy {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -6234,6 +6666,8 @@ pub enum Direction {
     Ltr,
     /// `rtl`.
     Rtl,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Direction {
@@ -6241,7 +6675,14 @@ impl fmt::Display for Direction {
         match self {
             Self::Ltr => f.write_str("ltr"),
             Self::Rtl => f.write_str("rtl"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Direction {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -6373,6 +6814,8 @@ pub enum DominantBaseline {
     TextBottom,
     /// `text-top`.
     TextTop,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for DominantBaseline {
@@ -6387,7 +6830,14 @@ impl fmt::Display for DominantBaseline {
             Self::Middle => f.write_str("middle"),
             Self::TextBottom => f.write_str("text-bottom"),
             Self::TextTop => f.write_str("text-top"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for DominantBaseline {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -6430,6 +6880,8 @@ pub enum EmptyCells {
     Hide,
     /// `show`.
     Show,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for EmptyCells {
@@ -6437,7 +6889,14 @@ impl fmt::Display for EmptyCells {
         match self {
             Self::Hide => f.write_str("hide"),
             Self::Show => f.write_str("show"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for EmptyCells {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -6498,6 +6957,8 @@ pub enum FillOpacity {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FillOpacity {
@@ -6505,6 +6966,7 @@ impl fmt::Display for FillOpacity {
         match self {
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -6527,6 +6989,12 @@ impl From<i32> for FillOpacity {
     }
 }
 
+impl From<Raw> for FillOpacity {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`fill-rule`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/fill-rule).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -6535,6 +7003,8 @@ pub enum FillRule {
     Evenodd,
     /// `nonzero`.
     Nonzero,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FillRule {
@@ -6542,7 +7012,14 @@ impl fmt::Display for FillRule {
         match self {
             Self::Evenodd => f.write_str("evenodd"),
             Self::Nonzero => f.write_str("nonzero"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FillRule {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -6720,6 +7197,8 @@ pub enum FlexDirection {
     Row,
     /// `row-reverse`.
     RowReverse,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FlexDirection {
@@ -6729,7 +7208,14 @@ impl fmt::Display for FlexDirection {
             Self::ColumnReverse => f.write_str("column-reverse"),
             Self::Row => f.write_str("row"),
             Self::RowReverse => f.write_str("row-reverse"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FlexDirection {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -6827,6 +7313,8 @@ pub enum Float {
     None,
     /// `right`.
     Right,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Float {
@@ -6837,7 +7325,14 @@ impl fmt::Display for Float {
             Self::Left => f.write_str("left"),
             Self::None => f.write_str("none"),
             Self::Right => f.write_str("right"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Float {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -6849,6 +7344,8 @@ pub enum FloodOpacity {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FloodOpacity {
@@ -6856,6 +7353,7 @@ impl fmt::Display for FloodOpacity {
         match self {
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -6875,6 +7373,12 @@ impl From<f64> for FloodOpacity {
 impl From<i32> for FloodOpacity {
     fn from(v: i32) -> Self {
         Self::Number(f64::from(v))
+    }
+}
+
+impl From<Raw> for FloodOpacity {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7032,6 +7536,8 @@ pub enum FontKerning {
     None,
     /// `normal`.
     Normal,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontKerning {
@@ -7040,7 +7546,14 @@ impl fmt::Display for FontKerning {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
             Self::Normal => f.write_str("normal"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FontKerning {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7052,6 +7565,8 @@ pub enum FontLanguageOverride {
     Normal,
     /// A quoted string.
     Quoted(Quoted),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontLanguageOverride {
@@ -7059,6 +7574,7 @@ impl fmt::Display for FontLanguageOverride {
         match self {
             Self::Normal => f.write_str("normal"),
             Self::Quoted(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -7066,6 +7582,12 @@ impl fmt::Display for FontLanguageOverride {
 impl From<Quoted> for FontLanguageOverride {
     fn from(v: Quoted) -> Self {
         Self::Quoted(v)
+    }
+}
+
+impl From<Raw> for FontLanguageOverride {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7077,6 +7599,8 @@ pub enum FontOpticalSizing {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontOpticalSizing {
@@ -7084,7 +7608,14 @@ impl fmt::Display for FontOpticalSizing {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FontOpticalSizing {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7149,6 +7680,8 @@ pub enum FontSize {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontSize {
@@ -7167,6 +7700,7 @@ impl fmt::Display for FontSize {
             Self::XxxLarge => f.write_str("xxx-large"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -7180,6 +7714,12 @@ impl From<Length> for FontSize {
 impl From<Percentage> for FontSize {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for FontSize {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7302,6 +7842,8 @@ pub enum FontSynthesisSmallCaps {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontSynthesisSmallCaps {
@@ -7309,7 +7851,14 @@ impl fmt::Display for FontSynthesisSmallCaps {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FontSynthesisSmallCaps {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7321,6 +7870,8 @@ pub enum FontSynthesisStyle {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontSynthesisStyle {
@@ -7328,7 +7879,14 @@ impl fmt::Display for FontSynthesisStyle {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FontSynthesisStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7340,6 +7898,8 @@ pub enum FontSynthesisWeight {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontSynthesisWeight {
@@ -7347,7 +7907,14 @@ impl fmt::Display for FontSynthesisWeight {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FontSynthesisWeight {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7521,6 +8088,8 @@ pub enum FontVariantCaps {
     TitlingCaps,
     /// `unicase`.
     Unicase,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontVariantCaps {
@@ -7533,7 +8102,14 @@ impl fmt::Display for FontVariantCaps {
             Self::SmallCaps => f.write_str("small-caps"),
             Self::TitlingCaps => f.write_str("titling-caps"),
             Self::Unicase => f.write_str("unicase"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FontVariantCaps {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7601,6 +8177,8 @@ pub enum FontVariantEmoji {
     Text,
     /// `unicode`.
     Unicode,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontVariantEmoji {
@@ -7610,7 +8188,14 @@ impl fmt::Display for FontVariantEmoji {
             Self::Normal => f.write_str("normal"),
             Self::Text => f.write_str("text"),
             Self::Unicode => f.write_str("unicode"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FontVariantEmoji {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7725,6 +8310,8 @@ pub enum FontVariantPosition {
     Sub,
     /// `super`.
     Super,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontVariantPosition {
@@ -7733,7 +8320,14 @@ impl fmt::Display for FontVariantPosition {
             Self::Normal => f.write_str("normal"),
             Self::Sub => f.write_str("sub"),
             Self::Super => f.write_str("super"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FontVariantPosition {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7776,6 +8370,8 @@ pub enum FontWeight {
     Normal,
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FontWeight {
@@ -7786,6 +8382,7 @@ impl fmt::Display for FontWeight {
             Self::Lighter => f.write_str("lighter"),
             Self::Normal => f.write_str("normal"),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -7802,6 +8399,12 @@ impl From<i32> for FontWeight {
     }
 }
 
+impl From<Raw> for FontWeight {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`forced-color-adjust`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/forced-color-adjust).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -7812,6 +8415,8 @@ pub enum ForcedColorAdjust {
     None,
     /// `preserve-parent-color`.
     PreserveParentColor,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ForcedColorAdjust {
@@ -7820,7 +8425,14 @@ impl fmt::Display for ForcedColorAdjust {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
             Self::PreserveParentColor => f.write_str("preserve-parent-color"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ForcedColorAdjust {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -7838,6 +8450,8 @@ pub enum FrameSizing {
     ContentInlineSize,
     /// `content-width`.
     ContentWidth,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for FrameSizing {
@@ -7848,7 +8462,14 @@ impl fmt::Display for FrameSizing {
             Self::ContentHeight => f.write_str("content-height"),
             Self::ContentInlineSize => f.write_str("content-inline-size"),
             Self::ContentWidth => f.write_str("content-width"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for FrameSizing {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -8508,6 +9129,8 @@ pub enum HyphenateCharacter {
     Auto,
     /// A quoted string.
     Quoted(Quoted),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for HyphenateCharacter {
@@ -8515,6 +9138,7 @@ impl fmt::Display for HyphenateCharacter {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Quoted(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -8522,6 +9146,12 @@ impl fmt::Display for HyphenateCharacter {
 impl From<Quoted> for HyphenateCharacter {
     fn from(v: Quoted) -> Self {
         Self::Quoted(v)
+    }
+}
+
+impl From<Raw> for HyphenateCharacter {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -8569,6 +9199,8 @@ pub enum Hyphens {
     Manual,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Hyphens {
@@ -8577,7 +9209,14 @@ impl fmt::Display for Hyphens {
             Self::Auto => f.write_str("auto"),
             Self::Manual => f.write_str("manual"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Hyphens {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -8630,6 +9269,8 @@ pub enum ImageRendering {
     Pixelated,
     /// `smooth`.
     Smooth,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ImageRendering {
@@ -8639,7 +9280,14 @@ impl fmt::Display for ImageRendering {
             Self::CrispEdges => f.write_str("crisp-edges"),
             Self::Pixelated => f.write_str("pixelated"),
             Self::Smooth => f.write_str("smooth"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ImageRendering {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9044,6 +9692,8 @@ pub enum Interactivity {
     Auto,
     /// `inert`.
     Inert,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Interactivity {
@@ -9051,7 +9701,14 @@ impl fmt::Display for Interactivity {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Inert => f.write_str("inert"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Interactivity {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9097,6 +9754,8 @@ pub enum InterestDelayEnd {
     Normal,
     /// A duration.
     Time(Time),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for InterestDelayEnd {
@@ -9104,6 +9763,7 @@ impl fmt::Display for InterestDelayEnd {
         match self {
             Self::Normal => f.write_str("normal"),
             Self::Time(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -9111,6 +9771,12 @@ impl fmt::Display for InterestDelayEnd {
 impl From<Time> for InterestDelayEnd {
     fn from(v: Time) -> Self {
         Self::Time(v)
+    }
+}
+
+impl From<Raw> for InterestDelayEnd {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9122,6 +9788,8 @@ pub enum InterestDelayStart {
     Normal,
     /// A duration.
     Time(Time),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for InterestDelayStart {
@@ -9129,6 +9797,7 @@ impl fmt::Display for InterestDelayStart {
         match self {
             Self::Normal => f.write_str("normal"),
             Self::Time(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -9136,6 +9805,12 @@ impl fmt::Display for InterestDelayStart {
 impl From<Time> for InterestDelayStart {
     fn from(v: Time) -> Self {
         Self::Time(v)
+    }
+}
+
+impl From<Raw> for InterestDelayStart {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9147,6 +9822,8 @@ pub enum Isolation {
     Auto,
     /// `isolate`.
     Isolate,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Isolation {
@@ -9154,7 +9831,14 @@ impl fmt::Display for Isolation {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Isolate => f.write_str("isolate"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Isolation {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9395,6 +10079,8 @@ pub enum LetterSpacing {
     Normal,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for LetterSpacing {
@@ -9402,6 +10088,7 @@ impl fmt::Display for LetterSpacing {
         match self {
             Self::Normal => f.write_str("normal"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -9409,6 +10096,12 @@ impl fmt::Display for LetterSpacing {
 impl From<Length> for LetterSpacing {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for LetterSpacing {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9426,6 +10119,8 @@ pub enum LineBreak {
     Normal,
     /// `strict`.
     Strict,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for LineBreak {
@@ -9436,7 +10131,14 @@ impl fmt::Display for LineBreak {
             Self::Loose => f.write_str("loose"),
             Self::Normal => f.write_str("normal"),
             Self::Strict => f.write_str("strict"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for LineBreak {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9448,6 +10150,8 @@ pub enum LineClamp {
     None,
     /// An integer.
     Integer(i32),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for LineClamp {
@@ -9455,6 +10159,7 @@ impl fmt::Display for LineClamp {
         match self {
             Self::None => f.write_str("none"),
             Self::Integer(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -9462,6 +10167,12 @@ impl fmt::Display for LineClamp {
 impl From<i32> for LineClamp {
     fn from(v: i32) -> Self {
         Self::Integer(v)
+    }
+}
+
+impl From<Raw> for LineClamp {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9479,6 +10190,8 @@ pub enum LineHeight {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for LineHeight {
@@ -9488,6 +10201,7 @@ impl fmt::Display for LineHeight {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -9507,6 +10221,12 @@ impl From<Percentage> for LineHeight {
 impl From<f64> for LineHeight {
     fn from(v: f64) -> Self {
         Self::Number(v)
+    }
+}
+
+impl From<Raw> for LineHeight {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -9601,6 +10321,8 @@ pub enum ListStylePosition {
     Inside,
     /// `outside`.
     Outside,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ListStylePosition {
@@ -9608,7 +10330,14 @@ impl fmt::Display for ListStylePosition {
         match self {
             Self::Inside => f.write_str("inside"),
             Self::Outside => f.write_str("outside"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ListStylePosition {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -10127,6 +10856,8 @@ pub enum Marker {
     None,
     /// A URL.
     Url(Url),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Marker {
@@ -10134,6 +10865,7 @@ impl fmt::Display for Marker {
         match self {
             Self::None => f.write_str("none"),
             Self::Url(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -10141,6 +10873,12 @@ impl fmt::Display for Marker {
 impl From<Url> for Marker {
     fn from(v: Url) -> Self {
         Self::Url(v)
+    }
+}
+
+impl From<Raw> for Marker {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -10152,6 +10890,8 @@ pub enum MarkerEnd {
     None,
     /// A URL.
     Url(Url),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for MarkerEnd {
@@ -10159,6 +10899,7 @@ impl fmt::Display for MarkerEnd {
         match self {
             Self::None => f.write_str("none"),
             Self::Url(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -10166,6 +10907,12 @@ impl fmt::Display for MarkerEnd {
 impl From<Url> for MarkerEnd {
     fn from(v: Url) -> Self {
         Self::Url(v)
+    }
+}
+
+impl From<Raw> for MarkerEnd {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -10177,6 +10924,8 @@ pub enum MarkerMid {
     None,
     /// A URL.
     Url(Url),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for MarkerMid {
@@ -10184,6 +10933,7 @@ impl fmt::Display for MarkerMid {
         match self {
             Self::None => f.write_str("none"),
             Self::Url(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -10191,6 +10941,12 @@ impl fmt::Display for MarkerMid {
 impl From<Url> for MarkerMid {
     fn from(v: Url) -> Self {
         Self::Url(v)
+    }
+}
+
+impl From<Raw> for MarkerMid {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -10202,6 +10958,8 @@ pub enum MarkerStart {
     None,
     /// A URL.
     Url(Url),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for MarkerStart {
@@ -10209,6 +10967,7 @@ impl fmt::Display for MarkerStart {
         match self {
             Self::None => f.write_str("none"),
             Self::Url(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -10216,6 +10975,12 @@ impl fmt::Display for MarkerStart {
 impl From<Url> for MarkerStart {
     fn from(v: Url) -> Self {
         Self::Url(v)
+    }
+}
+
+impl From<Raw> for MarkerStart {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -10433,6 +11198,8 @@ pub enum MaskBorderMode {
     Alpha,
     /// `luminance`.
     Luminance,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for MaskBorderMode {
@@ -10440,7 +11207,14 @@ impl fmt::Display for MaskBorderMode {
         match self {
             Self::Alpha => f.write_str("alpha"),
             Self::Luminance => f.write_str("luminance"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for MaskBorderMode {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -10996,6 +11770,8 @@ pub enum MaskType {
     Alpha,
     /// `luminance`.
     Luminance,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for MaskType {
@@ -11003,7 +11779,14 @@ impl fmt::Display for MaskType {
         match self {
             Self::Alpha => f.write_str("alpha"),
             Self::Luminance => f.write_str("luminance"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for MaskType {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -11049,6 +11832,8 @@ pub enum MathStyle {
     Compact,
     /// `normal`.
     Normal,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for MathStyle {
@@ -11056,7 +11841,14 @@ impl fmt::Display for MathStyle {
         match self {
             Self::Compact => f.write_str("compact"),
             Self::Normal => f.write_str("normal"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for MathStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -11516,6 +12308,8 @@ pub enum MixBlendMode {
     Screen,
     /// `soft-light`.
     SoftLight,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for MixBlendMode {
@@ -11539,7 +12333,14 @@ impl fmt::Display for MixBlendMode {
             Self::Saturation => f.write_str("saturation"),
             Self::Screen => f.write_str("screen"),
             Self::SoftLight => f.write_str("soft-light"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for MixBlendMode {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -11557,6 +12358,8 @@ pub enum ObjectFit {
     None,
     /// `scale-down`.
     ScaleDown,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ObjectFit {
@@ -11567,7 +12370,14 @@ impl fmt::Display for ObjectFit {
             Self::Fill => f.write_str("fill"),
             Self::None => f.write_str("none"),
             Self::ScaleDown => f.write_str("scale-down"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ObjectFit {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -11774,6 +12584,8 @@ pub enum OffsetDistance {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OffsetDistance {
@@ -11781,6 +12593,7 @@ impl fmt::Display for OffsetDistance {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -11794,6 +12607,12 @@ impl From<Length> for OffsetDistance {
 impl From<Percentage> for OffsetDistance {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for OffsetDistance {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -11946,6 +12765,8 @@ pub enum Opacity {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Opacity {
@@ -11953,6 +12774,7 @@ impl fmt::Display for Opacity {
         match self {
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -11972,6 +12794,12 @@ impl From<f64> for Opacity {
 impl From<i32> for Opacity {
     fn from(v: i32) -> Self {
         Self::Number(f64::from(v))
+    }
+}
+
+impl From<Raw> for Opacity {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12062,6 +12890,8 @@ pub enum OutlineColor {
     Auto,
     /// A color.
     Color(Color),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OutlineColor {
@@ -12069,6 +12899,7 @@ impl fmt::Display for OutlineColor {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Color(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12076,6 +12907,12 @@ impl fmt::Display for OutlineColor {
 impl From<Color> for OutlineColor {
     fn from(v: Color) -> Self {
         Self::Color(v)
+    }
+}
+
+impl From<Raw> for OutlineColor {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12103,6 +12940,8 @@ pub enum OutlineStyle {
     Ridge,
     /// `solid`.
     Solid,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OutlineStyle {
@@ -12118,7 +12957,14 @@ impl fmt::Display for OutlineStyle {
             Self::Outset => f.write_str("outset"),
             Self::Ridge => f.write_str("ridge"),
             Self::Solid => f.write_str("solid"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OutlineStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12134,6 +12980,8 @@ pub enum OutlineWidth {
     Thin,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OutlineWidth {
@@ -12143,6 +12991,7 @@ impl fmt::Display for OutlineWidth {
             Self::Thick => f.write_str("thick"),
             Self::Thin => f.write_str("thin"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12150,6 +12999,12 @@ impl fmt::Display for OutlineWidth {
 impl From<Length> for OutlineWidth {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for OutlineWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12198,6 +13053,8 @@ pub enum OverflowAnchor {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverflowAnchor {
@@ -12205,7 +13062,14 @@ impl fmt::Display for OverflowAnchor {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverflowAnchor {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12223,6 +13087,8 @@ pub enum OverflowBlock {
     Scroll,
     /// `visible`.
     Visible,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverflowBlock {
@@ -12233,7 +13099,14 @@ impl fmt::Display for OverflowBlock {
             Self::Hidden => f.write_str("hidden"),
             Self::Scroll => f.write_str("scroll"),
             Self::Visible => f.write_str("visible"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverflowBlock {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12291,6 +13164,8 @@ pub enum OverflowInline {
     Scroll,
     /// `visible`.
     Visible,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverflowInline {
@@ -12301,7 +13176,14 @@ impl fmt::Display for OverflowInline {
             Self::Hidden => f.write_str("hidden"),
             Self::Scroll => f.write_str("scroll"),
             Self::Visible => f.write_str("visible"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverflowInline {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12315,6 +13197,8 @@ pub enum OverflowWrap {
     BreakWord,
     /// `normal`.
     Normal,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverflowWrap {
@@ -12323,7 +13207,14 @@ impl fmt::Display for OverflowWrap {
             Self::Anywhere => f.write_str("anywhere"),
             Self::BreakWord => f.write_str("break-word"),
             Self::Normal => f.write_str("normal"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverflowWrap {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12341,6 +13232,8 @@ pub enum OverflowX {
     Scroll,
     /// `visible`.
     Visible,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverflowX {
@@ -12351,7 +13244,14 @@ impl fmt::Display for OverflowX {
             Self::Hidden => f.write_str("hidden"),
             Self::Scroll => f.write_str("scroll"),
             Self::Visible => f.write_str("visible"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverflowX {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12369,6 +13269,8 @@ pub enum OverflowY {
     Scroll,
     /// `visible`.
     Visible,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverflowY {
@@ -12379,7 +13281,14 @@ impl fmt::Display for OverflowY {
             Self::Hidden => f.write_str("hidden"),
             Self::Scroll => f.write_str("scroll"),
             Self::Visible => f.write_str("visible"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverflowY {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12424,6 +13333,8 @@ pub enum OverscrollBehaviorBlock {
     Contain,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverscrollBehaviorBlock {
@@ -12432,7 +13343,14 @@ impl fmt::Display for OverscrollBehaviorBlock {
             Self::Auto => f.write_str("auto"),
             Self::Contain => f.write_str("contain"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverscrollBehaviorBlock {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12446,6 +13364,8 @@ pub enum OverscrollBehaviorInline {
     Contain,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverscrollBehaviorInline {
@@ -12454,7 +13374,14 @@ impl fmt::Display for OverscrollBehaviorInline {
             Self::Auto => f.write_str("auto"),
             Self::Contain => f.write_str("contain"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverscrollBehaviorInline {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12468,6 +13395,8 @@ pub enum OverscrollBehaviorX {
     Contain,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverscrollBehaviorX {
@@ -12476,7 +13405,14 @@ impl fmt::Display for OverscrollBehaviorX {
             Self::Auto => f.write_str("auto"),
             Self::Contain => f.write_str("contain"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverscrollBehaviorX {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12490,6 +13426,8 @@ pub enum OverscrollBehaviorY {
     Contain,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for OverscrollBehaviorY {
@@ -12498,7 +13436,14 @@ impl fmt::Display for OverscrollBehaviorY {
             Self::Auto => f.write_str("auto"),
             Self::Contain => f.write_str("contain"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for OverscrollBehaviorY {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12590,6 +13535,8 @@ pub enum PaddingBlockEnd {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PaddingBlockEnd {
@@ -12597,6 +13544,7 @@ impl fmt::Display for PaddingBlockEnd {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12613,6 +13561,12 @@ impl From<Percentage> for PaddingBlockEnd {
     }
 }
 
+impl From<Raw> for PaddingBlockEnd {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`padding-block-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-block-start).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -12621,6 +13575,8 @@ pub enum PaddingBlockStart {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PaddingBlockStart {
@@ -12628,6 +13584,7 @@ impl fmt::Display for PaddingBlockStart {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12644,6 +13601,12 @@ impl From<Percentage> for PaddingBlockStart {
     }
 }
 
+impl From<Raw> for PaddingBlockStart {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`padding-bottom`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-bottom).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -12652,6 +13615,8 @@ pub enum PaddingBottom {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PaddingBottom {
@@ -12659,6 +13624,7 @@ impl fmt::Display for PaddingBottom {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12672,6 +13638,12 @@ impl From<Length> for PaddingBottom {
 impl From<Percentage> for PaddingBottom {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for PaddingBottom {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12723,6 +13695,8 @@ pub enum PaddingInlineEnd {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PaddingInlineEnd {
@@ -12730,6 +13704,7 @@ impl fmt::Display for PaddingInlineEnd {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12746,6 +13721,12 @@ impl From<Percentage> for PaddingInlineEnd {
     }
 }
 
+impl From<Raw> for PaddingInlineEnd {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`padding-inline-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-inline-start).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -12754,6 +13735,8 @@ pub enum PaddingInlineStart {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PaddingInlineStart {
@@ -12761,6 +13744,7 @@ impl fmt::Display for PaddingInlineStart {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12777,6 +13761,12 @@ impl From<Percentage> for PaddingInlineStart {
     }
 }
 
+impl From<Raw> for PaddingInlineStart {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`padding-left`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-left).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -12785,6 +13775,8 @@ pub enum PaddingLeft {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PaddingLeft {
@@ -12792,6 +13784,7 @@ impl fmt::Display for PaddingLeft {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12808,6 +13801,12 @@ impl From<Percentage> for PaddingLeft {
     }
 }
 
+impl From<Raw> for PaddingLeft {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`padding-right`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-right).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -12816,6 +13815,8 @@ pub enum PaddingRight {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PaddingRight {
@@ -12823,6 +13824,7 @@ impl fmt::Display for PaddingRight {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12839,6 +13841,12 @@ impl From<Percentage> for PaddingRight {
     }
 }
 
+impl From<Raw> for PaddingRight {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`padding-top`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/padding-top).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -12847,6 +13855,8 @@ pub enum PaddingTop {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PaddingTop {
@@ -12854,6 +13864,7 @@ impl fmt::Display for PaddingTop {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12867,6 +13878,12 @@ impl From<Length> for PaddingTop {
 impl From<Percentage> for PaddingTop {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for PaddingTop {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -12962,6 +13979,8 @@ pub enum Perspective {
     None,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Perspective {
@@ -12969,6 +13988,7 @@ impl fmt::Display for Perspective {
         match self {
             Self::None => f.write_str("none"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -12976,6 +13996,12 @@ impl fmt::Display for Perspective {
 impl From<Length> for Perspective {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for Perspective {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13228,6 +14254,8 @@ pub enum PointerEvents {
     VisiblePainted,
     /// `visibleStroke`.
     VisibleStroke,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PointerEvents {
@@ -13244,7 +14272,14 @@ impl fmt::Display for PointerEvents {
             Self::VisibleFill => f.write_str("visibleFill"),
             Self::VisiblePainted => f.write_str("visiblePainted"),
             Self::VisibleStroke => f.write_str("visibleStroke"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for PointerEvents {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13262,6 +14297,8 @@ pub enum Position {
     Static,
     /// `sticky`.
     Sticky,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Position {
@@ -13272,7 +14309,14 @@ impl fmt::Display for Position {
             Self::Relative => f.write_str("relative"),
             Self::Static => f.write_str("static"),
             Self::Sticky => f.write_str("sticky"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Position {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13377,6 +14421,8 @@ pub enum PrintColorAdjust {
     Economy,
     /// `exact`.
     Exact,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for PrintColorAdjust {
@@ -13384,7 +14430,14 @@ impl fmt::Display for PrintColorAdjust {
         match self {
             Self::Economy => f.write_str("economy"),
             Self::Exact => f.write_str("exact"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for PrintColorAdjust {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13424,6 +14477,8 @@ pub enum R {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for R {
@@ -13431,6 +14486,7 @@ impl fmt::Display for R {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -13444,6 +14500,12 @@ impl From<Length> for R {
 impl From<Percentage> for R {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for R {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13465,6 +14527,8 @@ pub enum ReadingFlow {
     Normal,
     /// `source-order`.
     SourceOrder,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ReadingFlow {
@@ -13477,7 +14541,14 @@ impl fmt::Display for ReadingFlow {
             Self::GridRows => f.write_str("grid-rows"),
             Self::Normal => f.write_str("normal"),
             Self::SourceOrder => f.write_str("source-order"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ReadingFlow {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13497,6 +14568,8 @@ pub enum Resize {
     None,
     /// `vertical`.
     Vertical,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Resize {
@@ -13508,7 +14581,14 @@ impl fmt::Display for Resize {
             Self::Inline => f.write_str("inline"),
             Self::None => f.write_str("none"),
             Self::Vertical => f.write_str("vertical"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Resize {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13599,6 +14679,8 @@ pub enum RowGap {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for RowGap {
@@ -13607,6 +14689,7 @@ impl fmt::Display for RowGap {
             Self::Normal => f.write_str("normal"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -13623,6 +14706,12 @@ impl From<Percentage> for RowGap {
     }
 }
 
+impl From<Raw> for RowGap {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`ruby-align`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/ruby-align).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -13635,6 +14724,8 @@ pub enum RubyAlign {
     SpaceBetween,
     /// `start`.
     Start,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for RubyAlign {
@@ -13644,7 +14735,14 @@ impl fmt::Display for RubyAlign {
             Self::SpaceAround => f.write_str("space-around"),
             Self::SpaceBetween => f.write_str("space-between"),
             Self::Start => f.write_str("start"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for RubyAlign {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13656,6 +14754,8 @@ pub enum RubyOverhang {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for RubyOverhang {
@@ -13663,7 +14763,14 @@ impl fmt::Display for RubyOverhang {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for RubyOverhang {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13711,6 +14818,8 @@ pub enum Rx {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Rx {
@@ -13719,6 +14828,7 @@ impl fmt::Display for Rx {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -13735,6 +14845,12 @@ impl From<Percentage> for Rx {
     }
 }
 
+impl From<Raw> for Rx {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`ry`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/ry).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -13745,6 +14861,8 @@ pub enum Ry {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Ry {
@@ -13753,6 +14871,7 @@ impl fmt::Display for Ry {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -13766,6 +14885,12 @@ impl From<Length> for Ry {
 impl From<Percentage> for Ry {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for Ry {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13826,6 +14951,8 @@ pub enum ScrollAxisLock {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollAxisLock {
@@ -13833,7 +14960,14 @@ impl fmt::Display for ScrollAxisLock {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ScrollAxisLock {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13845,6 +14979,8 @@ pub enum ScrollBehavior {
     Auto,
     /// `smooth`.
     Smooth,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollBehavior {
@@ -13852,7 +14988,14 @@ impl fmt::Display for ScrollBehavior {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Smooth => f.write_str("smooth"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ScrollBehavior {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -13959,6 +15102,8 @@ pub enum ScrollMarkerGroup {
     Before,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollMarkerGroup {
@@ -13967,7 +15112,14 @@ impl fmt::Display for ScrollMarkerGroup {
             Self::After => f.write_str("after"),
             Self::Before => f.write_str("before"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ScrollMarkerGroup {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14067,6 +15219,8 @@ pub enum ScrollPaddingBlockEnd {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollPaddingBlockEnd {
@@ -14075,6 +15229,7 @@ impl fmt::Display for ScrollPaddingBlockEnd {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14091,6 +15246,12 @@ impl From<Percentage> for ScrollPaddingBlockEnd {
     }
 }
 
+impl From<Raw> for ScrollPaddingBlockEnd {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`scroll-padding-block-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-block-start).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14101,6 +15262,8 @@ pub enum ScrollPaddingBlockStart {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollPaddingBlockStart {
@@ -14109,6 +15272,7 @@ impl fmt::Display for ScrollPaddingBlockStart {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14125,6 +15289,12 @@ impl From<Percentage> for ScrollPaddingBlockStart {
     }
 }
 
+impl From<Raw> for ScrollPaddingBlockStart {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`scroll-padding-bottom`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-bottom).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14135,6 +15305,8 @@ pub enum ScrollPaddingBottom {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollPaddingBottom {
@@ -14143,6 +15315,7 @@ impl fmt::Display for ScrollPaddingBottom {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14156,6 +15329,12 @@ impl From<Length> for ScrollPaddingBottom {
 impl From<Percentage> for ScrollPaddingBottom {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for ScrollPaddingBottom {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14212,6 +15391,8 @@ pub enum ScrollPaddingInlineEnd {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollPaddingInlineEnd {
@@ -14220,6 +15401,7 @@ impl fmt::Display for ScrollPaddingInlineEnd {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14236,6 +15418,12 @@ impl From<Percentage> for ScrollPaddingInlineEnd {
     }
 }
 
+impl From<Raw> for ScrollPaddingInlineEnd {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`scroll-padding-inline-start`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-inline-start).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14246,6 +15434,8 @@ pub enum ScrollPaddingInlineStart {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollPaddingInlineStart {
@@ -14254,6 +15444,7 @@ impl fmt::Display for ScrollPaddingInlineStart {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14270,6 +15461,12 @@ impl From<Percentage> for ScrollPaddingInlineStart {
     }
 }
 
+impl From<Raw> for ScrollPaddingInlineStart {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`scroll-padding-left`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-left).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14280,6 +15477,8 @@ pub enum ScrollPaddingLeft {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollPaddingLeft {
@@ -14288,6 +15487,7 @@ impl fmt::Display for ScrollPaddingLeft {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14304,6 +15504,12 @@ impl From<Percentage> for ScrollPaddingLeft {
     }
 }
 
+impl From<Raw> for ScrollPaddingLeft {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`scroll-padding-right`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-right).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14314,6 +15520,8 @@ pub enum ScrollPaddingRight {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollPaddingRight {
@@ -14322,6 +15530,7 @@ impl fmt::Display for ScrollPaddingRight {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14338,6 +15547,12 @@ impl From<Percentage> for ScrollPaddingRight {
     }
 }
 
+impl From<Raw> for ScrollPaddingRight {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`scroll-padding-top`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/scroll-padding-top).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14348,6 +15563,8 @@ pub enum ScrollPaddingTop {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollPaddingTop {
@@ -14356,6 +15573,7 @@ impl fmt::Display for ScrollPaddingTop {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14369,6 +15587,12 @@ impl From<Length> for ScrollPaddingTop {
 impl From<Percentage> for ScrollPaddingTop {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for ScrollPaddingTop {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14414,6 +15638,8 @@ pub enum ScrollSnapStop {
     Always,
     /// `normal`.
     Normal,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollSnapStop {
@@ -14421,7 +15647,14 @@ impl fmt::Display for ScrollSnapStop {
         match self {
             Self::Always => f.write_str("always"),
             Self::Normal => f.write_str("normal"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ScrollSnapStop {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14473,6 +15706,8 @@ pub enum ScrollTargetGroup {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollTargetGroup {
@@ -14480,7 +15715,14 @@ impl fmt::Display for ScrollTargetGroup {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ScrollTargetGroup {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14544,6 +15786,8 @@ pub enum ScrollbarWidth {
     None,
     /// `thin`.
     Thin,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ScrollbarWidth {
@@ -14552,7 +15796,14 @@ impl fmt::Display for ScrollbarWidth {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
             Self::Thin => f.write_str("thin"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ScrollbarWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14564,6 +15815,8 @@ pub enum ShapeImageThreshold {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ShapeImageThreshold {
@@ -14571,6 +15824,7 @@ impl fmt::Display for ShapeImageThreshold {
         match self {
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14593,6 +15847,12 @@ impl From<i32> for ShapeImageThreshold {
     }
 }
 
+impl From<Raw> for ShapeImageThreshold {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`shape-margin`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/shape-margin).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14601,6 +15861,8 @@ pub enum ShapeMargin {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ShapeMargin {
@@ -14608,6 +15870,7 @@ impl fmt::Display for ShapeMargin {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14621,6 +15884,12 @@ impl From<Length> for ShapeMargin {
 impl From<Percentage> for ShapeMargin {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for ShapeMargin {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14682,6 +15951,8 @@ pub enum ShapeRendering {
     GeometricPrecision,
     /// `optimizeSpeed`.
     OptimizeSpeed,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ShapeRendering {
@@ -14691,7 +15962,14 @@ impl fmt::Display for ShapeRendering {
             Self::CrispEdges => f.write_str("crispEdges"),
             Self::GeometricPrecision => f.write_str("geometricPrecision"),
             Self::OptimizeSpeed => f.write_str("optimizeSpeed"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ShapeRendering {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14703,6 +15981,8 @@ pub enum StopOpacity {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for StopOpacity {
@@ -14710,6 +15990,7 @@ impl fmt::Display for StopOpacity {
         match self {
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14729,6 +16010,12 @@ impl From<f64> for StopOpacity {
 impl From<i32> for StopOpacity {
     fn from(v: i32) -> Self {
         Self::Number(f64::from(v))
+    }
+}
+
+impl From<Raw> for StopOpacity {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14849,6 +16136,8 @@ pub enum StrokeDashoffset {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for StrokeDashoffset {
@@ -14857,6 +16146,7 @@ impl fmt::Display for StrokeDashoffset {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14885,6 +16175,12 @@ impl From<i32> for StrokeDashoffset {
     }
 }
 
+impl From<Raw> for StrokeDashoffset {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`stroke-linecap`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-linecap).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14895,6 +16191,8 @@ pub enum StrokeLinecap {
     Round,
     /// `square`.
     Square,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for StrokeLinecap {
@@ -14903,7 +16201,14 @@ impl fmt::Display for StrokeLinecap {
             Self::Butt => f.write_str("butt"),
             Self::Round => f.write_str("round"),
             Self::Square => f.write_str("square"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for StrokeLinecap {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14921,6 +16226,8 @@ pub enum StrokeLinejoin {
     MiterClip,
     /// `round`.
     Round,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for StrokeLinejoin {
@@ -14931,7 +16238,14 @@ impl fmt::Display for StrokeLinejoin {
             Self::Miter => f.write_str("miter"),
             Self::MiterClip => f.write_str("miter-clip"),
             Self::Round => f.write_str("round"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for StrokeLinejoin {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -14943,6 +16257,8 @@ pub enum StrokeOpacity {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for StrokeOpacity {
@@ -14950,6 +16266,7 @@ impl fmt::Display for StrokeOpacity {
         match self {
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -14972,6 +16289,12 @@ impl From<i32> for StrokeOpacity {
     }
 }
 
+impl From<Raw> for StrokeOpacity {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`stroke-width`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/stroke-width).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -14982,6 +16305,8 @@ pub enum StrokeWidth {
     Percentage(Percentage),
     /// A number.
     Number(f64),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for StrokeWidth {
@@ -14990,6 +16315,7 @@ impl fmt::Display for StrokeWidth {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
             Self::Number(v) => crate::value::number(*v).fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -15018,6 +16344,12 @@ impl From<i32> for StrokeWidth {
     }
 }
 
+impl From<Raw> for StrokeWidth {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`tab-size`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/tab-size).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -15026,6 +16358,8 @@ pub enum TabSize {
     Length(Length),
     /// An integer.
     Integer(i32),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TabSize {
@@ -15033,6 +16367,7 @@ impl fmt::Display for TabSize {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Integer(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -15049,6 +16384,12 @@ impl From<i32> for TabSize {
     }
 }
 
+impl From<Raw> for TabSize {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`table-layout`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/table-layout).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -15057,6 +16398,8 @@ pub enum TableLayout {
     Auto,
     /// `fixed`.
     Fixed,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TableLayout {
@@ -15064,7 +16407,14 @@ impl fmt::Display for TableLayout {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Fixed => f.write_str("fixed"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TableLayout {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15086,6 +16436,8 @@ pub enum TextAlign {
     Right,
     /// `start`.
     Start,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextAlign {
@@ -15098,7 +16450,14 @@ impl fmt::Display for TextAlign {
             Self::MatchParent => f.write_str("match-parent"),
             Self::Right => f.write_str("right"),
             Self::Start => f.write_str("start"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextAlign {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15120,6 +16479,8 @@ pub enum TextAlignLast {
     Right,
     /// `start`.
     Start,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextAlignLast {
@@ -15132,7 +16493,14 @@ impl fmt::Display for TextAlignLast {
             Self::Left => f.write_str("left"),
             Self::Right => f.write_str("right"),
             Self::Start => f.write_str("start"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextAlignLast {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15146,6 +16514,8 @@ pub enum TextAnchor {
     Middle,
     /// `start`.
     Start,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextAnchor {
@@ -15154,7 +16524,14 @@ impl fmt::Display for TextAnchor {
             Self::End => f.write_str("end"),
             Self::Middle => f.write_str("middle"),
             Self::Start => f.write_str("start"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextAnchor {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15293,6 +16670,8 @@ pub enum TextBoxTrim {
     TrimEnd,
     /// `trim-start`.
     TrimStart,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextBoxTrim {
@@ -15302,7 +16681,14 @@ impl fmt::Display for TextBoxTrim {
             Self::TrimBoth => f.write_str("trim-both"),
             Self::TrimEnd => f.write_str("trim-end"),
             Self::TrimStart => f.write_str("trim-start"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextBoxTrim {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15524,6 +16910,8 @@ pub enum TextDecorationSkipInk {
     Auto,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextDecorationSkipInk {
@@ -15532,7 +16920,14 @@ impl fmt::Display for TextDecorationSkipInk {
             Self::All => f.write_str("all"),
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextDecorationSkipInk {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15550,6 +16945,8 @@ pub enum TextDecorationStyle {
     Solid,
     /// `wavy`.
     Wavy,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextDecorationStyle {
@@ -15560,7 +16957,14 @@ impl fmt::Display for TextDecorationStyle {
             Self::Double => f.write_str("double"),
             Self::Solid => f.write_str("solid"),
             Self::Wavy => f.write_str("wavy"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextDecorationStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15576,6 +16980,8 @@ pub enum TextDecorationThickness {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextDecorationThickness {
@@ -15585,6 +16991,7 @@ impl fmt::Display for TextDecorationThickness {
             Self::FromFont => f.write_str("from-font"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -15598,6 +17005,12 @@ impl From<Length> for TextDecorationThickness {
 impl From<Percentage> for TextDecorationThickness {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for TextDecorationThickness {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15810,6 +17223,8 @@ pub enum TextJustify {
     InterWord,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextJustify {
@@ -15819,7 +17234,14 @@ impl fmt::Display for TextJustify {
             Self::InterCharacter => f.write_str("inter-character"),
             Self::InterWord => f.write_str("inter-word"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextJustify {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15833,6 +17255,8 @@ pub enum TextOrientation {
     Sideways,
     /// `upright`.
     Upright,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextOrientation {
@@ -15841,7 +17265,14 @@ impl fmt::Display for TextOrientation {
             Self::Mixed => f.write_str("mixed"),
             Self::Sideways => f.write_str("sideways"),
             Self::Upright => f.write_str("upright"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextOrientation {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15894,6 +17325,8 @@ pub enum TextRendering {
     OptimizeLegibility,
     /// `optimizeSpeed`.
     OptimizeSpeed,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextRendering {
@@ -15903,7 +17336,14 @@ impl fmt::Display for TextRendering {
             Self::GeometricPrecision => f.write_str("geometricPrecision"),
             Self::OptimizeLegibility => f.write_str("optimizeLegibility"),
             Self::OptimizeSpeed => f.write_str("optimizeSpeed"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextRendering {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -15985,6 +17425,8 @@ pub enum TextUnderlineOffset {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextUnderlineOffset {
@@ -15993,6 +17435,7 @@ impl fmt::Display for TextUnderlineOffset {
             Self::Auto => f.write_str("auto"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -16006,6 +17449,12 @@ impl From<Length> for TextUnderlineOffset {
 impl From<Percentage> for TextUnderlineOffset {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for TextUnderlineOffset {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -16094,6 +17543,8 @@ pub enum TextWrapMode {
     Nowrap,
     /// `wrap`.
     Wrap,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextWrapMode {
@@ -16101,7 +17552,14 @@ impl fmt::Display for TextWrapMode {
         match self {
             Self::Nowrap => f.write_str("nowrap"),
             Self::Wrap => f.write_str("wrap"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextWrapMode {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -16117,6 +17575,8 @@ pub enum TextWrapStyle {
     Pretty,
     /// `stable`.
     Stable,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TextWrapStyle {
@@ -16126,7 +17586,14 @@ impl fmt::Display for TextWrapStyle {
             Self::Balance => f.write_str("balance"),
             Self::Pretty => f.write_str("pretty"),
             Self::Stable => f.write_str("stable"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TextWrapStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -16717,6 +18184,8 @@ pub enum TransformBox {
     StrokeBox,
     /// `view-box`.
     ViewBox,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TransformBox {
@@ -16727,7 +18196,14 @@ impl fmt::Display for TransformBox {
             Self::FillBox => f.write_str("fill-box"),
             Self::StrokeBox => f.write_str("stroke-box"),
             Self::ViewBox => f.write_str("view-box"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TransformBox {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -16794,6 +18270,8 @@ pub enum TransformStyle {
     Flat,
     /// `preserve-3d`.
     Preserve3d,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for TransformStyle {
@@ -16801,7 +18279,14 @@ impl fmt::Display for TransformStyle {
         match self {
             Self::Flat => f.write_str("flat"),
             Self::Preserve3d => f.write_str("preserve-3d"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for TransformStyle {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17117,6 +18602,8 @@ pub enum UnicodeBidi {
     Normal,
     /// `plaintext`.
     Plaintext,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for UnicodeBidi {
@@ -17128,7 +18615,14 @@ impl fmt::Display for UnicodeBidi {
             Self::IsolateOverride => f.write_str("isolate-override"),
             Self::Normal => f.write_str("normal"),
             Self::Plaintext => f.write_str("plaintext"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for UnicodeBidi {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17144,6 +18638,8 @@ pub enum UserSelect {
     None,
     /// `text`.
     Text,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for UserSelect {
@@ -17153,7 +18649,14 @@ impl fmt::Display for UserSelect {
             Self::Auto => f.write_str("auto"),
             Self::None => f.write_str("none"),
             Self::Text => f.write_str("text"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for UserSelect {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17171,6 +18674,8 @@ pub enum VectorEffect {
     NonScalingStroke,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for VectorEffect {
@@ -17181,7 +18686,14 @@ impl fmt::Display for VectorEffect {
             Self::NonScalingSize => f.write_str("non-scaling-size"),
             Self::NonScalingStroke => f.write_str("non-scaling-stroke"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for VectorEffect {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17209,6 +18721,8 @@ pub enum VerticalAlign {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for VerticalAlign {
@@ -17224,6 +18738,7 @@ impl fmt::Display for VerticalAlign {
             Self::Top => f.write_str("top"),
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -17237,6 +18752,12 @@ impl From<Length> for VerticalAlign {
 impl From<Percentage> for VerticalAlign {
     fn from(v: Percentage) -> Self {
         Self::Percentage(v)
+    }
+}
+
+impl From<Raw> for VerticalAlign {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17301,6 +18822,8 @@ pub enum ViewTransitionScope {
     All,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ViewTransitionScope {
@@ -17308,7 +18831,14 @@ impl fmt::Display for ViewTransitionScope {
         match self {
             Self::All => f.write_str("all"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for ViewTransitionScope {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17322,6 +18852,8 @@ pub enum Visibility {
     Hidden,
     /// `visible`.
     Visible,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Visibility {
@@ -17330,7 +18862,14 @@ impl fmt::Display for Visibility {
             Self::Collapse => f.write_str("collapse"),
             Self::Hidden => f.write_str("hidden"),
             Self::Visible => f.write_str("visible"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for Visibility {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17403,6 +18942,8 @@ pub enum WhiteSpaceCollapse {
     PreserveBreaks,
     /// `preserve-spaces`.
     PreserveSpaces,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for WhiteSpaceCollapse {
@@ -17413,7 +18954,14 @@ impl fmt::Display for WhiteSpaceCollapse {
             Self::Preserve => f.write_str("preserve"),
             Self::PreserveBreaks => f.write_str("preserve-breaks"),
             Self::PreserveSpaces => f.write_str("preserve-spaces"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for WhiteSpaceCollapse {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17508,6 +19056,8 @@ pub enum WindowDrag {
     Move,
     /// `none`.
     None,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for WindowDrag {
@@ -17515,7 +19065,14 @@ impl fmt::Display for WindowDrag {
         match self {
             Self::Move => f.write_str("move"),
             Self::None => f.write_str("none"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for WindowDrag {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17533,6 +19090,8 @@ pub enum WordBreak {
     KeepAll,
     /// `normal`.
     Normal,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for WordBreak {
@@ -17543,7 +19102,14 @@ impl fmt::Display for WordBreak {
             Self::BreakWord => f.write_str("break-word"),
             Self::KeepAll => f.write_str("keep-all"),
             Self::Normal => f.write_str("normal"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for WordBreak {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17555,6 +19121,8 @@ pub enum WordSpacing {
     Normal,
     /// A length.
     Length(Length),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for WordSpacing {
@@ -17562,6 +19130,7 @@ impl fmt::Display for WordSpacing {
         match self {
             Self::Normal => f.write_str("normal"),
             Self::Length(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -17569,6 +19138,12 @@ impl fmt::Display for WordSpacing {
 impl From<Length> for WordSpacing {
     fn from(v: Length) -> Self {
         Self::Length(v)
+    }
+}
+
+impl From<Raw> for WordSpacing {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17580,6 +19155,8 @@ pub enum WordWrap {
     BreakWord,
     /// `normal`.
     Normal,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for WordWrap {
@@ -17587,7 +19164,14 @@ impl fmt::Display for WordWrap {
         match self {
             Self::BreakWord => f.write_str("break-word"),
             Self::Normal => f.write_str("normal"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for WordWrap {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17605,6 +19189,8 @@ pub enum WritingMode {
     VerticalLr,
     /// `vertical-rl`.
     VerticalRl,
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for WritingMode {
@@ -17615,7 +19201,14 @@ impl fmt::Display for WritingMode {
             Self::SidewaysRl => f.write_str("sideways-rl"),
             Self::VerticalLr => f.write_str("vertical-lr"),
             Self::VerticalRl => f.write_str("vertical-rl"),
+            Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Raw> for WritingMode {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 
@@ -17627,6 +19220,8 @@ pub enum X {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for X {
@@ -17634,6 +19229,7 @@ impl fmt::Display for X {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -17650,6 +19246,12 @@ impl From<Percentage> for X {
     }
 }
 
+impl From<Raw> for X {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`y`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/y).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -17658,6 +19260,8 @@ pub enum Y {
     Length(Length),
     /// A percentage.
     Percentage(Percentage),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for Y {
@@ -17665,6 +19269,7 @@ impl fmt::Display for Y {
         match self {
             Self::Length(v) => v.fmt(f),
             Self::Percentage(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -17681,6 +19286,12 @@ impl From<Percentage> for Y {
     }
 }
 
+impl From<Raw> for Y {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
+    }
+}
+
 /// A value of [`z-index`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/z-index).
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -17689,6 +19300,8 @@ pub enum ZIndex {
     Auto,
     /// An integer.
     Integer(i32),
+    /// Any other value, passed through unchecked.
+    Raw(Raw),
 }
 
 impl fmt::Display for ZIndex {
@@ -17696,6 +19309,7 @@ impl fmt::Display for ZIndex {
         match self {
             Self::Auto => f.write_str("auto"),
             Self::Integer(v) => v.fmt(f),
+            Self::Raw(v) => v.fmt(f),
         }
     }
 }
@@ -17703,6 +19317,12 @@ impl fmt::Display for ZIndex {
 impl From<i32> for ZIndex {
     fn from(v: i32) -> Self {
         Self::Integer(v)
+    }
+}
+
+impl From<Raw> for ZIndex {
+    fn from(v: Raw) -> Self {
+        Self::Raw(v)
     }
 }
 

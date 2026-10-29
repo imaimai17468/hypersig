@@ -202,16 +202,16 @@ fn raw_values(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A value enum that ends in a `Raw(Raw)` variant also accepts [`raw(css)`](api:hypersig/style/value/fn.raw.html), which the browser parses and nothing checks. Its method's rustdoc says so: \"The single-value forms are typed. Any other value goes through `Raw`\". A property whose type has no `Raw` takes only its typed forms. Among them are `font_size`, `line_height`, `opacity`, `z_index`, the longhands such as `padding_top`, and the methods that take a `Color` directly, so a `clamp()` there is E0277:",
-                ja: "最後に `Raw(Raw)` バリアントを持つ値の列挙型は、[`raw(css)`](api:hypersig/style/value/fn.raw.html) も受け付けます。その値はブラウザが解析し、何も検査しません。その場合、メソッドの rustdoc に「The single-value forms are typed. Any other value goes through `Raw`」と書かれています。型に `Raw` がないプロパティは、型の付いた形しか受け取りません。`font_size`、`line_height`、`opacity`、`z_index`、`padding_top` のようなロングハンド、`Color` を直接受け取るメソッドがこれにあたり、そこに `clamp()` を渡すと E0277 になります。",
+                en: "Every value enum ends in a `Raw(Raw)` variant, so it also accepts [`raw(css)`](api:hypersig/style/value/fn.raw.html), which the browser parses and nothing checks. Each method that takes an enum says so in its rustdoc: \"The single-value forms are typed. Any other value goes through `Raw`\". `Color` and `Length` convert from `Raw` too, so the methods that take one directly, such as `color` and `scroll_margin_top`, accept `raw` as well. A `calc()` of numbers, or one that mixes a length and a percentage, has no typed form and goes through `raw`:",
+                ja: "値の列挙型はどれも最後に `Raw(Raw)` バリアントを持つので、[`raw(css)`](api:hypersig/style/value/fn.raw.html) も受け付けます。その値はブラウザが解析し、何も検査しません。列挙型を受け取るメソッドの rustdoc には「The single-value forms are typed. Any other value goes through `Raw`」と書かれています。`Color` と `Length` も `Raw` から変換できるので、`color` や `scroll_margin_top` のようにそれらを直接受け取るメソッドにも `raw` を渡せます。数値どうしの `calc()` や、長さとパーセンテージを混ぜた `calc()` には型の付いた書き方がないので、`raw` で書きます。",
             },
         ),
-        show(Snippet::StyleNoRaw),
+        show(Snippet::StyleRawValues),
         para(
             site,
             L {
-                en: "A `Style` has no way to write such a value. [Unchecked values](style/unchecked/) covers the ways outside `Style`, such as a stylesheet of your own.",
-                ja: "このような値を `Style` で書く方法はありません。自分で書いたスタイルシートなど、`Style` の外の方法は[検査しない値](style/unchecked/)で説明します。",
+                en: "A `calc()`, `min()`, `max()`, or `clamp()` over values of one type is typed, as [Lengths](style/lengths/#math-functions) shows. The methods that take a bare number, such as `flex_grow`, `order`, and `widows`, take no `raw`.",
+                ja: "1 つの型の値だけを使う `calc()`、`min()`、`max()`、`clamp()` には型が付きます。これは[長さ](style/lengths/#math-functions)で示しています。`flex_grow`、`order`、`widows` のように数値をそのまま受け取るメソッドは `raw` を受け取りません。",
             },
         ),
     ])

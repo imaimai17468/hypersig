@@ -300,13 +300,15 @@ snippets! {
     StyleNumbers => "style/values/numbers.rs";
     StyleNumberNan => "style/values/number_nan.rs", "should_panic";
     StyleShorthands => "style/values/shorthands.rs";
-    StyleNoRaw => "style/values/no_raw.rs", "compile_fail,E0277";
+    StyleRawValues => "style/values/raw_values.rs";
     StyleNotice => "style/values/notice.rs";
     StyleLengths => "style/values/lengths.rs";
     StyleLengthBare => "style/values/length_bare.rs", "compile_fail,E0277";
     StyleLineHeightInteger => "style/values/line_height_integer.rs", "compile_fail,E0277";
     StyleBorderPct => "style/values/border_pct.rs", "compile_fail,E0277";
     StyleLengthF32 => "style/values/length_f32.rs";
+    StyleLengthMath => "style/values/length_math.rs";
+    StyleLengthMathMixed => "style/values/length_math_mixed.rs", "compile_fail,E0308";
     StyleArticle => "style/values/article.rs";
     StyleColors => "style/values/colors.rs";
     StyleColorString => "style/values/color_string.rs", "compile_fail,E0277";

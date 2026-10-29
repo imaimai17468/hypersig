@@ -91,8 +91,8 @@ fn types(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A zero angle or duration keeps its unit, because CSS reads `transition-duration: 0` as invalid, while a [zero length](style/lengths/) is written `0`. Angles in `rad` or `grad` have no function, and go through `raw` where the property's type has a `Raw` variant, as `Rotate` does.",
-                ja: "角度と時間のゼロには単位が残ります。CSS は `transition-duration: 0` を無効な値として読むからです。[長さのゼロ](style/lengths/)は `0` と書かれます。`rad` や `grad` の角度を作る関数はなく、`Rotate` のようにプロパティの型に `Raw` バリアントがあれば `raw` で書きます。",
+                en: "A zero angle or duration keeps its unit, because CSS reads `transition-duration: 0` as invalid, while a [zero length](style/lengths/) is written `0`. Angles in `rad` or `grad` have no function, and go through `raw`. Angles and durations take the [math functions](style/lengths/#math-functions) that lengths do, so `ms(150) * 2.0` writes `calc(150ms * 2)`.",
+                ja: "角度と時間のゼロには単位が残ります。CSS は `transition-duration: 0` を無効な値として読むからです。[長さのゼロ](style/lengths/)は `0` と書かれます。`rad` や `grad` の角度を作る関数はないので、`raw` で書きます。角度と時間にも長さと同じ[数学関数](style/lengths/#math-functions)を使えるので、`ms(150) * 2.0` は `calc(150ms * 2)` を書きます。",
             },
         ),
     ])

@@ -14,6 +14,7 @@ pub fn page(site: Site, head: Part) -> Part {
         types(site),
         units(site),
         accepted(site),
+        math(site),
         unchecked(site),
         example(site),
     ])
@@ -139,8 +140,8 @@ fn units(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`cqw` and `cqh` measure the nearest ancestor that is a query container, which [Container queries](style/containers/) covers. A unit with no function here, such as `vb` or `Q`, goes through `raw` where the property's type has a `Raw` variant.",
-                ja: "`cqw` と `cqh` が測るのは、クエリコンテナである最も近い祖先です。クエリコンテナは[コンテナクエリ](style/containers/)で説明します。`vb` や `Q` のようにここに関数のない単位は、プロパティの型に `Raw` バリアントがあれば `raw` で書きます。",
+                en: "`cqw` and `cqh` measure the nearest ancestor that is a query container, which [Container queries](style/containers/) covers. A unit with no function here, such as `vb` or `Q`, goes through `raw`.",
+                ja: "`cqw` と `cqh` が測るのは、クエリコンテナである最も近い祖先です。クエリコンテナは[コンテナクエリ](style/containers/)で説明します。`vb` や `Q` のようにここに関数のない単位は `raw` で書きます。",
             },
         ),
     ])
@@ -182,6 +183,34 @@ fn accepted(site: Site) -> Part {
     ])
 }
 
+fn math(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Math functions",
+                ja: "数学関数",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "[`clamp`](api:hypersig/style/value/fn.clamp.html), [`min`](api:hypersig/style/value/fn.min.html), and [`max`](api:hypersig/style/value/fn.max.html) write the CSS functions of the same names. `+` and `-` between two values, and `*` and `/` by an `f64`, write a `calc()`. Each takes values of one type and returns that type, so the result goes wherever its arguments would. The types are those that implement [`Quantity`](api:hypersig/style/value/trait.Quantity.html): `Length`, `Percentage`, `Time`, and `Angle`.",
+                ja: "[`clamp`](api:hypersig/style/value/fn.clamp.html)、[`min`](api:hypersig/style/value/fn.min.html)、[`max`](api:hypersig/style/value/fn.max.html) は同じ名前の CSS の関数を書きます。2 つの値の `+` と `-`、`f64` との `*` と `/` は `calc()` を書きます。どれも 1 つの型の値を受け取ってその型を返すので、結果は引数を渡せる場所ならどこにでも渡せます。使える型は [`Quantity`](api:hypersig/style/value/trait.Quantity.html) を実装する `Length`、`Percentage`、`Time`、`Angle` です。",
+            },
+        ),
+        show(Snippet::StyleLengthMath),
+        para(
+            site,
+            L {
+                en: "A length and a percentage are different types, so `pct(100) - rem(2)` is E0308. A property such as `scroll_margin_top` takes only a length, and the browser would drop a percentage there. Where a property takes both, write the mixed `calc()` with `raw`:",
+                ja: "長さとパーセンテージは別の型なので、`pct(100) - rem(2)` は E0308 になります。`scroll_margin_top` のように長さしか受け取らないプロパティでは、パーセンテージを含む値をブラウザが捨ててしまうからです。両方を受け取るプロパティで混ぜた `calc()` を書くときは `raw` を使います。",
+            },
+        ),
+        show(Snippet::StyleLengthMathMixed),
+    ])
+}
+
 fn unchecked(site: Site) -> Part {
     parts([
         heading(
@@ -209,8 +238,8 @@ fn unchecked(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A literal without a suffix, such as `px(0.1)`, is an `f64` and is written as `0.1px`. A length computed with `calc()` goes through `raw`, which [Unchecked values](style/unchecked/) covers, and a length shared across the page is a [token](style/tokens/), whose `var()` is a `Length`.",
-                ja: "`px(0.1)` のように接尾辞のないリテラルは `f64` なので、`0.1px` と書かれます。`calc()` で計算する長さは `raw` で書きます。`raw` は[検査しない値](style/unchecked/)で説明します。ページ全体で共有する長さは[トークン](style/tokens/)にすると、その `var()` が `Length` になります。",
+                en: "A literal without a suffix, such as `px(0.1)`, is an `f64` and is written as `0.1px`. A `calc()` that mixes a length and a percentage goes through `raw`, which [Unchecked values](style/unchecked/) covers, and a length shared across the page is a [token](style/tokens/), whose `var()` is a `Length`.",
+                ja: "`px(0.1)` のように接尾辞のないリテラルは `f64` なので、`0.1px` と書かれます。長さとパーセンテージを混ぜた `calc()` は `raw` で書きます。`raw` は[検査しない値](style/unchecked/)で説明します。ページ全体で共有する長さは[トークン](style/tokens/)にすると、その `var()` が `Length` になります。",
             },
         ),
     ])
