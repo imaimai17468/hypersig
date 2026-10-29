@@ -237,10 +237,27 @@ impl Color {
         Self(Cow::Owned(css))
     }
 
-    /// The color `#rrggbb` from the low 24 bits of `rgb`, as in `Color::hex(0xb83f45)`.
+    /// The color `#rrggbb` from `rgb`, as in `Color::hex(0xb83f45)`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `rgb` is above `0xffffff`, such as an `#rrggbbaa` literal,
+    /// which [`Color::hex_alpha`] takes. An eight-digit literal whose red
+    /// byte is `00`, such as `0x00ff_0080`, is the six-digit `0xff0080` to
+    /// the compiler, so it passes and is read as `#ff0080`.
     #[must_use]
     pub fn hex(rgb: u32) -> Self {
-        Self(Cow::Owned(format!("#{:06x}", rgb & 0x00ff_ffff)))
+        assert!(
+            rgb <= 0x00ff_ffff,
+            "Color::hex takes six hex digits, not {rgb:#x}; use Color::hex_alpha for #rrggbbaa"
+        );
+        Self(Cow::Owned(format!("#{rgb:06x}")))
+    }
+
+    /// The color `#rrggbbaa` from `rgba`, as in `Color::hex_alpha(0xb83f4580)`.
+    #[must_use]
+    pub fn hex_alpha(rgba: u32) -> Self {
+        Self(Cow::Owned(format!("#{rgba:08x}")))
     }
 
     /// The color with red, green, and blue channels from 0 to 255.
@@ -628,6 +645,21 @@ mod tests {
                 .fallback(FontFamily::Monospace)
                 .to_string(),
             r#""JetBrains Mono", monospace"#
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Color::hex takes six hex digits")]
+    fn an_eight_digit_hex_panics_where_it_is_built() {
+        let _ = super::Color::hex(0x2563_eb80);
+    }
+
+    #[test]
+    fn hex_alpha_keeps_all_four_bytes() {
+        assert_eq!(super::Color::hex(0x00_2563).to_string(), "#002563");
+        assert_eq!(
+            super::Color::hex_alpha(0x0025_6380).to_string(),
+            "#00256380"
         );
     }
 }
