@@ -125,7 +125,7 @@ pub struct Route<P = (), Q = ()> {
 /// prefix, which a proxy answers with its own 404, and which the router
 /// answers with 404 inside `nest`.
 /// A page served by a router nested at a path other than its base answers
-/// with a 500 that names both. An [`Asset`](crate::Asset) path the
+/// with a 500. An [`Asset`](crate::Asset) path the
 /// application serves goes under the page's base, and so does one in a
 /// stylesheet's [`url`](crate::style::value::url), in the page and in the
 /// patches an action, a stream, or an upload sends. Nothing checks that the
@@ -637,8 +637,8 @@ impl Route<(), ()> {
 ///
 /// A router passed to `Router::nest` serves its pages under a longer path
 /// than their links point to, unless it is nested at the [`Base`] the first
-/// line names after `under`. Such a page answers every request with a 500
-/// that names the two paths.
+/// line names after `under`. Such a page answers every request with a 500.
+/// The body names neither path, because a visitor reads it.
 ///
 /// A parent after `in` is a page itself. A path prefix that has no page of
 /// its own cannot be a parent.
@@ -1329,19 +1329,18 @@ pub(crate) fn query_string(value: &Value) -> String {
 
 /// A type one `{name}` segment of a [`Route`] holds.
 ///
-/// It is implemented for `String` and the integer types, whose text the
-/// browser's `String` and the server write the same way. A route parses
+/// It is implemented for [`PathSegment`], [`Rest`], and the integer types,
+/// whose text the browser's `String` and the server write the same way. A route parses
 /// every value of the integer type that [`Route::url`] can write, so the
 /// handler receives an `i64` or `u64` past 2^53 exactly. A page whose
 /// signals hold such a value panics while rendering, as it does for any
 /// signal, because the browser would round it.
 ///
-/// A `String` that is empty, `.`, or `..` writes a link no route serves.
-/// An empty segment leaves `/users/`, which `/users/{name}` does not match,
-/// and the browser resolves a `.` or `..` segment before it sends the
-/// request, as it does `%2E`, so no encoding keeps one. Nothing checks
-/// the value, so a route whose value can be one of these takes it in the
-/// query, or prefixes it in the path.
+/// Text is a [`PathSegment`] rather than a `String`, because an empty, `.`,
+/// or `..` segment writes a link no route serves: an empty one leaves
+/// `/users/`, which `/users/{name}` does not match, and the browser resolves
+/// `.` and `..` before it sends the request. `PathSegment` refuses those
+/// values when it is built.
 ///
 /// `#[derive(Segment)]` implements it for an enum whose variants have no
 /// fields. The segment is the string serde writes for the variant, so a link
