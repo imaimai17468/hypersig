@@ -1674,6 +1674,68 @@ impl Doc {
                     en: "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
                     ja: "コンポーネントは色と角の丸みをデザイントークンから読みます。トークンの値は、ページ全体にはテーマが、1 つの要素にはスタイルが設定します。",
                 },
+                // Overlays
+                Component::Dialog => L {
+                    en: "A modal dialog that the browser opens and closes from buttons, with the rest of the page inert while it is open.",
+                    ja: "ボタンからブラウザが開閉するモーダルダイアログです。開いている間、ページのほかの部分は操作できません。",
+                },
+                Component::AlertDialog => L {
+                    en: "A modal dialog that asks the visitor to confirm or cancel before going on, and stays open until they answer.",
+                    ja: "先に進む前に、訪問者に確認か取り消しを求めるモーダルダイアログです。訪問者が答えるまで閉じません。",
+                },
+                Component::Sheet => L {
+                    en: "A modal dialog along one edge of the viewport, for content too long or too wide for a dialog in the middle.",
+                    ja: "ビューポートの端に沿って出るモーダルダイアログです。中央のダイアログには長すぎる内容や広すぎる内容に使います。",
+                },
+                Component::Menu => L {
+                    en: "A button that opens a list of actions, which the visitor moves through with the arrow keys.",
+                    ja: "操作の一覧を開くボタンです。訪問者は一覧の中を矢印キーで移動します。",
+                },
+                Component::Tooltip => L {
+                    en: "A short description of a button, shown while the button is hovered or focused.",
+                    ja: "ボタンの短い説明です。ボタンにポインタが重なっている間か、フォーカスがある間に表示します。",
+                },
+                Component::Popover => L {
+                    en: "A panel of content that a button opens beside itself, while the rest of the page stays usable.",
+                    ja: "ボタンが自分の横に開く、内容を入れるパネルです。開いている間もページのほかの部分は操作できます。",
+                },
+                Component::Toast => L {
+                    en: "Short notices in a corner of the page, which a statement in the browser adds to a list signal.",
+                    ja: "ページの隅に表示する短いお知らせです。ブラウザで実行する文が、リストのシグナルに追加します。",
+                },
+                Component::ServerToasts => L {
+                    en: "A handler adds a toast with a patch on the list of toasts, and a failed call can show the server's message as a toast.",
+                    ja: "ハンドラはトーストのリストへの差分でトーストを追加します。呼び出しが失敗したときは、サーバーのメッセージをトーストで表示できます。",
+                },
+                // Display
+                Component::Alert => L {
+                    en: "A bordered box for a message, with a title and a description, which a screen reader reads as a live region.",
+                    ja: "タイトルと説明を持つ、メッセージ用の枠線付きのボックスです。スクリーンリーダーはライブリージョンとして読み上げます。",
+                },
+                Component::Badge => L {
+                    en: "A short label, such as a status, drawn as a small pill in one of four looks.",
+                    ja: "状態などの短いラベルを、4 つの見た目のどれかで小さな丸い枠に表示します。",
+                },
+                Component::Progress => L {
+                    en: "A bar filled up to a percentage, which a screen reader reads with its label.",
+                    ja: "割合の分だけ塗りつぶされるバーです。スクリーンリーダーはラベルと一緒に割合を読み上げます。",
+                },
+                Component::Skeleton => L {
+                    en: "A pulsing block that stands in for content still loading, sized to the content it replaces.",
+                    ja: "読み込み中の内容の代わりに置く、明滅するブロックです。大きさは代わりに置く内容に合わせます。",
+                },
+                Component::Spinner => L {
+                    en: "A turning ring that marks work whose length is not known, named for a screen reader by its label.",
+                    ja: "どれだけかかるかわからない処理の途中であることを示す、回転する輪です。スクリーンリーダーにはラベルで名前を伝えます。",
+                },
+                Component::Avatar => L {
+                    en: "A round picture of a person, with their initials where there is no picture or it fails to load.",
+                    ja: "人を表す丸い画像です。画像がないときや読み込めないときは、イニシャルを表示します。",
+                },
+                Component::Kbd => L {
+                    en: "A key or a shortcut the visitor presses, drawn as a small cap in running text.",
+                    ja: "訪問者が押すキーやショートカットを、文中に小さなキーの形で表示します。",
+                },
                 _ => components::component_lead(page),
             },
             Self::Reference(Reference::Overview) => L {

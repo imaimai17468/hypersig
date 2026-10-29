@@ -83,7 +83,6 @@ snippets! {
     UiSetup => "ui_setup.rs";
     UiTheme => "ui_theme.rs";
     UiScheme => "ui_scheme.rs";
-    ToastServer => "toast_server.rs";
     StyleBasics => "style/start/basics.rs";
     StyleValues => "style/values/properties.rs";
     WrongValue => "style/values/wrong_value.rs", "compile_fail,E0277";
@@ -386,6 +385,38 @@ snippets! {
     // The samples of the Components pages under Get started, Buttons, Form fields, and Pickers.
     // The samples of the Components pages under Layout, Navigation, and Data.
     // The samples of the Components pages under Overlays and Display.
+    UiDialog => "components/overlays/dialog.rs";
+    UiDialogNodeRef => "components/overlays/dialog_node_ref.rs", "compile_fail,E0308";
+    UiDialogText => "components/overlays/dialog_text.rs", "compile_fail,E0061";
+    UiAlertDialog => "components/overlays/alert_dialog.rs";
+    UiAlertDialogText => "components/overlays/alert_dialog_text.rs", "compile_fail,E0061";
+    UiSheet => "components/overlays/sheet.rs";
+    UiSheetSide => "components/overlays/sheet_side.rs", "compile_fail,E0308";
+    UiMenu => "components/overlays/menu.rs";
+    UiMenuDisabled => "components/overlays/menu_disabled.rs", "compile_fail,E0277";
+    UiTooltip => "components/overlays/tooltip.rs";
+    UiTooltipLabel => "components/overlays/tooltip_label.rs", "compile_fail,E0061";
+    UiTooltipRich => "components/overlays/tooltip_rich.rs", "compile_fail,E0277";
+    UiPopover => "components/overlays/popover.rs";
+    UiPopoverDialogRef => "components/overlays/popover_dialog_ref.rs", "compile_fail,E0308";
+    UiToast => "components/overlays/toast.rs";
+    UiToastList => "components/overlays/toast_list.rs", "compile_fail,E0308";
+    UiToastDelay => "components/overlays/toast_delay.rs", "compile_fail,E0308";
+    UiToastId => "components/overlays/toast_id.rs", "compile_fail,E0639";
+    UiServerToasts => "components/overlays/server_toasts.rs";
+    UiServerToastText => "components/overlays/server_toast_text.rs", "compile_fail,E0308";
+    UiAlert => "components/display/alert.rs";
+    UiAlertVariant => "components/display/alert_variant.rs", "compile_fail,E0061";
+    UiBadge => "components/display/badge.rs";
+    UiBadgeVariant => "components/display/badge_variant.rs", "compile_fail,E0308";
+    UiProgress => "components/display/progress.rs";
+    UiProgressFraction => "components/display/progress_fraction.rs", "compile_fail,E0277";
+    UiSkeleton => "components/display/skeleton.rs";
+    UiSpinner => "components/display/spinner.rs";
+    UiSpinnerLabel => "components/display/spinner_label.rs", "compile_fail,E0061";
+    UiAvatar => "components/display/avatar.rs";
+    UiAvatarUrl => "components/display/avatar_url.rs", "compile_fail,E0277";
+    UiKbd => "components/display/kbd.rs";
 }
 
 /// The lines of `snippet` that the page shows.

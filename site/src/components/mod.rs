@@ -13,6 +13,9 @@ use crate::lang::{L, Text};
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
+mod display;
+mod overlays;
+
 /// One item: its name, its rustdoc page and anchor under `api/`, and its
 /// summary.
 type Row = (&'static str, &'static str, L<&'static str>);
@@ -77,23 +80,28 @@ pub fn content(site: Site, page: Component) -> Part {
         | Component::BarChart
         | Component::DonutChart => carved(site, page),
         // Overlays
-        Component::Dialog
-        | Component::AlertDialog
-        | Component::Sheet
-        | Component::Menu
-        | Component::Tooltip
-        | Component::Popover
-        | Component::Toast
-        | Component::ServerToasts => carved(site, page),
+        Component::Dialog => overlays::dialog::page(site, head(site, page)),
+        Component::AlertDialog => overlays::alert_dialog::page(site, head(site, page)),
+        Component::Sheet => overlays::sheet::page(site, head(site, page)),
+        Component::Menu => overlays::menu::page(site, head(site, page)),
+        Component::Tooltip => overlays::tooltip::page(site, head(site, page)),
+        Component::Popover => overlays::popover::page(site, head(site, page)),
+        Component::Toast => overlays::toast::page(site, head(site, page)),
+        Component::ServerToasts => overlays::server_toasts::page(site, head(site, page)),
         // Display
-        Component::Alert
-        | Component::Badge
-        | Component::Progress
-        | Component::Skeleton
-        | Component::Spinner
-        | Component::Avatar
-        | Component::Kbd => carved(site, page),
+        Component::Alert => display::alert::page(site, head(site, page)),
+        Component::Badge => display::badge::page(site, head(site, page)),
+        Component::Progress => display::progress::page(site, head(site, page)),
+        Component::Skeleton => display::skeleton::page(site, head(site, page)),
+        Component::Spinner => display::spinner::page(site, head(site, page)),
+        Component::Avatar => display::avatar::page(site, head(site, page)),
+        Component::Kbd => display::kbd::page(site, head(site, page)),
     }
+}
+
+/// The title of `page`, which its file puts first.
+fn head(site: Site, page: Component) -> Part {
+    title(Doc::Components(page).title(site))
 }
 
 /// The text of the page `page` is carved from, until `page` has its own.
@@ -127,12 +135,6 @@ fn carved_from(page: Component) -> Component {
         | Component::ServerTable => Component::DataTable,
         // Data
         Component::BarChart | Component::DonutChart => Component::Chart,
-        // Overlays
-        Component::AlertDialog | Component::Sheet => Component::Dialog,
-        // Overlays
-        Component::ServerToasts => Component::Toast,
-        // Display
-        Component::Skeleton => Component::Progress,
         other => other,
     }
 }
@@ -143,9 +145,6 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
         lead(site, content.lead),
         demo::show(site, content.demo),
     ];
-    if matches!(page, Component::Toast) {
-        children.extend(toast_from_the_server(site));
-    }
     children.push(heading(
         site,
         L {
@@ -201,35 +200,6 @@ fn component(site: Site, page: Component, content: &Page) -> Part {
         Text::Chosen(rows.as_slice()),
     ));
     parts(children)
-}
-
-/// The section of the toast page on toasts a handler adds, which the demo
-/// cannot show because the site has no server.
-fn toast_from_the_server(site: Site) -> [Part; 4] {
-    [
-        heading(
-            site,
-            L {
-                en: "Add a toast from the server",
-                ja: "サーバーからトーストを追加する",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "A handler adds a toast with `patch_append`, which puts it after the toasts the browser shows, where `patch` would replace them. A failed call shows the server's message when `on_error` passes it to `Toast::push_expr` as `Toast::body()`.",
-                ja: "ハンドラは `patch_append` でトーストを追加します。`patch_append` はブラウザが表示中のトーストの後ろに追加し、`patch` はそれらを置き換えます。呼び出しが失敗したときにサーバーのメッセージを表示するには、`on_error` が渡すメッセージを `Toast::push_expr` で `Toast::body()` に入れます。",
-            },
-        ),
-        show(Snippet::ToastServer),
-        para(
-            site,
-            L {
-                en: "A toast from `Toast::new` has an id below 0, and a toast the browser pushes has an id above 0, so a toast from the server and one from the browser never share an id.",
-                ja: "`Toast::new` で作ったトーストの id は 0 未満で、ブラウザが追加したトーストの id は 0 より大きいので、サーバーのトーストとブラウザのトーストの id は重なりません。",
-            },
-        ),
-    ]
 }
 
 fn installation(site: Site) -> Part {
@@ -391,11 +361,23 @@ fn component_page(page: Component) -> Page {
         | Component::TableSelection
         | Component::ServerTable
         | Component::BarChart
-        | Component::DonutChart
+        | Component::DonutChart => unreachable!("carved_from maps it to its page"),
+        // Overlays and Display
+        Component::Dialog
         | Component::AlertDialog
         | Component::Sheet
+        | Component::Menu
+        | Component::Tooltip
+        | Component::Popover
+        | Component::Toast
         | Component::ServerToasts
-        | Component::Skeleton => unreachable!("carved_from maps it to its page"),
+        | Component::Alert
+        | Component::Badge
+        | Component::Progress
+        | Component::Skeleton
+        | Component::Spinner
+        | Component::Avatar
+        | Component::Kbd => unreachable!("written in its own file"),
         Component::Button => Page {
             lead: L {
                 en: "A button in one of six variants and three sizes.",
@@ -1351,96 +1333,6 @@ fn component_page(page: Component) -> Page {
                 ),
             ],
         },
-        Component::Avatar => Page {
-            lead: L {
-                en: "A round picture of a person, with their initials where there is no picture.",
-                ja: "人物を表す丸い画像です。画像がない場合はイニシャルを表示します。",
-            },
-            demo: Demo::Avatar,
-            built_on: &[
-                L {
-                    en: "The avatar is a `role=\"img\"` named after the person through `aria-label`, so a screen reader reads the name once and nothing inside it. The picture comes from a `SafeUrl`, a `Url`, or a signal of one, as the `src` of an `<img>` does.",
-                    ja: "アバターは `aria-label` で人物の名前を付けた `role=\"img\"` です。そのため、スクリーンリーダーは名前を一度だけ読み上げ、中身は読み上げません。画像の URL は `<img>` の `src` と同じく `SafeUrl` か `Url`、またはそのシグナルから渡します。",
-                },
-                L {
-                    en: "The initials are the picture's `alt`, and where the picture fails to load, the broken `<img>`'s `::after` draws them over it, as the second avatar of the demo shows. Chrome draws that `::after`. A browser that draws none on a broken image shows its own marker for one there instead.",
-                    ja: "イニシャルは画像の `alt` で、画像を読み込めなかった場合は、壊れた `<img>` の `::after` が画像の上にイニシャルを描きます。デモの 2 つ目のアバターがこの場合です。Chrome はこの `::after` を描きます。壊れた画像に `::after` を描かないブラウザでは、代わりにそのブラウザの壊れた画像の印が表示されます。",
-                },
-            ],
-            keys: &[],
-            items: &[
-                (
-                    "Avatar::new",
-                    "hypersig_ui/struct.Avatar.html#method.new",
-                    L {
-                        en: "An avatar of `name` that shows `initials`.",
-                        ja: "`initials` を表示する、`name` のアバター",
-                    },
-                ),
-                (
-                    "picture",
-                    "hypersig_ui/struct.Avatar.html#method.picture",
-                    L {
-                        en: "Shows the picture at `url` in place of the initials.",
-                        ja: "イニシャルの代わりに `url` の画像を表示します。",
-                    },
-                ),
-                (
-                    "render",
-                    "hypersig_ui/struct.Avatar.html#method.render",
-                    L {
-                        en: "The avatar, as a `<span>`.",
-                        ja: "`<span>` としてのアバター",
-                    },
-                ),
-            ],
-        },
-        Component::Kbd => Page {
-            lead: L {
-                en: "A key or a shortcut the visitor presses, drawn as a small cap in running text.",
-                ja: "訪問者が押すキーやショートカットを、文中に小さなキーの形で表示します。",
-            },
-            demo: Demo::Kbd,
-            built_on: &[L {
-                en: "It is a native `<kbd>`, and a screen reader reads its text as it stands, so write the key's name in words where a symbol would be read as something else, such as \"Ctrl\" rather than \"^\". For a shortcut, place one `kbd` per key side by side.",
-                ja: "ネイティブの `<kbd>` で、スクリーンリーダーはテキストをそのまま読み上げます。そのため、記号が別のものとして読まれる場合は、「^」ではなく「Ctrl」のように、キーの名前を言葉で書いてください。ショートカットはキーごとに 1 つの `kbd` を並べて書きます。",
-            }],
-            keys: &[],
-            items: &[(
-                "kbd",
-                "hypersig_ui/fn.kbd.html",
-                L {
-                    en: "A `<kbd>` that shows a key or a shortcut the visitor presses.",
-                    ja: "訪問者が押すキーやショートカットを表示する `<kbd>`",
-                },
-            )],
-        },
-        Component::Spinner => Page {
-            lead: L {
-                en: "A turning ring that marks work whose length is not known.",
-                ja: "どれだけかかるかわからない処理の途中であることを示す、回転する輪です。",
-            },
-            demo: Demo::Loading,
-            built_on: &[
-                L {
-                    en: "The spinner is a `role=\"status\"` named by its label through `aria-label`, and the ring inside it is hidden from assistive technology. A screen reader reads the label where it reaches the spinner. Whether it also reads the label as the spinner appears differs between screen readers, so say in text when the work finishes, such as in a toast.",
-                    ja: "スピナーは `aria-label` でラベルを名前にした `role=\"status\"` で、中の輪は支援技術から隠されています。スクリーンリーダーはスピナーまで読み進めたときにラベルを読み上げます。スピナーが現れたときにも読み上げるかどうかはスクリーンリーダーによって違うので、処理が終わったことはトーストなどのテキストで伝えてください。",
-                },
-                L {
-                    en: "The ring turns in the current text color, and four times slower for a visitor who asks for reduced motion. Use `progress` where the share of the work done is known.",
-                    ja: "輪は現在の文字色で回り、動きを減らす設定の訪問者には 4 倍遅く回ります。処理の進み具合がわかる場合は `progress` を使ってください。",
-                },
-            ],
-            keys: &[],
-            items: &[(
-                "spinner",
-                "hypersig_ui/fn.spinner.html",
-                L {
-                    en: "A turning ring named `label`, which marks work that has no known length.",
-                    ja: "`label` を名前に持ち、長さのわからない処理を示す回転する輪",
-                },
-            )],
-        },
         Component::Card => Page {
             lead: L {
                 en: "A bordered box with a header, content, and a footer.",
@@ -1924,617 +1816,6 @@ fn component_page(page: Component) -> Page {
                     L {
                         en: "The first series of a chart.",
                         ja: "チャートの 1 つめの系列の色",
-                    },
-                ),
-            ],
-        },
-        Component::Dialog => Page {
-            lead: L {
-                en: "A modal dialog, a sheet along an edge of the viewport, and an alert dialog that asks the visitor to confirm.",
-                ja: "モーダルダイアログ、ビューポートの端に沿って出るシート、訪問者に確認を求めるアラートダイアログです。",
-            },
-            demo: Demo::Dialog,
-            built_on: &[
-                L {
-                    en: "Declare the dialog as a `const` and use it for the dialog and for the buttons that open and close it. The buttons carry `commandfor` and `command`, and the browser opens the `<dialog>` with `showModal()`. While it is open, the rest of the page is inert, Escape closes the dialog, and on closing, focus returns to the button that opened it. Invoker commands are available from Chrome 135, Firefox 144, and Safari 26.2.",
-                    ja: "ダイアログは `const` として宣言し、ダイアログ本体と、それを開くボタン、閉じるボタンに使います。ボタンには `commandfor` と `command` が付き、ブラウザが `<dialog>` を `showModal()` で開きます。開いている間はページのほかの部分が inert になって操作できず、Escape でダイアログが閉じ、閉じるとフォーカスはダイアログを開いたボタンに戻ります。invoker commands は Chrome 135、Firefox 144、Safari 26.2 から使えます。",
-                },
-                L {
-                    en: "The dialog is labeled by its title and described by its description through ids derived from the name. An alert dialog has `role=\"alertdialog\"` and no close button in its corner, so the visitor answers with one of its buttons.",
-                    ja: "ダイアログには名前から作った id を通して、タイトルがラベルとして、説明が説明文として結び付きます。アラートダイアログは `role=\"alertdialog\"` を持ち、角に閉じるボタンがないので、訪問者はダイアログのボタンのどれかで答えます。",
-                },
-                L {
-                    en: "A sheet is the same modal `<dialog>`, placed along one edge of the viewport by `Dialog::sheet`, so it keeps the focus, Escape, and backdrop behavior of a dialog.",
-                    ja: "シートは同じモーダルの `<dialog>` を `Dialog::sheet` でビューポートの端に沿って置いたものなので、フォーカス、Escape、背景のクリックの振る舞いはダイアログと同じです。",
-                },
-            ],
-            keys: &[
-                (
-                    L {
-                        en: "Tab",
-                        ja: "Tab",
-                    },
-                    L {
-                        en: "Moves between the dialog's controls and never reaches the page behind.",
-                        ja: "ダイアログのコントロールの間を移り、後ろのページには移りません。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Escape",
-                        ja: "Escape",
-                    },
-                    L {
-                        en: "Closes the dialog and returns focus to the button that opened it.",
-                        ja: "ダイアログを閉じ、ダイアログを開いたボタンにフォーカスを戻します。",
-                    },
-                ),
-            ],
-            items: &[
-                (
-                    "Dialog::new",
-                    "hypersig_ui/struct.Dialog.html#method.new",
-                    L {
-                        en: "A dialog that `dialog` names, whose id is the name of `dialog`.",
-                        ja: "`dialog` が名前を付け、`dialog` の名前を id とするダイアログ",
-                    },
-                ),
-                (
-                    "trigger",
-                    "hypersig_ui/struct.Dialog.html#method.trigger",
-                    L {
-                        en: "A button that opens the dialog.",
-                        ja: "ダイアログを開くボタン",
-                    },
-                ),
-                (
-                    "open",
-                    "hypersig_ui/struct.Dialog.html#method.open",
-                    L {
-                        en: "A statement that opens the dialog, as its trigger button does.",
-                        ja: "トリガーのボタンと同じようにダイアログを開く文",
-                    },
-                ),
-                (
-                    "dismiss",
-                    "hypersig_ui/struct.Dialog.html#method.dismiss",
-                    L {
-                        en: "A statement that closes the dialog, as its close button does.",
-                        ja: "閉じるボタンと同じようにダイアログを閉じる文",
-                    },
-                ),
-                (
-                    "close",
-                    "hypersig_ui/struct.Dialog.html#method.close",
-                    L {
-                        en: "A button that closes the dialog. Put it inside the dialog.",
-                        ja: "ダイアログの中に置く、ダイアログを閉じるボタン",
-                    },
-                ),
-                (
-                    "dialog",
-                    "hypersig_ui/struct.Dialog.html#method.dialog",
-                    L {
-                        en: "The dialog, with `title`, `description`, `content`, and a close button in its corner.",
-                        ja: "`title`、`description`、`content` と、角の閉じるボタンを持つダイアログ",
-                    },
-                ),
-                (
-                    "alert_dialog",
-                    "hypersig_ui/struct.Dialog.html#method.alert_dialog",
-                    L {
-                        en: "An alert dialog, which asks the visitor to confirm or cancel before going on.",
-                        ja: "先に進む前に、訪問者に確認か取り消しを求めるアラートダイアログ",
-                    },
-                ),
-                (
-                    "sheet",
-                    "hypersig_ui/struct.Dialog.html#method.sheet",
-                    L {
-                        en: "A sheet: a dialog along the `side` edge of the viewport.",
-                        ja: "シート。ビューポートの `side` の端に沿って出るダイアログ",
-                    },
-                ),
-                (
-                    "DialogText",
-                    "hypersig_ui/struct.DialogText.html",
-                    L {
-                        en: "The words `Dialog::dialog` and `Dialog::sheet` name their close button with.",
-                        ja: "`Dialog::dialog` と `Dialog::sheet` が閉じるボタンの名前に使う言葉",
-                    },
-                ),
-                (
-                    "Side",
-                    "hypersig_ui/enum.Side.html",
-                    L {
-                        en: "The edge of the viewport a `Dialog::sheet` sits along.",
-                        ja: "`Dialog::sheet` が沿うビューポートの端",
-                    },
-                ),
-                (
-                    "dialog_footer",
-                    "hypersig_ui/fn.dialog_footer.html",
-                    L {
-                        en: "The row of buttons at the bottom of a dialog, aligned to the end.",
-                        ja: "ダイアログの下部に、末尾に寄せて並べるボタンの列",
-                    },
-                ),
-            ],
-        },
-        Component::Menu => Page {
-            lead: L {
-                en: "A menu of actions opened by a button.",
-                ja: "ボタンで開く、操作のメニューです。",
-            },
-            demo: Demo::Menu,
-            built_on: &[
-                L {
-                    en: "It follows the WAI-ARIA menu button pattern. The button has `aria-haspopup=\"menu\"`, the menu `role=\"menu\"`, and each action `role=\"menuitem\"`. The menu is a `popover`, so the browser shows it over the page and closes it on Escape or on a click outside. It is placed under the button with CSS anchor positioning and moves above it where there is no room below.",
-                    ja: "WAI-ARIA menu button パターンに従います。ボタンは `aria-haspopup=\"menu\"` を、メニューは `role=\"menu\"` を、各操作は `role=\"menuitem\"` を持ちます。メニューは `popover` なので、ブラウザがページの上に重ねて表示し、Escape か外側のクリックで閉じます。メニューは CSS の anchor positioning でボタンの下に置かれ、下に場所がなければボタンの上に移ります。",
-                },
-                L {
-                    en: "A disabled action keeps its place, and the arrow keys skip it.",
-                    ja: "無効な操作はその位置に残り、矢印キーでは飛ばされます。",
-                },
-            ],
-            keys: &[
-                (
-                    L {
-                        en: "Enter, Space",
-                        ja: "Enter、Space",
-                    },
-                    L {
-                        en: "With focus on the button, opens the menu and moves focus to the first action. With focus on an action, runs it and closes the menu.",
-                        ja: "ボタンにフォーカスがあるときに押すと、メニューを開いて最初の操作にフォーカスを移します。操作にフォーカスがあるときに押すと、その操作を実行してメニューを閉じます。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Up, Down",
-                        ja: "上矢印、下矢印",
-                    },
-                    L {
-                        en: "Move to the previous or next action.",
-                        ja: "前か次の操作に移ります。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Home, End",
-                        ja: "Home、End",
-                    },
-                    L {
-                        en: "Move to the first or last action.",
-                        ja: "最初か最後の操作に移ります。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Escape",
-                        ja: "Escape",
-                    },
-                    L {
-                        en: "Closes the menu and returns focus to the button.",
-                        ja: "メニューを閉じ、ボタンにフォーカスを戻します。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Tab",
-                        ja: "Tab",
-                    },
-                    L {
-                        en: "Closes the menu.",
-                        ja: "メニューを閉じます。",
-                    },
-                ),
-            ],
-            items: &[
-                (
-                    "Menu::new",
-                    "hypersig_ui/struct.Menu.html#method.new",
-                    L {
-                        en: "A menu that `menu` names, whose id is the name of `menu`.",
-                        ja: "`menu` が名前を付け、`menu` の名前を id とするメニュー",
-                    },
-                ),
-                (
-                    "trigger",
-                    "hypersig_ui/struct.Menu.html#method.trigger",
-                    L {
-                        en: "The button that opens and closes the menu.",
-                        ja: "メニューを開閉するボタン",
-                    },
-                ),
-                (
-                    "menu",
-                    "hypersig_ui/struct.Menu.html#method.menu",
-                    L {
-                        en: "The menu, holding `items` in order.",
-                        ja: "`items` を順に並べたメニュー",
-                    },
-                ),
-                (
-                    "MenuItem::new",
-                    "hypersig_ui/struct.MenuItem.html#method.new",
-                    L {
-                        en: "An action labeled `label` that runs `run` when chosen.",
-                        ja: "`label` をラベルに持ち、選ばれると `run` を実行する操作",
-                    },
-                ),
-                (
-                    "destructive",
-                    "hypersig_ui/struct.MenuItem.html#method.destructive",
-                    L {
-                        en: "Draws the action in `token::destructive`. It is for an action that deletes.",
-                        ja: "操作を `token::destructive` の色で描きます。削除する操作に使います。",
-                    },
-                ),
-                (
-                    "disabled",
-                    "hypersig_ui/struct.MenuItem.html#method.disabled",
-                    L {
-                        en: "Disables the action while `when` is true, which the arrow keys then skip.",
-                        ja: "`when` が true の間、操作を無効にします。無効な操作は矢印キーで飛ばされます。",
-                    },
-                ),
-            ],
-        },
-        Component::Tooltip => Page {
-            lead: L {
-                en: "A short description shown while a button is hovered or focused.",
-                ja: "ボタンにポインタが重なっている間か、フォーカスがある間に表示する短い説明です。",
-            },
-            demo: Demo::Tooltip,
-            built_on: &[
-                L {
-                    en: "It follows the WAI-ARIA tooltip pattern. The tooltip has `role=\"tooltip\"` and the button `aria-describedby` pointing at it, so a screen reader reads the text after the button's name. `Tooltip` builds the button and gives it the attributes the tooltip needs.",
-                    ja: "WAI-ARIA tooltip パターンに従います。ツールチップは `role=\"tooltip\"` を持ち、ボタンの `aria-describedby` がツールチップを指すので、スクリーンリーダーはボタンの名前のあとにツールチップのテキストを読み上げます。ボタンは `Tooltip` が作り、ツールチップに必要な属性をそのボタンに付けます。",
-                },
-                L {
-                    en: "The tooltip is a `popover=\"hint\"`, which browser-compat-data 8.1.6 lists for Chrome 151 and Firefox 153, with partial older implementations in earlier versions, and for Safari only in its preview. A browser without it treats the value as `manual`, and there Escape closes the tooltip only while focus is on its button.",
-                    ja: "ツールチップは `popover=\"hint\"` です。browser-compat-data 8.1.6 では、Chrome 151 と Firefox 153 が対応しており、それより前のバージョンには部分的な古い実装があり、Safari はプレビュー版だけが対応しています。対応していないブラウザはこの値を `manual` として扱うので、Escape でツールチップが閉じるのは、フォーカスがそのボタンにある間だけです。",
-                },
-            ],
-            keys: &[
-                (
-                    L {
-                        en: "Tab",
-                        ja: "Tab",
-                    },
-                    L {
-                        en: "Focusing the button opens the tooltip, and leaving it closes the tooltip.",
-                        ja: "ボタンにフォーカスが移るとツールチップが開き、フォーカスが離れると閉じます。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Any key",
-                        ja: "任意のキー",
-                    },
-                    L {
-                        en: "With focus on the button, closes the tooltip. Escape also reaches a dialog around the tooltip.",
-                        ja: "ボタンにフォーカスがあるときに押すと、ツールチップが閉じます。Escape の場合は、ツールチップを囲むダイアログにもキーが届きます。",
-                    },
-                ),
-            ],
-            items: &[
-                (
-                    "Tooltip::new",
-                    "hypersig_ui/struct.Tooltip.html#method.new",
-                    L {
-                        en: "A tooltip that `tip` names, whose id is the name of `tip`.",
-                        ja: "`tip` が名前を付け、`tip` の名前を id とするツールチップ",
-                    },
-                ),
-                (
-                    "trigger",
-                    "hypersig_ui/struct.Tooltip.html#method.trigger",
-                    L {
-                        en: "A button described by the tooltip.",
-                        ja: "ツールチップが説明するボタン",
-                    },
-                ),
-                (
-                    "icon_trigger",
-                    "hypersig_ui/struct.Tooltip.html#method.icon_trigger",
-                    L {
-                        en: "An icon button named `label` and described by the tooltip.",
-                        ja: "`label` を名前に持ち、ツールチップが説明するアイコンボタン",
-                    },
-                ),
-                (
-                    "tooltip",
-                    "hypersig_ui/struct.Tooltip.html#method.tooltip",
-                    L {
-                        en: "The tooltip, holding `text`.",
-                        ja: "`text` を入れたツールチップ",
-                    },
-                ),
-            ],
-        },
-        Component::Popover => Page {
-            lead: L {
-                en: "A panel of content that a button opens beside itself.",
-                ja: "ボタンの横に開く、内容を入れるパネルです。",
-            },
-            demo: Demo::Popover,
-            built_on: &[
-                L {
-                    en: "The panel is a `popover=\"auto\"` with `role=\"dialog\"`, named by its button through `aria-labelledby`. The button has `aria-haspopup=\"dialog\"` and opens and closes it with `commandfor` and `command`, so the browser puts the panel above the page, closes it on Escape or on a click outside, and returns focus to the button when focus was inside the panel.",
-                    ja: "パネルは `role=\"dialog\"` を持つ `popover=\"auto\"` で、`aria-labelledby` によってボタンのテキストがパネルの名前になります。ボタンは `aria-haspopup=\"dialog\"` を持ち、`commandfor` と `command` でパネルを開閉します。そのため、ブラウザがパネルをページの上に表示し、Escape かパネルの外のクリックで閉じ、フォーカスがパネルの中にあった場合はボタンに戻します。",
-                },
-                L {
-                    en: "Focus stays on the button as the panel opens, so place the panel right after its button, where Tab moves from the button into it. A statement closes it with `NodeRef::hide_popover` on the node ref the popover is built from.",
-                    ja: "パネルが開いてもフォーカスはボタンに残ります。パネルはボタンの直後に置いてください。そうすると、ボタンから Tab でパネルの中に移れます。ステートメントから閉じるには、ポップオーバーを作った node ref の `NodeRef::hide_popover` を使います。",
-                },
-            ],
-            keys: &[
-                (
-                    L {
-                        en: "Enter, Space",
-                        ja: "Enter、Space",
-                    },
-                    L {
-                        en: "On the button, opens or closes the panel.",
-                        ja: "ボタンの上で押すと、パネルを開くか閉じます。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Escape",
-                        ja: "Escape",
-                    },
-                    L {
-                        en: "Closes the panel.",
-                        ja: "パネルを閉じます。",
-                    },
-                ),
-            ],
-            items: &[
-                (
-                    "Popover::new",
-                    "hypersig_ui/struct.Popover.html#method.new",
-                    L {
-                        en: "A popover that `panel` names, whose id is the name of `panel`.",
-                        ja: "`panel` が名前を付け、`panel` の名前を id とするポップオーバー",
-                    },
-                ),
-                (
-                    "trigger",
-                    "hypersig_ui/struct.Popover.html#method.trigger",
-                    L {
-                        en: "The button that opens and closes the panel.",
-                        ja: "パネルを開閉するボタン",
-                    },
-                ),
-                (
-                    "popover",
-                    "hypersig_ui/struct.Popover.html#method.popover",
-                    L {
-                        en: "The panel, empty, for the content added with `El::child`.",
-                        ja: "`El::child` で内容を加える、空のパネル",
-                    },
-                ),
-            ],
-        },
-        Component::Toast => Page {
-            lead: L {
-                en: "Short notices shown together in a corner of the page, added from the browser or by the server.",
-                ja: "ページの隅に並べて表示する短いお知らせです。ブラウザからもサーバーからも追加できます。",
-            },
-            demo: Demo::Toast,
-            built_on: &[
-                L {
-                    en: "The toaster is a landmark region named \"Notifications\" holding an `aria-live=\"polite\"` list, so a screen reader reads a toast when it is added, after what it is reading. Each toast has a button that removes it.",
-                    ja: "トーストを並べる領域（toaster）は「Notifications」という名前のランドマークで、`aria-live=\"polite\"` の一覧を持ちます。そのため、トーストが追加されると、スクリーンリーダーは読み上げ中の内容のあとにそのトーストを読み上げます。各トーストには、そのトーストを消すボタンがあります。",
-                },
-                L {
-                    en: "A toast stays until it is dismissed, unless `Toaster::dismiss_after` sets a time, because a visitor who reads slowly or uses a magnifier can miss a notice that is removed automatically (WCAG 2.2.1). The region is in the page rather than in the top layer, so an open modal dialog makes it inert until the dialog closes.",
-                    ja: "トーストは `Toaster::dismiss_after` で時間を設定しない限り、消されるまで残ります。ゆっくり読む訪問者や拡大鏡を使う訪問者は、自動で消えるお知らせを見逃すことがあるからです（WCAG 2.2.1）。この領域は top layer ではなくページの中にあるので、モーダルダイアログが開いている間は inert になって操作できず、ダイアログが閉じると操作できるようになります。",
-                },
-            ],
-            keys: &[(
-                L {
-                    en: "Tab, Enter",
-                    ja: "Tab、Enter",
-                },
-                L {
-                    en: "Reach a toast's Dismiss button and press it.",
-                    ja: "トーストの Dismiss ボタンに移り、それを押します。",
-                },
-            )],
-            items: &[
-                (
-                    "Toaster::new",
-                    "hypersig_ui/struct.Toaster.html#method.new",
-                    L {
-                        en: "A region that shows `toasts`, newest last.",
-                        ja: "`toasts` を新しいものほど後ろに並べて表示する領域",
-                    },
-                ),
-                (
-                    "label",
-                    "hypersig_ui/struct.Toaster.html#method.label",
-                    L {
-                        en: "Names the region for assistive technology, in place of \"Notifications\".",
-                        ja: "「Notifications」の代わりに、支援技術に向けた領域の名前を付けます。",
-                    },
-                ),
-                (
-                    "dismiss_label",
-                    "hypersig_ui/struct.Toaster.html#method.dismiss_label",
-                    L {
-                        en: "Names the button that removes a toast, in place of \"Dismiss\".",
-                        ja: "「Dismiss」の代わりに、トーストを取り除くボタンの名前を付けます。",
-                    },
-                ),
-                (
-                    "dismiss_after",
-                    "hypersig_ui/struct.Toaster.html#method.dismiss_after",
-                    L {
-                        en: "Removes each toast `delay` after it appears.",
-                        ja: "各トーストを表示してから `delay` が経ったら取り除きます。",
-                    },
-                ),
-                (
-                    "Toast::new",
-                    "hypersig_ui/struct.Toast.html#method.new",
-                    L {
-                        en: "A toast titled `title`, with an id no other toast of the process has.",
-                        ja: "`title` をタイトルに持ち、プロセスのほかのどのトーストとも違う id を持つトースト",
-                    },
-                ),
-                (
-                    "description",
-                    "hypersig_ui/struct.Toast.html#method.description",
-                    L {
-                        en: "Adds a line of text under the title.",
-                        ja: "タイトルの下に 1 行のテキストを追加します。",
-                    },
-                ),
-                (
-                    "variant",
-                    "hypersig_ui/struct.Toast.html#method.variant",
-                    L {
-                        en: "Sets the look of the toast.",
-                        ja: "トーストの見た目を設定します。",
-                    },
-                ),
-                (
-                    "push",
-                    "hypersig_ui/struct.Toast.html#method.push",
-                    L {
-                        en: "A statement that adds this toast to `toasts` in the browser.",
-                        ja: "ブラウザでこのトーストを `toasts` に追加する文",
-                    },
-                ),
-                (
-                    "Toast::push_expr",
-                    "hypersig_ui/struct.Toast.html#method.push_expr",
-                    L {
-                        en: "A statement that adds `toast`, which the browser evaluates, to `toasts`.",
-                        ja: "ブラウザが評価する `toast` を `toasts` に追加する文",
-                    },
-                ),
-                (
-                    "Toast::body",
-                    "hypersig_ui/struct.Toast.html#method.body",
-                    L {
-                        en: "Typed reference to the `body` signal.",
-                        ja: "`body` シグナルへの型付きの参照",
-                    },
-                ),
-            ],
-        },
-        Component::Alert => Page {
-            lead: L {
-                en: "A bordered box for a message, with a title and a description.",
-                ja: "タイトルと説明を持つ、メッセージ用の枠線付きのボックスです。",
-            },
-            demo: Demo::Alert,
-            built_on: &[L {
-                en: "Both variants are live regions. A destructive alert has `role=\"alert\"`, which a screen reader reads when it is put on the page, as the demo does with `when`. A default alert has `role=\"status\"`, which is read when its text changes. Some screen readers skip a status that arrives with its text already in it, so keep a status box on the page and change its text with `bind_text`.",
-                ja: "どちらのバリアントもライブリージョンです。destructive のアラートは `role=\"alert\"` を持ち、ページに置かれたときにスクリーンリーダーが読み上げます。デモでは `when` でアラートをページに置いています。default のアラートは `role=\"status\"` を持ち、テキストが変わったときに読み上げられます。最初からテキストが入った状態で現れた status を読み飛ばすスクリーンリーダーもあるので、status のボックスはページに置いたままにして、テキストを `bind_text` で変えてください。",
-            }],
-            keys: &[],
-            items: &[
-                (
-                    "alert",
-                    "hypersig_ui/fn.alert.html",
-                    L {
-                        en: "A bordered box for a message, holding an `alert_title` and an `alert_description`.",
-                        ja: "`alert_title` と `alert_description` を入れる、メッセージ用の枠線付きのボックス",
-                    },
-                ),
-                (
-                    "alert_title",
-                    "hypersig_ui/fn.alert_title.html",
-                    L {
-                        en: "The first line of an `alert`.",
-                        ja: "`alert` の最初の行",
-                    },
-                ),
-                (
-                    "alert_description",
-                    "hypersig_ui/fn.alert_description.html",
-                    L {
-                        en: "The text under the title of an `alert`.",
-                        ja: "`alert` のタイトルの下のテキスト",
-                    },
-                ),
-                (
-                    "AlertVariant",
-                    "hypersig_ui/enum.AlertVariant.html",
-                    L {
-                        en: "The look and the urgency of an alert.",
-                        ja: "アラートの見た目と緊急度",
-                    },
-                ),
-            ],
-        },
-        Component::Badge => Page {
-            lead: L {
-                en: "A badge that shows a short label, such as a status.",
-                ja: "状態などの短いラベルを表示するバッジです。",
-            },
-            demo: Demo::Badge,
-            built_on: &[L {
-                en: "A badge is a `<span>` and takes no role, so a screen reader reads it where it stands. Where the color alone carries the meaning, put the meaning in the text too, such as \"Failed\" rather than a red dot.",
-                ja: "バッジは `<span>` でロールを持たないので、スクリーンリーダーは置かれた位置でそのまま読み上げます。色だけで意味を伝えている場合は、赤い点だけで済ませずに、「失敗」のように意味をテキストにも書いてください。",
-            }],
-            keys: &[],
-            items: &[
-                (
-                    "badge",
-                    "hypersig_ui/fn.badge.html",
-                    L {
-                        en: "A `<span>` that shows a short label, such as a status, as a badge.",
-                        ja: "状態のような短いラベルをバッジとして表示する `<span>`",
-                    },
-                ),
-                (
-                    "BadgeVariant",
-                    "hypersig_ui/enum.BadgeVariant.html",
-                    L {
-                        en: "The look of a badge.",
-                        ja: "バッジの見た目",
-                    },
-                ),
-            ],
-        },
-        Component::Progress => Page {
-            lead: L {
-                en: "A bar filled up to a percentage, and a block that stands in for content still loading.",
-                ja: "割合の分だけ塗りつぶされるバーと、読み込み中の内容の代わりに置くブロックです。",
-            },
-            demo: Demo::Progress,
-            built_on: &[
-                L {
-                    en: "The bar is a `role=\"progressbar\"` with `aria-valuenow` kept equal to the value, so a screen reader reads the label and the percentage. A value below 0 or above 100 is drawn and announced as 0 or 100.",
-                    ja: "バーは `role=\"progressbar\"` を持ち、`aria-valuenow` が常に値と同じになるので、スクリーンリーダーはラベルと割合を読み上げます。0 未満や 100 を超える値は、0 や 100 として描かれ、読み上げられます。",
-                },
-                L {
-                    en: "A skeleton is hidden from assistive technology. Tell a screen reader that the content is loading elsewhere, as the demo does with `aria-busy` on the region that holds it.",
-                    ja: "スケルトンは支援技術から隠してあります。内容を読み込み中であることは、別の場所でスクリーンリーダーに伝えてください。デモではスケルトンを置いた領域に `aria-busy` を付けています。",
-                },
-            ],
-            keys: &[],
-            items: &[
-                (
-                    "progress",
-                    "hypersig_ui/fn.progress.html",
-                    L {
-                        en: "A bar filled up to `percent`, named by `label`.",
-                        ja: "`label` を名前に持ち、`percent` の分だけ塗りつぶされるバー",
-                    },
-                ),
-                (
-                    "skeleton",
-                    "hypersig_ui/fn.skeleton.html",
-                    L {
-                        en: "A pulsing block in `token::accent` that stands in for loading content.",
-                        ja: "読み込み中の内容の代わりに置く、`token::accent` の色で明滅するブロック",
                     },
                 ),
             ],
