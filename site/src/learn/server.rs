@@ -1,4 +1,4 @@
-//! The pages on talking to the server, styling, and what to use when bindings
+//! The pages on talking to the server, and what to use when bindings
 //! and statements are not enough.
 
 use super::snippet::{Snippet, show};
@@ -153,7 +153,6 @@ pub fn calls_in_depth(site: Site) -> Part {
         ),
         show(Snippet::LoadMore),
         calls(site),
-        shared_parts(site),
     ])
 }
 
@@ -212,7 +211,6 @@ pub fn routes_in_depth(site: Site) -> Part {
                 ja: "`push_url` や `replace_url` が出す URL が、画面のページのものかどうかは検査されません。別のページの URL を出すと、このページの内容のままその URL が表示され、再読み込みすると別のページが読み込まれます。",
             },
         ),
-        head(site),
         heading(
             site,
             L {
@@ -267,35 +265,6 @@ fn calls(site: Site) -> Part {
             L {
                 en: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) opens a stream again when its connection fails, it breaks off, or the server answers with a 5xx status, as the clock on [Talking to the server](learn/server/) does. It waits up to 1 second, then up to twice as long each time, to at most 30 seconds. Each wait ends at a random point past its half, so pages that lost the server together come back spread over that time, and it ends early when the browser comes back online or the page becomes visible. The server sends the event `hs-end` last once the handler's stream finishes, so a response a host closes at its time limit, which ends before `hs-end`, counts as broken off. `reconnect` does not open the stream again after `hs-end` or a 4xx answer, or once the element has left the page. Each attempt evaluates the arguments again, so a stream that takes a signal its patches keep current, such as the id of the last message, can send only what came after it. A stream whose arguments stay the same should start with the current values, and the page catches up with what it missed. Only a call to a `StreamAction`, which is always served on `GET`, has `reconnect`, because sending a `POST` again could repeat a change.",
                 ja: "[`StreamCall::reconnect`](api:hypersig/struct.StreamCall.html#method.reconnect) は、接続が失敗したとき、ストリームが途中で切れたとき、サーバーが 5xx を返したときに、ストリームを開き直します。[サーバーとのやり取り](learn/server/) の時計がこの例です。最初は最大 1 秒待ち、そのあとは待ち時間の上限を倍にしながら 30 秒まで延ばします。実際に待つ長さは上限の半分から上限までのうちランダムに決まるので、同時にサーバーを失ったページが開き直す時刻はばらつきます。ブラウザがオンラインに戻ったときや、ページが表示されたときは、待つのをやめてすぐに開き直します。サーバーはハンドラのストリームが終わると最後に `hs-end` のイベントを送ります。ホストが時間の上限で閉じたレスポンスは `hs-end` の前で終わるので、途中で切れたものとして扱います。`hs-end` で終わったとき、4xx の応答を受けたとき、要素がページから外れたときは、開き直しません。開き直すたびに引数を評価し直します。最後に受け取ったメッセージの id のように、ストリームの差分が更新し続けるシグナルを引数に渡せば、ハンドラはそれより後の分だけを送れます。引数が変わらないストリームでは、初めに現在の値を送ってください。そうすればページは見逃した変更に追いつきます。`POST` を送り直すと変更が繰り返されることがあるので、`reconnect` があるのは、常に `GET` で配信する `StreamAction` の呼び出しだけです。",
-            },
-        ),
-    ])
-}
-
-/// The section on parts that several pages embed, and on what one call does
-/// when it fails or succeeds.
-fn shared_parts(site: Site) -> Part {
-    parts([
-        heading(
-            site,
-            L {
-                en: "Parts shared across pages",
-                ja: "複数のページで使う部品",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "A piece that sits on several pages, such as a sign-out button in an app's shell or a newsletter form in a footer, is a [`Part`](api:hypersig/trait.Part.html): its own signal struct, an element built by `Part::render`, and actions over that struct. A page whose struct has a field of the part's type embeds it with `html::part(Home::footer())`, and the part writes its paths under that field. Each call the part makes names the field in a header, so the one handler registered for the part's action serves every page that embeds it, and the signals it patches and the fragments it renders again land under the field the call came from. Calling the part's action outside the part, or embedding the part at a field of a list item, is a compile error.",
-                ja: "アプリの枠にあるサインアウトのボタンや、フッターのニュースレターのフォームのように複数のページに置くものは、[`Part`](api:hypersig/trait.Part.html) として書きます。部品は自分のシグナル構造体と、`Part::render` で組み立てる要素と、その構造体に対するアクションを持ちます。部品の型のフィールドを持つページは `html::part(Home::footer())` で部品を埋め込み、部品はそのフィールドの下にパスを書きます。部品の中の呼び出しはヘッダーでフィールドを伝えるので、部品のアクションに登録したハンドラ 1 つが、部品を埋め込んだどのページにも応答します。ハンドラが書き換えるシグナルと描き直すフラグメントは、呼び出し元のフィールドの下に入ります。部品のアクションを部品の外から呼ぶことと、リストの項目のフィールドに部品を埋め込むことは、コンパイルエラーになります。",
-            },
-        ),
-        show(Snippet::Parts),
-        para(
-            site,
-            L {
-                en: "[`Call::on_error`](api:hypersig/struct.Call.html#method.on_error) runs a statement with the error text when that one call fails, and `Call::on_success` runs one after its patches are applied. Both run where the call was made, and `let_in_stmt` names a value when the call is sent, so a page that adds several items before the server answers marks only the item whose save failed. The [`storefront`](https://github.com/imaimai17468/hypersig/tree/main/examples/storefront) example puts one newsletter part on two pages and saves a wish list this way.",
-                ja: "[`Call::on_error`](api:hypersig/struct.Call.html#method.on_error) はその呼び出しが失敗したときにエラーの文言を受け取って文を実行し、`Call::on_success` は差分を適用し終えたあとに文を実行します。どちらも呼び出しを書いた場所で動き、`let_in_stmt` で送信時の値に名前を付けられるので、サーバーの応答より先に項目を複数追加するページでも、保存に失敗した項目だけに印を付けられます。[`storefront`](https://github.com/imaimai17468/hypersig/tree/main/examples/storefront) の例は、ニュースレターの部品を 2 つのページに置き、この方法でほしいものリストを保存します。",
             },
         ),
     ])
@@ -493,108 +462,6 @@ pub fn pages(site: Site) -> Part {
             ),
         ]),
     )
-}
-
-/// The section on what a page tells search engines and link previews,
-/// apart from `pages` because clippy rejects an array of parts larger than
-/// 16 KiB on the stack.
-fn head(site: Site) -> Part {
-    parts([
-        heading(
-            site,
-            L {
-                en: "Search results and link previews",
-                ja: "検索結果とリンクのプレビュー",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "`Page::description` writes the summary a search result shows, and `Page::icon` the icon of the tab. A canonical URL and the image of a link preview must be absolute, so `Page::canonical` and `OpenGraph::image` join a path to an [`Origin`](api:hypersig/struct.Origin.html), whose constant fails to compile when it holds more than the scheme, the host, and the port. An application that a proxy serves under a path such as `/blog` adds that path with `Origin::under`, which rejects a malformed prefix the same way. [`OpenGraph`](api:hypersig/struct.OpenGraph.html) takes the card's title, text, and URL from the page, so each is written once.",
-                ja: "`Page::description` は検索結果に出る要約を、`Page::icon` はタブのアイコンを書きます。canonical の URL とリンクのプレビューの画像は絶対 URL でなければならないので、`Page::canonical` と `OpenGraph::image` はパスを [`Origin`](api:hypersig/struct.Origin.html) につなぎます。`Origin` の定数は、スキーム、ホスト、ポート以外を含むとコンパイルエラーになります。プロキシが `/blog` のようなパスの下に配信するアプリは、`Origin::under` でそのパスを追加します。`under` も、形の正しくない接頭辞を同じようにコンパイルエラーにします。[`OpenGraph`](api:hypersig/struct.OpenGraph.html) はカードのタイトル、本文、URL をページから取るので、どれも 1 回書くだけで済みます。",
-            },
-        ),
-        show(Snippet::Head),
-        para(
-            site,
-            L {
-                en: "`Page::bind_title(expr)` makes the tab's title follow a `String` expression, such as an unread count. The server writes its first value into `<title>`, and the runtime writes each later value into `document.title`. The card of `OpenGraph` keeps the title given to `Page::new`.",
-                ja: "`Page::bind_title(expr)` は未読の件数のように変わる `String` の式にタブのタイトルを合わせます。最初の値はサーバーが `<title>` に書き、その後の値はランタイムが `document.title` に書きます。`OpenGraph` のカードには `Page::new` に渡したタイトルが保持されます。",
-            },
-        ),
-    ])
-}
-
-pub fn styling(site: Site) -> Part {
-    parts([
-        title(Doc::Learn(Learn::Styling).title(site)),
-        lead(site, Doc::Learn(Learn::Styling).leads()),
-        heading(
-            site,
-            L {
-                en: "Atomic styles",
-                ja: "アトミックなスタイル",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "[`Style`](api:hypersig/style/struct.Style.html) has one method per standard CSS property, generated from MDN's CSS data. `El::css` adds each declaration as one class named after the declaration, as in the atomic CSS of Panda CSS and Tailwind CSS. The page writes the rules its elements use into `<head>`, and a patch that contains new elements includes their rules.",
-                ja: "[`Style`](api:hypersig/style/struct.Style.html) には、標準の CSS プロパティごとに 1 つずつメソッドがあり、MDN の CSS データから生成しています。`El::css` は、Panda CSS や Tailwind CSS のアトミック CSS と同じく、宣言ごとにその宣言にちなんだ名前のクラスを 1 つ付けます。ページは要素が使うルールを `<head>` に書き、新しい要素を含む差分には、その要素のルールも含まれます。",
-            },
-        ),
-        show(Snippet::Styles),
-        bullets(
-            site,
-            &[
-                L {
-                    en: "`on(PseudoClass::Hover, ...)` and `on(Media::Md, ...)` apply a style under a condition. Conditions cover pseudo-classes and pseudo-elements, media features, container sizes, and the state of a marked ancestor or sibling (`group` and `peer`).",
-                    ja: "`on(PseudoClass::Hover, ...)` や `on(Media::Md, ...)` は条件付きでスタイルを適用します。条件には、疑似クラスと疑似要素、メディア特性、コンテナのサイズ、印を付けた祖先や兄弟の状態（`group` と `peer`）があります。",
-                },
-                L {
-                    en: "`css_when(style, cond)` adds a style while a signal condition holds, and `css_match(value, cases)` picks one style per value of a signal.",
-                    ja: "`css_when(style, cond)` はシグナルの条件が成り立つ間だけスタイルを付け、`css_match(value, cases)` はシグナルの値ごとにスタイルを 1 つ選びます。",
-                },
-                L {
-                    en: "A `Token` is a CSS custom property with a typed value. `Page::theme` sets tokens for the page, for example under `Media::Dark`.",
-                    ja: "`Token` は型の付いた値を持つ CSS カスタムプロパティです。`Page::theme` はたとえば `Media::Dark` のもとでのトークンをページに設定します。",
-                },
-                L {
-                    en: "`Global` holds rules for elements by tag with a small reset, `@font-face`, and `@keyframes`. `hypersig::style::pattern` has layouts such as `stack` and `grid`.",
-                    ja: "`Global` はタグで指定する要素のルールを、小さなリセット、`@font-face`、`@keyframes` と一緒に持ちます。`hypersig::style::pattern` には `stack` や `grid` のようなレイアウトがあります。",
-                },
-            ],
-        ),
-        para(
-            site,
-            L {
-                en: "The badge below takes its color from `css_match` over an enum, and the green comes from a token with a dark value.",
-                ja: "下のバッジは、列挙型に対する `css_match` で色が決まります。緑はダークモード用の値を持つトークンの色です。",
-            },
-        ),
-        demo::show(site, Demo::Status),
-        heading(
-            site,
-            L {
-                en: "Values the types do not check",
-                ja: "型が検査しない値",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "A value with several parts, such as `margin: 0 auto`, a shadow, or a `calc()`, goes through `raw(...)`, which is passed to the browser unchecked, and so is a value outside a property's range, such as a negative width. A page that loads an existing stylesheet keeps it: `Stylesheet::class(\"name\")` checks at compile time that the stylesheet has a selector for the class.",
-                ja: "`margin: 0 auto`、影、`calc()` のように複数の部分からなる値は `raw(...)` で書き、検査されないままブラウザに渡ります。負の幅のように、プロパティの範囲を外れた値も検査されません。既存のスタイルシートを読み込むページは、そのまま使い続けられます。`Stylesheet::class(\"name\")` は、そのスタイルシートにクラスのセレクタがあることをコンパイル時に検査します。",
-            },
-        ),
-        para(
-            site,
-            L {
-                en: "The [`style`](https://github.com/imaimai17468/hypersig/tree/main/examples/style) example in the repository puts each feature on one page, and the [`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) example shows the components of `hypersig_ui`, which are built with these features.",
-                ja: "リポジトリの [`style`](https://github.com/imaimai17468/hypersig/tree/main/examples/style) の例はそれぞれの機能を 1 つのページにまとめています。[`ui`](https://github.com/imaimai17468/hypersig/tree/main/examples/ui) の例は、これらの機能を使って作った `hypersig_ui` のコンポーネントを示します。",
-            },
-        ),
-    ])
 }
 
 pub fn escape_hatches(site: Site) -> Part {

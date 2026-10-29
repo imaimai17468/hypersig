@@ -41,7 +41,6 @@ pub enum Learn {
     Bindings,
     Components,
     Styling,
-    DescribingThePage,
     // Browser state
     Signals,
     NestedSignals,
@@ -334,7 +333,6 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::Bindings),
             Doc::Learn(Learn::Components),
             Doc::Learn(Learn::Styling),
-            Doc::Learn(Learn::DescribingThePage),
         ],
     },
     Group {
@@ -682,7 +680,6 @@ impl Doc {
         Self::Learn(Learn::Bindings),
         Self::Learn(Learn::Components),
         Self::Learn(Learn::Styling),
-        Self::Learn(Learn::DescribingThePage),
         // Browser state
         Self::Learn(Learn::Signals),
         Self::Learn(Learn::NestedSignals),
@@ -851,7 +848,6 @@ impl Doc {
                 Learn::Bindings => ("Values that follow the signals", "シグナルに追従する値"),
                 Learn::Components => ("Components", "コンポーネント"),
                 Learn::Styling => ("Styling", "スタイル"),
-                Learn::DescribingThePage => ("Building the page", "ページを組み立てる"),
                 // Browser state
                 Learn::Signals => ("Signals", "シグナル"),
                 Learn::NestedSignals => ("Signals inside signals", "入れ子のシグナル"),
@@ -1018,16 +1014,25 @@ impl Doc {
                     ja: "`cargo hypersig dev` は変更のたびにサーバーをビルドして起動し直し、開いているタブは訪問者が変えたシグナルを保ったまま読み込み直されます。`cargo hypersig new` は最初のプロジェクトを書き出します。",
                 },
                 // Building the page
-                Learn::Elements | Learn::ThePage | Learn::Bindings | Learn::Components => {
-                    Doc::Learn(Learn::DescribingThePage).leads()
-                }
+                Learn::Elements => L {
+                    en: "A page is a tree of `El` values built with Rust functions and rendered to HTML on the server. The tags, the attribute names, and the ids that attributes point at are checked when the program compiles.",
+                    ja: "ページは Rust の関数で組み立てた `El` の値の木で、サーバーが HTML に描画します。タグ、属性の名前、属性が指す id は、プログラムのコンパイル時に検査されます。",
+                },
+                Learn::ThePage => L {
+                    en: "`Page` wraps the tree in the HTML document a handler sends, with the runtime, the initial signals, and the head that browsers, search engines, and link previews read.",
+                    ja: "`Page` は木を包み、ハンドラが送る HTML 文書にします。文書には、ランタイム、シグナルの初期値、そしてブラウザ、検索エンジン、リンクのプレビューが読む head が入ります。",
+                },
+                Learn::Bindings => L {
+                    en: "A binding keeps an element's text, attributes, visibility, or classes equal to an expression over the signals, in the first HTML and in the browser after each change.",
+                    ja: "束縛は、要素のテキスト、属性、表示と非表示、クラスをシグナルの式の値に合わせ続けます。最初の HTML でも、変更のたびのブラウザでも同じです。",
+                },
+                Learn::Components => L {
+                    en: "A component is a Rust function that returns an element, and a part is a component with its own signals and actions that several pages embed.",
+                    ja: "コンポーネントは要素を返す Rust の関数です。部品は自分のシグナルとアクションを持つコンポーネントで、複数のページに埋め込めます。",
+                },
                 Learn::Styling => L {
                     en: "Styles are Rust values too. A misspelled property or keyword, or a value of the wrong type, is a compile error.",
                     ja: "スタイルも Rust の値です。プロパティやキーワードの打ち間違いや、型の違う値はコンパイルエラーになります。",
-                },
-                Learn::DescribingThePage => L {
-                    en: "A page is a tree of `El` values built with Rust functions and rendered to HTML on the server.",
-                    ja: "ページは Rust の関数で組み立てた `El` の値の木で、サーバーが HTML に描画します。",
                 },
                 // Browser state
                 Learn::Signals => L {
@@ -1321,7 +1326,6 @@ impl Learn {
             Self::Bindings => "bindings",
             Self::Components => "components",
             Self::Styling => "styling",
-            Self::DescribingThePage => "describing-the-page",
             // Browser state
             Self::Signals => "signals",
             Self::NestedSignals => "nested-signals",
