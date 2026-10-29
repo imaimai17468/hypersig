@@ -383,6 +383,9 @@ snippets! {
     StylesheetClass => "style/unchecked/stylesheet_class.rs", "compile_fail,E0080";
     LinkedStylesheet => "style/unchecked/linked_stylesheet.rs";
     StyleAttr => "style/unchecked/style_attr.rs", "compile_fail,E0080";
+    // The samples of the Components pages under Get started, Buttons, Form fields, and Pickers.
+    // The samples of the Components pages under Layout, Navigation, and Data.
+    // The samples of the Components pages under Overlays and Display.
 }
 
 /// The lines of `snippet` that the page shows.

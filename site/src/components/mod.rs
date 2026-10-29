@@ -29,11 +29,111 @@ struct Page {
 }
 
 /// The article of `page`.
+#[expect(
+    clippy::match_same_arms,
+    reason = "each group's arms change when its pages are written"
+)]
 pub fn content(site: Site, page: Component) -> Part {
     match page {
-        Component::Installation => installation(site),
-        Component::Theming => theming(site),
-        _ => component(site, page, &component_page(page)),
+        // Get started
+        Component::Installation | Component::Handles | Component::Translations => {
+            installation(site)
+        }
+        Component::Theming | Component::Tokens => theming(site),
+        // Buttons
+        Component::Button
+        | Component::IconButton
+        | Component::LinkButton
+        | Component::Toggle
+        | Component::ToggleGroup
+        | Component::MultiToggleGroup => carved(site, page),
+        // Form fields
+        Component::TextField
+        | Component::NumberField
+        | Component::DateField
+        | Component::Checkbox
+        | Component::Switch
+        | Component::RadioGroup
+        | Component::Select
+        | Component::Slider
+        | Component::FormFields => carved(site, page),
+        // Pickers
+        Component::Listbox | Component::Combobox => carved(site, page),
+        // Layout
+        Component::Tabs
+        | Component::Accordion
+        | Component::Collapsible
+        | Component::Card
+        | Component::Separator => carved(site, page),
+        // Navigation
+        Component::Navigation | Component::Breadcrumb | Component::Pagination => carved(site, page),
+        // Data
+        Component::DataTable
+        | Component::TableSorting
+        | Component::TableFiltering
+        | Component::TableSelection
+        | Component::ServerTable
+        | Component::Chart
+        | Component::BarChart
+        | Component::DonutChart => carved(site, page),
+        // Overlays
+        Component::Dialog
+        | Component::AlertDialog
+        | Component::Sheet
+        | Component::Menu
+        | Component::Tooltip
+        | Component::Popover
+        | Component::Toast
+        | Component::ServerToasts => carved(site, page),
+        // Display
+        Component::Alert
+        | Component::Badge
+        | Component::Progress
+        | Component::Skeleton
+        | Component::Spinner
+        | Component::Avatar
+        | Component::Kbd => carved(site, page),
+    }
+}
+
+/// The text of the page `page` is carved from, until `page` has its own.
+fn carved(site: Site, page: Component) -> Part {
+    component(site, page, &component_page(carved_from(page)))
+}
+
+/// The page whose text `page` shows until it is written.
+fn carved_from(page: Component) -> Component {
+    match page {
+        // Get started
+        Component::Tokens => Component::Theming,
+        // Get started
+        Component::Handles | Component::Translations => Component::Installation,
+        // Buttons
+        Component::IconButton | Component::LinkButton => Component::Button,
+        // Buttons
+        Component::ToggleGroup | Component::MultiToggleGroup => Component::Toggle,
+        // Form fields
+        Component::NumberField | Component::DateField | Component::FormFields => {
+            Component::TextField
+        }
+        // Form fields
+        Component::Switch => Component::Checkbox,
+        // Navigation
+        Component::Breadcrumb | Component::Pagination => Component::Navigation,
+        // Data
+        Component::TableSorting
+        | Component::TableFiltering
+        | Component::TableSelection
+        | Component::ServerTable => Component::DataTable,
+        // Data
+        Component::BarChart | Component::DonutChart => Component::Chart,
+        // Overlays
+        Component::AlertDialog | Component::Sheet => Component::Dialog,
+        // Overlays
+        Component::ServerToasts => Component::Toast,
+        // Display
+        Component::Skeleton => Component::Progress,
+        other => other,
     }
 }
 
@@ -265,7 +365,7 @@ fn theming(site: Site) -> Part {
 /// The lead of the page of `page`, a component rather than Installation or
 /// Theming.
 pub(crate) fn component_lead(page: Component) -> L<&'static str> {
-    component_page(page).lead
+    component_page(carved_from(page)).lead
 }
 
 /// The content of a component page.
@@ -273,6 +373,29 @@ pub(crate) fn component_lead(page: Component) -> L<&'static str> {
 fn component_page(page: Component) -> Page {
     match page {
         Component::Installation | Component::Theming => unreachable!("written by hand"),
+        Component::Tokens
+        | Component::Handles
+        | Component::Translations
+        | Component::IconButton
+        | Component::LinkButton
+        | Component::ToggleGroup
+        | Component::MultiToggleGroup
+        | Component::NumberField
+        | Component::DateField
+        | Component::Switch
+        | Component::FormFields
+        | Component::Breadcrumb
+        | Component::Pagination
+        | Component::TableSorting
+        | Component::TableFiltering
+        | Component::TableSelection
+        | Component::ServerTable
+        | Component::BarChart
+        | Component::DonutChart
+        | Component::AlertDialog
+        | Component::Sheet
+        | Component::ServerToasts
+        | Component::Skeleton => unreachable!("carved_from maps it to its page"),
         Component::Button => Page {
             lead: L {
                 en: "A button in one of six variants and three sizes.",
