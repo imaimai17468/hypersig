@@ -134,9 +134,9 @@ snippets! {
     ErrorId => "quality/error_id.rs", "compile_fail,E0080";
     ErrorComputed => "quality/error_computed.rs", "compile_fail,E0277";
     CallError => "quality/call_error.rs";
-    // The samples added for the Learn group Get started.
+    // The samples of the Learn pages under Get started.
     KeptSignals => "start/kept_signals.rs";
-    // The samples added for the Learn group Building the page.
+    // The samples of the Learn pages under Building the page.
     OtherPage => "page/other_page.rs", "compile_fail,E0277";
     Children => "page/children.rs";
     Attrs => "page/attrs.rs";
@@ -158,7 +158,7 @@ snippets! {
     PartInList => "page/part_in_list.rs", "compile_fail,E0308";
     StyleKeyword => "page/style_keyword.rs", "compile_fail,E0599";
     BindStyle => "page/bind_style.rs";
-    // The samples added for the Learn group Browser state.
+    // The samples of the Learn pages under Browser state.
     StateFirstRender => "state/first_render.rs";
     StateOtherPage => "state/other_page.rs", "compile_fail,E0277";
     StateSerdeAttribute => "state/serde_attribute.rs", "compile_fail";
@@ -203,7 +203,7 @@ snippets! {
     StatePatchOnItem => "state/patch_on_item.rs", "compile_fail,E0599";
     StateItemBranch => "state/item_branch.rs";
     StateNestedLists => "state/nested_lists.rs";
-    // The samples added for the Learn group Talking to the server.
+    // The samples of the Learn pages under Talking to the server.
     TalkDeclare => "talking/declare.rs";
     TalkCall => "talking/call.rs";
     TalkWrongArgs => "talking/wrong_args.rs", "compile_fail,E0277";
@@ -226,7 +226,7 @@ snippets! {
     TalkStreamAsync => "talking/stream_async.rs", "compile_fail,E0277";
     TalkReconnectOnAction => "talking/reconnect_on_action.rs", "compile_fail,E0599";
     TalkInbox => "talking/inbox.rs";
-    // The samples added for the Learn group Pages and routing.
+    // The samples of the Learn pages under Pages and routing.
     RouteSegments => "routing/segments.rs";
     WrongSegment => "routing/wrong_segment.rs", "compile_fail,E0277";
     WrongHref => "routing/wrong_href.rs", "compile_fail,E0277";
@@ -238,7 +238,7 @@ snippets! {
     WrongUnserved => "routing/wrong_unserved.rs", "compile_fail,E0277";
     BasePath => "routing/base_path.rs";
     WrongBase => "routing/wrong_base.rs", "compile_fail,E0080";
-    // The samples added for the Learn group Forms and requests.
+    // The samples of the Learn pages under Forms and requests.
     FormWrongField => "requests/form_wrong_field.rs", "compile_fail,E0308";
     FormComponent => "requests/form_component.rs";
     FormRules => "requests/form_rules.rs";
@@ -249,7 +249,7 @@ snippets! {
     ErrorNotResponse => "requests/error_not_response.rs", "compile_fail,E0277";
     UploadWrongPage => "requests/upload_wrong_page.rs", "compile_fail,E0308";
     UploadStream => "requests/upload_stream.rs";
-    // The samples added for the Learn group Data and sign-in.
+    // The samples of the Learn pages under Data and sign-in.
     WrongState => "data/wrong_state.rs", "compile_fail,E0277";
     ErrorWithoutResponse => "data/error_without_response.rs", "compile_fail,E0277";
     SqlxPool => "data/sqlx_pool.rs", "no_run";
@@ -261,7 +261,7 @@ snippets! {
     NavigateText => "data/navigate_text.rs", "compile_fail,E0308";
     RedirectText => "data/redirect_text.rs", "compile_fail,E0308";
     SessionExpiry => "data/session_expiry.rs";
-    // The samples added for the Learn group Browser features.
+    // The samples of the Learn pages under Browser features.
     NodeRefDeclare => "browser/node_ref.rs";
     NodeRefInFn => "browser/node_ref_in_fn.rs", "compile_fail,E0425";
     NodeRefOtherPage => "browser/node_ref_other_page.rs", "compile_fail,E0308";
@@ -284,7 +284,7 @@ snippets! {
     AttrValue => "browser/attr_value.rs";
     RenderUnder => "browser/render_under.rs";
     RuntimeSrcText => "browser/runtime_src_text.rs", "compile_fail,E0308";
-    // The samples added for the Learn group Quality and operations.
+    // The samples of the Learn pages under Quality and operations.
     Escaping => "quality/escaping.rs";
     AttrEventHandler => "quality/attr_event_handler.rs", "compile_fail,E0080";
     HrefFromString => "quality/href_from_string.rs", "compile_fail,E0277";
