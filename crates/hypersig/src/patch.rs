@@ -524,6 +524,11 @@ impl<S: Signals> Patches<S> {
     /// The part comes from a header the browser sends, so a request whose
     /// header names a part fails the same way. [`Patches::to_event_stream`]
     /// panics in that case.
+    ///
+    /// # Panics
+    ///
+    /// Panics if two elements of `fragment` animate with
+    /// [`Keyframes`](crate::style::Keyframes) of one name and other steps.
     #[must_use]
     pub fn element<F: Fragment<Signals = S>>(mut self, fragment: &F) -> Self {
         let el = self::fragment(fragment);

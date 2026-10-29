@@ -218,8 +218,8 @@ pub fn page(site: Site) -> Part {
                     ja: "段階の中の条件。キーフレームにはセレクタもメディアクエリも書けないので、`at` は `style` のうち条件の付かない宣言だけを書き、`on` や `pseudo` の下の宣言は警告なしに捨てます。",
                 },
                 L {
-                    en: "Unique names. Two `Keyframes` with the same name produce one `@keyframes` rule in a page, so the elements of both play the steps of one of them. Nothing checks that each name is used once.",
-                    ja: "名前の重複。同じ名前の 2 つの `Keyframes` からはページに 1 つの `@keyframes` のルールしかできないので、両方の要素がどちらか一方の段階を再生します。名前が一度しか使われていないかは検査されません。",
+                    en: "Unique names across patches, at run time. Two `Keyframes` with one name and different steps panic where a style combines them and where `Page::render` or a patch writes both. One `Keyframes` that many elements use is written once. A patch is checked only against itself, so a patch whose keyframes reuse a name of the page with other steps replaces the steps for every element that uses the name.",
+                    ja: "パッチをまたいだ名前の重複（実行時）。同じ名前で段階の違う 2 つの `Keyframes` は、スタイルが両方を組み合わせたところと、`Page::render` やパッチが両方を書くところで panic します。多くの要素が使う 1 つの `Keyframes` は 1 回だけ書かれます。パッチはそのパッチの中でしか検査されないので、ページと同じ名前で段階の違うキーフレームを持つパッチが届くと、その名前を使うすべての要素の段階がパッチのものに置き換わります。",
                 },
                 L {
                     en: "Keyframes in a [`Global`](style/global/) rule. A style passed to `Global::rule` writes `animation-name`, but the page gets no `@keyframes` rule from it, so the elements it selects do not animate. Put the style on the elements with `El::css`.",

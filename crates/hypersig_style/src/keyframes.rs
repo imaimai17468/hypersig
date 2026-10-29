@@ -9,9 +9,13 @@ use crate::style::Style;
 ///
 /// [`Style::keyframes`] sets an element's `animation-name` to it and carries
 /// the rule along, so the page or the patch that brings the element also
-/// brings the rule. Two `Keyframes` with the same name are one rule to the
-/// browser, and the later one in the stylesheet wins; nothing checks that
-/// each name is used once.
+/// brings the rule.
+///
+/// Two `Keyframes` with the same name are one rule to the browser, so the
+/// styles and the [`Sheet`](crate::Sheet) that meet both panic unless their steps are
+/// the same. The check covers one page or one patch. A later patch whose
+/// keyframes reuse a name of the page with other steps is not compared,
+/// and the browser plays the steps the patch brought.
 ///
 /// ```
 /// use hypersig_style::value::{AnimationIterationCount, Transform, deg, ms, raw};
@@ -80,6 +84,15 @@ impl Keyframes {
     #[must_use]
     pub fn name(&self) -> &'static str {
         self.name
+    }
+
+    /// Panics unless `css` and `other`, two `@keyframes` rules named `name`,
+    /// are the same rule.
+    pub(crate) fn assert_one_rule(name: &str, css: &str, other: &str) {
+        assert!(
+            css == other,
+            "two Keyframes named {name:?} have different steps, `{css}` and `{other}`; give each its own name"
+        );
     }
 
     pub(crate) fn to_css(&self) -> String {
