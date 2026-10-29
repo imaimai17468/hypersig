@@ -90,7 +90,6 @@ snippets! {
     GroupPeer => "style/conditions/group_peer.rs";
     Tokens => "style/tokens/tokens.rs";
     GlobalRules => "style/global/rules.rs";
-    I18nLocale => "i18n_locale.rs";
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";
     // The changes the use cases page shows, each written as the code after
     // the change, so the doctest compiles what the page adds.
@@ -382,6 +381,25 @@ snippets! {
     LinkedStylesheet => "style/unchecked/linked_stylesheet.rs";
     StyleAttr => "style/unchecked/style_attr.rs", "compile_fail,E0080";
     // The samples of the i18n pages under Get started and Texts.
+    I18nDeclare => "i18n/start/declare.rs";
+    I18nHome => "i18n/start/home.rs";
+    I18nTag => "i18n/texts/tag.rs";
+    I18nRegions => "i18n/texts/regions.rs";
+    I18nMissingArm => "i18n/texts/missing_arm.rs", "compile_fail,E0004";
+    I18nNoSegment => "i18n/texts/no_segment.rs", "compile_fail,E0277";
+    I18nNoSerialize => "i18n/texts/no_serialize.rs", "compile_fail,E0277";
+    I18nBadTag => "i18n/texts/bad_tag.rs", "should_panic";
+    I18nTextConsts => "i18n/texts/consts.rs";
+    I18nNewLanguage => "i18n/texts/new_language.rs", "compile_fail,E0004,E0063";
+    I18nTextValues => "i18n/texts/values.rs";
+    I18nMessage => "i18n/texts/message.rs";
+    I18nMessageArg => "i18n/texts/message_arg.rs", "compile_fail,E0308";
+    I18nTwoClosures => "i18n/texts/two_closures.rs", "compile_fail,E0308";
+    I18nMessagePage => "i18n/texts/message_page.rs";
+    I18nPlural => "i18n/texts/plural.rs";
+    I18nWrongLocale => "i18n/texts/wrong_locale.rs", "compile_fail,E0308";
+    I18nFormats => "i18n/texts/formats.rs";
+    I18nLangMismatch => "i18n/texts/lang_mismatch.rs", "should_panic";
     // The samples of the i18n pages under Pages in each language and Choosing the language.
     I18nRoute => "i18n/pages/route.rs";
     I18nUrlWithoutLang => "i18n/pages/url_without_lang.rs", "compile_fail,E0308";
