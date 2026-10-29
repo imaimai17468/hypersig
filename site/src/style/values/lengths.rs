@@ -174,10 +174,11 @@ fn accepted(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A few types that take a length also take a plain number, with a meaning of its own. `LineHeight` converts from `i32` and `f64`, so `line_height(2)` compiles and writes `line-height: 2`, twice the element's font size, not 2px.",
-                ja: "長さを取る型の中には、単位のない数値も別の意味で受け取るものがあります。`LineHeight` は `i32` と `f64` から変換できるので、`line_height(2)` はコンパイルが通り、`line-height: 2` を書きます。これは 2px ではなく、要素のフォントサイズの 2 倍です。",
+                en: "A few types that take a length also take a plain number, with a meaning of its own. `line-height: 2` is twice the element's font size, not 2px, so `LineHeight` takes a multiplier only as an `f64`, and `line_height(1.5)` writes `line-height: 1.5`. An integer such as `line_height(16)` is E0277, and the error lists the conversions `LineHeight` has. Write `px(16)` for a length or `1.0` for a multiplier:",
+                ja: "長さを取る型の中には、単位のない数値も別の意味で受け取るものがあります。`line-height: 2` は 2px ではなく要素のフォントサイズの 2 倍なので、`LineHeight` は倍率を `f64` でしか受け取りません。`line_height(1.5)` は `line-height: 1.5` を書きます。`line_height(16)` のように整数を渡すと E0277 になり、エラーには `LineHeight` が変換できる型が並びます。長さなら `px(16)`、倍率なら `1.0` と書きます。",
             },
         ),
+        show(Snippet::StyleLineHeightInteger),
     ])
 }
 

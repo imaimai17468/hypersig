@@ -9466,6 +9466,8 @@ impl From<i32> for LineClamp {
 }
 
 /// A value of [`line-height`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/line-height).
+///
+/// A number multiplies the element's font size and converts from `f64` only, so `line_height(16)` does not compile: write `px(16)` for a length, or `1.0` for a multiplier.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum LineHeight {
@@ -9505,12 +9507,6 @@ impl From<Percentage> for LineHeight {
 impl From<f64> for LineHeight {
     fn from(v: f64) -> Self {
         Self::Number(v)
-    }
-}
-
-impl From<i32> for LineHeight {
-    fn from(v: i32) -> Self {
-        Self::Number(f64::from(v))
     }
 }
 
