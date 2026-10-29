@@ -62,7 +62,7 @@ fn building(site: Site) -> Part {
             site,
             L {
                 en: "[`skeleton`](api:hypersig_ui/fn.skeleton.html) returns an empty block in `token::accent` with rounded corners. It has no size of its own, so give it one with `El::css`, close to the size of the content it stands in for:",
-                ja: "[`skeleton`](api:hypersig_ui/fn.skeleton.html) は、`token::accent` の色の、角の丸い空のブロックを返します。ブロック自体には大きさがないので、`El::css` で、代わりに置く内容に近い大きさを指定します。",
+                ja: "[`skeleton`](api:hypersig_ui/fn.skeleton.html) は `token::accent` の色の、角の丸い空のブロックを返します。ブロック自体には大きさがないので、`El::css` で、代わりに置く内容に近い大きさを指定します。",
             },
         ),
         code::block(Lang::Rust, None, "pub fn skeleton<S>() -> El<S>;"),

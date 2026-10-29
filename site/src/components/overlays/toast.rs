@@ -80,7 +80,7 @@ fn toaster(site: Site) -> Part {
             site,
             L {
                 en: "The toasts live in a `Vec<Toast>` field of the page's signals. A [`Toaster<S>`](api:hypersig_ui/struct.Toaster.html) shows that list in the bottom corner of the page, newest last. Put it on the page once, anywhere, since it is fixed to the viewport:",
-                ja: "トーストは、ページのシグナルの `Vec<Toast>` のフィールドに入ります。[`Toaster<S>`](api:hypersig_ui/struct.Toaster.html) はそのリストを、新しいものほど後ろにしてページの下の隅に表示します。ビューポートに固定されるので、ページのどこか 1 か所に置きます。",
+                ja: "トーストはページのシグナルの `Vec<Toast>` のフィールドに入ります。[`Toaster<S>`](api:hypersig_ui/struct.Toaster.html) はそのリストを、新しいものほど後ろにしてページの下の隅に表示します。ビューポートに固定されるので、ページのどこか 1 か所に置きます。",
             },
         ),
         code::block(

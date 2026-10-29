@@ -82,7 +82,7 @@ fn building(site: Site) -> Part {
             site,
             L {
                 en: "[`Tabs::new`](api:hypersig_ui/struct.Tabs.html#method.new) takes the name of the list, the signal that holds the selected tab, and a function that returns the title and the panel of each value:",
-                ja: "[`Tabs::new`](api:hypersig_ui/struct.Tabs.html#method.new) は、一覧の名前、選ばれたタブを持つシグナル、各値のタイトルとパネルを返す関数を受け取ります。",
+                ja: "[`Tabs::new`](api:hypersig_ui/struct.Tabs.html#method.new) は一覧の名前、選ばれたタブを持つシグナル、各値のタイトルとパネルを返す関数を受け取ります。",
             },
         ),
         code::block(

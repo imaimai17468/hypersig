@@ -71,7 +71,7 @@ fn functions(site: Site) -> Part {
             site,
             L {
                 en: "[`toggle`](api:hypersig_ui/fn.toggle.html) takes the `bool` signal it shows and flips. [`icon_toggle`](api:hypersig_ui/fn.icon_toggle.html) is the same toggle, square, with the name that `aria-label` gives it as its first argument, for a toggle that shows only an icon:",
-                ja: "[`toggle`](api:hypersig_ui/fn.toggle.html) は、表示して反転する `bool` のシグナルを受け取ります。[`icon_toggle`](api:hypersig_ui/fn.icon_toggle.html) は同じトグルを正方形にしたもので、アイコンだけを表示するトグルのために、`aria-label` に入る名前を最初の引数に取ります。",
+                ja: "[`toggle`](api:hypersig_ui/fn.toggle.html) は表示して反転する `bool` のシグナルを受け取ります。[`icon_toggle`](api:hypersig_ui/fn.icon_toggle.html) は同じトグルを正方形にしたもので、アイコンだけを表示するトグルのために、`aria-label` に入る名前を最初の引数に取ります。",
             },
         ),
         code::block(

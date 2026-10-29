@@ -54,7 +54,7 @@ fn building(site: Site) -> Part {
             site,
             L {
                 en: "[`separator`](api:hypersig_ui/fn.separator.html) takes the direction the line runs in, an [`Orientation`](api:hypersig/html/enum.Orientation.html) from `hypersig::html`:",
-                ja: "[`separator`](api:hypersig_ui/fn.separator.html) は、線の向きを `hypersig::html` の [`Orientation`](api:hypersig/html/enum.Orientation.html) で受け取ります。",
+                ja: "[`separator`](api:hypersig_ui/fn.separator.html) は線の向きを `hypersig::html` の [`Orientation`](api:hypersig/html/enum.Orientation.html) で受け取ります。",
             },
         ),
         code::block(

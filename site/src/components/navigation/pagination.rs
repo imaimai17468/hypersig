@@ -72,7 +72,7 @@ fn building(site: Site) -> Part {
             site,
             L {
                 en: "[`pagination`](api:hypersig_ui/fn.pagination.html) takes the current page, the number of pages, a function that returns the link to a page, and the words of its parts:",
-                ja: "[`pagination`](api:hypersig_ui/fn.pagination.html) は、今のページ、ページ数、ページへのリンクを返す関数、各部分の言葉を受け取ります。",
+                ja: "[`pagination`](api:hypersig_ui/fn.pagination.html) は今のページ、ページ数、ページへのリンクを返す関数、各部分の言葉を受け取ります。",
             },
         ),
         code::block(
@@ -89,7 +89,7 @@ fn building(site: Site) -> Part {
             site,
             L {
                 en: "Pages are counted from 1. The links are the page before and after, the first and the last page, and the pages next to the current one, with `…` for the pages left out. Where `…` would stand for one page, that page is shown instead.",
-                ja: "ページは 1 から数えます。リンクは、前後のページ、最初と最後のページ、今のページの隣のページで、省いたページは `…` で表します。`…` が 1 ページだけを表すことになる場合は、代わりにそのページを表示します。",
+                ja: "ページは 1 から数えます。リンクは前後のページ、最初と最後のページ、今のページの隣のページで、省いたページは `…` で表します。`…` が 1 ページだけを表すことになる場合は、代わりにそのページを表示します。",
             },
         ),
         table_of(
