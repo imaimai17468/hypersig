@@ -508,6 +508,27 @@ impl From<(Color, Color)> for ScrollbarColor {
     }
 }
 
+impl FontFamily {
+    /// This family, then `next` where this one lacks a character.
+    ///
+    /// The browser takes each character from the first family in the list
+    /// that has it, so a list ends in a generic family such as `sans-serif`,
+    /// which every browser has.
+    ///
+    /// ```
+    /// use hypersig_style::FontFace;
+    /// use hypersig_style::value::{FontFamily, url};
+    ///
+    /// let inter = FontFace::new("Inter", url("/inter.woff2"));
+    /// let body = inter.family().fallback(FontFamily::SansSerif);
+    /// assert_eq!(body.to_string(), "\"Inter\", sans-serif");
+    /// ```
+    #[must_use]
+    pub fn fallback(self, next: impl Into<Self>) -> Self {
+        Self::Raw(Raw(format!("{self}, {}", next.into())))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{is_loaded_url, px, quoted, raw, stays_in_declaration, url};
@@ -591,5 +612,22 @@ mod tests {
     #[should_panic(expected = "a CSS number is finite")]
     fn an_infinite_flex_grow_panics_where_it_is_set() {
         let _ = crate::Style::new().flex_grow(f64::INFINITY);
+    }
+
+    #[test]
+    fn a_font_family_lists_its_fallbacks_in_order() {
+        use super::FontFamily;
+        let inter = crate::FontFace::new("Inter", url("/inter.woff2"));
+        let list = inter
+            .family()
+            .fallback(FontFamily::SystemUi)
+            .fallback(FontFamily::SansSerif);
+        assert_eq!(list.to_string(), r#""Inter", system-ui, sans-serif"#);
+        assert_eq!(
+            FontFamily::from(quoted("JetBrains Mono"))
+                .fallback(FontFamily::Monospace)
+                .to_string(),
+            r#""JetBrains Mono", monospace"#
+        );
     }
 }

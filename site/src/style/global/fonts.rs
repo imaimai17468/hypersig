@@ -36,7 +36,7 @@ pub fn page(site: Site, head: Part) -> Part {
         code::block(
             Lang::Html,
             None,
-            "body { font-family: \"Inter\"; line-height: 1.5 }\n\
+            "body { font-family: \"Inter\", sans-serif; line-height: 1.5 }\n\
              code { font-family: \"JetBrains Mono\", monospace }\n\
              kbd { font-family: ui-monospace }\n\
              @font-face { font-family: \"Inter\"; src: url(\"/fonts/inter.woff2\"); font-display: swap; font-weight: 100 900 }\n\
@@ -133,8 +133,8 @@ pub fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "A `FontFamily` holds one family: a generic keyword such as `FontFamily::SystemUi`, or the quoted name `family()` returns. A list such as `\"JetBrains Mono\", monospace` goes through `raw`, and nothing checks it. [Unchecked values](style/unchecked/) covers `raw`.",
-                ja: "`FontFamily` が持つのは 1 つのファミリーで、`FontFamily::SystemUi` のような総称のキーワードか、`family()` が返す引用符付きの名前です。`\"JetBrains Mono\", monospace` のような並びは `raw` で書き、検査はしません。`raw` は[検査しない値](style/unchecked/)で説明しています。",
+                en: "A `FontFamily` is a generic keyword such as `FontFamily::SystemUi`, the quoted name `family()` returns, or a name from `quoted`. [`FontFamily::fallback`](api:hypersig/style/value/enum.FontFamily.html#method.fallback) adds the next family of a list, so `inter.family().fallback(FontFamily::SansSerif)` writes `\"Inter\", sans-serif`. The browser takes each character from the first family that has it, so the `<code>` rule of the first sample falls back to `monospace` where `JetBrains Mono` is not installed. A list should end in a generic family, which every browser has, and nothing checks that it does.",
+                ja: "`FontFamily` は、`FontFamily::SystemUi` のような総称のキーワード、`family()` が返す引用符付きの名前、`quoted` で作る名前のどれかです。[`FontFamily::fallback`](api:hypersig/style/value/enum.FontFamily.html#method.fallback) は並びに次のファミリーを足すので、`inter.family().fallback(FontFamily::SansSerif)` は `\"Inter\", sans-serif` を書きます。ブラウザは文字ごとに、その文字を持つ最初のファミリーを使います。そのため最初の例の `<code>` のルールでは、`JetBrains Mono` がインストールされていなければ `monospace` で表示されます。並びの最後にはどのブラウザにもある総称のファミリーを置きます。最後が総称のファミリーかどうかは検査されません。",
             },
         ),
         heading(
