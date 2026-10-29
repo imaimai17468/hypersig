@@ -92,8 +92,6 @@ snippets! {
     GlobalRules => "style/global/rules.rs";
     I18nLocale => "i18n_locale.rs";
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";
-    I18nPages => "i18n_pages.rs";
-    I18nNegotiate => "i18n_negotiate.rs";
     // The changes the use cases page shows, each written as the code after
     // the change, so the doctest compiles what the page adds.
     UseOthersChanges => "use_cases/others_changes.rs";
@@ -385,6 +383,21 @@ snippets! {
     StyleAttr => "style/unchecked/style_attr.rs", "compile_fail,E0080";
     // The samples of the i18n pages under Get started and Texts.
     // The samples of the i18n pages under Pages in each language and Choosing the language.
+    I18nRoute => "i18n/pages/route.rs";
+    I18nUrlWithoutLang => "i18n/pages/url_without_lang.rs", "compile_fail,E0308";
+    I18nPagesExample => "i18n/pages/example.rs";
+    I18nSwitcher => "i18n/pages/switcher.rs";
+    I18nSwitcherWrong => "i18n/pages/switcher_wrong.rs", "compile_fail,E0277";
+    I18nLang => "i18n/pages/lang.rs";
+    I18nTagConst => "i18n/pages/tag_const.rs", "compile_fail,E0080";
+    I18nTagPanic => "i18n/pages/tag_panic.rs", "should_panic";
+    I18nAlternates => "i18n/pages/alternates.rs";
+    I18nAlternatesString => "i18n/pages/alternates_string.rs", "compile_fail,E0308";
+    I18nAlternateOne => "i18n/pages/alternate_one.rs";
+    I18nNegotiate => "i18n/choosing/negotiate.rs";
+    I18nNegotiateHandler => "i18n/choosing/handler.rs";
+    I18nRedirect => "i18n/choosing/redirect.rs";
+    I18nRedirectRoute => "i18n/choosing/redirect_route.rs", "compile_fail,E0277";
 }
 
 /// The lines of `snippet` that the page shows.

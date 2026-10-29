@@ -1619,21 +1619,21 @@ impl Doc {
                     ja: "言語は各ページのルートの最初のセグメントに置きます。そのため、別の言語のページは言語だけを変えた同じルートになります。",
                 },
                 I18nPage::LanguageSwitcher => L {
-                    en: "A link to the same page in another language is the same route with another language.",
-                    ja: "同じページの別の言語へのリンクは、言語だけを変えた同じルートへのリンクです。",
+                    en: "A link to the same page in another language is a link to the same route with only the language changed, so the route checks it like any other link.",
+                    ja: "同じページの別の言語へのリンクは、言語だけを変えた同じルートへのリンクです。そのため、ルートはほかのリンクと同じようにこのリンクを検査します。",
                 },
                 I18nPage::PageLanguage => L {
-                    en: "`Page::lang` tells the browser the language of the page.",
-                    ja: "`Page::lang` はページの言語をブラウザに伝えます。",
+                    en: "`Page::lang` writes the page's language into `<html lang>`, which the browser and screen readers read to show and speak the text.",
+                    ja: "`Page::lang` はページの言語を `<html lang>` に書きます。ブラウザとスクリーンリーダーは、文を表示したり読み上げたりするときにこの属性を読みます。",
                 },
                 I18nPage::Alternates => L {
-                    en: "`LocalePage::alternates` lists the page's address in every language for search engines.",
-                    ja: "`LocalePage::alternates` は、ページの各言語のアドレスを検索エンジンに示します。",
+                    en: "`LocalePage::alternates` writes the page's address in every language into `<head>`, so a search engine shows each searcher the page in their language.",
+                    ja: "`LocalePage::alternates` は、ページの各言語のアドレスを `<head>` に書きます。検索エンジンはこれを読み、検索した人にその人の言語のページを示します。",
                 },
                 // Choosing the language
                 I18nPage::Negotiation => L {
-                    en: "A visitor who opens `/` is redirected to the page in the language their browser asks for.",
-                    ja: "`/` を開いた訪問者を、ブラウザが求める言語のページへリダイレクトします。",
+                    en: "`negotiate` reads the `Accept-Language` header a browser sends and returns the variant of the language enum that matches it best.",
+                    ja: "`negotiate` はブラウザが送る `Accept-Language` ヘッダーを読み、言語の enum のバリアントから最も合うものを返します。",
                 },
                 I18nPage::Redirect => L {
                     en: "With the `axum` feature, `redirect_to_locale` answers `GET /` with a redirect to the page in the visitor's language.",

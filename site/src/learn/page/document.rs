@@ -144,8 +144,8 @@ fn search(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Page::json_ld` adds structured data that search engines read, written so that no string inside it can close the block. `noindex` and `nofollow` ask search engines to leave the page out of their results and not to follow its links. `Page::alternate` names the same page in another language, which [Pages in each language](i18n/pages/) covers.",
-                ja: "`Page::json_ld` は検索エンジンが読む構造化データを追加します。中の文字列がブロックを閉じることはありません。`noindex` と `nofollow` は検索結果にページを載せないことと、ページのリンクをたどらないことを検索エンジンに求めます。`Page::alternate` は別の言語の同じページを示します。これは [言語ごとのページ](i18n/pages/) で説明します。",
+                en: "`Page::json_ld` adds structured data that search engines read, written so that no string inside it can close the block. `noindex` and `nofollow` ask search engines to leave the page out of their results and not to follow its links. `Page::alternate` names the same page in another language, which [Alternate pages](i18n/alternates/) covers.",
+                ja: "`Page::json_ld` は検索エンジンが読む構造化データを追加します。中の文字列がブロックを閉じることはありません。`noindex` と `nofollow` は検索結果にページを載せないことと、ページのリンクをたどらないことを検索エンジンに求めます。`Page::alternate` は別の言語の同じページを示します。これは [別の言語のページを示す](i18n/alternates/) で説明します。",
             },
         ),
         show(Snippet::Search),
