@@ -1,5 +1,5 @@
 //! Actions with arguments, a busy flag, an error message, and an optimistic
-//! update, for the page on talking to the server.
+//! update, for the page on actions.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};

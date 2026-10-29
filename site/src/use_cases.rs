@@ -424,8 +424,8 @@ const CONCEPTS: &[Concept] = &[
     Concept {
         kind: Kind::Push,
         text: L {
-            en: "Another visitor's write, a job's progress, or a deadline changes the screen while the visitor does nothing. A Server Action answers only the tab that called it, so in Next.js these changes need a second path: a stream of their own, and client code that merges what arrives into the state. In hypersig, a stream sends the same `Patches` an action answers with, and the runtime applies both the same way. [Talking to the server](learn/server/) covers streams.",
-            ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が必要です。専用のストリームと、届いた値を状態に取り込むクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [サーバーとのやり取り](learn/server/) で説明しています。",
+            en: "Another visitor's write, a job's progress, or a deadline changes the screen while the visitor does nothing. A Server Action answers only the tab that called it, so in Next.js these changes need a second path: a stream of their own, and client code that merges what arrives into the state. In hypersig, a stream sends the same `Patches` an action answers with, and the runtime applies both the same way. [Streams](learn/streams/) covers them.",
+            ja: "ほかの訪問者の書き込み、ジョブの進み具合、締め切りの到来は、訪問者が何もしなくても画面を変えます。Server Action は呼び出したタブにしか応答しないので、Next.js ではこうした変更に別の通り道が必要です。専用のストリームと、届いた値を状態に取り込むクライアントのコードです。hypersig のストリームはアクションと同じ `Patches` を送り、ランタイムはどちらも同じ処理で反映します。ストリームは [ストリーム](learn/streams/) で説明しています。",
         },
         feature: L {
             en: "Show the tasks other people add, without a reload.",
@@ -488,8 +488,8 @@ const CONCEPTS: &[Concept] = &[
     Concept {
         kind: Kind::Calls,
         text: L {
-            en: "A slow answer arrives after a newer one, the connection drops, or the visitor presses the button again while it waits. In Next.js, the component handles these with an `AbortController`, a pending flag, and code that reconnects. In hypersig, each is a method on the call: `.latest()` aborts the earlier call, `.indicator()` sets a flag while the call waits, and `.reconnect()` opens a stream again. [Calls in depth](learn/calls/) covers calls that overlap.",
-            ja: "遅い応答が新しい応答のあとに届く、接続が切れる、待っている間にボタンがもう一度押される、という場面です。Next.js では、`AbortController`、処理中のフラグ、つなぎ直す処理をコンポーネントに書きます。hypersig では、どれも呼び出しのメソッドです。`.latest()` は前の呼び出しを止め、`.indicator()` は待っている間フラグを立て、`.reconnect()` はストリームをつなぎ直します。重なった呼び出しは [呼び出しの詳細](learn/calls/) で説明しています。",
+            en: "A slow answer arrives after a newer one, the connection drops, or the visitor presses the button again while it waits. In Next.js, the component handles these with an `AbortController`, a pending flag, and code that reconnects. In hypersig, each is a method on the call: `.latest()` aborts the earlier call, `.indicator()` sets a flag while the call waits, and `.reconnect()` opens a stream again. [Calls that overlap](learn/overlapping-calls/) covers `.latest()`, [Busy and failed calls](learn/call-status/) covers `.indicator()`, and [Streams](learn/streams/) covers `.reconnect()`.",
+            ja: "遅い応答が新しい応答のあとに届く、接続が切れる、待っている間にボタンがもう一度押される、という場面です。Next.js では、`AbortController`、処理中のフラグ、つなぎ直す処理をコンポーネントに書きます。hypersig では、どれも呼び出しのメソッドです。`.latest()` は前の呼び出しを止め、`.indicator()` は待っている間フラグを立て、`.reconnect()` はストリームをつなぎ直します。`.latest()` は [重なった呼び出し](learn/overlapping-calls/) で、`.indicator()` は [呼び出し中と失敗](learn/call-status/) で、`.reconnect()` は [ストリーム](learn/streams/) で説明しています。",
         },
         feature: L {
             en: "Search as the visitor types, show that it is searching, and never let an older result replace a newer one.",
