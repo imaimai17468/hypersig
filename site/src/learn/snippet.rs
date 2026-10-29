@@ -56,8 +56,8 @@ snippets! {
     ListStatements => "state/list_statements.rs";
     Patches => "patches.rs";
     ListPatches => "list_patches.rs";
-    TestingListPatches => "testing_list_patches.rs";
-    TestingSimulation => "testing_simulation.rs";
+    TestingListPatches => "quality/testing_list_patches.rs";
+    TestingSimulation => "quality/testing_simulation.rs";
     Forms => "requests/form_page.rs";
     Latest => "latest.rs";
     Parts => "page/parts.rs";
@@ -66,7 +66,7 @@ snippets! {
     Logging => "requests/logging.rs";
     Uploads => "requests/uploads.rs";
     Sessions => "data/sessions.rs";
-    TestingSessions => "testing_sessions.rs";
+    TestingSessions => "quality/testing_sessions.rs";
     Database => "data/database.rs", "no_run";
     DynamoDb => "data/dynamodb.rs", "no_run";
     Api => "data/api.rs", "no_run";
@@ -130,10 +130,10 @@ snippets! {
     Upgrade011 => "upgrading/v0_11.rs";
     Upgrade012 => "upgrading/v0_12.rs";
     Upgrade013 => "upgrading/v0_13.rs";
-    TroubleHandler => "troubleshooting/handler.rs", "compile_fail,E0277";
-    TroubleId => "troubleshooting/id.rs", "compile_fail,E0080";
-    TroubleComputed => "troubleshooting/computed.rs", "compile_fail,E0277";
-    TroubleCallError => "troubleshooting/call_error.rs";
+    ErrorHandler => "quality/error_handler.rs", "compile_fail,E0277";
+    ErrorId => "quality/error_id.rs", "compile_fail,E0080";
+    ErrorComputed => "quality/error_computed.rs", "compile_fail,E0277";
+    CallError => "quality/call_error.rs";
     // The samples added for the Learn group Get started.
     KeptSignals => "start/kept_signals.rs";
     // The samples added for the Learn group Building the page.
@@ -285,6 +285,16 @@ snippets! {
     RenderUnder => "browser/render_under.rs";
     RuntimeSrcText => "browser/runtime_src_text.rs", "compile_fail,E0308";
     // The samples added for the Learn group Quality and operations.
+    Escaping => "quality/escaping.rs";
+    AttrEventHandler => "quality/attr_event_handler.rs", "compile_fail,E0080";
+    HrefFromString => "quality/href_from_string.rs", "compile_fail,E0277";
+    Csp => "quality/csp.rs";
+    TestingStream => "quality/testing_stream.rs";
+    TestingWrongPage => "quality/testing_wrong_page.rs", "compile_fail,E0308";
+    TestingListItems => "quality/testing_list_items.rs";
+    SimulationWrongPage => "quality/simulation_wrong_page.rs", "compile_fail,E0277";
+    DuplicateId => "quality/duplicate_id.rs", "should_panic";
+    CallStatusType => "quality/call_status_type.rs", "compile_fail,E0308";
 }
 
 /// The lines of `snippet` that the page shows.

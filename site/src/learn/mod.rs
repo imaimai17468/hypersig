@@ -4,17 +4,13 @@ mod browser;
 mod data;
 mod deploying;
 mod page;
+mod quality;
 mod requests;
 mod routing;
-mod security;
-mod server;
 pub mod snippet;
 mod start;
 mod state;
 mod talking;
-mod testing;
-mod troubleshooting;
-mod upgrading;
 
 use crate::Site;
 use crate::code::{self, Lang};
@@ -86,12 +82,12 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::UncheckedValues => browser::unchecked_values::page(site),
         Learn::StaticPages => browser::static_pages::page(site),
         // Quality and operations
-        Learn::Security => security::security(site),
-        Learn::Testing | Learn::TestingPages => testing::testing(site),
-        Learn::CompileErrors | Learn::Debugging | Learn::Troubleshooting => {
-            troubleshooting::troubleshooting(site)
-        }
-        Learn::Upgrading => upgrading::upgrading(site),
+        Learn::Security => quality::security::page(site),
+        Learn::Testing => quality::testing::page(site),
+        Learn::TestingPages => quality::testing_pages::page(site),
+        Learn::CompileErrors => quality::compile_errors::page(site),
+        Learn::Debugging => quality::debugging::page(site),
+        Learn::Upgrading => quality::upgrading::page(site),
         // Deploy
         Learn::Deploying => deploying::deploying(site),
         Learn::DeployContainer => deploying::container::page(site),

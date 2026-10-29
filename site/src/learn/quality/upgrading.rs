@@ -1,13 +1,13 @@
 //! The page on moving an application to a newer release: each breaking
 //! change of a public signature, shown as the code after it.
 
-use super::snippet::{Snippet, show_change};
 use crate::Site;
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
+use crate::learn::snippet::{Snippet, show_change};
 use crate::prose::{Part, bullets, heading, lead, para, parts, title};
 
-pub fn upgrading(site: Site) -> Part {
+pub fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Upgrading).title(site)),
         lead(site, Doc::Learn(Learn::Upgrading).leads()),

@@ -99,7 +99,6 @@ pub enum Learn {
     CompileErrors,
     Debugging,
     Upgrading,
-    Troubleshooting,
     // Deploy
     Deploying,
     DeployContainer,
@@ -443,7 +442,6 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::CompileErrors),
             Doc::Learn(Learn::Debugging),
             Doc::Learn(Learn::Upgrading),
-            Doc::Learn(Learn::Troubleshooting),
         ],
     },
     Group {
@@ -744,7 +742,6 @@ impl Doc {
         Self::Learn(Learn::CompileErrors),
         Self::Learn(Learn::Debugging),
         Self::Learn(Learn::Upgrading),
-        Self::Learn(Learn::Troubleshooting),
         // Deploy
         Self::Learn(Learn::Deploying),
         Self::Learn(Learn::DeployContainer),
@@ -927,7 +924,7 @@ impl Doc {
                 Learn::StaticPages => ("Static pages", "静的ページ"),
                 // Quality and operations
                 Learn::Security => ("Security", "セキュリティ"),
-                Learn::Testing => ("Testing", "テストを書く"),
+                Learn::Testing => ("Testing handlers", "ハンドラのテスト"),
                 Learn::TestingPages => (
                     "Testing a page without a browser",
                     "ブラウザなしでページをテストする",
@@ -935,7 +932,6 @@ impl Doc {
                 Learn::CompileErrors => ("Reading a compile error", "コンパイルエラーの読み方"),
                 Learn::Debugging => ("Debugging a running page", "動いているページを調べる"),
                 Learn::Upgrading => ("Upgrading", "新しいリリースに上げる"),
-                Learn::Troubleshooting => ("Troubleshooting", "うまく動かないとき"),
                 // Deploy
                 Learn::Deploying => ("Choosing a host", "デプロイ先の選び方"),
                 Learn::DeployContainer => ("In a container", "コンテナ"),
@@ -1243,20 +1239,24 @@ impl Doc {
                     ja: "訪問者が送るものからページとアクションを守るために hypersig が検査すること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
                 },
                 Learn::Testing => L {
-                    en: "Tests that call a page's and an action's handler as functions and read the signals with their types, tests that send a request through the router, tests that click and type on a page without a browser, and what only a browser test reaches.",
-                    ja: "ページとアクションのハンドラを関数として呼び、シグナルの値を型で読むテスト、ルーターにリクエストを送るテスト、ブラウザなしでページをクリックして入力するテスト、ブラウザのテストでしか確かめられないことを扱います。",
+                    en: "Tests that call a page's, an action's, and a stream's handler as functions and read the signals by their types, and tests that send a request through the router to check what the router adds.",
+                    ja: "ページ、アクション、ストリームのハンドラを関数として呼び、シグナルの値を型で読むテストと、ルーターにリクエストを送って、ルーターが加えるものを確かめるテストを扱います。",
                 },
-                Learn::TestingPages => Doc::Learn(Learn::Testing).leads(),
-                Learn::CompileErrors | Learn::Debugging => {
-                    Doc::Learn(Learn::Troubleshooting).leads()
-                }
+                Learn::TestingPages => L {
+                    en: "A test that clicks and types on a page without a browser, reads the signals and the elements afterwards, and checks the calls and the navigation the events asked for. The page also lists what only a browser test reaches.",
+                    ja: "ブラウザなしでページをクリックして入力し、そのあとのシグナルと要素を読み、イベントが求めた呼び出しと移動を確かめるテストを扱います。ブラウザのテストでしか確かめられないことも挙げます。",
+                },
+                Learn::CompileErrors => L {
+                    en: "How to read the compile errors that hypersig's traits and constants produce: which line names the mistake, which lines to skip, and where to look up a message this page does not list.",
+                    ja: "hypersig のトレイトと定数が出すコンパイルエラーの読み方を扱います。どの行が間違いを指し、どの行を読み飛ばしてよいか、このページにないメッセージをどこで調べるかを説明します。",
+                },
+                Learn::Debugging => L {
+                    en: "Where a running page reports a mistake the types do not catch: a panic on the server while the page is built, a line in the browser's console, and a failed call that the page can show.",
+                    ja: "型で防げない間違いを、動いているページがどこに報告するかを扱います。ページを組み立てるときのサーバーでのパニック、ブラウザのコンソールの行、ページに表示できる失敗した呼び出しの 3 つです。",
+                },
                 Learn::Upgrading => L {
-                    en: "Each change of a public signature from 0.4 to 0.8, shown as the code before and after it.",
-                    ja: "0.4 から 0.8 までに公開のシグネチャが変わった箇所を、変更前と変更後のコードで示します。",
-                },
-                Learn::Troubleshooting => L {
-                    en: "How to read the compile errors hypersig's types and constants produce, and where a running page reports a panic, a failed call, or a problem the runtime meets.",
-                    ja: "hypersig の型と定数が出すコンパイルエラーの読み方と、動いているページがパニック、失敗した呼び出し、ランタイムが見つけた問題をどこに報告するかを扱います。",
+                    en: "Each change of a public signature from 0.5 to 0.13, shown as the code after it, with the line it replaces.",
+                    ja: "0.5 から 0.13 までに公開のシグネチャが変わった箇所を、変更後のコードと、それが置き換える行で示します。",
                 },
                 // Deploy
                 Learn::Deploying => L {
@@ -1497,7 +1497,6 @@ impl Learn {
             Self::CompileErrors => "compile-errors",
             Self::Debugging => "debugging",
             Self::Upgrading => "upgrading",
-            Self::Troubleshooting => "troubleshooting",
             // Deploy
             Self::Deploying => "deploying",
             Self::DeployContainer => "deploying/container",
