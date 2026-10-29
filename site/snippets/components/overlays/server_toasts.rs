@@ -1,7 +1,7 @@
 use axum::Router;
-use hypersig::html::button;
-use hypersig::{Action, Expr, Patches, Signals};
-use hypersig_ui::{Toast, ToastVariant};
+use hypersig::html::div;
+use hypersig::{Action, Expr, Page, Patches, Signals};
+use hypersig_ui::{ButtonSize, ButtonVariant, Toast, ToastVariant, Toaster, button};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -26,5 +26,17 @@ let failed = Toast::new("Save failed").variant(ToastVariant::Destructive);
 let call = SAVE.call().on_error(|message| {
     Toast::push_expr(App::toasts(), Expr::lit(&failed).with(Toast::body(), message))
 });
-let _save = button().on_click(call).text("Save");
+
+// A toast in the first signals is in the first HTML.
+let signals = App { toasts: vec![Toast::new("Welcome back")] };
+let html = Page::new("App", signals)
+    .child(
+        div().child(
+            button(ButtonVariant::Default, ButtonSize::Default).on_click(call).text("Save"),
+        ),
+    )
+    .child(Toaster::new(App::toasts()))
+    .render();
 let _app: Router = pages(Router::new());
+# assert!(html.contains(r#"aria-atomic="true""#));
+# assert!(html.contains(">Welcome back</p>"));
