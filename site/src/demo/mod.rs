@@ -106,13 +106,15 @@ demos! {
     Avatar => avatar, "ui/avatar.rs", "5rem";
     Kbd => kbd, "ui/kbd.rs", "7rem";
     Separator => separator, "ui/separator.rs", "12.5rem";
-    Navigation => navigation, "ui/navigation.rs", "15rem";
+    Navigation => navigation, "ui/navigation.rs", "12rem";
     DataTable => data_table, "ui/data_table.rs", "25rem";
     Chart => chart, "ui/chart.rs", "29rem";
     Hover => hover, "style/hover.rs", "12rem";
     Accent => accent, "style/accent.rs", "15rem";
     Layout => layout, "style/layout.rs", "14rem";
     Spinner => spinner, "style/spinner.rs", "6rem";
+    Breadcrumb => breadcrumb, "ui/breadcrumb.rs", "4.5rem";
+    Pagination => pagination, "ui/pagination.rs", "5.5rem";
 }
 
 /// The script of `<star-rating>`, which the rating demo loads and the page

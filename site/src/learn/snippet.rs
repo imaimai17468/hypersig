@@ -385,6 +385,26 @@ snippets! {
     StyleAttr => "style/unchecked/style_attr.rs", "compile_fail,E0080";
     // The samples of the Components pages under Get started, Buttons, Form fields, and Pickers.
     // The samples of the Components pages under Layout, Navigation, and Data.
+    UiTabs => "components/layout/tabs.rs";
+    UiTabsMissing => "components/layout/tabs_missing.rs", "compile_fail,E0004";
+    UiTabsTwice => "components/layout/tabs_twice.rs", "should_panic";
+    UiAccordion => "components/layout/accordion.rs";
+    UiAccordionName => "components/layout/accordion_name.rs", "compile_fail,E0308";
+    UiAccordionTwice => "components/layout/accordion_twice.rs", "should_panic";
+    UiCollapsible => "components/layout/collapsible.rs";
+    UiCollapsibleType => "components/layout/collapsible_type.rs", "compile_fail,E0308";
+    UiCollapsibleTwice => "components/layout/collapsible_twice.rs", "should_panic";
+    UiCard => "components/layout/card.rs";
+    UiCardLevel => "components/layout/card_level.rs", "compile_fail,E0599";
+    UiSeparator => "components/layout/separator.rs";
+    UiNavList => "components/navigation/nav_list.rs";
+    UiNavListCurrent => "components/navigation/nav_list_current.rs", "compile_fail,E0308";
+    UiNavListArgs => "components/navigation/nav_list_args.rs", "compile_fail,E0308";
+    UiBreadcrumb => "components/navigation/breadcrumb.rs";
+    UiBreadcrumbAfter => "components/navigation/breadcrumb_after.rs", "compile_fail,E0599";
+    UiPagination => "components/navigation/pagination.rs";
+    UiPaginationLink => "components/navigation/pagination_link.rs", "compile_fail,E0308";
+    UiPaginationPast => "components/navigation/pagination_past.rs", "should_panic";
     // The samples of the Components pages under Overlays and Display.
 }
 

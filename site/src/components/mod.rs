@@ -13,6 +13,9 @@ use crate::lang::{L, Text};
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
+mod layout;
+mod navigation;
+
 /// One item: its name, its rustdoc page and anchor under `api/`, and its
 /// summary.
 type Row = (&'static str, &'static str, L<&'static str>);
@@ -34,6 +37,7 @@ struct Page {
     reason = "each group's arms change when its pages are written"
 )]
 pub fn content(site: Site, page: Component) -> Part {
+    let head = title(Doc::Components(page).title(site));
     match page {
         // Get started
         Component::Installation | Component::Handles | Component::Translations => {
@@ -60,13 +64,15 @@ pub fn content(site: Site, page: Component) -> Part {
         // Pickers
         Component::Listbox | Component::Combobox => carved(site, page),
         // Layout
-        Component::Tabs
-        | Component::Accordion
-        | Component::Collapsible
-        | Component::Card
-        | Component::Separator => carved(site, page),
+        Component::Tabs => layout::tabs::page(site, head),
+        Component::Accordion => layout::accordion::page(site, head),
+        Component::Collapsible => layout::collapsible::page(site, head),
+        Component::Card => layout::card::page(site, head),
+        Component::Separator => layout::separator::page(site, head),
         // Navigation
-        Component::Navigation | Component::Breadcrumb | Component::Pagination => carved(site, page),
+        Component::Navigation => navigation::nav_list::page(site, head),
+        Component::Breadcrumb => navigation::breadcrumb::page(site, head),
+        Component::Pagination => navigation::pagination::page(site, head),
         // Data
         Component::DataTable
         | Component::TableSorting
@@ -118,8 +124,6 @@ fn carved_from(page: Component) -> Component {
         }
         // Form fields
         Component::Switch => Component::Checkbox,
-        // Navigation
-        Component::Breadcrumb | Component::Pagination => Component::Navigation,
         // Data
         Component::TableSorting
         | Component::TableFiltering
@@ -384,8 +388,6 @@ fn component_page(page: Component) -> Page {
         | Component::DateField
         | Component::Switch
         | Component::FormFields
-        | Component::Breadcrumb
-        | Component::Pagination
         | Component::TableSorting
         | Component::TableFiltering
         | Component::TableSelection
@@ -396,6 +398,14 @@ fn component_page(page: Component) -> Page {
         | Component::Sheet
         | Component::ServerToasts
         | Component::Skeleton => unreachable!("carved_from maps it to its page"),
+        Component::Tabs
+        | Component::Accordion
+        | Component::Collapsible
+        | Component::Card
+        | Component::Separator
+        | Component::Navigation
+        | Component::Breadcrumb
+        | Component::Pagination => unreachable!("written in its own file"),
         Component::Button => Page {
             lead: L {
                 en: "A button in one of six variants and three sizes.",
@@ -1194,163 +1204,6 @@ fn component_page(page: Component) -> Page {
                 ),
             ],
         },
-        Component::Tabs => Page {
-            lead: L {
-                en: "A tab list that keeps the selected tab in a signal, with one panel per tab.",
-                ja: "選ばれたタブをシグナルに持つタブの一覧です。タブごとに 1 つのパネルがあります。",
-            },
-            demo: Demo::Tabs,
-            built_on: &[L {
-                en: "It follows the WAI-ARIA tabs pattern. The list has `role=\"tablist\"`, each tab `role=\"tab\"` with `aria-selected` and `aria-controls`, and each panel `role=\"tabpanel\"` labeled by its tab. A tab is selected as it gains focus, through `El::roving_focus`. The ids are derived from the signal's path and the tab's position. The signal holds an enum with `#[derive(Segment)]`, and the tabs are its variants, so the selected value always has a tab that Tab reaches, and a `match` that leaves a variant without a tab fails to compile.",
-                ja: "WAI-ARIA tabs パターンに従います。一覧は `role=\"tablist\"` を持ち、各タブは `role=\"tab\"` と `aria-selected`、`aria-controls` を持ちます。各パネルは `role=\"tabpanel\"` を持ち、対応するタブがパネルのラベルになります。タブは `El::roving_focus` でフォーカスを受けると同時に選ばれます。id はシグナルのパスとタブの位置から作られます。シグナルの値は `#[derive(Segment)]` を付けた列挙型で、タブはそのバリアントです。そのため、選ばれた値には必ず Tab キーで移れるタブがあり、タブのないバリアントを残した `match` はコンパイルできません。",
-            }],
-            keys: &[
-                (
-                    L {
-                        en: "Tab",
-                        ja: "Tab",
-                    },
-                    L {
-                        en: "Moves focus into the list at the selected tab, then on to the panel.",
-                        ja: "一覧の中の選ばれたタブにフォーカスを移し、もう一度押すとパネルに移します。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Left, Right",
-                        ja: "左矢印、右矢印",
-                    },
-                    L {
-                        en: "Move to the previous or next tab and select it.",
-                        ja: "前か次のタブに移り、それを選びます。",
-                    },
-                ),
-                (
-                    L {
-                        en: "Home, End",
-                        ja: "Home、End",
-                    },
-                    L {
-                        en: "Move to the first or last tab and select it.",
-                        ja: "最初か最後のタブに移り、それを選びます。",
-                    },
-                ),
-            ],
-            items: &[(
-                "Tabs::new",
-                "hypersig_ui/struct.Tabs.html#method.new",
-                L {
-                    en: "A tab list named `label`, with the title and panel `tab` gives each variant.",
-                    ja: "`label` を名前に持ち、`tab` が各バリアントに返すタイトルとパネルを並べるタブの一覧",
-                },
-            )],
-        },
-        Component::Accordion => Page {
-            lead: L {
-                en: "A stack of sections that open and close, one at a time or each on its own.",
-                ja: "開閉するセクションを縦に並べたものです。一度に 1 つだけ開く形と、それぞれが独立に開く形があります。",
-            },
-            demo: Demo::Accordion,
-            built_on: &[
-                L {
-                    en: "Each section is a native `<details>` whose `<summary>` opens and closes it. The browser handles the keyboard, and each summary is announced as a button that is expanded or collapsed, and find-in-page opens a closed section that holds a match.",
-                    ja: "各セクションはネイティブの `<details>` で、その `<summary>` がセクションを開閉します。キーボード操作はブラウザが扱い、各 summary は展開か折りたたみの状態を持つボタンとして読み上げられます。ページ内検索で一致した箇所が閉じたセクションにあれば、ブラウザがそのセクションを開きます。",
-                },
-                L {
-                    en: "An exclusive accordion gives its sections one `name`, so the browser closes the open one when another opens. The name is an `Id` that the accordion's `<div>` also carries, so two accordions given one `Id::new` make the page panic when it renders, where they would otherwise close each other's sections.",
-                    ja: "排他的なアコーディオンはセクションに同じ `name` を付けるので、別のセクションが開くと、ブラウザが開いていたセクションを閉じます。この名前は `Id` で、アコーディオンの `<div>` も同じ id を持ちます。そのため、1 つの `Id::new` を 2 つのアコーディオンに渡すと、互いのセクションを閉じ合う代わりに、ページの描画がパニックします。",
-                },
-            ],
-            keys: &[(
-                L {
-                    en: "Enter, Space",
-                    ja: "Enter、Space",
-                },
-                L {
-                    en: "Opens or closes the focused section.",
-                    ja: "フォーカスのあるセクションを開くか閉じます。",
-                },
-            )],
-            items: &[
-                (
-                    "Accordion::new",
-                    "hypersig_ui/struct.Accordion.html#method.new",
-                    L {
-                        en: "An accordion whose sections open and close independently.",
-                        ja: "セクションがそれぞれ独立に開閉するアコーディオン",
-                    },
-                ),
-                (
-                    "Accordion::exclusive",
-                    "hypersig_ui/struct.Accordion.html#method.exclusive",
-                    L {
-                        en: "An accordion that keeps at most one section open.",
-                        ja: "開いているセクションを多くても 1 つにするアコーディオン",
-                    },
-                ),
-                (
-                    "item",
-                    "hypersig_ui/struct.Accordion.html#method.item",
-                    L {
-                        en: "Adds a section titled `title` whose content is `content`.",
-                        ja: "`title` をタイトルに持ち、中身が `content` のセクションを追加します。",
-                    },
-                ),
-            ],
-        },
-        Component::Collapsible => Page {
-            lead: L {
-                en: "A button that shows and hides one region, bound to a `bool` signal.",
-                ja: "1 つの領域を表示したり隠したりするボタンです。`bool` のシグナルに束縛します。",
-            },
-            demo: Demo::Collapsible,
-            built_on: &[
-                L {
-                    en: "It follows the WAI-ARIA disclosure pattern. The button is a native `<button>` with `aria-expanded` bound to the signal and `aria-controls` pointing at the region, so a screen reader announces it as expanded or collapsed. The region's id is derived from the signal's path.",
-                    ja: "WAI-ARIA disclosure パターンに従います。ボタンはネイティブの `<button>` で、`aria-expanded` をシグナルに束縛し、`aria-controls` で領域を指します。そのため、スクリーンリーダーは展開されているか折りたたまれているかを読み上げます。領域の id はシグナルのパスから作られます。",
-                },
-                L {
-                    en: "The button and the region are separate elements, so the button can sit in a heading or a toolbar away from the region. An `Accordion` is built on `<details>` instead, and no signal holds which of its sections is open.",
-                    ja: "ボタンと領域は別の要素なので、ボタンを領域から離れた見出しやツールバーに置けます。`Accordion` は代わりに `<details>` の上に作られており、どのセクションが開いているかはシグナルに入りません。",
-                },
-            ],
-            keys: &[(
-                L {
-                    en: "Enter, Space",
-                    ja: "Enter、Space",
-                },
-                L {
-                    en: "Shows or hides the region.",
-                    ja: "領域を表示するか隠します。",
-                },
-            )],
-            items: &[
-                (
-                    "Collapsible::new",
-                    "hypersig_ui/struct.Collapsible.html#method.new",
-                    L {
-                        en: "A collapsible whose region is shown while `open` is true.",
-                        ja: "`open` が true の間、領域を表示する折りたたみ",
-                    },
-                ),
-                (
-                    "trigger",
-                    "hypersig_ui/struct.Collapsible.html#method.trigger",
-                    L {
-                        en: "The button that shows and hides the region.",
-                        ja: "領域を表示したり隠したりするボタン",
-                    },
-                ),
-                (
-                    "content",
-                    "hypersig_ui/struct.Collapsible.html#method.content",
-                    L {
-                        en: "The region, empty, for the content added with `El::child`.",
-                        ja: "`El::child` で内容を加える、空の領域",
-                    },
-                ),
-            ],
-        },
         Component::Avatar => Page {
             lead: L {
                 en: "A round picture of a person, with their initials where there is no picture.",
@@ -1440,172 +1293,6 @@ fn component_page(page: Component) -> Page {
                     ja: "`label` を名前に持ち、長さのわからない処理を示す回転する輪",
                 },
             )],
-        },
-        Component::Card => Page {
-            lead: L {
-                en: "A bordered box with a header, content, and a footer.",
-                ja: "ヘッダー、中身、フッターを持つ、枠線付きのボックスです。",
-            },
-            demo: Demo::Card,
-            built_on: &[L {
-                en: "A card is a `<div>` and takes no role. Its title is a heading whose level you choose with `Level`, so that it sits one level below the section around it and a screen reader's list of headings stays in order.",
-                ja: "カードは `<div>` で、ロールを持ちません。タイトルは見出しで、そのレベルは `Level` で選びます。周りのセクションより 1 つ下のレベルにすると、スクリーンリーダーの見出しの一覧が順番どおりに並びます。",
-            }],
-            keys: &[],
-            items: &[
-                (
-                    "card",
-                    "hypersig_ui/fn.card.html",
-                    L {
-                        en: "A `<div>` with a border, a shadow, and `token::card` behind it.",
-                        ja: "枠線と影を持ち、背景が `token::card` の `<div>`",
-                    },
-                ),
-                (
-                    "card_header",
-                    "hypersig_ui/fn.card_header.html",
-                    L {
-                        en: "The top of a `card`, holding its title and description.",
-                        ja: "タイトルと説明を入れる、`card` の上部",
-                    },
-                ),
-                (
-                    "card_title",
-                    "hypersig_ui/fn.card_title.html",
-                    L {
-                        en: "The title of a `card`, as a heading of `level`.",
-                        ja: "`level` の見出しとして描く、`card` のタイトル",
-                    },
-                ),
-                (
-                    "card_description",
-                    "hypersig_ui/fn.card_description.html",
-                    L {
-                        en: "A line under the title of a `card`, in `token::muted_foreground`.",
-                        ja: "`card` のタイトルの下に `token::muted_foreground` の色で書く 1 行",
-                    },
-                ),
-                (
-                    "card_content",
-                    "hypersig_ui/fn.card_content.html",
-                    L {
-                        en: "The body of a `card`.",
-                        ja: "`card` の本体",
-                    },
-                ),
-                (
-                    "card_footer",
-                    "hypersig_ui/fn.card_footer.html",
-                    L {
-                        en: "The bottom of a `card`, laying its children out in a row.",
-                        ja: "子要素を横に並べる、`card` の下部",
-                    },
-                ),
-                (
-                    "Level",
-                    "hypersig_ui/enum.Level.html",
-                    L {
-                        en: "The level of a heading, which follows the headings around it.",
-                        ja: "周りの見出しに合わせて決める、見出しのレベル",
-                    },
-                ),
-            ],
-        },
-        Component::Separator => Page {
-            lead: L {
-                en: "A one-pixel line between groups of content, across or along.",
-                ja: "内容のまとまりの間に引く、横向きか縦向きの 1 ピクセルの線です。",
-            },
-            demo: Demo::Separator,
-            built_on: &[L {
-                en: "A horizontal separator is an `<hr>`, and a vertical one is a `<div>` with `role=\"separator\"` and `aria-orientation=\"vertical\"`, so a screen reader announces both as separators.",
-                ja: "横向きの区切り線は `<hr>` で、縦向きの区切り線は `role=\"separator\"` と `aria-orientation=\"vertical\"` を持つ `<div>` です。そのため、スクリーンリーダーはどちらも区切り線として読み上げます。",
-            }],
-            keys: &[],
-            items: &[(
-                "separator",
-                "hypersig_ui/fn.separator.html",
-                L {
-                    en: "A one-pixel line in `token::border` that runs along `orientation`.",
-                    ja: "`orientation` の向きに引く、`token::border` の色の 1 ピクセルの線",
-                },
-            )],
-        },
-        Component::Navigation => Page {
-            lead: L {
-                en: "Links between the pages of an application: a list of its sections, a breadcrumb trail, and the pages of a long list.",
-                ja: "アプリケーションのページの間を移るリンクです。セクションの一覧、パンくずリスト、長い一覧のページ送りがあります。",
-            },
-            demo: Demo::Navigation,
-            built_on: &[
-                L {
-                    en: "Each is a `<nav>` named by the label it takes, holding a list of links, so a screen reader lists it among the page's landmarks. The links are typed `Link` values from routes, and the one to the page the visitor is on has `aria-current=\"page\"`.",
-                    ja: "どれも受け取ったラベルを名前に持つ `<nav>` で、中にリンクの一覧を持ちます。そのため、スクリーンリーダーはページのランドマークの 1 つとして一覧に出します。リンクはルートから作った型付きの `Link` で、訪問者がいるページへのリンクは `aria-current=\"page\"` を持ちます。",
-                },
-                L {
-                    en: "`NavList` decides the mark on the server, from the page's own `Url` that `Route::url` writes. A link to the same path has `aria-current=\"page\"`, and a link to a path that the page's path begins with has `aria-current=\"true\"`. `Breadcrumb::current` ends the trail with the current page as text and returns the element, so no link can follow it. `pagination` shows the first and the last page and the pages next to the current one, and marks the previous or next link `aria-disabled` where that page does not exist. The links in the demo lead to pages of this site.",
-                    ja: "`NavList` は `Route::url` で書いたページ自身の `Url` をもとに、どのリンクに印を付けるかをサーバーで決めます。同じパスへのリンクは `aria-current=\"page\"` を持ち、ページのパスがリンク先のパスの続きになっているリンクは `aria-current=\"true\"` を持ちます。`Breadcrumb::current` は今のページをテキストとして最後に置き、要素を返すので、そのあとにリンクは続けられません。`pagination` は最初と最後のページ、今のページの前後のページを表示し、前や次のページがないときはそのリンクを `aria-disabled` にします。デモのリンクは、このサイトのページにつながります。",
-                },
-            ],
-            keys: &[],
-            items: &[
-                (
-                    "NavList::new",
-                    "hypersig_ui/struct.NavList.html#method.new",
-                    L {
-                        en: "An empty list whose `<nav>` is named `label`, on the page at `current`.",
-                        ja: "`<nav>` の名前が `label` で、`current` のページに置く空の一覧",
-                    },
-                ),
-                (
-                    "item",
-                    "hypersig_ui/struct.NavList.html#method.item",
-                    L {
-                        en: "Adds a link to `route` with the arguments `args`, as `Route::url` takes them.",
-                        ja: "`Route::url` と同じ形の引数 `args` を付けた、`route` へのリンクを追加します。",
-                    },
-                ),
-                (
-                    "Breadcrumb::new",
-                    "hypersig_ui/struct.Breadcrumb.html#method.new",
-                    L {
-                        en: "An empty trail whose `<nav>` is named `label`, such as \"Breadcrumb\".",
-                        ja: "`<nav>` の名前が `label`（たとえば「Breadcrumb」）の空のパンくずリスト",
-                    },
-                ),
-                (
-                    "link",
-                    "hypersig_ui/struct.Breadcrumb.html#method.link",
-                    L {
-                        en: "Adds a link to a page above the current one.",
-                        ja: "今のページより上のページへのリンクを追加します。",
-                    },
-                ),
-                (
-                    "current",
-                    "hypersig_ui/struct.Breadcrumb.html#method.current",
-                    L {
-                        en: "The trail, ending at the current page `text`.",
-                        ja: "今のページ `text` で終わるパンくずリスト",
-                    },
-                ),
-                (
-                    "pagination",
-                    "hypersig_ui/fn.pagination.html",
-                    L {
-                        en: "Links to the pages of a list of `count` pages, on page `current`.",
-                        ja: "`count` ページある一覧の各ページへのリンク。今のページは `current`",
-                    },
-                ),
-                (
-                    "PaginationText",
-                    "hypersig_ui/struct.PaginationText.html",
-                    L {
-                        en: "The words `pagination` names its parts with.",
-                        ja: "`pagination` が各部分の名前に使う言葉",
-                    },
-                ),
-            ],
         },
         Component::DataTable => Page {
             lead: L {
