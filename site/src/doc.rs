@@ -76,8 +76,15 @@ pub enum Learn {
     Uploads,
     // Data and sign-in
     Database,
+    DatabaseWithoutSql,
+    CheckedSql,
+    HostedDatabases,
+    DatabaseHosts,
     Api,
     Sessions,
+    MembersOnly,
+    SessionCookie,
+    SessionStores,
     // Browser features
     NodeRefs,
     Timers,
@@ -400,8 +407,15 @@ pub const LEARN: &[Group] = &[
         },
         docs: &[
             Doc::Learn(Learn::Database),
+            Doc::Learn(Learn::DatabaseWithoutSql),
+            Doc::Learn(Learn::CheckedSql),
+            Doc::Learn(Learn::HostedDatabases),
+            Doc::Learn(Learn::DatabaseHosts),
             Doc::Learn(Learn::Api),
             Doc::Learn(Learn::Sessions),
+            Doc::Learn(Learn::MembersOnly),
+            Doc::Learn(Learn::SessionCookie),
+            Doc::Learn(Learn::SessionStores),
         ],
     },
     Group {
@@ -709,8 +723,15 @@ impl Doc {
         Self::Learn(Learn::Uploads),
         // Data and sign-in
         Self::Learn(Learn::Database),
+        Self::Learn(Learn::DatabaseWithoutSql),
+        Self::Learn(Learn::CheckedSql),
+        Self::Learn(Learn::HostedDatabases),
+        Self::Learn(Learn::DatabaseHosts),
         Self::Learn(Learn::Api),
         Self::Learn(Learn::Sessions),
+        Self::Learn(Learn::MembersOnly),
+        Self::Learn(Learn::SessionCookie),
+        Self::Learn(Learn::SessionStores),
         // Browser features
         Self::Learn(Learn::NodeRefs),
         Self::Learn(Learn::Timers),
@@ -877,11 +898,29 @@ impl Doc {
                 Learn::Uploads => ("Uploads", "アップロード"),
                 // Data and sign-in
                 Learn::Database => ("Storing data", "データを保存する"),
+                Learn::DatabaseWithoutSql => {
+                    ("A database without SQL", "SQL を使わないデータベース")
+                }
+                Learn::CheckedSql => ("SQL the compiler checks", "コンパイラが検査する SQL"),
+                Learn::HostedDatabases => (
+                    "Hosted PostgreSQL and MySQL",
+                    "ホスティングされた PostgreSQL と MySQL",
+                ),
+                Learn::DatabaseHosts => (
+                    "The database each host can reach",
+                    "デプロイ先ごとのデータベース",
+                ),
                 Learn::Api => (
                     "Calling another service's API",
                     "ほかのサービスの API を呼ぶ",
                 ),
                 Learn::Sessions => ("Signing in", "サインインとセッション"),
+                Learn::MembersOnly => (
+                    "Pages for signed-in members",
+                    "サインインした人だけのページ",
+                ),
+                Learn::SessionCookie => ("The session cookie", "セッションの Cookie"),
+                Learn::SessionStores => ("Where sessions are stored", "セッションの保存先"),
                 // Browser features
                 Learn::NodeRefs => ("Node refs", "ノード参照"),
                 Learn::Timers => ("Timers and reactions", "タイマーと変化への反応"),
@@ -1141,16 +1180,44 @@ impl Doc {
                 },
                 // Data and sign-in
                 Learn::Database => L {
-                    en: "A handler keeps data shared across requests in a database that its own Rust code connects to, so the data outlives the process and every instance of the server reads the same values.",
-                    ja: "ハンドラはリクエストをまたいで使うデータを、自分の Rust のコードからつなぐデータベースに置きます。データはプロセスが終わっても保持され、サーバーのどのインスタンスも同じ値を読みます。",
+                    en: "A handler keeps the data that requests share in a database its own Rust code connects to, with the connection in the router's state. The page also covers telling the streams of every server process about a change.",
+                    ja: "ハンドラはリクエストをまたいで使うデータを、自分の Rust のコードからつなぐデータベースに置き、接続はルーターの状態に持たせます。変更をサーバーのすべてのプロセスのストリームに知らせる方法も、このページで説明します。",
+                },
+                Learn::DatabaseWithoutSql => L {
+                    en: "A database read through an SDK, such as DynamoDB, is used the same way as one read with SQL: the client goes in the router's state, and the handler awaits its calls.",
+                    ja: "DynamoDB のように SDK で読むデータベースも、SQL で読むものと同じように使います。クライアントをルーターの状態に置き、ハンドラはその呼び出しを `.await` します。",
+                },
+                Learn::CheckedSql => L {
+                    en: "sqlx's `query!` macros check each query against the database's tables when the program is built, and the `.sqlx` directory lets a machine without a database build it.",
+                    ja: "sqlx の `query!` などのマクロはビルドのときにクエリをデータベースのテーブルと照らし合わせて検査します。`.sqlx` ディレクトリがあれば、データベースのないマシンでもビルドできます。",
+                },
+                Learn::HostedDatabases => L {
+                    en: "Supabase, PlanetScale, Cloud SQL, AlloyDB, RDS, and Aurora each take a connection string in `DATABASE_URL`, and differ in their ports, poolers, and TLS settings.",
+                    ja: "Supabase、PlanetScale、Cloud SQL、AlloyDB、RDS、Aurora は、どれも `DATABASE_URL` の接続文字列でつなぎます。違うのはポート、プーラー、TLS の設定です。",
+                },
+                Learn::DatabaseHosts => L {
+                    en: "A container, a Vercel Function, and a Cloudflare Worker each limit where the data can be kept: a file on a volume, a database over the network, or a binding the host provides.",
+                    ja: "コンテナ、Vercel Functions、Cloudflare Workers では、データを置ける場所が違います。ボリューム上のファイル、ネットワーク越しのデータベース、ホストが用意するバインディングのいずれかです。",
                 },
                 Learn::Api => L {
                     en: "A handler can call another service's HTTP API and answer the browser with what it returned, so the service's address and token stay on the server.",
                     ja: "ハンドラはほかのサービスの HTTP の API を呼び、その結果でブラウザに応答できます。サービスのアドレスとトークンはサーバーから出ません。",
                 },
                 Learn::Sessions => L {
-                    en: "The `tower-sessions` layer keeps a session for each browser behind a cookie, and an extractor reads the signed-in member from it. Without one, a page goes to the sign-in page and an action answers with a 401.",
-                    ja: "`tower-sessions` のレイヤーがブラウザごとのセッションを Cookie の向こうに持ち、エクストラクタがそこからサインイン中のメンバーを読みます。サインインしていなければ、ページはサインインのページへ移り、アクションには 401 を返します。",
+                    en: "The `tower-sessions` layer keeps a session for each browser, which a cookie points to. An action signs the visitor in by writing the member's name into the session, and signs them out by emptying it.",
+                    ja: "`tower-sessions` のレイヤーはブラウザごとのセッションを持ち、ブラウザは Cookie でそのセッションを指します。アクションはセッションにメンバーの名前を書いて訪問者をサインインさせ、セッションを空にしてサインアウトさせます。",
+                },
+                Learn::MembersOnly => L {
+                    en: "An extractor reads the signed-in member from the session, so a handler that takes it runs only for a signed-in visitor. Anyone else gets a redirect to the sign-in page from a page, and a 401 from an action.",
+                    ja: "エクストラクタがセッションからサインイン中のメンバーを読むので、それを受け取るハンドラはサインインした訪問者に対してだけ動きます。それ以外の訪問者には、ページならサインインのページへのリダイレクトを、アクションなら 401 を返します。",
+                },
+                Learn::SessionCookie => L {
+                    en: "The session's cookie is `HttpOnly`, `Secure`, and `SameSite=Strict` unless the layer says otherwise, and lasts until the browser closes unless the layer is given an expiry.",
+                    ja: "セッションの Cookie には、レイヤーで変えない限り `HttpOnly`、`Secure`、`SameSite=Strict` が付きます。レイヤーに有効期限を渡さなければ、ブラウザを閉じるまで保持されます。",
+                },
+                Learn::SessionStores => L {
+                    en: "`MemoryStore` keeps the sessions inside one process, so a server that runs more than one instance keeps them in PostgreSQL, SQLite, MySQL, or Redis.",
+                    ja: "`MemoryStore` はセッションを 1 つのプロセスの中に置きます。インスタンスを複数動かすサーバーでは、PostgreSQL、SQLite、MySQL、Redis に置きます。",
                 },
                 // Browser features
                 Learn::NodeRefs
@@ -1403,8 +1470,15 @@ impl Learn {
             Self::Uploads => "uploads",
             // Data and sign-in
             Self::Database => "database",
+            Self::DatabaseWithoutSql => "database-without-sql",
+            Self::CheckedSql => "checked-sql",
+            Self::HostedDatabases => "hosted-databases",
+            Self::DatabaseHosts => "database-hosts",
             Self::Api => "api",
             Self::Sessions => "sessions",
+            Self::MembersOnly => "members-only",
+            Self::SessionCookie => "session-cookie",
+            Self::SessionStores => "session-stores",
             // Browser features
             Self::NodeRefs => "node-refs",
             Self::Timers => "timers",

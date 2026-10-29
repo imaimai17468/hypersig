@@ -33,6 +33,7 @@ http-body-util.workspace = true
 reqwest = { workspace = true, features = ["json", "rustls"] }
 rusqlite = { workspace = true, features = ["bundled"] }
 serde_json.workspace = true
+sqlx = { workspace = true, features = ["postgres", "runtime-tokio"] }
 tokio = { workspace = true, features = ["signal"] }
 tower.workspace = true
 tower-sessions = { workspace = true, features = ["axum-core", "memory-store"] }
@@ -43,16 +44,16 @@ tracing-subscriber.workspace = true
 [lints]
 workspace = true
 
-# The samples of `snippets/database.rs`, `dynamodb.rs`, `api.rs`,
-# `sessions.rs`, `testing_sessions.rs`, `requests/logging.rs`, and
-# `static_files.rs` are the only users of these crates, and cargo-udeps does
-# not see a crate that only doctests use.
+# The samples under `snippets/data/` and `snippets/testing_sessions.rs`,
+# `logging.rs`, and `static_files.rs` are the only users of these crates,
+# and cargo-udeps does not see a crate that only doctests use.
 [package.metadata.cargo-udeps.ignore]
 development = [
     "aws-config",
     "aws-sdk-dynamodb",
     "reqwest",
     "rusqlite",
+    "sqlx",
     "tower-http",
     "tower-sessions",
     "tracing",

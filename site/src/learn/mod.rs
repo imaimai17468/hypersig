@@ -1,7 +1,6 @@
 //! The Learn section, a guide read from top to bottom.
 
-mod api;
-mod database;
+mod data;
 mod deploying;
 mod javascript;
 mod page;
@@ -9,7 +8,6 @@ mod requests;
 mod routing;
 mod security;
 mod server;
-mod sessions;
 pub mod snippet;
 mod start;
 mod state;
@@ -70,9 +68,16 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::Errors => requests::errors::page(site),
         Learn::Uploads => requests::uploads::page(site),
         // Data and sign-in
-        Learn::Database => database::database(site),
-        Learn::Api => api::api(site),
-        Learn::Sessions => sessions::sessions(site),
+        Learn::Database => data::database::page(site),
+        Learn::DatabaseWithoutSql => data::without_sql::page(site),
+        Learn::CheckedSql => data::checked_sql::page(site),
+        Learn::HostedDatabases => data::hosted::page(site),
+        Learn::DatabaseHosts => data::hosts::page(site),
+        Learn::Api => data::api::page(site),
+        Learn::Sessions => data::sessions::page(site),
+        Learn::MembersOnly => data::members::page(site),
+        Learn::SessionCookie => data::cookie::page(site),
+        Learn::SessionStores => data::stores::page(site),
         // Browser features
         Learn::NodeRefs
         | Learn::Timers
