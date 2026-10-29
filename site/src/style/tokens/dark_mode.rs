@@ -51,8 +51,8 @@ pub fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "The generated type of `color-scheme` holds only `normal`, so `light dark` goes through `raw` and is not checked. [Unchecked values](style/unchecked/) covers `raw`.",
-                ja: "`color-scheme` の生成された型が持つのは `normal` だけなので、`light dark` は `raw` で書きます。`raw` の値は検査しません。`raw` は[検査しない値](style/unchecked/)で説明しています。",
+                en: "[`ColorScheme`](api:hypersig/style/value/enum.ColorScheme.html) has `LightDark` for `light dark`, which follows the system, and `Light` and `Dark` for a page that is always one of them. A value such as `only dark` goes through `raw`, which [Unchecked values](style/unchecked/) covers.",
+                ja: "[`ColorScheme`](api:hypersig/style/value/enum.ColorScheme.html) には、システムに従う `light dark` を書く `LightDark` と、常にどちらか一方の配色にするページのための `Light` と `Dark` があります。`only dark` のような値は `raw` で書きます。`raw` は[検査しない値](style/unchecked/)で説明しています。",
             },
         ),
         heading(
