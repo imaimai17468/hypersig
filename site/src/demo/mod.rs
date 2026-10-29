@@ -101,7 +101,7 @@ demos! {
     Card => card, "ui/card.rs", "19rem";
     Alert => alert, "ui/alert.rs", "16rem";
     Badge => badge, "ui/badge.rs", "8rem";
-    Progress => progress, "ui/progress.rs", "10.5rem";
+    Progress => progress, "ui/progress.rs", "7rem";
     Loading => loading, "ui/loading.rs", "6rem";
     Avatar => avatar, "ui/avatar.rs", "5rem";
     Kbd => kbd, "ui/kbd.rs", "7rem";
@@ -113,6 +113,9 @@ demos! {
     Accent => accent, "style/accent.rs", "15rem";
     Layout => layout, "style/layout.rs", "14rem";
     Spinner => spinner, "style/spinner.rs", "6rem";
+    AlertDialog => alert_dialog, "ui/alert_dialog.rs", "16rem";
+    Sheet => sheet, "ui/sheet.rs", "18rem";
+    Skeleton => skeleton, "ui/skeleton.rs", "9rem";
 }
 
 /// The script of `<star-rating>`, which the rating demo loads and the page
