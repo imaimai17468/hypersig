@@ -1,5 +1,5 @@
 use hypersig::html::{em, p};
-use hypersig::style::value::{FontFamily, raw, url};
+use hypersig::style::value::{FontFamily, quoted, url};
 use hypersig::style::{Element, FontFace, Global, Style};
 use hypersig::{Page, Signals};
 use serde::{Deserialize, Serialize};
@@ -16,9 +16,17 @@ let inter_italic = FontFace::new("Inter", url("/fonts/inter-italic.woff2"))
 let html = Page::new("Blog", Blog {})
     .global(
         Global::preflight()
-            .rule(Element::Body, Style::new().font_family(inter.family()))
-            // A list with fallbacks is written with `raw`, unchecked.
-            .rule(Element::Code, Style::new().font_family(raw("\"JetBrains Mono\", monospace")))
+            .rule(
+                Element::Body,
+                Style::new().font_family(inter.family().fallback(FontFamily::SansSerif)),
+            )
+            // Each character comes from the first family in the list that has it.
+            .rule(
+                Element::Code,
+                Style::new().font_family(
+                    FontFamily::from(quoted("JetBrains Mono")).fallback(FontFamily::Monospace),
+                ),
+            )
             .rule(Element::Kbd, Style::new().font_family(FontFamily::UiMonospace))
             .font(inter)
             .font(inter_italic),
@@ -27,4 +35,5 @@ let html = Page::new("Blog", Blog {})
     .render();
 # assert!(html.contains("@font-face{font-family:\"Inter\";src:url(\"/fonts/inter.woff2\");font-display:swap;font-weight:100 900}"));
 # assert!(html.contains("font-weight:100 900;font-style:italic}"));
-# assert!(html.contains("body{font-family:\"Inter\";line-height:1.5}"));
+# assert!(html.contains("body{font-family:\"Inter\", sans-serif;line-height:1.5}"));
+# assert!(html.contains("code{font-family:\"JetBrains Mono\", monospace"));

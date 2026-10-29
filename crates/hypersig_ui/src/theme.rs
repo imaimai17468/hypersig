@@ -1,6 +1,6 @@
 //! The page-wide rules and the dark theme.
 
-use hypersig::style::value::{FontFamily, LineHeight, raw};
+use hypersig::style::value::{FontFamily, LineHeight, quoted, raw};
 use hypersig::style::{Element, Global, Media, Selector, Style, Theme};
 
 use crate::token;
@@ -32,14 +32,21 @@ pub fn global() -> Global {
         .rule(
             Element::Body,
             Style::new()
-                .font_family(raw(
-                    "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\"",
-                ))
+                .font_family(
+                    FontFamily::UiSansSerif
+                        .fallback(FontFamily::SystemUi)
+                        .fallback(FontFamily::SansSerif)
+                        .fallback(quoted("Apple Color Emoji"))
+                        .fallback(quoted("Segoe UI Emoji")),
+                )
                 .line_height(LineHeight::Number(1.5))
                 .background_color(token::background().var())
                 .color(token::foreground().var()),
         )
-        .rule(Element::Code, Style::new().font_family(FontFamily::Monospace))
+        .rule(
+            Element::Code,
+            Style::new().font_family(FontFamily::Monospace),
+        )
 }
 
 /// The dark values of the tokens for a visitor whose system prefers dark.
