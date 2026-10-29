@@ -1,5 +1,7 @@
 //! The Style section: typed atomic CSS from `hypersig::style`.
 
+mod layout;
+
 use crate::Site;
 use crate::demo::{self, Demo};
 use crate::doc::{Doc, StylePage};
@@ -33,7 +35,9 @@ pub fn content(site: Site, page: StylePage) -> Part {
         // Global styles
         StylePage::Global | StylePage::Fonts => global(site, head),
         // Layout
-        StylePage::Stacks | StylePage::Grids | StylePage::Patterns => patterns(site, head),
+        StylePage::Stacks => layout::stacks::page(site),
+        StylePage::Grids => layout::grids::page(site),
+        StylePage::Patterns => layout::patterns::page(site),
         // Animation
         StylePage::Animation
         | StylePage::Transitions
@@ -381,96 +385,6 @@ fn global(site: Site, head: Part) -> Part {
                 },
             ],
         ),
-    ])
-}
-
-fn patterns(site: Site, head: Part) -> Part {
-    parts([
-        head,
-        lead(site, Doc::Style(StylePage::Patterns).leads()),
-        show(Snippet::Patterns),
-        table_of(
-            site,
-            L {
-                en: &["Pattern", "Lays out"],
-                ja: &["パターン", "並べ方"],
-            },
-            L {
-                en: &[
-                    &[
-                        "`stack(gap)`, `vstack(gap)`",
-                        "Children in a column, the second centered across it",
-                    ],
-                    &["`hstack(gap)`", "Children in a row, centered on its line"],
-                    &["`wrap(gap)`", "Children in rows that wrap onto new lines"],
-                    &[
-                        "`grid(columns, gap)`, `grid_item(columns)`",
-                        "A grid of equal columns, and a child spanning several",
-                    ],
-                    &[
-                        "`container(max, padding)`",
-                        "A block no wider than `max`, centered, with padding on both sides",
-                    ],
-                    &[
-                        "`center()`, `spacer()`",
-                        "Children centered on both axes, and an empty flex child that takes the free space",
-                    ],
-                    &[
-                        "`square(size)`, `circle(size)`, `aspect_ratio(ratio)`",
-                        "Boxes of a fixed shape",
-                    ],
-                    &["`divider(width, color)`", "A line across the box"],
-                    &[
-                        "`visually_hidden()`",
-                        "Hidden from sight but read by screen readers",
-                    ],
-                    &[
-                        "`link_overlay()`",
-                        "A link that covers its positioned ancestor, so a whole card is clickable",
-                    ],
-                ],
-                ja: &[
-                    &[
-                        "`stack(gap)`、`vstack(gap)`",
-                        "子を縦 1 列に並べ、`vstack` は横方向の中央に揃えます",
-                    ],
-                    &[
-                        "`hstack(gap)`",
-                        "子を横 1 行に並べ、行の中で縦の中央に揃えます",
-                    ],
-                    &[
-                        "`wrap(gap)`",
-                        "子を横に並べ、収まらない分を次の行に折り返します",
-                    ],
-                    &[
-                        "`grid(columns, gap)`、`grid_item(columns)`",
-                        "等しい幅の列のグリッドと、複数の列にまたがる子",
-                    ],
-                    &[
-                        "`container(max, padding)`",
-                        "幅が `max` を超えない中央寄せのブロックで、左右に余白があります",
-                    ],
-                    &[
-                        "`center()`、`spacer()`",
-                        "子を縦横の中央に置くボックスと、空いた場所を埋める空の flex の子",
-                    ],
-                    &[
-                        "`square(size)`、`circle(size)`、`aspect_ratio(ratio)`",
-                        "形の決まったボックス",
-                    ],
-                    &["`divider(width, color)`", "ボックスを横切る線"],
-                    &[
-                        "`visually_hidden()`",
-                        "画面には見えず、スクリーンリーダーには読まれる要素",
-                    ],
-                    &[
-                        "`link_overlay()`",
-                        "位置指定された祖先を覆うリンクで、カード全体をクリックできるようにします",
-                    ],
-                ],
-            },
-        ),
-        demo::show(site, Demo::Layout),
     ])
 }
 

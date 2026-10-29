@@ -91,7 +91,6 @@ snippets! {
     GroupPeer => "group_peer.rs";
     Tokens => "tokens.rs";
     GlobalRules => "global_rules.rs";
-    Patterns => "patterns.rs";
     Animation => "animation.rs";
     ViewTransitions => "view_transitions.rs";
     ViewTransitionStmt => "view_transition_stmt.rs";
@@ -298,6 +297,14 @@ snippets! {
     // The samples of the Style pages under Get started and Values.
     // The samples of the Style pages under Conditions, Tokens and themes, and Global styles.
     // The samples of the Style pages under Layout, Animation, and Opting out of type checks.
+    Stacks => "style/layout/stacks.rs";
+    StackResponsive => "style/layout/stack_responsive.rs";
+    StackGap => "style/layout/stack_gap.rs", "compile_fail,E0277";
+    Grids => "style/layout/grids.rs";
+    GridColumns => "style/layout/grid_columns.rs", "compile_fail,E0308";
+    GridSignal => "style/layout/grid_signal.rs";
+    Patterns => "style/layout/patterns.rs";
+    CircleSize => "style/layout/circle_size.rs", "compile_fail,E0308";
 }
 
 /// The lines of `snippet` that the page shows.
