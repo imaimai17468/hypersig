@@ -72,6 +72,22 @@ const RUST_KEYWORDS: &[&str] = &[
     "typeof", "unsafe", "unsized", "use", "virtual", "where", "while", "yield",
 ];
 
+/// Properties whose value type takes a number from `f64` alone, not `i32`,
+/// each with the paragraph its type's rustdoc adds. A unitless `line-height`
+/// multiplies the font size, so `line_height(16)` would write 16 times the
+/// font size where a reader most likely meant 16px; without `From<i32>` that
+/// call is a compile error whose help lists `From<Length>`,
+/// `From<Percentage>`, and `From<f64>`. Other types
+/// with a number and a length keep `From<i32>`, because there an integer means
+/// what it reads as: `flex(1)` is the grow factor, and a unitless
+/// `stroke-width` is in user units, which are pixels by default.
+const FLOAT_ONLY_NUMBERS: &[(&str, &str)] = &[(
+    "line-height",
+    "A number multiplies the element's font size and converts from `f64` only, \
+     so `line_height(16)` does not compile: write `px(16)` for a length, or \
+     `1.0` for a multiplier.",
+)];
+
 /// Pseudo-classes left out of `PseudoClass`, because a class on an element
 /// never matches them, each group with the reason the enum's rustdoc gives.
 /// `Page::render` writes `<html>` without a class, and the crate writes no
@@ -771,6 +787,9 @@ fn generate() -> (String, String) {
             assert!(type_names.insert(ty.clone()), "value type `{ty}` collides");
             let mut variants = BTreeSet::new();
             let _ = writeln!(enums, "/// A value of [`{name}`]({url}).");
+            if let Some((_, doc)) = FLOAT_ONLY_NUMBERS.iter().find(|(p, _)| *p == name) {
+                let _ = writeln!(enums, "///\n/// {doc}");
+            }
             enums.push_str("#[derive(Debug, Clone, PartialEq)]\n#[non_exhaustive]\n");
             let _ = writeln!(enums, "pub enum {ty} {{");
             for keyword in &keywords {
@@ -825,7 +844,10 @@ fn generate() -> (String, String) {
                     t = kind.type_name(),
                     v = kind.variant()
                 );
-                if *kind == Kind::Number && !has_integer {
+                if *kind == Kind::Number
+                    && !has_integer
+                    && !FLOAT_ONLY_NUMBERS.iter().any(|(p, _)| *p == name)
+                {
                     let _ = writeln!(
                         enums,
                         "impl From<i32> for {ty} {{\n    fn from(v: i32) -> Self {{\n        Self::Number(f64::from(v))\n    }}\n}}\n"

@@ -140,8 +140,8 @@ fn numbers(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A property that takes an integer, such as `order` or `z-index`, takes an `i32`. One that takes any number, such as `flex-grow`, takes `impl Into<f64>`, so an integer literal works too. A value enum with a `Number` variant, such as `FontWeight`, `LineHeight`, or `Opacity`, converts from `f64` and `i32`:",
-                ja: "`order` や `z-index` のように整数を取るプロパティは `i32` を受け取ります。`flex-grow` のように任意の数値を取るプロパティは `impl Into<f64>` を受け取るので、整数のリテラルも渡せます。`FontWeight`、`LineHeight`、`Opacity` のように `Number` バリアントを持つ値の列挙型は、`f64` と `i32` から変換できます。",
+                en: "A property that takes an integer, such as `order` or `z-index`, takes an `i32`. One that takes any number, such as `flex-grow`, takes `impl Into<f64>`, so an integer literal works too. A value enum with a `Number` variant, such as `FontWeight` or `Opacity`, converts from `f64` and `i32`. `LineHeight` converts from `f64` only, because an integer there reads as a length in pixels, as [Lengths and units](style/lengths/) shows:",
+                ja: "`order` や `z-index` のように整数を取るプロパティは `i32` を受け取ります。`flex-grow` のように任意の数値を取るプロパティは `impl Into<f64>` を受け取るので、整数のリテラルも渡せます。`FontWeight` や `Opacity` のように `Number` バリアントを持つ値の列挙型は、`f64` と `i32` から変換できます。`LineHeight` に渡す整数はピクセル単位の長さに見えるので、`LineHeight` は `f64` からしか変換できません。詳しくは[長さと単位](style/lengths/)で説明しています。",
             },
         ),
         show(Snippet::StyleNumbers),

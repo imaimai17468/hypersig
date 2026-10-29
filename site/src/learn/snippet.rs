@@ -304,6 +304,7 @@ snippets! {
     StyleNotice => "style/values/notice.rs";
     StyleLengths => "style/values/lengths.rs";
     StyleLengthBare => "style/values/length_bare.rs", "compile_fail,E0277";
+    StyleLineHeightInteger => "style/values/line_height_integer.rs", "compile_fail,E0277";
     StyleBorderPct => "style/values/border_pct.rs", "compile_fail,E0277";
     StyleLengthF32 => "style/values/length_f32.rs";
     StyleArticle => "style/values/article.rs";
