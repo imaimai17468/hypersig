@@ -958,4 +958,12 @@ mod tests {
             "#00256380"
         );
     }
+
+    #[test]
+    fn a_color_scheme_is_light_dark_or_both() {
+        use super::ColorScheme;
+        assert_eq!(ColorScheme::Light.to_string(), "light");
+        assert_eq!(ColorScheme::Dark.to_string(), "dark");
+        assert_eq!(ColorScheme::LightDark.to_string(), "light dark");
+    }
 }

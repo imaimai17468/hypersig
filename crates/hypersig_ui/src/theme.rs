@@ -1,6 +1,6 @@
 //! The page-wide rules and the dark theme.
 
-use hypersig::style::value::{FontFamily, LineHeight, quoted, raw};
+use hypersig::style::value::{ColorScheme, FontFamily, LineHeight, quoted};
 use hypersig::style::{Element, Global, Media, Selector, Style, Theme};
 
 use crate::token;
@@ -28,7 +28,10 @@ use crate::token;
 #[must_use]
 pub fn global() -> Global {
     Global::preflight()
-        .rule(Selector::Root, Style::new().color_scheme(raw("light dark")))
+        .rule(
+            Selector::Root,
+            Style::new().color_scheme(ColorScheme::LightDark),
+        )
         .rule(
             Element::Body,
             Style::new()
@@ -84,7 +87,7 @@ pub fn theme() -> Theme {
 #[must_use]
 pub fn dark() -> Style {
     token::dark().into_iter().fold(
-        Style::new().color_scheme(raw("dark")),
+        Style::new().color_scheme(ColorScheme::Dark),
         |style, (token, value)| style.token(&token, value),
     )
 }
@@ -96,7 +99,7 @@ pub fn dark() -> Style {
 #[must_use]
 pub fn light() -> Style {
     token::light().into_iter().fold(
-        Style::new().color_scheme(raw("light")),
+        Style::new().color_scheme(ColorScheme::Light),
         |style, (token, value)| style.token(&token, value),
     )
 }

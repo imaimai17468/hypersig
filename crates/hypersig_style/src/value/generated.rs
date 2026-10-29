@@ -2564,6 +2564,10 @@ pub enum BorderImage {
     Space,
     /// `stretch`.
     Stretch,
+    /// A percentage.
+    Percentage(Percentage),
+    /// A number.
+    Number(f64),
     /// A URL.
     Url(Url),
     /// Any other value, passed through unchecked.
@@ -2578,9 +2582,29 @@ impl fmt::Display for BorderImage {
             Self::Round => f.write_str("round"),
             Self::Space => f.write_str("space"),
             Self::Stretch => f.write_str("stretch"),
+            Self::Percentage(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Url(v) => v.fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Percentage> for BorderImage {
+    fn from(v: Percentage) -> Self {
+        Self::Percentage(v)
+    }
+}
+
+impl From<f64> for BorderImage {
+    fn from(v: f64) -> Self {
+        Self::Number(v)
+    }
+}
+
+impl From<i32> for BorderImage {
+    fn from(v: i32) -> Self {
+        Self::Number(f64::from(v))
     }
 }
 
@@ -2680,6 +2704,10 @@ impl From<Raw> for BorderImageRepeat {
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum BorderImageSlice {
+    /// A percentage.
+    Percentage(Percentage),
+    /// A number.
+    Number(f64),
     /// Any other value, passed through unchecked.
     Raw(Raw),
 }
@@ -2687,8 +2715,28 @@ pub enum BorderImageSlice {
 impl fmt::Display for BorderImageSlice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Percentage(v) => v.fmt(f),
+            Self::Number(v) => crate::value::number(*v).fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Percentage> for BorderImageSlice {
+    fn from(v: Percentage) -> Self {
+        Self::Percentage(v)
+    }
+}
+
+impl From<f64> for BorderImageSlice {
+    fn from(v: f64) -> Self {
+        Self::Number(v)
+    }
+}
+
+impl From<i32> for BorderImageSlice {
+    fn from(v: i32) -> Self {
+        Self::Number(f64::from(v))
     }
 }
 
@@ -4812,8 +4860,14 @@ impl From<Raw> for ColorInterpolationFilters {
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum ColorScheme {
+    /// `dark`.
+    Dark,
+    /// `light`.
+    Light,
     /// `normal`.
     Normal,
+    /// `light dark`.
+    LightDark,
     /// Any other value, passed through unchecked.
     Raw(Raw),
 }
@@ -4821,7 +4875,10 @@ pub enum ColorScheme {
 impl fmt::Display for ColorScheme {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Dark => f.write_str("dark"),
+            Self::Light => f.write_str("light"),
             Self::Normal => f.write_str("normal"),
+            Self::LightDark => f.write_str("light dark"),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -6714,6 +6771,8 @@ pub enum Display {
     InlineListItem,
     /// `inline-table`.
     InlineTable,
+    /// `list-item`.
+    ListItem,
     /// `none`.
     None,
     /// `ruby`.
@@ -6765,6 +6824,7 @@ impl fmt::Display for Display {
             Self::InlineGrid => f.write_str("inline-grid"),
             Self::InlineListItem => f.write_str("inline-list-item"),
             Self::InlineTable => f.write_str("inline-table"),
+            Self::ListItem => f.write_str("list-item"),
             Self::None => f.write_str("none"),
             Self::Ruby => f.write_str("ruby"),
             Self::RubyBase => f.write_str("ruby-base"),
@@ -15757,6 +15817,8 @@ impl From<Raw> for ScrollbarColor {
 pub enum ScrollbarGutter {
     /// `auto`.
     Auto,
+    /// `stable`.
+    Stable,
     /// Any other value, passed through unchecked.
     Raw(Raw),
 }
@@ -15765,6 +15827,7 @@ impl fmt::Display for ScrollbarGutter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Auto => f.write_str("auto"),
+            Self::Stable => f.write_str("stable"),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -17084,6 +17147,10 @@ impl From<Raw> for TextEmphasis {
 pub enum TextEmphasisPosition {
     /// `auto`.
     Auto,
+    /// `over`.
+    Over,
+    /// `under`.
+    Under,
     /// Any other value, passed through unchecked.
     Raw(Raw),
 }
@@ -17092,6 +17159,8 @@ impl fmt::Display for TextEmphasisPosition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Auto => f.write_str("auto"),
+            Self::Over => f.write_str("over"),
+            Self::Under => f.write_str("under"),
             Self::Raw(v) => v.fmt(f),
         }
     }
@@ -17193,6 +17262,10 @@ impl From<Raw> for TextFit {
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum TextIndent {
+    /// A length.
+    Length(Length),
+    /// A percentage.
+    Percentage(Percentage),
     /// Any other value, passed through unchecked.
     Raw(Raw),
 }
@@ -17200,8 +17273,22 @@ pub enum TextIndent {
 impl fmt::Display for TextIndent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Length(v) => v.fmt(f),
+            Self::Percentage(v) => v.fmt(f),
             Self::Raw(v) => v.fmt(f),
         }
+    }
+}
+
+impl From<Length> for TextIndent {
+    fn from(v: Length) -> Self {
+        Self::Length(v)
+    }
+}
+
+impl From<Percentage> for TextIndent {
+    fn from(v: Percentage) -> Self {
+        Self::Percentage(v)
     }
 }
 

@@ -1,5 +1,5 @@
 use hypersig::html::p;
-use hypersig::style::value::{Color, raw};
+use hypersig::style::value::{Color, ColorScheme};
 use hypersig::style::{Element, Global, Media, Selector, Style, Theme, Token};
 use hypersig::{Page, Signals};
 use serde::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ let html = Page::new("Blog", Blog {})
     .global(
         Global::new()
             // Scrollbars and form controls follow the system too.
-            .rule(Selector::Root, Style::new().color_scheme(raw("light dark")))
+            .rule(Selector::Root, Style::new().color_scheme(ColorScheme::LightDark))
             .rule(
                 Element::Body,
                 Style::new().background_color(background.var()).color(foreground.var()),

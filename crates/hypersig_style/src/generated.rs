@@ -2470,6 +2470,10 @@ impl Style {
     /// Sets [`border-image`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-image).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn border_image(self, value: impl Into<crate::value::BorderImage>) -> Self {
         self.with(Property::BorderImage, value.into().to_string())
@@ -2498,6 +2502,10 @@ impl Style {
     /// Sets [`border-image-slice`](https://developer.mozilla.org/docs/Web/CSS/Reference/Properties/border-image-slice).
     ///
     /// The single-value forms are typed. Any other value goes through [`Raw`](crate::value::Raw), which is passed to the browser unchecked.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is a number that is NaN or infinite, which CSS cannot write.
     #[must_use]
     pub fn border_image_slice(self, value: impl Into<crate::value::BorderImageSlice>) -> Self {
         self.with(Property::BorderImageSlice, value.into().to_string())

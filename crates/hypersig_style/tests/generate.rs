@@ -179,7 +179,7 @@ enum Atom {
 enum Node {
     Alt(Vec<Node>),
     AnyOrder(Vec<Node>),
-    All,
+    All(Vec<Node>),
     Seq(Vec<Node>),
     Repeat(Box<Node>, u32, u32),
     Keyword(String),
@@ -384,7 +384,7 @@ impl Parser {
         if items.len() == 1 {
             items.remove(0)
         } else {
-            Node::All
+            Node::All(items)
         }
     }
 
@@ -458,7 +458,7 @@ impl Data {
                 self.follow(name, &self.syntaxes, seen)
             }
             Node::PropertyRef(name) => self.follow(name, &self.properties, seen),
-            Node::Opaque | Node::All => Singles {
+            Node::Opaque => Singles {
                 atoms: BTreeSet::new(),
                 complete: false,
             },
@@ -485,7 +485,13 @@ impl Data {
                     complete: false,
                 }
             }
-            Node::Seq(items) => {
+            Node::All(_) if seen.iter().any(|s| OPAQUE_ALL.contains(&s.as_str())) => Singles {
+                atoms: BTreeSet::new(),
+                complete: false,
+            },
+            // Every operand of `&&` is required, as in a sequence, so one
+            // alone is a value only when the others are optional.
+            Node::Seq(items) | Node::All(items) => {
                 let required: Vec<&Node> = items
                     .iter()
                     .filter(|item| !matches!(item, Node::Repeat(_, 0, _)))
@@ -619,6 +625,21 @@ const EXPERIMENTAL: &[&str] = &[
 /// syntax.
 const ADDED_KEYWORDS: &[(&str, &str)] = &[("appearance", "base-select")];
 
+/// Syntaxes whose `&&` operands give no single value.
+///
+/// `<grid-line>` reads `<integer> && <custom-ident>?` alone as an integer,
+/// but line 0 does not exist, and the browser drops `grid-row: 0`. Its
+/// integer is left to `Raw`, so `grid_row(0)` does not compile.
+const OPAQUE_ALL: &[&str] = &["grid-line"];
+
+/// Values of several words that a property's enum holds as one variant, as
+/// (property, variant, CSS).
+///
+/// `color-scheme: light dark` tells the browser the page has both schemes,
+/// so its form controls and scrollbars follow the system's preference. It is
+/// the value a page with a dark theme sets on `:root`.
+const ADDED_VALUES: &[(&str, &str, &str)] = &[("color-scheme", "LightDark", "light dark")];
+
 fn is_generated(name: &str, value: &Value) -> bool {
     (is_standard(value) || EXPERIMENTAL.contains(&name)) && !name.starts_with('-')
 }
@@ -748,6 +769,11 @@ fn generate() -> (String, String) {
                 let _ = write!(syntax, " | {keyword}");
             }
         }
+        let added: Vec<(&str, &str)> = ADDED_VALUES
+            .iter()
+            .filter(|(property, _, _)| *property == name)
+            .map(|&(_, variant, css)| (variant, css))
+            .collect();
         let mut seen = vec![name.to_owned()];
         let singles = data.singles(&Parser::parse(&syntax), &mut seen);
         let keywords: Vec<&str> = singles
@@ -784,7 +810,8 @@ fn generate() -> (String, String) {
         // their own `From<Raw>`, and `f64` and `i32` take none. Every other
         // property takes a generated enum, which ends in `Raw` for such a
         // function and for the forms of more than one value.
-        let direct = keywords.is_empty() && singles.complete && kinds.len() == 1;
+        let direct =
+            keywords.is_empty() && added.is_empty() && singles.complete && kinds.len() == 1;
         let unchecked = if direct {
             ""
         } else {
@@ -813,6 +840,13 @@ fn generate() -> (String, String) {
                 assert!(variants.insert(variant.clone()), "{ty}::{variant} twice");
                 let _ = writeln!(enums, "    /// `{keyword}`.\n    {variant},");
             }
+            for (variant, css) in &added {
+                assert!(
+                    variants.insert((*variant).to_owned()),
+                    "{ty}::{variant} twice"
+                );
+                let _ = writeln!(enums, "    /// `{css}`.\n    {variant},");
+            }
             for kind in &kinds {
                 let variant = kind.variant();
                 assert!(variants.insert(variant.to_owned()), "{ty}::{variant} twice");
@@ -834,6 +868,12 @@ fn generate() -> (String, String) {
                     enums,
                     "            Self::{} => f.write_str(\"{keyword}\"),",
                     camel(keyword)
+                );
+            }
+            for (variant, css) in &added {
+                let _ = writeln!(
+                    enums,
+                    "            Self::{variant} => f.write_str(\"{css}\"),"
                 );
             }
             for kind in &kinds {

@@ -1,5 +1,5 @@
 use hypersig::html::{button, div};
-use hypersig::style::value::{Color, raw};
+use hypersig::style::value::{Color, ColorScheme};
 use hypersig::style::{Element, Global, Media, Style, Theme, Token};
 use hypersig::{Page, Signals};
 use serde::{Deserialize, Serialize};
@@ -21,11 +21,11 @@ let foreground = Token::new("foreground", Color::hex(0x0009_090b));
 let light = Style::new()
     .token(&background, Color::WHITE)
     .token(&foreground, Color::hex(0x0009_090b))
-    .color_scheme(raw("light"));
+    .color_scheme(ColorScheme::Light);
 let dark = Style::new()
     .token(&background, Color::hex(0x0009_090b))
     .token(&foreground, Color::hex(0x00fa_fafa))
-    .color_scheme(raw("dark"));
+    .color_scheme(ColorScheme::Dark);
 
 let scheme = App::scheme();
 let html = Page::new("App", App { scheme: Scheme::System })

@@ -1,0 +1,43 @@
+error[E0277]: the trait bound `hypersig::hypersig_style::value::GridRow: From<{integer}>` is not satisfied
+ --> tests/ui/fail/style_grid_line_integer.rs:8:35
+  |
+8 |     let _ = Style::new().grid_row(0);
+  |                          -------- ^ the trait `From<{integer}>` is not implemented for `hypersig::hypersig_style::value::GridRow`
+  |                          |
+  |                          required by a bound introduced by this call
+  |
+help: the trait `From<{integer}>` is not implemented for `hypersig::hypersig_style::value::GridRow`
+      but trait `From<hypersig::hypersig_style::value::Raw>` is implemented for it
+ --> $WORKSPACE/crates/hypersig_style/src/value/generated.rs
+  |
+  | impl From<Raw> for GridRow {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = help: for that trait implementation, expected `hypersig::hypersig_style::value::Raw`, found `{integer}`
+  = note: required for `{integer}` to implement `Into<hypersig::hypersig_style::value::GridRow>`
+note: required by a bound in `style::generated::<impl hypersig::hypersig_style::Style>::grid_row`
+ --> $WORKSPACE/crates/hypersig_style/src/generated.rs
+  |
+  |     pub fn grid_row(self, value: impl Into<crate::value::GridRow>) -> Self {
+  |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `style::generated::<impl Style>::grid_row`
+
+error[E0277]: the trait bound `hypersig::hypersig_style::value::GridRow: From<{integer}>` is not satisfied
+ --> tests/ui/fail/style_grid_line_integer.rs:9:35
+  |
+9 |     let _ = Style::new().grid_row(1);
+  |                          -------- ^ the trait `From<{integer}>` is not implemented for `hypersig::hypersig_style::value::GridRow`
+  |                          |
+  |                          required by a bound introduced by this call
+  |
+help: the trait `From<{integer}>` is not implemented for `hypersig::hypersig_style::value::GridRow`
+      but trait `From<hypersig::hypersig_style::value::Raw>` is implemented for it
+ --> $WORKSPACE/crates/hypersig_style/src/value/generated.rs
+  |
+  | impl From<Raw> for GridRow {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = help: for that trait implementation, expected `hypersig::hypersig_style::value::Raw`, found `{integer}`
+  = note: required for `{integer}` to implement `Into<hypersig::hypersig_style::value::GridRow>`
+note: required by a bound in `style::generated::<impl hypersig::hypersig_style::Style>::grid_row`
+ --> $WORKSPACE/crates/hypersig_style/src/generated.rs
+  |
+  |     pub fn grid_row(self, value: impl Into<crate::value::GridRow>) -> Self {
+  |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `style::generated::<impl Style>::grid_row`
