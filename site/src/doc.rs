@@ -234,9 +234,21 @@ pub enum StylePage {
 /// The pages of the i18n section.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum I18nPage {
+    // Get started
     Overview,
+    // Texts
+    Locale,
+    Texts,
+    Messages,
+    Formats,
+    // Pages in each language
     Pages,
+    LanguageSwitcher,
+    PageLanguage,
+    Alternates,
+    // Choosing the language
     Negotiation,
+    Redirect,
 }
 
 /// One of the sets of docs, each with its own header and landing
@@ -794,10 +806,37 @@ pub const I18N: &[Group] = &[
     },
     Group {
         title: L {
-            en: "Guides",
-            ja: "ガイド",
+            en: "Texts",
+            ja: "文と訳",
         },
-        docs: &[Doc::I18n(I18nPage::Pages), Doc::I18n(I18nPage::Negotiation)],
+        docs: &[
+            Doc::I18n(I18nPage::Locale),
+            Doc::I18n(I18nPage::Texts),
+            Doc::I18n(I18nPage::Messages),
+            Doc::I18n(I18nPage::Formats),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Pages in each language",
+            ja: "言語ごとのページ",
+        },
+        docs: &[
+            Doc::I18n(I18nPage::Pages),
+            Doc::I18n(I18nPage::LanguageSwitcher),
+            Doc::I18n(I18nPage::PageLanguage),
+            Doc::I18n(I18nPage::Alternates),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Choosing the language",
+            ja: "言語の選択",
+        },
+        docs: &[
+            Doc::I18n(I18nPage::Negotiation),
+            Doc::I18n(I18nPage::Redirect),
+        ],
     },
 ];
 
@@ -992,9 +1031,21 @@ impl Doc {
         // Style: Opting out of type checks
         Self::Style(StylePage::Unchecked),
         Self::I18nHome,
+        // i18n: Get started
         Self::I18n(I18nPage::Overview),
+        // i18n: Texts
+        Self::I18n(I18nPage::Locale),
+        Self::I18n(I18nPage::Texts),
+        Self::I18n(I18nPage::Messages),
+        Self::I18n(I18nPage::Formats),
+        // i18n: Pages in each language
         Self::I18n(I18nPage::Pages),
+        Self::I18n(I18nPage::LanguageSwitcher),
+        Self::I18n(I18nPage::PageLanguage),
+        Self::I18n(I18nPage::Alternates),
+        // i18n: Choosing the language
         Self::I18n(I18nPage::Negotiation),
+        Self::I18n(I18nPage::Redirect),
     ];
 
     /// The page's directory inside the site, ending in `/`, or `""` for the
@@ -1031,9 +1082,21 @@ impl Doc {
             Self::I18nHome => ("hypersig i18n", "hypersig i18n"),
             Self::UseCases => ("Use cases", "ユースケース"),
             Self::I18n(page) => match page {
+                // Get started
                 I18nPage::Overview => ("Overview", "概要"),
+                // Texts
+                I18nPage::Locale => ("The Locale trait", "Locale トレイト"),
+                I18nPage::Texts => ("Writing a text", "文を書く"),
+                I18nPage::Messages => ("Texts with values", "値を含む文"),
+                I18nPage::Formats => ("Plurals, numbers, and dates", "複数形、数値、日付"),
+                // Pages in each language
                 I18nPage::Pages => ("Pages in each language", "言語ごとのページ"),
+                I18nPage::LanguageSwitcher => ("Links to other languages", "ほかの言語へのリンク"),
+                I18nPage::PageLanguage => ("The language of the page", "ページの言語"),
+                I18nPage::Alternates => ("Alternate pages", "別の言語のページを示す"),
+                // Choosing the language
                 I18nPage::Negotiation => ("Choosing the language", "言語の選び方"),
+                I18nPage::Redirect => ("The redirect from /", "/ からのリダイレクト"),
             },
             Self::ComponentsHome => ("hypersig components", "hypersig components"),
             Self::Learn(page) => match page {
@@ -1656,13 +1719,48 @@ impl Doc {
                     en: "`hypersig_i18n` keeps a text and its translations together in one value, so a text missing a translation into any language fails to compile.",
                     ja: "`hypersig_i18n` は 1 つの文とその訳を 1 つの値にまとめて持ちます。そのため、どれかの言語の訳が欠けた文はコンパイルエラーになります。",
                 },
+                // Texts
+                I18nPage::Locale => L {
+                    en: "The `Locale` trait names the languages of an application and picks the text of one of them.",
+                    ja: "`Locale` トレイトはアプリケーションの言語を定め、そのうち 1 つの言語の文を選びます。",
+                },
+                I18nPage::Texts => L {
+                    en: "A text is a struct literal with one field per language, so a missing translation is a compile error.",
+                    ja: "文は言語ごとに 1 つのフィールドを持つ構造体のリテラルです。そのため、訳が欠けるとコンパイルエラーになります。",
+                },
+                I18nPage::Messages => L {
+                    en: "A text that takes values is a function per language, so its arguments have the same types in every translation.",
+                    ja: "値を受け取る文は言語ごとの関数です。そのため、引数の型はどの訳でも同じになります。",
+                },
+                I18nPage::Formats => L {
+                    en: "Plural forms and the formats of numbers and dates come from `hypersig`, chosen per language.",
+                    ja: "複数形と、数値や日付の書式には `hypersig` の機能を使い、言語ごとに選びます。",
+                },
+                // Pages in each language
                 I18nPage::Pages => L {
                     en: "The language is the first segment of each page's route, so the page in another language is the same route with only the language changed.",
                     ja: "言語は各ページのルートの最初のセグメントに置きます。そのため、別の言語のページは言語だけを変えた同じルートになります。",
                 },
+                I18nPage::LanguageSwitcher => L {
+                    en: "A link to the same page in another language is a link to the same route with only the language changed, so the route checks it like any other link.",
+                    ja: "同じページの別の言語へのリンクは、言語だけを変えた同じルートへのリンクです。そのため、ルートはほかのリンクと同じようにこのリンクを検査します。",
+                },
+                I18nPage::PageLanguage => L {
+                    en: "`Page::lang` writes the page's language into `<html lang>`, which the browser and screen readers read to show and speak the text.",
+                    ja: "`Page::lang` はページの言語を `<html lang>` に書きます。ブラウザとスクリーンリーダーは、文を表示したり読み上げたりするときにこの属性を読みます。",
+                },
+                I18nPage::Alternates => L {
+                    en: "`LocalePage::alternates` writes the page's address in every language into `<head>`, so a search engine shows each searcher the page in their language.",
+                    ja: "`LocalePage::alternates` は、ページの各言語のアドレスを `<head>` に書きます。検索エンジンはこれを読み、検索した人にその人の言語のページを示します。",
+                },
+                // Choosing the language
                 I18nPage::Negotiation => L {
-                    en: "A visitor who opens `/` is redirected to the page in the language their browser asks for.",
-                    ja: "`/` を開いた訪問者を、ブラウザが求める言語のページへリダイレクトします。",
+                    en: "`negotiate` reads the `Accept-Language` header a browser sends and returns the variant of the language enum that matches it best.",
+                    ja: "`negotiate` はブラウザが送る `Accept-Language` ヘッダーを読み、言語の enum のバリアントから最も合うものを返します。",
+                },
+                I18nPage::Redirect => L {
+                    en: "With the `axum` feature, `redirect_to_locale` answers `GET /` with a redirect to the page in the visitor's language.",
+                    ja: "`axum` の feature を有効にすると、`redirect_to_locale` は `GET /` に対して訪問者の言語のページへのリダイレクトを返します。",
                 },
             },
             Self::Components(page) => match page {
@@ -1972,9 +2070,21 @@ impl Doc {
 impl I18nPage {
     fn slug(self) -> &'static str {
         match self {
+            // Get started
             Self::Overview => "overview",
+            // Texts
+            Self::Locale => "locale",
+            Self::Texts => "texts",
+            Self::Messages => "messages",
+            Self::Formats => "formats",
+            // Pages in each language
             Self::Pages => "pages",
+            Self::LanguageSwitcher => "language-switcher",
+            Self::PageLanguage => "page-language",
+            Self::Alternates => "alternates",
+            // Choosing the language
             Self::Negotiation => "negotiation",
+            Self::Redirect => "redirect",
         }
     }
 }

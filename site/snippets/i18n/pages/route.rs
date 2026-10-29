@@ -9,10 +9,8 @@
 #     type Text<T> = ByLang<T>;
 #     fn pick<T>(self, text: ByLang<T>) -> T { match self { Self::En => text.en, Self::Ja => text.ja } }
 # }
-// `Lang` and `ByLang` are the ones the Overview declares.
-# use hypersig::Signals;
-use hypersig::html::a;
-use hypersig::{Page, Route};
+// `Lang` is a `Locale` enum with the variants `En` and `Ja`, and `ByLang` its text struct.
+use hypersig::{Page, Route, Signals};
 
 #[derive(Signals, Serialize, Deserialize)]
 struct Profile {
@@ -21,17 +19,18 @@ struct Profile {
 
 hypersig::routes! {
     fn pages(Router<()>);
-    // The language is the first segment of every page.
     const MEMBER: Route<(Lang, i32)> = "/{lang}/members/{id}" => member;
 }
 
-async fn member((): (), (lang, id): (Lang, i32)) -> Page<Profile> {
-    let other = if lang == Lang::En { Lang::Ja } else { Lang::En };
-    Page::new(lang.pick(ByLang { en: "Member", ja: "メンバー" }), Profile { name: "Ada".to_owned() })
-        .lang(lang.tag())
-        // The same page in the other language is the same route with another locale.
-        .child(a().href(MEMBER.link_with((&other, id))).text(other.pick(ByLang { en: "English", ja: "日本語" })))
+async fn member((): (), (lang, id): (Lang, i32)) -> Option<Page<Profile>> {
+    let name = match id {
+        7 => "Ada",
+        _ => return None,
+    };
+    let title = lang.pick(ByLang { en: "Member", ja: "メンバー" });
+    Some(Page::new(title, Profile { name: name.to_owned() }))
 }
 
+assert_eq!(MEMBER.url((Lang::En, 7)).as_str(), "/en/members/7");
 assert_eq!(MEMBER.url((Lang::Ja, 7)).as_str(), "/ja/members/7");
 # let _ = pages;
