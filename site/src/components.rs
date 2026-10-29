@@ -255,8 +255,8 @@ fn theming(site: Site) -> Part {
         note(
             site,
             L {
-                en: "The tokens are plain values of `hypersig::style`. [Tokens and themes](style/tokens/) covers how they are written to the page.",
-                ja: "トークンは `hypersig::style` の普通の値です。トークンをページに書き出す方法は、[トークンとテーマ](style/tokens/) で説明しています。",
+                en: "The tokens are plain values of `hypersig::style`. [Tokens](style/tokens/) and [Themes](style/themes/) cover how they are written to the page.",
+                ja: "トークンは `hypersig::style` の普通の値です。トークンをページに書き出す方法は、[トークン](style/tokens/) と [テーマ](style/themes/) で説明しています。",
             },
         ),
     ])

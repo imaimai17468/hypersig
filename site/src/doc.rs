@@ -179,7 +179,6 @@ pub enum StylePage {
     Containers,
     GroupAndPeer,
     Toggled,
-    Conditions,
     // Tokens and themes
     Tokens,
     Themes,
@@ -675,7 +674,6 @@ pub const STYLE: &[Group] = &[
             Doc::Style(StylePage::Containers),
             Doc::Style(StylePage::GroupAndPeer),
             Doc::Style(StylePage::Toggled),
-            Doc::Style(StylePage::Conditions),
         ],
     },
     Group {
@@ -886,7 +884,6 @@ impl Doc {
         Self::Style(StylePage::Containers),
         Self::Style(StylePage::GroupAndPeer),
         Self::Style(StylePage::Toggled),
-        Self::Style(StylePage::Conditions),
         // Style: Tokens and themes
         Self::Style(StylePage::Tokens),
         Self::Style(StylePage::Themes),
@@ -1113,7 +1110,6 @@ impl Doc {
                     "Styles switched by a signal",
                     "シグナルで切り替えるスタイル",
                 ),
-                StylePage::Conditions => ("Conditions", "条件"),
                 // Tokens and themes
                 StylePage::Tokens => ("Tokens", "トークン"),
                 StylePage::Themes => ("Themes", "テーマ"),
@@ -1432,28 +1428,52 @@ impl Doc {
                 | StylePage::UrlsAndStrings
                 | StylePage::Keywords => Doc::Style(StylePage::Values).leads(),
                 // Conditions
-                StylePage::PseudoClasses
-                | StylePage::PseudoElements
-                | StylePage::Media
-                | StylePage::Containers
-                | StylePage::GroupAndPeer
-                | StylePage::Toggled => Doc::Style(StylePage::Conditions).leads(),
-                StylePage::Conditions => L {
-                    en: "`Style::on` applies part of a style only under a condition. The condition can be a pseudo-class, a media feature, a container width, or the state of a marked ancestor or sibling.",
-                    ja: "`Style::on` はスタイルの一部を条件の下でだけ適用します。条件には擬似クラス、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態を使えます。",
+                StylePage::PseudoClasses => L {
+                    en: "`Style::on` with a `PseudoClass` applies part of a style only while the element is hovered, focused, checked, disabled, or in another state CSS names.",
+                    ja: "`PseudoClass` を渡した `Style::on` は、要素がホバー、フォーカス、チェック、無効など、CSS が名前を付けた状態にある間だけスタイルの一部を適用します。",
+                },
+                StylePage::PseudoElements => L {
+                    en: "`Style::pseudo` styles a part of an element that is not an element of its own, such as `::before`, `::placeholder`, or the marker of a list item.",
+                    ja: "`Style::pseudo` は、`::before`、`::placeholder`、リスト項目のマーカーのように、それ自体は要素ではない要素の一部にスタイルを付けます。",
+                },
+                StylePage::Media => L {
+                    en: "A `Media` applies part of a style from a viewport width up, or under a user setting such as a dark color scheme or reduced motion.",
+                    ja: "`Media` は、ビューポートが一定の幅以上のときや、ダークの配色、動きを減らす設定のようなユーザーの設定の下で、スタイルの一部を適用します。",
+                },
+                StylePage::Containers => L {
+                    en: "A `Container` applies part of a style from a width of the nearest query container up, so a component follows the space it is placed in.",
+                    ja: "`Container` は、いちばん近いクエリコンテナが一定の幅以上のときにスタイルの一部を適用します。そのため、コンポーネントは置かれた場所の広さに合わせて変わります。",
+                },
+                StylePage::GroupAndPeer => L {
+                    en: "`Condition::Group` and `Condition::Peer` apply a style while a marked ancestor, or a marked sibling before the element, matches a pseudo-class.",
+                    ja: "`Condition::Group` と `Condition::Peer` は、印を付けた祖先や、要素より前にある印を付けた兄弟が擬似クラスに当てはまる間だけスタイルを適用します。",
+                },
+                StylePage::Toggled => L {
+                    en: "`css_when` and `css_match` add a style while an expression over the signals holds. The browser switches it without a request to the server.",
+                    ja: "`css_when` と `css_match` は、シグナルから作る式が成り立つ間だけスタイルを追加します。切り替えはブラウザが行い、サーバーへのリクエストは発生しません。",
                 },
                 // Tokens and themes
                 StylePage::Tokens => L {
                     en: "A token is a named value written as a CSS custom property. A theme sets its value for the whole page, and a style sets it for one element.",
                     ja: "トークンは CSS のカスタムプロパティとして書かれる名前付きの値です。テーマはページ全体に、スタイルは 1 つの要素にトークンの値を設定します。",
                 },
-                StylePage::Themes | StylePage::DarkMode => Doc::Style(StylePage::Tokens).leads(),
+                StylePage::Themes => L {
+                    en: "A `Theme` sets the values of tokens on `:root` for the whole page, with other values under media conditions such as dark mode or print.",
+                    ja: "`Theme` は、ページ全体のトークンの値を `:root` に設定します。ダークモードや印刷のようなメディアの条件の下では、別の値を設定できます。",
+                },
+                StylePage::DarkMode => L {
+                    en: "Dark mode is a second set of values for the same tokens, applied while the system prefers dark or while a signal holds the visitor's choice.",
+                    ja: "ダークモードは同じトークンに対する 2 つ目の値の組です。システムがダークを選んでいる間か、訪問者が選んだ配色をシグナルが持っている間に適用されます。",
+                },
                 // Global styles
                 StylePage::Global => L {
-                    en: "A `Global` holds rules that select elements by tag, a small reset, and the fonts the page loads.",
-                    ja: "`Global` には、タグで要素を選ぶルール、小さなリセット、ページが読み込むフォントが入ります。",
+                    en: "A `Global` holds rules that select elements by tag, and can start from a small reset.",
+                    ja: "`Global` はタグで要素を選ぶルールを持ち、小さなリセットから始めることもできます。",
                 },
-                StylePage::Fonts => Doc::Style(StylePage::Global).leads(),
+                StylePage::Fonts => L {
+                    en: "A `FontFace` loads a font file with `@font-face`, and its `family()` is the value a `font-family` declaration takes.",
+                    ja: "`FontFace` はフォントのファイルを `@font-face` で読み込みます。その `family()` は `font-family` の宣言に渡す値です。",
+                },
                 // Layout
                 StylePage::Patterns => L {
                     en: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) has functions that return the styles of common layouts. Merge the returned style with your own.",
@@ -1747,7 +1767,6 @@ impl StylePage {
             Self::Containers => "containers",
             Self::GroupAndPeer => "group-and-peer",
             Self::Toggled => "toggled",
-            Self::Conditions => "conditions",
             // Tokens and themes
             Self::Tokens => "tokens",
             Self::Themes => "themes",

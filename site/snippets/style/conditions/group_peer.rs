@@ -1,7 +1,7 @@
 use hypersig::html::{a, div, input, label, span, attr};
 use hypersig::style::value::{Color, Opacity};
 use hypersig::style::{Condition, PseudoClass, Style};
-use hypersig::{SafeUrl, Signals};
+use hypersig::{Page, SafeUrl, Signals};
 use serde::{Deserialize, Serialize};
 
 #[derive(Signals, Serialize, Deserialize)]
@@ -32,4 +32,8 @@ let agree = label::<Settings>()
             .css(Style::new().on(Condition::Peer(PseudoClass::Checked), Style::new().color(Color::GREEN)))
             .text("I agree"),
     );
-# let _ = div::<Settings>().child(card).child(agree);
+# let html = Page::new("Settings", Settings { agreed: false })
+#     .child(div().child(card).child(agree))
+#     .render();
+# assert!(html.contains(":hover .group-hover\\:opacity_1{opacity:1}"));
+# assert!(html.contains(":checked ~ .peer-checked\\:color_green{color:green}"));
