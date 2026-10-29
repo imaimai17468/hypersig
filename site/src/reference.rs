@@ -634,8 +634,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "children",
                             "html/struct.El.html#method.children",
                             L {
-                                en: "Appends several children. An `Option` counts as zero or one child.",
-                                ja: "複数の子を追加します。`Option` は 0 個か 1 個の子として数えます。",
+                                en: "Appends several children.",
+                                ja: "複数の子を追加します。",
                             },
                         ),
                         (
@@ -903,8 +903,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "on",
                             "html/struct.El.html#method.on",
                             L {
-                                en: "Runs `stmt` on `event`. When `on` is called twice for the same event, the second statement runs after the first.",
-                                ja: "`event` が起きると `stmt` を実行します。同じイベントで 2 回呼ぶと、2 回目の文は 1 回目の文の後に実行されます。",
+                                en: "Runs `stmt` on `event`.",
+                                ja: "`event` が起きると `stmt` を実行します。",
                             },
                         ),
                         (
@@ -951,8 +951,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "on_blur",
                             "html/struct.El.html#method.on_blur",
                             L {
-                                en: "Runs `stmt` when focus leaves the element.",
-                                ja: "フォーカスが要素から外れたときに `stmt` を実行します。",
+                                en: "Runs `stmt` when focus leaves the element and everything inside it.",
+                                ja: "フォーカスが要素とその中のすべてから外れたときに `stmt` を実行します。",
                             },
                         ),
                         (
@@ -2241,8 +2241,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                         "IntoStmt",
                         "trait.IntoStmt.html",
                         L {
-                            en: "Converts a value into a statement, as `Call` does.",
-                            ja: "`Call` と同じように、値を文に変換します。",
+                            en: "Conversion into a `Stmt` over `S`.",
+                            ja: "`S` に対する `Stmt` への変換です。",
                         },
                     ),
                 ],
@@ -2937,8 +2937,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "SignalPatch::and",
                             "struct.SignalPatch.html#method.and",
                             L {
-                                en: "Adds the values in `other`. A signal present in both takes `other`'s value.",
-                                ja: "`other` の値を加えます。両方にあるシグナルは `other` の値になります。",
+                                en: "Adds the values in `other`.",
+                                ja: "`other` の値を加えます。",
                             },
                         ),
                         (
@@ -3288,8 +3288,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "PageResponse",
                             "struct.PageResponse.html",
                             L {
-                                en: "What a page handler returns: a page, a page with a status, a redirect, or a 404.",
-                                ja: "ページのハンドラが返す値です。ページ、ステータスを付けたページ、リダイレクト、404 のいずれかです。",
+                                en: "What a page handler returns.",
+                                ja: "ページのハンドラが返す値です。",
                             },
                         ),
                         (
@@ -3460,8 +3460,8 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             "UploadedFile",
                             "struct.UploadedFile.html",
                             L {
-                                en: "One file of an upload, read into memory: its name, media type, and bytes.",
-                                ja: "メモリに読み込んだ、アップロードの 1 つのファイルです。名前、メディアタイプ、中身を持ちます。",
+                                en: "One file of an upload, read into memory.",
+                                ja: "メモリに読み込んだ、アップロードの 1 つのファイルです。",
                             },
                         ),
                         (
