@@ -152,8 +152,8 @@ pub fn page(site: Site, head: Part) -> Part {
                     ja: "ファイルが存在するかどうかは検査しません。ファイルを読み込んでいる間と、読み込めなかった場合はその後もずっと、`font-display: swap` によってテキストは並びの次のフォントか、ブラウザの既定のフォントで表示されます。",
                 },
                 L {
-                    en: "`weights` does not check its range. `weights(900, 100)` compiles, and so does a weight above 1000, outside the 1 to 1000 that CSS allows, which makes the browser drop the `font-weight` descriptor.",
-                    ja: "`weights` は範囲を検査しません。`weights(900, 100)` もコンパイルが通り、CSS が認める 1 から 1000 の外にある 1000 を超える太さも通ります。範囲の外の太さがあると、ブラウザは `font-weight` の記述子を捨てます。",
+                    en: "The weight range, at run time. `weights` panics where it is called on a range in reverse, such as `weights(900, 100)`, or on a weight outside the 1 to 1000 that CSS allows. It is not a `const fn`, so this is a panic when the line runs, not a compile error.",
+                    ja: "太さの範囲（実行時）。`weights` は、`weights(900, 100)` のような逆向きの範囲や、CSS が認める 1 から 1000 の外にある太さを受け取ると、呼んだところで panic します。`const fn` ではないので、これはコンパイルエラーではなく、その行を実行したときの panic です。",
                 },
                 L {
                     en: "The browser downloads a font only when text on the page uses its family. A `FontFace` that no rule or style names costs nothing, and nothing reports it.",

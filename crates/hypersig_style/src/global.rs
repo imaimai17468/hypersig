@@ -114,8 +114,17 @@ impl FontFace {
     ///
     /// This is how a variable font declares them. One weight is `weights(400,
     /// 400)`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `min` is over `max`, or either is outside the 1 to 1000
+    /// that CSS allows, where the browser would drop the descriptor.
     #[must_use]
     pub fn weights(mut self, min: u16, max: u16) -> Self {
+        assert!(
+            (1..=1000).contains(&min) && (1..=1000).contains(&max) && min <= max,
+            "font weights run from 1 to 1000 with min <= max, not {min} to {max}"
+        );
         self.weight = Some((min, max));
         self
     }
@@ -359,5 +368,23 @@ mod tests {
         assert!(css.ends_with(
             "@font-face{font-family:\"Inter\";src:url(\"/inter.woff2\");font-display:swap;font-weight:100 900}"
         ));
+    }
+
+    #[test]
+    #[should_panic(expected = "font weights run from 1 to 1000 with min <= max, not 900 to 100")]
+    fn weights_in_reverse_panic() {
+        let _ = FontFace::new("Inter", url("/inter.woff2")).weights(900, 100);
+    }
+
+    #[test]
+    #[should_panic(expected = "not 100 to 1200")]
+    fn a_weight_above_1000_panics() {
+        let _ = FontFace::new("Inter", url("/inter.woff2")).weights(100, 1200);
+    }
+
+    #[test]
+    #[should_panic(expected = "not 0 to 400")]
+    fn a_weight_of_0_panics() {
+        let _ = FontFace::new("Inter", url("/inter.woff2")).weights(0, 400);
     }
 }
