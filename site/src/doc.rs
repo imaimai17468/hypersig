@@ -855,7 +855,7 @@ impl Doc {
                 // Browser state
                 Learn::Signals => ("Signals", "シグナル"),
                 Learn::NestedSignals => ("Signals inside signals", "入れ子のシグナル"),
-                Learn::Expressions => ("Expressions and statements", "式と文"),
+                Learn::Expressions => ("Expressions", "式"),
                 Learn::Statements => ("Statements", "文"),
                 Learn::Events => ("Events", "イベント"),
                 Learn::BindingInputs => ("Binding form controls", "入力欄の束縛"),
@@ -1031,22 +1031,42 @@ impl Doc {
                     en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
                     ja: "ページの状態は Rust の構造体 1 つで表し、シグナルはそのフィールド 1 つを指す型付きの参照です。",
                 },
-                Learn::NestedSignals => Doc::Learn(Learn::Signals).leads(),
-                Learn::Expressions => L {
-                    en: "An expression computes a value from the signals, and a statement changes them. Both are Rust values that the browser receives as JSON.",
-                    ja: "式はシグナルから値を計算し、文はシグナルを変更します。どちらも Rust の値で、ブラウザは JSON として受け取ります。",
+                Learn::NestedSignals => L {
+                    en: "A field can hold a struct, an `Option`, or the state of a component, and `at` reaches the fields inside it.",
+                    ja: "フィールドには構造体、`Option`、部品の状態を持たせられ、その中のフィールドへは `at` でたどります。",
                 },
-                Learn::Statements | Learn::Events | Learn::BindingInputs => {
-                    Doc::Learn(Learn::Expressions).leads()
-                }
-                Learn::ComputedSignals | Learn::PersistedSignals => {
-                    Doc::Learn(Learn::Signals).leads()
-                }
+                Learn::Expressions => L {
+                    en: "An expression computes a value from the signals. The browser evaluates it, and the server evaluates it for the first HTML.",
+                    ja: "式はシグナルから値を計算します。ブラウザが式を評価し、最初の HTML のためにはサーバーも評価します。",
+                },
+                Learn::Statements => L {
+                    en: "A statement changes the signals in the browser, without a request. Statements run in order and branch on expressions.",
+                    ja: "文は、リクエストを送らずにブラウザでシグナルを変更します。文は順に実行され、式で分岐します。",
+                },
+                Learn::Events => L {
+                    en: "Each event method writes a statement into an attribute of the element, and the runtime runs it on that DOM event or key.",
+                    ja: "イベントのメソッドは文を要素の属性に書き込み、ランタイムはその DOM のイベントやキーで文を実行します。",
+                },
+                Learn::BindingInputs => L {
+                    en: "`bind`, `bind_radio`, and `bind_select` keep a form control and a signal equal in both directions.",
+                    ja: "`bind`、`bind_radio`、`bind_select` は、フォームの入力欄とシグナルを双方向に一致させます。",
+                },
+                Learn::ComputedSignals => L {
+                    en: "A computed signal is a field the browser keeps equal to an expression. Writing one is a compile error.",
+                    ja: "計算シグナルは、ブラウザが式の値に保ち続けるフィールドです。書き込もうとするとコンパイルエラーになります。",
+                },
+                Learn::PersistedSignals => L {
+                    en: "`Page::persist` keeps a signal in `localStorage`, so the next page load starts from the visitor's last value.",
+                    ja: "`Page::persist` はシグナルを `localStorage` に保存し、次にページを読み込むときは訪問者が最後に選んだ値から始めます。",
+                },
                 Learn::Lists => L {
                     en: "A `Vec` field is a list. `each` renders an element per item in the browser, and list statements change it without a request.",
                     ja: "`Vec` のフィールドはリストです。`each` はブラウザで項目ごとに要素を描画し、リストの文はリクエストを送らずにリストを変更します。",
                 },
-                Learn::ListItems => Doc::Learn(Learn::Lists).leads(),
+                Learn::ListItems => L {
+                    en: "A field of a list item is a signal whose path starts at the item. The server cannot patch it, and state the browser keeps per item belongs at the page's root.",
+                    ja: "リスト項目のフィールドは、パスが項目から始まるシグナルです。サーバーはこれを差分で変えられず、ブラウザが項目ごとに持つ状態はページの構造体の直下に置きます。",
+                },
                 // Talking to the server
                 Learn::Actions
                 | Learn::CallStatus
