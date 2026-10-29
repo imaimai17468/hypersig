@@ -1,5 +1,4 @@
-//! A clock the server pushes over a stream, for the page on talking to the
-//! server.
+//! A clock the server pushes over a stream, for the page on streams.
 
 use std::time::Duration;
 

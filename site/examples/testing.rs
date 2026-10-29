@@ -62,7 +62,7 @@ async fn main() -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use axum::body::Body;
-    use axum::http::Request;
+    use axum::http::{HeaderValue, Request};
     use http_body_util::BodyExt as _;
     use tower::ServiceExt as _;
 
@@ -102,6 +102,16 @@ mod tests {
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let expected = Patches::from(Votes::likes().patch(3)).to_event_stream();
         assert_eq!(body, expected.as_bytes());
+    }
+
+    #[tokio::test]
+    async fn a_call_from_another_site_is_refused() {
+        let mut request = LIKE.request(&3);
+        request
+            .headers_mut()
+            .insert("sec-fetch-site", HeaderValue::from_static("cross-site"));
+        let response = app(Likes::default()).oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
     }
 
     #[tokio::test]

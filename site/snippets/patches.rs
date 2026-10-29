@@ -16,5 +16,5 @@ let both: Patches<Inbox> = Inbox::unread()
     .and(Inbox::status().patch("3 new messages".to_owned()))
     .into();
 
-assert!(both.to_event_stream().starts_with("event: hs-signals"));
-# let _ = one;
+assert_eq!(both.value_of(Inbox::unread()), Some(3));
+assert_eq!(one.value_of(Inbox::status()), None);

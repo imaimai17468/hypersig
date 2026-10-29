@@ -181,8 +181,8 @@ fn host(site: Site) -> Part {
             site,
             &[
                 L {
-                    en: "A stream holds its request open for as long as it sends patches. A host that ends a request after a time limit closes the stream at that limit, and a call with [`reconnect()`](learn/server/) opens it again after 1 second. On Cloud Run, with its default timeout of 300 seconds, a stream that sent the time every second closed after 303 seconds and opened again. Raise the limit with `--timeout` so the page reconnects less often.",
-                    ja: "ストリームはパッチを送るあいだリクエストを開いたままにします。リクエストを一定の時間で終えるホストでは、その時間でストリームが切れます。[`reconnect()`](learn/server/) を付けた呼び出しは、切れたストリームを 1 秒後に開き直します。既定のタイムアウトが 300 秒の Cloud Run で確かめると、1 秒ごとに時刻を送るストリームは 303 秒で切れ、開き直りました。ページがつなぎ直す回数を減らすには、`--timeout` で上限を延ばしてください。",
+                    en: "A stream holds its request open for as long as it sends patches. A host that ends a request after a time limit closes the stream at that limit, and a call with [`reconnect()`](learn/streams/) opens it again after 1 second. On Cloud Run, with its default timeout of 300 seconds, a stream that sent the time every second closed after 303 seconds and opened again. Raise the limit with `--timeout` so the page reconnects less often.",
+                    ja: "ストリームはパッチを送るあいだリクエストを開いたままにします。リクエストを一定の時間で終えるホストでは、その時間でストリームが切れます。[`reconnect()`](learn/streams/) を付けた呼び出しは、切れたストリームを 1 秒後に開き直します。既定のタイムアウトが 300 秒の Cloud Run で確かめると、1 秒ごとに時刻を送るストリームは 303 秒で切れ、開き直りました。ページがつなぎ直す回数を減らすには、`--timeout` で上限を延ばしてください。",
                 },
                 L {
                     en: "State kept in memory, such as a counter in the router's state, belongs to one process. When the host runs more than one instance, keep that state in a database, as [Storing data](learn/database/) shows.",

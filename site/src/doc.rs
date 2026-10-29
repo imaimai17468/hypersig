@@ -31,28 +31,75 @@ pub enum Doc {
 /// The pages of the Learn section, a guide read from top to bottom.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Learn {
-    Why,
+    // Get started
     QuickStart,
-    DescribingThePage,
-    Signals,
-    Expressions,
-    Lists,
-    Server,
-    Forms,
-    Requests,
-    Sessions,
-    Database,
-    Api,
-    Pages,
+    Why,
+    DevServer,
+    // Building the page
+    Elements,
+    ThePage,
+    Bindings,
+    Components,
     Styling,
-    EscapeHatches,
+    // Browser state
+    Signals,
+    NestedSignals,
+    Expressions,
+    Statements,
+    Events,
+    BindingInputs,
+    ComputedSignals,
+    PersistedSignals,
+    Lists,
+    ListItems,
+    // Talking to the server
+    Actions,
+    CallStatus,
+    Optimistic,
+    OverlappingCalls,
+    Patches,
+    ListPatches,
+    Fragments,
+    Streams,
+    // Pages and routing
+    Routes,
+    Links,
+    ChildPages,
+    SearchParams,
+    ErrorPages,
+    BasePath,
+    // Forms and requests
+    Forms,
+    FormValidation,
+    Requests,
+    Errors,
+    Uploads,
+    // Data and sign-in
+    Database,
+    DatabaseWithoutSql,
+    CheckedSql,
+    HostedDatabases,
+    DatabaseHosts,
+    Api,
+    Sessions,
+    MembersOnly,
+    SessionCookie,
+    SessionStores,
+    // Browser features
+    NodeRefs,
+    Timers,
+    Keyboard,
     JavaScript,
+    UncheckedValues,
+    StaticPages,
+    // Quality and operations
     Security,
     Testing,
-    Troubleshooting,
+    TestingPages,
+    CompileErrors,
+    Debugging,
     Upgrading,
-    CallsInDepth,
-    RoutesInDepth,
+    // Deploy
     Deploying,
     DeployContainer,
     DeployCloudflare,
@@ -271,42 +318,130 @@ pub const LEARN: &[Group] = &[
             en: "Get started",
             ja: "はじめに",
         },
-        docs: &[Doc::Learn(Learn::QuickStart), Doc::Learn(Learn::Why)],
-    },
-    Group {
-        title: L {
-            en: "Learn hypersig",
-            ja: "hypersig を学ぶ",
-        },
         docs: &[
-            Doc::Learn(Learn::DescribingThePage),
-            Doc::Learn(Learn::Signals),
-            Doc::Learn(Learn::Expressions),
-            Doc::Learn(Learn::Lists),
-            Doc::Learn(Learn::Server),
-            Doc::Learn(Learn::Forms),
-            Doc::Learn(Learn::Requests),
-            Doc::Learn(Learn::Sessions),
-            Doc::Learn(Learn::Database),
-            Doc::Learn(Learn::Api),
-            Doc::Learn(Learn::Pages),
-            Doc::Learn(Learn::Styling),
-            Doc::Learn(Learn::EscapeHatches),
-            Doc::Learn(Learn::JavaScript),
-            Doc::Learn(Learn::Security),
-            Doc::Learn(Learn::Testing),
-            Doc::Learn(Learn::Troubleshooting),
-            Doc::Learn(Learn::Upgrading),
+            Doc::Learn(Learn::QuickStart),
+            Doc::Learn(Learn::Why),
+            Doc::Learn(Learn::DevServer),
         ],
     },
     Group {
         title: L {
-            en: "In depth",
-            ja: "詳しく知る",
+            en: "Building the page",
+            ja: "ページを組み立てる",
         },
         docs: &[
-            Doc::Learn(Learn::CallsInDepth),
-            Doc::Learn(Learn::RoutesInDepth),
+            Doc::Learn(Learn::Elements),
+            Doc::Learn(Learn::ThePage),
+            Doc::Learn(Learn::Bindings),
+            Doc::Learn(Learn::Components),
+            Doc::Learn(Learn::Styling),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Browser state",
+            ja: "ブラウザ側の状態",
+        },
+        docs: &[
+            Doc::Learn(Learn::Signals),
+            Doc::Learn(Learn::NestedSignals),
+            Doc::Learn(Learn::Expressions),
+            Doc::Learn(Learn::Statements),
+            Doc::Learn(Learn::Events),
+            Doc::Learn(Learn::BindingInputs),
+            Doc::Learn(Learn::ComputedSignals),
+            Doc::Learn(Learn::PersistedSignals),
+            Doc::Learn(Learn::Lists),
+            Doc::Learn(Learn::ListItems),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Talking to the server",
+            ja: "サーバーとのやり取り",
+        },
+        docs: &[
+            Doc::Learn(Learn::Actions),
+            Doc::Learn(Learn::CallStatus),
+            Doc::Learn(Learn::Optimistic),
+            Doc::Learn(Learn::OverlappingCalls),
+            Doc::Learn(Learn::Patches),
+            Doc::Learn(Learn::ListPatches),
+            Doc::Learn(Learn::Fragments),
+            Doc::Learn(Learn::Streams),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Pages and routing",
+            ja: "ページとルーティング",
+        },
+        docs: &[
+            Doc::Learn(Learn::Routes),
+            Doc::Learn(Learn::Links),
+            Doc::Learn(Learn::ChildPages),
+            Doc::Learn(Learn::SearchParams),
+            Doc::Learn(Learn::ErrorPages),
+            Doc::Learn(Learn::BasePath),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Forms and requests",
+            ja: "フォームとリクエスト",
+        },
+        docs: &[
+            Doc::Learn(Learn::Forms),
+            Doc::Learn(Learn::FormValidation),
+            Doc::Learn(Learn::Requests),
+            Doc::Learn(Learn::Errors),
+            Doc::Learn(Learn::Uploads),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Data and sign-in",
+            ja: "データとサインイン",
+        },
+        docs: &[
+            Doc::Learn(Learn::Database),
+            Doc::Learn(Learn::DatabaseWithoutSql),
+            Doc::Learn(Learn::CheckedSql),
+            Doc::Learn(Learn::HostedDatabases),
+            Doc::Learn(Learn::DatabaseHosts),
+            Doc::Learn(Learn::Api),
+            Doc::Learn(Learn::Sessions),
+            Doc::Learn(Learn::MembersOnly),
+            Doc::Learn(Learn::SessionCookie),
+            Doc::Learn(Learn::SessionStores),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Browser features",
+            ja: "ブラウザの機能を使う",
+        },
+        docs: &[
+            Doc::Learn(Learn::NodeRefs),
+            Doc::Learn(Learn::Timers),
+            Doc::Learn(Learn::Keyboard),
+            Doc::Learn(Learn::JavaScript),
+            Doc::Learn(Learn::UncheckedValues),
+            Doc::Learn(Learn::StaticPages),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Quality and operations",
+            ja: "品質と運用",
+        },
+        docs: &[
+            Doc::Learn(Learn::Security),
+            Doc::Learn(Learn::Testing),
+            Doc::Learn(Learn::TestingPages),
+            Doc::Learn(Learn::CompileErrors),
+            Doc::Learn(Learn::Debugging),
+            Doc::Learn(Learn::Upgrading),
         ],
     },
     Group {
@@ -539,28 +674,75 @@ impl Doc {
         Self::StyleHome,
         Self::ComponentsHome,
         Self::UseCases,
+        // Get started
         Self::Learn(Learn::QuickStart),
         Self::Learn(Learn::Why),
-        Self::Learn(Learn::DescribingThePage),
-        Self::Learn(Learn::Signals),
-        Self::Learn(Learn::Expressions),
-        Self::Learn(Learn::Lists),
-        Self::Learn(Learn::Server),
-        Self::Learn(Learn::Forms),
-        Self::Learn(Learn::Requests),
-        Self::Learn(Learn::Sessions),
-        Self::Learn(Learn::Database),
-        Self::Learn(Learn::Api),
-        Self::Learn(Learn::Pages),
+        Self::Learn(Learn::DevServer),
+        // Building the page
+        Self::Learn(Learn::Elements),
+        Self::Learn(Learn::ThePage),
+        Self::Learn(Learn::Bindings),
+        Self::Learn(Learn::Components),
         Self::Learn(Learn::Styling),
-        Self::Learn(Learn::EscapeHatches),
+        // Browser state
+        Self::Learn(Learn::Signals),
+        Self::Learn(Learn::NestedSignals),
+        Self::Learn(Learn::Expressions),
+        Self::Learn(Learn::Statements),
+        Self::Learn(Learn::Events),
+        Self::Learn(Learn::BindingInputs),
+        Self::Learn(Learn::ComputedSignals),
+        Self::Learn(Learn::PersistedSignals),
+        Self::Learn(Learn::Lists),
+        Self::Learn(Learn::ListItems),
+        // Talking to the server
+        Self::Learn(Learn::Actions),
+        Self::Learn(Learn::CallStatus),
+        Self::Learn(Learn::Optimistic),
+        Self::Learn(Learn::OverlappingCalls),
+        Self::Learn(Learn::Patches),
+        Self::Learn(Learn::ListPatches),
+        Self::Learn(Learn::Fragments),
+        Self::Learn(Learn::Streams),
+        // Pages and routing
+        Self::Learn(Learn::Routes),
+        Self::Learn(Learn::Links),
+        Self::Learn(Learn::ChildPages),
+        Self::Learn(Learn::SearchParams),
+        Self::Learn(Learn::ErrorPages),
+        Self::Learn(Learn::BasePath),
+        // Forms and requests
+        Self::Learn(Learn::Forms),
+        Self::Learn(Learn::FormValidation),
+        Self::Learn(Learn::Requests),
+        Self::Learn(Learn::Errors),
+        Self::Learn(Learn::Uploads),
+        // Data and sign-in
+        Self::Learn(Learn::Database),
+        Self::Learn(Learn::DatabaseWithoutSql),
+        Self::Learn(Learn::CheckedSql),
+        Self::Learn(Learn::HostedDatabases),
+        Self::Learn(Learn::DatabaseHosts),
+        Self::Learn(Learn::Api),
+        Self::Learn(Learn::Sessions),
+        Self::Learn(Learn::MembersOnly),
+        Self::Learn(Learn::SessionCookie),
+        Self::Learn(Learn::SessionStores),
+        // Browser features
+        Self::Learn(Learn::NodeRefs),
+        Self::Learn(Learn::Timers),
+        Self::Learn(Learn::Keyboard),
         Self::Learn(Learn::JavaScript),
+        Self::Learn(Learn::UncheckedValues),
+        Self::Learn(Learn::StaticPages),
+        // Quality and operations
         Self::Learn(Learn::Security),
         Self::Learn(Learn::Testing),
-        Self::Learn(Learn::Troubleshooting),
+        Self::Learn(Learn::TestingPages),
+        Self::Learn(Learn::CompileErrors),
+        Self::Learn(Learn::Debugging),
         Self::Learn(Learn::Upgrading),
-        Self::Learn(Learn::CallsInDepth),
-        Self::Learn(Learn::RoutesInDepth),
+        // Deploy
         Self::Learn(Learn::Deploying),
         Self::Learn(Learn::DeployContainer),
         Self::Learn(Learn::DeployCloudflare),
@@ -662,41 +844,99 @@ impl Doc {
             },
             Self::ComponentsHome => ("hypersig components", "hypersig components"),
             Self::Learn(page) => match page {
-                Learn::Why => ("Why hypersig", "hypersig を選ぶ理由"),
+                // Get started
                 Learn::QuickStart => ("Quick start", "クイックスタート"),
-                Learn::DescribingThePage => ("Building the page", "ページを組み立てる"),
+                Learn::Why => ("Why hypersig", "hypersig を選ぶ理由"),
+                Learn::DevServer => ("The development server", "開発サーバー"),
+                // Building the page
+                Learn::Elements => ("Elements and attributes", "要素と属性"),
+                Learn::ThePage => ("The page and its head", "ページと head"),
+                Learn::Bindings => ("Values that follow the signals", "シグナルに追従する値"),
+                Learn::Components => ("Components", "コンポーネント"),
+                Learn::Styling => ("Styling", "スタイル"),
+                // Browser state
                 Learn::Signals => ("Signals", "シグナル"),
-                Learn::Expressions => ("Expressions and statements", "式と文"),
-                Learn::Lists => ("Lists", "リスト"),
-                Learn::Server => ("Talking to the server", "サーバーとのやり取り"),
-                Learn::Forms => ("Forms", "フォーム"),
-                Learn::Requests => (
-                    "Requests, cookies, and errors",
-                    "リクエスト、Cookie、エラー",
+                Learn::NestedSignals => ("Signals inside signals", "入れ子のシグナル"),
+                Learn::Expressions => ("Expressions", "式"),
+                Learn::Statements => ("Statements", "文"),
+                Learn::Events => ("Events", "イベント"),
+                Learn::BindingInputs => ("Binding form controls", "入力欄の束縛"),
+                Learn::ComputedSignals => ("Computed signals", "計算シグナル"),
+                Learn::PersistedSignals => (
+                    "Signals kept across page loads",
+                    "ページをまたいで保つシグナル",
                 ),
-                Learn::Sessions => ("Signing in", "サインインとセッション"),
+                Learn::Lists => ("Lists", "リスト"),
+                Learn::ListItems => ("The state of a list item", "リスト項目の状態"),
+                // Talking to the server
+                Learn::Actions => ("Actions", "アクション"),
+                Learn::CallStatus => ("Busy and failed calls", "呼び出し中と失敗"),
+                Learn::Optimistic => ("Optimistic updates", "楽観的更新"),
+                Learn::OverlappingCalls => ("Calls that overlap", "重なった呼び出し"),
+                Learn::Patches => ("Patches", "差分"),
+                Learn::ListPatches => ("List patches", "リストの差分"),
+                Learn::Fragments => ("Fragments", "フラグメント"),
+                Learn::Streams => ("Streams", "ストリーム"),
+                // Pages and routing
+                Learn::Routes => ("Routes", "ルート"),
+                Learn::Links => ("Links and redirects", "リンクとリダイレクト"),
+                Learn::ChildPages => ("Pages under a page", "子のページ"),
+                Learn::SearchParams => ("Search parameters", "検索パラメータ"),
+                Learn::ErrorPages => ("Error pages", "エラーページ"),
+                Learn::BasePath => ("Serving under a path prefix", "パスの接頭辞の下で配信する"),
+                // Forms and requests
+                Learn::Forms => ("Forms", "フォーム"),
+                Learn::FormValidation => ("Validating a form", "フォームの検証"),
+                Learn::Requests => ("Extractors and headers", "エクストラクタとヘッダー"),
+                Learn::Errors => ("Errors and logging", "エラーとログ"),
+                Learn::Uploads => ("Uploads", "アップロード"),
+                // Data and sign-in
                 Learn::Database => ("Storing data", "データを保存する"),
+                Learn::DatabaseWithoutSql => {
+                    ("A database without SQL", "SQL を使わないデータベース")
+                }
+                Learn::CheckedSql => ("SQL the compiler checks", "コンパイラが検査する SQL"),
+                Learn::HostedDatabases => (
+                    "Hosted PostgreSQL and MySQL",
+                    "ホスティングされた PostgreSQL と MySQL",
+                ),
+                Learn::DatabaseHosts => (
+                    "The database each host can reach",
+                    "デプロイ先ごとのデータベース",
+                ),
                 Learn::Api => (
                     "Calling another service's API",
                     "ほかのサービスの API を呼ぶ",
                 ),
-                Learn::Pages => ("Pages and links", "ページとリンク"),
-                Learn::Styling => ("Styling", "スタイル"),
-                Learn::EscapeHatches => (
-                    "When bindings and statements are not enough",
-                    "束縛と文で足りないとき",
+                Learn::Sessions => ("Signing in", "サインインとセッション"),
+                Learn::MembersOnly => (
+                    "Pages for signed-in members",
+                    "サインインした人だけのページ",
                 ),
+                Learn::SessionCookie => ("The session cookie", "セッションの Cookie"),
+                Learn::SessionStores => ("Where sessions are stored", "セッションの保存先"),
+                // Browser features
+                Learn::NodeRefs => ("Node refs", "ノード参照"),
+                Learn::Timers => ("Timers and reactions", "タイマーと変化への反応"),
+                Learn::Keyboard => ("Keyboard patterns", "キーボード操作"),
                 Learn::JavaScript => ("JavaScript libraries", "JavaScript のライブラリ"),
+                Learn::UncheckedValues => ("Values the types do not check", "型で検査しない値"),
+                Learn::StaticPages => ("Static pages", "静的ページ"),
+                // Quality and operations
+                Learn::Security => ("Security", "セキュリティ"),
+                Learn::Testing => ("Testing handlers", "ハンドラのテスト"),
+                Learn::TestingPages => (
+                    "Testing a page without a browser",
+                    "ブラウザなしでページをテストする",
+                ),
+                Learn::CompileErrors => ("Reading a compile error", "コンパイルエラーの読み方"),
+                Learn::Debugging => ("Debugging a running page", "動いているページを調べる"),
+                Learn::Upgrading => ("Upgrading", "新しいリリースに上げる"),
+                // Deploy
                 Learn::Deploying => ("Choosing a host", "デプロイ先の選び方"),
                 Learn::DeployContainer => ("In a container", "コンテナ"),
                 Learn::DeployCloudflare => ("Cloudflare Workers", "Cloudflare Workers"),
                 Learn::DeployVercel => ("Vercel", "Vercel"),
-                Learn::Security => ("Security", "セキュリティ"),
-                Learn::Testing => ("Testing", "テストを書く"),
-                Learn::Troubleshooting => ("Troubleshooting", "うまく動かないとき"),
-                Learn::Upgrading => ("Upgrading", "新しいリリースに上げる"),
-                Learn::CallsInDepth => ("Calls in depth", "呼び出しの詳細"),
-                Learn::RoutesInDepth => ("Routes in depth", "ルートの詳細"),
             },
             Self::Reference(page) => match page {
                 Reference::Overview => ("API reference", "API リファレンス"),
@@ -773,54 +1013,252 @@ impl Doc {
                 ja: "hypersig に向くアプリと、そのアプリに仕様を 1 つ追加するごとに、hypersig と Next.js でコードがどう変わるかを並べます。",
             },
             Self::Learn(page) => match page {
+                // Get started
                 Learn::QuickStart => L {
                     en: "Build a counter that counts in the browser and resets on the server, in one Rust file.",
                     ja: "ブラウザで数を数え、サーバーで 0 に戻すカウンターを、Rust のファイル 1 つで作ります。",
                 },
-                Learn::DescribingThePage => L {
-                    en: "A page is a tree of `El` values built with Rust functions and rendered to HTML on the server.",
-                    ja: "ページは Rust の関数で組み立てた `El` の値の木で、サーバーが HTML に描画します。",
+                Learn::Why => L {
+                    en: "hypersig renders the page on the server and writes its behavior into the HTML. Every string the browser acts on comes from a Rust type, so the page needs no browser build, no hydration, and no string typed by hand.",
+                    ja: "hypersig はページをサーバーで描画し、その動きを HTML に書き込みます。ブラウザが扱う文字列はすべて Rust の型から作られるので、ブラウザ向けのビルドもハイドレーションも不要で、手で書く文字列もありません。",
                 },
-                Learn::Forms => L {
-                    en: "A form's rules are written once in Rust. The browser checks them as the visitor types, and the handler checks the same rules before it trusts the values.",
-                    ja: "フォームのルールは Rust で 1 回だけ書きます。ブラウザは入力に合わせてそのルールを検査し、ハンドラは値を使う前に同じルールで検査します。",
+                Learn::DevServer => L {
+                    en: "`cargo hypersig dev` builds and restarts the server after each change, and the open tab reloads with the signals the visitor changed. `cargo hypersig new` writes a project to start from.",
+                    ja: "`cargo hypersig dev` は変更のたびにサーバーをビルドして起動し直し、開いているタブは訪問者が変えたシグナルを保ったまま読み込み直されます。`cargo hypersig new` は最初のプロジェクトを書き出します。",
                 },
-                Learn::Database => L {
-                    en: "A handler keeps data shared across requests in a database that its own Rust code connects to, so the data outlives the process and every instance of the server reads the same values.",
-                    ja: "ハンドラはリクエストをまたいで使うデータを、自分の Rust のコードからつなぐデータベースに置きます。データはプロセスが終わっても保持され、サーバーのどのインスタンスも同じ値を読みます。",
+                // Building the page
+                Learn::Elements => L {
+                    en: "A page is a tree of `El` values built with Rust functions and rendered to HTML on the server. The tags, the attribute names, and the ids that attributes point at are checked when the program compiles.",
+                    ja: "ページは Rust の関数で組み立てた `El` の値の木で、サーバーが HTML に描画します。タグ、属性の名前、属性が指す id は、プログラムのコンパイル時に検査されます。",
                 },
-                Learn::Api => L {
-                    en: "A handler can call another service's HTTP API and answer the browser with what it returned, so the service's address and token stay on the server.",
-                    ja: "ハンドラはほかのサービスの HTTP の API を呼び、その結果でブラウザに応答できます。サービスのアドレスとトークンはサーバーから出ません。",
+                Learn::ThePage => L {
+                    en: "`Page` wraps the tree in the HTML document a handler sends, with the runtime, the initial signals, and the head that browsers, search engines, and link previews read.",
+                    ja: "`Page` は木を包み、ハンドラが送る HTML 文書にします。文書には、ランタイム、シグナルの初期値、そしてブラウザ、検索エンジン、リンクのプレビューが読む head が入ります。",
                 },
-                Learn::Requests => L {
-                    en: "A handler reads the request through an axum extractor, sets cookies by returning headers beside its answer, and fails with `?`.",
-                    ja: "ハンドラは axum の extractor でリクエストを読み、応答と一緒にヘッダーを返して Cookie を設定し、`?` で失敗を返します。",
+                Learn::Bindings => L {
+                    en: "A binding keeps an element's text, attributes, visibility, or classes equal to an expression over the signals, in the first HTML and in the browser after each change.",
+                    ja: "束縛は、要素のテキスト、属性、表示と非表示、クラスをシグナルの式の値に合わせ続けます。最初の HTML でも、変更のたびのブラウザでも同じです。",
                 },
-                Learn::Sessions => L {
-                    en: "The `tower-sessions` layer keeps a session for each browser behind a cookie, and an extractor reads the signed-in member from it. Without one, a page goes to the sign-in page and an action answers with a 401.",
-                    ja: "`tower-sessions` のレイヤーがブラウザごとのセッションを Cookie の向こうに持ち、エクストラクタがそこからサインイン中のメンバーを読みます。サインインしていなければ、ページはサインインのページへ移り、アクションには 401 を返します。",
-                },
-                Learn::Server => L {
-                    en: "The browser calls an action, and the server answers with patches: new values for signals, or new HTML for a part of the page.",
-                    ja: "ブラウザがアクションを呼び出すと、サーバーは差分を返します。差分はシグナルの新しい値か、ページの一部の新しい HTML です。",
-                },
-                Learn::Pages => L {
-                    en: "A route is a page the server renders at a path. The router serves it and the links on other pages point to it from the same value, so a parameter of the wrong type or in the wrong number is a compile error.",
-                    ja: "ルートは、あるパスでサーバーが描画するページです。ルーターの配信もほかのページからのリンクも同じ値から作るので、パラメータの型や数の誤りはコンパイルエラーになります。",
+                Learn::Components => L {
+                    en: "A component is a Rust function that returns an element, and a part is a component with its own signals and actions that several pages embed.",
+                    ja: "コンポーネントは要素を返す Rust の関数です。部品は自分のシグナルとアクションを持つコンポーネントで、複数のページに埋め込めます。",
                 },
                 Learn::Styling => L {
                     en: "Styles are Rust values too. A misspelled property or keyword, or a value of the wrong type, is a compile error.",
                     ja: "スタイルも Rust の値です。プロパティやキーワードの打ち間違いや、型の違う値はコンパイルエラーになります。",
                 },
-                Learn::EscapeHatches => L {
-                    en: "Most pages need only bindings and statements. The pages here cover focus, timers, and reactions to a change, links outside the router, and serving a page as a static file.",
-                    ja: "たいていのページは束縛と文だけで書けます。ここで扱うのは、フォーカス、タイマー、変化への反応、ルーターの外へのリンク、ページを静的ファイルとして配信する方法です。",
+                // Browser state
+                Learn::Signals => L {
+                    en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
+                    ja: "ページの状態は Rust の構造体 1 つで表し、シグナルはそのフィールド 1 つを指す型付きの参照です。",
+                },
+                Learn::NestedSignals => L {
+                    en: "A field can hold a struct, an `Option`, or the state of a component, and `at` reaches the fields inside it.",
+                    ja: "フィールドには構造体、`Option`、部品の状態を持たせられ、その中のフィールドへは `at` でたどります。",
+                },
+                Learn::Expressions => L {
+                    en: "An expression computes a value from the signals. The browser evaluates it, and the server evaluates it for the first HTML.",
+                    ja: "式はシグナルから値を計算します。ブラウザが式を評価し、最初の HTML のためにはサーバーも評価します。",
+                },
+                Learn::Statements => L {
+                    en: "A statement changes the signals in the browser, without a request. Statements run in order and branch on expressions.",
+                    ja: "文は、リクエストを送らずにブラウザでシグナルを変更します。文は順に実行され、式で分岐します。",
+                },
+                Learn::Events => L {
+                    en: "Each event method writes a statement into an attribute of the element, and the runtime runs it on that DOM event or key.",
+                    ja: "イベントのメソッドは文を要素の属性に書き込み、ランタイムはその DOM のイベントやキーで文を実行します。",
+                },
+                Learn::BindingInputs => L {
+                    en: "`bind`, `bind_radio`, and `bind_select` keep a form control and a signal equal in both directions.",
+                    ja: "`bind`、`bind_radio`、`bind_select` は、フォームの入力欄とシグナルを双方向に一致させます。",
+                },
+                Learn::ComputedSignals => L {
+                    en: "A computed signal is a field the browser keeps equal to an expression. Writing one is a compile error.",
+                    ja: "計算シグナルは、ブラウザが式の値に保ち続けるフィールドです。書き込もうとするとコンパイルエラーになります。",
+                },
+                Learn::PersistedSignals => L {
+                    en: "`Page::persist` keeps a signal in `localStorage`, so the next page load starts from the visitor's last value.",
+                    ja: "`Page::persist` はシグナルを `localStorage` に保存し、次にページを読み込むときは訪問者が最後に選んだ値から始めます。",
+                },
+                Learn::Lists => L {
+                    en: "A `Vec` field is a list. `each` renders an element per item in the browser, and list statements change it without a request.",
+                    ja: "`Vec` のフィールドはリストです。`each` はブラウザで項目ごとに要素を描画し、リストの文はリクエストを送らずにリストを変更します。",
+                },
+                Learn::ListItems => L {
+                    en: "A field of a list item is a signal whose path starts at the item. The server cannot patch it, and state the browser keeps per item belongs at the page's root.",
+                    ja: "リスト項目のフィールドは、パスが項目から始まるシグナルです。サーバーはこれを差分で変えられず、ブラウザが項目ごとに持つ状態はページの構造体の直下に置きます。",
+                },
+                // Talking to the server
+                Learn::Actions => L {
+                    en: "An action is a server endpoint a page calls with typed arguments. This page covers declaring one, calling it, and the request and the answer that go over the network.",
+                    ja: "アクションは、ページが型付きの引数で呼び出すサーバーのエンドポイントです。宣言のしかた、呼び出し方、ネットワークを流れるリクエストと応答を扱います。",
+                },
+                Learn::CallStatus => L {
+                    en: "A call can set a signal while it waits, write the error text when it fails, and run a statement on failure or success.",
+                    ja: "呼び出しは応答を待つ間にシグナルを設定し、失敗したときにエラーの文言を書き込み、失敗や成功のときに文を実行できます。",
+                },
+                Learn::Optimistic => L {
+                    en: "A statement before a call changes the page at once, and the server's answer then sets the value it stored.",
+                    ja: "呼び出しの前に置いた文はすぐにページを変え、そのあとサーバーの応答が保存した値を設定します。",
+                },
+                Learn::OverlappingCalls => L {
+                    en: "What happens when a call is sent while an earlier call to the same action still waits, and how to keep the newest answer, send one at a time, or give up after a time limit.",
+                    ja: "同じアクションへの前の呼び出しが応答を待っている間に次の呼び出しを送ったときの動きと、最新の応答を採る、一度に 1 つだけ送る、一定の時間で打ち切る方法を扱います。",
+                },
+                Learn::Patches => L {
+                    en: "A handler answers with a batch of patches: new values for signals, list changes, fragments, and URLs. The browser receives them as Server-Sent Events and applies them in order.",
+                    ja: "ハンドラは差分のまとまりで応答します。中身はシグナルの新しい値、リストの変更、フラグメント、URL です。ブラウザはそれを Server-Sent Events として受け取り、順に適用します。",
+                },
+                Learn::ListPatches => L {
+                    en: "Patches that add, replace, or remove items of a list without sending the rest of it, and a feed that loads more items as the visitor scrolls.",
+                    ja: "リストの残りを送らずに項目を加える、置き換える、取り除く差分と、スクロールに合わせて項目を読み足すフィードを扱います。",
+                },
+                Learn::Fragments => L {
+                    en: "A fragment is a part of the page the server renders again and sends as HTML, which the browser merges into the element with the fragment's id.",
+                    ja: "フラグメントは、サーバーが描画し直して HTML として送るページの一部です。ブラウザはそれを、フラグメントの id を持つ要素に取り込みます。",
+                },
+                Learn::Streams => L {
+                    en: "A stream keeps its response open and sends patches as changes happen on the server, and opens again when the connection drops.",
+                    ja: "ストリームは応答を開いたままにして、サーバーで変化が起きるたびに差分を送り、接続が切れたら開き直します。",
+                },
+                // Pages and routing
+                Learn::Routes => L {
+                    en: "A route is a page the server renders at a typed path. This page covers declaring one in `routes!`, the types a path parameter can hold, and the handler that serves it.",
+                    ja: "ルートは、型の付いたパスでサーバーが描画するページです。`routes!` での宣言、パスのパラメータに使える型、ルートを配信するハンドラを説明します。",
+                },
+                Learn::Links => L {
+                    en: "Links, redirects, and navigation from an action or a statement are built from the route, so a URL with a parameter of the wrong type or in the wrong number does not compile.",
+                    ja: "リンク、リダイレクト、アクションや文からのページ移動はルートから作るので、パラメータの型や数が違う URL はコンパイルできません。",
+                },
+                Learn::ChildPages => L {
+                    en: "A route declared with `in PARENT` continues its parent's path and parameters, and the compiler checks that it does.",
+                    ja: "`in PARENT` を付けて宣言したルートは親のパスとパラメータを引き継ぎ、コンパイラがそれを検査します。",
+                },
+                Learn::SearchParams => L {
+                    en: "A route's second type parameter types its query string, and a statement or an action can change the URL in the address bar without loading a page.",
+                    ja: "ルートの 2 つ目の型パラメータはクエリ文字列の型です。文やアクションは、ページを読み込まずにアドレスバーの URL を変えられます。",
+                },
+                Learn::ErrorPages => L {
+                    en: "What a page handler answers when it cannot build its page, and the one page `routes!` shows for every request that reaches no page.",
+                    ja: "ページを組み立てられなかったハンドラが返すものと、どのページにも届かなかったリクエストに `routes!` が出すページを説明します。",
+                },
+                Learn::BasePath => L {
+                    en: "An application served under a prefix such as `/app` names it once as a `Base`, and every link, URL, and call of the block starts with it.",
+                    ja: "`/app` のような接頭辞の下で配信するアプリは、接頭辞を `Base` として 1 回だけ宣言します。ブロックのリンク、URL、呼び出しはすべてその接頭辞で始まります。",
+                },
+                // Forms and requests
+                Learn::Forms => L {
+                    en: "A form on the page is a `Form<T>` field, which holds the values, the values they started from, and what the visitor has done to them. This page binds its controls, shows its messages, and submits it.",
+                    ja: "ページのフォームは `Form<T>` のフィールドで、値、開始時の値、訪問者がフォームでした操作を持ちます。このページではコントロールの束縛、メッセージの表示、送信を説明します。",
+                },
+                Learn::FormValidation => L {
+                    en: "A form's rules are written once in Rust. The browser checks them as the visitor types, and the handler checks the same rules before it trusts the values.",
+                    ja: "フォームのルールは Rust で 1 回だけ書きます。ブラウザは入力に合わせてそのルールを検査し、ハンドラは値を使う前に同じルールで検査します。",
+                },
+                Learn::Requests => L {
+                    en: "A handler reads the request through an axum extractor and sets cookies by returning headers beside its answer. The router refuses some requests before any handler runs.",
+                    ja: "ハンドラは axum のエクストラクタでリクエストを読み、応答と一緒にヘッダーを返して Cookie を設定します。ハンドラが動く前にルーターが拒否するリクエストもあります。",
+                },
+                Learn::Errors => L {
+                    en: "A handler fails by returning an error that has a response, and the page shows that response's status and text. What the visitor should not see goes to the server's log through `tracing`.",
+                    ja: "ハンドラは応答を持つエラーを返して失敗し、ページはその応答のステータスと文言を表示します。訪問者に見せないことは、`tracing` でサーバーのログに書きます。",
+                },
+                Learn::Uploads => L {
+                    en: "An upload is an action that also receives the files picked in a file input. Its handler reads them into memory, or one chunk at a time for large files.",
+                    ja: "アップロードは、ファイル入力で選んだファイルも受け取るアクションです。ハンドラはファイルをメモリに読み込むか、大きなファイルなら少しずつ読みます。",
+                },
+                // Data and sign-in
+                Learn::Database => L {
+                    en: "A handler keeps the data that requests share in a database its own Rust code connects to, with the connection in the router's state. The page also covers telling the streams of every server process about a change.",
+                    ja: "ハンドラはリクエストをまたいで使うデータを、自分の Rust のコードからつなぐデータベースに置き、接続はルーターの状態に持たせます。変更をサーバーのすべてのプロセスのストリームに知らせる方法も、このページで説明します。",
+                },
+                Learn::DatabaseWithoutSql => L {
+                    en: "A database read through an SDK, such as DynamoDB, is used the same way as one read with SQL: the client goes in the router's state, and the handler awaits its calls.",
+                    ja: "DynamoDB のように SDK で読むデータベースも、SQL で読むものと同じように使います。クライアントをルーターの状態に置き、ハンドラはその呼び出しを `.await` します。",
+                },
+                Learn::CheckedSql => L {
+                    en: "sqlx's `query!` macros check each query against the database's tables when the program is built, and the `.sqlx` directory lets a machine without a database build it.",
+                    ja: "sqlx の `query!` などのマクロはビルドのときにクエリをデータベースのテーブルと照らし合わせて検査します。`.sqlx` ディレクトリがあれば、データベースのないマシンでもビルドできます。",
+                },
+                Learn::HostedDatabases => L {
+                    en: "Supabase, PlanetScale, Cloud SQL, AlloyDB, RDS, and Aurora each take a connection string in `DATABASE_URL`, and differ in their ports, poolers, and TLS settings.",
+                    ja: "Supabase、PlanetScale、Cloud SQL、AlloyDB、RDS、Aurora は、どれも `DATABASE_URL` の接続文字列でつなぎます。違うのはポート、プーラー、TLS の設定です。",
+                },
+                Learn::DatabaseHosts => L {
+                    en: "A container, a Vercel Function, and a Cloudflare Worker each limit where the data can be kept: a file on a volume, a database over the network, or a binding the host provides.",
+                    ja: "コンテナ、Vercel Functions、Cloudflare Workers では、データを置ける場所が違います。ボリューム上のファイル、ネットワーク越しのデータベース、ホストが用意するバインディングのいずれかです。",
+                },
+                Learn::Api => L {
+                    en: "A handler can call another service's HTTP API and answer the browser with what it returned, so the service's address and token stay on the server.",
+                    ja: "ハンドラはほかのサービスの HTTP の API を呼び、その結果でブラウザに応答できます。サービスのアドレスとトークンはサーバーから出ません。",
+                },
+                Learn::Sessions => L {
+                    en: "The `tower-sessions` layer keeps a session for each browser, which a cookie points to. An action signs the visitor in by writing the member's name into the session, and signs them out by emptying it.",
+                    ja: "`tower-sessions` のレイヤーはブラウザごとのセッションを持ち、ブラウザは Cookie でそのセッションを指します。アクションはセッションにメンバーの名前を書いて訪問者をサインインさせ、セッションを空にしてサインアウトさせます。",
+                },
+                Learn::MembersOnly => L {
+                    en: "An extractor reads the signed-in member from the session, so a handler that takes it runs only for a signed-in visitor. Anyone else gets a redirect to the sign-in page from a page, and a 401 from an action.",
+                    ja: "エクストラクタがセッションからサインイン中のメンバーを読むので、それを受け取るハンドラはサインインした訪問者に対してだけ動きます。それ以外の訪問者には、ページならサインインのページへのリダイレクトを、アクションなら 401 を返します。",
+                },
+                Learn::SessionCookie => L {
+                    en: "The session's cookie is `HttpOnly`, `Secure`, and `SameSite=Strict` unless the layer says otherwise, and lasts until the browser closes unless the layer is given an expiry.",
+                    ja: "セッションの Cookie には、レイヤーで変えない限り `HttpOnly`、`Secure`、`SameSite=Strict` が付きます。レイヤーに有効期限を渡さなければ、ブラウザを閉じるまで保持されます。",
+                },
+                Learn::SessionStores => L {
+                    en: "`MemoryStore` keeps the sessions inside one process, so a server that runs more than one instance keeps them in PostgreSQL, SQLite, MySQL, or Redis.",
+                    ja: "`MemoryStore` はセッションを 1 つのプロセスの中に置きます。インスタンスを複数動かすサーバーでは、PostgreSQL、SQLite、MySQL、Redis に置きます。",
+                },
+                // Browser features
+                Learn::NodeRefs => L {
+                    en: "A node ref names one element, so that a statement can focus it, select its text, scroll it into view, or open it as a popover or a dialog. The page covers declaring one, its statements, and the mistakes that rendering catches.",
+                    ja: "ノード参照は要素を 1 つ指す名前で、文はこれを使って要素にフォーカスしたり、テキストを選択したり、見える位置までスクロールしたり、ポップオーバーやダイアログとして開いたりします。宣言の仕方、使える文、描画で見つかるミスを説明します。",
+                },
+                Learn::Timers => L {
+                    en: "Statements that run on a timer, when an element is added to the document, or when a signal changes, and the browser's clock and random numbers that they can read.",
+                    ja: "タイマーで、要素が文書に追加されたときに、またはシグナルが変わったときに実行される文と、それらの文が読めるブラウザの時計と乱数を説明します。",
+                },
+                Learn::Keyboard => L {
+                    en: "Focus that moves between items with the arrow keys, the active option of a listbox while focus stays in a text field, and shortcuts that move focus through node refs.",
+                    ja: "矢印キーで項目間を移るフォーカス、フォーカスをテキスト欄に置いたまま動かすリストボックスのアクティブな選択肢、ノード参照を通してフォーカスを動かすショートカットを説明します。",
                 },
                 Learn::JavaScript => L {
                     en: "A map, a chart, or a rich text editor runs in the browser as a JavaScript library. Wrapped in a custom element, it takes values from the page's signals and hands its events back as typed values.",
                     ja: "地図、グラフ、リッチテキストエディタは、ブラウザで JavaScript のライブラリとして動きます。カスタム要素で包むと、ページのシグナルから値を受け取り、イベントを型付きの値としてページに返せます。",
                 },
+                Learn::UncheckedValues => L {
+                    en: "Some values pass the type check while their content goes unchecked: the host of a URL, the value of an attribute or a CSS property, and the path of a file the page loads. For each, what is checked and what the browser does with a wrong value.",
+                    ja: "型の検査は通っても、中身は検査されない値があります。URL のホスト、属性や CSS プロパティの値、ページが読み込むファイルのパスです。それぞれについて、何が検査され、間違った値をブラウザがどう扱うかを説明します。",
+                },
+                Learn::StaticPages => L {
+                    en: "A page that calls no action can be written to a file and served by any static host, with the runtime next to it. The page also covers rendering under a path prefix and what a static host leaves out.",
+                    ja: "アクションを呼ばないページは、ファイルに書き出して、ランタイムと一緒に静的なホストで配信できます。パスの接頭辞の下での描画と、静的なホストで抜け落ちるものも説明します。",
+                },
+                // Quality and operations
+                Learn::Security => L {
+                    en: "What hypersig checks so that a page and its actions resist what a visitor can send, why data from the browser cannot run code on the server, and what is left to the application.",
+                    ja: "訪問者が送るものからページとアクションを守るために hypersig が検査すること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
+                },
+                Learn::Testing => L {
+                    en: "Tests that call a page's, an action's, and a stream's handler as functions and read the signals by their types, and tests that send a request through the router to check what the router adds.",
+                    ja: "ページ、アクション、ストリームのハンドラを関数として呼び、シグナルの値を型で読むテストと、ルーターにリクエストを送って、ルーターが加えるものを確かめるテストを扱います。",
+                },
+                Learn::TestingPages => L {
+                    en: "A test that clicks and types on a page without a browser, reads the signals and the elements afterwards, and checks the calls and the navigation the events asked for. The page also lists what only a browser test reaches.",
+                    ja: "ブラウザなしでページをクリックして入力し、そのあとのシグナルと要素を読み、イベントが求めた呼び出しと移動を確かめるテストを扱います。ブラウザのテストでしか確かめられないことも挙げます。",
+                },
+                Learn::CompileErrors => L {
+                    en: "How to read the compile errors that hypersig's traits and constants produce: which line names the mistake, which lines to skip, and where to look up a message this page does not list.",
+                    ja: "hypersig のトレイトと定数が出すコンパイルエラーの読み方を扱います。どの行が間違いを指し、どの行を読み飛ばしてよいか、このページにないメッセージをどこで調べるかを説明します。",
+                },
+                Learn::Debugging => L {
+                    en: "Where a running page reports a mistake the types do not catch: a panic on the server while the page is built, a line in the browser's console, and a failed call that the page can show.",
+                    ja: "型で防げない間違いを、動いているページがどこに報告するかを扱います。ページを組み立てるときのサーバーでのパニック、ブラウザのコンソールの行、ページに表示できる失敗した呼び出しの 3 つです。",
+                },
+                Learn::Upgrading => L {
+                    en: "Each change of a public signature from 0.5 to 0.13, shown as the code after it, with the line it replaces.",
+                    ja: "0.5 から 0.13 までに公開のシグネチャが変わった箇所を、変更後のコードと、それが置き換える行で示します。",
+                },
+                // Deploy
                 Learn::Deploying => L {
                     en: "A template gives a project that deploys as it is: a container image for a container host, a worker for Cloudflare Workers, or a function for Vercel. Each takes a few commands from an empty directory to a running application.",
                     ja: "テンプレートから、そのままデプロイできるプロジェクトを作れます。コンテナのホスト向けのイメージ、Cloudflare Workers 向けの Worker、Vercel 向けの関数の 3 つがあり、どれも空のディレクトリから数行のコマンドで動くところまで進みます。",
@@ -836,46 +1274,6 @@ impl Doc {
                 Learn::DeployVercel => L {
                     en: "The Vercel template runs the same pages, actions, and streams as a Vercel Function, where `VercelLayer` hands each request to the axum `Router`.",
                     ja: "Vercel のテンプレートは同じページ、アクション、ストリームを Vercel の関数として動かし、`VercelLayer` が受け取ったリクエストを axum の `Router` に渡します。",
-                },
-                Learn::Security => L {
-                    en: "What hypersig checks so that a page and its actions resist what a visitor can send, why data from the browser cannot run code on the server, and what is left to the application.",
-                    ja: "訪問者が送るものからページとアクションを守るために hypersig が検査すること、ブラウザから届くデータがサーバーのコードを動かせない理由、アプリに任せることをまとめます。",
-                },
-                Learn::Testing => L {
-                    en: "Tests that call a page's and an action's handler as functions and read the signals with their types, tests that send a request through the router, tests that click and type on a page without a browser, and what only a browser test reaches.",
-                    ja: "ページとアクションのハンドラを関数として呼び、シグナルの値を型で読むテスト、ルーターにリクエストを送るテスト、ブラウザなしでページをクリックして入力するテスト、ブラウザのテストでしか確かめられないことを扱います。",
-                },
-                Learn::Troubleshooting => L {
-                    en: "How to read the compile errors hypersig's types and constants produce, and where a running page reports a panic, a failed call, or a problem the runtime meets.",
-                    ja: "hypersig の型と定数が出すコンパイルエラーの読み方と、動いているページがパニック、失敗した呼び出し、ランタイムが見つけた問題をどこに報告するかを扱います。",
-                },
-                Learn::Upgrading => L {
-                    en: "Each change of a public signature from 0.4 to 0.8, shown as the code before and after it.",
-                    ja: "0.4 から 0.8 までに公開のシグネチャが変わった箇所を、変更前と変更後のコードで示します。",
-                },
-                Learn::CallsInDepth => L {
-                    en: "Patches that send only the items of a list that change, calls that overlap, streams that reconnect, and parts that several pages share.",
-                    ja: "リストの変わった項目だけを送る差分、重なった呼び出し、つなぎ直すストリーム、複数のページで使う部品を扱います。",
-                },
-                Learn::RoutesInDepth => L {
-                    en: "Typed query strings, URLs that change without loading a page, pages for missing paths, what search results and link previews show, and an application served under a path prefix.",
-                    ja: "型の付いたクエリ文字列、ページを読み込まずに変える URL、存在しないパスのページ、検索結果とリンクのプレビューに出る内容、パスの接頭辞の下で配信するアプリを扱います。",
-                },
-                Learn::Signals => L {
-                    en: "The page's state is one Rust struct, and a signal is a typed reference to one of its fields.",
-                    ja: "ページの状態は Rust の構造体 1 つで表し、シグナルはそのフィールド 1 つを指す型付きの参照です。",
-                },
-                Learn::Expressions => L {
-                    en: "An expression computes a value from the signals, and a statement changes them. Both are Rust values that the browser receives as JSON.",
-                    ja: "式はシグナルから値を計算し、文はシグナルを変更します。どちらも Rust の値で、ブラウザは JSON として受け取ります。",
-                },
-                Learn::Lists => L {
-                    en: "A `Vec` field is a list. `each` renders an element per item in the browser, and list statements change it without a request.",
-                    ja: "`Vec` のフィールドはリストです。`each` はブラウザで項目ごとに要素を描画し、リストの文はリクエストを送らずにリストを変更します。",
-                },
-                Learn::Why => L {
-                    en: "hypersig renders the page on the server and writes its behavior into the HTML. Every string the browser acts on comes from a Rust type, so the page needs no browser build, no hydration, and no string typed by hand.",
-                    ja: "hypersig はページをサーバーで描画し、その動きを HTML に書き込みます。ブラウザが扱う文字列はすべて Rust の型から作られるので、ブラウザ向けのビルドもハイドレーションも不要で、手で書く文字列もありません。",
                 },
             },
             Self::Style(page) => match page {
@@ -1031,32 +1429,79 @@ impl I18nPage {
 impl Learn {
     fn slug(self) -> &'static str {
         match self {
-            Self::Why => "why",
+            // Get started
             Self::QuickStart => "",
-            Self::DescribingThePage => "describing-the-page",
-            Self::Signals => "signals",
-            Self::Expressions => "expressions",
-            Self::Lists => "lists",
-            Self::Server => "server",
-            Self::Forms => "forms",
-            Self::Requests => "requests",
-            Self::Sessions => "sessions",
-            Self::Database => "database",
-            Self::Api => "api",
-            Self::Pages => "pages",
+            Self::Why => "why",
+            Self::DevServer => "dev-server",
+            // Building the page
+            Self::Elements => "elements",
+            Self::ThePage => "page",
+            Self::Bindings => "bindings",
+            Self::Components => "components",
             Self::Styling => "styling",
-            Self::EscapeHatches => "escape-hatches",
+            // Browser state
+            Self::Signals => "signals",
+            Self::NestedSignals => "nested-signals",
+            Self::Expressions => "expressions",
+            Self::Statements => "statements",
+            Self::Events => "events",
+            Self::BindingInputs => "inputs",
+            Self::ComputedSignals => "computed-signals",
+            Self::PersistedSignals => "persisted-signals",
+            Self::Lists => "lists",
+            Self::ListItems => "list-items",
+            // Talking to the server
+            Self::Actions => "actions",
+            Self::CallStatus => "call-status",
+            Self::Optimistic => "optimistic-updates",
+            Self::OverlappingCalls => "overlapping-calls",
+            Self::Patches => "patches",
+            Self::ListPatches => "list-patches",
+            Self::Fragments => "fragments",
+            Self::Streams => "streams",
+            // Pages and routing
+            Self::Routes => "routes",
+            Self::Links => "links",
+            Self::ChildPages => "child-pages",
+            Self::SearchParams => "search-params",
+            Self::ErrorPages => "error-pages",
+            Self::BasePath => "base-path",
+            // Forms and requests
+            Self::Forms => "forms",
+            Self::FormValidation => "form-validation",
+            Self::Requests => "requests",
+            Self::Errors => "errors",
+            Self::Uploads => "uploads",
+            // Data and sign-in
+            Self::Database => "database",
+            Self::DatabaseWithoutSql => "database-without-sql",
+            Self::CheckedSql => "checked-sql",
+            Self::HostedDatabases => "hosted-databases",
+            Self::DatabaseHosts => "database-hosts",
+            Self::Api => "api",
+            Self::Sessions => "sessions",
+            Self::MembersOnly => "members-only",
+            Self::SessionCookie => "session-cookie",
+            Self::SessionStores => "session-stores",
+            // Browser features
+            Self::NodeRefs => "node-refs",
+            Self::Timers => "timers",
+            Self::Keyboard => "keyboard",
             Self::JavaScript => "javascript",
+            Self::UncheckedValues => "unchecked-values",
+            Self::StaticPages => "static-pages",
+            // Quality and operations
+            Self::Security => "security",
+            Self::Testing => "testing",
+            Self::TestingPages => "testing-pages",
+            Self::CompileErrors => "compile-errors",
+            Self::Debugging => "debugging",
+            Self::Upgrading => "upgrading",
+            // Deploy
             Self::Deploying => "deploying",
             Self::DeployContainer => "deploying/container",
             Self::DeployCloudflare => "deploying/cloudflare",
             Self::DeployVercel => "deploying/vercel",
-            Self::Security => "security",
-            Self::Testing => "testing",
-            Self::Troubleshooting => "troubleshooting",
-            Self::Upgrading => "upgrading",
-            Self::CallsInDepth => "calls",
-            Self::RoutesInDepth => "routes",
         }
     }
 }

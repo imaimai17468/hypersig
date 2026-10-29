@@ -1,5 +1,5 @@
 //! A search whose results the server renders as a fragment, for the page on
-//! talking to the server.
+//! fragments.
 
 use std::time::Duration;
 
