@@ -5640,6 +5640,12 @@ impl Style {
 }
 
 /// A standard pseudo-class without arguments.
+///
+/// The standard ones a class on an element never matches are left out:
+///
+/// - `:root` and `:scope` match only `<html>`; a [`Global`](crate::Global) rule for [`Selector::Root`](crate::Selector::Root) styles it instead.
+/// - `:host` matches only from inside a shadow tree.
+/// - `:first`, `:left`, and `:right` select a page box in `@page`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum PseudoClass {
