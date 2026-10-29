@@ -295,6 +295,9 @@ snippets! {
     SimulationWrongPage => "quality/simulation_wrong_page.rs", "compile_fail,E0277";
     DuplicateId => "quality/duplicate_id.rs", "should_panic";
     CallStatusType => "quality/call_status_type.rs", "compile_fail,E0308";
+    // The samples of the Style pages under Get started and Values.
+    // The samples of the Style pages under Conditions, Tokens and themes, and Global styles.
+    // The samples of the Style pages under Layout, Animation, and Opting out of type checks.
 }
 
 /// The lines of `snippet` that the page shows.

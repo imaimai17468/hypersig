@@ -162,13 +162,41 @@ pub enum Component {
 /// The pages of the Style section.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StylePage {
+    // Get started
     Overview,
+    Applying,
+    // Values
     Values,
+    Lengths,
+    Colors,
+    AnglesAndTimes,
+    UrlsAndStrings,
+    Keywords,
+    // Conditions
+    PseudoClasses,
+    PseudoElements,
+    Media,
+    Containers,
+    GroupAndPeer,
+    Toggled,
     Conditions,
+    // Tokens and themes
     Tokens,
+    Themes,
+    DarkMode,
+    // Global styles
     Global,
+    Fonts,
+    // Layout
+    Stacks,
+    Grids,
     Patterns,
+    // Animation
     Animation,
+    Transitions,
+    PageTransitions,
+    ReducedMotion,
+    // Opting out of type checks
     Unchecked,
 }
 
@@ -616,28 +644,79 @@ pub const STYLE: &[Group] = &[
             en: "Get started",
             ja: "はじめに",
         },
-        docs: &[Doc::Style(StylePage::Overview)],
-    },
-    Group {
-        title: L {
-            en: "Writing styles",
-            ja: "スタイルを書く",
-        },
         docs: &[
-            Doc::Style(StylePage::Values),
-            Doc::Style(StylePage::Conditions),
-            Doc::Style(StylePage::Tokens),
+            Doc::Style(StylePage::Overview),
+            Doc::Style(StylePage::Applying),
         ],
     },
     Group {
         title: L {
-            en: "The page",
-            ja: "ページ",
+            en: "Values",
+            ja: "値",
         },
         docs: &[
-            Doc::Style(StylePage::Global),
+            Doc::Style(StylePage::Values),
+            Doc::Style(StylePage::Lengths),
+            Doc::Style(StylePage::Colors),
+            Doc::Style(StylePage::AnglesAndTimes),
+            Doc::Style(StylePage::UrlsAndStrings),
+            Doc::Style(StylePage::Keywords),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Conditions",
+            ja: "条件",
+        },
+        docs: &[
+            Doc::Style(StylePage::PseudoClasses),
+            Doc::Style(StylePage::PseudoElements),
+            Doc::Style(StylePage::Media),
+            Doc::Style(StylePage::Containers),
+            Doc::Style(StylePage::GroupAndPeer),
+            Doc::Style(StylePage::Toggled),
+            Doc::Style(StylePage::Conditions),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Tokens and themes",
+            ja: "トークンとテーマ",
+        },
+        docs: &[
+            Doc::Style(StylePage::Tokens),
+            Doc::Style(StylePage::Themes),
+            Doc::Style(StylePage::DarkMode),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Global styles",
+            ja: "グローバルスタイル",
+        },
+        docs: &[Doc::Style(StylePage::Global), Doc::Style(StylePage::Fonts)],
+    },
+    Group {
+        title: L {
+            en: "Layout",
+            ja: "レイアウト",
+        },
+        docs: &[
+            Doc::Style(StylePage::Stacks),
+            Doc::Style(StylePage::Grids),
             Doc::Style(StylePage::Patterns),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Animation",
+            ja: "アニメーション",
+        },
+        docs: &[
             Doc::Style(StylePage::Animation),
+            Doc::Style(StylePage::Transitions),
+            Doc::Style(StylePage::PageTransitions),
+            Doc::Style(StylePage::ReducedMotion),
         ],
     },
     Group {
@@ -790,13 +869,41 @@ impl Doc {
         Self::Components(Component::Spinner),
         Self::Components(Component::Avatar),
         Self::Components(Component::Kbd),
+        // Style: Get started
         Self::Style(StylePage::Overview),
+        Self::Style(StylePage::Applying),
+        // Style: Values
         Self::Style(StylePage::Values),
+        Self::Style(StylePage::Lengths),
+        Self::Style(StylePage::Colors),
+        Self::Style(StylePage::AnglesAndTimes),
+        Self::Style(StylePage::UrlsAndStrings),
+        Self::Style(StylePage::Keywords),
+        // Style: Conditions
+        Self::Style(StylePage::PseudoClasses),
+        Self::Style(StylePage::PseudoElements),
+        Self::Style(StylePage::Media),
+        Self::Style(StylePage::Containers),
+        Self::Style(StylePage::GroupAndPeer),
+        Self::Style(StylePage::Toggled),
         Self::Style(StylePage::Conditions),
+        // Style: Tokens and themes
         Self::Style(StylePage::Tokens),
+        Self::Style(StylePage::Themes),
+        Self::Style(StylePage::DarkMode),
+        // Style: Global styles
         Self::Style(StylePage::Global),
+        Self::Style(StylePage::Fonts),
+        // Style: Layout
+        Self::Style(StylePage::Stacks),
+        Self::Style(StylePage::Grids),
         Self::Style(StylePage::Patterns),
+        // Style: Animation
         Self::Style(StylePage::Animation),
+        Self::Style(StylePage::Transitions),
+        Self::Style(StylePage::PageTransitions),
+        Self::Style(StylePage::ReducedMotion),
+        // Style: Opting out of type checks
         Self::Style(StylePage::Unchecked),
         Self::I18nHome,
         Self::I18n(I18nPage::Overview),
@@ -986,13 +1093,44 @@ impl Doc {
                 Component::Kbd => ("Kbd", "Kbd"),
             },
             Self::Style(page) => match page {
+                // Get started
                 StylePage::Overview => ("Overview", "概要"),
-                StylePage::Values => ("Properties and values", "プロパティと値"),
+                StylePage::Applying => ("Applying a style", "スタイルを付ける"),
+                // Values
+                StylePage::Values => ("Properties", "プロパティ"),
+                StylePage::Lengths => ("Lengths and units", "長さと単位"),
+                StylePage::Colors => ("Colors", "色"),
+                StylePage::AnglesAndTimes => ("Angles and times", "角度と時間"),
+                StylePage::UrlsAndStrings => ("URLs and strings", "URL と文字列"),
+                StylePage::Keywords => ("CSS-wide keywords", "CSS 全体のキーワード"),
+                // Conditions
+                StylePage::PseudoClasses => ("Pseudo-classes", "擬似クラス"),
+                StylePage::PseudoElements => ("Pseudo-elements", "擬似要素"),
+                StylePage::Media => ("Media queries", "メディアクエリ"),
+                StylePage::Containers => ("Container queries", "コンテナクエリ"),
+                StylePage::GroupAndPeer => ("Group and peer", "グループとピア"),
+                StylePage::Toggled => (
+                    "Styles switched by a signal",
+                    "シグナルで切り替えるスタイル",
+                ),
                 StylePage::Conditions => ("Conditions", "条件"),
-                StylePage::Tokens => ("Tokens and themes", "トークンとテーマ"),
-                StylePage::Global => ("Global styles", "グローバルスタイル"),
-                StylePage::Patterns => ("Layout patterns", "レイアウトのパターン"),
-                StylePage::Animation => ("Animation", "アニメーション"),
+                // Tokens and themes
+                StylePage::Tokens => ("Tokens", "トークン"),
+                StylePage::Themes => ("Themes", "テーマ"),
+                StylePage::DarkMode => ("Dark mode", "ダークモード"),
+                // Global styles
+                StylePage::Global => ("Rules by tag", "タグ単位のルール"),
+                StylePage::Fonts => ("Fonts", "フォント"),
+                // Layout
+                StylePage::Stacks => ("Stacks", "スタック"),
+                StylePage::Grids => ("Grids", "グリッド"),
+                StylePage::Patterns => ("Other patterns", "そのほかのパターン"),
+                // Animation
+                StylePage::Animation => ("Keyframes", "キーフレーム"),
+                StylePage::Transitions => ("Transitions", "トランジション"),
+                StylePage::PageTransitions => ("Page transitions", "ページ遷移"),
+                StylePage::ReducedMotion => ("Reduced motion", "動きを減らす設定"),
+                // Opting out of type checks
                 StylePage::Unchecked => ("Unchecked values", "検査しない値"),
             },
         };
@@ -1277,34 +1415,60 @@ impl Doc {
                 },
             },
             Self::Style(page) => match page {
+                // Get started
                 StylePage::Overview => L {
                     en: "`hypersig::style` is typed atomic CSS. A misspelled property name or keyword, or a value of the wrong type, is a compile error. Each declaration becomes one class.",
                     ja: "`hypersig::style` は型の付いた atomic CSS です。プロパティ名やキーワードの綴りを間違えたり、型の違う値を渡したりするとコンパイルエラーになります。宣言は 1 つごとに 1 つのクラスになります。",
                 },
+                StylePage::Applying => Doc::Style(StylePage::Overview).leads(),
+                // Values
                 StylePage::Values => L {
                     en: "Each property method takes its own value type, which has the property's keywords and accepts values in the units the property allows.",
                     ja: "プロパティのメソッドはそれぞれ専用の値の型を受け取ります。その型はプロパティのキーワードを持ち、プロパティで使える単位の値を受け付けます。",
                 },
+                StylePage::Lengths
+                | StylePage::Colors
+                | StylePage::AnglesAndTimes
+                | StylePage::UrlsAndStrings
+                | StylePage::Keywords => Doc::Style(StylePage::Values).leads(),
+                // Conditions
+                StylePage::PseudoClasses
+                | StylePage::PseudoElements
+                | StylePage::Media
+                | StylePage::Containers
+                | StylePage::GroupAndPeer
+                | StylePage::Toggled => Doc::Style(StylePage::Conditions).leads(),
                 StylePage::Conditions => L {
                     en: "`Style::on` applies part of a style only under a condition. The condition can be a pseudo-class, a media feature, a container width, or the state of a marked ancestor or sibling.",
                     ja: "`Style::on` はスタイルの一部を条件の下でだけ適用します。条件には擬似クラス、メディア特性、コンテナの幅、印を付けた祖先や兄弟の状態を使えます。",
                 },
+                // Tokens and themes
                 StylePage::Tokens => L {
                     en: "A token is a named value written as a CSS custom property. A theme sets its value for the whole page, and a style sets it for one element.",
                     ja: "トークンは CSS のカスタムプロパティとして書かれる名前付きの値です。テーマはページ全体に、スタイルは 1 つの要素にトークンの値を設定します。",
                 },
+                StylePage::Themes | StylePage::DarkMode => Doc::Style(StylePage::Tokens).leads(),
+                // Global styles
                 StylePage::Global => L {
                     en: "A `Global` holds rules that select elements by tag, a small reset, and the fonts the page loads.",
                     ja: "`Global` には、タグで要素を選ぶルール、小さなリセット、ページが読み込むフォントが入ります。",
                 },
+                StylePage::Fonts => Doc::Style(StylePage::Global).leads(),
+                // Layout
                 StylePage::Patterns => L {
                     en: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) has functions that return the styles of common layouts. Merge the returned style with your own.",
                     ja: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) には、よく使うレイアウトのスタイルを返す関数があります。返されたスタイルは自分のスタイルと `merge` して使います。",
                 },
+                StylePage::Stacks | StylePage::Grids => Doc::Style(StylePage::Patterns).leads(),
+                // Animation
                 StylePage::Animation => L {
                     en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element. The move from one page to the next animates with the browser's view transitions.",
                     ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。ページから次のページへの移動は、ブラウザの View Transitions でアニメーションできます。",
                 },
+                StylePage::Transitions | StylePage::PageTransitions | StylePage::ReducedMotion => {
+                    Doc::Style(StylePage::Animation).leads()
+                }
+                // Opting out of type checks
                 StylePage::Unchecked => L {
                     en: "A few forms reach the browser without a check. Each has its own name, so searching for that name finds every place that uses an unchecked value.",
                     ja: "いくつかの書き方は検査を受けずにブラウザへ渡ります。どの書き方にも決まった名前があるので、その名前で検索すれば、検査なしの値を使う箇所をすべて見つけられます。",
@@ -1566,13 +1730,41 @@ impl Component {
 impl StylePage {
     fn slug(self) -> &'static str {
         match self {
+            // Get started
             Self::Overview => "overview",
+            Self::Applying => "applying",
+            // Values
             Self::Values => "values",
+            Self::Lengths => "lengths",
+            Self::Colors => "colors",
+            Self::AnglesAndTimes => "angles-and-times",
+            Self::UrlsAndStrings => "urls-and-strings",
+            Self::Keywords => "keywords",
+            // Conditions
+            Self::PseudoClasses => "pseudo-classes",
+            Self::PseudoElements => "pseudo-elements",
+            Self::Media => "media",
+            Self::Containers => "containers",
+            Self::GroupAndPeer => "group-and-peer",
+            Self::Toggled => "toggled",
             Self::Conditions => "conditions",
+            // Tokens and themes
             Self::Tokens => "tokens",
+            Self::Themes => "themes",
+            Self::DarkMode => "dark-mode",
+            // Global styles
             Self::Global => "global",
+            Self::Fonts => "fonts",
+            // Layout
+            Self::Stacks => "stacks",
+            Self::Grids => "grids",
             Self::Patterns => "patterns",
+            // Animation
             Self::Animation => "animation",
+            Self::Transitions => "transitions",
+            Self::PageTransitions => "page-transitions",
+            Self::ReducedMotion => "reduced-motion",
+            // Opting out of type checks
             Self::Unchecked => "unchecked",
         }
     }

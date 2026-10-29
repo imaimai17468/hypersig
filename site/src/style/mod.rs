@@ -11,13 +11,35 @@ use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, ti
 pub fn content(site: Site, page: StylePage) -> Part {
     let head = title(Doc::Style(page).title(site));
     match page {
-        StylePage::Overview => overview(site, head),
-        StylePage::Values => values(site, head),
-        StylePage::Conditions => conditions(site, head),
-        StylePage::Tokens => tokens(site, head),
-        StylePage::Global => global(site, head),
-        StylePage::Patterns => patterns(site, head),
-        StylePage::Animation => animation(site, head),
+        // Get started
+        StylePage::Overview | StylePage::Applying => overview(site, head),
+        // Values
+        StylePage::Values
+        | StylePage::Lengths
+        | StylePage::Colors
+        | StylePage::AnglesAndTimes
+        | StylePage::UrlsAndStrings
+        | StylePage::Keywords => values(site, head),
+        // Conditions
+        StylePage::PseudoClasses
+        | StylePage::PseudoElements
+        | StylePage::Media
+        | StylePage::Containers
+        | StylePage::GroupAndPeer
+        | StylePage::Toggled
+        | StylePage::Conditions => conditions(site, head),
+        // Tokens and themes
+        StylePage::Tokens | StylePage::Themes | StylePage::DarkMode => tokens(site, head),
+        // Global styles
+        StylePage::Global | StylePage::Fonts => global(site, head),
+        // Layout
+        StylePage::Stacks | StylePage::Grids | StylePage::Patterns => patterns(site, head),
+        // Animation
+        StylePage::Animation
+        | StylePage::Transitions
+        | StylePage::PageTransitions
+        | StylePage::ReducedMotion => animation(site, head),
+        // Opting out of type checks
         StylePage::Unchecked => unchecked(site, head),
     }
 }
