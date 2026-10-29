@@ -60,7 +60,12 @@ fn building(site: Site) -> Part {
                     &[
                         "[`Color::hex`](api:hypersig/style/value/struct.Color.html#method.hex)",
                         "`fn hex(rgb: u32) -> Color`",
-                        "`#rrggbb` from the low 24 bits",
+                        "`#rrggbb`, and panics above `0xffffff`",
+                    ],
+                    &[
+                        "[`Color::hex_alpha`](api:hypersig/style/value/struct.Color.html#method.hex_alpha)",
+                        "`fn hex_alpha(rgba: u32) -> Color`",
+                        "`#rrggbbaa`",
                     ],
                     &[
                         "[`Color::rgb`](api:hypersig/style/value/struct.Color.html#method.rgb)",
@@ -97,7 +102,12 @@ fn building(site: Site) -> Part {
                     &[
                         "[`Color::hex`](api:hypersig/style/value/struct.Color.html#method.hex)",
                         "`fn hex(rgb: u32) -> Color`",
-                        "下位 24 ビットから作る `#rrggbb`",
+                        "`#rrggbb`。`0xffffff` を超えると panic します",
+                    ],
+                    &[
+                        "[`Color::hex_alpha`](api:hypersig/style/value/struct.Color.html#method.hex_alpha)",
+                        "`fn hex_alpha(rgba: u32) -> Color`",
+                        "`#rrggbbaa`",
                     ],
                     &[
                         "[`Color::rgb`](api:hypersig/style/value/struct.Color.html#method.rgb)",
@@ -174,16 +184,16 @@ fn unchecked(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`Color::hex` keeps only the low 24 bits of its argument and writes six hex digits. An eight-digit literal compiles, and its first byte is dropped, so the alpha you meant is lost and the color is wrong. `opacity` and `mix` read a percentage above 100 as 100:",
-                ja: "`Color::hex` は引数の下位 24 ビットだけを使い、16 進数 6 桁で書きます。8 桁のリテラルもコンパイルは通りますが、先頭の 1 バイトは捨てられるので、意図した透明度は失われ、色も違うものになります。`opacity` と `mix` は 100 を超える割合を 100 として扱います。",
+                en: "`Color::hex` panics on a value above `0xffffff`, so an eight-digit `#rrggbbaa` literal stops where it is built, and `Color::hex_alpha` takes it instead. A literal whose red byte is `00`, such as `0x00ff_0080`, is the number `0xff0080`, so `hex` reads it as `#ff0080` and the alpha is lost. `opacity` and `mix` read a percentage above 100 as 100:",
+                ja: "`Color::hex` は `0xffffff` を超える値で panic するので、8 桁の `#rrggbbaa` のリテラルは作ったところで止まります。8 桁の色には `Color::hex_alpha` を使います。`0x00ff_0080` のように赤のバイトが `00` のリテラルは数としては `0xff0080` なので、`hex` はそれを `#ff0080` として読み、透明度は失われます。`opacity` と `mix` は 100 を超える割合を 100 として扱います。",
             },
         ),
         show(Snippet::StyleColorLimits),
         para(
             site,
             L {
-                en: "For a translucent color, use `opacity`. `Color::rgb` takes `u8`, so a literal channel above 255 is a compile error from the `overflowing_literals` lint. Nothing checks the contrast between a text color and its background.",
-                ja: "半透明の色には `opacity` を使います。`Color::rgb` は `u8` を受け取るので、255 を超えるチャンネルをリテラルで書くと、`overflowing_literals` リントによるコンパイルエラーになります。文字の色と背景のコントラストは検査されません。",
+                en: "For a translucent color, use `hex_alpha` or `opacity`. `Color::rgb` takes `u8`, so a literal channel above 255 is a compile error from the `overflowing_literals` lint. Nothing checks the contrast between a text color and its background.",
+                ja: "半透明の色には `hex_alpha` か `opacity` を使います。`Color::rgb` は `u8` を受け取るので、255 を超えるチャンネルをリテラルで書くと、`overflowing_literals` リントによるコンパイルエラーになります。文字の色と背景のコントラストは検査されません。",
             },
         ),
         para(
