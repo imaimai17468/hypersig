@@ -534,8 +534,8 @@ fn costs(site: Site) -> [Part; 3] {
         para(
             site,
             L {
-                en: "Next, [Building the page](learn/describing-the-page/) shows how the HTML is built.",
-                ja: "HTML の組み立て方は次の [ページを組み立てる](learn/describing-the-page/) で説明します。",
+                en: "Next, [Elements and attributes](learn/elements/) shows how the HTML is built.",
+                ja: "HTML の組み立て方は次の [要素と属性](learn/elements/) で説明します。",
             },
         ),
     ]

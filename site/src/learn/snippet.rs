@@ -36,12 +36,12 @@ macro_rules! snippets {
 }
 
 snippets! {
-    Elements => "elements.rs";
+    Elements => "page/elements.rs";
     Foreign => "foreign.rs";
     ElementsModule => "elements_module.rs";
     ElementsPage => "elements_page.rs";
-    Component => "component.rs";
-    Bindings => "bindings.rs";
+    Component => "page/component.rs";
+    Bindings => "page/bindings.rs";
     SignalPaths => "signal_paths.rs";
     WrongField => "wrong_field.rs", "compile_fail,E0599";
     Nested => "nested.rs";
@@ -60,7 +60,7 @@ snippets! {
     TestingSimulation => "testing_simulation.rs";
     Forms => "forms.rs";
     Latest => "latest.rs";
-    Parts => "parts.rs";
+    Parts => "page/parts.rs";
     Extractors => "extractors.rs";
     HandlerErrors => "handler_errors.rs";
     Logging => "logging.rs";
@@ -75,9 +75,9 @@ snippets! {
     ChildRoutes => "child_routes.rs";
     Navigation => "navigation.rs";
     History => "history.rs";
-    Head => "head.rs";
+    Head => "page/head.rs";
     SearchParams => "search_params.rs";
-    Styles => "styles.rs";
+    Styles => "page/styles.rs";
     Effects => "effects.rs";
     StaticPage => "static_page.rs";
     UiSetup => "ui_setup.rs";
@@ -136,6 +136,27 @@ snippets! {
     TroubleCallError => "troubleshooting/call_error.rs";
     // The samples added for the Learn group Get started.
     // The samples added for the Learn group Building the page.
+    OtherPage => "page/other_page.rs", "compile_fail,E0277";
+    Children => "page/children.rs";
+    Attrs => "page/attrs.rs";
+    AttrScript => "page/attr_script.rs", "compile_fail,E0080";
+    Ids => "page/ids.rs";
+    Team => "page/team.rs";
+    Document => "page/document.rs";
+    Serve => "page/serve.rs";
+    Title => "page/title.rs";
+    TitleType => "page/title_type.rs", "compile_fail,E0277";
+    OriginPath => "page/origin_path.rs", "compile_fail,E0080";
+    Search => "page/search.rs";
+    PostPage => "page/post_page.rs";
+    BindingsRender => "page/bindings_render.rs";
+    When => "page/when.rs";
+    Classes => "page/classes.rs";
+    ShowType => "page/show_type.rs", "compile_fail,E0277";
+    PartOutside => "page/part_outside.rs", "compile_fail,E0277";
+    PartInList => "page/part_in_list.rs", "compile_fail,E0308";
+    StyleKeyword => "page/style_keyword.rs", "compile_fail,E0599";
+    BindStyle => "page/bind_style.rs";
     // The samples added for the Learn group Browser state.
     // The samples added for the Learn group Talking to the server.
     // The samples added for the Learn group Pages and routing.

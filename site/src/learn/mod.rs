@@ -6,6 +6,7 @@ mod database;
 mod deploying;
 mod forms;
 mod javascript;
+mod page;
 mod requests;
 mod security;
 mod server;
@@ -29,12 +30,11 @@ pub fn content(site: Site, page: Learn) -> Part {
         Learn::QuickStart | Learn::DevServer => basics::quick_start(site),
         Learn::Why => why::why(site),
         // Building the page
-        Learn::Elements
-        | Learn::ThePage
-        | Learn::Bindings
-        | Learn::Components
-        | Learn::DescribingThePage => basics::describing_the_page(site),
-        Learn::Styling => server::styling(site),
+        Learn::Elements => page::elements::page(site),
+        Learn::ThePage => page::document::page(site),
+        Learn::Bindings => page::bindings::page(site),
+        Learn::Components => page::components::page(site),
+        Learn::Styling => page::styling::page(site),
         // Browser state
         Learn::Signals
         | Learn::NestedSignals
