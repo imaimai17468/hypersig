@@ -383,6 +383,8 @@ snippets! {
     StylesheetClass => "style/unchecked/stylesheet_class.rs", "compile_fail,E0080";
     LinkedStylesheet => "style/unchecked/linked_stylesheet.rs";
     StyleAttr => "style/unchecked/style_attr.rs", "compile_fail,E0080";
+    // The samples of the i18n pages under Get started and Texts.
+    // The samples of the i18n pages under Pages in each language and Choosing the language.
 }
 
 /// The lines of `snippet` that the page shows.

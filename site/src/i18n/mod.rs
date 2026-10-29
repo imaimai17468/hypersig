@@ -11,9 +11,19 @@ use crate::prose::{Part, bullets, heading, lead, note, para, parts, title};
 pub fn content(site: Site, page: I18nPage) -> Part {
     let head = title(Doc::I18n(page).title(site));
     match page {
+        // Get started
         I18nPage::Overview => overview(site, head),
-        I18nPage::Pages => pages(site, head),
-        I18nPage::Negotiation => negotiation(site, head),
+        // Texts
+        I18nPage::Locale | I18nPage::Texts | I18nPage::Messages | I18nPage::Formats => {
+            overview(site, head)
+        }
+        // Pages in each language
+        I18nPage::Pages
+        | I18nPage::LanguageSwitcher
+        | I18nPage::PageLanguage
+        | I18nPage::Alternates => pages(site, head),
+        // Choosing the language
+        I18nPage::Negotiation | I18nPage::Redirect => negotiation(site, head),
     }
 }
 
