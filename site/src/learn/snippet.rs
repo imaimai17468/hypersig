@@ -70,13 +70,13 @@ snippets! {
     Database => "database.rs", "no_run";
     DynamoDb => "dynamodb.rs", "no_run";
     Api => "api.rs", "no_run";
-    Links => "links.rs";
-    WrongRoute => "wrong_route.rs", "compile_fail,E0080";
-    ChildRoutes => "child_routes.rs";
-    Navigation => "navigation.rs";
-    History => "history.rs";
+    Links => "routing/links.rs";
+    WrongRoute => "routing/wrong_route.rs", "compile_fail,E0080";
+    ChildRoutes => "routing/child_routes.rs";
+    Navigation => "routing/navigation.rs";
+    History => "routing/history.rs";
     Head => "page/head.rs";
-    SearchParams => "search_params.rs";
+    SearchParams => "routing/search_params.rs";
     Styles => "page/styles.rs";
     Effects => "effects.rs";
     StaticPage => "static_page.rs";
@@ -116,7 +116,7 @@ snippets! {
     Listen => "../../crates/hypersig_cli/steps/server.rs";
     SafeUrl => "safe_url.rs";
     StaticFiles => "static_files.rs";
-    ErrorPage => "error_page.rs";
+    ErrorPage => "routing/error_page.rs";
     LoadMore => "load_more.rs";
     EditState => "state/edit_state.rs";
     // The upgrading page shows each release's breaking changes as the code
@@ -227,6 +227,17 @@ snippets! {
     TalkReconnectOnAction => "talking/reconnect_on_action.rs", "compile_fail,E0599";
     TalkInbox => "talking/inbox.rs";
     // The samples added for the Learn group Pages and routing.
+    RouteSegments => "routing/segments.rs";
+    WrongSegment => "routing/wrong_segment.rs", "compile_fail,E0277";
+    WrongHref => "routing/wrong_href.rs", "compile_fail,E0277";
+    WrongChild => "routing/wrong_child.rs", "compile_fail,E0277";
+    OrgPages => "routing/org_pages.rs";
+    SearchFields => "routing/search_fields.rs";
+    WrongSearch => "routing/wrong_search.rs", "compile_fail,E0277";
+    MissingPage => "routing/missing_page.rs";
+    WrongUnserved => "routing/wrong_unserved.rs", "compile_fail,E0277";
+    BasePath => "routing/base_path.rs";
+    WrongBase => "routing/wrong_base.rs", "compile_fail,E0080";
     // The samples added for the Learn group Forms and requests.
     // The samples added for the Learn group Data and sign-in.
     // The samples added for the Learn group Browser features.

@@ -68,7 +68,6 @@ pub enum Learn {
     SearchParams,
     ErrorPages,
     BasePath,
-    Pages,
     // Forms and requests
     Forms,
     FormValidation,
@@ -379,7 +378,6 @@ pub const LEARN: &[Group] = &[
             Doc::Learn(Learn::SearchParams),
             Doc::Learn(Learn::ErrorPages),
             Doc::Learn(Learn::BasePath),
-            Doc::Learn(Learn::Pages),
         ],
     },
     Group {
@@ -703,7 +701,6 @@ impl Doc {
         Self::Learn(Learn::SearchParams),
         Self::Learn(Learn::ErrorPages),
         Self::Learn(Learn::BasePath),
-        Self::Learn(Learn::Pages),
         // Forms and requests
         Self::Learn(Learn::Forms),
         Self::Learn(Learn::FormValidation),
@@ -872,7 +869,6 @@ impl Doc {
                 Learn::SearchParams => ("Search parameters", "検索パラメータ"),
                 Learn::ErrorPages => ("Error pages", "エラーページ"),
                 Learn::BasePath => ("Serving under a path prefix", "パスの接頭辞の下で配信する"),
-                Learn::Pages => ("Pages and links", "ページとリンク"),
                 // Forms and requests
                 Learn::Forms => ("Forms", "フォーム"),
                 Learn::FormValidation => ("Validating a form", "フォームの検証"),
@@ -1102,16 +1098,28 @@ impl Doc {
                 },
                 // Pages and routing
                 Learn::Routes => L {
-                    en: "Typed query strings, URLs that change without loading a page, pages for missing paths, what search results and link previews show, and an application served under a path prefix.",
-                    ja: "型の付いたクエリ文字列、ページを読み込まずに変える URL、存在しないパスのページ、検索結果とリンクのプレビューに出る内容、パスの接頭辞の下で配信するアプリを扱います。",
+                    en: "A route is a page the server renders at a typed path. This page covers declaring one in `routes!`, the types a path parameter can hold, and the handler that serves it.",
+                    ja: "ルートは、型の付いたパスでサーバーが描画するページです。`routes!` での宣言、パスのパラメータに使える型、ルートを配信するハンドラを説明します。",
                 },
-                Learn::Links | Learn::ChildPages => Doc::Learn(Learn::Pages).leads(),
-                Learn::SearchParams | Learn::ErrorPages | Learn::BasePath => {
-                    Doc::Learn(Learn::Routes).leads()
-                }
-                Learn::Pages => L {
-                    en: "A route is a page the server renders at a path. The router serves it and the links on other pages point to it from the same value, so a parameter of the wrong type or in the wrong number is a compile error.",
-                    ja: "ルートは、あるパスでサーバーが描画するページです。ルーターの配信もほかのページからのリンクも同じ値から作るので、パラメータの型や数の誤りはコンパイルエラーになります。",
+                Learn::Links => L {
+                    en: "Links, redirects, and navigation from an action or a statement are built from the route, so a URL with a parameter of the wrong type or in the wrong number does not compile.",
+                    ja: "リンク、リダイレクト、アクションや文からのページ移動はルートから作るので、パラメータの型や数が違う URL はコンパイルできません。",
+                },
+                Learn::ChildPages => L {
+                    en: "A route declared with `in PARENT` continues its parent's path and parameters, and the compiler checks that it does.",
+                    ja: "`in PARENT` を付けて宣言したルートは親のパスとパラメータを引き継ぎ、コンパイラがそれを検査します。",
+                },
+                Learn::SearchParams => L {
+                    en: "A route's second type parameter types its query string, and a statement or an action can change the URL in the address bar without loading a page.",
+                    ja: "ルートの 2 つ目の型パラメータはクエリ文字列の型です。文やアクションは、ページを読み込まずにアドレスバーの URL を変えられます。",
+                },
+                Learn::ErrorPages => L {
+                    en: "What a page handler answers when it cannot build its page, and the one page `routes!` shows for every request that reaches no page.",
+                    ja: "ページを組み立てられなかったハンドラが返すものと、どのページにも届かなかったリクエストに `routes!` が出すページを説明します。",
+                },
+                Learn::BasePath => L {
+                    en: "An application served under a prefix such as `/app` names it once as a `Base`, and every link, URL, and call of the block starts with it.",
+                    ja: "`/app` のような接頭辞の下で配信するアプリは、接頭辞を `Base` として 1 回だけ宣言します。ブロックのリンク、URL、呼び出しはすべてその接頭辞で始まります。",
                 },
                 // Forms and requests
                 Learn::Forms => L {
@@ -1380,7 +1388,6 @@ impl Learn {
             Self::SearchParams => "search-params",
             Self::ErrorPages => "error-pages",
             Self::BasePath => "base-path",
-            Self::Pages => "pages",
             // Forms and requests
             Self::Forms => "forms",
             Self::FormValidation => "form-validation",
