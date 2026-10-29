@@ -1666,13 +1666,97 @@ impl Doc {
                 },
             },
             Self::Components(page) => match page {
-                Component::Installation | Component::Handles | Component::Translations => L {
+                // Get started
+                Component::Installation => L {
                     en: "`hypersig_ui` is a set of components that look like shadcn/ui and take their behavior from the browser's native elements and the WAI-ARIA Authoring Practices.",
                     ja: "`hypersig_ui` は、見た目が shadcn/ui に似ており、振る舞いはブラウザのネイティブ要素と WAI-ARIA Authoring Practices に従うコンポーネント集です。",
                 },
-                Component::Theming | Component::Tokens => L {
-                    en: "The components read their colors and radius from design tokens, which a theme sets for the page and a style sets for one element.",
-                    ja: "コンポーネントは色と角の丸みをデザイントークンから読みます。トークンの値は、ページ全体にはテーマが、1 つの要素にはスタイルが設定します。",
+                Component::Theming => L {
+                    en: "The components are light by default and dark for a visitor whose system prefers dark. `light()` and `dark()` let a signal pick the scheme instead.",
+                    ja: "コンポーネントは既定でライトの配色になり、システムがダークを選んでいる訪問者にはダークの配色になります。`light()` と `dark()` を使うと、代わりにシグナルで配色を選べます。",
+                },
+                Component::Tokens => L {
+                    en: "The components read their colors and their corner radius from the tokens of the `token` module, which a theme sets for the page and a style sets for one element.",
+                    ja: "コンポーネントは色と角の丸みを `token` モジュールのトークンから読みます。トークンの値は、ページ全体にはテーマが、1 つの要素にはスタイルが設定します。",
+                },
+                Component::Handles => L {
+                    en: "A dialog, a menu, a popover, a tooltip, and a combobox are `const` handles. The button that opens one and the element it opens are built from the same handle, so they agree on the element's id.",
+                    ja: "ダイアログ、メニュー、ポップオーバー、ツールチップ、コンボボックスは `const` のハンドルです。開くボタンと開かれる要素を同じハンドルから作るので、両者は要素の id で食い違いません。",
+                },
+                Component::Translations => L {
+                    en: "A few components show or announce words of their own, such as \"Close\" or \"No matches\". They are English by default, and each is a field of a struct that a page in another language fills in.",
+                    ja: "いくつかのコンポーネントは「Close」や「No matches」のような独自の文言を表示したり読み上げさせたりします。既定は英語で、どの文言も構造体のフィールドなので、ほかの言語のページはそれを埋めて渡します。",
+                },
+                // Buttons
+                Component::Button => L {
+                    en: "A native `<button>` in one of six variants and three sizes. `button` does not submit a form, and `submit_button` does.",
+                    ja: "6 つのバリアントと 3 つのサイズから選べるネイティブの `<button>` です。`button` はフォームを送信せず、`submit_button` は送信します。",
+                },
+                Component::IconButton => L {
+                    en: "A square button that shows only an icon. Its name for assistive technology is a required argument.",
+                    ja: "アイコンだけを表示する正方形のボタンです。支援技術に伝える名前は必須の引数です。",
+                },
+                Component::LinkButton => L {
+                    en: "`button_style` gives a link the look of a button. It stays an `<a>`, so it navigates and a screen reader announces it as a link.",
+                    ja: "`button_style` はリンクにボタンの見た目を与えます。要素は `<a>` のままなので、ページを移動し、スクリーンリーダーもリンクとして読み上げます。",
+                },
+                Component::Toggle => L {
+                    en: "A button that is pressed or not, bound to a `bool` signal. A click flips the signal.",
+                    ja: "押された状態と押されていない状態を持つボタンで、`bool` のシグナルに結び付きます。クリックするとシグナルが反転します。",
+                },
+                Component::ToggleGroup => L {
+                    en: "A row of toggles of which exactly one is on, bound to a signal that holds the chosen value.",
+                    ja: "常にちょうど 1 つだけがオンになるトグルの並びで、選んだ値を持つシグナルに結び付きます。",
+                },
+                Component::MultiToggleGroup => L {
+                    en: "A row of toggles, each bound to a `bool` signal of its own, that any number of can be on at once.",
+                    ja: "トグルの並びで、それぞれが自分の `bool` のシグナルに結び付きます。いくつでも同時にオンにできます。",
+                },
+                // Form fields
+                Component::TextField => L {
+                    en: "A labeled `<input>` or `<textarea>` bound to a `String` signal, with an optional description and error message tied to it.",
+                    ja: "ラベル付きの `<input>` または `<textarea>` で、`String` のシグナルに結び付きます。説明とエラーメッセージを付けると、それらも入力欄に結び付きます。",
+                },
+                Component::NumberField => L {
+                    en: "A labeled `<input type=\"number\">` bound to an `i32` or `f64` signal, whose `min`, `max`, and `step` take the signal's own type.",
+                    ja: "ラベル付きの `<input type=\"number\">` で、`i32` か `f64` のシグナルに結び付きます。`min`、`max`、`step` はシグナルと同じ型の値を受け取ります。",
+                },
+                Component::DateField => L {
+                    en: "A labeled `<input type=\"date\">` bound to a `CalendarDate` signal, which the browser fills from its own date picker.",
+                    ja: "ラベル付きの `<input type=\"date\">` で、`CalendarDate` のシグナルに結び付きます。値はブラウザ自身の日付ピッカーで入力します。",
+                },
+                Component::Checkbox => L {
+                    en: "A native checkbox inside the label that names it, bound to a `bool` signal.",
+                    ja: "名前を表すラベルの中に置いたネイティブのチェックボックスで、`bool` のシグナルに結び付きます。",
+                },
+                Component::Switch => L {
+                    en: "An on and off switch bound to a `bool` signal. It is a native checkbox with `role=\"switch\"`.",
+                    ja: "オンとオフを切り替えるスイッチで、`bool` のシグナルに結び付きます。`role=\"switch\"` を付けたネイティブのチェックボックスです。",
+                },
+                Component::RadioGroup => L {
+                    en: "A `<fieldset>` of radio buttons, one per option, that sets a signal to the chosen option's value.",
+                    ja: "選択肢ごとにラジオボタンを並べた `<fieldset>` で、選んだ選択肢の値をシグナルに設定します。",
+                },
+                Component::Select => L {
+                    en: "A labeled native `<select>` that sets a signal to the chosen option's value.",
+                    ja: "ラベル付きのネイティブの `<select>` で、選んだ選択肢の値をシグナルに設定します。",
+                },
+                Component::Slider => L {
+                    en: "A labeled `<input type=\"range\">` bound to an `i32` signal, drawn as a track and a thumb that look the same in every browser.",
+                    ja: "ラベル付きの `<input type=\"range\">` で、`i32` のシグナルに結び付きます。トラックとつまみを描画するので、どのブラウザでも同じ見た目になります。",
+                },
+                Component::FormFields => L {
+                    en: "Each form field has a variant that binds it to a field of a `Form`, shows the form's message for that field, and marks the field touched when the visitor leaves it.",
+                    ja: "どの入力欄にも `Form` のフィールドに結び付ける版があります。その版はフィールドに対するフォームのメッセージを表示し、訪問者が入力欄から離れるとフィールドを操作済みにします。",
+                },
+                // Pickers
+                Component::Listbox => L {
+                    en: "A list of options, one per variant of an enum, of which one is selected. The arrow keys move the selection.",
+                    ja: "列挙型のバリアントごとに選択肢を並べ、そのうち 1 つを選ぶリストです。矢印キーで選択を移します。",
+                },
+                Component::Combobox => L {
+                    en: "A text field with a list of options that narrows as the visitor types. Choosing an option puts it in the field.",
+                    ja: "入力に合わせて選択肢が絞り込まれるテキストフィールドです。選択肢を選ぶと、その文字列が入力欄に入ります。",
                 },
                 // Overlays
                 Component::Dialog => L {
