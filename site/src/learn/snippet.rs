@@ -90,11 +90,6 @@ snippets! {
     GroupPeer => "style/conditions/group_peer.rs";
     Tokens => "style/tokens/tokens.rs";
     GlobalRules => "style/global/rules.rs";
-    Patterns => "patterns.rs";
-    Animation => "animation.rs";
-    ViewTransitions => "view_transitions.rs";
-    ViewTransitionStmt => "view_transition_stmt.rs";
-    Unchecked => "unchecked.rs";
     I18nLocale => "i18n_locale.rs";
     I18nMissing => "i18n_missing.rs", "compile_fail,E0063";
     I18nPages => "i18n_pages.rs";
@@ -360,6 +355,30 @@ snippets! {
     FontSrc => "style/global/font_src.rs", "compile_fail,E0308";
     FontUrl => "style/global/font_url.rs", "compile_fail,E0080";
     // The samples of the Style pages under Layout, Animation, and Opting out of type checks.
+    Stacks => "style/layout/stacks.rs";
+    StackResponsive => "style/layout/stack_responsive.rs";
+    StackGap => "style/layout/stack_gap.rs", "compile_fail,E0277";
+    Grids => "style/layout/grids.rs";
+    GridColumns => "style/layout/grid_columns.rs", "compile_fail,E0308";
+    GridSignal => "style/layout/grid_signal.rs";
+    Patterns => "style/layout/patterns.rs";
+    CircleSize => "style/layout/circle_size.rs", "compile_fail,E0308";
+    Keyframes => "style/animation/keyframes.rs";
+    KeyframesName => "style/animation/keyframes_name.rs", "compile_fail,E0277";
+    KeyframesSteps => "style/animation/keyframes_steps.rs";
+    Transitions => "style/animation/transitions.rs";
+    TransitionDuration => "style/animation/transition_duration.rs", "compile_fail,E0277";
+    PageTransitions => "style/animation/page_transitions.rs";
+    PageTransitionStmt => "style/animation/page_transition_stmt.rs";
+    ViewTransitionName => "style/animation/view_transition_name.rs", "compile_fail,E0277";
+    ReducedMotion => "style/animation/reduced_motion.rs";
+    ReducedMotionVariant => "style/animation/reduced_motion_variant.rs", "compile_fail,E0599";
+    Raw => "style/unchecked/raw.rs";
+    RawPanic => "style/unchecked/raw_panic.rs", "should_panic";
+    Unchecked => "style/unchecked/stylesheet.rs";
+    StylesheetClass => "style/unchecked/stylesheet_class.rs", "compile_fail,E0080";
+    LinkedStylesheet => "style/unchecked/linked_stylesheet.rs";
+    StyleAttr => "style/unchecked/style_attr.rs", "compile_fail,E0080";
 }
 
 /// The lines of `snippet` that the page shows.

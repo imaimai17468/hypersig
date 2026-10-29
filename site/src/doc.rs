@@ -1493,19 +1493,35 @@ impl Doc {
                     ja: "`FontFace` はフォントのファイルを `@font-face` で読み込みます。その `family()` は `font-family` の宣言に渡す値です。",
                 },
                 // Layout
-                StylePage::Patterns => L {
-                    en: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) has functions that return the styles of common layouts. Merge the returned style with your own.",
-                    ja: "[`hypersig::style::pattern`](api:hypersig_style/pattern/index.html) には、よく使うレイアウトのスタイルを返す関数があります。返されたスタイルは自分のスタイルと `merge` して使います。",
+                StylePage::Stacks => L {
+                    en: "A stack puts an element's children in a row or a column with a gap between them. Each stack is a function that returns a `Style` of flexbox declarations.",
+                    ja: "スタックは要素の子を間隔を空けて横 1 行か縦 1 列に並べます。どのスタックも flexbox の宣言からなる `Style` を返す関数です。",
                 },
-                StylePage::Stacks | StylePage::Grids => Doc::Style(StylePage::Patterns).leads(),
+                StylePage::Grids => L {
+                    en: "`grid` lays children out in columns of equal width, and `grid_item` makes one child span several of them.",
+                    ja: "`grid` は子を等しい幅の列に並べ、`grid_item` は 1 つの子を複数の列にまたがらせます。",
+                },
+                StylePage::Patterns => L {
+                    en: "The rest of [`hypersig::style::pattern`](api:hypersig/style/pattern/index.html) centers content, gives a box a fixed shape, makes a whole card one link, and hides text from sight but not from screen readers.",
+                    ja: "[`hypersig::style::pattern`](api:hypersig/style/pattern/index.html) の残りの関数は、内容を中央に置き、ボックスの形を決め、カード全体を 1 つのリンクにし、テキストを画面からは隠してスクリーンリーダーには読ませます。",
+                },
                 // Animation
                 StylePage::Animation => L {
-                    en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element. The move from one page to the next animates with the browser's view transitions.",
-                    ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。ページから次のページへの移動は、ブラウザの View Transitions でアニメーションできます。",
+                    en: "Keyframes are Rust values too. When an element uses keyframes, their rule is written to the page along with the element.",
+                    ja: "キーフレームも Rust の値です。要素がキーフレームを使うと、そのキーフレームのルールも要素と一緒にページに書かれます。",
                 },
-                StylePage::Transitions | StylePage::PageTransitions | StylePage::ReducedMotion => {
-                    Doc::Style(StylePage::Animation).leads()
-                }
+                StylePage::Transitions => L {
+                    en: "A transition animates a property from its old value to its new one when a pseudo-class or a signal changes it.",
+                    ja: "トランジションは、擬似クラスやシグナルがプロパティの値を変えたときに、前の値から新しい値へアニメーションさせます。",
+                },
+                StylePage::PageTransitions => L {
+                    en: "The browser's view transitions animate the move from one page to the next, and `Stmt::view_transition` animates a change within a page.",
+                    ja: "ブラウザの View Transitions は、ページから次のページへの移動をアニメーションさせます。ページの中の変化は `Stmt::view_transition` でアニメーションさせます。",
+                },
+                StylePage::ReducedMotion => L {
+                    en: "`Media::ReducedMotion` applies a style for a visitor who asks the operating system for less motion, so an animation can stop, slow down, or become instant for them.",
+                    ja: "`Media::ReducedMotion` は、OS で動きを減らすよう設定した訪問者にだけスタイルを適用します。その訪問者に対してはアニメーションを止めたり、遅くしたり、すぐに終わらせたりできます。",
+                },
                 // Opting out of type checks
                 StylePage::Unchecked => L {
                     en: "A few forms reach the browser without a check. Each has its own name, so searching for that name finds every place that uses an unchecked value.",
