@@ -157,8 +157,8 @@ fn panics(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A handler of an action, a stream, or an upload that panics before it returns answers `500 Internal Server Error`, which the page shows as any failed call, and the default panic hook still prints the message to stderr. A stream's stream is read after the response has begun, so a panic while it is read closes the connection before the answer is complete, and the page sees status 0.",
-                ja: "アクション、ストリーム、アップロードのハンドラが値を返す前にパニックすると、`500 Internal Server Error` で応答します。ページはこれをほかの失敗した呼び出しと同じように表示し、既定のパニックフックはメッセージを標準エラー出力に書きます。ストリームのハンドラが返したストリームは応答が始まってから読まれるので、読んでいるあいだのパニックは応答が終わる前に接続を閉じ、ページにはステータス 0 が届きます。",
+                en: "A handler of an action, a stream, or an upload that panics before it returns answers `500 Internal Server Error`, which the page shows as any failed call, and the default panic hook still prints the message to stderr. A stream's stream is read after the response has begun, so a panic while it is read closes the connection before the answer is complete, and the page sees status 0. A page handler that panics, and a page that panics while it renders, answer `500 Internal Server Error` with an empty body.",
+                ja: "アクション、ストリーム、アップロードのハンドラが値を返す前にパニックすると、`500 Internal Server Error` で応答します。ページはこれをほかの失敗した呼び出しと同じように表示し、既定のパニックフックはメッセージを標準エラー出力に書きます。ストリームのハンドラが返したストリームは応答が始まってから読まれるので、読んでいるあいだのパニックは応答が終わる前に接続を閉じ、ページにはステータス 0 が届きます。ページのハンドラや、描画中のページがパニックしたときは、本文が空の `500 Internal Server Error` で応答します。",
             },
         ),
     ])

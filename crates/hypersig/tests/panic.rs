@@ -1,10 +1,11 @@
-//! The answer to a call whose handler panics.
+//! The answer to a call or a page whose handler panics.
 
 use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use futures::stream;
-use hypersig::{Action, Patches, Signals, StreamAction, Upload, Uploaded};
+use hypersig::html::{Id, div};
+use hypersig::{Action, Page, Patches, Route, Signals, StreamAction, Upload, Uploaded};
 use serde::{Deserialize, Serialize};
 use tower::ServiceExt as _;
 
@@ -26,11 +27,24 @@ hypersig::routes! {
         assert!(count < 0, "the handler expects a negative count");
         stream::empty::<Patches<Counter>>()
     };
+    const FAIL_PAGE: Route<u32> = "/pages/{n}" => |(), n: u32| async move {
+        assert!(n == 0, "the handler serves only page 0");
+        counter()
+    };
+    const FAIL_RENDER: Route = "/render" => |(), ()| async move {
+        counter().child(div().id(TWICE)).child(div().id(TWICE))
+    };
     upload FAIL_UPLOAD: Upload<Counter> = "/fail-upload" => |(), _: Uploaded<()>| async move {
         panic!("the handler cannot store the file");
         #[expect(unreachable_code, reason = "the handler's return type is inferred from here")]
         Patches::<Counter>::new()
     };
+}
+
+const TWICE: Id = Id::new("twice");
+
+fn counter() -> Page<Counter> {
+    Page::new("Counter", Counter { count: 0 })
 }
 
 async fn status(request: Request<Body>) -> StatusCode {
@@ -76,4 +90,25 @@ async fn an_upload_whose_handler_panics_answers_500() {
         .body(Body::from(body))
         .expect("request");
     assert_eq!(status(request).await, StatusCode::INTERNAL_SERVER_ERROR);
+}
+
+fn get(path: &str) -> Request<Body> {
+    Request::get(path).body(Body::empty()).expect("request")
+}
+
+#[tokio::test]
+async fn a_page_whose_handler_panics_answers_500() {
+    assert_eq!(
+        status(get("/pages/3")).await,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+    assert_eq!(status(get("/pages/0")).await, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn a_page_that_panics_while_it_renders_answers_500() {
+    assert_eq!(
+        status(get("/render")).await,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
 }

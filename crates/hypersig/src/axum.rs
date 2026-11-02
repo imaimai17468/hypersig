@@ -278,7 +278,7 @@ impl<St: Clone + Send + Sync + 'static> RouterExt<St> for Router<St> {
                     Err(rejection) => rejection,
                 }
             };
-            async move { nosniff(answer.await) }
+            async move { nosniff(or_500(answer).await) }
         };
         self.route(route.path(), get(route_handler))
     }
@@ -568,6 +568,9 @@ where
 ///
 /// A page goes out with `Cache-Control: private, no-cache`, because it
 /// carries the visitor's signals, and a `Cache-Control` part replaces it.
+///
+/// A handler that panics, and a page that panics while it renders, answer
+/// `500 Internal Server Error` with an empty body.
 ///
 /// ```
 /// use hypersig::html::h1;
@@ -1327,14 +1330,27 @@ fn called_part(headers: &HeaderMap) -> Result<Option<Arc<str>>, RequestError> {
     Ok(Some(path.into()))
 }
 
+/// Runs `future`, the response to one request, and answers
+/// `500 Internal Server Error` where it panics.
+///
+/// Left to unwind, the panic would drop the connection, and the browser
+/// would see a network error. The default panic hook still prints the
+/// message.
+async fn or_500(future: impl Future<Output = Response>) -> Response {
+    // The router state is all the future shares with later requests, and a
+    // `Mutex` in it is poisoned by this panic as by a panic on any thread.
+    AssertUnwindSafe(future)
+        .catch_unwind()
+        .await
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
 /// Runs `future`, the response to one request, with `part`, the part the
 /// request came from, current, or answers with the refusal of a malformed part.
 ///
 /// A panic while `future` runs answers `500 Internal Server Error`, which
 /// the runtime shows through [`Call::error`](crate::Call::error) as it shows
-/// any failed call. Left to unwind, the panic would drop the connection, and
-/// the runtime would see a network error. The default panic hook still
-/// prints the message.
+/// any failed call.
 fn in_called_part<F>(
     base: Base,
     part: Result<Option<Arc<str>>, RequestError>,
@@ -1346,16 +1362,9 @@ where
     let (part, inner): (_, Pin<Box<dyn Future<Output = Response> + Send>>) = match part {
         Ok(part) => (
             part,
-            Box::pin(async move {
-                // The router state is all the future shares with later
-                // requests, and a `Mutex` in it is poisoned by this panic as
-                // by a panic on any thread.
-                let response = AssertUnwindSafe(async move { future.await.into_response() })
-                    .catch_unwind()
-                    .await
-                    .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
-                nosniff(response)
-            }),
+            Box::pin(
+                async move { nosniff(or_500(async move { future.await.into_response() }).await) },
+            ),
         ),
         Err(refusal) => (
             None,
