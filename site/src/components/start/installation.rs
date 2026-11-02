@@ -39,8 +39,8 @@ fn dependency(site: Site) -> Part {
             Lang::Toml,
             Some("Cargo.toml"),
             r#"[dependencies]
-hypersig = "0.14"
-hypersig_ui = "0.14"
+hypersig = "0.15"
+hypersig_ui = "0.15"
 serde = { version = "1", features = ["derive"] }"#,
         ),
         para(

@@ -14,10 +14,11 @@ pub(crate) fn page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The releases that changed a public signature, 0.5 through 0.14, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
-                ja: "公開しているシグネチャを変えた 0.5 から 0.14 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
+                en: "The releases that changed a public signature, 0.5 through 0.15, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
+                ja: "公開しているシグネチャを変えた 0.5 から 0.15 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
             },
         ),
+        to_0_15(site),
         to_0_14(site),
         to_0_13(site),
         to_0_12(site),
@@ -28,6 +29,26 @@ pub(crate) fn page(site: Site) -> Part {
         to_0_7(site),
         to_0_6(site),
         to_0_5(site),
+    ])
+}
+
+fn to_0_15(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "From 0.14 to 0.15",
+                ja: "0.14 から 0.15 へ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "The enums the crates export are `#[non_exhaustive]`, so a later release can add a variant without breaking your code. A `match` on one of them in your crate needs a `_` arm, and the compiler names each `match` without one (E0004). They are `RequestKind`, `Framing`, `Candidate`, `DateStyle`, `TimeStyle`, `TimeZone`, and `PluralCategory` in `hypersig`, `Condition`, `Selector`, and `value::CssWideKeyword` in `hypersig::style`, and `SortOrder` in `hypersig_ui`.",
+                ja: "クレートが公開する enum には `#[non_exhaustive]` が付いています。そのため、後のリリースで列挙子を足しても、利用者のコードは壊れません。これらの enum を自分のクレートで `match` するときは `_` の腕が必要で、`_` の腕がない `match` はコンパイラがそれぞれエラー（E0004）で示します。対象は `hypersig` の `RequestKind`、`Framing`、`Candidate`、`DateStyle`、`TimeStyle`、`TimeZone`、`PluralCategory`、`hypersig::style` の `Condition`、`Selector`、`value::CssWideKeyword`、`hypersig_ui` の `SortOrder` です。",
+            },
+        ),
+        show_change(Snippet::Upgrade015),
     ])
 }
 

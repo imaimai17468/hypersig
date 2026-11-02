@@ -40,8 +40,8 @@ fn crate_setup(site: Site) -> Part {
             Lang::Toml,
             Some("Cargo.toml"),
             r#"[dependencies]
-hypersig = "0.14"
-hypersig_i18n = "0.14"
+hypersig = "0.15"
+hypersig_i18n = "0.15"
 serde = { version = "1", features = ["derive"] }"#,
         ),
         para(
