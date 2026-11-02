@@ -376,7 +376,9 @@ fn expand_segment(input: &DeriveInput) -> syn::Result<TokenStream> {
 ///
 /// A generic struct, a tuple or unit struct, an enum, and a union are each a
 /// compile error at the offending span. `because` ends the message for a
-/// struct whose fields have no names.
+/// struct whose fields have no names. The message for a unit struct names
+/// `struct Name {}`, which serializes to the `{}` a unit struct's `null` is
+/// not.
 fn named_fields<'input>(
     input: &'input DeriveInput,
     derive: &str,
@@ -391,7 +393,15 @@ fn named_fields<'input>(
     match &input.data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(named) => Ok(named),
-            other => Err(syn::Error::new_spanned(
+            Fields::Unit => Err(syn::Error::new_spanned(
+                &input.ident,
+                format!(
+                    "`{derive}` needs a struct with named fields, {because}; \
+                     write `struct {} {{}}` for one with no fields",
+                    input.ident
+                ),
+            )),
+            Fields::Unnamed(other) => Err(syn::Error::new_spanned(
                 other,
                 format!("`{derive}` needs a struct with named fields, {because}"),
             )),
@@ -550,6 +560,11 @@ mod tests {
     #[test]
     fn rejects_tuple_struct() {
         insta::assert_snapshot!(expand(quote! { struct T(i32); }));
+    }
+
+    #[test]
+    fn rejects_unit_struct() {
+        insta::assert_snapshot!(expand(quote! { struct U; }));
     }
 
     #[test]
