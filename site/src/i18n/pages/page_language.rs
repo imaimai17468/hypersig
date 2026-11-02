@@ -152,8 +152,8 @@ fn locale_tag(site: Site) -> Part {
         para(
             site,
             L {
-                en: "In a page handler the panic happens on every request for that language. It drops the connection before a response is written, and the browser shows its own error for a failed connection. Name each variant with its tag, through `rename_all = \"lowercase\"` or `#[serde(rename = \"pt-BR\")]`.",
-                ja: "ページのハンドラの中では、その言語へのリクエストのたびにパニックします。パニックはレスポンスを書く前に接続を切るので、ブラウザは接続に失敗したときの自身のエラーを表示します。各バリアントには `rename_all = \"lowercase\"` や `#[serde(rename = \"pt-BR\")]` でタグの名前を付けてください。",
+                en: "In a page handler the panic happens on every request for that language, and each request gets an empty `500 Internal Server Error`. Name each variant with its tag, through `rename_all = \"lowercase\"` or `#[serde(rename = \"pt-BR\")]`.",
+                ja: "ページのハンドラの中では、その言語へのリクエストのたびにパニックし、どのリクエストにも本文が空の `500 Internal Server Error` で応答します。各バリアントには `rename_all = \"lowercase\"` や `#[serde(rename = \"pt-BR\")]` でタグの名前を付けてください。",
             },
         ),
     ])
