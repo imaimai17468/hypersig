@@ -59,6 +59,7 @@ impl Timestamp {
         // `SystemTime::now` panics on this target, and `Date.now()` returns
         // whole milliseconds as a float.
         #[expect(
+            clippy::as_conversions,
             clippy::cast_possible_truncation,
             reason = "Date.now() is a whole number of milliseconds within i64"
         )]
