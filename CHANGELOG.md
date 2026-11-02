@@ -2,6 +2,24 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
 
+## [0.15.0] - 2026-11-03
+
+### Breaking
+
+- The exported enums are `#[non_exhaustive]`, so a `match` on one of them outside its crate needs a `_` arm: `RequestKind`, `Framing`, `Candidate`, `DateStyle`, `TimeStyle`, `TimeZone`, `PluralCategory`, the `Sig` markers `Root`, `Local`, `Computed`, and `Read`, `hypersig::style`'s `Condition`, `Selector`, and `value::CssWideKeyword`, and `hypersig_ui`'s `SortOrder`.
+
+### Changed
+
+- A panic in a page handler, or in a page while it renders, answers `500 Internal Server Error` with an empty body, as a panicking action does. It dropped the connection before.
+- `#[derive(Signals)]` and `#[derive(Search)]` on a unit struct name `struct Name {}` in their error, the form a page with no signals takes.
+
+### Fixed
+
+- `Combobox` leaves out `aria-activedescendant` while no option is active, where it wrote an empty value.
+- `NavList`, `Breadcrumb`, and `pagination` draw no list markers, the breadcrumb's chevrons show, and its links take the muted color without an underline. An `<a>` styled with `button_style` has no underline outside the `Link` variant's hover. The toast region drops the list's indent.
+- The docs of `Accordion::exclusive` say that an id from `Id::with_key` is checked for duplicates, and the docs of `Tooltip` say where the tooltip opens when one handle has two buttons.
+- The i18n and Components docs give each concept and each component a page of its own.
+
 ## [0.14.0] - 2026-10-29
 
 ### Breaking
