@@ -58,11 +58,11 @@ impl<S> Accordion<S> {
     ///
     /// The sections share `group` as their `name`, and sections with one
     /// `name` close each other wherever they are on the page. The `<div>`
-    /// carries `group` as its id, so two accordions given one [`Id::new`]
-    /// are two elements with one id, which
-    /// [`Page::render`](hypersig::Page::render) panics on. An id built with
-    /// [`Id::with_key`] or [`Id::from_text`] is not checked, and two
-    /// accordions given one such id close each other's sections.
+    /// carries `group` as its id, so two accordions given one id from
+    /// [`Id::new`], or from [`Id::with_key`] on such an id, are two elements
+    /// with one id, which [`Page::render`](hypersig::Page::render) panics on.
+    /// An id built with [`Id::from_text`] is not checked, and two accordions
+    /// given one such id close each other's sections.
     #[must_use]
     pub fn exclusive(group: Id) -> Self {
         Self {
@@ -173,6 +173,20 @@ mod tests {
     fn two_exclusive_accordions_of_one_group_panic_when_rendered() {
         let faq = || Accordion::<()>::exclusive(FAQ).item("Why?", p().text("Because."));
         let _ = div::<()>().child(faq()).child(faq()).render();
+    }
+
+    #[test]
+    #[should_panic(expected = "two elements carry the id `faq-1`")]
+    fn two_exclusive_accordions_of_one_keyed_group_panic_when_rendered() {
+        let faq = || Accordion::<()>::exclusive(FAQ.with_key(1)).item("Why?", p());
+        let _ = div::<()>().child(faq()).child(faq()).render();
+    }
+
+    #[test]
+    fn two_exclusive_accordions_of_one_group_from_text_render() {
+        let faq = || Accordion::<()>::exclusive(Id::from_text("faq")).item("Why?", p());
+        let html = div::<()>().child(faq()).child(faq()).render();
+        assert_eq!(html.matches(r#" id="faq""#).count(), 2);
     }
 
     #[test]
