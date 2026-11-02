@@ -177,8 +177,8 @@ fn twice(site: Site) -> Part {
                     ja: "ページを描画するテストを書けば、訪問者より先に見つけられます。",
                 },
                 L {
-                    en: "A dialog or a tooltip may have several buttons: two `trigger` buttons of one `Dialog` open the same dialog. A menu or a popover is named after its button, so its button carries an id too, and a second `trigger` of one `Menu` or `Popover` makes `Page::render` panic the same way.",
-                    ja: "ダイアログとツールチップには複数のボタンを置けます。1 つの `Dialog` の `trigger` を 2 つ置けば、どちらも同じダイアログを開きます。メニューとポップオーバーは名前をボタンから取るので、ボタンも id を持ちます。そのため、1 つの `Menu` か `Popover` の `trigger` を 2 つ置くと、同じように `Page::render` が panic します。",
+                    en: "A dialog may have several buttons: two `trigger` buttons of one `Dialog` open the same dialog. Two `trigger` buttons of one `Tooltip` both point at the tooltip, which opens under the later of the two in the page, whichever button opened it. A menu or a popover is named after its button, so its button carries an id too, and a second `trigger` of one `Menu` or `Popover` makes `Page::render` panic the same way.",
+                    ja: "ダイアログには複数のボタンを置けます。1 つの `Dialog` の `trigger` を 2 つ置けば、どちらも同じダイアログを開きます。1 つの `Tooltip` の `trigger` を 2 つ置くと、どちらも同じツールチップを指し、ツールチップはどちらのボタンで開いても、ページの後ろにあるほうのボタンの下に出ます。メニューとポップオーバーは名前をボタンから取るので、ボタンも id を持ちます。そのため、1 つの `Menu` か `Popover` の `trigger` を 2 つ置くと、同じように `Page::render` が panic します。",
                 },
             ],
         ),
