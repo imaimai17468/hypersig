@@ -11,10 +11,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Plans {
-    /// How many times the button, which leads nowhere, was pressed.
-    presses: i32,
-}
+pub struct Plans {}
 
 /// The part of this page that the links lead to, since the frame has no
 /// other page to open.
@@ -26,7 +23,7 @@ pub fn page(site: Site) -> Page<Plans> {
             en: "Plans",
             ja: "プラン",
         }),
-        Plans { presses: 0 },
+        Plans {},
     )
     .child(
         div()
@@ -51,9 +48,7 @@ pub fn page(site: Site) -> Page<Plans> {
                             })),
                     )
                     .child(
-                        button(ButtonVariant::Outline, ButtonSize::Default)
-                            .on_click(Plans::presses().set(Plans::presses() + 1))
-                            .text(site.t(L {
+                        button(ButtonVariant::Outline, ButtonSize::Default).text(site.t(L {
                             en: "A button",
                             ja: "ボタン",
                         })),

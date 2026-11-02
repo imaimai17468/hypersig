@@ -1,0 +1,5 @@
+error: `Signals` needs a struct with named fields, because each field name becomes a signal path; write `struct Home {}` for one with no fields
+ --> tests/ui/fail/signals_unit_struct.rs:7:8
+  |
+7 | struct Home;
+  |        ^^^^

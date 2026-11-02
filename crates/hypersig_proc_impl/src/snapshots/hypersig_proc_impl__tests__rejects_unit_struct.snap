@@ -1,0 +1,9 @@
+---
+source: crates/hypersig_proc_impl/src/lib.rs
+expression: "expand(quote! { struct U; })"
+---
+::core::compile_error! {
+    "`Signals` needs a struct with named fields, because each field name becomes a signal path; write `struct U {}` for one with no fields"
+}
+#[automatically_derived]
+impl ::hypersig::Signals for U {}
