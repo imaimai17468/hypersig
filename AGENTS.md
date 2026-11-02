@@ -23,6 +23,17 @@ That last sentence is the project's thesis. A change that lets a user write one 
 - **When raising the Rust version**, change `rust-toolchain.toml`, `rust-version` in `Cargo.toml`, the CI toolchain, and every regenerated `.stderr` in one commit, because the `.stderr` files hold rustc's exact output.
 - **Before opening a pull request that changes Rust**, run the beautiful-rust plugin's `rust-review` skill on the diff and fix what it finds. `.claude/hooks/review-before-pr.sh` refuses the first `gh pr create` until then. Skip its suggestions of `unsafe` (`Cargo.toml` forbids it), of a `serde` feature (serde's traits are in the public API unconditionally), and of a public `&str` parameter (the thesis above), and its verification commands, which `scripts/verify.sh` replaces.
 
+## Writing
+
+These hold for every text you write here: replies, commit messages, pull requests, issues, comments, docs, and skills.
+
+- Give the information the reader needs, in as few words as carry it.
+- Leave out excess empathy, praise, apology, and self-reflection.
+- Leave out preambles, contrasts, summaries, conclusions, and repetition that add nothing.
+- Prefer a concrete fact to an abstract phrase.
+- Do not perform a human voice with colloquialisms or a run of unnaturally short sentences.
+- Judge a pointed-out problem by the facts, without deferring to whoever raised it.
+
 ## Commits
 
 - One commit has one purpose. Stage explicit paths, never `git add -A` or `git add .`.
