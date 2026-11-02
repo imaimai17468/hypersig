@@ -99,6 +99,8 @@ fn base() -> Style {
         .font_weight(FontWeight::Number(500.0))
         .cursor(Cursor::Pointer)
         .user_select(UserSelect::None)
+        // An `<a>` styled as a button would keep the browser's underline.
+        .text_decoration_line(TextDecorationLine::None)
         .merge(look::small_text())
         .merge(look::transition())
         .merge(look::focus_ring())

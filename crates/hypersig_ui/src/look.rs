@@ -2,8 +2,8 @@
 
 use hypersig::html::{El, attr, el};
 use hypersig::style::value::{
-    Cursor, Length, LineHeight, Opacity, OutlineStyle, PointerEvents, TransitionDuration, ms, px,
-    raw, rem,
+    Cursor, Length, LineHeight, ListStyleType, Opacity, OutlineStyle, PointerEvents,
+    TransitionDuration, ms, px, raw, rem,
 };
 use hypersig::style::{Condition, Media, PseudoClass, Style};
 
@@ -62,6 +62,17 @@ pub(crate) fn small_text() -> Style {
     Style::new()
         .font_size(rem(0.875))
         .line_height(LineHeight::Length(rem(1.25)))
+}
+
+/// A `<ul>` or `<ol>` without the browser's markers, margin, and indent.
+///
+/// An outside marker sits to the left of its item, over whatever the list
+/// lays out there, such as the separator between two links.
+pub(crate) fn bare_list() -> Style {
+    Style::new()
+        .margin(px(0))
+        .padding(px(0))
+        .list_style_type(ListStyleType::None)
 }
 
 /// The paths of the icons the components draw, from Lucide (ISC license),

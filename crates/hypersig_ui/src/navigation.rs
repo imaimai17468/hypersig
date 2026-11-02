@@ -3,7 +3,7 @@
 
 use hypersig::html::{El, Role, a, attr, li, nav, ol, span, ul};
 use hypersig::style::pattern::{hstack, stack};
-use hypersig::style::value::{AlignItems, FlexWrap, JustifyContent, pct, rem};
+use hypersig::style::value::{AlignItems, FlexWrap, JustifyContent, TextDecorationLine, pct, rem};
 use hypersig::style::{PseudoClass, Style};
 use hypersig::{Link, Params, Route, Search, Url};
 use serde::Serialize;
@@ -80,6 +80,7 @@ impl<S> Breadcrumb<S> {
         };
         let mut list = ol().css(
             hstack(rem(0.375))
+                .merge(look::bare_list())
                 .flex_wrap(FlexWrap::Wrap)
                 .merge(look::small_text())
                 .color(token::muted_foreground().var()),
@@ -91,6 +92,8 @@ impl<S> Breadcrumb<S> {
                         a().href(link)
                             .css(
                                 Style::new()
+                                    .color(token::muted_foreground().var())
+                                    .text_decoration_line(TextDecorationLine::None)
                                     .merge(look::transition())
                                     .merge(look::focus_ring())
                                     .on(
@@ -223,9 +226,10 @@ impl<S> NavList<S> {
             }
             li().child(item)
         });
-        nav()
-            .attr(attr::ARIA_LABEL, self.label)
-            .child(ul().css(stack(rem(0.25))).children(items))
+        nav().attr(attr::ARIA_LABEL, self.label).child(
+            ul().css(stack(rem(0.25)).merge(look::bare_list()))
+                .children(items),
+        )
     }
 }
 
@@ -359,6 +363,7 @@ pub fn pagination<S>(
     let mut list = ul()
         .css(
             hstack(rem(0.25))
+                .merge(look::bare_list())
                 .flex_wrap(FlexWrap::Wrap)
                 .align_items(AlignItems::Center),
         )

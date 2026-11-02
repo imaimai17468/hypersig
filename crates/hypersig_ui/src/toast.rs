@@ -224,7 +224,7 @@ impl<S> Toaster<S> {
             .css(region_style())
             .child(
                 ol().attr(attr::ARIA_LIVE, "polite")
-                    .css(stack(rem(0.5)))
+                    .css(stack(rem(0.5)).merge(look::bare_list()))
                     .child(each_keyed(
                         self.toasts,
                         |toast| toast.at(Toast::key()),

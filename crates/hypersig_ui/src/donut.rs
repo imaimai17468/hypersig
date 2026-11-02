@@ -241,9 +241,7 @@ impl<S: 'static, T: 'static> DonutChart<S, T> {
                     .column_gap(rem(0.5))
                     .row_gap(rem(0.25))
                     .align_items(AlignItems::Center)
-                    .margin(px(0))
-                    .padding(px(0))
-                    .list_style_type(raw("none"))
+                    .merge(look::bare_list())
                     .merge(look::small_text()),
             )
             .child(each(self.rows, |row| {

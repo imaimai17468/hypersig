@@ -717,9 +717,7 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                     .flex_wrap(FlexWrap::Wrap)
                     .justify_content(JustifyContent::Center)
                     .column_gap(rem(1))
-                    .margin(px(0))
-                    .padding(px(0))
-                    .list_style_type(raw("none"))
+                    .merge(look::bare_list())
                     .merge(look::small_text()),
             )
             .children(self.series.iter().map(|series| {
