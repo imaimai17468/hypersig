@@ -37,7 +37,9 @@ use crate::token;
 /// The button carries the attributes the tooltip needs, so build it here
 /// rather than adding a tooltip to a button made elsewhere. The tooltip
 /// carries the node ref, so placing one tooltip twice on a page makes
-/// [`Page::render`](hypersig::Page::render) panic.
+/// [`Page::render`](hypersig::Page::render) panic. Two buttons from one
+/// tooltip both point at it, and both carry its anchor name, so the browser
+/// places it under the later of the two in the page, whichever opened it.
 ///
 /// ```
 /// use hypersig::{NodeRef, Signals};

@@ -230,8 +230,8 @@ fn unchecked(site: Site) -> Part {
         para(
             site,
             L {
-                en: "One handle's `tooltip` placed twice makes `Page::render` panic with `two elements carry the node ref … where the runtime can reach both`. A button from `trigger` with no tooltip on the page still renders, and its `aria-describedby` points at nothing, so a screen reader reads only its name. Two buttons from one handle both point at the one tooltip.",
-                ja: "1 つのハンドルの `tooltip` を 2 回置くと、`Page::render` が `two elements carry the node ref … where the runtime can reach both` というメッセージで panic します。ページにツールチップがない `trigger` のボタンも描画されますが、`aria-describedby` が指す要素がないので、スクリーンリーダーはボタンの名前だけを読みます。1 つのハンドルから作った 2 つのボタンは、どちらも同じツールチップを指します。",
+                en: "One handle's `tooltip` placed twice makes `Page::render` panic with `two elements carry the node ref … where the runtime can reach both`. A button from `trigger` with no tooltip on the page still renders, and its `aria-describedby` points at nothing, so a screen reader reads only its name. Two buttons from one handle both point at the one tooltip, which opens under the later of the two in the page, whichever button opened it.",
+                ja: "1 つのハンドルの `tooltip` を 2 回置くと、`Page::render` が `two elements carry the node ref … where the runtime can reach both` というメッセージで panic します。ページにツールチップがない `trigger` のボタンも描画されますが、`aria-describedby` が指す要素がないので、スクリーンリーダーはボタンの名前だけを読みます。1 つのハンドルから作った 2 つのボタンは、どちらも同じツールチップを指し、ツールチップはどちらのボタンで開いても、ページの後ろにあるほうのボタンの下に出ます。",
             },
         ),
         para(
