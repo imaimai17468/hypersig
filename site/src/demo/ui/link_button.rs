@@ -11,13 +11,13 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Plans {}
+pub(super) struct Plans {}
 
 /// The part of this page that the links lead to, since the frame has no
 /// other page to open.
 const PLANS: SafeUrl = SafeUrl::new("#plans");
 
-pub fn page(site: Site) -> Page<Plans> {
+pub(super) fn page(site: Site) -> Page<Plans> {
     Page::new(
         site.t(L {
             en: "Plans",

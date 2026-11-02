@@ -13,7 +13,7 @@ macro_rules! snippets {
     ($($name:ident => $file:literal $(, $attr:literal)?;)*) => {
         /// One code sample.
         #[derive(Debug, Clone, Copy)]
-        pub enum Snippet {
+        pub(crate) enum Snippet {
             $($name,)*
         }
 
@@ -547,19 +547,19 @@ fn shown(snippet: Snippet) -> impl Iterator<Item = &'static str> {
 }
 
 /// `snippet` as a code block, without its hidden lines.
-pub fn show(snippet: Snippet) -> Part {
+pub(crate) fn show(snippet: Snippet) -> Part {
     let shown: String = shown(snippet).flat_map(|line| [line, "\n"]).collect();
     code::block(Lang::Rust, None, &shown)
 }
 
 /// `snippet` as a code block headed by the file name `file`.
-pub fn show_file(snippet: Snippet, file: &str) -> Part {
+pub(crate) fn show_file(snippet: Snippet, file: &str) -> Part {
     let shown: String = shown(snippet).flat_map(|line| [line, "\n"]).collect();
     code::block(Lang::Rust, Some(file), &shown)
 }
 
 /// `snippet` as a change, with its added and removed lines marked.
-pub fn show_change(snippet: Snippet) -> Part {
+pub(crate) fn show_change(snippet: Snippet) -> Part {
     code::diff(
         Lang::Rust,
         shown(snippet).map(|line| {

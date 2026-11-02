@@ -11,25 +11,25 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub enum Kind {
+pub(super) enum Kind {
     Line,
     Area,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Month {
+pub(super) struct Month {
     name: String,
     desktop: i32,
     mobile: i32,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Traffic {
+pub(super) struct Traffic {
     kind: Kind,
     months: Vec<Month>,
 }
 
-pub fn page(site: Site) -> Page<Traffic> {
+pub(super) fn page(site: Site) -> Page<Traffic> {
     // Both kinds of chart draw the same two series of the same months.
     let visitors = |chart: Chart<Traffic, Month>| {
         chart

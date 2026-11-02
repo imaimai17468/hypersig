@@ -11,11 +11,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Player {
+pub(super) struct Player {
     volume: i32,
 }
 
-pub fn page(site: Site) -> Page<Player> {
+pub(super) fn page(site: Site) -> Page<Player> {
     let volume = Player::volume();
     Page::new(
         site.t(L {

@@ -13,10 +13,10 @@ mod tokens;
 mod unchecked;
 mod values;
 
-pub use start::overview::benchmarks;
+pub(crate) use start::overview::benchmarks;
 
 /// The article of `page`.
-pub fn content(site: Site, page: StylePage) -> Part {
+pub(crate) fn content(site: Site, page: StylePage) -> Part {
     let head = title(Doc::Style(page).title(site));
     match page {
         // Get started

@@ -8,7 +8,7 @@ use crate::doc::{Doc, Learn};
 use crate::lang::L;
 use crate::prose::{Part, heading, lead, para, parts, title};
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::DatabaseHosts).title(site)),
         lead(site, Doc::Learn(Learn::DatabaseHosts).leads()),

@@ -9,7 +9,7 @@ use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, heading, lead, note, para, parts, table_of, title};
 
 /// The article.
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Forms).title(site)),
         lead(site, Doc::Learn(Learn::Forms).leads()),

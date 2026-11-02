@@ -10,7 +10,7 @@ use crate::doc::{Doc, I18nPage};
 use crate::prose::{Part, title};
 
 /// The article of `page`.
-pub fn content(site: Site, page: I18nPage) -> Part {
+pub(crate) fn content(site: Site, page: I18nPage) -> Part {
     let head = title(Doc::I18n(page).title(site));
     match page {
         // Get started

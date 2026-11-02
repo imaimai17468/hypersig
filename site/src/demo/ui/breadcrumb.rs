@@ -12,7 +12,7 @@ use crate::lang::L;
 use crate::{PAGE, Site};
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Docs {
+pub(super) struct Docs {
     /// The title of the page the demo stands on.
     title: String,
 }
@@ -23,7 +23,7 @@ fn at(site: Site, doc: Doc) -> Rest {
         .expect("a component's page has a directory without `.` or `..` parts")
 }
 
-pub fn page(site: Site) -> Page<Docs> {
+pub(super) fn page(site: Site) -> Page<Docs> {
     let trail = Breadcrumb::new(site.t(L {
         en: "Breadcrumb",
         ja: "パンくずリスト",

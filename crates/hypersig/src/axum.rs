@@ -1045,6 +1045,7 @@ impl<St: Clone + Send + Sync + 'static> UnservedPage<St> {
 /// assert_eq!(RequestKind::of(&parts), RequestKind::Runtime);
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RequestKind {
     /// The browser loading a page, by following a link or opening a URL.
     Navigation,

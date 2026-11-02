@@ -14,7 +14,7 @@ const FUNCTION: &str = include_str!("../../../../crates/hypersig_cli/templates/v
 /// `hypersig_cli` build into the quick start counter.
 const MAIN: &str = include_str!("../../../../crates/hypersig_cli/steps/vercel.rs");
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::DeployVercel).title(site)),
         lead(site, Doc::Learn(Learn::DeployVercel).leads()),

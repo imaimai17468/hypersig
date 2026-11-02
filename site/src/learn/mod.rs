@@ -7,7 +7,7 @@ mod page;
 mod quality;
 mod requests;
 mod routing;
-pub mod snippet;
+pub(crate) mod snippet;
 mod start;
 mod state;
 mod talking;
@@ -18,7 +18,7 @@ use crate::doc::Learn;
 use crate::prose::Part;
 
 /// The article of `page`.
-pub fn content(site: Site, page: Learn) -> Part {
+pub(crate) fn content(site: Site, page: Learn) -> Part {
     match page {
         // Get started
         Learn::QuickStart => start::quick_start::page(site),

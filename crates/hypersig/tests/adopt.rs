@@ -73,7 +73,8 @@ impl Rng {
     }
 
     fn below(&mut self, n: usize) -> usize {
-        usize::try_from(self.next() % u64::try_from(n).unwrap()).unwrap()
+        let n = u64::try_from(n).expect("a bound fits in u64");
+        usize::try_from(self.next() % n).expect("a value below a usize bound fits in usize")
     }
 
     fn chance(&mut self, percent: usize) -> bool {
@@ -305,7 +306,7 @@ fn signals(rng: &mut Rng) -> Board {
     let text = |rng: &mut Rng| rng.pick(&TEXTS).to_owned();
     let rows = (0..rng.below(4))
         .map(|id| Row {
-            id: i32::try_from(id).unwrap(),
+            id: i32::try_from(id).expect("a row id below 4 fits in i32"),
             label: text(rng),
             done: rng.chance(50),
             tags: (0..rng.below(3))
@@ -319,7 +320,7 @@ fn signals(rng: &mut Rng) -> Board {
     Board {
         title: text(rng),
         note: text(rng),
-        count: i32::try_from(rng.below(3)).unwrap() - 1,
+        count: i32::try_from(rng.below(3)).expect("a count below 3 fits in i32") - 1,
         on: rng.chance(50),
         maybe: rng.chance(50).then(|| text(rng)),
         rows,

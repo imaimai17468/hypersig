@@ -13,11 +13,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Report {
+pub(super) struct Report {
     loading: bool,
 }
 
-pub fn page(site: Site) -> Page<Report> {
+pub(super) fn page(site: Site) -> Page<Report> {
     let loading = Report::loading();
     Page::new(
         site.t(L {

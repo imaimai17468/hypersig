@@ -12,14 +12,14 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Layer {
+pub(super) struct Layer {
     width: String,
 }
 
 hypersig::node_ref!(const SIZE_PANEL: NodeRef<Layer>);
 const SIZE: Popover<Layer> = Popover::new(SIZE_PANEL);
 
-pub fn page(site: Site) -> Page<Layer> {
+pub(super) fn page(site: Site) -> Page<Layer> {
     Page::new(
         site.t(L {
             en: "Layer",

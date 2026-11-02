@@ -273,7 +273,7 @@ mod styles {
 
     const GRAY: u32 = 0x0094_9494;
 
-    pub fn global() -> Global {
+    pub(crate) fn global() -> Global {
         Global::new()
             .rule(
                 Selector::Everything,
@@ -290,7 +290,7 @@ mod styles {
             )
     }
 
-    pub fn app() -> Style {
+    pub(crate) fn app() -> Style {
         Style::new()
             .background_color(Color::WHITE)
             .max_width(px(550))
@@ -301,7 +301,7 @@ mod styles {
             .box_shadow(raw("0 2px 4px rgba(0,0,0,.2), 0 25px 50px rgba(0,0,0,.1)"))
     }
 
-    pub fn heading() -> Style {
+    pub(crate) fn heading() -> Style {
         Style::new()
             .position(Position::Absolute)
             .top(px(-110))
@@ -321,7 +321,7 @@ mod styles {
             .outline(Outline::None)
     }
 
-    pub fn new_todo() -> Style {
+    pub(crate) fn new_todo() -> Style {
         text_field()
             .padding_block(px(16))
             .padding_right(px(16))
@@ -329,7 +329,7 @@ mod styles {
             .box_shadow(raw("inset 0 -2px 1px rgba(0,0,0,.03)"))
     }
 
-    pub fn edit() -> Style {
+    pub(crate) fn edit() -> Style {
         text_field()
             .margin_left(px(43))
             .padding_block(px(12))
@@ -338,7 +338,7 @@ mod styles {
             .box_shadow(raw("inset 0 -1px 5px rgba(0,0,0,.2)"))
     }
 
-    pub fn main() -> Style {
+    pub(crate) fn main() -> Style {
         Style::new()
             .position(Position::Relative)
             .border_top(raw("1px solid #e6e6e6"))
@@ -346,11 +346,11 @@ mod styles {
 
     /// The checkbox is invisible; the label after it draws the arrow, which
     /// darkens while the box is checked.
-    pub fn toggle_all() -> Style {
+    pub(crate) fn toggle_all() -> Style {
         Style::new().position(Position::Absolute).opacity(0).peer()
     }
 
-    pub fn toggle_all_label() -> Style {
+    pub(crate) fn toggle_all_label() -> Style {
         let arrow = Style::new()
             .content(quoted("❯"))
             .font_size(px(22))
@@ -376,7 +376,7 @@ mod styles {
             )
     }
 
-    pub fn list() -> Style {
+    pub(crate) fn list() -> Style {
         Style::new()
             .margin(px(0))
             .padding(px(0))
@@ -384,7 +384,7 @@ mod styles {
     }
 
     /// The item is the group its delete button watches for hover.
-    pub fn item() -> Style {
+    pub(crate) fn item() -> Style {
         Style::new()
             .position(Position::Relative)
             .font_size(px(24))
@@ -394,7 +394,7 @@ mod styles {
             .group()
     }
 
-    pub fn toggle() -> Style {
+    pub(crate) fn toggle() -> Style {
         Style::new()
             .width(px(40))
             .height(px(40))
@@ -402,7 +402,7 @@ mod styles {
             .margin_inline(px(10))
     }
 
-    pub fn title() -> Style {
+    pub(crate) fn title() -> Style {
         Style::new()
             .flex(1)
             .padding(px(15))
@@ -410,17 +410,17 @@ mod styles {
             .transition(raw("color .2s"))
     }
 
-    pub fn completed_title() -> Style {
+    pub(crate) fn completed_title() -> Style {
         Style::new()
             .color(Color::hex(GRAY))
             .text_decoration(TextDecoration::LineThrough)
     }
 
-    pub fn hidden() -> Style {
+    pub(crate) fn hidden() -> Style {
         Style::new().display(Display::None)
     }
 
-    pub fn plain_button() -> Style {
+    pub(crate) fn plain_button() -> Style {
         Style::new()
             .border(Border::None)
             .background_color(Color::TRANSPARENT)
@@ -429,7 +429,7 @@ mod styles {
     }
 
     /// Hidden until the pointer is over its item.
-    pub fn destroy() -> Style {
+    pub(crate) fn destroy() -> Style {
         plain_button()
             .display(Display::None)
             .font_size(px(30))
@@ -445,7 +445,7 @@ mod styles {
             )
     }
 
-    pub fn footer() -> Style {
+    pub(crate) fn footer() -> Style {
         Style::new()
             .padding_block(px(10))
             .padding_inline(px(15))
@@ -456,11 +456,11 @@ mod styles {
             .color(Color::hex(0x0011_1111))
     }
 
-    pub fn filters() -> Style {
+    pub(crate) fn filters() -> Style {
         list().display(Display::Flex).gap(px(4))
     }
 
-    pub fn filter_link() -> Style {
+    pub(crate) fn filter_link() -> Style {
         Style::new()
             .keyword(Property::Color, CssWideKeyword::Inherit)
             .text_decoration(TextDecoration::None)
@@ -470,7 +470,7 @@ mod styles {
             .border_radius(px(3))
     }
 
-    pub fn selected() -> Style {
+    pub(crate) fn selected() -> Style {
         Style::new().border_color(Color::hex(0x00ce_4646))
     }
 }

@@ -7,7 +7,7 @@ use crate::lang::L;
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of, title};
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts(vec![
         title(Doc::Learn(Learn::Expressions).title(site)),
         lead(site, Doc::Learn(Learn::Expressions).leads()),

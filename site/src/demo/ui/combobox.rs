@@ -11,7 +11,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Shipping {
+pub(super) struct Shipping {
     country: ComboboxState,
 }
 
@@ -19,7 +19,7 @@ hypersig::node_ref!(const COUNTRY_FIELD: NodeRef<Shipping>);
 hypersig::node_ref!(const COUNTRY_OPTIONS: NodeRef<Shipping>);
 const COUNTRY: Combobox<Shipping> = Combobox::new(COUNTRY_FIELD, COUNTRY_OPTIONS);
 
-pub fn page(site: Site) -> Page<Shipping> {
+pub(super) fn page(site: Site) -> Page<Shipping> {
     let initial = Shipping {
         country: ComboboxState::new(""),
     };

@@ -1,7 +1,7 @@
 //! The i18n pages under Texts: the `Locale` trait, texts, texts with
 //! values, and plurals, numbers, and dates.
 
-pub mod formats;
-pub mod locale;
-pub mod messages;
-pub mod writing;
+pub(super) mod formats;
+pub(super) mod locale;
+pub(super) mod messages;
+pub(super) mod writing;

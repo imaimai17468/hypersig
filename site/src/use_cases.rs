@@ -17,7 +17,7 @@ use crate::lang::L;
 use crate::learn::snippet::{Snippet, show_change};
 use crate::prose::{Part, bullets, href, inline, para};
 
-pub fn render(site: Site) -> String {
+pub(crate) fn render(site: Site) -> String {
     landing::page(
         site,
         Doc::UseCases,

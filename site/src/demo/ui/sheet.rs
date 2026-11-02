@@ -11,7 +11,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Project {
+pub(super) struct Project {
     this_week: bool,
 }
 
@@ -20,7 +20,7 @@ hypersig::dialog_ref!(const FILTERS_SHEET: DialogRef<Project>);
 const DETAILS: Dialog<Project> = Dialog::new(DETAILS_SHEET);
 const FILTERS: Dialog<Project> = Dialog::new(FILTERS_SHEET);
 
-pub fn page(site: Site) -> Page<Project> {
+pub(super) fn page(site: Site) -> Page<Project> {
     let text = DialogText {
         close: site
             .t(L {

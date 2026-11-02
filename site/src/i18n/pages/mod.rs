@@ -2,7 +2,7 @@
 //! the route, links to other languages, the language of the page, and
 //! alternate pages.
 
-pub mod alternates;
-pub mod language_switcher;
-pub mod page_language;
-pub mod routes;
+pub(super) mod alternates;
+pub(super) mod language_switcher;
+pub(super) mod page_language;
+pub(super) mod routes;

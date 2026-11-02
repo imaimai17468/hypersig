@@ -6,6 +6,11 @@
 //! release of this crate always holds the same files, and the build commands
 //! in them (the `Dockerfile`'s `RUN`, the `[build]` of `wrangler.toml`, the
 //! `buildCommand` of `vercel.json`) are the ones crates.io published.
+#![expect(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "a command-line tool reports to its user on standard output and standard error"
+)]
 
 mod add;
 mod dev;

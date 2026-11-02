@@ -18,7 +18,7 @@ use crate::prose::{Part, href, inline, para};
 use crate::{Site, layout, own, prose};
 
 /// A landing page of `doc` holding `sections`, with the page footer.
-pub fn page(site: Site, doc: Doc, sections: impl IntoIterator<Item = Part>) -> String {
+pub(crate) fn page(site: Site, doc: Doc, sections: impl IntoIterator<Item = Part>) -> String {
     let body = div()
         .css(container(rem(64), rem(1)).padding_bottom(rem(3)))
         .children(sections)
@@ -28,11 +28,17 @@ pub fn page(site: Site, doc: Doc, sections: impl IntoIterator<Item = Part>) -> S
 
 /// One button of a hero: its label, its target as `prose::href` reads it,
 /// and its look.
-pub type Action = (&'static str, &'static str, ButtonVariant);
+pub(crate) type Action = (&'static str, &'static str, ButtonVariant);
 
 /// The top of a landing page: the crate's name above a heading, a line of
 /// text, and buttons.
-pub fn hero(site: Site, eyebrow: &str, heading: &str, text: &str, actions: &[Action]) -> Part {
+pub(crate) fn hero(
+    site: Site,
+    eyebrow: &str,
+    heading: &str,
+    text: &str,
+    actions: &[Action],
+) -> Part {
     section()
         .css(
             stack(rem(1.5))
@@ -94,7 +100,7 @@ pub fn hero(site: Site, eyebrow: &str, heading: &str, text: &str, actions: &[Act
 }
 
 /// A row of cards, each a heading and a line of text.
-pub fn features(site: Site, cards: &[(&str, &str)]) -> Part {
+pub(crate) fn features(site: Site, cards: &[(&str, &str)]) -> Part {
     div()
         .css(
             stack(rem(1)).on(
@@ -116,7 +122,7 @@ pub fn features(site: Site, cards: &[(&str, &str)]) -> Part {
 }
 
 /// A titled section of a landing page, whose id comes from the English heading.
-pub fn titled<'a>(
+pub(crate) fn titled<'a>(
     site: Site,
     heading: impl Into<Text<'a, str>>,
     children: impl IntoIterator<Item = Part>,
@@ -140,7 +146,7 @@ pub fn titled<'a>(
 
 /// A card that links to the landing page of `library`, for the landing
 /// page of another one.
-pub fn library_card(site: Site, library: Library, krate: &str, text: &str) -> Part {
+pub(crate) fn library_card(site: Site, library: Library, krate: &str, text: &str) -> Part {
     a().href(own(library.home().url(site)))
         .css(card_style().on(
             PseudoClass::Hover,
@@ -192,7 +198,7 @@ fn small_muted() -> Style {
 }
 
 /// The landing page of the Style docs.
-pub fn style(site: Site) -> String {
+pub(crate) fn style(site: Site) -> String {
     page(
         site,
         Doc::StyleHome,
@@ -270,7 +276,7 @@ pub fn style(site: Site) -> String {
 }
 
 /// The landing page of the i18n docs.
-pub fn i18n(site: Site) -> String {
+pub(crate) fn i18n(site: Site) -> String {
     page(
         site,
         Doc::I18nHome,
@@ -395,7 +401,7 @@ pub fn i18n(site: Site) -> String {
 }
 
 /// The landing page of the Components docs.
-pub fn components(site: Site) -> String {
+pub(crate) fn components(site: Site) -> String {
     page(
         site,
         Doc::ComponentsHome,
@@ -502,13 +508,13 @@ fn catalog(site: Site) -> Part {
 
 /// Cards for two libraries, side by side, each with its crate's name and a
 /// line of text.
-pub fn two_cards(site: Site, cards: [(Library, &str, &str); 2]) -> Part {
+pub(crate) fn two_cards(site: Site, cards: [(Library, &str, &str); 2]) -> Part {
     library_cards(site, cards)
 }
 
 /// Cards that link to the landing pages of other libraries, `N` to a row on
 /// a wide screen.
-pub fn library_cards<const N: usize>(site: Site, cards: [(Library, &str, &str); N]) -> Part {
+pub(crate) fn library_cards<const N: usize>(site: Site, cards: [(Library, &str, &str); N]) -> Part {
     div()
         .css(
             stack(rem(1)).margin_top(rem(1.5)).on(

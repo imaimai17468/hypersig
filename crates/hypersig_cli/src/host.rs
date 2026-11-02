@@ -7,7 +7,7 @@ use crate::Error;
 
 /// A host that a hypersig project can be deployed to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Host {
+pub(crate) enum Host {
     /// A container image, for a host such as Fly.io, Cloud Run, or Render.
     Server,
     /// Cloudflare Workers, which runs the crate compiled to wasm.
@@ -18,7 +18,7 @@ pub enum Host {
 
 /// What a file of a template is to `add`, which treats each kind differently.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Kind {
+pub(crate) enum Kind {
     /// `Cargo.toml`, which `add` edits in place.
     Manifest,
     /// The Rust code, which `add` leaves to the reader.
@@ -34,7 +34,7 @@ pub enum Kind {
 
 /// One file of a template.
 #[derive(Debug)]
-pub struct File {
+pub(crate) struct File {
     /// Where the file goes in the project.
     pub path: &'static str,
     /// The text, with `{{project-name}}`, `{{hypersig-version}}`, and
@@ -127,11 +127,11 @@ const VERCEL: &[File] = &[
 ];
 
 impl Host {
-    pub const ALL: [Self; 3] = [Self::Server, Self::Cloudflare, Self::Vercel];
+    pub(crate) const ALL: [Self; 3] = [Self::Server, Self::Cloudflare, Self::Vercel];
 
     /// The name the command line takes, which is also the template's
     /// directory under `templates/`.
-    pub fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Server => "server",
             Self::Cloudflare => "cloudflare",
@@ -139,7 +139,7 @@ impl Host {
         }
     }
 
-    pub fn files(self) -> &'static [File] {
+    pub(crate) fn files(self) -> &'static [File] {
         match self {
             Self::Server => SERVER,
             Self::Cloudflare => CLOUDFLARE,
@@ -148,7 +148,7 @@ impl Host {
     }
 
     /// The template's `Cargo.toml` with its placeholders filled.
-    pub fn manifest(self, package: &str) -> String {
+    pub(crate) fn manifest(self, package: &str) -> String {
         let file = self
             .files()
             .iter()
@@ -170,7 +170,7 @@ impl Host {
     /// notes in place of the placeholders. The CLI is released with hypersig
     /// at the same version, so its version is the hypersig the template was
     /// tested against.
-    pub fn fill(self, text: &str, package: &str) -> String {
+    pub(crate) fn fill(self, text: &str, package: &str) -> String {
         text.replace("{{project-name}}", package)
             .replace("{{hypersig-version}}", env!("CARGO_PKG_VERSION"))
             .replace("{{host-notes}}", self.notes().trim_end())

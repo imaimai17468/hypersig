@@ -2,9 +2,9 @@
 //! types: node refs, timers, keyboard patterns, JavaScript libraries, the
 //! values the types do not check, and pages served as static files.
 
-pub mod javascript;
-pub mod keyboard;
-pub mod node_refs;
-pub mod static_pages;
-pub mod timers;
-pub mod unchecked_values;
+pub(super) mod javascript;
+pub(super) mod keyboard;
+pub(super) mod node_refs;
+pub(super) mod static_pages;
+pub(super) mod timers;
+pub(super) mod unchecked_values;

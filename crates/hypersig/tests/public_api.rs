@@ -480,7 +480,7 @@ fn check(api: &Api<'_>, failures: &mut String, listed: &mut Listed) {
             failures,
             "M-SINGLE-ITEM-PATH: one item has the paths {paths}"
         )
-        .unwrap();
+        .expect("writing to a String does not fail");
     }
 
     for (path, item) in &api.items {
@@ -503,7 +503,7 @@ fn check(api: &Api<'_>, failures: &mut String, listed: &mut Listed) {
                     failures,
                     "M-SIMPLE-ABSTRACTIONS: {path} has {types} type parameters"
                 )
-                .unwrap();
+                .expect("writing to a String does not fail");
             }
         }
 
@@ -524,10 +524,12 @@ fn check(api: &Api<'_>, failures: &mut String, listed: &mut Listed) {
                 && !WORKSPACE.contains(&owner)
                 && !third_party_allowed(krate, id, owner, &target);
             if wrapper && reported.insert(target.clone()) {
-                writeln!(failures, "M-AVOID-WRAPPERS: {path} names {target}").unwrap();
+                writeln!(failures, "M-AVOID-WRAPPERS: {path} names {target}")
+                    .expect("writing to a String does not fail");
             }
             if leaked && reported.insert(target.clone()) {
-                writeln!(failures, "M-DONT-LEAK-TYPES: {path} names {target}").unwrap();
+                writeln!(failures, "M-DONT-LEAK-TYPES: {path} names {target}")
+                    .expect("writing to a String does not fail");
             }
         }
 
@@ -573,7 +575,7 @@ fn compare(
     if std::env::var("HYPERSIG_PUBLIC_API").as_deref() == Ok("overwrite") {
         let mut text = header.to_owned();
         for line in current {
-            writeln!(text, "{line}").unwrap();
+            writeln!(text, "{line}").expect("writing to a String does not fail");
         }
         std::fs::write(&path, text).expect("the list is writable");
         return;
@@ -585,7 +587,8 @@ fn compare(
         .collect();
     for line in current {
         if !committed.contains(line.as_str()) {
-            writeln!(failures, "{rule}: {line} is not listed in {file}").unwrap();
+            writeln!(failures, "{rule}: {line} is not listed in {file}")
+                .expect("writing to a String does not fail");
         }
     }
     for line in committed {
@@ -594,7 +597,7 @@ fn compare(
                 failures,
                 "{rule}: {file} lists {line}, which no longer needs it"
             )
-            .unwrap();
+            .expect("writing to a String does not fail");
         }
     }
 }

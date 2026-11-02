@@ -14,11 +14,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Upload {
+pub(super) struct Upload {
     busy: bool,
 }
 
-pub fn page(site: Site) -> Page<Upload> {
+pub(super) fn page(site: Site) -> Page<Upload> {
     let busy = Upload::busy();
     let spin = Keyframes::new("spin")
         .at(0, Style::new().transform(raw("rotate(0deg)")))

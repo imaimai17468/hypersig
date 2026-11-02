@@ -243,6 +243,10 @@ impl Key {
     /// width, so that comparing two names as strings compares the buckets.
     /// Each list of conditions ends with `-`, which sorts before the digits,
     /// so a list sorts before any longer list it starts.
+    #[expect(
+        clippy::as_conversions,
+        reason = "a condition's rank is its enum discriminant, which only `as` reads"
+    )]
     fn bucket(&self) -> String {
         let mut key = String::from("k");
         for &m in &self.conditions.media {

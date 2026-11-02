@@ -13,11 +13,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Greeting {
+pub(super) struct Greeting {
     name: String,
 }
 
-pub fn page(site: Site) -> Page<Greeting> {
+pub(super) fn page(site: Site) -> Page<Greeting> {
     let name = Greeting::name();
     let typed = !name.trim().is_empty();
     Page::new(

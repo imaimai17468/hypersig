@@ -14,7 +14,7 @@ use crate::prose::{Docs, Part};
 
 /// The language a code block is written in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Lang {
+pub(crate) enum Lang {
     Rust,
     Toml,
     Shell,
@@ -47,7 +47,7 @@ macro_rules! syntax {
         }
 
         /// The dark values of the syntax colors, for the page theme.
-        pub fn theme() -> Theme {
+        pub(crate) fn theme() -> Theme {
             let dark = Theme::new()
                 $(.set(&Token::new($name, Color::hex($light)), Color::hex($dark)))*
                 .set(&added(), Color::hex(0x0012_261e))
@@ -57,7 +57,7 @@ macro_rules! syntax {
 
         /// The light values of the syntax colors, for `<body>` while the
         /// visitor picks the light theme.
-        pub fn light() -> Style {
+        pub(crate) fn light() -> Style {
             Style::new()
                 $(.token(&Token::new($name, Color::hex($light)), Color::hex($light)))*
                 .token(&added(), Color::hex(0x00da_fbe1))
@@ -66,7 +66,7 @@ macro_rules! syntax {
 
         /// The dark values of the syntax colors, for `<body>` while the
         /// visitor picks the dark theme.
-        pub fn dark() -> Style {
+        pub(crate) fn dark() -> Style {
             Style::new()
                 $(.token(&Token::new($name, Color::hex($light)), Color::hex($dark)))*
                 .token(&added(), Color::hex(0x0012_261e))
@@ -88,7 +88,7 @@ syntax! {
 }
 
 /// A code block holding `source`, under a bar naming `file` if it is given.
-pub fn block(lang: Lang, file: Option<&str>, source: &str) -> Part {
+pub(crate) fn block(lang: Lang, file: Option<&str>, source: &str) -> Part {
     let body = pre()
         .css(pre_style().padding(rem(1)))
         .child(code().children(highlight(lang, source.trim_end())));
@@ -97,7 +97,7 @@ pub fn block(lang: Lang, file: Option<&str>, source: &str) -> Part {
 
 /// What a change did to one line of a diff.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Change {
+pub(crate) enum Change {
     Kept,
     Added,
     Removed,
@@ -133,7 +133,7 @@ fn removed() -> Token<Color> {
 }
 
 /// A code block of `lines`, each marked with its sign and background.
-pub fn diff<'a>(lang: Lang, lines: impl IntoIterator<Item = (Change, &'a str)>) -> Part {
+pub(crate) fn diff<'a>(lang: Lang, lines: impl IntoIterator<Item = (Change, &'a str)>) -> Part {
     let rows = lines.into_iter().map(|(change, line)| {
         let row = Style::new().display(Display::Block).padding_inline(rem(1));
         let row = span().css(match change.background() {
@@ -211,7 +211,7 @@ fn frame(file: Option<&str>, body: Part) -> Part {
 
 /// The Rust source of a file of this repository, without its `//!` header,
 /// which describes the file for its readers in the repository.
-pub fn without_header(source: &str) -> &str {
+pub(crate) fn without_header(source: &str) -> &str {
     let mut rest = source;
     while let Some(line_end) = rest.find('\n') {
         let line = &rest[..line_end];

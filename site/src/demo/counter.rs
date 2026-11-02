@@ -13,11 +13,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Counter {
+pub(super) struct Counter {
     count: i32,
 }
 
-pub fn page(site: Site) -> Page<Counter> {
+pub(super) fn page(site: Site) -> Page<Counter> {
     let count = Counter::count();
     Page::new(
         site.t(L {

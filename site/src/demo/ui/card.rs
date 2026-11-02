@@ -15,12 +15,12 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct NewProject {
+pub(super) struct NewProject {
     name: String,
     created: i32,
 }
 
-pub fn page(site: Site) -> Page<NewProject> {
+pub(super) fn page(site: Site) -> Page<NewProject> {
     let created = NewProject::created();
     let initial = NewProject {
         name: String::new(),

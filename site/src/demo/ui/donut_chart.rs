@@ -11,17 +11,17 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Browser {
+pub(super) struct Browser {
     name: String,
     visitors: i32,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Traffic {
+pub(super) struct Traffic {
     browsers: Vec<Browser>,
 }
 
-pub fn page(site: Site) -> Page<Traffic> {
+pub(super) fn page(site: Site) -> Page<Traffic> {
     let browsers = ["Chrome", "Safari", "Firefox", "Edge"]
         .into_iter()
         .map(str::to_owned)

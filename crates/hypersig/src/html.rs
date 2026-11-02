@@ -1772,6 +1772,7 @@ impl Tag {
 
 /// What an image of [`El::srcset`] is drawn for.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum Candidate {
     /// The image's width in pixels, written as `480w`.
     Width(u32),

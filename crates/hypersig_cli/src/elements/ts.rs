@@ -4,7 +4,7 @@
 
 /// A TypeScript type, reduced to what decides its Rust type.
 #[derive(Debug, PartialEq)]
-pub enum Ty {
+pub(super) enum Ty {
     /// `string`, `number`, `boolean`, or a literal of one of them.
     Prim(Prim),
     /// `null`, `undefined`, or `void`.
@@ -22,7 +22,7 @@ pub enum Ty {
 
 /// The primitive a literal or a keyword type stands for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Prim {
+pub(super) enum Prim {
     String,
     Number,
     Boolean,
@@ -30,7 +30,7 @@ pub enum Prim {
 
 /// A property of an object literal type.
 #[derive(Debug, PartialEq)]
-pub struct Field {
+pub(super) struct Field {
     pub name: String,
     /// Written `name?:`, so the property may be missing.
     pub optional: bool,
@@ -40,7 +40,7 @@ pub struct Field {
 }
 
 /// The type `text` writes, or `None` where it is not a type this reader reads.
-pub fn parse(text: &str) -> Option<Ty> {
+pub(super) fn parse(text: &str) -> Option<Ty> {
     let mut parser = Parser {
         chars: text.chars().collect(),
         at: 0,
@@ -51,14 +51,14 @@ pub fn parse(text: &str) -> Option<Ty> {
 }
 
 /// `text` with each run of whitespace, line breaks included, made one space.
-pub fn one_line(text: &str) -> String {
+pub(super) fn one_line(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// The Rust type a value of `ty` deserializes into, where one exists.
 ///
 /// A number is `f64`, because a JavaScript number may hold a fraction.
-pub fn rust_type(ty: &Ty) -> Option<String> {
+pub(super) fn rust_type(ty: &Ty) -> Option<String> {
     match ty {
         Ty::Prim(prim) => Some(prim_type(*prim).to_owned()),
         Ty::Array(item) => rust_type(item).map(|item| format!("Vec<{item}>")),
@@ -82,7 +82,7 @@ pub fn rust_type(ty: &Ty) -> Option<String> {
 }
 
 /// `Option<inner>`, or `inner` where it is an `Option` already.
-pub fn optional(inner: &str) -> String {
+pub(super) fn optional(inner: &str) -> String {
     if inner.starts_with("Option<") {
         inner.to_owned()
     } else {

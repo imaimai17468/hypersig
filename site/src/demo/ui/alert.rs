@@ -13,11 +13,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Builds {
+pub(super) struct Builds {
     failed: bool,
 }
 
-pub fn page(site: Site) -> Page<Builds> {
+pub(super) fn page(site: Site) -> Page<Builds> {
     let failed = Builds::failed();
     Page::new(
         site.t(L {

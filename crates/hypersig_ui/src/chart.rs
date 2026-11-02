@@ -443,11 +443,9 @@ impl<S: 'static, T: 'static> Chart<S, T> {
                 match self.kind {
                     Kind::Bar | Kind::HorizontalBar => {
                         let width = band * (BAR_SHARE / count);
-                        #[expect(
-                            clippy::cast_precision_loss,
-                            reason = "a chart has far fewer than 2^52 series"
-                        )]
-                        let left = x + band * BAR_INSET + &width * (index as f64);
+                        let index =
+                            u32::try_from(index).expect("a chart has fewer than 2^32 series");
+                        let left = x + band * BAR_INSET + &width * f64::from(index);
                         self.bar_mark(Expr::lit(&0.0), value, &left, &width, color)
                     }
                     Kind::StackedBar => {

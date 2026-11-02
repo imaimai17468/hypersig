@@ -5,6 +5,10 @@
 //! shop's own 404 page.
 //!
 //! Run with `cargo run -p example-prefix` and open <http://localhost:3009/app>.
+#![expect(
+    clippy::print_stdout,
+    reason = "the example server prints where it listens"
+)]
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};

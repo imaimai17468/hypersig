@@ -8,7 +8,7 @@ use crate::lang::{L, Text};
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, heading, lead, para, parts, table_of};
 
-pub fn page(site: Site, head: Part) -> Part {
+pub(crate) fn page(site: Site, head: Part) -> Part {
     parts(vec![
         head,
         lead(site, Doc::Style(StylePage::Overview).leads()),
@@ -237,7 +237,7 @@ cursor: pointer;";
 /// The styling benchmark of `bench/style`, with the numbers of its
 /// `results/latest.md`, for the Style overview and the landing page of the
 /// Style docs.
-pub fn benchmarks(site: Site) -> [Part; 4] {
+pub(crate) fn benchmarks(site: Site) -> [Part; 4] {
     [
         para(
             site,

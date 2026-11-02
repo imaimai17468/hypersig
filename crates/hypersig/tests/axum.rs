@@ -67,10 +67,10 @@ hypersig::routes! {
         Patches::from(Counter::count().patch(id)).navigate(ORG_MEMBER.url((PathSegment::new("acme"), id)))
     };
     action LEDGER: Action<Counter, Vec<i64>> = post "/ledger" => |(), amounts: Vec<i64>| async move {
-        Patches::from(Counter::count().patch(i32::try_from(amounts.len()).unwrap()))
+        Patches::from(Counter::count().patch(i32::try_from(amounts.len()).expect("the test sends a few amounts")))
     };
     action LENGTH: Action<Counter, String> = get "/length" => |(), text: String| async move {
-        Patches::from(Counter::count().patch(i32::try_from(text.chars().count()).unwrap()))
+        Patches::from(Counter::count().patch(i32::try_from(text.chars().count()).expect("the test sends a short text")))
     };
     stream TICKS: StreamAction<Counter, i32> = "/ticks" => |(), from: i32| {
         stream::iter([from, from + 1]).map(|count| Counter::count().patch(count).into())

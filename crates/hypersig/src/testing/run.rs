@@ -126,6 +126,7 @@ impl<'p, S: Signals> Simulation<'p, S> {
                     .filter(|count| *count > 0.0)
                     .map_or(0, |count| {
                         #[expect(
+                            clippy::as_conversions,
                             clippy::cast_possible_truncation,
                             clippy::cast_sign_loss,
                             reason = "a positive count truncates, as `Array.from({ length })` does"
@@ -363,6 +364,7 @@ fn position(value: &Value, len: usize) -> Option<usize> {
         return None;
     }
     #[expect(
+        clippy::as_conversions,
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
         reason = "a non-negative integer, compared with `len` below"

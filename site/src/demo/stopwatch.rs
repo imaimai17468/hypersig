@@ -15,14 +15,14 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Stopwatch {
+pub(super) struct Stopwatch {
     running: bool,
     tenths: i32,
 }
 
 hypersig::node_ref!(const START: NodeRef<Stopwatch>);
 
-pub fn page(site: Site) -> Page<Stopwatch> {
+pub(super) fn page(site: Site) -> Page<Stopwatch> {
     let running = Stopwatch::running();
     let tenths = Stopwatch::tenths();
     let seconds = tenths.to_f64() / 10.0;

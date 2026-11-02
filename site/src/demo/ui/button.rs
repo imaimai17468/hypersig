@@ -11,11 +11,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Buttons {
+pub(super) struct Buttons {
     clicks: i32,
 }
 
-pub fn page(site: Site) -> Page<Buttons> {
+pub(super) fn page(site: Site) -> Page<Buttons> {
     let clicks = Buttons::clicks();
     let count = clicks.set(clicks + 1);
     let variants = [

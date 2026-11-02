@@ -72,6 +72,7 @@ pub struct Page<S> {
 /// A response says it in `X-Frame-Options` and in a
 /// `Content-Security-Policy` of `frame-ancestors`.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Framing {
     /// Pages of the page's own origin, and of these origins.
     ///

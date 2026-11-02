@@ -11,7 +11,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Editor {
+pub(super) struct Editor {
     bold: bool,
 }
 
@@ -20,7 +20,7 @@ hypersig::node_ref!(const SHARE_TIP: NodeRef<Editor>);
 const BOLD: Tooltip<Editor> = Tooltip::new(BOLD_TIP);
 const SHARE: Tooltip<Editor> = Tooltip::new(SHARE_TIP);
 
-pub fn page(site: Site) -> Page<Editor> {
+pub(super) fn page(site: Site) -> Page<Editor> {
     Page::new(
         site.t(L {
             en: "Editor",

@@ -9,7 +9,7 @@ use crate::lang::L;
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, heading, lead, para, parts};
 
-pub fn page(site: Site, head: Part) -> Part {
+pub(crate) fn page(site: Site, head: Part) -> Part {
     parts(vec![
         head,
         lead(site, Doc::Components(Component::Breadcrumb).leads()),

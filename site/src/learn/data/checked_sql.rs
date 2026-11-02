@@ -10,7 +10,7 @@ use crate::lang::L;
 use crate::learn::snippet::{Snippet, show_file};
 use crate::prose::{Part, heading, lead, para, parts, title};
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::CheckedSql).title(site)),
         lead(site, Doc::Learn(Learn::CheckedSql).leads()),

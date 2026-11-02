@@ -10,7 +10,7 @@ use crate::lang::L;
 use crate::learn::snippet::{Snippet, show};
 use crate::prose::{Part, heading, lead, note, para, parts, subheading, table_of, title};
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Api).title(site)),
         lead(site, Doc::Learn(Learn::Api).leads()),

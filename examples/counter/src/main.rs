@@ -34,10 +34,10 @@ mod class {
 
     use super::STYLE;
 
-    pub const ROW: Class = STYLE.class("row");
-    pub const COUNT: Class = STYLE.class("count");
-    pub const BIG: Class = STYLE.class("big");
-    pub const STATUS: Class = STYLE.class("status");
+    pub(crate) const ROW: Class = STYLE.class("row");
+    pub(crate) const COUNT: Class = STYLE.class("count");
+    pub(crate) const BIG: Class = STYLE.class("big");
+    pub(crate) const STATUS: Class = STYLE.class("status");
 }
 
 const STYLE: Stylesheet = Stylesheet::new(

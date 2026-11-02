@@ -197,6 +197,7 @@ impl PseudoClass {
 
 /// A condition that [`Style::on`](crate::Style::on) applies a part of a style under.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Condition {
     /// The element matches a pseudo-class.
     Pseudo(PseudoClass),

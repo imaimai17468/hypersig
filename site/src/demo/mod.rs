@@ -31,13 +31,13 @@ macro_rules! demos {
 
         /// One live demo.
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-        pub enum Demo {
+        pub(crate) enum Demo {
             $($variant,)*
         }
 
         impl Demo {
             /// Every demo.
-            pub const ALL: &[Self] = &[$(Self::$variant,)*];
+            pub(crate) const ALL: &[Self] = &[$(Self::$variant,)*];
 
             /// The demo's name: its file name without the directory and
             /// the extension.
@@ -61,7 +61,7 @@ macro_rules! demos {
             }
 
             /// The demo's page as an HTML document.
-            pub fn render(self, site: Site) -> String {
+            pub(crate) fn render(self, site: Site) -> String {
                 match self {
                     $(Self::$variant => rendering(site, || frame_page(site, $module::page(site))),)*
                 }
@@ -128,7 +128,7 @@ demos! {
 
 /// The script of `<star-rating>`, which the rating demo loads and the page
 /// on JavaScript libraries shows.
-pub const STAR_RATING_JS: &str = include_str!("star-rating.js");
+pub(crate) const STAR_RATING_JS: &str = include_str!("star-rating.js");
 
 thread_local! {
     /// The site the demo being rendered is for.
@@ -160,7 +160,7 @@ fn rendering(site: Site, render: impl FnOnce() -> String) -> String {
 
 impl Demo {
     /// The demo's directory inside the site, ending in `/`.
-    pub fn path(self) -> String {
+    pub(crate) fn path(self) -> String {
         format!("demo/{}/", self.name())
     }
 }
@@ -184,7 +184,7 @@ fn frame_page<S: Signals>(site: Site, page: Page<S>) -> String {
 }
 
 /// `demo` running in a frame, above its source.
-pub fn show(site: Site, demo: Demo) -> Part {
+pub(crate) fn show(site: Site, demo: Demo) -> Part {
     parts([
         div()
             .css(

@@ -12,6 +12,7 @@ use crate::value::{
 
 /// What a [`Global`] rule applies to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub enum Selector {
     /// The document's root, `:root`.
     Root,

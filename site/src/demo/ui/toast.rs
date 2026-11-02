@@ -11,11 +11,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct App {
+pub(super) struct App {
     toasts: Vec<Toast>,
 }
 
-pub fn page(site: Site) -> Page<App> {
+pub(super) fn page(site: Site) -> Page<App> {
     let toasts = App::toasts();
     let initial = App { toasts: Vec::new() };
     Page::new(

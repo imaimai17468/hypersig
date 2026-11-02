@@ -40,10 +40,11 @@ struct SignedOut(RequestKind);
 
 impl IntoResponse for SignedOut {
     fn into_response(self) -> Response {
-        match self.0 {
+        if self.0 == RequestKind::Navigation {
+            PageResponse::redirect(LOGIN.url(())).into_response()
+        } else {
             // An action's `fetch` would follow a redirect, so it gets a status.
-            RequestKind::Runtime => (StatusCode::UNAUTHORIZED, "Sign in again.").into_response(),
-            RequestKind::Navigation => PageResponse::redirect(LOGIN.url(())).into_response(),
+            (StatusCode::UNAUTHORIZED, "Sign in again.").into_response()
         }
     }
 }

@@ -2,8 +2,8 @@
 //! a handler reads from the request and writes beside its answer, how a
 //! failure reaches the page, and uploads.
 
-pub mod errors;
-pub mod extractors;
-pub mod forms;
-pub mod uploads;
-pub mod validation;
+pub(super) mod errors;
+pub(super) mod extractors;
+pub(super) mod forms;
+pub(super) mod uploads;
+pub(super) mod validation;

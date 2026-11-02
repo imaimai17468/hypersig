@@ -5,6 +5,7 @@ use crate::{Site, components, home, i18n, landing, layout, learn, reference, sty
 
 /// One page of the site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Doc {
     /// The landing page of hypersig, the framework.
     Home,
@@ -254,7 +255,7 @@ pub enum I18nPage {
 /// One of the sets of docs, each with its own header and landing
 /// page, as the libraries of `TanStack` share one site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Library {
+pub(crate) enum Library {
     /// hypersig itself.
     Framework,
     /// `hypersig::style`, from the `hypersig_style` crate.
@@ -267,10 +268,10 @@ pub enum Library {
 
 impl Library {
     /// Every library, in the order the switcher lists them.
-    pub const ALL: [Self; 4] = [Self::Framework, Self::Style, Self::Components, Self::I18n];
+    pub(crate) const ALL: [Self; 4] = [Self::Framework, Self::Style, Self::Components, Self::I18n];
 
     /// The name the header and the switcher show.
-    pub fn name(self, site: Site) -> &'static str {
+    pub(crate) fn name(self, site: Site) -> &'static str {
         site.t(match self {
             Self::Framework => L {
                 en: "Framework",
@@ -292,7 +293,7 @@ impl Library {
     }
 
     /// The path a program imports the library from.
-    pub fn path(self) -> &'static str {
+    pub(crate) fn path(self) -> &'static str {
         match self {
             Self::Framework => "hypersig",
             Self::Style => "hypersig::style",
@@ -325,7 +326,7 @@ impl Library {
     }
 
     /// The library's landing page.
-    pub fn home(self) -> Doc {
+    pub(crate) fn home(self) -> Doc {
         match self {
             Self::Framework => Doc::Home,
             Self::Style => Doc::StyleHome,
@@ -335,7 +336,7 @@ impl Library {
     }
 
     /// The sections the header links to, each with its first page.
-    pub fn sections(self) -> &'static [(L<&'static str>, Doc)] {
+    pub(crate) fn sections(self) -> &'static [(L<&'static str>, Doc)] {
         const LEARN: L<&str> = L {
             en: "Learn",
             ja: "学ぶ",
@@ -365,7 +366,7 @@ impl Library {
     }
 
     /// The front page of the library's rustdoc output, as a link target.
-    pub fn api(self) -> &'static str {
+    pub(crate) fn api(self) -> &'static str {
         match self {
             Self::Framework => "api:hypersig/index.html",
             Self::Style => "api:hypersig_style/index.html",
@@ -377,13 +378,13 @@ impl Library {
 
 /// A titled run of pages in a sidebar.
 #[derive(Debug)]
-pub struct Group {
+pub(crate) struct Group {
     pub title: L<&'static str>,
     pub docs: &'static [Doc],
 }
 
 /// The sidebar of the Learn section.
-pub const LEARN: &[Group] = &[
+pub(crate) const LEARN: &[Group] = &[
     Group {
         title: L {
             en: "Get started",
@@ -530,7 +531,7 @@ pub const LEARN: &[Group] = &[
 ];
 
 /// The sidebar of the Reference section.
-pub const REFERENCE: &[Group] = &[
+pub(crate) const REFERENCE: &[Group] = &[
     Group {
         title: L {
             en: "Reference",
@@ -577,7 +578,7 @@ pub const REFERENCE: &[Group] = &[
 ];
 
 /// The sidebar of the Components section.
-pub const COMPONENTS: &[Group] = &[
+pub(crate) const COMPONENTS: &[Group] = &[
     Group {
         title: L {
             en: "Get started",
@@ -706,7 +707,7 @@ pub const COMPONENTS: &[Group] = &[
 ];
 
 /// The sidebar of the Style section.
-pub const STYLE: &[Group] = &[
+pub(crate) const STYLE: &[Group] = &[
     Group {
         title: L {
             en: "Get started",
@@ -796,7 +797,7 @@ pub const STYLE: &[Group] = &[
 ];
 
 /// The sidebar of the i18n section.
-pub const I18N: &[Group] = &[
+pub(crate) const I18N: &[Group] = &[
     Group {
         title: L {
             en: "Get started",

@@ -10,7 +10,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Invoice {
+pub(super) struct Invoice {
     number: i32,
     email: String,
     amount: f64,
@@ -18,14 +18,14 @@ pub struct Invoice {
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Billing {
+pub(super) struct Billing {
     invoices: Vec<Invoice>,
     table: TableState,
 }
 
 const DOLLARS: NumberFormat = NumberFormat::new().digits(2).prefix("$");
 
-pub fn page(site: Site) -> Page<Billing> {
+pub(super) fn page(site: Site) -> Page<Billing> {
     let paid = site.t(L {
         en: "Paid",
         ja: "支払い済み",

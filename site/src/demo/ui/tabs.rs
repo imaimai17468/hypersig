@@ -9,18 +9,18 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub enum Section {
+pub(super) enum Section {
     Account,
     Password,
     Billing,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Settings {
+pub(super) struct Settings {
     section: Section,
 }
 
-pub fn page(site: Site) -> Page<Settings> {
+pub(super) fn page(site: Site) -> Page<Settings> {
     let initial = Settings {
         section: Section::Account,
     };

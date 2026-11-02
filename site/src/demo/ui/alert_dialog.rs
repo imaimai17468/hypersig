@@ -11,14 +11,14 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Project {
+pub(super) struct Project {
     status: String,
 }
 
 hypersig::dialog_ref!(const DELETE_DIALOG: DialogRef<Project>);
 const DELETE: Dialog<Project> = Dialog::new(DELETE_DIALOG);
 
-pub fn page(site: Site) -> Page<Project> {
+pub(super) fn page(site: Site) -> Page<Project> {
     let status = Project::status();
     Page::new(
         site.t(L {

@@ -11,11 +11,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Sync {
+pub(super) struct Sync {
     busy: bool,
 }
 
-pub fn page(site: Site) -> Page<Sync> {
+pub(super) fn page(site: Site) -> Page<Sync> {
     let busy = Sync::busy();
     Page::new(
         site.t(L {

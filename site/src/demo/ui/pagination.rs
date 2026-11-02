@@ -13,7 +13,7 @@ use crate::lang::L;
 use crate::{PAGE, Site};
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Docs {
+pub(super) struct Docs {
     /// The title of the page the demo stands on.
     title: String,
 }
@@ -37,7 +37,7 @@ fn at(site: Site, doc: Doc) -> Rest {
         .expect("a component's page has a directory without `.` or `..` parts")
 }
 
-pub fn page(site: Site) -> Page<Docs> {
+pub(super) fn page(site: Site) -> Page<Docs> {
     let text = PaginationText {
         label: site
             .t(L {
@@ -61,7 +61,7 @@ pub fn page(site: Site) -> Page<Docs> {
     let pager = pagination(
         5,
         9,
-        |page| PAGE.link_with(at(site, Doc::Components(PAGES[page as usize - 1]))),
+        |page| PAGE.link_with(at(site, Doc::Components(PAGES[usize::try_from(page).expect("a page number fits in usize") - 1]))),
         &text,
     );
     Page::new(

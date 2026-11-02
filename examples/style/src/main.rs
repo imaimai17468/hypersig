@@ -205,19 +205,19 @@ mod look {
         Condition, Element, Global, Keyframes, Media, PseudoClass, Style, Theme, Token,
     };
 
-    pub fn surface() -> Token<Color> {
+    pub(crate) fn surface() -> Token<Color> {
         Token::new("surface", Color::WHITE)
     }
 
-    pub fn ink() -> Token<Color> {
+    pub(crate) fn ink() -> Token<Color> {
         Token::new("ink", Color::hex(0x001f_2328))
     }
 
-    pub fn brand() -> Token<Color> {
+    pub(crate) fn brand() -> Token<Color> {
         Token::new("brand", Color::hex(0x002f_6feb))
     }
 
-    pub fn global() -> Global {
+    pub(crate) fn global() -> Global {
         Global::preflight().rule(
             Element::Body,
             Style::new()
@@ -228,7 +228,7 @@ mod look {
 
     /// The colors a visitor whose system prefers dark sees until the button
     /// picks a theme.
-    pub fn theme() -> Theme {
+    pub(crate) fn theme() -> Theme {
         Theme::new().on(
             Media::Dark,
             Theme::new()
@@ -237,7 +237,7 @@ mod look {
         )
     }
 
-    pub fn app() -> Style {
+    pub(crate) fn app() -> Style {
         stack(rem(1.5))
             .min_height(raw("100vh"))
             .padding(rem(1.5))
@@ -245,14 +245,14 @@ mod look {
             .color(ink().var())
     }
 
-    pub fn dark() -> Style {
+    pub(crate) fn dark() -> Style {
         Style::new()
             .token(&surface(), Color::hex(0x000d_1117))
             .token(&ink(), Color::hex(0x00e6_edf3))
             .token(&brand(), Color::hex(0x0058_a6ff))
     }
 
-    pub fn panel() -> Style {
+    pub(crate) fn panel() -> Style {
         stack(rem(0.75))
             .padding(rem(1))
             .border_width(px(1))
@@ -261,11 +261,11 @@ mod look {
             .border_radius(px(8))
     }
 
-    pub fn row() -> Style {
+    pub(crate) fn row() -> Style {
         wrap(rem(0.5))
     }
 
-    pub fn chip() -> Style {
+    pub(crate) fn chip() -> Style {
         Style::new()
             .padding_block(rem(0.25))
             .padding_inline(rem(0.75))
@@ -283,7 +283,7 @@ mod look {
     }
 
     /// The base of the recipe, which the size and tone variants add to.
-    pub fn button() -> Style {
+    pub(crate) fn button() -> Style {
         Style::new()
             .border_width(px(2))
             .border_style(BorderStyle::Solid)
@@ -293,38 +293,38 @@ mod look {
             .cursor(Cursor::Pointer)
     }
 
-    pub fn small() -> Style {
+    pub(crate) fn small() -> Style {
         Style::new()
             .padding_block(rem(0.25))
             .padding_inline(rem(0.5))
             .font_size(rem(0.875))
     }
 
-    pub fn large() -> Style {
+    pub(crate) fn large() -> Style {
         Style::new()
             .padding_block(rem(0.75))
             .padding_inline(rem(1.5))
             .font_size(rem(1.25))
     }
 
-    pub fn solid() -> Style {
+    pub(crate) fn solid() -> Style {
         Style::new()
             .background_color(brand().var())
             .color(Color::WHITE)
     }
 
-    pub fn outline() -> Style {
+    pub(crate) fn outline() -> Style {
         Style::new()
             .background_color(Color::TRANSPARENT)
             .color(brand().var())
     }
 
     /// One column, then three from the `lg` breakpoint.
-    pub fn cards() -> Style {
+    pub(crate) fn cards() -> Style {
         grid(1, rem(0.75)).on(Media::Lg, grid(3, rem(0.75)))
     }
 
-    pub fn card() -> Style {
+    pub(crate) fn card() -> Style {
         hstack(rem(0.5))
             .justify_content(hypersig::style::value::JustifyContent::SpaceBetween)
             .padding(rem(1))
@@ -334,7 +334,7 @@ mod look {
     }
 
     /// Hidden until the pointer is over its card.
-    pub fn card_action() -> Style {
+    pub(crate) fn card_action() -> Style {
         Style::new()
             .visibility(Visibility::Hidden)
             .color(brand().var())
@@ -344,19 +344,19 @@ mod look {
             )
     }
 
-    pub fn peer() -> Style {
+    pub(crate) fn peer() -> Style {
         Style::new().peer()
     }
 
     /// Shown while the checkbox before it is checked.
-    pub fn details() -> Style {
+    pub(crate) fn details() -> Style {
         Style::new().display(Display::None).flex_basis(pct(100)).on(
             Condition::Peer(PseudoClass::Checked),
             Style::new().display(Display::Block),
         )
     }
 
-    pub fn spinner() -> Style {
+    pub(crate) fn spinner() -> Style {
         let spin = Keyframes::new("spin").at(100, Style::new().transform(raw("rotate(1turn)")));
         circle(rem(1.5))
             .border_width(px(3))
@@ -376,7 +376,7 @@ mod look {
 
     /// The loaded cards side by side, with no gap, so each width is a plain
     /// share of the row.
-    pub fn loaded_row() -> Style {
+    pub(crate) fn loaded_row() -> Style {
         Style::new()
             .display(Display::Flex)
             .flex_wrap(hypersig::style::value::FlexWrap::Wrap)
@@ -385,7 +385,7 @@ mod look {
     /// Full width, half from `md`, and a quarter from `lg`. The page has a
     /// rule under `lg` but none under `md`, so the patch's `md` rules have to
     /// land before the page's `lg` rules for the quarter to win.
-    pub fn loaded_card() -> Style {
+    pub(crate) fn loaded_card() -> Style {
         Style::new()
             .box_sizing(BoxSizing::BorderBox)
             .width(pct(100))

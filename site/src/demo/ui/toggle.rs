@@ -12,21 +12,21 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub enum Align {
+pub(super) enum Align {
     Start,
     Center,
     End,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Note {
+pub(super) struct Note {
     bold: bool,
     italic: bool,
     align: Align,
     pinned: bool,
 }
 
-pub fn page(site: Site) -> Page<Note> {
+pub(super) fn page(site: Site) -> Page<Note> {
     let initial = Note {
         bold: false,
         italic: false,

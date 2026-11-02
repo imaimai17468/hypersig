@@ -11,7 +11,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Project {
+pub(super) struct Project {
     name: String,
     status: String,
 }
@@ -23,7 +23,7 @@ const RENAME: Dialog<Project> = Dialog::new(RENAME_DIALOG);
 const DELETE: Dialog<Project> = Dialog::new(DELETE_DIALOG);
 const DETAILS: Dialog<Project> = Dialog::new(DETAILS_SHEET);
 
-pub fn page(site: Site) -> Page<Project> {
+pub(super) fn page(site: Site) -> Page<Project> {
     let name = Project::name();
     let status = Project::status();
     let text = DialogText {

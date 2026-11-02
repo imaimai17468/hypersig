@@ -11,18 +11,18 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub enum Region {
+pub(super) enum Region {
     Tokyo,
     Frankfurt,
     Virginia,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Deploy {
+pub(super) struct Deploy {
     region: Region,
 }
 
-pub fn page(site: Site) -> Page<Deploy> {
+pub(super) fn page(site: Site) -> Page<Deploy> {
     Page::new(
         site.t(L {
             en: "Deploy",

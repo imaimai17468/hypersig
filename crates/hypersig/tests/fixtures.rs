@@ -25,12 +25,12 @@ use serde_json::json;
 mod class {
     use hypersig::html::Class;
 
-    pub const DONE: Class = Class::new("done");
-    pub const EDIT: Class = Class::new("edit");
-    pub const REMOVE: Class = Class::new("remove");
-    pub const NAME: Class = Class::new("name");
-    pub const COUNT: Class = Class::new("count");
-    pub const ON: Class = Class::new("on");
+    pub(crate) const DONE: Class = Class::new("done");
+    pub(crate) const EDIT: Class = Class::new("edit");
+    pub(crate) const REMOVE: Class = Class::new("remove");
+    pub(crate) const NAME: Class = Class::new("name");
+    pub(crate) const COUNT: Class = Class::new("count");
+    pub(crate) const ON: Class = Class::new("on");
 }
 
 #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]

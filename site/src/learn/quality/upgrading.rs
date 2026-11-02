@@ -7,7 +7,7 @@ use crate::lang::L;
 use crate::learn::snippet::{Snippet, show_change};
 use crate::prose::{Part, bullets, heading, lead, para, parts, title};
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Upgrading).title(site)),
         lead(site, Doc::Learn(Learn::Upgrading).leads()),

@@ -11,18 +11,18 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub enum Plan {
+pub(super) enum Plan {
     Hobby,
     Pro,
     Team,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Billing {
+pub(super) struct Billing {
     plan: Plan,
 }
 
-pub fn page(site: Site) -> Page<Billing> {
+pub(super) fn page(site: Site) -> Page<Billing> {
     let plan = Billing::plan();
     Page::new(
         site.t(L {

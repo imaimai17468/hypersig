@@ -6,7 +6,7 @@ use std::process::{Command, Stdio};
 use crate::Error;
 use crate::host::Host;
 
-pub fn run(path: &Path, host: Host) -> Result<(), Error> {
+pub(crate) fn run(path: &Path, host: Host) -> Result<(), Error> {
     let package = path
         .file_name()
         .and_then(|name| name.to_str())

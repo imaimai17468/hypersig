@@ -12,18 +12,18 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub enum Status {
+pub(super) enum Status {
     Idle,
     Busy,
     Done,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Build {
+pub(super) struct Build {
     status: Status,
 }
 
-pub fn page(site: Site) -> Page<Build> {
+pub(super) fn page(site: Site) -> Page<Build> {
     let status = Build::status();
     let done = Token::new("done", Color::hex(0x0015_803d));
     let badge = span()

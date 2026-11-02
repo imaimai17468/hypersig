@@ -707,6 +707,7 @@ fn stays_in_declaration(css: &str) -> bool {
 
 /// A keyword every property accepts, which CSS calls a CSS-wide keyword.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub enum CssWideKeyword {
     /// `inherit`: the parent's computed value.
     Inherit,

@@ -139,7 +139,7 @@ mod styles {
         MarginInline, TextDecorationLine, px, rem,
     };
 
-    pub fn page() -> Style {
+    pub(crate) fn page() -> Style {
         Style::new()
             .font_family(FontFamily::SystemUi)
             .max_width(rem(32))
@@ -148,26 +148,26 @@ mod styles {
             .padding_inline(rem(1))
     }
 
-    pub fn form() -> Style {
+    pub(crate) fn form() -> Style {
         Style::new().display(Display::Flex).gap(rem(0.5))
     }
 
-    pub fn input() -> Style {
+    pub(crate) fn input() -> Style {
         Style::new()
             .flex_grow(1)
             .font_size(rem(1))
             .padding(rem(0.4))
     }
 
-    pub fn button() -> Style {
+    pub(crate) fn button() -> Style {
         Style::new().font_size(rem(1)).cursor(Cursor::Pointer)
     }
 
-    pub fn list() -> Style {
+    pub(crate) fn list() -> Style {
         Style::new().list_style(ListStyle::None).padding(px(0))
     }
 
-    pub fn item() -> Style {
+    pub(crate) fn item() -> Style {
         Style::new()
             .display(Display::Flex)
             .gap(rem(0.5))
@@ -178,27 +178,27 @@ mod styles {
             .border_bottom_color(Color::hex(0x00ee_eeee))
     }
 
-    pub fn title() -> Style {
+    pub(crate) fn title() -> Style {
         Style::new().flex_grow(1)
     }
 
-    pub fn title_done() -> Style {
+    pub(crate) fn title_done() -> Style {
         Style::new()
             .text_decoration_line(TextDecorationLine::LineThrough)
             .color(Color::hex(0x0088_8888))
     }
 
-    pub fn icon_button() -> Style {
+    pub(crate) fn icon_button() -> Style {
         button()
             .border_style(BorderStyle::None)
             .background_color(Color::TRANSPARENT)
     }
 
-    pub fn link() -> Style {
+    pub(crate) fn link() -> Style {
         Style::new().color(Color::CURRENT_COLOR)
     }
 
-    pub fn summary() -> Style {
+    pub(crate) fn summary() -> Style {
         Style::new().color(Color::hex(0x0055_5555))
     }
 }

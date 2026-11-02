@@ -292,7 +292,8 @@ impl<P: Params, Q: Search> Route<P, Q> {
             }
             Err(reason) => return Err(reason),
         }
-        if P::REST_COUNT != P::REST_LAST as usize {
+        let rest_last = if P::REST_LAST { 1 } else { 0 };
+        if P::REST_COUNT != rest_last {
             return Err("only the last value of a route's parameters can be `Rest`");
         }
         if ends_in_wildcard(path) != P::REST_LAST {
@@ -1769,7 +1770,7 @@ impl Params for () {
 impl<T: Segment> Params for T {
     const COUNT: usize = 1;
     const REST_LAST: bool = T::REST;
-    const REST_COUNT: usize = T::REST as usize;
+    const REST_COUNT: usize = if T::REST { 1 } else { 0 };
 
     fn from_segments(segments: &[&str]) -> Option<Self> {
         match segments {
@@ -1801,7 +1802,7 @@ macro_rules! tuple_params {
         impl<$($ty: Segment),+> Params for ($($ty,)+) {
             const COUNT: usize = $count;
             const REST_LAST: bool = $last::REST;
-            const REST_COUNT: usize = 0 $(+ $ty::REST as usize)+;
+            const REST_COUNT: usize = 0 $(+ if $ty::REST { 1 } else { 0 })+;
 
             fn from_segments(segments: &[&str]) -> Option<Self> {
                 match segments {

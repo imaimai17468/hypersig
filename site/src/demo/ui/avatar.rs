@@ -12,14 +12,14 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Team {
+pub(super) struct Team {
     picture: SafeUrl,
 }
 
 const LOGO: SafeUrl = SafeUrl::new("https://imaimai17468.github.io/hypersig/icon.svg");
 const MISSING: SafeUrl = SafeUrl::new("https://imaimai17468.github.io/hypersig/missing.png");
 
-pub fn page(site: Site) -> Page<Team> {
+pub(super) fn page(site: Site) -> Page<Team> {
     let picture = Team::picture();
     Page::new(
         site.t(L {

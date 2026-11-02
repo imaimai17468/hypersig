@@ -5,7 +5,7 @@
 ///
 /// The longest common subsequence takes time and memory proportional to the
 /// product of the two line counts, which a `Cargo.toml` keeps small.
-pub fn lines(before: &str, after: &str) -> String {
+pub(crate) fn lines(before: &str, after: &str) -> String {
     let old: Vec<&str> = before.lines().collect();
     let new: Vec<&str> = after.lines().collect();
     // common[i][j] is the length of the longest common subsequence of
