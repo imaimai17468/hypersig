@@ -11,12 +11,12 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Settings {
+pub(super) struct Settings {
     terms: bool,
     notifications: bool,
 }
 
-pub fn page(site: Site) -> Page<Settings> {
+pub(super) fn page(site: Site) -> Page<Settings> {
     let notifications = Settings::notifications();
     let initial = Settings {
         terms: false,

@@ -45,9 +45,10 @@ impl FromRequestParts<AppState> for Member {
             Ok(Some(name)) => Ok(Self { name }),
             // A page goes to the sign-in page. An action's `fetch` would
             // follow a redirect, so it gets a 401 its `Call::error` shows.
-            Ok(None) => Err(match RequestKind::of(parts) {
-                RequestKind::Navigation => PageResponse::redirect(LOGIN.url(())).into_response(),
-                RequestKind::Runtime => (StatusCode::UNAUTHORIZED, "Sign in again.").into_response(),
+            Ok(None) => Err(if RequestKind::of(parts) == RequestKind::Navigation {
+                PageResponse::redirect(LOGIN.url(())).into_response()
+            } else {
+                (StatusCode::UNAUTHORIZED, "Sign in again.").into_response()
             }),
             Err(error) => Err(StoreFailed(error).into_response()),
         }

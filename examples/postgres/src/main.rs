@@ -19,6 +19,10 @@
 //! `DATABASE_URL` set and open <http://localhost:3011>. The server applies
 //! the migrations when it starts. A hosted database, such as Supabase,
 //! Cloud SQL, or RDS, takes its own connection string in `DATABASE_URL`.
+#![expect(
+    clippy::print_stderr,
+    reason = "the example server reports failures on standard error"
+)]
 
 use std::time::Duration;
 
@@ -211,7 +215,7 @@ mod styles {
         MarginInline, TextDecorationLine, px, rem,
     };
 
-    pub fn page() -> Style {
+    pub(crate) fn page() -> Style {
         Style::new()
             .font_family(FontFamily::SystemUi)
             .max_width(rem(32))
@@ -220,26 +224,26 @@ mod styles {
             .padding_inline(rem(1))
     }
 
-    pub fn form() -> Style {
+    pub(crate) fn form() -> Style {
         Style::new().display(Display::Flex).gap(rem(0.5))
     }
 
-    pub fn input() -> Style {
+    pub(crate) fn input() -> Style {
         Style::new()
             .flex_grow(1)
             .font_size(rem(1))
             .padding(rem(0.4))
     }
 
-    pub fn button() -> Style {
+    pub(crate) fn button() -> Style {
         Style::new().font_size(rem(1)).cursor(Cursor::Pointer)
     }
 
-    pub fn list() -> Style {
+    pub(crate) fn list() -> Style {
         Style::new().list_style(ListStyle::None).padding(px(0))
     }
 
-    pub fn item() -> Style {
+    pub(crate) fn item() -> Style {
         Style::new()
             .display(Display::Flex)
             .gap(rem(0.5))
@@ -250,7 +254,7 @@ mod styles {
             .border_bottom_color(Color::hex(0x00ee_eeee))
     }
 
-    pub fn title(done: bool) -> Style {
+    pub(crate) fn title(done: bool) -> Style {
         let title = Style::new().flex_grow(1);
         if done {
             title
@@ -261,21 +265,21 @@ mod styles {
         }
     }
 
-    pub fn icon_button() -> Style {
+    pub(crate) fn icon_button() -> Style {
         button()
             .border_style(BorderStyle::None)
             .background_color(Color::TRANSPARENT)
     }
 
-    pub fn link() -> Style {
+    pub(crate) fn link() -> Style {
         Style::new().color(Color::CURRENT_COLOR)
     }
 
-    pub fn summary() -> Style {
+    pub(crate) fn summary() -> Style {
         Style::new().color(Color::hex(0x0055_5555))
     }
 
-    pub fn problem() -> Style {
+    pub(crate) fn problem() -> Style {
         Style::new().color(Color::hex(0x00b4_2318))
     }
 }

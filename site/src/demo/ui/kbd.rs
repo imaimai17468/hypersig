@@ -11,11 +11,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Help {
+pub(super) struct Help {
     open: bool,
 }
 
-pub fn page(site: Site) -> Page<Help> {
+pub(super) fn page(site: Site) -> Page<Help> {
     Page::new(
         site.t(L {
             en: "Help",

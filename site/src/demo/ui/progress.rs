@@ -11,11 +11,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Upload {
+pub(super) struct Upload {
     percent: i32,
 }
 
-pub fn page(site: Site) -> Page<Upload> {
+pub(super) fn page(site: Site) -> Page<Upload> {
     let percent = Upload::percent();
     Page::new(
         site.t(L {

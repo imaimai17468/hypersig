@@ -20,7 +20,7 @@ const OUTPUT: &str =
 Started `target/debug/counter`
 Restarted `target/debug/counter`";
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts(
         intro(site)
             .into_iter()

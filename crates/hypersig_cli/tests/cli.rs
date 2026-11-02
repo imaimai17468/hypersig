@@ -37,18 +37,19 @@ fn scratch(name: &str) -> PathBuf {
         .join(name);
     // Keeps `target`, so a second run of the tests checks quickly.
     if let Ok(entries) = std::fs::read_dir(&dir) {
-        for entry in entries.map(Result::unwrap) {
+        for entry in entries {
+            let entry = entry.expect("an entry of the scratch directory can be read");
             if entry.file_name() != "target" {
                 let path = entry.path();
                 if path.is_dir() {
-                    std::fs::remove_dir_all(path).unwrap();
+                    std::fs::remove_dir_all(path).expect("a scratch directory can be removed");
                 } else {
-                    std::fs::remove_file(path).unwrap();
+                    std::fs::remove_file(path).expect("a scratch file can be removed");
                 }
             }
         }
     }
-    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::create_dir_all(&dir).expect("the scratch directory can be created");
     dir
 }
 
@@ -58,11 +59,11 @@ fn hypersig(dir: &Path, args: &[&str]) -> Output {
         .args(args)
         .current_dir(dir)
         .output()
-        .unwrap()
+        .expect("the built `cargo-hypersig` runs")
 }
 
 fn succeeds(output: &Output) -> String {
-    let stdout = String::from_utf8(output.stdout.clone()).unwrap();
+    let stdout = String::from_utf8(output.stdout.clone()).expect("the CLI writes UTF-8");
     assert!(
         output.status.success(),
         "stdout:\n{stdout}\nstderr:\n{}",
@@ -79,7 +80,8 @@ fn read(path: impl AsRef<Path>) -> String {
 /// Every file under `dir`, by its path relative to `dir`.
 fn files(dir: &Path) -> Vec<String> {
     fn walk(dir: &Path, base: &Path, out: &mut Vec<String>) {
-        for entry in std::fs::read_dir(dir).unwrap().map(Result::unwrap) {
+        for entry in std::fs::read_dir(dir).expect("the project directory can be read") {
+            let entry = entry.expect("an entry of the project can be read");
             let path = entry.path();
             if path.is_dir() {
                 if entry.file_name() != "target" {
@@ -88,9 +90,9 @@ fn files(dir: &Path) -> Vec<String> {
             } else {
                 out.push(
                     path.strip_prefix(base)
-                        .unwrap()
+                        .expect("the walk stays under its base")
                         .to_str()
-                        .unwrap()
+                        .expect("the template's paths are UTF-8")
                         .to_owned(),
                 );
             }
@@ -110,7 +112,7 @@ fn cargo() -> String {
 /// Checks the project at `dir` against this repository's hypersig, in a
 /// target directory that the projects of one host share.
 fn check(dir: &Path, target: &Path, args: &[&str]) {
-    std::fs::create_dir_all(dir.join(".cargo")).unwrap();
+    std::fs::create_dir_all(dir.join(".cargo")).expect("`.cargo` can be created");
     std::fs::write(
         dir.join(".cargo/config.toml"),
         format!(
@@ -119,7 +121,7 @@ fn check(dir: &Path, target: &Path, args: &[&str]) {
             Path::new(ROOT).join("crates/hypersig_ui").display()
         ),
     )
-    .unwrap();
+    .expect("`.cargo/config.toml` can be written");
     let status = Command::new(cargo())
         .arg("check")
         .args(args)
@@ -127,7 +129,7 @@ fn check(dir: &Path, target: &Path, args: &[&str]) {
         .env("CARGO_TARGET_DIR", target)
         .current_dir(dir)
         .status()
-        .unwrap();
+        .expect("cargo runs");
     assert!(status.success(), "cargo check failed in {}", dir.display());
 }
 
@@ -151,11 +153,18 @@ fn new(host: &str, target: &Path, check_args: &[&str]) {
         .chain(["AGENTS.md".to_owned(), "CLAUDE.md".to_owned()])
         .collect();
     expected.sort();
-    assert_eq!(files(&project), expected);
+    assert_eq!(
+        files(&project),
+        expected,
+        "the project holds other files than its template"
+    );
     for path in &expected {
         let source = match path.as_str() {
             "Cargo.toml" => template.join("Cargo.toml.template"),
-            "AGENTS.md" | "CLAUDE.md" => template.parent().unwrap().join(path),
+            "AGENTS.md" | "CLAUDE.md" => template
+                .parent()
+                .expect("a template sits in the templates directory")
+                .join(path),
             _ => template.join(path),
         };
         let want = read(source)
@@ -164,10 +173,14 @@ fn new(host: &str, target: &Path, check_args: &[&str]) {
             .replace("{{host-notes}}", notes.trim_end());
         assert_eq!(read(project.join(path)), want, "{path}");
     }
-    assert!(!read(project.join("AGENTS.md")).contains("{{"));
+    assert!(
+        !read(project.join("AGENTS.md")).contains("{{"),
+        "the project's AGENTS.md keeps a placeholder"
+    );
     assert!(
         read(project.join("Cargo.toml"))
-            .contains(&format!("hypersig = \"{}\"", env!("CARGO_PKG_VERSION")))
+            .contains(&format!("hypersig = \"{}\"", env!("CARGO_PKG_VERSION"))),
+        "the project's manifest does not depend on this hypersig version"
     );
 
     check(&project, target, check_args);
@@ -176,10 +189,11 @@ fn new(host: &str, target: &Path, check_args: &[&str]) {
 /// The quick start counter in a directory of its own.
 fn quick_start(name: &str) -> PathBuf {
     let dir = scratch(name);
-    std::fs::create_dir_all(dir.join("src")).unwrap();
-    std::fs::write(dir.join("Cargo.toml"), QUICK_START_MANIFEST).unwrap();
-    std::fs::write(dir.join("src/main.rs"), QUICK_START).unwrap();
-    std::fs::write(dir.join(".gitignore"), "/target\n").unwrap();
+    std::fs::create_dir_all(dir.join("src")).expect("`src` can be created");
+    std::fs::write(dir.join("Cargo.toml"), QUICK_START_MANIFEST)
+        .expect("the manifest can be written");
+    std::fs::write(dir.join("src/main.rs"), QUICK_START).expect("`main.rs` can be written");
+    std::fs::write(dir.join(".gitignore"), "/target\n").expect("`.gitignore` can be written");
     dir
 }
 
@@ -202,13 +216,17 @@ fn replace_main(source: &str, code: &str) -> String {
 fn add_refuses_to_overwrite(dir: &Path, host: &str, taken: &str) {
     let before = read(dir.join("Cargo.toml"));
     let output = hypersig(dir, &["add", host]);
-    assert!(!output.status.success());
+    assert!(!output.status.success(), "`add {host}` overwrote `{taken}`");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         stderr.contains(taken) && stderr.contains("--force"),
         "{stderr}"
     );
-    assert_eq!(read(dir.join("Cargo.toml")), before);
+    assert_eq!(
+        read(dir.join("Cargo.toml")),
+        before,
+        "a refused `add` changed Cargo.toml"
+    );
 }
 
 #[test]

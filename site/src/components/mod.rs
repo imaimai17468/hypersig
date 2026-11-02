@@ -16,7 +16,7 @@ use crate::doc::{Component, Doc};
 use crate::prose::{Part, title};
 
 /// The article of `page`.
-pub fn content(site: Site, page: Component) -> Part {
+pub(crate) fn content(site: Site, page: Component) -> Part {
     let head = title(Doc::Components(page).title(site));
     match page {
         // Get started

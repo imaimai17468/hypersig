@@ -12,11 +12,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Weather {
+pub(super) struct Weather {
     celsius: f64,
 }
 
-pub fn page(site: Site) -> Page<Weather> {
+pub(super) fn page(site: Site) -> Page<Weather> {
     let celsius = Weather::celsius();
     let fahrenheit = celsius * 1.8 + 32.0;
     Page::new(

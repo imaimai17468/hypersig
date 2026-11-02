@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 /// A language of the site. English is the default and sits at the root.
 #[derive(Segment, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum Lang {
     /// English, written at the root of the site.
     En,
@@ -72,7 +73,7 @@ impl Lang {
 /// rows of a table. There is no way to make one from English alone, so a
 /// text without its translation fails to compile.
 #[derive(Debug)]
-pub enum Text<'a, T: ?Sized> {
+pub(crate) enum Text<'a, T: ?Sized> {
     Translated(L<&'a T>),
     /// A value already in the page's language, such as the rows of a table
     /// whose cells were each picked with `Site::t`.
@@ -90,7 +91,7 @@ impl<T: ?Sized> Copy for Text<'_, T> {}
 impl<'a, T: ?Sized> Text<'a, T> {
     /// The text in `lang`.
     #[must_use]
-    pub fn get(self, lang: Lang) -> &'a T {
+    pub(crate) fn get(self, lang: Lang) -> &'a T {
         match self {
             Self::Translated(text) => lang.pick(text),
             Self::Chosen(text) => text,
@@ -103,7 +104,7 @@ impl<'a, T: ?Sized> Text<'a, T> {
     ///
     /// Panics for a [`Text::Chosen`] value, which holds one language only.
     #[must_use]
-    pub fn english(self) -> &'a T {
+    pub(crate) fn english(self) -> &'a T {
         match self {
             Self::Translated(text) => text.en,
             Self::Chosen(_) => panic!("a heading is written with its translations"),

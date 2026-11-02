@@ -12,11 +12,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Team {
+pub(super) struct Team {
     columns: i32,
 }
 
-pub fn page(site: Site) -> Page<Team> {
+pub(super) fn page(site: Site) -> Page<Team> {
     let tile = || {
         div().css(
             center()

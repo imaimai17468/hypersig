@@ -11,7 +11,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Project {
+pub(super) struct Project {
     archived: bool,
     status: String,
 }
@@ -19,7 +19,7 @@ pub struct Project {
 hypersig::node_ref!(const PROJECT_ACTIONS: NodeRef<Project>);
 const ACTIONS: Menu<Project> = Menu::new(PROJECT_ACTIONS);
 
-pub fn page(site: Site) -> Page<Project> {
+pub(super) fn page(site: Site) -> Page<Project> {
     let archived = Project::archived();
     let status = Project::status();
     let initial = Project {

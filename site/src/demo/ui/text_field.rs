@@ -11,14 +11,14 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Signup {
+pub(super) struct Signup {
     email: String,
     bio: String,
     guests: i32,
     arrival: Option<CalendarDate>,
 }
 
-pub fn page(site: Site) -> Page<Signup> {
+pub(super) fn page(site: Site) -> Page<Signup> {
     let email = Signup::email();
     let looks_wrong = !email.is_empty().or(email.contains("@"));
     let initial = Signup {

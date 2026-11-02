@@ -20,7 +20,7 @@ const COUNTER_HTML: &str = r#"<body data-hs-signals='{"count":0}'>
   </div>
 </body>"#;
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts(
         intro(site)
             .into_iter()

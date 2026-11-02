@@ -11,18 +11,18 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Segment, Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub enum Font {
+pub(super) enum Font {
     Sans,
     Serif,
     Mono,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Editor {
+pub(super) struct Editor {
     font: Font,
 }
 
-pub fn page(site: Site) -> Page<Editor> {
+pub(super) fn page(site: Site) -> Page<Editor> {
     Page::new(
         site.t(L {
             en: "Editor",

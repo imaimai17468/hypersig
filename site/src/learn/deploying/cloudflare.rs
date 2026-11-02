@@ -15,7 +15,7 @@ const WORKER: &str =
 /// `hypersig_cli` build into the quick start counter.
 const FETCH: &str = include_str!("../../../../crates/hypersig_cli/steps/cloudflare.rs");
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::DeployCloudflare).title(site)),
         lead(site, Doc::Learn(Learn::DeployCloudflare).leads()),

@@ -149,6 +149,7 @@ pub const MAX_DEPTH: usize = 8;
 /// Only a page-rooted signal has a fixed path, so only it can be patched from
 /// the server.
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum Root {}
 
 /// Marks a [`Sig`] whose path starts at the current list item.
@@ -156,6 +157,7 @@ pub enum Root {}
 /// The item is the one an [`each`](crate::html::each) or a list predicate is
 /// at, so the path is resolved in the browser per item.
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum Local {}
 
 /// Marks a [`Sig`] whose value [`Page::computed`](crate::Page::computed) keeps up to date.
@@ -181,6 +183,7 @@ pub enum Local {}
 /// let _ = Cart::total().set(0.0);
 /// ```
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum Computed {}
 
 /// Marks a read-only view of a page-rooted [`Sig`], which [`Sig::read`] returns.
@@ -205,6 +208,7 @@ pub enum Computed {}
 /// let _ = Cart::price().read().set(0.0);
 /// ```
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub enum Read {}
 
 /// The markers of a [`Sig`] the browser may write: [`Root`] and [`Local`].

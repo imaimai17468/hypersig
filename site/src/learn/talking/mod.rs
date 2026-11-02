@@ -1,14 +1,14 @@
 //! The pages on talking to the server: calling actions, what a call does
 //! while it waits and when it fails, and the patches the server answers with.
 
-pub mod actions;
-pub mod call_status;
-pub mod fragments;
-pub mod list_patches;
-pub mod optimistic;
-pub mod overlapping_calls;
-pub mod patches;
-pub mod streams;
+pub(super) mod actions;
+pub(super) mod call_status;
+pub(super) mod fragments;
+pub(super) mod list_patches;
+pub(super) mod optimistic;
+pub(super) mod overlapping_calls;
+pub(super) mod patches;
+pub(super) mod streams;
 
 use crate::Site;
 use crate::lang::L;

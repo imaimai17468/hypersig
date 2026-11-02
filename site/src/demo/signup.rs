@@ -16,7 +16,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Default)]
-pub enum Plan {
+pub(super) enum Plan {
     #[default]
     Unset,
     Free,
@@ -24,7 +24,7 @@ pub enum Plan {
 }
 
 #[derive(Signals, Serialize, Deserialize, Clone, Default)]
-pub struct Signup {
+pub(super) struct Signup {
     email: String,
     password: String,
     confirm: String,
@@ -82,12 +82,12 @@ impl Validate for Signup {
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Join {
+pub(super) struct Join {
     signup: Form<Signup>,
     joined: bool,
 }
 
-pub fn page(site: Site) -> Page<Join> {
+pub(super) fn page(site: Site) -> Page<Join> {
     let signup = Join::signup();
     let joined = Join::joined();
     let initial = Join {

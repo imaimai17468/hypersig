@@ -603,16 +603,16 @@ mod look {
     };
     use hypersig::style::{Container, Keyframes, Media, Style, Theme, Token};
 
-    pub fn surface() -> Token<Color> {
+    pub(crate) fn surface() -> Token<Color> {
         Token::new("surface", Color::hex(0x00f6_f6f6))
     }
 
-    pub fn ink() -> Token<Color> {
+    pub(crate) fn ink() -> Token<Color> {
         Token::new("ink", Color::hex(0x0022_2222))
     }
 
     /// The page's dark values, for a visitor whose system prefers dark.
-    pub fn theme() -> Theme {
+    pub(crate) fn theme() -> Theme {
         Theme::new().on(
             Media::Dark,
             Theme::new()
@@ -622,13 +622,13 @@ mod look {
     }
 
     /// The tokens the theme button switches to, for the card inside.
-    pub fn dark_frame() -> Style {
+    pub(crate) fn dark_frame() -> Style {
         Style::new()
             .token(&surface(), Color::hex(0x0022_2733))
             .token(&ink(), Color::hex(0x00ee_eeee))
     }
 
-    pub fn card() -> Style {
+    pub(crate) fn card() -> Style {
         stack(rem(0.75))
             .box_sizing(BoxSizing::BorderBox)
             .padding(rem(1))
@@ -640,17 +640,17 @@ mod look {
             .container_type(ContainerType::InlineSize)
     }
 
-    pub fn wide_note() -> Style {
+    pub(crate) fn wide_note() -> Style {
         Style::new()
             .margin(px(0))
             .on(Container::Sm, Style::new().font_weight(FontWeight::Bold))
     }
 
-    pub fn buttons() -> Style {
+    pub(crate) fn buttons() -> Style {
         hstack(rem(0.5))
     }
 
-    pub fn badge() -> Style {
+    pub(crate) fn badge() -> Style {
         Style::new()
             .padding_inline(rem(0.5))
             .border_radius(px(4))
@@ -658,17 +658,17 @@ mod look {
             .border_style(BorderStyle::Solid)
     }
 
-    pub fn calm() -> Style {
+    pub(crate) fn calm() -> Style {
         Style::new().color(Color::GRAY)
     }
 
-    pub fn loud() -> Style {
+    pub(crate) fn loud() -> Style {
         Style::new()
             .color(Color::CRIMSON)
             .font_weight(FontWeight::Bold)
     }
 
-    pub fn spinner() -> Style {
+    pub(crate) fn spinner() -> Style {
         let spin = Keyframes::new("spin")
             .at(0, Style::new().transform(Transform::None))
             .at(100, Style::new().transform(raw("rotate(1turn)")));
@@ -840,44 +840,44 @@ mod class {
 
     use super::STYLE;
 
-    pub const DISCLOSURE_TITLE: Class = STYLE.class("disclosure-title");
-    pub const STEPPER: Class = STYLE.class("stepper");
-    pub const NAME: Class = STYLE.class("name");
-    pub const VALUE: Class = STYLE.class("value");
-    pub const ELAPSED: Class = STYLE.class("elapsed");
-    pub const ROW: Class = STYLE.class("row");
-    pub const SEARCHING: Class = STYLE.class("searching");
-    pub const COUNT: Class = STYLE.class("count");
-    pub const OVER: Class = STYLE.class("over");
-    pub const PRICE: Class = STYLE.class("price");
-    pub const ERROR: Class = STYLE.class("error");
-    pub const FEED: Class = STYLE.class("feed");
+    pub(crate) const DISCLOSURE_TITLE: Class = STYLE.class("disclosure-title");
+    pub(crate) const STEPPER: Class = STYLE.class("stepper");
+    pub(crate) const NAME: Class = STYLE.class("name");
+    pub(crate) const VALUE: Class = STYLE.class("value");
+    pub(crate) const ELAPSED: Class = STYLE.class("elapsed");
+    pub(crate) const ROW: Class = STYLE.class("row");
+    pub(crate) const SEARCHING: Class = STYLE.class("searching");
+    pub(crate) const COUNT: Class = STYLE.class("count");
+    pub(crate) const OVER: Class = STYLE.class("over");
+    pub(crate) const PRICE: Class = STYLE.class("price");
+    pub(crate) const ERROR: Class = STYLE.class("error");
+    pub(crate) const FEED: Class = STYLE.class("feed");
 
     // No rule in `STYLE` styles the classes below.
-    pub const DISCLOSURE: Class = Class::new("disclosure");
-    pub const TOTAL: Class = Class::new("total");
-    pub const START: Class = Class::new("start");
-    pub const RESET: Class = Class::new("reset");
-    pub const EMPTY: Class = Class::new("empty");
-    pub const FOCUS: Class = Class::new("focus");
-    pub const QUANTITY: Class = Class::new("quantity");
-    pub const SIZE: Class = Class::new("size");
-    pub const GIFT: Class = Class::new("gift");
-    pub const NOTE: Class = Class::new("note");
-    pub const PLACE: Class = Class::new("place");
-    pub const STATUS: Class = Class::new("status");
-    pub const OLDER: Class = Class::new("older");
-    pub const NEWER: Class = Class::new("newer");
-    pub const STAR: Class = Class::new("star");
-    pub const DISMISS: Class = Class::new("dismiss");
-    pub const OPEN_PALETTE: Class = Class::new("open-palette");
-    pub const CLOSE_PALETTE: Class = Class::new("close-palette");
-    pub const MORE: Class = Class::new("more");
-    pub const END: Class = Class::new("end");
-    pub const RENDERED_EN: Class = Class::new("rendered-en");
-    pub const RENDERED_TOKYO: Class = Class::new("rendered-tokyo");
-    pub const RENDERED_LOCAL: Class = Class::new("rendered-local");
-    pub const SINCE: Class = Class::new("since");
+    pub(crate) const DISCLOSURE: Class = Class::new("disclosure");
+    pub(crate) const TOTAL: Class = Class::new("total");
+    pub(crate) const START: Class = Class::new("start");
+    pub(crate) const RESET: Class = Class::new("reset");
+    pub(crate) const EMPTY: Class = Class::new("empty");
+    pub(crate) const FOCUS: Class = Class::new("focus");
+    pub(crate) const QUANTITY: Class = Class::new("quantity");
+    pub(crate) const SIZE: Class = Class::new("size");
+    pub(crate) const GIFT: Class = Class::new("gift");
+    pub(crate) const NOTE: Class = Class::new("note");
+    pub(crate) const PLACE: Class = Class::new("place");
+    pub(crate) const STATUS: Class = Class::new("status");
+    pub(crate) const OLDER: Class = Class::new("older");
+    pub(crate) const NEWER: Class = Class::new("newer");
+    pub(crate) const STAR: Class = Class::new("star");
+    pub(crate) const DISMISS: Class = Class::new("dismiss");
+    pub(crate) const OPEN_PALETTE: Class = Class::new("open-palette");
+    pub(crate) const CLOSE_PALETTE: Class = Class::new("close-palette");
+    pub(crate) const MORE: Class = Class::new("more");
+    pub(crate) const END: Class = Class::new("end");
+    pub(crate) const RENDERED_EN: Class = Class::new("rendered-en");
+    pub(crate) const RENDERED_TOKYO: Class = Class::new("rendered-tokyo");
+    pub(crate) const RENDERED_LOCAL: Class = Class::new("rendered-local");
+    pub(crate) const SINCE: Class = Class::new("since");
 }
 
 const STYLE: Stylesheet = Stylesheet::new("

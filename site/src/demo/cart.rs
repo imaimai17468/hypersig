@@ -11,20 +11,20 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Item {
+pub(super) struct Item {
     name: String,
     price: f64,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Cart {
+pub(super) struct Cart {
     item: Item,
     quantity: i32,
     #[signals(computed)]
     total: f64,
 }
 
-pub fn page(site: Site) -> Page<Cart> {
+pub(super) fn page(site: Site) -> Page<Cart> {
     let item = Cart::item();
     let quantity = Cart::quantity();
     let total = Cart::total();

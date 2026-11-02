@@ -111,6 +111,7 @@ impl Default for TableText {
 
 /// The direction a [`TableState`] sorts its column in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SortOrder {
     /// Smallest first.
     Ascending,

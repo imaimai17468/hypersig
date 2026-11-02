@@ -12,11 +12,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Profile {
+pub(super) struct Profile {
     section: String,
 }
 
-pub fn page(site: Site) -> Page<Profile> {
+pub(super) fn page(site: Site) -> Page<Profile> {
     let section = Profile::section();
     let link = |name: &str| {
         button(ButtonVariant::Link, ButtonSize::Sm)

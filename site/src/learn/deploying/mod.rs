@@ -1,16 +1,16 @@
 //! The pages on deploying an application from a template: which host each
 //! template is for, then one page per host.
 
-pub mod cloudflare;
-pub mod container;
-pub mod vercel;
+pub(super) mod cloudflare;
+pub(super) mod container;
+pub(super) mod vercel;
 
 use crate::Site;
 use crate::doc::{Doc, Learn};
 use crate::lang::L;
 use crate::prose::{Part, lead, para, parts, table_of, title};
 
-pub fn deploying(site: Site) -> Part {
+pub(super) fn deploying(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::Deploying).title(site)),
         lead(site, Doc::Learn(Learn::Deploying).leads()),

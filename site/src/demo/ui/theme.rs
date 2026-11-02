@@ -15,19 +15,19 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
-pub enum Scheme {
+pub(super) enum Scheme {
     System,
     Light,
     Dark,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Preview {
+pub(super) struct Preview {
     scheme: Scheme,
     on: bool,
 }
 
-pub fn page(site: Site) -> Page<Preview> {
+pub(super) fn page(site: Site) -> Page<Preview> {
     let initial = Preview {
         scheme: Scheme::System,
         on: true,

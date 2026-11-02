@@ -77,7 +77,7 @@ fn moves(host: Host) -> Option<Move> {
 
 /// `code` without the lines that start with `# `, which a step file holds so
 /// that it compiles as a doctest, as rustdoc leaves them out.
-pub fn shown(code: &str) -> String {
+pub(crate) fn shown(code: &str) -> String {
     code.lines()
         .filter(|line| !(line.starts_with("# ") || *line == "#"))
         .flat_map(|line| [line, "\n"])
@@ -94,7 +94,7 @@ struct Plan {
     notes: Vec<String>,
 }
 
-pub fn run(dir: &Path, host: Host, force: bool) -> Result<(), Error> {
+pub(crate) fn run(dir: &Path, host: Host, force: bool) -> Result<(), Error> {
     let plan = plan(dir, host, force)?;
     if let Some(after) = &plan.manifest {
         let before = read(&dir.join("Cargo.toml"))?;

@@ -8,6 +8,10 @@
 //!
 //! Run with `cargo run -p example-auth`, open <http://localhost:3007>, and
 //! sign in as `ada` with the password `lovelace`.
+#![expect(
+    clippy::print_stderr,
+    reason = "the example server reports a failed session store on standard error"
+)]
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -203,12 +207,11 @@ struct SignedOut {
 
 impl IntoResponse for SignedOut {
     fn into_response(self) -> Response {
-        match self.kind {
-            RequestKind::Runtime => {
-                let message = "Your session has ended. Sign in again.";
-                (StatusCode::UNAUTHORIZED, message).into_response()
-            }
-            RequestKind::Navigation => PageResponse::redirect(LOGIN.url(())).into_response(),
+        if self.kind == RequestKind::Navigation {
+            PageResponse::redirect(LOGIN.url(())).into_response()
+        } else {
+            let message = "Your session has ended. Sign in again.";
+            (StatusCode::UNAUTHORIZED, message).into_response()
         }
     }
 }

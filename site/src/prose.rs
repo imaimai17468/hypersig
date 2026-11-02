@@ -27,7 +27,7 @@ use crate::{Site, own};
 
 /// The signals of a documentation page.
 #[derive(Signals, Serialize, Deserialize, Default)]
-pub struct Docs {
+pub(crate) struct Docs {
     /// Whether the sidebar is open on a narrow screen.
     pub menu: bool,
     /// The color scheme the visitor picked with the button in the header,
@@ -37,7 +37,7 @@ pub struct Docs {
 
 /// A color scheme of the site.
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
-pub enum Scheme {
+pub(crate) enum Scheme {
     /// The scheme the system prefers, through `prefers-color-scheme`.
     #[default]
     System,
@@ -46,10 +46,10 @@ pub enum Scheme {
 }
 
 /// An element of a documentation page.
-pub type Part = El<Docs>;
+pub(crate) type Part = El<Docs>;
 
 /// The page title.
-pub fn title(text: &str) -> Part {
+pub(crate) fn title(text: &str) -> Part {
     h1().css(
         Style::new()
             .font_size(rem(2.25))
@@ -61,7 +61,7 @@ pub fn title(text: &str) -> Part {
 }
 
 /// The paragraph under the title that says what the page covers.
-pub fn lead<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+pub(crate) fn lead<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
     let text = site.text(text);
     p().css(
         Style::new()
@@ -75,7 +75,7 @@ pub fn lead<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
 
 /// A section heading, with an id made from its English text so it can be
 /// linked to, and so the same section has the same id in every language.
-pub fn heading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+pub(crate) fn heading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
     let text = text.into();
     h2().id(Id::from_text(anchor(text.english())))
         .css(
@@ -94,7 +94,7 @@ pub fn heading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
 }
 
 /// A heading inside a section, with an id made from its English text.
-pub fn subheading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+pub(crate) fn subheading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
     let text = text.into();
     h3().id(Id::from_text(anchor(text.english())))
         .css(
@@ -108,14 +108,14 @@ pub fn subheading<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
 }
 
 /// A paragraph.
-pub fn para<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+pub(crate) fn para<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
     let text = site.text(text);
     p().css(body_text().margin_top(rem(1.25)))
         .children(inline(site, text))
 }
 
 /// A bulleted list, one item per entry of `items`.
-pub fn bullets<'a, I: Into<Text<'a, str>> + Copy>(site: Site, items: &[I]) -> Part {
+pub(crate) fn bullets<'a, I: Into<Text<'a, str>> + Copy>(site: Site, items: &[I]) -> Part {
     ul().css(
         body_text()
             .margin_top(rem(1.25))
@@ -129,7 +129,7 @@ pub fn bullets<'a, I: Into<Text<'a, str>> + Copy>(site: Site, items: &[I]) -> Pa
 }
 
 /// A table with a header row and one row per entry of `rows`.
-pub fn table_of<'a, R: AsRef<[&'a str]> + 'a>(
+pub(crate) fn table_of<'a, R: AsRef<[&'a str]> + 'a>(
     site: Site,
     header: impl Into<Text<'a, [&'a str]>>,
     rows: impl Into<Text<'a, [R]>>,
@@ -181,7 +181,7 @@ pub fn table_of<'a, R: AsRef<[&'a str]> + 'a>(
 }
 
 /// A boxed note beside the text, for a fact the reader should not miss.
-pub fn note<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
+pub(crate) fn note<'a>(site: Site, text: impl Into<Text<'a, str>>) -> Part {
     let text = site.text(text);
     div()
         .role(Role::Note)
@@ -206,7 +206,7 @@ fn body_text() -> Style {
 
 /// The id of a heading: its text in lowercase, with each run of characters
 /// other than ASCII letters and digits replaced by one `-`.
-pub fn anchor(text: &str) -> String {
+pub(crate) fn anchor(text: &str) -> String {
     let mut id = String::new();
     for c in text.chars() {
         if c.is_ascii_alphanumeric() {
@@ -270,7 +270,7 @@ fn marks(text: &str) -> impl Iterator<Item = Mark<'_>> {
 /// # Panics
 ///
 /// Panics if a mark is not closed, which is a typo in the page's source.
-pub fn inline(site: Site, text: &str) -> Vec<Node<Docs>> {
+pub(crate) fn inline(site: Site, text: &str) -> Vec<Node<Docs>> {
     marks(text)
         .map(|mark| match mark {
             Mark::Text(text) => text.into(),
@@ -286,7 +286,7 @@ pub fn inline(site: Site, text: &str) -> Vec<Node<Docs>> {
 
 /// `text` with the marks [`inline`] reads taken out, for a place that shows
 /// no markup, such as a page's description.
-pub fn plain(text: &str) -> String {
+pub(crate) fn plain(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     for mark in marks(text) {
         match mark {
@@ -315,7 +315,7 @@ fn split_link(text: &str) -> Option<(&str, &str, &str)> {
 }
 
 /// Code inside running text.
-pub fn inline_code(text: &str) -> Part {
+pub(crate) fn inline_code(text: &str) -> Part {
     code()
         .css(
             Style::new()
@@ -330,7 +330,7 @@ pub fn inline_code(text: &str) -> Part {
 }
 
 /// A link to `target`, in the form the module header describes.
-pub fn link(site: Site, target: &str) -> Part {
+pub(crate) fn link(site: Site, target: &str) -> Part {
     a().href(href(site, target)).css(
         Style::new()
             .font_weight(FontWeight::Number(500.0))
@@ -344,7 +344,7 @@ pub fn link(site: Site, target: &str) -> Part {
 }
 
 /// The URL of `target`, in the form the module header describes.
-pub fn href(site: Site, target: &str) -> SafeUrl {
+pub(crate) fn href(site: Site, target: &str) -> SafeUrl {
     own(if target.starts_with("https://") {
         target.to_owned()
     } else if let Some(item) = target.strip_prefix("api:") {
@@ -355,7 +355,7 @@ pub fn href(site: Site, target: &str) -> SafeUrl {
 }
 
 /// Several parts as one, for a function that returns the body of a page.
-pub fn parts(children: impl IntoIterator<Item = Part>) -> Part {
+pub(crate) fn parts(children: impl IntoIterator<Item = Part>) -> Part {
     html::div().children(children)
 }
 

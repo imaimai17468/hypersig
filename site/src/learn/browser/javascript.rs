@@ -9,7 +9,7 @@ use crate::lang::L;
 use crate::learn::snippet::{Snippet, show, show_file};
 use crate::prose::{Part, heading, lead, para, parts, table_of, title};
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts(vec![
         title(Doc::Learn(Learn::JavaScript).title(site)),
         lead(site, Doc::Learn(Learn::JavaScript).leads()),

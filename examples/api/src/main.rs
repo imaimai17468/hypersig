@@ -8,6 +8,10 @@
 //! `cargo run -p example-api` and open <http://localhost:3012>. `API_URL`
 //! and `API_TOKEN` name the service and its token, and default to the
 //! stand-in's.
+#![expect(
+    clippy::print_stderr,
+    reason = "the example server reports a failed call on standard error"
+)]
 
 use axum::Router;
 use axum::http::StatusCode;
@@ -145,7 +149,7 @@ mod styles {
         BorderBottomStyle, Color, Cursor, Display, FontFamily, ListStyle, MarginInline, px, rem,
     };
 
-    pub fn page() -> Style {
+    pub(crate) fn page() -> Style {
         Style::new()
             .font_family(FontFamily::SystemUi)
             .max_width(rem(32))
@@ -154,26 +158,26 @@ mod styles {
             .padding_inline(rem(1))
     }
 
-    pub fn form() -> Style {
+    pub(crate) fn form() -> Style {
         Style::new().display(Display::Flex).gap(rem(0.5))
     }
 
-    pub fn input() -> Style {
+    pub(crate) fn input() -> Style {
         Style::new()
             .flex_grow(1)
             .font_size(rem(1))
             .padding(rem(0.4))
     }
 
-    pub fn button() -> Style {
+    pub(crate) fn button() -> Style {
         Style::new().font_size(rem(1)).cursor(Cursor::Pointer)
     }
 
-    pub fn list() -> Style {
+    pub(crate) fn list() -> Style {
         Style::new().list_style(ListStyle::None).padding(px(0))
     }
 
-    pub fn item() -> Style {
+    pub(crate) fn item() -> Style {
         Style::new()
             .padding_block(rem(0.3))
             .border_bottom_width(px(1))
@@ -181,7 +185,7 @@ mod styles {
             .border_bottom_color(Color::hex(0x00ee_eeee))
     }
 
-    pub fn problem() -> Style {
+    pub(crate) fn problem() -> Style {
         Style::new().color(Color::hex(0x00b4_2318))
     }
 }

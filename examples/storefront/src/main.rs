@@ -54,7 +54,7 @@ mod class {
 
     use super::STYLE;
 
-    pub const PROBLEM: Class = STYLE.class("problem");
+    pub(crate) const PROBLEM: Class = STYLE.class("problem");
 }
 
 #[derive(Clone, Default)]

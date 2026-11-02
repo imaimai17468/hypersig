@@ -22,7 +22,7 @@ struct Section {
 }
 
 /// The article of `page`.
-pub fn content(site: Site, page: Reference) -> Part {
+pub(crate) fn content(site: Site, page: Reference) -> Part {
     let doc = Doc::Reference(page);
     if page == Reference::Overview {
         return overview(site);

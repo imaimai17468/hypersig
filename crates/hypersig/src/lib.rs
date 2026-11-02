@@ -47,10 +47,6 @@
 //! With the `axum` feature (on by default), [`routes!`] declares the pages,
 //! actions, streams, and uploads together with their handlers, and
 //! `RouterExt` serves the runtime.
-// A library's caller owns standard output and standard error, so the library writes to neither.
-#![warn(clippy::print_stdout, clippy::print_stderr)]
-// A library hands a failure back to its caller as an error, and marks `pub` only what it exports.
-#![warn(clippy::unwrap_used, unreachable_pub)]
 #![doc(
     html_logo_url = "https://imaimai17468.github.io/hypersig/icon.svg",
     html_favicon_url = "https://imaimai17468.github.io/hypersig/icon.svg"
@@ -163,6 +159,7 @@ const RUNTIME_BR: &[u8] = include_bytes!("../assets/hypersig.js.br");
 ///
 /// The compiler computes it, so the path needs no build script and changes
 /// in the same build as the runtime.
+#[expect(clippy::as_conversions, reason = "`From` cannot run in a constant")]
 const RUNTIME_PATH_BYTES: [u8; RUNTIME_PREFIX.len() + HASH_DIGITS + RUNTIME_SUFFIX.len()] = {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let js = RUNTIME_JS.as_bytes();

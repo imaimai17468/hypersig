@@ -12,7 +12,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Payment {
+pub(super) struct Payment {
     id: i32,
     email: String,
     amount: f64,
@@ -20,14 +20,14 @@ pub struct Payment {
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Ledger {
+pub(super) struct Ledger {
     payments: Vec<Payment>,
     chosen: Vec<i32>,
     open: Vec<i32>,
     table: TableState,
 }
 
-pub fn page(site: Site) -> Page<Ledger> {
+pub(super) fn page(site: Site) -> Page<Ledger> {
     let payments = [
         (
             "ken99@example.com",

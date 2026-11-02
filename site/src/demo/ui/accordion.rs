@@ -11,13 +11,13 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Faq {
+pub(super) struct Faq {
     helpful: i32,
 }
 
 const FAQ: Id = Id::new("faq");
 
-pub fn page(site: Site) -> Page<Faq> {
+pub(super) fn page(site: Site) -> Page<Faq> {
     let helpful = Faq::helpful();
     let answers = Accordion::exclusive(FAQ)
         .item(

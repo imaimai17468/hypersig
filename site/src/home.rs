@@ -9,7 +9,7 @@ use crate::landing::{self, features, hero, library_cards, titled};
 use crate::lang::{L, Text};
 use crate::prose::{Part, para, table_of};
 
-pub fn render(site: Site) -> String {
+pub(crate) fn render(site: Site) -> String {
     landing::page(
         site,
         Doc::Home,

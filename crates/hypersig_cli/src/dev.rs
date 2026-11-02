@@ -34,7 +34,7 @@ const SETTLE: Duration = Duration::from_millis(50);
 
 /// Builds with `build_args`, runs the binary with `program_args`, and
 /// repeats both after each change until interrupted.
-pub fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> {
+pub(crate) fn run(build_args: &[String], program_args: &[String]) -> Result<(), Error> {
     let dir = std::env::current_dir()
         .map_err(|error| Error::new(format!("cannot read the current directory: {error}")))?;
     if build_args

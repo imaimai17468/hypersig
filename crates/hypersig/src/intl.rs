@@ -39,6 +39,7 @@ impl IntlLocale {
 /// for every other number, and Japanese uses `Other` for every number. The
 /// other categories serve locales this crate does not have yet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum PluralCategory {
     /// `zero`.
     Zero,

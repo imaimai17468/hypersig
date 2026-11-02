@@ -212,6 +212,7 @@ pub(crate) fn truthy<'b>(value: impl Into<Ref<'b>>) -> bool {
 /// is left for the runtime, and a form rule that does fails on the server.
 fn number(value: f64) -> Option<Value> {
     #[expect(
+        clippy::as_conversions,
         clippy::cast_possible_truncation,
         reason = "only integral values inside i64's range reach the cast"
     )]
@@ -235,6 +236,7 @@ fn write_js_number(out: &mut String, value: f64) {
         // fraction or exponent, as an `i64` is. This covers -0, which
         // JavaScript writes as "0".
         #[expect(
+            clippy::as_conversions,
             clippy::cast_possible_truncation,
             reason = "the value is integral and inside i64's range"
         )]

@@ -518,6 +518,7 @@ fn read_date(text: &str, kind: &str) -> Option<Value> {
 /// `value` as JSON, an integer where it is one, as the store holds a number the runtime wrote.
 fn json_number(value: f64) -> Value {
     #[expect(
+        clippy::as_conversions,
         clippy::cast_possible_truncation,
         reason = "only integral values inside i64's range reach the cast"
     )]

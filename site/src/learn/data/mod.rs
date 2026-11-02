@@ -2,16 +2,16 @@
 //! requests share, the services it calls, and the session that tells one
 //! visitor from another.
 
-pub mod api;
-pub mod checked_sql;
-pub mod cookie;
-pub mod database;
-pub mod hosted;
-pub mod hosts;
-pub mod members;
-pub mod sessions;
-pub mod stores;
-pub mod without_sql;
+pub(super) mod api;
+pub(super) mod checked_sql;
+pub(super) mod cookie;
+pub(super) mod database;
+pub(super) mod hosted;
+pub(super) mod hosts;
+pub(super) mod members;
+pub(super) mod sessions;
+pub(super) mod stores;
+pub(super) mod without_sql;
 
 use crate::Site;
 use crate::lang::L;

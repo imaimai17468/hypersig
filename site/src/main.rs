@@ -11,6 +11,11 @@
 //! `--origin https://imaimai17468.github.io` gives each page a canonical URL
 //! and an `og:url`, joined from the origin, the base path, and the page's
 //! directory. A local preview leaves it out, and its pages have neither.
+#![expect(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "the site builder reports what it wrote and why it failed on the terminal"
+)]
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;

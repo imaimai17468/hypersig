@@ -19,7 +19,7 @@ use crate::{Site, code, own};
 use hypersig_i18n::{Locale as _, locales};
 
 /// The repository the header links to.
-pub const REPOSITORY: SafeUrl = SafeUrl::new("https://github.com/imaimai17468/hypersig");
+pub(crate) const REPOSITORY: SafeUrl = SafeUrl::new("https://github.com/imaimai17468/hypersig");
 
 /// The id of the sidebar, which the menu button controls.
 const SIDEBAR: Id = Id::new("sidebar");
@@ -58,7 +58,7 @@ const TRANSITIONS: Stylesheet = Stylesheet::new(
 );
 
 /// A page of `doc` with the header and `body` below it, full width.
-pub fn document(site: Site, doc: Doc, body: Part) -> String {
+pub(crate) fn document(site: Site, doc: Doc, body: Part) -> String {
     let title = if doc == Doc::Home {
         // The title search results show for the site, so it says what
         // hypersig is. The other pages end in the bare name.
@@ -144,7 +144,7 @@ pub fn document(site: Site, doc: Doc, body: Part) -> String {
 
 /// A page of `doc` with the sidebar of its section and `content` as an
 /// article beside it.
-pub fn article(site: Site, doc: Doc, content: Part) -> String {
+pub(crate) fn article(site: Site, doc: Doc, content: Part) -> String {
     let (before, after) = doc.neighbors();
     let body = div()
         .css(
@@ -773,7 +773,7 @@ fn pager(site: Site, before: Option<Doc>, after: Option<Doc>) -> Part {
 
 /// The line at the bottom of every page, with the links the header hides on
 /// a phone.
-pub fn page_footer(site: Site) -> Part {
+pub(crate) fn page_footer(site: Site) -> Part {
     footer()
         .css(
             Style::new()

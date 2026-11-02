@@ -11,11 +11,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Releases {
+pub(super) struct Releases {
     older: bool,
 }
 
-pub fn page(site: Site) -> Page<Releases> {
+pub(super) fn page(site: Site) -> Page<Releases> {
     let older = Collapsible::new(Releases::older());
     Page::new(
         site.t(L {

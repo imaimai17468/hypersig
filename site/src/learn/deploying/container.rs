@@ -8,7 +8,7 @@ use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, title}
 
 use crate::learn::snippet::{Snippet, show};
 
-pub fn page(site: Site) -> Part {
+pub(crate) fn page(site: Site) -> Part {
     parts([
         title(Doc::Learn(Learn::DeployContainer).title(site)),
         lead(site, Doc::Learn(Learn::DeployContainer).leads()),

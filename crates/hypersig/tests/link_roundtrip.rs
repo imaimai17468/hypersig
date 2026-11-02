@@ -282,7 +282,11 @@ impl Rng {
         if self.chance(3) {
             self.pick(&[i32::MIN, i32::MIN + 1, -1, 0, 1, i32::MAX - 1, i32::MAX])
         } else {
-            #[expect(clippy::cast_possible_truncation, reason = "any 32 bits")]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_possible_truncation,
+                reason = "any 32 bits"
+            )]
             let value = self.next() as i32;
             value
         }
@@ -292,7 +296,11 @@ impl Rng {
         if self.chance(3) {
             self.pick(&[0, 1, u32::MAX - 1, u32::MAX])
         } else {
-            #[expect(clippy::cast_possible_truncation, reason = "any 32 bits")]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_possible_truncation,
+                reason = "any 32 bits"
+            )]
             let value = self.next() as u32;
             value
         }
@@ -313,7 +321,11 @@ impl Rng {
                 i64::MAX,
             ])
         } else if self.chance(2) {
-            #[expect(clippy::cast_possible_wrap, reason = "any 64 bits")]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_possible_wrap,
+                reason = "any 64 bits"
+            )]
             let value = self.next() as i64;
             value
         } else {
@@ -372,7 +384,11 @@ impl Rng {
                 f32::INFINITY,
             ])
         } else {
-            #[expect(clippy::cast_possible_truncation, reason = "any 32 bits")]
+            #[expect(
+                clippy::as_conversions,
+                clippy::cast_possible_truncation,
+                reason = "any 32 bits"
+            )]
             let value = f32::from_bits(self.next() as u32);
             if value.is_finite() { value } else { 2.5 }
         }
@@ -786,12 +802,10 @@ async fn a_url_reaches_its_handler_with_the_values_it_was_written_from() {
         }
     }
     assert!(clean > 10_000, "{clean} cases list no finding");
-    for failure in unexpected.iter().take(20) {
-        eprintln!("{failure:#?}");
-    }
+    let first: Vec<_> = unexpected.iter().take(20).collect();
     assert!(
         unexpected.is_empty(),
-        "{} of {CASES} cases failed outside the skip set",
+        "{} of {CASES} cases failed outside the skip set, the first of them: {first:#?}",
         unexpected.len()
     );
     for (finding, count) in SKIPS.iter().zip(skipped) {

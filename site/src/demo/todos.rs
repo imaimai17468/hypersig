@@ -12,20 +12,20 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Todo {
+pub(super) struct Todo {
     id: i32,
     title: String,
     done: bool,
 }
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Todos {
+pub(super) struct Todos {
     draft: String,
     next_id: i32,
     items: Vec<Todo>,
 }
 
-pub fn page(site: Site) -> Page<Todos> {
+pub(super) fn page(site: Site) -> Page<Todos> {
     let draft = Todos::draft();
     let next_id = Todos::next_id();
     let items = Todos::items();

@@ -59,6 +59,7 @@ impl Timestamp {
         // `SystemTime::now` panics on this target, and `Date.now()` returns
         // whole milliseconds as a float.
         #[expect(
+            clippy::as_conversions,
             clippy::cast_possible_truncation,
             reason = "Date.now() is a whole number of milliseconds within i64"
         )]
@@ -274,6 +275,7 @@ const fn check_date(year: u16, month: u8, day: u8) -> Result<(), &'static str> {
 /// | `Medium` | Jan 5, 2026 | 2026/01/05 |
 /// | `Short` | 1/5/26 | 2026/01/05 |
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum DateStyle {
     /// The weekday, the month's name, the day, and the year.
     Full,
@@ -301,6 +303,7 @@ impl DateStyle {
 /// `Intl`'s `full` and `long` styles add the zone's name, which a zone
 /// given as an offset does not have, so they are left out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TimeStyle {
     /// Hours, minutes, and seconds: `3:04:05 PM` in English, `15:04:05` in Japanese.
     Medium,
@@ -319,6 +322,7 @@ impl TimeStyle {
 
 /// The time zone [`DateFormat`] writes a time in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TimeZone {
     /// Coordinated Universal Time.
     Utc,

@@ -12,11 +12,11 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Palette {
+pub(super) struct Palette {
     accent: String,
 }
 
-pub fn page(site: Site) -> Page<Palette> {
+pub(super) fn page(site: Site) -> Page<Palette> {
     let accent = Token::new("accent-demo", Color::hex(0x0025_63eb));
     let swatch = Style::new()
         .width(rem(3))

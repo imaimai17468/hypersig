@@ -12,7 +12,7 @@ use crate::Site;
 use crate::lang::L;
 
 #[derive(Signals, Serialize, Deserialize)]
-pub struct Review {
+pub(super) struct Review {
     stars: i32,
 }
 
@@ -22,7 +22,7 @@ const STAR_RATING: Asset = Asset::new("/star-rating.js");
 // `star-rating.js` dispatches it with the number of the star clicked.
 const RATE: CustomEvent<i32> = CustomEvent::new("rate");
 
-pub fn page(site: Site) -> Page<Review> {
+pub(super) fn page(site: Site) -> Page<Review> {
     let stars = Review::stars();
     Page::new(
         site.t(L {

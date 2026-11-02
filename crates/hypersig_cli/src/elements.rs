@@ -21,7 +21,7 @@ use crate::Error;
 use ts::Ty;
 
 /// Prints the module for the manifest at `path`.
-pub fn run(path: &Path) -> Result<(), Error> {
+pub(crate) fn run(path: &Path) -> Result<(), Error> {
     let text = std::fs::read_to_string(path)
         .map_err(|error| Error::new(format!("cannot read {}: {error}", path.display())))?;
     let manifest: Value = serde_json::from_str(&text)
@@ -50,7 +50,7 @@ struct Member {
 }
 
 /// The source of the module for `manifest`, which the header names `source`.
-pub fn generate(manifest: &Value, source: &str) -> Result<String, Error> {
+pub(crate) fn generate(manifest: &Value, source: &str) -> Result<String, Error> {
     let elements = elements(manifest)?;
     let mut out = String::new();
     header(&mut out, source);
