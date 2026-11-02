@@ -47,3 +47,16 @@ it("leaves Enter alone while no option is active", async () => {
   expect(event.defaultPrevented).toBe(false);
   expect(runtime.store.get("picked")).toBe("");
 });
+
+it("leaves out aria-activedescendant while no option is active", async () => {
+  const runtime = mount("combo");
+  const field = $("#field");
+  await tick();
+  expect(field.hasAttribute("aria-activedescendant")).toBe(false);
+  key(field, "ArrowDown");
+  await tick();
+  expect(field.getAttribute("aria-activedescendant")).toBe("o0");
+  runtime.store.set("active", "");
+  await tick();
+  expect(field.hasAttribute("aria-activedescendant")).toBe(false);
+});

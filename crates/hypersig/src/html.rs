@@ -2899,8 +2899,9 @@ impl<S> El<S> {
     ///
     /// It runs before the handlers of [`El::on_key`], which then still see
     /// the key. It also binds `aria-activedescendant` to `active`, so a
-    /// screen reader reads the option `active` names. Style that option
-    /// yourself, since the runtime changes nothing else.
+    /// screen reader reads the option `active` names, and leaves the
+    /// attribute out while `active` is empty. Style that option yourself,
+    /// since the runtime changes nothing else.
     ///
     /// ```
     /// use hypersig::html::{Role, div, input};
@@ -3139,7 +3140,11 @@ impl<S> El<S> {
             computed.push((HIDE, Cow::Borrowed("")));
         }
         for (name, value) in &self.attr_bind {
-            if let Some(value) = eval_text(value.as_json(), ctx) {
+            // An empty id names no element, so an attribute that names one
+            // is left out while its value is empty.
+            if let Some(value) = eval_text(value.as_json(), ctx)
+                && !(value.is_empty() && points_at_an_element(name.as_bytes()))
+            {
                 computed.push((name, value));
             }
         }
