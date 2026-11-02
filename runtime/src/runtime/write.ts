@@ -13,6 +13,13 @@ export const CONDITIONS: ReadonlySet<string> = new Set(["show", "class", "toggle
 const URLS: ReadonlySet<string> = new Set(["href", "src", "poster"]);
 
 /**
+ * The bound attributes whose value is the id of another element, which
+ * `El::active_descendant` binds. An empty id names no element, so the
+ * attribute goes while its value is empty.
+ */
+const IDS: ReadonlySet<string> = new Set(["aria-activedescendant"]);
+
+/**
  * Whether `url` is one a `SafeUrl` can hold, the rule of `check` in
  * `crates/hypersig/src/href.rs`. A `SafeUrl` the server sent passed it
  * already, and one the browser built, such as the `detail` of a custom
@@ -73,7 +80,8 @@ export function write(element: Element, kind: Write, name: string, value: unknow
       return;
     case "attr": {
       const next = String(value);
-      if (URLS.has(name) && !safeUrl(next)) element.removeAttribute(name);
+      if ((URLS.has(name) && !safeUrl(next)) || (IDS.has(name) && next === ""))
+        element.removeAttribute(name);
       else if (element.getAttribute(name) !== next) element.setAttribute(name, next);
       return;
     }

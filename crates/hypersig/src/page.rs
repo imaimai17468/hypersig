@@ -1462,6 +1462,22 @@ mod tests {
     }
 
     #[test]
+    fn an_empty_active_descendant_is_left_out() {
+        let page = |active: &str| {
+            Page::new(
+                "Search",
+                Search {
+                    query: active.to_owned(),
+                },
+            )
+            .child(input().active_descendant(FIELD, Search::query()))
+            .render()
+        };
+        assert!(!page("").contains("aria-activedescendant="));
+        assert!(page("o1").contains(r#"aria-activedescendant="o1""#));
+    }
+
+    #[test]
     fn a_leading_newline_in_a_textarea_or_pre_survives_the_parser() {
         let html = Page::new(
             "Search",
