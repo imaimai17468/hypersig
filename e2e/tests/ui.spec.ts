@@ -429,6 +429,39 @@ test("a data table whose last column sorts does not scroll sideways", async ({ p
   expect(scroll).toBe(client);
 });
 
+/** The channels of a computed `rgb()` or `rgba()` color, with an alpha of 1 for `rgb()`. */
+const channels = (color: string) => {
+  const [red = 0, green = 0, blue = 0, alpha = 1] = (color.match(/[\d.]+/g) ?? []).map(Number);
+  return { red, green, blue, alpha };
+};
+
+test("a border stays visible on a selected row of a data table in both schemes", async ({ page }) => {
+  await payments(page).getByRole("checkbox", { name: "Select row" }).first().check({ force: true });
+  const row = payments(page).locator("tbody tr:visible").first();
+  const muted = { light: "rgb(244, 244, 245)", dark: "rgb(39, 39, 42)" };
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    await expect(row).toHaveCSS("background-color", muted[colorScheme]);
+    const border = await row.evaluate((tr) => {
+      const probe = document.createElement("span");
+      probe.style.border = "1px solid var(--border)";
+      tr.querySelector("td")?.append(probe);
+      const color = getComputedStyle(probe).borderTopColor;
+      probe.remove();
+      return color;
+    });
+    const fill = channels(muted[colorScheme]);
+    const line = channels(border);
+    const shown = (channel: "red" | "green" | "blue") =>
+      Math.round(line[channel] * line.alpha + fill[channel] * (1 - line.alpha));
+    expect([shown("red"), shown("green"), shown("blue")], `the ${colorScheme} border on a selected row`).not.toEqual([
+      fill.red,
+      fill.green,
+      fill.blue,
+    ]);
+  }
+});
+
 test("a data table pages through the rows the filter passes", async ({ page }) => {
   const range = page.getByText("1–5 / 12");
   await expect(range).toBeVisible();

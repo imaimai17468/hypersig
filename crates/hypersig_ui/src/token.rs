@@ -23,83 +23,93 @@ use hypersig::style::Token;
 use hypersig::style::value::{Color, Length, rem};
 
 macro_rules! colors {
-    ($($(#[$doc:meta])* $name:ident => $css:literal, $light:literal, $dark:literal;)*) => {
+    ($($(#[$doc:meta])* $name:ident => $css:literal, $light:expr, $dark:expr;)*) => {
         $(
             $(#[$doc])*
             #[must_use]
             pub fn $name() -> Token<Color> {
-                Token::new($css, Color::hex($light))
+                Token::new($css, $light)
             }
         )*
 
         /// Each color token with its value in the light theme.
         pub(crate) fn light() -> Vec<(Token<Color>, Color)> {
-            vec![$(($name(), Color::hex($light))),*]
+            vec![$(($name(), $light)),*]
         }
 
         /// Each color token with its value in the dark theme.
         pub(crate) fn dark() -> Vec<(Token<Color>, Color)> {
-            vec![$(($name(), Color::hex($dark))),*]
+            vec![$(($name(), $dark)),*]
         }
     };
 }
 
 colors! {
     /// The page background.
-    background => "background", 0x00ff_ffff, 0x0009_090b;
+    background => "background", hex(0x00ff_ffff), hex(0x0009_090b);
     /// Text on [`background`].
-    foreground => "foreground", 0x0009_090b, 0x00fa_fafa;
+    foreground => "foreground", hex(0x0009_090b), hex(0x00fa_fafa);
     /// The surface of a card.
-    card => "card", 0x00ff_ffff, 0x0018_181b;
+    card => "card", hex(0x00ff_ffff), hex(0x0018_181b);
     /// Text on [`card`].
-    card_foreground => "card-foreground", 0x0009_090b, 0x00fa_fafa;
+    card_foreground => "card-foreground", hex(0x0009_090b), hex(0x00fa_fafa);
     /// The surface of a menu or another popover.
-    popover => "popover", 0x00ff_ffff, 0x0018_181b;
+    popover => "popover", hex(0x00ff_ffff), hex(0x0018_181b);
     /// Text on [`popover`].
-    popover_foreground => "popover-foreground", 0x0009_090b, 0x00fa_fafa;
+    popover_foreground => "popover-foreground", hex(0x0009_090b), hex(0x00fa_fafa);
     /// The fill of a default button, a checked box, and an on switch.
-    primary => "primary", 0x0018_181b, 0x00e4_e4e7;
+    primary => "primary", hex(0x0018_181b), hex(0x00e4_e4e7);
     /// Text and marks on [`primary`].
-    primary_foreground => "primary-foreground", 0x00fa_fafa, 0x0018_181b;
+    primary_foreground => "primary-foreground", hex(0x00fa_fafa), hex(0x0018_181b);
     /// The fill of a secondary button.
-    secondary => "secondary", 0x00f4_f4f5, 0x0027_272a;
+    secondary => "secondary", hex(0x00f4_f4f5), hex(0x0027_272a);
     /// Text on [`secondary`].
-    secondary_foreground => "secondary-foreground", 0x0018_181b, 0x00fa_fafa;
+    secondary_foreground => "secondary-foreground", hex(0x0018_181b), hex(0x00fa_fafa);
     /// A quiet fill, such as the track of a tab list.
-    muted => "muted", 0x00f4_f4f5, 0x0027_272a;
+    muted => "muted", hex(0x00f4_f4f5), hex(0x0027_272a);
     /// Secondary text, such as a description.
     ///
     /// It has 4.8:1 contrast or more on [`background`] and on [`muted`] in both
     /// themes.
-    muted_foreground => "muted-foreground", 0x006b_6b74, 0x00a1_a1aa;
+    muted_foreground => "muted-foreground", hex(0x006b_6b74), hex(0x00a1_a1aa);
     /// The fill under the pointer in a menu or a ghost button.
-    accent => "accent", 0x00f4_f4f5, 0x003f_3f46;
+    accent => "accent", hex(0x00f4_f4f5), hex(0x003f_3f46);
     /// Text on [`accent`].
-    accent_foreground => "accent-foreground", 0x0018_181b, 0x00fa_fafa;
+    accent_foreground => "accent-foreground", hex(0x0018_181b), hex(0x00fa_fafa);
     /// The color of a destructive action and of an error message.
-    destructive => "destructive", 0x00e7_000b, 0x00ff_6467;
+    destructive => "destructive", hex(0x00e7_000b), hex(0x00ff_6467);
     /// Text on [`destructive`].
-    destructive_foreground => "destructive-foreground", 0x00ff_ffff, 0x0009_090b;
+    destructive_foreground => "destructive-foreground", hex(0x00ff_ffff), hex(0x0009_090b);
     /// The border of a card, a menu, and a separator, which mark no control.
-    border => "border", 0x00e4_e4e7, 0x0027_272a;
+    ///
+    /// In the dark theme it is white at 12% opacity, which shows as
+    /// `#27272a` on [`background`] and stays visible on [`muted`], the
+    /// fill of a selected table row.
+    border => "border", hex(0x00e4_e4e7), Color::hex_alpha(0xffff_ff1f);
     /// The border of a text field, a checkbox, a radio, and an off switch.
     ///
     /// It has 3.3:1 contrast or more on [`background`] and on [`card`] in both
     /// themes.
-    input => "input", 0x008b_8b94, 0x0070_707a;
+    input => "input", hex(0x008b_8b94), hex(0x0070_707a);
     /// The focus outline.
-    ring => "ring", 0x0018_181b, 0x00d4_d4d8;
+    ring => "ring", hex(0x0018_181b), hex(0x00d4_d4d8);
     /// The first series of a chart. The five chart colors keep 3:1 or more
     /// on [`background`], [`card`], and [`muted`] in both themes.
-    chart_1 => "chart-1", 0x0015_5dfc, 0x0051_a2ff;
+    chart_1 => "chart-1", hex(0x0015_5dfc), hex(0x0051_a2ff);
     /// The second series of a chart.
-    chart_2 => "chart-2", 0x0000_9689, 0x0000_d5be;
+    chart_2 => "chart-2", hex(0x0000_9689), hex(0x0000_d5be);
     /// The third series of a chart.
-    chart_3 => "chart-3", 0x00f5_4900, 0x00ff_8904;
+    chart_3 => "chart-3", hex(0x00f5_4900), hex(0x00ff_8904);
     /// The fourth series of a chart.
-    chart_4 => "chart-4", 0x0098_10fa, 0x00c2_7aff;
+    chart_4 => "chart-4", hex(0x0098_10fa), hex(0x00c2_7aff);
     /// The fifth series of a chart.
-    chart_5 => "chart-5", 0x00bb_4d00, 0x00ff_d230;
+    chart_5 => "chart-5", hex(0x00bb_4d00), hex(0x00ff_d230);
+}
+
+/// `Color::hex`, short enough to keep each token on one line; a token whose
+/// value is translucent calls `Color::hex_alpha` instead.
+fn hex(rgb: u32) -> Color {
+    Color::hex(rgb)
 }
 
 /// The corner radius of a card, a dialog, and a menu.
