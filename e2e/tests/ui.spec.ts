@@ -423,6 +423,12 @@ test("a data table sorts by a column header, ascending then descending", async (
   expect((await emails(page))[0]).toBe("liam34@example.com");
 });
 
+test("a data table whose last column sorts does not scroll sideways", async ({ page }) => {
+  const frame = payments(page).locator("xpath=..");
+  const [scroll, client] = await frame.evaluate((element) => [element.scrollWidth, element.clientWidth]);
+  expect(scroll).toBe(client);
+});
+
 test("a data table pages through the rows the filter passes", async ({ page }) => {
   const range = page.getByText("1–5 / 12");
   await expect(range).toBeVisible();

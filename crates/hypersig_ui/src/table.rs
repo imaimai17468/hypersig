@@ -1435,10 +1435,14 @@ fn row_line() -> Style {
         .border_bottom_color(token::border().var())
 }
 
+/// The space between a cell's edge and its content, in rem, for every cell
+/// and for the sort button that cancels it.
+const CELL_PADDING: f64 = 0.5;
+
 fn head_cell(numeric: bool) -> Style {
     row_line()
         .height(rem(2.5))
-        .padding_inline(rem(0.5))
+        .padding_inline(rem(CELL_PADDING))
         .text_align(if numeric {
             TextAlign::End
         } else {
@@ -1450,10 +1454,16 @@ fn head_cell(numeric: bool) -> Style {
         .color(token::muted_foreground().var())
 }
 
+/// The header's sort button, whose label lines up with the cells below.
+///
+/// Its padding equals the cell's and its margin cancels the cell's, so the
+/// button stays inside the cell and adds no width to a table whose last
+/// column sorts.
 fn sort_button(numeric: bool) -> Style {
     button_style(ButtonVariant::Ghost, ButtonSize::Sm)
         .column_gap(rem(0.5))
-        .margin_inline(rem(-0.75))
+        .padding_inline(rem(CELL_PADDING))
+        .margin_inline(rem(-CELL_PADDING))
         .flex_direction(if numeric {
             FlexDirection::RowReverse
         } else {
@@ -1481,7 +1491,7 @@ fn selected_row() -> Style {
 
 fn body_cell(numeric: bool) -> Style {
     Style::new()
-        .padding(rem(0.5))
+        .padding(rem(CELL_PADDING))
         .vertical_align(VerticalAlign::Middle)
         .text_align(if numeric {
             TextAlign::End
@@ -1498,7 +1508,7 @@ fn body_cell(numeric: bool) -> Style {
 fn select_cell() -> Style {
     Style::new()
         .width(rem(2.5))
-        .padding_inline(rem(0.5))
+        .padding_inline(rem(CELL_PADDING))
         .vertical_align(VerticalAlign::Middle)
 }
 
