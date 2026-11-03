@@ -159,7 +159,7 @@ const ROWS_EN: [Row; 25] = [
     [
         "`border`",
         "`#e4e4e7`",
-        "`#27272a`",
+        "`#ffffff1f`",
         "The border of a card, a menu, and a separator",
     ],
     [
@@ -277,7 +277,7 @@ const ROWS_JA: [Row; 25] = [
     [
         "`border`",
         "`#e4e4e7`",
-        "`#27272a`",
+        "`#ffffff1f`",
         "カード、メニュー、区切り線の境界線",
     ],
     [
@@ -382,6 +382,13 @@ fn contrast(site: Site) -> Part {
             L {
                 en: "The five chart colors keep 3:1 or more on `background`, `card`, and `muted` in both schemes, the contrast that a graphical object needs.",
                 ja: "チャートの 5 色は両方の配色で `background`、`card`、`muted` の上で 3:1 以上を保ちます。これはグラフィックのオブジェクトに必要なコントラストです。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "In the dark scheme, `border` is white at 12% opacity. It shows as `#27272a`, the same as `muted`, on `background`, and lighter than the fill on `muted` itself, so an outline badge in a selected table row keeps its border.",
+                ja: "ダークの `border` は不透明度 12% の白です。`background` の上では `muted` と同じ `#27272a` に見えます。表の選択した行のように `muted` の上では塗りより明るく見えるので、そこに置いたアウトラインのバッジの枠も見えます。",
             },
         ),
     ])
