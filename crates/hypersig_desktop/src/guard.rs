@@ -67,10 +67,11 @@ async fn check(State(guard): State<Arc<Guard>>, request: Request, next: Next) ->
     if request.headers().get(header::HOST) != Some(&guard.host) {
         return StatusCode::FORBIDDEN.into_response();
     }
-    if let Some(offered) = request.headers().get(START_HEADER) {
-        if !guard.take_start(offered) {
-            return StatusCode::FORBIDDEN.into_response();
-        }
+    // A reload may send the first request's headers again, after the token
+    // is spent, so a token that does not match leaves the cookie to decide.
+    if let Some(offered) = request.headers().get(START_HEADER)
+        && guard.take_start(offered)
+    {
         let mut answer = next.run(request).await;
         let cookie = format!(
             "{COOKIE}={}; HttpOnly; SameSite=Strict; Path=/",
@@ -250,11 +251,20 @@ mod tests {
             .unwrap();
         assert_eq!(answer.status(), StatusCode::FORBIDDEN);
 
-        cookie(&app, &start).await;
+        let cookie = cookie(&app, &start).await;
         let again = app
+            .clone()
             .oneshot(request(HOST, None, Some(&start)))
             .await
             .unwrap();
         assert_eq!(again.status(), StatusCode::FORBIDDEN);
+
+        // A reload that sends the spent token again, with the cookie.
+        let reload = app
+            .oneshot(request(HOST, Some(&cookie), Some(&start)))
+            .await
+            .unwrap();
+        assert_eq!(reload.status(), StatusCode::OK);
+        assert!(!reload.headers().contains_key(header::SET_COOKIE));
     }
 }
