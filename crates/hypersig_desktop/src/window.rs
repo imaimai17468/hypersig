@@ -52,8 +52,7 @@ fn leave_for(url: &str) {
 
 /// Makes the web view of `window`, which stays at `origin` and tells the
 /// event loop of its title, of each page of `origin` that finishes loading,
-/// of `about:blank` once the closing window has left for it, and of a page
-/// of `origin` it asks to open in a new window. Another URL it is asked to
+/// and of a page of `origin` it asks to open in a new window. Another URL it is asked to
 /// show opens in the system's program for it. It loads nothing until it is
 /// given a URL.
 pub(crate) fn web_view(
@@ -97,8 +96,6 @@ pub(crate) fn web_view(
             }
             if url.starts_with(&load_origin) {
                 let _ = loads.send_event(Event::Loaded(id));
-            } else if url == "about:blank" {
-                let _ = loads.send_event(Event::Left(id));
             }
         });
     #[cfg(not(target_os = "linux"))]

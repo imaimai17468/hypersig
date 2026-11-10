@@ -30,7 +30,11 @@ const GRACE: Duration = Duration::from_secs(5);
 /// How long a hidden window waits for its page before it is shown anyway.
 const FIRST_LOAD: Duration = Duration::from_secs(10);
 
-/// How long a closing window waits for its page to leave before it goes.
+/// How long a closing window stays, hidden, after its page leaves. The web
+/// view writes `localStorage` to disk a moment after a page sets it, and a
+/// value set just before the window closed was lost when the process ended
+/// as soon as the page had left; with this wait, it was kept in each of
+/// four runs in `WKWebView`.
 const LEAVE: Duration = Duration::from_secs(1);
 
 /// What the server's tasks, the web views, and [`Os`] tell the event loop.
@@ -54,7 +58,7 @@ pub(crate) enum Event {
     Close(WindowId),
     /// [`Os`] brings a window to the front.
     Focus(WindowId),
-    /// A closing window's page has left, or [`LEAVE`] has passed.
+    /// [`LEAVE`] has passed since a window began to close.
     Left(WindowId),
     /// Ctrl-C was pressed in the terminal, or Quit was chosen in the menu.
     Quit,
@@ -374,7 +378,7 @@ impl Lifecycle<'_> {
     /// Hides the window `id` and sends its page to `about:blank`, which ends
     /// the page's streams from the web view's side, so the server has no
     /// open stream to wait for when it is asked to stop. The window goes on
-    /// [`Event::Left`].
+    /// [`Event::Left`], after [`LEAVE`].
     fn leave(&mut self, id: WindowId) {
         let Some(open) = self.windows.get_mut(&id) else {
             return;
