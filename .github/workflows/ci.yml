@@ -217,8 +217,8 @@ jobs:
       # xvfb gives the window a display on a runner that has none.
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev xvfb
-      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes --features hypersig_desktop/testing,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
-      - run: cargo test -p hypersig_desktop -p example-notes --features hypersig_desktop/testing
+      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes --features hypersig_desktop/testing,hypersig_desktop/updater,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
+      - run: cargo test -p hypersig_desktop -p example-notes --features hypersig_desktop/testing,hypersig_desktop/updater
       - run: cargo build --release -p example-todo -p example-notes --features example-todo/desktop
       # examples/todo/smoke.js adds a todo in the window, waits for it to come
       # back over the page's stream, and does the same from a second window.

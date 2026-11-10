@@ -20,10 +20,14 @@ publish = false
 # `testing::FakeOs`, an `Os` whose dialogs, clipboard, and windows a test
 # scripts and reads.
 testing = []
+# `Os::updates`, which finds, downloads, verifies, and installs a new
+# version with cargo-packager-updater.
+updater = ["dep:cargo-packager-updater"]
 
 [dependencies]
 arboard.workspace = true
 axum.workspace = true
+cargo-packager-updater = { workspace = true, optional = true }
 getrandom.workspace = true
 hypersig.workspace = true
 open.workspace = true
@@ -37,8 +41,15 @@ wry.workspace = true
 muda.workspace = true
 
 [dev-dependencies]
+base64.workspace = true
+minisign.workspace = true
 serde.workspace = true
 tower.workspace = true
 
 [lints]
 workspace = true
+
+# The tests of the `updater` feature sign a package with these, and
+# cargo-udeps, run without that feature, does not see them used.
+[package.metadata.cargo-udeps.ignore]
+development = ["base64", "minisign"]

@@ -33,6 +33,8 @@ pub enum ErrorKind {
     /// [`Os::open_external`](crate::Os::open_external) was given a URL
     /// without a scheme, which the system would open as a file.
     NotExternal,
+    /// Finding, downloading, verifying, or installing a new version failed.
+    Update,
 }
 
 impl Error {
@@ -73,6 +75,14 @@ impl Error {
     pub(crate) fn clipboard(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
         Self {
             kind: ErrorKind::Clipboard,
+            source: Some(why.into()),
+        }
+    }
+
+    #[cfg(feature = "updater")]
+    pub(crate) fn update(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
+        Self {
+            kind: ErrorKind::Update,
             source: Some(why.into()),
         }
     }
@@ -121,6 +131,7 @@ impl fmt::Display for Error {
             ErrorKind::Closed => "the application is closing",
             ErrorKind::Smoke => "the smoke run failed",
             ErrorKind::Clipboard => "the clipboard could not be used",
+            ErrorKind::Update => "the new version could not be found or installed",
             ErrorKind::NotExternal => {
                 "the URL names no scheme, so it is not opened in another program"
             }

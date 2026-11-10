@@ -29,12 +29,16 @@ hypersig_desktop = { path = "crates/hypersig_desktop", version = "=0.15.0" }
 arboard = { version = "3.7.0", default-features = false }
 aws-config = "1.13.0"
 aws-sdk-dynamodb = "1.134.0"
+# The version cargo-packager-updater encodes its keys and signatures with.
+base64 = "0.22.1"
+cargo-packager-updater = "0.2.3"
 axum = "0.8.9"
 divan = "0.1.21"
 futures = "0.3.34"
 getrandom = "0.4.3"
 insta = "1.49.0"
 js-sys = "0.3.106"
+minisign = "0.10.0"
 multer = "3.1.0"
 # Without GTK, which only the Linux menu bar needs and hypersig_desktop does not make.
 muda = { version = "0.21.2", default-features = false }

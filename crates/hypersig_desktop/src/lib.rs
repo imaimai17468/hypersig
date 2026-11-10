@@ -58,6 +58,11 @@
 //! the pages with [`Page::simulate`](hypersig::Page::simulate), without a
 //! window. `examples/notes` is written and tested this way.
 //!
+//! With the `updater` feature, `App::updates` names where new versions are
+//! announced and the key that signs them, and `Os::updates` finds a newer
+//! version, downloads it, checks its signature, and installs it, in the
+//! format `cargo-packager` builds and signs packages in.
+//!
 //! The server answers only the application's own windows. It listens on
 //! `127.0.0.1` alone, refuses a request whose `Host` is not that address, and
 //! refuses one without the cookie the first window receives when it opens,
@@ -110,8 +115,12 @@ mod run;
 mod smoke;
 #[cfg(feature = "testing")]
 pub mod testing;
+#[cfg(feature = "updater")]
+mod updates;
 mod window;
 
 pub use app::{App, IntoRouter};
 pub use error::{Error, ErrorKind};
 pub use os::{Clipboard, Dialog, Os, Window, Windows};
+#[cfg(feature = "updater")]
+pub use updates::{Downloaded, Update, Updates};

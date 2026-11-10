@@ -18,6 +18,8 @@ pub struct App {
     pub(crate) size: (u32, u32),
     pub(crate) min_size: Option<(u32, u32)>,
     pub(crate) resizable: bool,
+    #[cfg(feature = "updater")]
+    pub(crate) updates: Option<crate::Updates>,
 }
 
 impl App {
@@ -38,6 +40,8 @@ impl App {
             size: (1024, 768),
             min_size: None,
             resizable: true,
+            #[cfg(feature = "updater")]
+            updates: None,
         }
     }
 
@@ -59,6 +63,15 @@ impl App {
     #[must_use]
     pub const fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
+        self
+    }
+
+    /// Finds the application's new versions where `updates` says, for
+    /// [`Os::updates`](crate::Os::updates).
+    #[cfg(feature = "updater")]
+    #[must_use]
+    pub const fn updates(mut self, updates: crate::Updates) -> Self {
+        self.updates = Some(updates);
         self
     }
 
