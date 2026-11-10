@@ -124,6 +124,8 @@ impl App {
             base: format!("http://127.0.0.1:{port}"),
             windows: HashMap::new(),
             first: None,
+            waiting: Vec::new(),
+            started: false,
             smoke: Smoke::from_env(started)?,
             quitting: false,
             failure: None,
@@ -158,6 +160,12 @@ struct Open {
     leaving: bool,
 }
 
+/// A window a page or [`Os`] asked for, with where to answer.
+struct Asked {
+    url: String,
+    answer: Option<oneshot::Sender<Result<WindowId, Error>>>,
+}
+
 /// The windows and how far the run has come.
 struct Lifecycle<'a> {
     app: App,
@@ -171,6 +179,11 @@ struct Lifecycle<'a> {
     /// The first window, and the URL it opens once the server is ready,
     /// which trades the start token for the session cookie.
     first: Option<(WindowId, String)>,
+    /// The windows asked for before the first page loaded, which opens them
+    /// once it has, since a page needs the cookie the first one receives.
+    waiting: Vec<Asked>,
+    /// Whether the first page has loaded.
+    started: bool,
     smoke: Option<Smoke>,
     quitting: bool,
     failure: Option<Error>,
@@ -191,15 +204,13 @@ impl Lifecycle<'_> {
                     open.window.set_title(&title);
                 }
             }
-            TaoEvent::UserEvent(Event::Loaded(id)) => self.loaded(id),
+            TaoEvent::UserEvent(Event::Loaded(id)) => self.loaded(id, target),
             TaoEvent::UserEvent(Event::Slow(id)) => self.slow(id),
             TaoEvent::UserEvent(Event::Open { url, answer }) => {
-                let opened = self.open(target, Some(&url));
-                if let Err(error) = &opened {
-                    tracing::error!(%error, %url, "a window could not be opened");
-                }
-                if let Some(answer) = answer {
-                    let _ = answer.send(opened);
+                if self.started {
+                    self.answer(target, Asked { url, answer });
+                } else {
+                    self.waiting.push(Asked { url, answer });
                 }
             }
             TaoEvent::UserEvent(Event::Close(id))
@@ -279,7 +290,7 @@ impl Lifecycle<'_> {
         Ok(id)
     }
 
-    fn loaded(&mut self, id: WindowId) {
+    fn loaded(&mut self, id: WindowId, target: &EventLoopWindowTarget<Event>) {
         let Some(open) = self.windows.get_mut(&id) else {
             return;
         };
@@ -291,10 +302,31 @@ impl Lifecycle<'_> {
         open.window.set_focus();
         if self.first.as_ref().is_some_and(|(first, _)| *first == id) {
             self.smoke(None);
+            self.started(target);
         } else if let Some(smoke) = &self.smoke
             && let Err(error) = smoke.other_window(&open.web_view)
         {
             self.fail(error);
+        }
+    }
+
+    /// Opens the windows asked for while the first page loaded, now that
+    /// the cookie they need is there.
+    fn started(&mut self, target: &EventLoopWindowTarget<Event>) {
+        self.started = true;
+        for asked in std::mem::take(&mut self.waiting) {
+            self.answer(target, asked);
+        }
+    }
+
+    /// Opens the window `asked` for, and tells whoever asked.
+    fn answer(&mut self, target: &EventLoopWindowTarget<Event>, Asked { url, answer }: Asked) {
+        let opened = self.open(target, Some(&url));
+        if let Err(error) = &opened {
+            tracing::error!(%error, %url, "a window could not be opened");
+        }
+        if let Some(answer) = answer {
+            let _ = answer.send(opened);
         }
     }
 
