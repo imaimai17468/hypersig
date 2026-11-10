@@ -5,6 +5,7 @@ use std::fs;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use axum::http::HeaderMap;
 use hypersig::Url;
 use tao::event::{Event as TaoEvent, WindowEvent};
 use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget};
@@ -35,8 +36,6 @@ const LEAVE: Duration = Duration::from_secs(1);
 /// What the server's tasks, the web views, and [`Os`] tell the event loop.
 #[derive(Debug)]
 pub(crate) enum Event {
-    /// The router is built and the server is listening.
-    Ready,
     /// The setup failed, or the server stopped on an error.
     Failed(Error),
     /// The title of a window's page changed.
@@ -105,7 +104,7 @@ impl App {
             .build()?;
         let listener = runtime.block_on(port::listen(&own))?;
         let port = listener.local_addr()?.port();
-        let (guard, start) = Guard::new(port, first_page.as_str())?;
+        let (guard, start) = Guard::new(port)?;
 
         let mut event_loop = EventLoopBuilder::<Event>::with_user_event().build();
         let proxy = event_loop.create_proxy();
@@ -130,8 +129,13 @@ impl App {
             quitting: false,
             failure: None,
         };
-        let first = run.open(&event_loop, None)?;
-        run.first = Some((first, start));
+        // The first page is asked for at once, while the event loop starts
+        // and the setup runs: the listener holds the request until the
+        // server answers it.
+        let mut headers = HeaderMap::new();
+        headers.insert(guard::START_HEADER, start);
+        let first = run.open(&event_loop, Some((first_page.as_str(), headers)))?;
+        run.first = Some(first);
         event_loop.run_return(|event, target, flow| {
             *flow = if run.handle(event, target) {
                 ControlFlow::Exit
@@ -176,9 +180,9 @@ struct Lifecycle<'a> {
     /// `http://127.0.0.1:<port>`, which a page's path is joined to.
     base: String,
     windows: HashMap<WindowId, Open>,
-    /// The first window, and the URL it opens once the server is ready,
-    /// which trades the start token for the session cookie.
-    first: Option<(WindowId, String)>,
+    /// The first window, whose first page trades the start token for the
+    /// session cookie.
+    first: Option<WindowId>,
     /// The windows asked for before the first page loaded, which opens them
     /// once it has, since a page needs the cookie the first one receives.
     waiting: Vec<Asked>,
@@ -197,7 +201,6 @@ impl Lifecycle<'_> {
         target: &EventLoopWindowTarget<Event>,
     ) -> bool {
         match event {
-            TaoEvent::UserEvent(Event::Ready) => self.ready(),
             TaoEvent::UserEvent(Event::Failed(error)) => self.fail(error),
             TaoEvent::UserEvent(Event::Title(id, title)) => {
                 if let Some(open) = self.windows.get(&id) {
@@ -237,26 +240,12 @@ impl Lifecycle<'_> {
         false
     }
 
-    /// Opens the start URL in the first window.
-    fn ready(&mut self) {
-        let Some((id, start)) = &self.first else {
-            return;
-        };
-        let loaded = self
-            .windows
-            .get(id)
-            .map(|open| open.web_view.load_url(start));
-        if let Some(Err(error)) = loaded {
-            self.fail(Error::window(error));
-        }
-    }
-
-    /// Makes a hidden window with its web view, which loads `url`, a path of
-    /// the application or a URL of its origin, when there is one.
+    /// Makes a hidden window with its web view, which loads `page`, a path
+    /// of the application or a URL of its origin, with the headers given.
     fn open(
         &mut self,
         target: &EventLoopWindowTarget<Event>,
-        url: Option<&str>,
+        page: Option<(&str, HeaderMap)>,
     ) -> Result<WindowId, Error> {
         if self.quitting {
             return Err(Error::closed());
@@ -264,13 +253,15 @@ impl Lifecycle<'_> {
         let window = window::window(&self.app, target)?;
         let origin = format!("{}/", self.base);
         let web_view = window::web_view(&window, &mut self.context, &origin, self.proxy)?;
-        if let Some(url) = url {
+        if let Some((url, headers)) = page {
             let absolute = if url.starts_with('/') {
                 format!("{}{url}", self.base)
             } else {
                 url.to_owned()
             };
-            web_view.load_url(&absolute).map_err(Error::window)?;
+            web_view
+                .load_url_with_headers(&absolute, headers)
+                .map_err(Error::window)?;
         }
         let id = window.id();
         let slow = self.proxy.clone();
@@ -300,7 +291,7 @@ impl Lifecycle<'_> {
         open.shown = true;
         open.window.set_visible(true);
         open.window.set_focus();
-        if self.first.as_ref().is_some_and(|(first, _)| *first == id) {
+        if self.first == Some(id) {
             self.smoke(None);
             self.started(target);
         } else if let Some(smoke) = &self.smoke
@@ -321,7 +312,7 @@ impl Lifecycle<'_> {
 
     /// Opens the window `asked` for, and tells whoever asked.
     fn answer(&mut self, target: &EventLoopWindowTarget<Event>, Asked { url, answer }: Asked) {
-        let opened = self.open(target, Some(&url));
+        let opened = self.open(target, Some((&url, HeaderMap::new())));
         if let Err(error) = &opened {
             tracing::error!(%error, %url, "a window could not be opened");
         }
@@ -353,7 +344,7 @@ impl Lifecycle<'_> {
         let Some(smoke) = &mut self.smoke else {
             return;
         };
-        let Some(open) = self.first.as_ref().and_then(|(id, _)| self.windows.get(id)) else {
+        let Some(open) = self.first.and_then(|id| self.windows.get(&id)) else {
             return;
         };
         if open.leaving {
@@ -423,7 +414,6 @@ async fn serve<F>(
         }
     };
     let app = guard::wrap(router, guard);
-    let _ = proxy.send_event(Event::Ready);
     let served = axum::serve(listener, app)
         .with_graceful_shutdown(async {
             let _ = stopped.await;

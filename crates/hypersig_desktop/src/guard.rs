@@ -7,7 +7,8 @@
 //! - a request whose `Host` is not `127.0.0.1:<port>`, which is how a page
 //!   whose domain was made to resolve to `127.0.0.1` arrives;
 //! - a request without the session cookie, which only the application's
-//!   window receives, by opening the start URL with the start token once.
+//!   first window receives, by loading its first page with the start token
+//!   in a header, once.
 
 use std::fmt::Write as _;
 use std::io;
@@ -19,8 +20,9 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 
-/// The path the first window opens, which trades the start token for the session cookie.
-const START_PATH: &str = "/.hypersig-desktop/start";
+/// The header the first window's first request carries the start token in,
+/// which the answer trades for the session cookie.
+pub(crate) const START_HEADER: &str = "hypersig-desktop-start";
 
 /// The name of the session cookie.
 const COOKIE: &str = "hypersig-desktop";
@@ -31,28 +33,25 @@ pub(crate) struct Guard {
     host: HeaderValue,
     start: Mutex<Option<Secret>>,
     session: Secret,
-    first_page: HeaderValue,
 }
 
 impl Guard {
-    /// The guard of a server on `port`, which sends the window to
-    /// `first_page` once it has its cookie, and the URL the window opens to
-    /// receive it.
+    /// The guard of a server on `port`, and the start token the first
+    /// window sends in [`START_HEADER`].
     ///
     /// # Errors
     ///
     /// Fails when the system gives no random bytes.
-    pub(crate) fn new(port: u16, first_page: &str) -> io::Result<(Arc<Self>, String)> {
+    pub(crate) fn new(port: u16) -> io::Result<(Arc<Self>, HeaderValue)> {
         let start = Secret::new()?;
-        let url = format!("http://127.0.0.1:{port}{START_PATH}?token={}", start.hex());
+        let token = HeaderValue::try_from(start.hex()).expect("hex digits are header text");
         let guard = Self {
             host: HeaderValue::try_from(format!("127.0.0.1:{port}"))
                 .expect("an address and a port are header text"),
             start: Mutex::new(Some(start)),
             session: Secret::new()?,
-            first_page: HeaderValue::try_from(first_page).map_err(io::Error::other)?,
         };
-        Ok((Arc::new(guard), url))
+        Ok((Arc::new(guard), token))
     }
 }
 
@@ -68,8 +67,20 @@ async fn check(State(guard): State<Arc<Guard>>, request: Request, next: Next) ->
     if request.headers().get(header::HOST) != Some(&guard.host) {
         return StatusCode::FORBIDDEN.into_response();
     }
-    if request.uri().path() == START_PATH {
-        return start(&guard, request.uri().query());
+    if let Some(offered) = request.headers().get(START_HEADER) {
+        if !guard.take_start(offered) {
+            return StatusCode::FORBIDDEN.into_response();
+        }
+        let mut answer = next.run(request).await;
+        let cookie = format!(
+            "{COOKIE}={}; HttpOnly; SameSite=Strict; Path=/",
+            guard.session.hex()
+        );
+        answer.headers_mut().append(
+            header::SET_COOKIE,
+            HeaderValue::try_from(cookie).expect("hex digits are header text"),
+        );
+        return answer;
     }
     if carries_session(&guard.session, request.headers()) {
         next.run(request).await
@@ -78,33 +89,18 @@ async fn check(State(guard): State<Arc<Guard>>, request: Request, next: Next) ->
     }
 }
 
-/// Answers the start URL: the session cookie and a redirect to the first
-/// page, once, for the query that carries the start token.
-fn start(guard: &Guard, query: Option<&str>) -> Response {
-    let offered = query.and_then(|query| query.strip_prefix("token="));
-    let mut start = guard.start.lock().unwrap_or_else(PoisonError::into_inner);
-    let accepted = start
-        .as_ref()
-        .is_some_and(|token| offered.is_some_and(|offered| token.matches(offered)));
-    if !accepted {
-        return StatusCode::FORBIDDEN.into_response();
+impl Guard {
+    /// Whether `offered` is the start token, which works once.
+    fn take_start(&self, offered: &HeaderValue) -> bool {
+        let mut start = self.start.lock().unwrap_or_else(PoisonError::into_inner);
+        let accepted = start
+            .as_ref()
+            .is_some_and(|token| offered.to_str().is_ok_and(|offered| token.matches(offered)));
+        if accepted {
+            *start = None;
+        }
+        accepted
     }
-    *start = None;
-    let cookie = format!(
-        "{COOKIE}={}; HttpOnly; SameSite=Strict; Path=/",
-        guard.session.hex()
-    );
-    (
-        StatusCode::SEE_OTHER,
-        [
-            (header::LOCATION, guard.first_page.clone()),
-            (
-                header::SET_COOKIE,
-                HeaderValue::try_from(cookie).expect("hex digits are header text"),
-            ),
-        ],
-    )
-        .into_response()
 }
 
 /// Whether one of the `Cookie` headers carries `session`.
@@ -155,38 +151,41 @@ impl Secret {
 mod tests {
     use axum::Router;
     use axum::body::Body;
-    use axum::http::{Request, StatusCode, header};
+    use axum::http::{HeaderValue, Request, StatusCode, header};
     use axum::routing::get;
     use tower::ServiceExt as _;
 
-    use super::{Guard, START_PATH, wrap};
+    use super::{Guard, START_HEADER, wrap};
 
     const PORT: u16 = 4321;
+    const HOST: &str = "127.0.0.1:4321";
 
-    fn app() -> (Router, String) {
-        let (guard, start) = Guard::new(PORT, "/home").unwrap();
+    fn app() -> (Router, HeaderValue) {
+        let (guard, start) = Guard::new(PORT).unwrap();
         let router = Router::new().route("/home", get(|| async { "home" }));
         (wrap(router, guard), start)
     }
 
-    fn request(uri: &str, host: &str, cookie: Option<&str>) -> Request<Body> {
-        let mut request = Request::get(uri).header(header::HOST, host);
+    fn request(host: &str, cookie: Option<&str>, start: Option<&HeaderValue>) -> Request<Body> {
+        let mut request = Request::get("/home").header(header::HOST, host);
         if let Some(cookie) = cookie {
             request = request.header(header::COOKIE, cookie);
+        }
+        if let Some(start) = start {
+            request = request.header(START_HEADER, start);
         }
         request.body(Body::empty()).unwrap()
     }
 
-    /// Opens the start URL and returns the `name=value` of the cookie it sets.
-    async fn cookie(app: &Router, start: &str) -> String {
-        let path = start.strip_prefix("http://127.0.0.1:4321").unwrap();
+    /// Loads the first page with the start token and returns the
+    /// `name=value` of the cookie its answer sets.
+    async fn cookie(app: &Router, start: &HeaderValue) -> String {
         let answer = app
             .clone()
-            .oneshot(request(path, "127.0.0.1:4321", None))
+            .oneshot(request(HOST, None, Some(start)))
             .await
             .unwrap();
-        assert_eq!(answer.status(), StatusCode::SEE_OTHER);
-        assert_eq!(answer.headers()[header::LOCATION], "/home");
+        assert_eq!(answer.status(), StatusCode::OK);
         let set = answer.headers()[header::SET_COOKIE].to_str().unwrap();
         set.split(';').next().unwrap().to_owned()
     }
@@ -196,7 +195,7 @@ mod tests {
         let (app, start) = app();
         let cookie = cookie(&app, &start).await;
         let answer = app
-            .oneshot(request("/home", "127.0.0.1:4321", Some(&cookie)))
+            .oneshot(request(HOST, Some(&cookie), None))
             .await
             .unwrap();
         assert_eq!(answer.status(), StatusCode::OK);
@@ -205,20 +204,22 @@ mod tests {
     #[tokio::test]
     async fn a_request_without_the_cookie_is_refused_even_where_no_route_matches() {
         let (app, _) = app();
-        for path in ["/home", "/nothing-here"] {
-            let answer = app
-                .clone()
-                .oneshot(request(path, "127.0.0.1:4321", None))
-                .await
-                .unwrap();
-            assert_eq!(answer.status(), StatusCode::FORBIDDEN, "{path}");
-        }
+        let nowhere = Request::get("/nothing-here")
+            .header(header::HOST, HOST)
+            .body(Body::empty())
+            .unwrap();
+        assert_eq!(
+            app.clone().oneshot(nowhere).await.unwrap().status(),
+            StatusCode::FORBIDDEN
+        );
         let answer = app
-            .oneshot(request(
-                "/home",
-                "127.0.0.1:4321",
-                Some("hypersig-desktop=00"),
-            ))
+            .clone()
+            .oneshot(request(HOST, None, None))
+            .await
+            .unwrap();
+        assert_eq!(answer.status(), StatusCode::FORBIDDEN);
+        let answer = app
+            .oneshot(request(HOST, Some("hypersig-desktop=00"), None))
             .await
             .unwrap();
         assert_eq!(answer.status(), StatusCode::FORBIDDEN);
@@ -231,7 +232,7 @@ mod tests {
         for host in ["evil.example:4321", "localhost:4321", "127.0.0.1:1234"] {
             let answer = app
                 .clone()
-                .oneshot(request("/home", host, Some(&cookie)))
+                .oneshot(request(host, Some(&cookie), None))
                 .await
                 .unwrap();
             assert_eq!(answer.status(), StatusCode::FORBIDDEN, "{host}");
@@ -241,21 +242,17 @@ mod tests {
     #[tokio::test]
     async fn only_the_start_token_works_and_only_once() {
         let (app, start) = app();
-        let guessed = app
+        let guessed = HeaderValue::from_static("00");
+        let answer = app
             .clone()
-            .oneshot(request(
-                &format!("{START_PATH}?token=00"),
-                "127.0.0.1:4321",
-                None,
-            ))
+            .oneshot(request(HOST, None, Some(&guessed)))
             .await
             .unwrap();
-        assert_eq!(guessed.status(), StatusCode::FORBIDDEN);
+        assert_eq!(answer.status(), StatusCode::FORBIDDEN);
 
         cookie(&app, &start).await;
-        let path = start.strip_prefix("http://127.0.0.1:4321").unwrap();
         let again = app
-            .oneshot(request(path, "127.0.0.1:4321", None))
+            .oneshot(request(HOST, None, Some(&start)))
             .await
             .unwrap();
         assert_eq!(again.status(), StatusCode::FORBIDDEN);
