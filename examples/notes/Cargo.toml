@@ -1,0 +1,21 @@
+[package]
+name = "example-notes"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+axum.workspace = true
+futures.workspace = true
+hypersig.workspace = true
+hypersig_desktop.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tokio-stream = { workspace = true, features = ["sync"] }
+
+[dev-dependencies]
+hypersig_desktop = { workspace = true, features = ["testing"] }
+
+[lints]
+workspace = true

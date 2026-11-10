@@ -217,9 +217,9 @@ jobs:
       # xvfb gives the window a display on a runner that has none.
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev xvfb
-      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo --features example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
-      - run: cargo test -p hypersig_desktop
-      - run: cargo build --release -p example-todo --features desktop
+      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes --features hypersig_desktop/testing,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
+      - run: cargo test -p hypersig_desktop -p example-notes --features hypersig_desktop/testing
+      - run: cargo build --release -p example-todo -p example-notes --features example-todo/desktop
       # examples/todo/smoke.js adds a todo in the window, waits for it to come
       # back over the page's stream, and does the same from a second window.
       - name: The todo example works in two windows
@@ -232,6 +232,21 @@ jobs:
           else
             target/release/example-todo
           fi
+      # examples/notes/smoke.js edits and saves the file in the window the
+      # example opens for it, and waits for the save in the list window.
+      - name: The notes example saves a file from a second window
+        shell: bash
+        env:
+          HYPERSIG_DESKTOP_SMOKE_SCRIPT: examples/notes/smoke.js
+        run: |
+          note="$RUNNER_TEMP/smoke-note.md"
+          printf '# Smoke\n' > "$note"
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a target/release/example-notes "$note"
+          else
+            target/release/example-notes "$note"
+          fi
+          grep -q 'Saved by the smoke run.' "$note"
 
   nightly:
     needs: changes
