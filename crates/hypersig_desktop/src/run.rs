@@ -429,6 +429,8 @@ async fn serve<F>(
             return;
         }
     };
+    #[cfg(target_os = "linux")]
+    let router = crate::framing::wrap(router);
     let app = guard::wrap(router, guard);
     let served = axum::serve(listener, app)
         .with_graceful_shutdown(async {

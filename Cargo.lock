@@ -2499,6 +2499,7 @@ dependencies = [
  "serde",
  "tao",
  "tokio",
+ "tokio-stream",
  "tower",
  "tracing",
  "webkit2gtk",
