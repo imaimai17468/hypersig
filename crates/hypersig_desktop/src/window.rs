@@ -9,6 +9,7 @@ use wry::{NewWindowResponse, PageLoadEvent, WebContext, WebView, WebViewBuilder}
 
 use crate::app::App;
 use crate::error::Error;
+use crate::os::is_external;
 use crate::run::Event;
 
 /// Makes a window the size `app` asks for, hidden until its page has loaded.
@@ -36,10 +37,24 @@ pub(crate) fn context(dir: PathBuf) -> WebContext {
     WebContext::new(Some(dir))
 }
 
+/// Opens `url`, which a page of the application asked to show, in the
+/// program the system opens it with when it is an `http`, `https`, or
+/// `mailto` URL, since the windows show only the application's pages.
+fn leave_for(url: &str) {
+    if !is_external(url) {
+        tracing::warn!(%url, "the window shows only the application's pages, so it did not open this URL");
+        return;
+    }
+    if let Err(error) = open::that_detached(url) {
+        tracing::error!(%url, %error, "the system did not open this URL");
+    }
+}
+
 /// Makes the web view of `window`, which stays at `origin` and tells the
 /// event loop of its title, of each page of `origin` that finishes loading,
 /// of `about:blank` once the closing window has left for it, and of a page
-/// of `origin` it asks to open in a new window. It loads nothing until it is
+/// of `origin` it asks to open in a new window. Another URL it is asked to
+/// show opens in the system's program for it. It loads nothing until it is
 /// given a URL.
 pub(crate) fn web_view(
     window: &Window,
@@ -60,7 +75,7 @@ pub(crate) fn web_view(
         .with_navigation_handler(move |url| {
             let stays = url.starts_with(&navigation_origin) || url == "about:blank";
             if !stays {
-                tracing::warn!(%url, "the window stays on the application's pages, so it did not open this URL");
+                leave_for(&url);
             }
             stays
         })
@@ -69,7 +84,7 @@ pub(crate) fn web_view(
             if url.starts_with(&open_origin) {
                 let _ = opens.send_event(Event::Open { url, answer: None });
             } else {
-                tracing::warn!(%url, "the window stays on the application's pages, so it did not open this URL");
+                leave_for(&url);
             }
             NewWindowResponse::Deny
         })

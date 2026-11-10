@@ -28,6 +28,11 @@ pub enum ErrorKind {
     Closed,
     /// A check of a smoke run failed.
     Smoke,
+    /// The system clipboard could not be read or written.
+    Clipboard,
+    /// [`Os::open_external`](crate::Os::open_external) was given a URL
+    /// without a scheme, which the system would open as a file.
+    NotExternal,
 }
 
 impl Error {
@@ -62,6 +67,20 @@ impl Error {
         Self {
             kind: ErrorKind::Smoke,
             source: Some(why.into()),
+        }
+    }
+
+    pub(crate) fn clipboard(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
+        Self {
+            kind: ErrorKind::Clipboard,
+            source: Some(why.into()),
+        }
+    }
+
+    pub(crate) fn not_external() -> Self {
+        Self {
+            kind: ErrorKind::NotExternal,
+            source: None,
         }
     }
 
@@ -101,6 +120,10 @@ impl fmt::Display for Error {
             ErrorKind::Io => "the application's files or server failed",
             ErrorKind::Closed => "the application is closing",
             ErrorKind::Smoke => "the smoke run failed",
+            ErrorKind::Clipboard => "the clipboard could not be used",
+            ErrorKind::NotExternal => {
+                "the URL names no scheme, so it is not opened in another program"
+            }
         };
         match &self.source {
             Some(source) => write!(f, "{what}: {source}"),

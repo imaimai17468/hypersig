@@ -49,6 +49,15 @@
 //! the server without HTTP, an application keeps the streams open across its
 //! windows to five.
 //!
+//! A handler reaches the system through the same [`Os`]: [`Os::dialog`]
+//! shows a file dialog, [`Os::clipboard`] reads and writes the clipboard's
+//! text, and [`Os::open_external`] opens a URL in the person's browser, as a
+//! window does with a link to another site. With the `testing` feature,
+//! `testing::FakeOs` stands in for the system, so a test calls the handlers
+//! with dialogs it answers and reads back what they did, and clicks through
+//! the pages with [`Page::simulate`](hypersig::Page::simulate), without a
+//! window. `examples/notes` is written and tested this way.
+//!
 //! The server answers only the application's own windows. It listens on
 //! `127.0.0.1` alone, refuses a request whose `Host` is not that address, and
 //! refuses one without the cookie the first window receives when it opens,
@@ -89,6 +98,7 @@
 //! within 20 seconds, ends the run with an error.
 
 mod app;
+mod clipboard;
 mod error;
 mod guard;
 mod instance;
@@ -98,8 +108,10 @@ mod os;
 mod port;
 mod run;
 mod smoke;
+#[cfg(feature = "testing")]
+pub mod testing;
 mod window;
 
 pub use app::{App, IntoRouter};
 pub use error::{Error, ErrorKind};
-pub use os::{Os, Window, Windows};
+pub use os::{Clipboard, Dialog, Os, Window, Windows};

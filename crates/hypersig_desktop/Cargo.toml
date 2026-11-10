@@ -16,10 +16,18 @@ include = ["src/**/*.rs", "LICENSE"]
 # release by hand.
 publish = false
 
+[features]
+# `testing::FakeOs`, an `Os` whose dialogs, clipboard, and windows a test
+# scripts and reads.
+testing = []
+
 [dependencies]
+arboard.workspace = true
 axum.workspace = true
 getrandom.workspace = true
 hypersig.workspace = true
+open.workspace = true
+rfd.workspace = true
 tao.workspace = true
 tokio = { workspace = true, features = ["signal"] }
 tracing.workspace = true
