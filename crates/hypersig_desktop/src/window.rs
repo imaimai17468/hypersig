@@ -35,8 +35,9 @@ pub(crate) fn context(dir: PathBuf) -> WebContext {
 }
 
 /// Makes the web view of `window`, which stays at `origin` and tells the
-/// event loop of its title and of each page of `origin` that finishes
-/// loading. It loads nothing until it is given a URL.
+/// event loop of its title, of each page of `origin` that finishes loading,
+/// and of `about:blank` once a closing window has left for it. It loads
+/// nothing until it is given a URL.
 pub(crate) fn web_view(
     window: &Window,
     context: &mut WebContext,
@@ -64,8 +65,13 @@ pub(crate) fn web_view(
             let _ = titles.send_event(Event::Title(title));
         })
         .with_on_page_load_handler(move |event, url| {
-            if matches!(event, PageLoadEvent::Finished) && url.starts_with(&loaded_origin) {
+            if !matches!(event, PageLoadEvent::Finished) {
+                return;
+            }
+            if url.starts_with(&loaded_origin) {
                 let _ = loads.send_event(Event::Loaded);
+            } else if url == "about:blank" {
+                let _ = loads.send_event(Event::Left);
             }
         });
     #[cfg(not(target_os = "linux"))]
