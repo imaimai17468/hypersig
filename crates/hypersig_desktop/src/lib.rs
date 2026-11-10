@@ -47,6 +47,13 @@
 //! A second copy of the application started while the first runs stops with
 //! [`ErrorKind::AlreadyRunning`].
 //!
+//! `WebKit`, which shows the window on macOS and Linux, does not keep a
+//! `Secure` cookie from `http://127.0.0.1`. A session layer that marks its
+//! cookie `Secure`, as `tower-sessions` does by default, signs no one in
+//! inside the window, so the desktop build of such an application sets its
+//! cookie without `Secure`. The checks above keep other programs off the
+//! server.
+//!
 //! On macOS the menu bar holds the application, Edit, and Window menus,
 //! because macOS sends the shortcuts for copying, pasting, closing, and
 //! quitting to the menu rather than to the web view.
