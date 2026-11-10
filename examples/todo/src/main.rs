@@ -1,7 +1,8 @@
 //! A shared todo list. Every open tab receives changes over a long-lived stream,
 //! and each todo has a page of its own at `/todos/{id}`.
 //!
-//! Run with `cargo run -p example-todo` and open <http://localhost:3001> in two tabs.
+//! Run with `cargo run -p example-todo` and open <http://localhost:3001> in two tabs,
+//! or with `cargo run -p example-todo --features desktop` to open it in a window.
 //!
 //! The list and the channel that tells the streams of a change live in this
 //! process's memory, so a second process serves a list of its own.
@@ -317,13 +318,24 @@ fn updates(state: AppState, (): ()) -> impl Stream<Item = Patches<TodoPage>> {
     }))
 }
 
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
+fn app() -> Router {
     let (changed, _) = broadcast::channel(16);
     let state = AppState {
         todos: Arc::default(),
         changed,
     };
-    let app = pages(Router::new()).hypersig_runtime().with_state(state);
-    hypersig::serve(app, 3001).await
+    pages(Router::new()).hypersig_runtime().with_state(state)
+}
+
+#[cfg(not(feature = "desktop"))]
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    hypersig::serve(app(), 3001).await
+}
+
+/// With `--features desktop`, the list opens in a window of its own.
+#[cfg(feature = "desktop")]
+fn main() -> Result<(), hypersig_desktop::Error> {
+    const APP: hypersig_desktop::App = hypersig_desktop::App::new("dev.hypersig.example-todo");
+    APP.size(640, 720).run(&INDEX.url(()), async { app() })
 }

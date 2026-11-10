@@ -1,6 +1,8 @@
 //! A counter whose increments happen in the browser and whose saves go to the server.
 //!
-//! Run with `cargo run -p example-counter` and open <http://localhost:3000>.
+//! Run with `cargo run -p example-counter` and open <http://localhost:3000>,
+//! or with `cargo run -p example-counter --features desktop` to open it in a
+//! window.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -125,10 +127,21 @@ async fn reset(state: AppState, (): ()) -> Patches<Counter> {
     )
 }
 
+fn app() -> Router {
+    pages(Router::new())
+        .hypersig_runtime()
+        .with_state(AppState::default())
+}
+
+#[cfg(not(feature = "desktop"))]
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let app = pages(Router::new())
-        .hypersig_runtime()
-        .with_state(AppState::default());
-    hypersig::serve(app, 3000).await
+    hypersig::serve(app(), 3000).await
+}
+
+/// With `--features desktop`, the counter opens in a window of its own.
+#[cfg(feature = "desktop")]
+fn main() -> Result<(), hypersig_desktop::Error> {
+    const APP: hypersig_desktop::App = hypersig_desktop::App::new("dev.hypersig.example-counter");
+    APP.size(560, 480).run(&INDEX.url(()), async { app() })
 }

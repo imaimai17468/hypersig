@@ -1,0 +1,33 @@
+[package]
+name = "hypersig_desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Runs a hypersig application in a desktop window"
+keywords = ["hypermedia", "desktop", "webview", "hypersig"]
+categories = ["gui", "web-programming"]
+readme = "../../README.md"
+include = ["src/**/*.rs", "LICENSE"]
+# The publish job of ci.yml can publish only a crate that crates.io already
+# has with this repository as its trusted publisher, which takes a first
+# release by hand.
+publish = false
+
+[dependencies]
+axum.workspace = true
+getrandom.workspace = true
+hypersig.workspace = true
+tao.workspace = true
+tokio = { workspace = true, features = ["signal"] }
+tracing.workspace = true
+wry.workspace = true
+
+[dev-dependencies]
+serde.workspace = true
+tower.workspace = true
+
+[lints]
+workspace = true

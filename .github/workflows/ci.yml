@@ -49,6 +49,9 @@ jobs:
           components: rustfmt, clippy, rust-src
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      # hypersig_desktop links GTK and WebKitGTK, which the runner image
+      # lacks, and tao reads the desktop's color scheme over D-Bus.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       # The crates a Cloudflare Worker links, built for the target it runs on.
@@ -95,6 +98,9 @@ jobs:
           # for the target a worker runs on.
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      # hypersig_desktop links GTK and WebKitGTK, which the runner image
+      # lacks, and tao reads the desktop's color scheme over D-Bus.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev
       - run: cargo test --workspace
 
   runtime:
@@ -190,6 +196,41 @@ jobs:
           name: playwright-report
           path: e2e/test-results
 
+  # hypersig_desktop on each system it runs on, and the todo example started
+  # in a real web view, which closes once its first page has loaded and
+  # prints how long that took.
+  desktop:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@d124f86f28ff42855784ff3319f48ac182c248f8 # 1.99
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      # xvfb gives the window a display on a runner that has none.
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev xvfb
+      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo --features example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
+      - run: cargo test -p hypersig_desktop
+      - run: cargo build --release -p example-todo --features desktop
+      - name: The todo example shows its first page in a window
+        shell: bash
+        env:
+          HYPERSIG_DESKTOP_SMOKE: 1
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a target/release/example-todo
+          else
+            target/release/example-todo
+          fi
+
   nightly:
     needs: changes
     if: needs.changes.outputs.code == 'true' || needs.changes.outputs.site-deps == 'true'
@@ -205,6 +246,9 @@ jobs:
       - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2
         with:
           tool: cargo-udeps@0.1.61
+      # hypersig_desktop links GTK and WebKitGTK, which the runner image
+      # lacks, and tao reads the desktop's color scheme over D-Bus.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev
       - run: cargo +nightly-2026-10-14 udeps --workspace --all-targets
       - run: cargo +nightly-2026-10-14 miri test -p hypersig --lib
       # tests/public_api.rs reads the rustdoc JSON of each library crate,
@@ -220,7 +264,7 @@ jobs:
   # there yet, so a push to main that raises the version releases it and any
   # other push publishes nothing.
   publish:
-    needs: [changes, lint, test, runtime, e2e, nightly]
+    needs: [changes, lint, test, runtime, e2e, desktop, nightly]
     # A job that `changes` skipped counts as passed, and any other result
     # stops the release.
     if: ${{ !cancelled() && !failure() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
