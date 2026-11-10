@@ -32,3 +32,5 @@ identifier = "dev.hypersig.example-notes"
 version = "0.1.0"
 before-packaging-command = "cargo build --release -p example-notes"
 binaries = [{ path = "example-notes", main = true }]
+# The AppImage needs a square icon; the path is read from this directory.
+icons = ["icons/icon.png"]
