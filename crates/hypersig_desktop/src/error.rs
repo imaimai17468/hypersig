@@ -30,8 +30,9 @@ pub enum ErrorKind {
     Smoke,
     /// The system clipboard could not be read or written.
     Clipboard,
-    /// [`Os::open_external`](crate::Os::open_external) was given a URL
-    /// without a scheme, which the system would open as a file.
+    /// [`Os::open_external`](crate::Os::open_external) got a URL without a scheme.
+    ///
+    /// The system would open such a URL as a file.
     NotExternal,
     /// Finding, downloading, verifying, or installing a new version failed.
     Update,

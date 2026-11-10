@@ -141,8 +141,9 @@ impl std::fmt::Debug for Downloaded {
 }
 
 impl Downloaded {
-    /// Installs the package over the running application, which runs the
-    /// new version once it is started again.
+    /// Installs the package over the running application.
+    ///
+    /// The new version runs once the application starts again.
     ///
     /// On Windows the installer takes over and the application exits; on
     /// macOS the `.app` bundle and on Linux the `AppImage` are replaced.

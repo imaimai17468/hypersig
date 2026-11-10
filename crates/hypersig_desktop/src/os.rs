@@ -110,10 +110,11 @@ impl Os {
         }
     }
 
-    /// The newer version the endpoint given to
-    /// [`App::updates`](crate::App::updates) announces, or `None`, to
-    /// download and install with the [`Update`] that returns. A fake system
-    /// finds none.
+    /// The newer version the update endpoint announces, or `None`.
+    ///
+    /// The endpoint is the one given to [`App::updates`](crate::App::updates),
+    /// and the [`Update`] that returns downloads and installs the version. A
+    /// fake system finds none.
     ///
     /// # Errors
     ///
