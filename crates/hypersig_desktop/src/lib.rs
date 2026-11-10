@@ -46,8 +46,8 @@
 //! its connection open, so with six windows that each hold a stream, a seventh
 //! request waits until one closes; in `WKWebView`, the todo example's sixth
 //! window left the first window's actions unanswered. Until the windows reach
-//! the server without HTTP, an application keeps the streams open across its
-//! windows to five.
+//! the server without HTTP, an application keeps at most five streams open
+//! across all its windows.
 //!
 //! A handler reaches the system through the same [`Os`]: [`Os::dialog`]
 //! shows a file dialog, [`Os::clipboard`] reads and writes the clipboard's

@@ -105,6 +105,7 @@ pub enum Learn {
     DeployContainer,
     DeployCloudflare,
     DeployVercel,
+    DeployDesktop,
 }
 
 /// The pages of the Reference section, one per group of items.
@@ -526,6 +527,7 @@ pub(crate) const LEARN: &[Group] = &[
             Doc::Learn(Learn::DeployContainer),
             Doc::Learn(Learn::DeployCloudflare),
             Doc::Learn(Learn::DeployVercel),
+            Doc::Learn(Learn::DeployDesktop),
         ],
     },
 ];
@@ -921,6 +923,7 @@ impl Doc {
         Self::Learn(Learn::DeployContainer),
         Self::Learn(Learn::DeployCloudflare),
         Self::Learn(Learn::DeployVercel),
+        Self::Learn(Learn::DeployDesktop),
         Self::Reference(Reference::Overview),
         Self::Reference(Reference::Page),
         Self::Reference(Reference::El),
@@ -1194,6 +1197,7 @@ impl Doc {
                 Learn::DeployContainer => ("In a container", "コンテナ"),
                 Learn::DeployCloudflare => ("Cloudflare Workers", "Cloudflare Workers"),
                 Learn::DeployVercel => ("Vercel", "Vercel"),
+                Learn::DeployDesktop => ("A desktop window", "デスクトップのウィンドウ"),
             },
             Self::Reference(page) => match page {
                 Reference::Overview => ("API reference", "API リファレンス"),
@@ -1595,6 +1599,10 @@ impl Doc {
                 Learn::DeployVercel => L {
                     en: "The Vercel template runs the same pages, actions, and streams as a Vercel Function, where `VercelLayer` hands each request to the axum `Router`.",
                     ja: "Vercel のテンプレートは同じページ、アクション、ストリームを Vercel の関数として動かし、`VercelLayer` が受け取ったリクエストを axum の `Router` に渡します。",
+                },
+                Learn::DeployDesktop => L {
+                    en: "`hypersig_desktop` shows the same pages, actions, and streams in a desktop window, with the server in the same process, and changes only `main`.",
+                    ja: "`hypersig_desktop` は同じページ、アクション、ストリームをデスクトップのウィンドウに表示します。サーバーは同じプロセスで動き、書き換えるのは `main` だけです。",
                 },
             },
             Self::Style(page) => match page {
@@ -2166,6 +2174,7 @@ impl Learn {
             Self::DeployContainer => "deploying/container",
             Self::DeployCloudflare => "deploying/cloudflare",
             Self::DeployVercel => "deploying/vercel",
+            Self::DeployDesktop => "deploying/desktop",
         }
     }
 }
