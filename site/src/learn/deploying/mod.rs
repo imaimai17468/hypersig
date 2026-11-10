@@ -83,12 +83,5 @@ pub(super) fn deploying(site: Site) -> Part {
                 ja: "どのテンプレートも `AGENTS.md` を書き出します。Claude Code や Codex のようなコーディングエージェントが読む指示で、変更のあとに実行するチェック、このガイドの索引 [`llms.txt`](llms.txt) の場所、使う Rust のツールと指針、hypersig のコードの書き方、ホストがリクエストのあいだに何を保持するかを書いています。どのテンプレートの `Cargo.toml` も Clippy の pedantic の lint を有効にしており、その警告は、人にもエージェントにも、コンパイルは通るが誤りを隠しているコードを指摘します。`CLAUDE.md` には `@AGENTS.md` の 1 行だけがあり、Claude Code はこれを `AGENTS.md` の取り込みとして読みます。`cargo hypersig add` は、この 2 つのファイルがプロジェクトにないときだけ書き出し、`--force` を付けても既存のものは書き換えません。",
             },
         ),
-        para(
-            site,
-            L {
-                en: "The same router also runs in a desktop window, with no host at all: [A desktop window](learn/deploying/desktop/) covers `hypersig_desktop`, which has no template.",
-                ja: "同じルーターはホストを使わずにデスクトップのウィンドウでも動きます。テンプレートのない `hypersig_desktop` については [デスクトップのウィンドウ](learn/deploying/desktop/) で説明します。",
-            },
-        ),
     ])
 }

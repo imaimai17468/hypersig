@@ -527,7 +527,6 @@ pub(crate) const LEARN: &[Group] = &[
             Doc::Learn(Learn::DeployContainer),
             Doc::Learn(Learn::DeployCloudflare),
             Doc::Learn(Learn::DeployVercel),
-            Doc::Learn(Learn::DeployDesktop),
         ],
     },
 ];
@@ -923,7 +922,6 @@ impl Doc {
         Self::Learn(Learn::DeployContainer),
         Self::Learn(Learn::DeployCloudflare),
         Self::Learn(Learn::DeployVercel),
-        Self::Learn(Learn::DeployDesktop),
         Self::Reference(Reference::Overview),
         Self::Reference(Reference::Page),
         Self::Reference(Reference::El),
