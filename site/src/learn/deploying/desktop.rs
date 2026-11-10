@@ -14,7 +14,7 @@ fn main() -> Result<(), hypersig_desktop::Error> {
     APP.size(560, 480).run(&INDEX.url(()), |_os| async { app() })
 }"#;
 
-/// The handler of examples/notes that opens a file.
+/// The handler of examples/notes that opens a file, with shorter messages.
 const OPEN: &str = r#"async fn open(state: AppState, (): ()) -> Patches<NotesPage> {
     let status = NotesPage::status();
     let chosen = state.os.dialog().filter("Text", &["txt", "md"]).open_file().await;
@@ -31,7 +31,7 @@ const OPEN: &str = r#"async fn open(state: AppState, (): ()) -> Patches<NotesPag
     }
 }"#;
 
-/// A test of examples/notes, which opens no window.
+/// A test of examples/notes, which opens no window, without its cleanup.
 const TEST: &str = r#"#[tokio::test]
 async fn opening_a_file_shows_it_in_a_window_of_its_own() {
     let dir = folder("open");
