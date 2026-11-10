@@ -219,7 +219,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev xvfb
       - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes --features hypersig_desktop/testing,hypersig_desktop/updater,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
       - run: cargo test -p hypersig_desktop -p example-notes --features hypersig_desktop/testing,hypersig_desktop/updater
-      - run: cargo build --release -p example-todo -p example-notes --features example-todo/desktop
+      - run: cargo build --release -p example-todo -p example-notes --features example-todo/desktop,hypersig_desktop/smoke
       # examples/todo/smoke.js adds a todo in the window, waits for it to come
       # back over the page's stream, and does the same from a second window.
       - name: The todo example works in two windows
@@ -253,12 +253,12 @@ jobs:
         with:
           tool: cargo-packager@0.11.8
       - run: cargo packager -p example-notes --release
-      # The .app starts from its bundle as a person's double click starts it.
-      - name: The notes example starts from its macOS bundle
+      # The bundle names the identifier App::new gives, which macOS keys the
+      # web view's data by. The packaged binary is built without the smoke
+      # feature, as a release is, so it is not started here.
+      - name: The notes example's macOS bundle names its identifier
         if: runner.os == 'macOS'
-        env:
-          HYPERSIG_DESKTOP_SMOKE: 1
-        run: '"target/release/hypersig notes.app/Contents/MacOS/example-notes"'
+        run: test "$(plutil -extract CFBundleIdentifier raw "target/release/hypersig notes.app/Contents/Info.plist")" = dev.hypersig.example-notes
 
 
   nightly:

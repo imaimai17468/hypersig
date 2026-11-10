@@ -1,4 +1,5 @@
-//! Smoke runs, which start the application, check its first page, and close it.
+//! Smoke runs, which start the application, check its first page, and close
+//! it, in a build with the `smoke` feature.
 //!
 //! With `HYPERSIG_DESKTOP_SMOKE` set, the run writes how long after
 //! [`App::run`](crate::App::run) the first page was shown, checks that it is
@@ -57,6 +58,9 @@ impl Smoke {
     ///
     /// Fails when the script named in `HYPERSIG_DESKTOP_SMOKE_SCRIPT` cannot be read.
     pub(crate) fn from_env(started: Instant) -> Result<Option<Self>, Error> {
+        if cfg!(not(feature = "smoke")) {
+            return Ok(None);
+        }
         let script = env::var_os(SCRIPT).map(fs::read_to_string).transpose()?;
         if script.is_none() && env::var_os(SMOKE).is_none() {
             return Ok(None);

@@ -91,7 +91,8 @@
 //!
 //! # Smoke runs
 //!
-//! With `HYPERSIG_DESKTOP_SMOKE` set, the application checks that its first
+//! In a build with the `smoke` feature, for CI and benchmarks, and with
+//! `HYPERSIG_DESKTOP_SMOKE` set, the application checks that its first
 //! page is one hypersig rendered, writes to standard output how many
 //! milliseconds after [`App::run`] the page was shown, and closes. It ends
 //! with an error when the page is not hypersig's, as when the server refused

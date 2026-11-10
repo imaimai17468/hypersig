@@ -23,6 +23,10 @@ testing = []
 # `Os::updates`, which finds, downloads, verifies, and installs a new
 # version with cargo-packager-updater.
 updater = ["dep:cargo-packager-updater"]
+# Smoke runs, which `HYPERSIG_DESKTOP_SMOKE` and
+# `HYPERSIG_DESKTOP_SMOKE_SCRIPT` start, for CI and the start-up benchmark.
+# A build without it ignores both, since the script can call every action.
+smoke = []
 
 [dependencies]
 arboard.workspace = true

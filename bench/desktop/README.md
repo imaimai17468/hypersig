@@ -13,7 +13,7 @@ Each build writes a line with `first page shown` when its window shows the first
 ## Running
 
 ```sh
-cargo build --release -p example-todo --features desktop
+cargo build --release -p example-todo --features example-todo/desktop,hypersig_desktop/smoke
 (cd bench/desktop/tauri && cargo build --release)
 cd bench/desktop && pnpm install && node measure.mjs
 ```
