@@ -19,3 +19,16 @@ hypersig_desktop = { workspace = true, features = ["testing"] }
 
 [lints]
 workspace = true
+
+# `cargo packager -p example-notes --release`, from the repository's root,
+# builds the release binary with the command below and packages it under
+# target/release: an .app and a .dmg on macOS, an NSIS installer on Windows,
+# and a .deb, an AppImage, and a pacman package on Linux. The identifier is
+# the one `App::new` names in src/main.rs, which macOS keys the web view's
+# data by.
+[package.metadata.packager]
+product-name = "hypersig notes"
+identifier = "dev.hypersig.example-notes"
+version = "0.1.0"
+before-packaging-command = "cargo build --release -p example-notes"
+binaries = [{ path = "example-notes", main = true }]
