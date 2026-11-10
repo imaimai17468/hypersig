@@ -14,7 +14,9 @@ use crate::run::Event;
 /// Makes the window of `app`, hidden until its first page has loaded.
 pub(crate) fn window(app: &App, event_loop: &EventLoop<Event>) -> Result<Window, Error> {
     let (width, height) = app.size;
+    // The page's title replaces the empty one once the page has it.
     let mut builder = WindowBuilder::new()
+        .with_title("")
         .with_visible(false)
         .with_inner_size(LogicalSize::new(width, height))
         .with_resizable(app.resizable);
