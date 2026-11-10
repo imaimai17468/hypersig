@@ -338,6 +338,18 @@ impl Lifecycle<'_> {
         );
         open.shown = true;
         open.window.set_visible(true);
+        // The windows asked for meanwhile would have no cookie, so whoever
+        // asked hears that none opened rather than waiting on.
+        if self.first == Some(id) {
+            for Asked { url, answer } in std::mem::take(&mut self.waiting) {
+                tracing::error!(%url, "a window was not opened, since the first page did not load");
+                if let Some(answer) = answer {
+                    let _ = answer.send(Err(Error::window(
+                        "the first page did not load, so no other window opens",
+                    )));
+                }
+            }
+        }
         if self.smoke.is_some() {
             self.fail(Error::smoke("a page did not finish loading in time"));
         }
