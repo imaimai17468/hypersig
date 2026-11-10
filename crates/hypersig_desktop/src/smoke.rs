@@ -1,8 +1,8 @@
 //! Smoke runs, which start the application, check its first page, and close it.
 //!
-//! With `HYPERSIG_DESKTOP_SMOKE` set, the run checks that the first page is
-//! one hypersig rendered, writes how long after [`App::run`](crate::App::run)
-//! it was shown, and closes the application. With
+//! With `HYPERSIG_DESKTOP_SMOKE` set, the run writes how long after
+//! [`App::run`](crate::App::run) the first page was shown, checks that it is
+//! one hypersig rendered, and closes the application. With
 //! `HYPERSIG_DESKTOP_SMOKE_SCRIPT` set to the path of a JavaScript file, it
 //! then runs that file in the first page, and in the page of each window
 //! opened after it, and waits for the first page to set
@@ -85,17 +85,22 @@ impl Smoke {
         runtime: &Runtime,
     ) -> Result<bool, Error> {
         match (&self.stage, answer) {
-            (Stage::Rendering, None) => ask(web_view, RENDERED, proxy)?,
+            // The time is written when the window is shown, as other
+            // frameworks' measurements write it, and the check follows; a
+            // failed check still ends the run with an error.
+            (Stage::Rendering, None) => {
+                report(&format!(
+                    "first page shown {} ms after run",
+                    self.started.elapsed().as_millis()
+                ));
+                ask(web_view, RENDERED, proxy)?;
+            }
             (Stage::Rendering, Some(answer)) => {
                 if answer != "true" {
                     return Err(Error::smoke(
                         "the first page is not one hypersig rendered, as when the server refused the window",
                     ));
                 }
-                report(&format!(
-                    "first page shown {} ms after run",
-                    self.started.elapsed().as_millis()
-                ));
                 let Some(script) = &self.script else {
                     return Ok(true);
                 };
