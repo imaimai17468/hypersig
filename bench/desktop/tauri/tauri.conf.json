@@ -1,0 +1,11 @@
+{
+  "productName": "bench-desktop-tauri",
+  "version": "0.1.0",
+  "identifier": "dev.hypersig.bench-desktop-tauri",
+  "build": { "frontendDist": "../web" },
+  "app": {
+    "windows": [{ "title": "todo", "width": 640, "height": 720, "visible": false }],
+    "security": { "csp": null }
+  },
+  "bundle": { "active": false, "icon": ["icons/icon.png"] }
+}

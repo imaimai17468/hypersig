@@ -15,8 +15,13 @@ test = false
 [dependencies]
 axum.workspace = true
 hypersig.workspace = true
+hypersig_desktop = { workspace = true, optional = true }
 serde.workspace = true
 tokio.workspace = true
+
+[features]
+# Opens the counter in a desktop window instead of serving it on port 3000.
+desktop = ["dep:hypersig_desktop"]
 
 [lints]
 workspace = true

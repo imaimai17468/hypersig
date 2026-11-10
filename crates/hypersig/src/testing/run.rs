@@ -86,19 +86,11 @@ impl<'p, S: Signals> Simulation<'p, S> {
                 items.push(self.eval(arg(2), scope, vars, op));
                 self.set(&path, Value::Array(items));
             }
-            "append" | "prepend" => {
-                let (path, items) = self.list(arg(1), scope);
-                let added = self.eval(arg(2), scope, vars, op);
-                let Some(added) = added.as_array().filter(|added| !added.is_empty()) else {
-                    return;
-                };
-                let next = if op == "prepend" {
-                    added.iter().chain(&items).cloned().collect()
-                } else {
-                    items.iter().chain(added).cloned().collect()
-                };
-                self.set(&path, Value::Array(next));
-            }
+            "append" | "prepend" => self.patch_list(op, parts, scope, vars),
+            "upsert" | "remove_keys" => panic!(
+                "`{op}` is a list statement that only a server patch sends, which the \
+                 simulation runs only from `Simulation::apply`"
+            ),
             "remove" => {
                 let (path, mut items) = self.list(arg(1), scope);
                 let at = self.eval(arg(2), scope, vars, op);
@@ -226,10 +218,6 @@ impl<'p, S: Signals> Simulation<'p, S> {
                 };
                 effects.visits.push((visit, url));
             }
-            "upsert" | "remove_keys" => panic!(
-                "`{op}` is a list statement that only a server patch sends, and the \
-                 simulation applies no patch"
-            ),
             _ => panic!("`{op}` is not a statement the runtime runs: {ast}"),
         }
     }
@@ -284,6 +272,69 @@ impl<'p, S: Signals> Simulation<'p, S> {
     /// The URL `ast` evaluates to, written as `String(value)` writes it.
     fn url(&self, ast: &Value, scope: &[ItemAt], vars: &[Value], op: &str) -> Url {
         Url::evaluated(ssr::js_string(&self.eval(ast, scope, vars, op)))
+    }
+
+    /// Runs the list statement `op`, of `parts`, one of the four a server
+    /// patch sends as `hs-list`: `append` and `prepend`, which a page's
+    /// statements send too, and `upsert` and `remove_keys`, which only a
+    /// patch sends. `runtime/src/eval/stmt/each.ts` runs them.
+    pub(super) fn patch_list(
+        &mut self,
+        op: &str,
+        parts: &[Value],
+        scope: &[ItemAt],
+        vars: &[Value],
+    ) {
+        let arg = |i: usize| parts.get(i).unwrap_or(&Value::Null);
+        match op {
+            "append" | "prepend" => {
+                let (path, items) = self.list(arg(1), scope);
+                let added = self.eval(arg(2), scope, vars, op);
+                let Some(added) = added.as_array().filter(|added| !added.is_empty()) else {
+                    return;
+                };
+                let next = if op == "prepend" {
+                    added.iter().chain(&items).cloned().collect()
+                } else {
+                    items.iter().chain(added).cloned().collect()
+                };
+                self.set(&path, Value::Array(next));
+            }
+            "upsert" => {
+                let (path, items) = self.list(arg(1), scope);
+                let added = match self.eval(arg(4), scope, vars, op) {
+                    Value::Array(added) if !added.is_empty() => added,
+                    _ => return,
+                };
+                // The key may read the item and the page's signals, so the
+                // added items are keyed while the list holds them after its
+                // own items.
+                let all: Vec<Value> = items.iter().chain(&added).cloned().collect();
+                let held = self.values.clone();
+                self.set(&path, Value::Array(all.clone()));
+                let keys = self.each(&path, all.len(), index(arg(2)), arg(3), scope, vars, op);
+                self.values = held;
+                self.set(&path, Value::Array(upserted(&items, &added, &keys)));
+            }
+            "remove_keys" => {
+                let (path, items) = self.list(arg(1), scope);
+                let removed = match self.eval(arg(4), scope, vars, op) {
+                    Value::Array(removed) if !removed.is_empty() => removed,
+                    _ => return,
+                };
+                let keys = self.each(&path, items.len(), index(arg(2)), arg(3), scope, vars, op);
+                let kept: Vec<Value> = items
+                    .iter()
+                    .zip(&keys)
+                    .filter(|(_, key)| !removed.contains(key))
+                    .map(|(item, _)| item.clone())
+                    .collect();
+                if kept.len() != items.len() {
+                    self.set(&path, Value::Array(kept));
+                }
+            }
+            _ => panic!("`{op}` is not a list statement a patch sends"),
+        }
     }
 
     /// The store path of the list at `place`, and its items, none where it holds no list.
@@ -388,3 +439,28 @@ fn reads_browser(ast: &Value) -> bool {
 
 #[cfg(test)]
 mod tests;
+
+/// `items` with each of `added` in place of the first item with its key, or
+/// at the end, where `keys` holds the key of each item and then of each
+/// added one, as `merged` in `runtime/src/eval/stmt/each.ts` writes it.
+fn upserted(items: &[Value], added: &[Value], keys: &[Value]) -> Vec<Value> {
+    let mut next = items.to_vec();
+    let mut at: Vec<(&Value, usize)> = Vec::new();
+    for (index, key) in keys.iter().take(items.len()).enumerate() {
+        if !at.iter().any(|(seen, _)| *seen == key) {
+            at.push((key, index));
+        }
+    }
+    for (offset, item) in added.iter().enumerate() {
+        let Some(key) = keys.get(items.len() + offset) else {
+            continue;
+        };
+        if let Some(&(_, index)) = at.iter().find(|(seen, _)| *seen == key) {
+            next[index] = item.clone();
+        } else {
+            at.push((key, next.len()));
+            next.push(item.clone());
+        }
+    }
+    next
+}

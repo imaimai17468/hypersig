@@ -1,0 +1,3 @@
+allowBuilds:
+  # Its install script downloads the Electron binary the comparison runs.
+  electron: true

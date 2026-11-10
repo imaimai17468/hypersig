@@ -134,6 +134,13 @@ struct Signals {
 }
 
 impl Signals {
+    #[cfg_attr(
+        not(unix),
+        expect(
+            clippy::unnecessary_wraps,
+            reason = "only watching SIGTERM, which Unix alone has, can fail"
+        )
+    )]
     fn new() -> io::Result<Self> {
         Ok(Self {
             #[cfg(unix)]

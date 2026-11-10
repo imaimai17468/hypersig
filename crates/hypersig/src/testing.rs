@@ -53,8 +53,9 @@
 //! It fires no event apart from the four above, so a statement on a double
 //! click, on focus or blur, on the pointer entering or leaving, on a key,
 //! or on an [`El::on_custom`](crate::html::El::on_custom) event never runs.
-//! It applies no patch of the server's answer. A test reaches those through
-//! a browser.
+//! It applies a patch of the server's answer only when a test hands it one
+//! with [`Simulation::apply`], and then no element patch. A test reaches the
+//! rest through a browser.
 
 use std::cmp::Ordering;
 use std::fmt;
@@ -66,10 +67,11 @@ use serde_json::Value;
 use crate::expr::IntoStmt;
 use crate::html::find::{self, Found, ItemAt, Mark};
 use crate::html::{Attr, Event, Id};
+use crate::patch::PatchEvent;
 use crate::route::Url;
 use crate::signal::{FromPage, Sig, Signals};
 use crate::tape::Ref;
-use crate::{Action, DialogRef, FileInput, NodeRef, Page, StreamAction, Upload};
+use crate::{Action, DialogRef, FileInput, NodeRef, Page, Patches, StreamAction, Upload};
 
 #[cfg(test)]
 mod differential;
@@ -337,6 +339,68 @@ impl<'p, S: Signals> Simulation<'p, S> {
         let mut effects = Effects::new();
         for waiting in std::mem::take(&mut self.waiting) {
             self.run(waiting.stmt, &waiting.scope, &waiting.vars, &mut effects);
+            self.settle();
+        }
+        effects
+    }
+
+    /// Applies a batch of patches the server answered with.
+    ///
+    /// The events run in order, as the runtime applies an answer. A test gets the batch by calling the handler itself, with the
+    /// arguments [`Effects::calls`] recorded, or by taking an item of the
+    /// stream a [`StreamAction`]'s handler returns. Signal and list patches
+    /// change the values, and the computed signals are recomputed after
+    /// each. The navigations of [`Patches::navigate`],
+    /// [`Patches::push_url`], and [`Patches::replace_url`] go into the
+    /// returned [`Effects`].
+    ///
+    /// The call that asked for the batch stays unanswered: its indicator
+    /// stays `true`, and its `on_success` does not run.
+    ///
+    /// # Panics
+    ///
+    /// Panics on a patch of [`Patches::element`], whose element only the
+    /// browser can render into the page.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hypersig::{Page, Patches, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Counter {
+    ///     count: i32,
+    /// }
+    ///
+    /// let page = Page::new("Counter", Counter { count: 0 });
+    /// let mut browser = page.simulate();
+    /// browser.apply(Counter::count().patch(5));
+    /// assert_eq!(browser.value_of(Counter::count()), 5);
+    /// ```
+    pub fn apply(&mut self, patches: impl Into<Patches<S>>) -> Effects<S> {
+        let mut effects = Effects::new();
+        for event in patches.into().into_events() {
+            match event {
+                PatchEvent::Signals(values) => {
+                    for (path, value) in values {
+                        self.set(&path, value);
+                    }
+                }
+                PatchEvent::List(statement) => {
+                    let parts = statement.as_array().map_or(&[][..], Vec::as_slice);
+                    let op = parts.first().and_then(Value::as_str).unwrap_or("");
+                    self.patch_list(op, parts, &[], &[]);
+                }
+                PatchEvent::Element { id, .. } => panic!(
+                    "the patch of element #{} needs a browser to render it, and the simulation renders no element a patch sends",
+                    id.as_str()
+                ),
+                PatchEvent::Navigate(url) => effects.visits.push((Visit::Navigate, url)),
+                PatchEvent::History { url, replace } => effects
+                    .visits
+                    .push((if replace { Visit::Replace } else { Visit::Push }, url)),
+            }
             self.settle();
         }
         effects

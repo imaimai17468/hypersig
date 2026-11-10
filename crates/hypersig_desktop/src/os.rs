@@ -1,0 +1,433 @@
+//! What the application's handlers ask of the operating system.
+
+use std::fmt;
+use std::path::PathBuf;
+#[cfg(feature = "testing")]
+use std::sync::{Arc, Mutex, PoisonError};
+
+use hypersig::{SafeUrl, Url};
+use tao::event_loop::EventLoopProxy;
+use tao::window::WindowId;
+use tokio::sync::oneshot;
+
+use crate::clipboard;
+use crate::error::Error;
+use crate::run::Event;
+#[cfg(feature = "testing")]
+use crate::testing::Fake;
+#[cfg(feature = "updater")]
+use crate::updates::{Update, Updates};
+
+/// The operating system's windows and services, for the application's handlers.
+///
+/// [`App::run`](crate::App::run) gives it to the setup closure, which puts it
+/// in the router's state, so a handler reaches it as `state.os`. A test gives
+/// the handlers `testing::FakeOs::os` instead, with the
+/// `testing` feature.
+#[derive(Clone)]
+pub struct Os {
+    inner: Inner,
+    #[cfg(feature = "updater")]
+    updates: Option<Updates>,
+}
+
+#[derive(Clone)]
+enum Inner {
+    System(EventLoopProxy<Event>),
+    #[cfg(feature = "testing")]
+    Fake(Arc<Mutex<Fake>>),
+}
+
+impl fmt::Debug for Os {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Os").finish_non_exhaustive()
+    }
+}
+
+impl Os {
+    pub(crate) fn new(proxy: EventLoopProxy<Event>, app: &crate::App) -> Self {
+        #[cfg(not(feature = "updater"))]
+        let _ = app;
+        Self {
+            inner: Inner::System(proxy),
+            #[cfg(feature = "updater")]
+            updates: app.updates,
+        }
+    }
+
+    #[cfg(feature = "testing")]
+    pub(crate) fn fake(fake: Arc<Mutex<Fake>>) -> Self {
+        Self {
+            inner: Inner::Fake(fake),
+            #[cfg(feature = "updater")]
+            updates: None,
+        }
+    }
+
+    /// The application's windows.
+    #[must_use]
+    pub fn windows(&self) -> Windows<'_> {
+        Windows { os: self }
+    }
+
+    /// A file dialog, to be given a title and filters before it is shown.
+    pub fn dialog(&self) -> Dialog {
+        Dialog {
+            #[cfg(feature = "testing")]
+            os: self.clone(),
+            title: None,
+            filters: Vec::new(),
+            directory: None,
+            file_name: None,
+        }
+    }
+
+    /// The system clipboard.
+    #[must_use]
+    pub fn clipboard(&self) -> Clipboard<'_> {
+        Clipboard { os: self }
+    }
+
+    /// Opens `url` in the person's web browser, or their mail program for a
+    /// `mailto:` URL.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ErrorKind::NotExternal`](crate::ErrorKind::NotExternal)
+    /// when `url` names no scheme, as `/notes` does, since the system would
+    /// open such a path as a file, and fails when the system cannot open it.
+    pub fn open_external(&self, url: &SafeUrl) -> Result<(), Error> {
+        if !is_external(url.as_str()) {
+            return Err(Error::not_external());
+        }
+        match &self.inner {
+            Inner::System(_) => open::that_detached(url.as_str()).map_err(Error::from),
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                lock(fake).external.push(url.clone());
+                Ok(())
+            }
+        }
+    }
+
+    /// The newer version the update endpoint announces, or `None`.
+    ///
+    /// The endpoint is the one given to [`App::updates`](crate::App::updates),
+    /// and the [`Update`] that returns downloads and installs the version. A
+    /// fake system finds none.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application gave no [`Updates`] to `App::updates`, and
+    /// where [`Updates`] lists.
+    #[cfg(feature = "updater")]
+    pub async fn updates(&self) -> Result<Option<Update>, Error> {
+        match (&self.inner, self.updates) {
+            (Inner::System(_), Some(updates)) => updates.check().await,
+            (Inner::System(_), None) => Err(Error::update(
+                "the application gave no Updates to App::updates",
+            )),
+            #[cfg(feature = "testing")]
+            (Inner::Fake(_), _) => Ok(None),
+        }
+    }
+
+    /// Sends `event` to the event loop.
+    fn send(proxy: &EventLoopProxy<Event>, event: Event) -> Result<(), Error> {
+        proxy.send_event(event).map_err(|_closed| Error::closed())
+    }
+}
+
+/// Whether `url` is one the system opens in another program: an absolute
+/// `http`, `https`, or `mailto` URL. A [`SafeUrl`] has one of these schemes
+/// or none.
+pub(crate) fn is_external(url: &str) -> bool {
+    ["http://", "https://", "mailto:"].iter().any(|scheme| {
+        url.get(..scheme.len())
+            .is_some_and(|start| start.eq_ignore_ascii_case(scheme))
+    })
+}
+
+#[cfg(feature = "testing")]
+fn lock(fake: &Mutex<Fake>) -> std::sync::MutexGuard<'_, Fake> {
+    fake.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// The application's windows, from [`Os::windows`].
+#[derive(Debug, Clone, Copy)]
+pub struct Windows<'a> {
+    os: &'a Os,
+}
+
+impl Windows<'_> {
+    /// Opens `page` in a new window, shown once the page has loaded.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the window or its web view cannot be made, and when the
+    /// application is closing.
+    pub async fn open(&self, page: &Url) -> Result<Window, Error> {
+        let key = match &self.os.inner {
+            Inner::System(proxy) => {
+                let (answer, answered) = oneshot::channel();
+                Os::send(
+                    proxy,
+                    Event::Open {
+                        url: page.as_str().to_owned(),
+                        answer: Some(answer),
+                    },
+                )?;
+                Key::System(answered.await.map_err(|_closed| Error::closed())??)
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                let mut fake = lock(fake);
+                fake.windows.push(Some(page.clone()));
+                Key::Fake(fake.windows.len() - 1)
+            }
+        };
+        Ok(Window {
+            key,
+            os: self.os.clone(),
+        })
+    }
+}
+
+/// A window [`Windows::open`] opened.
+#[derive(Debug, Clone)]
+pub struct Window {
+    key: Key,
+    os: Os,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Key {
+    System(WindowId),
+    #[cfg(feature = "testing")]
+    Fake(usize),
+}
+
+impl Window {
+    /// Closes the window, as its close button does.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing.
+    pub fn close(&self) -> Result<(), Error> {
+        match (&self.os.inner, self.key) {
+            (Inner::System(proxy), Key::System(id)) => Os::send(proxy, Event::Close(id)),
+            #[cfg(feature = "testing")]
+            (Inner::Fake(fake), Key::Fake(index)) => {
+                if let Some(window) = lock(fake).windows.get_mut(index) {
+                    *window = None;
+                }
+                Ok(())
+            }
+            #[cfg(feature = "testing")]
+            _ => Ok(()),
+        }
+    }
+
+    /// Brings the window to the front and gives it the keyboard.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing.
+    pub fn focus(&self) -> Result<(), Error> {
+        match (&self.os.inner, self.key) {
+            (Inner::System(proxy), Key::System(id)) => Os::send(proxy, Event::Focus(id)),
+            #[cfg(feature = "testing")]
+            _ => Ok(()),
+        }
+    }
+}
+
+impl PartialEq for Window {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+    }
+}
+
+impl Eq for Window {}
+
+/// A file dialog, from [`Os::dialog`], shown by one of its async methods.
+#[derive(Debug, Clone)]
+#[must_use = "a dialog shows only when one of its async methods is awaited"]
+pub struct Dialog {
+    /// Only a fake system answers in place of the system's own dialog.
+    #[cfg(feature = "testing")]
+    os: Os,
+    title: Option<String>,
+    filters: Vec<(String, Vec<String>)>,
+    directory: Option<PathBuf>,
+    file_name: Option<String>,
+}
+
+impl Dialog {
+    /// Titles the dialog's window.
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
+    /// Offers the files whose extension is one of `extensions`, as `name`.
+    pub fn filter(mut self, name: impl Into<String>, extensions: &[&str]) -> Self {
+        self.filters.push((
+            name.into(),
+            extensions
+                .iter()
+                .map(|&extension| extension.to_owned())
+                .collect(),
+        ));
+        self
+    }
+
+    /// Opens the dialog in `directory`.
+    pub fn directory(mut self, directory: impl Into<PathBuf>) -> Self {
+        self.directory = Some(directory.into());
+        self
+    }
+
+    /// Fills in `name` as the file to save.
+    pub fn file_name(mut self, name: impl Into<String>) -> Self {
+        self.file_name = Some(name.into());
+        self
+    }
+
+    /// The file the person chose, or `None` when they cancelled.
+    pub async fn open_file(self) -> Option<PathBuf> {
+        #[cfg(feature = "testing")]
+        if let Some(paths) = self.fake_answer() {
+            return paths?.into_iter().next();
+        }
+        self.system()
+            .pick_file()
+            .await
+            .map(|file| file.path().to_owned())
+    }
+
+    /// The files the person chose, or `None` when they cancelled.
+    pub async fn open_files(self) -> Option<Vec<PathBuf>> {
+        #[cfg(feature = "testing")]
+        if let Some(paths) = self.fake_answer() {
+            return paths;
+        }
+        self.system()
+            .pick_files()
+            .await
+            .map(|files| files.iter().map(|file| file.path().to_owned()).collect())
+    }
+
+    /// The folder the person chose, or `None` when they cancelled.
+    pub async fn pick_folder(self) -> Option<PathBuf> {
+        #[cfg(feature = "testing")]
+        if let Some(paths) = self.fake_answer() {
+            return paths?.into_iter().next();
+        }
+        self.system()
+            .pick_folder()
+            .await
+            .map(|folder| folder.path().to_owned())
+    }
+
+    /// Where the person chose to save, or `None` when they cancelled. The
+    /// file is not written.
+    pub async fn save_file(self) -> Option<PathBuf> {
+        #[cfg(feature = "testing")]
+        if let Some(paths) = self.fake_answer() {
+            return paths?.into_iter().next();
+        }
+        self.system()
+            .save_file()
+            .await
+            .map(|file| file.path().to_owned())
+    }
+
+    /// The answer a test gave a fake system for this dialog: the paths, or
+    /// `None` for a cancelled dialog. The outer `None` means the system's
+    /// own dialog answers.
+    #[cfg(feature = "testing")]
+    #[expect(
+        clippy::option_option,
+        reason = "the outer layer is who answers and the inner one is the answer"
+    )]
+    fn fake_answer(&self) -> Option<Option<Vec<PathBuf>>> {
+        match &self.os.inner {
+            Inner::System(_) => None,
+            Inner::Fake(fake) => Some(lock(fake).answer_dialog()),
+        }
+    }
+
+    fn system(self) -> rfd::AsyncFileDialog {
+        let mut dialog = rfd::AsyncFileDialog::new();
+        if let Some(title) = self.title {
+            dialog = dialog.set_title(title);
+        }
+        for (name, extensions) in self.filters {
+            dialog = dialog.add_filter(name, &extensions);
+        }
+        if let Some(directory) = self.directory {
+            dialog = dialog.set_directory(directory);
+        }
+        if let Some(name) = self.file_name {
+            dialog = dialog.set_file_name(name);
+        }
+        dialog
+    }
+}
+
+/// The system clipboard, from [`Os::clipboard`].
+#[derive(Debug, Clone, Copy)]
+pub struct Clipboard<'a> {
+    os: &'a Os,
+}
+
+impl Clipboard<'_> {
+    /// The text on the clipboard, or `None` when it holds no text.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the system clipboard cannot be read.
+    pub async fn read_text(&self) -> Result<Option<String>, Error> {
+        match &self.os.inner {
+            Inner::System(_) => clipboard::read().await,
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => Ok(lock(fake).clipboard.clone()),
+        }
+    }
+
+    /// Puts `text` on the clipboard.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the system clipboard cannot be written.
+    pub async fn write_text(&self, text: impl Into<String>) -> Result<(), Error> {
+        match &self.os.inner {
+            Inner::System(_) => clipboard::write(text.into()).await,
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                lock(fake).clipboard = Some(text.into());
+                Ok(())
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_external;
+
+    #[test]
+    fn only_an_absolute_url_is_external() {
+        for url in [
+            "https://example.com",
+            "HTTP://example.com/a",
+            "mailto:a@example.com",
+        ] {
+            assert!(is_external(url), "{url}");
+        }
+        for url in ["/notes", "notes", "//example.com", "file:///etc", ""] {
+            assert!(!is_external(url), "{url}");
+        }
+    }
+}

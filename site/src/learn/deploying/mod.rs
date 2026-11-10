@@ -3,6 +3,7 @@
 
 pub(super) mod cloudflare;
 pub(super) mod container;
+pub(super) mod desktop;
 pub(super) mod vercel;
 
 use crate::Site;

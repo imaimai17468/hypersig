@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>todo</title>
+<style>
+body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; }
+form { display: flex; gap: .5rem; }
+input { flex: 1; font-size: 1rem; padding: .4rem; }
+ul { list-style: none; padding: 0; }
+li { display: flex; gap: .5rem; align-items: center; padding: .3rem 0; border-bottom: 1px solid #eee; }
+.done { text-decoration: line-through; color: #888; }
+</style>
+</head>
+<body>
+<!-- The todo list of examples/todo, kept in the page, for the Electron and Tauri builds. -->
+<h1>Todo</h1>
+<form id="add"><input id="draft" placeholder="What needs doing?"><button>Add</button></form>
+<ul id="todos"></ul>
+<p id="summary"></p>
+<script>
+const todos = [];
+const list = document.getElementById("todos");
+const summary = document.getElementById("summary");
+const draw = () => {
+  list.replaceChildren(...todos.map((todo, index) => {
+    const item = document.createElement("li");
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = todo.done;
+    box.onchange = () => { todo.done = box.checked; draw(); };
+    const title = document.createElement("span");
+    title.textContent = todo.title;
+    title.className = todo.done ? "done" : "";
+    const remove = document.createElement("button");
+    remove.textContent = "×";
+    remove.onclick = () => { todos.splice(index, 1); draw(); };
+    item.append(box, title, remove);
+    return item;
+  }));
+  const left = todos.filter((todo) => !todo.done).length;
+  summary.textContent = left > 0 ? `${left} left` : "All done.";
+};
+document.getElementById("add").onsubmit = (event) => {
+  event.preventDefault();
+  const draft = document.getElementById("draft");
+  if (draft.value.trim() !== "") todos.push({ title: draft.value.trim(), done: false });
+  draft.value = "";
+  draw();
+};
+draw();
+</script>
+</body>
+</html>

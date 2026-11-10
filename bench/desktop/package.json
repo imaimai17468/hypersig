@@ -1,0 +1,11 @@
+{
+  "name": "hypersig-bench-desktop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "measure": "node measure.mjs"
+  },
+  "devDependencies": {
+    "electron": "38.2.0"
+  }
+}

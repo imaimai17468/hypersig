@@ -1,0 +1,63 @@
+[package]
+name = "hypersig_desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Runs a hypersig application in a desktop window"
+keywords = ["hypermedia", "desktop", "webview", "hypersig"]
+categories = ["gui", "web-programming"]
+readme = "../../README.md"
+include = ["src/**/*.rs", "LICENSE"]
+# The publish job of ci.yml can publish only a crate that crates.io already
+# has with this repository as its trusted publisher, which takes a first
+# release by hand.
+publish = false
+
+[features]
+# `testing::FakeOs`, an `Os` whose dialogs, clipboard, and windows a test
+# scripts and reads.
+testing = []
+# `Os::updates`, which finds, downloads, verifies, and installs a new
+# version with cargo-packager-updater.
+updater = ["dep:cargo-packager-updater"]
+# Smoke runs, which `HYPERSIG_DESKTOP_SMOKE` and
+# `HYPERSIG_DESKTOP_SMOKE_SCRIPT` start, for CI and the start-up benchmark.
+# A build without it ignores both, since the script can call every action.
+smoke = []
+
+[dependencies]
+arboard.workspace = true
+axum.workspace = true
+cargo-packager-updater = { workspace = true, optional = true }
+getrandom.workspace = true
+hypersig.workspace = true
+open.workspace = true
+rfd.workspace = true
+tao.workspace = true
+tokio = { workspace = true, features = ["signal"] }
+tracing.workspace = true
+wry.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+muda.workspace = true
+
+[dev-dependencies]
+base64.workspace = true
+minisign.workspace = true
+serde.workspace = true
+tokio-stream.workspace = true
+tower.workspace = true
+
+[lints]
+workspace = true
+
+# The tests of the `updater` feature sign a package with these, and
+# cargo-udeps, run without that feature, does not see them used.
+[package.metadata.cargo-udeps.ignore]
+development = ["base64", "minisign"]

@@ -498,3 +498,45 @@ fn a_patch_statement_is_refused() {
     }));
     page.simulate().click(GO);
 }
+
+#[test]
+fn apply_sets_the_signals_of_a_patch_and_the_computed_signals_follow() {
+    let page = page(Board::count().set(1));
+    let mut browser = page.simulate();
+    browser.apply(
+        Board::count()
+            .patch(5)
+            .and(Board::name().patch("five".to_owned())),
+    );
+    assert_eq!(browser.value_of(Board::count()), 5);
+    assert_eq!(browser.value_of(Board::doubled()), 10);
+    assert_eq!(browser.value_of(Board::name()), "five");
+}
+
+#[test]
+fn apply_runs_the_list_patches_a_server_sends() {
+    let page = page(Board::count().set(1));
+    let mut browser = page.simulate();
+    let rows = Board::rows();
+    browser.apply(rows.patch_append(&[row("d", 4)]));
+    assert_eq!(names(&browser.value_of(rows)), ["b", "a", "c", "d"]);
+
+    let mut renamed = row("a", 9);
+    renamed.done = true;
+    browser.apply(rows.patch_upsert(&[renamed.clone(), row("e", 5)], |row| row.at(Row::name())));
+    let after = browser.value_of(rows);
+    assert_eq!(names(&after), ["b", "a", "c", "d", "e"]);
+    assert_eq!(after[1], renamed);
+
+    browser.apply(rows.patch_remove(&["b".to_owned(), "d".to_owned()], |row| row.at(Row::name())));
+    assert_eq!(names(&browser.value_of(rows)), ["a", "c", "e"]);
+}
+
+#[test]
+fn apply_records_the_navigation_a_patch_asks_for() {
+    const NEXT: Route = Route::new("/next");
+    let page = page(Board::count().set(1));
+    let mut browser = page.simulate();
+    let effects = browser.apply(crate::Patches::<Board>::new().navigate(NEXT.url(())));
+    assert_eq!(effects.navigates_to(), Some(&NEXT.url(())));
+}

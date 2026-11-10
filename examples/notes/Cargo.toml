@@ -1,0 +1,36 @@
+[package]
+name = "example-notes"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+axum.workspace = true
+futures.workspace = true
+hypersig.workspace = true
+hypersig_desktop.workspace = true
+serde.workspace = true
+tokio.workspace = true
+tokio-stream = { workspace = true, features = ["sync"] }
+
+[dev-dependencies]
+hypersig_desktop = { workspace = true, features = ["testing"] }
+
+[lints]
+workspace = true
+
+# `cargo packager -p example-notes --release`, from the repository's root,
+# builds the release binary with the command below and packages it under
+# target/release: an .app and a .dmg on macOS, an NSIS installer on Windows,
+# and a .deb, an AppImage, and a pacman package on Linux. The identifier is
+# the one `App::new` names in src/main.rs, which macOS keys the web view's
+# data by.
+[package.metadata.packager]
+product-name = "hypersig notes"
+identifier = "dev.hypersig.example-notes"
+version = "0.1.0"
+before-packaging-command = "cargo build --release -p example-notes"
+binaries = [{ path = "example-notes", main = true }]
+# The AppImage needs a square icon; the path is read from this directory.
+icons = ["icons/icon.png"]

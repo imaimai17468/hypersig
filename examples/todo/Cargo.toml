@@ -16,9 +16,14 @@ test = false
 axum.workspace = true
 futures.workspace = true
 hypersig.workspace = true
+hypersig_desktop = { workspace = true, optional = true }
 serde.workspace = true
 tokio.workspace = true
 tokio-stream = { workspace = true, features = ["sync"] }
+
+[features]
+# Opens the list in a desktop window instead of serving it on port 3001.
+desktop = ["dep:hypersig_desktop"]
 
 [lints]
 workspace = true
