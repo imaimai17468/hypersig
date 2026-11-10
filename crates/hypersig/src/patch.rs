@@ -834,7 +834,6 @@ impl<S: Signals> Patches<S> {
         out
     }
 
-    #[cfg(feature = "axum")]
     pub(crate) fn into_events(self) -> Vec<PatchEvent> {
         self.events
     }
