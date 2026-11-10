@@ -24,6 +24,10 @@ pub enum ErrorKind {
     Window,
     /// A file, the port, or the server failed.
     Io,
+    /// The application is closing, so it opens and changes no window.
+    Closed,
+    /// A check of a smoke run failed.
+    Smoke,
 }
 
 impl Error {
@@ -44,6 +48,20 @@ impl Error {
         Self {
             kind: ErrorKind::AlreadyRunning,
             source: None,
+        }
+    }
+
+    pub(crate) fn closed() -> Self {
+        Self {
+            kind: ErrorKind::Closed,
+            source: None,
+        }
+    }
+
+    pub(crate) fn smoke(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
+        Self {
+            kind: ErrorKind::Smoke,
+            source: Some(why.into()),
         }
     }
 
@@ -81,6 +99,8 @@ impl fmt::Display for Error {
             ErrorKind::Setup => "the application's setup failed",
             ErrorKind::Window => "the window could not be shown",
             ErrorKind::Io => "the application's files or server failed",
+            ErrorKind::Closed => "the application is closing",
+            ErrorKind::Smoke => "the smoke run failed",
         };
         match &self.source {
             Some(source) => write!(f, "{what}: {source}"),

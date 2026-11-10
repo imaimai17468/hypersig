@@ -27,16 +27,32 @@
 //! const APP: App = App::new("dev.example.home");
 //!
 //! fn main() -> Result<(), hypersig_desktop::Error> {
-//!     APP.size(800, 600).run(&INDEX.url(()), async {
+//!     APP.size(800, 600).run(&INDEX.url(()), |_os| async {
 //!         pages(Router::new()).hypersig_runtime()
 //!     })
 //! }
 //! ```
 //!
-//! The server answers only the application's own window. It listens on
+//! Every window shows a page of the same server, so two windows that open a
+//! stream such as a [`StreamAction`](hypersig::StreamAction) fed by one
+//! broadcast channel show the same state, as two browser tabs do. A handler
+//! opens another window with [`Windows::open`], through the [`Os`] that
+//! [`App::run`] gives the setup, and a page's `window.open`, or a link with
+//! `target="_blank"`, opens one too. Closing the last window closes the
+//! application, on macOS as well.
+//!
+//! The windows reach the server over HTTP/1.1, and a web view keeps at most
+//! six connections to one host for all its windows together. A stream holds
+//! its connection open, so with six windows that each hold a stream, a seventh
+//! request waits until one closes; in `WKWebView`, the todo example's sixth
+//! window left the first window's actions unanswered. Until the windows reach
+//! the server without HTTP, an application keeps the streams open across its
+//! windows to five.
+//!
+//! The server answers only the application's own windows. It listens on
 //! `127.0.0.1` alone, refuses a request whose `Host` is not that address, and
-//! refuses one without the cookie the window receives when it opens. The
-//! window does not leave the application's origin.
+//! refuses one without the cookie the first window receives when it opens,
+//! which the others share. No window leaves the application's origin.
 //!
 //! The server listens on the port it listened on the previous time the
 //! application ran, so that the signals a page keeps in the browser with
@@ -59,12 +75,18 @@
 //! because macOS sends the shortcuts for copying, pasting, closing, and
 //! quitting to the menu rather than to the web view.
 //!
-//! # Measuring the start
+//! # Smoke runs
 //!
-//! With `HYPERSIG_DESKTOP_SMOKE` set, the application closes once its first
-//! page has loaded, after writing to standard output how many milliseconds
-//! passed since [`App::run`] was called. It ends with an error when the page
-//! does not load within 10 seconds.
+//! With `HYPERSIG_DESKTOP_SMOKE` set, the application checks that its first
+//! page is one hypersig rendered, writes to standard output how many
+//! milliseconds after [`App::run`] the page was shown, and closes. It ends
+//! with an error when the page is not hypersig's, as when the server refused
+//! the window, or does not load within 10 seconds.
+//!
+//! With `HYPERSIG_DESKTOP_SMOKE_SCRIPT` set to the path of a JavaScript file,
+//! the run then evaluates that file in the first page and closes once it sets
+//! `window.hypersigSmoke` to `"pass"`. Anything else it sets, or nothing
+//! within 20 seconds, ends the run with an error.
 
 mod app;
 mod error;
@@ -72,9 +94,12 @@ mod guard;
 mod instance;
 #[cfg(target_os = "macos")]
 mod menu;
+mod os;
 mod port;
 mod run;
+mod smoke;
 mod window;
 
 pub use app::{App, IntoRouter};
 pub use error::{Error, ErrorKind};
+pub use os::{Os, Window, Windows};

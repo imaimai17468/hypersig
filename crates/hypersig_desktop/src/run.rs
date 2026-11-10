@@ -1,87 +1,98 @@
-//! Starting the server and the window side by side, and stopping both.
+//! Starting the server and the windows side by side, and stopping both.
 
-use std::env;
+use std::collections::HashMap;
 use std::fs;
-use std::io;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use hypersig::Url;
 use tao::event::{Event as TaoEvent, WindowEvent};
-use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy};
+use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget};
 use tao::platform::run_return::EventLoopExtRunReturn as _;
-use tao::window::Window;
+use tao::window::{Window, WindowId};
 use tokio::net::TcpListener;
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
-use wry::WebView;
+use wry::{WebContext, WebView};
 
 use crate::app::{App, IntoRouter};
 use crate::error::Error;
 use crate::guard::{self, Guard};
+use crate::os::Os;
+use crate::smoke::Smoke;
 use crate::{instance, port, window};
 
 /// How long the server is given to finish the requests it is answering
-/// once the window closes, the same as `hypersig::serve` gives.
+/// once the last window closes, the same as `hypersig::serve` gives.
 const GRACE: Duration = Duration::from_secs(5);
 
-/// How long the hidden window waits for its first page before it is shown anyway.
+/// How long a hidden window waits for its page before it is shown anyway.
 const FIRST_LOAD: Duration = Duration::from_secs(10);
 
-/// How long a closing window waits for its page to leave before the server stops.
+/// How long a closing window waits for its page to leave before it goes.
 const LEAVE: Duration = Duration::from_secs(1);
 
-/// The environment variable that makes the application close once its first page loads.
-const SMOKE: &str = "HYPERSIG_DESKTOP_SMOKE";
-
-/// Whether the page is one hypersig rendered, which a refused request is not.
-const RENDERED: &str = "document.body !== null && document.body.dataset.hsSignals !== undefined";
-
-/// What the server's tasks and the web view tell the event loop.
+/// What the server's tasks, the web views, and [`Os`] tell the event loop.
 #[derive(Debug)]
 pub(crate) enum Event {
     /// The router is built and the server is listening.
     Ready,
     /// The setup failed, or the server stopped on an error.
     Failed(Error),
-    /// The page's title changed.
-    Title(String),
-    /// A page of the application finished loading.
-    Loaded,
-    /// Whether the first page is one hypersig rendered, asked in smoke mode.
-    Rendered(bool),
-    /// The first page has not finished loading in [`FIRST_LOAD`].
-    Slow,
+    /// The title of a window's page changed.
+    Title(WindowId, String),
+    /// A page of the application finished loading in a window.
+    Loaded(WindowId),
+    /// A window's page has not finished loading in [`FIRST_LOAD`].
+    Slow(WindowId),
+    /// A page asks to be opened in a new window, answered on `answer` with
+    /// the window, when [`Os`] asked.
+    Open {
+        url: String,
+        answer: Option<oneshot::Sender<Result<WindowId, Error>>>,
+    },
+    /// [`Os`] closes a window.
+    Close(WindowId),
+    /// [`Os`] brings a window to the front.
+    Focus(WindowId),
+    /// A closing window's page has left, or [`LEAVE`] has passed.
+    Left(WindowId),
     /// Ctrl-C was pressed in the terminal, or Quit was chosen in the menu.
     Quit,
-    /// The closing window's page has left, or [`LEAVE`] has passed.
-    Left,
+    /// The first page's answer to what a smoke run asked, or `None` when
+    /// it is time to ask again.
+    Smoke(Option<String>),
 }
 
 impl App {
     /// Serves the router `setup` builds and shows `first_page` in a window.
     ///
-    /// The window and the web view are made while `setup` runs, on a Tokio
-    /// runtime this method starts, and the window is shown once the page has
-    /// loaded. Closing the window, or Ctrl-C in the terminal, hides it and
-    /// stops the server, which is given five seconds to finish the requests
-    /// it is answering. The method returns once the server has stopped.
+    /// `setup` receives the [`Os`] the router's handlers open windows and
+    /// reach the operating system through, and returns the future that
+    /// builds the router. That future runs on a Tokio runtime this method
+    /// starts, while the first window and its web view are made, and the
+    /// window is shown once its page has loaded.
     ///
-    /// The window and its event loop take the thread that calls this, which
-    /// on macOS must be the main thread, so `main` is not
+    /// Closing the last window, Quit in the menu, or Ctrl-C in the terminal
+    /// stops the server, which is given five seconds to finish the requests
+    /// it is answering, and the method returns once it has stopped.
+    ///
+    /// The windows and their event loop take the thread that calls this,
+    /// which on macOS must be the main thread, so `main` is not
     /// `#[tokio::main]`.
     ///
     /// # Errors
     ///
     /// Fails when the application's directory cannot be made, when another
-    /// copy of the application runs, when `setup` returns an error, and when
-    /// the window, the web view, or the server fails.
+    /// copy of the application runs, when the setup returns an error, and
+    /// when a window, a web view, or the server fails.
     ///
     /// # Panics
     ///
     /// Panics on macOS when it is not called on the main thread.
-    pub fn run<F>(self, first_page: &Url, setup: F) -> Result<(), Error>
+    pub fn run<S, F>(self, first_page: &Url, setup: S) -> Result<(), Error>
     where
+        S: FnOnce(Os) -> F,
         F: Future<Output: IntoRouter> + Send + 'static,
     {
         let started = Instant::now();
@@ -94,44 +105,41 @@ impl App {
             .build()?;
         let listener = runtime.block_on(port::listen(&own))?;
         let port = listener.local_addr()?.port();
-        let origin = format!("http://127.0.0.1:{port}/");
         let (guard, start) = Guard::new(port, first_page.as_str())?;
 
         let mut event_loop = EventLoopBuilder::<Event>::with_user_event().build();
         let proxy = event_loop.create_proxy();
         let (stop, stopped) = oneshot::channel();
+        let setup = setup(Os::new(proxy.clone()));
         let server = runtime.spawn(serve(listener, guard, setup, proxy.clone(), stopped));
         runtime.spawn(quit_on_ctrl_c(proxy.clone()));
 
         #[cfg(target_os = "macos")]
         let _menu = crate::menu::install(proxy.clone())?;
-        let window = window::window(&self, &event_loop)?;
-        let mut context = window::context(own.join("webview"));
-        let web_view = window::web_view(&window, &mut context, origin, &proxy)?;
-
         let mut run = Lifecycle {
-            window: &window,
-            web_view: &web_view,
+            app: self,
             proxy: &proxy,
             runtime: &runtime,
-            start: &start,
-            started,
-            smoke: env::var_os(SMOKE).is_some(),
-            shown: None,
-            leaving: false,
+            context: window::context(own.join("webview")),
+            base: format!("http://127.0.0.1:{port}"),
+            windows: HashMap::new(),
+            first: None,
+            smoke: Smoke::from_env(started)?,
+            quitting: false,
             failure: None,
         };
-        event_loop.run_return(|event, _, flow| {
-            *flow = if run.handle(event) {
+        let first = run.open(&event_loop, None)?;
+        run.first = Some((first, start));
+        event_loop.run_return(|event, target, flow| {
+            *flow = if run.handle(event, target) {
                 ControlFlow::Exit
             } else {
                 ControlFlow::Wait
             };
         });
-        let failure = run.failure;
+        let failure = run.failure.take();
+        drop(run);
 
-        drop(web_view);
-        drop(window);
         let _ = stop.send(());
         runtime.block_on(async {
             let _ = tokio::time::timeout(GRACE, server).await;
@@ -142,111 +150,224 @@ impl App {
     }
 }
 
-/// The window, its web view, and how far the run has come.
+/// A window, its web view, and how far its page has come.
+struct Open {
+    window: Window,
+    web_view: WebView,
+    shown: bool,
+    leaving: bool,
+}
+
+/// The windows and how far the run has come.
 struct Lifecycle<'a> {
-    window: &'a Window,
-    web_view: &'a WebView,
+    app: App,
     proxy: &'a EventLoopProxy<Event>,
     runtime: &'a Runtime,
-    /// The URL that trades the start token for the session cookie.
-    start: &'a str,
-    started: Instant,
-    smoke: bool,
-    /// How long after the start the window was shown.
-    shown: Option<Duration>,
-    leaving: bool,
+    /// The web view data every window shares, cookies included.
+    context: WebContext,
+    /// `http://127.0.0.1:<port>`, which a page's path is joined to.
+    base: String,
+    windows: HashMap<WindowId, Open>,
+    /// The first window, and the URL it opens once the server is ready,
+    /// which trades the start token for the session cookie.
+    first: Option<(WindowId, String)>,
+    smoke: Option<Smoke>,
+    quitting: bool,
     failure: Option<Error>,
 }
 
 impl Lifecycle<'_> {
     /// Answers one event, and returns whether the event loop is done.
-    fn handle(&mut self, event: TaoEvent<'_, Event>) -> bool {
+    fn handle(
+        &mut self,
+        event: TaoEvent<'_, Event>,
+        target: &EventLoopWindowTarget<Event>,
+    ) -> bool {
         match event {
-            TaoEvent::UserEvent(Event::Ready) => {
-                if let Err(error) = self.web_view.load_url(self.start) {
-                    self.fail(Error::window(error));
-                    return true;
-                }
-            }
+            TaoEvent::UserEvent(Event::Ready) => self.ready(),
             TaoEvent::UserEvent(Event::Failed(error)) => self.fail(error),
-            TaoEvent::UserEvent(Event::Title(title)) => self.window.set_title(&title),
-            TaoEvent::UserEvent(Event::Loaded) if self.shown.is_none() && !self.leaving => {
-                self.show();
-                if self.smoke {
-                    self.ask_rendered();
+            TaoEvent::UserEvent(Event::Title(id, title)) => {
+                if let Some(open) = self.windows.get(&id) {
+                    open.window.set_title(&title);
                 }
             }
-            TaoEvent::UserEvent(Event::Rendered(true)) => {
-                report_start(self.shown.unwrap_or_default());
-                self.leave();
-            }
-            TaoEvent::UserEvent(Event::Rendered(false)) => self.fail(Error::window(
-                "the first page is not one hypersig rendered, as when the server refused the window",
-            )),
-            TaoEvent::UserEvent(Event::Slow) if self.shown.is_none() && !self.leaving => {
-                tracing::error!(
-                    "the first page did not finish loading in {} seconds, so the window is shown without it",
-                    FIRST_LOAD.as_secs()
-                );
-                self.show();
-                if self.smoke {
-                    self.fail(Error::window(io::Error::from(io::ErrorKind::TimedOut)));
+            TaoEvent::UserEvent(Event::Loaded(id)) => self.loaded(id),
+            TaoEvent::UserEvent(Event::Slow(id)) => self.slow(id),
+            TaoEvent::UserEvent(Event::Open { url, answer }) => {
+                let opened = self.open(target, Some(&url));
+                if let Err(error) = &opened {
+                    tracing::error!(%error, %url, "a window could not be opened");
+                }
+                if let Some(answer) = answer {
+                    let _ = answer.send(opened);
                 }
             }
-            TaoEvent::UserEvent(Event::Quit)
+            TaoEvent::UserEvent(Event::Close(id))
             | TaoEvent::WindowEvent {
+                window_id: id,
                 event: WindowEvent::CloseRequested,
                 ..
-            } => self.leave(),
-            TaoEvent::UserEvent(Event::Left) => return self.leaving,
+            } => self.leave(id),
+            TaoEvent::UserEvent(Event::Focus(id)) => {
+                if let Some(open) = self.windows.get(&id) {
+                    open.window.set_focus();
+                }
+            }
+            TaoEvent::UserEvent(Event::Left(id)) => {
+                if self.windows.get(&id).is_some_and(|open| open.leaving) {
+                    self.windows.remove(&id);
+                }
+                return self.windows.is_empty();
+            }
+            TaoEvent::UserEvent(Event::Quit) => self.quit(),
+            TaoEvent::UserEvent(Event::Smoke(answer)) => self.smoke(answer.as_deref()),
             _ => {}
         }
         false
     }
 
-    fn show(&mut self) {
-        self.shown = Some(self.started.elapsed());
-        self.window.set_visible(true);
-        self.window.set_focus();
-    }
-
-    /// Asks the page whether hypersig rendered it, the answer arriving as
-    /// [`Event::Rendered`].
-    fn ask_rendered(&mut self) {
-        let rendered = self.proxy.clone();
-        let asked = self
-            .web_view
-            .evaluate_script_with_callback(RENDERED, move |answer| {
-                let _ = rendered.send_event(Event::Rendered(answer == "true"));
-            });
-        if let Err(error) = asked {
+    /// Opens the start URL in the first window.
+    fn ready(&mut self) {
+        let Some((id, start)) = &self.first else {
+            return;
+        };
+        let loaded = self
+            .windows
+            .get(id)
+            .map(|open| open.web_view.load_url(start));
+        if let Some(Err(error)) = loaded {
             self.fail(Error::window(error));
         }
     }
 
-    /// Keeps the first failure and closes the window.
-    fn fail(&mut self, error: Error) {
-        self.failure.get_or_insert(error);
-        self.leave();
+    /// Makes a hidden window with its web view, which loads `url`, a path of
+    /// the application or a URL of its origin, when there is one.
+    fn open(
+        &mut self,
+        target: &EventLoopWindowTarget<Event>,
+        url: Option<&str>,
+    ) -> Result<WindowId, Error> {
+        if self.quitting {
+            return Err(Error::closed());
+        }
+        let window = window::window(&self.app, target)?;
+        let origin = format!("{}/", self.base);
+        let web_view = window::web_view(&window, &mut self.context, &origin, self.proxy)?;
+        if let Some(url) = url {
+            let absolute = if url.starts_with('/') {
+                format!("{}{url}", self.base)
+            } else {
+                url.to_owned()
+            };
+            web_view.load_url(&absolute).map_err(Error::window)?;
+        }
+        let id = window.id();
+        let slow = self.proxy.clone();
+        self.runtime.spawn(async move {
+            tokio::time::sleep(FIRST_LOAD).await;
+            let _ = slow.send_event(Event::Slow(id));
+        });
+        self.windows.insert(
+            id,
+            Open {
+                window,
+                web_view,
+                shown: false,
+                leaving: false,
+            },
+        );
+        Ok(id)
     }
 
-    /// Hides the window and sends its page to `about:blank`, which ends the
-    /// page's streams from the web view's side, so the server has no open
-    /// stream to wait for when it is asked to stop. The event loop ends on
-    /// [`Event::Left`].
-    fn leave(&mut self) {
-        if self.leaving {
+    fn loaded(&mut self, id: WindowId) {
+        let Some(open) = self.windows.get_mut(&id) else {
+            return;
+        };
+        if open.shown || open.leaving {
             return;
         }
-        self.leaving = true;
-        self.window.set_visible(false);
-        if let Err(error) = self.web_view.load_url("about:blank") {
-            self.failure.get_or_insert(Error::window(error));
+        open.shown = true;
+        open.window.set_visible(true);
+        open.window.set_focus();
+        if self.first.as_ref().is_some_and(|(first, _)| *first == id) {
+            self.smoke(None);
+        } else if let Some(smoke) = &self.smoke
+            && let Err(error) = smoke.other_window(&open.web_view)
+        {
+            self.fail(error);
+        }
+    }
+
+    fn slow(&mut self, id: WindowId) {
+        let Some(open) = self.windows.get_mut(&id) else {
+            return;
+        };
+        if open.shown || open.leaving {
+            return;
+        }
+        tracing::error!(
+            "a page did not finish loading in {} seconds, so its window is shown without it",
+            FIRST_LOAD.as_secs()
+        );
+        open.shown = true;
+        open.window.set_visible(true);
+        if self.smoke.is_some() {
+            self.fail(Error::smoke("a page did not finish loading in time"));
+        }
+    }
+
+    /// Takes the smoke run's next step in the first window, if this is one.
+    fn smoke(&mut self, answer: Option<&str>) {
+        let Some(smoke) = &mut self.smoke else {
+            return;
+        };
+        let Some(open) = self.first.as_ref().and_then(|(id, _)| self.windows.get(id)) else {
+            return;
+        };
+        if open.leaving {
+            return;
+        }
+        match smoke.step(answer, &open.web_view, self.proxy, self.runtime) {
+            Ok(false) => {}
+            Ok(true) => self.quit(),
+            Err(error) => self.fail(error),
+        }
+    }
+
+    /// Keeps the first failure and closes every window.
+    fn fail(&mut self, error: Error) {
+        self.failure.get_or_insert(error);
+        self.quit();
+    }
+
+    fn quit(&mut self) {
+        self.quitting = true;
+        let ids: Vec<WindowId> = self.windows.keys().copied().collect();
+        for id in ids {
+            self.leave(id);
+        }
+    }
+
+    /// Hides the window `id` and sends its page to `about:blank`, which ends
+    /// the page's streams from the web view's side, so the server has no
+    /// open stream to wait for when it is asked to stop. The window goes on
+    /// [`Event::Left`].
+    fn leave(&mut self, id: WindowId) {
+        let Some(open) = self.windows.get_mut(&id) else {
+            return;
+        };
+        if open.leaving {
+            return;
+        }
+        open.leaving = true;
+        open.window.set_visible(false);
+        if let Err(error) = open.web_view.load_url("about:blank") {
+            tracing::error!(%error, "a closing window could not leave its page");
         }
         let left = self.proxy.clone();
         self.runtime.spawn(async move {
             tokio::time::sleep(LEAVE).await;
-            let _ = left.send_event(Event::Left);
+            let _ = left.send_event(Event::Left(id));
         });
     }
 }
@@ -271,11 +392,6 @@ async fn serve<F>(
     };
     let app = guard::wrap(router, guard);
     let _ = proxy.send_event(Event::Ready);
-    let slow = proxy.clone();
-    tokio::spawn(async move {
-        tokio::time::sleep(FIRST_LOAD).await;
-        let _ = slow.send_event(Event::Slow);
-    });
     let served = axum::serve(listener, app)
         .with_graceful_shutdown(async {
             let _ = stopped.await;
@@ -290,15 +406,4 @@ async fn quit_on_ctrl_c(proxy: EventLoopProxy<Event>) {
     if tokio::signal::ctrl_c().await.is_ok() {
         let _ = proxy.send_event(Event::Quit);
     }
-}
-
-#[expect(
-    clippy::print_stdout,
-    reason = "the measurement is read from standard output by whatever started the application"
-)]
-fn report_start(elapsed: Duration) {
-    println!(
-        "hypersig_desktop: first page shown {} ms after run",
-        elapsed.as_millis()
-    );
 }

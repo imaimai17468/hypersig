@@ -143,5 +143,6 @@ async fn main() -> std::io::Result<()> {
 #[cfg(feature = "desktop")]
 fn main() -> Result<(), hypersig_desktop::Error> {
     const APP: hypersig_desktop::App = hypersig_desktop::App::new("dev.hypersig.example-counter");
-    APP.size(560, 480).run(&INDEX.url(()), async { app() })
+    APP.size(560, 480)
+        .run(&INDEX.url(()), |_os| async { app() })
 }
