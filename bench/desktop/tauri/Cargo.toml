@@ -1,0 +1,17 @@
+[package]
+name = "bench-desktop-tauri"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+tauri = "=2.12.5"
+
+[build-dependencies]
+tauri-build = "=2.7.4"
+
+[profile.release]
+strip = false
+
+# Not a member of the repository's workspace, which does not build Tauri.
+[workspace]
