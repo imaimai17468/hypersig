@@ -34,6 +34,9 @@ const LEAVE: Duration = Duration::from_secs(1);
 /// The environment variable that makes the application close once its first page loads.
 const SMOKE: &str = "HYPERSIG_DESKTOP_SMOKE";
 
+/// Whether the page is one hypersig rendered, which a refused request is not.
+const RENDERED: &str = "document.body !== null && document.body.dataset.hsSignals !== undefined";
+
 /// What the server's tasks and the web view tell the event loop.
 #[derive(Debug)]
 pub(crate) enum Event {
@@ -45,6 +48,8 @@ pub(crate) enum Event {
     Title(String),
     /// A page of the application finished loading.
     Loaded,
+    /// Whether the first page is one hypersig rendered, asked in smoke mode.
+    Rendered(bool),
     /// The first page has not finished loading in [`FIRST_LOAD`].
     Slow,
     /// Ctrl-C was pressed in the terminal, or Quit was chosen in the menu.
@@ -168,10 +173,16 @@ impl Lifecycle<'_> {
             TaoEvent::UserEvent(Event::Loaded) if self.shown.is_none() && !self.leaving => {
                 self.show();
                 if self.smoke {
-                    report_start(self.shown.unwrap_or_default());
-                    self.leave();
+                    self.ask_rendered();
                 }
             }
+            TaoEvent::UserEvent(Event::Rendered(true)) => {
+                report_start(self.shown.unwrap_or_default());
+                self.leave();
+            }
+            TaoEvent::UserEvent(Event::Rendered(false)) => self.fail(Error::window(
+                "the first page is not one hypersig rendered, as when the server refused the window",
+            )),
             TaoEvent::UserEvent(Event::Slow) if self.shown.is_none() && !self.leaving => {
                 tracing::error!(
                     "the first page did not finish loading in {} seconds, so the window is shown without it",
@@ -197,6 +208,20 @@ impl Lifecycle<'_> {
         self.shown = Some(self.started.elapsed());
         self.window.set_visible(true);
         self.window.set_focus();
+    }
+
+    /// Asks the page whether hypersig rendered it, the answer arriving as
+    /// [`Event::Rendered`].
+    fn ask_rendered(&mut self) {
+        let rendered = self.proxy.clone();
+        let asked = self
+            .web_view
+            .evaluate_script_with_callback(RENDERED, move |answer| {
+                let _ = rendered.send_event(Event::Rendered(answer == "true"));
+            });
+        if let Err(error) = asked {
+            self.fail(Error::window(error));
+        }
     }
 
     /// Keeps the first failure and closes the window.
