@@ -394,6 +394,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             },
                         ),
                         (
+                            "Simulation::apply",
+                            "testing/struct.Simulation.html#method.apply",
+                            L {
+                                en: "Applies a batch of patches the server answered with.",
+                                ja: "サーバーが応答で返した patch をまとめて適用します。",
+                            },
+                        ),
+                        (
                             "Effects::calls",
                             "testing/struct.Effects.html#method.calls",
                             L {
