@@ -47,6 +47,10 @@
 //! A second copy of the application started while the first runs stops with
 //! [`ErrorKind::AlreadyRunning`].
 //!
+//! On macOS the menu bar holds the application, Edit, and Window menus,
+//! because macOS sends the shortcuts for copying, pasting, closing, and
+//! quitting to the menu rather than to the web view.
+//!
 //! # Measuring the start
 //!
 //! With `HYPERSIG_DESKTOP_SMOKE` set, the application closes once its first
@@ -58,6 +62,8 @@ mod app;
 mod error;
 mod guard;
 mod instance;
+#[cfg(target_os = "macos")]
+mod menu;
 mod port;
 mod run;
 mod window;

@@ -91,6 +91,8 @@ impl App {
         let server = runtime.spawn(serve(listener, guard, setup, proxy.clone(), stopped));
         runtime.spawn(quit_on_ctrl_c(proxy.clone()));
 
+        #[cfg(target_os = "macos")]
+        let _menu = crate::menu::install(proxy.clone())?;
         let window = window::window(&self, &event_loop)?;
         let mut context = window::context(own.join("webview"));
         let web_view = window::web_view(&window, &mut context, origin, &proxy)?;
