@@ -2501,6 +2501,7 @@ dependencies = [
  "tokio",
  "tower",
  "tracing",
+ "webkit2gtk",
  "wry",
 ]
 

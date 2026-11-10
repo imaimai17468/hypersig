@@ -41,6 +41,9 @@ tokio = { workspace = true, features = ["signal"] }
 tracing.workspace = true
 wry.workspace = true
 
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk.workspace = true
+
 [target.'cfg(target_os = "macos")'.dependencies]
 muda.workspace = true
 

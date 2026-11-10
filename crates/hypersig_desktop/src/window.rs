@@ -111,7 +111,15 @@ pub(crate) fn web_view(
                 "the window has no box for the web view to go in",
             ));
         };
-        builder.build_gtk(vbox)
+        builder.build_gtk(vbox).inspect(|web_view| {
+            use webkit2gtk::{SettingsExt as _, WebViewExt as _};
+            use wry::WebViewExtUnix as _;
+            // WebKitGTK drops a `window.open` that no click started before
+            // it asks the new-window handler, which WKWebView and WebView2 ask.
+            if let Some(settings) = web_view.webview().settings() {
+                settings.set_javascript_can_open_windows_automatically(true);
+            }
+        })
     };
     web_view.map_err(Error::window)
 }
