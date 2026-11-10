@@ -47,9 +47,10 @@
 //! A second copy of the application started while the first runs stops with
 //! [`ErrorKind::AlreadyRunning`].
 //!
-//! `WebKit`, which shows the window on macOS and Linux, does not keep a
-//! `Secure` cookie from `http://127.0.0.1`. A session layer that marks its
-//! cookie `Secure`, as `tower-sessions` does by default, signs no one in
+//! `WKWebView`, which shows the window on macOS, does not send a `Secure`
+//! cookie to `http://127.0.0.1`, and neither does Playwright's build of
+//! `WebKit`, the engine of `WebKitGTK` on Linux. A session layer that marks
+//! its cookie `Secure`, as `tower-sessions` does by default, signs no one in
 //! inside the window, so the desktop build of such an application sets its
 //! cookie without `Secure`. The checks above keep other programs off the
 //! server.

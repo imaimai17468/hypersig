@@ -82,8 +82,7 @@ impl App {
     }
 }
 
-/// The value of the future given to [`App::run`]: a router, or the error that
-/// kept the application from building one.
+/// What the future given to [`App::run`] returns: a router, or why there is none.
 pub trait IntoRouter {
     /// The router to serve, or why there is none.
     ///
