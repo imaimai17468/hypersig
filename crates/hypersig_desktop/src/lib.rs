@@ -85,6 +85,11 @@
 //! cookie without `Secure`. The checks above keep other programs off the
 //! server.
 //!
+//! On Linux, `WebKitGTK` 2.52 does not always hand a page's stream the events
+//! after its first, though the server sends them
+//! ([#201](https://github.com/imaimai17468/hypersig/issues/201)): pages and
+//! actions work there, and a page that relies on a stream may not update.
+//!
 //! On macOS the menu bar holds the application, Edit, and Window menus,
 //! because macOS sends the shortcuts for copying, pasting, closing, and
 //! quitting to the menu rather than to the web view.

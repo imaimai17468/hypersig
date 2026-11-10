@@ -188,6 +188,10 @@ fn limits(site: Site) -> Part {
                     ja: "WKWebView は `http://127.0.0.1` に `Secure` の cookie を送りません。セッションを使うアプリは、デスクトップ版では cookie から `Secure` を外します。",
                 },
                 L {
+                    en: "On Linux, WebKitGTK 2.52 does not always hand a page's stream the events after its first, though the server sends them ([#201](https://github.com/imaimai17468/hypersig/issues/201)). Pages and actions work there, and a page that relies on a stream may not update.",
+                    ja: "Linux では、サーバーがイベントを送っても、WebKitGTK 2.52 がページのストリームに 2 つめ以降を渡さないことがあります（[#201](https://github.com/imaimai17468/hypersig/issues/201)）。ページとアクションは動きますが、ストリームに頼るページは更新されないことがあります。",
+                },
+                L {
                     en: "Windows needs the WebView2 Runtime, which Windows 11 includes, and Linux needs WebKitGTK 4.1.",
                     ja: "Windows では WebView2 Runtime が必要です（Windows 11 には含まれています）。Linux では WebKitGTK 4.1 が必要です。",
                 },
