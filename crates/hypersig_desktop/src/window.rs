@@ -70,11 +70,18 @@ pub(crate) fn web_view(
         });
     #[cfg(not(target_os = "linux"))]
     let web_view = builder.build(window);
+    // tao puts a box in the GTK window, which holds one child, so the web
+    // view goes in that box.
     #[cfg(target_os = "linux")]
     let web_view = {
         use tao::platform::unix::WindowExtUnix as _;
         use wry::WebViewBuilderExtUnix as _;
-        builder.build_gtk(window.gtk_window())
+        let Some(vbox) = window.default_vbox() else {
+            return Err(Error::window(
+                "the window has no box for the web view to go in",
+            ));
+        };
+        builder.build_gtk(vbox)
     };
     web_view.map_err(Error::window)
 }
