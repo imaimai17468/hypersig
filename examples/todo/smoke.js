@@ -4,6 +4,10 @@
 // second window at `/#second`, which adds another; the first passes once
 // that one reaches it too.
 (() => {
+  // The runtime dispatches `hs-error` for a call that failed, which the
+  // verdict names when the run fails.
+  const errors = [];
+  document.body.addEventListener("hs-error", (event) => errors.push(`${event.detail.status} ${event.detail.message}`));
   const count = () => document.querySelectorAll("li").length;
   const add = (title) => {
     const input = document.querySelector("form input");
@@ -15,7 +19,7 @@
     const deadline = Date.now() + 10_000;
     const check = () => {
       if (done()) then();
-      else if (Date.now() > deadline) window.hypersigSmoke = failure;
+      else if (Date.now() > deadline) window.hypersigSmoke = `${failure} (${count()} todos shown; errors: ${errors.join(" | ") || "none"})`;
       else setTimeout(check, 100);
     };
     check();
