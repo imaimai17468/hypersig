@@ -4,7 +4,12 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::io;
 
-/// Why [`App::run`](crate::App::run) or [`App::data_dir`](crate::App::data_dir) failed.
+/// Why an operation of this crate failed.
+///
+/// [`App::run`](crate::App::run), [`App::data_dir`](crate::App::data_dir), and
+/// the methods of [`Os`](crate::Os), [`Windows`](crate::Windows),
+/// [`Window`](crate::Window), [`Clipboard`](crate::Clipboard), and the
+/// updater return it.
 pub struct Error {
     kind: ErrorKind,
     source: Option<Box<dyn StdError + Send + Sync>>,
@@ -36,6 +41,10 @@ pub enum ErrorKind {
     NotExternal,
     /// Finding, downloading, verifying, or installing a new version failed.
     Update,
+    /// [`App::run`](crate::App::run) was called inside a Tokio runtime.
+    ///
+    /// `run` starts a runtime of its own, so `main` is not `#[tokio::main]`.
+    InRuntime,
 }
 
 impl Error {
@@ -55,6 +64,13 @@ impl Error {
     pub(crate) fn already_running() -> Self {
         Self {
             kind: ErrorKind::AlreadyRunning,
+            source: None,
+        }
+    }
+
+    pub(crate) fn in_runtime() -> Self {
+        Self {
+            kind: ErrorKind::InRuntime,
             source: None,
         }
     }
@@ -130,6 +146,9 @@ impl fmt::Display for Error {
             ErrorKind::Window => "the window could not be shown",
             ErrorKind::Io => "the application's files or server failed",
             ErrorKind::Closed => "the application is closing",
+            ErrorKind::InRuntime => {
+                "`App::run` was called inside a Tokio runtime; call it from a `main` without `#[tokio::main]`"
+            }
             ErrorKind::Smoke => "the smoke run failed",
             ErrorKind::Clipboard => "the clipboard could not be used",
             ErrorKind::Update => "the new version could not be found or installed",
