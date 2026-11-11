@@ -131,8 +131,8 @@ fn size(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The arguments are `u32`. Nothing checks that `size` is at least `min_size`; the system decides how such a window opens.",
-                ja: "引数の型は `u32` です。`size` が `min_size` 以上かどうかは検査しません。そのようなウィンドウがどの大きさで開くかは OS が決めます。",
+                en: "The arguments are `u32`. A `size` narrower or shorter than `min_size` panics, which in a `const` such as `APP` is a compile error.",
+                ja: "引数の型は `u32` です。`size` の幅か高さが `min_size` より小さいとパニックします。`APP` のような `const` の中では、コンパイルエラーになります。",
             },
         ),
     ])

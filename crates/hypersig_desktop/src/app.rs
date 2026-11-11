@@ -48,17 +48,46 @@ impl App {
     }
 
     /// Opens the window `width` by `height` logical pixels large.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the size is narrower or shorter than
+    /// [`min_size`](Self::min_size). In a `const`, that is a compile error.
+    ///
+    /// ```compile_fail,E0080
+    /// use hypersig_desktop::App;
+    ///
+    /// const APP: App = App::new("dev.example.notes").min_size(800, 600).size(640, 480);
+    /// # let _ = APP;
+    /// ```
     #[must_use]
     pub const fn size(mut self, width: u32, height: u32) -> Self {
         self.size = (width, height);
+        self.check_sizes();
         self
     }
 
     /// Keeps the window at least `width` by `height` logical pixels large.
+    ///
+    /// # Panics
+    ///
+    /// Panics when [`size`](Self::size) is narrower or shorter than this. In
+    /// a `const`, that is a compile error.
     #[must_use]
     pub const fn min_size(mut self, width: u32, height: u32) -> Self {
         self.min_size = Some((width, height));
+        self.check_sizes();
         self
+    }
+
+    /// Checks that the window opens no smaller than it may become.
+    const fn check_sizes(&self) {
+        if let Some((width, height)) = self.min_size {
+            assert!(
+                self.size.0 >= width && self.size.1 >= height,
+                "the window's `size` is at least its `min_size` in both width and height"
+            );
+        }
     }
 
     /// Whether the person can resize the window, which they can by default.
@@ -173,7 +202,7 @@ fn absolute_var(name: &str) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::is_identifier;
+    use super::{App, is_identifier};
 
     #[test]
     fn a_reverse_domain_name_is_an_identifier() {
@@ -195,5 +224,21 @@ mod tests {
         ] {
             assert!(!is_identifier(id), "{id}");
         }
+    }
+
+    #[test]
+    fn a_size_at_least_the_minimum_is_kept() {
+        let app = App::new("dev.example.notes")
+            .min_size(400, 300)
+            .size(400, 500);
+        assert_eq!((app.size, app.min_size), ((400, 500), Some((400, 300))));
+    }
+
+    #[test]
+    #[should_panic(expected = "at least its `min_size`")]
+    fn a_minimum_wider_than_the_size_panics() {
+        let _ = App::new("dev.example.notes")
+            .size(640, 480)
+            .min_size(800, 300);
     }
 }
