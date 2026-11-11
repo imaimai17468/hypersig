@@ -100,8 +100,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "The new version runs once the application starts again. On Windows, `install` starts the NSIS installer and ends the process at once, so it does not return and the patch after it never reaches the page. On macOS the `.app` bundle, and on Linux the AppImage, are replaced on disk, and `install` returns while the application keeps running. In cargo-packager-updater 0.2.3's source, a `.app` in a folder the person cannot write to is moved into place after macOS asks for an administrator's password.",
-                ja: "新しいバージョンはアプリを次に起動したときから動きます。Windows では、`install` が NSIS のインストーラーを起動してすぐにプロセスを終了します。`install` は戻らず、そのあとの patch はページに届きません。macOS では `.app` バンドルが、Linux では AppImage がディスク上で置き換わり、`install` が戻ったあともアプリは動き続けます。cargo-packager-updater 0.2.3 のソースでは、利用者が書き込めないフォルダにある `.app` は、macOS が管理者のパスワードを求めたあとで置き換えられます。",
+                en: "The new version runs once the application starts again. On Windows, `install` starts the NSIS installer and ends the process at once, so it does not return and the patch after it never reaches the page. The exit skips the shutdown of `App::run`: requests in progress get no time to finish, and the window's `localStorage` is not waited for. On macOS the `.app` bundle, and on Linux the AppImage, are replaced on disk, and `install` returns while the application keeps running. In cargo-packager-updater 0.2.3's source, a `.app` in a folder the person cannot write to is moved into place after macOS asks for an administrator's password.",
+                ja: "新しいバージョンはアプリを次に起動したときから動きます。Windows では、`install` が NSIS のインストーラーを起動してすぐにプロセスを終了します。`install` は戻らず、そのあとの patch はページに届きません。このようにプロセスが終わると `App::run` の終了処理は実行されないので、処理中のリクエストが終わるのも、ウィンドウの `localStorage` がディスクに書き込まれるのも待ちません。macOS では `.app` バンドルが、Linux では AppImage がディスク上で置き換わり、`install` が戻ったあともアプリは動き続けます。cargo-packager-updater 0.2.3 のソースでは、利用者が書き込めないフォルダにある `.app` は、macOS が管理者のパスワードを求めたあとで置き換えられます。",
             },
         ),
         note(

@@ -164,8 +164,12 @@ impl Downloaded {
     ///
     /// The new version runs once the application starts again.
     ///
-    /// On Windows the installer takes over and the application exits; on
-    /// macOS the `.app` bundle and on Linux the `AppImage` are replaced.
+    /// On Windows it does not return: cargo-packager-updater 0.2.3 starts
+    /// the installer and ends the process with `std::process::exit(0)`.
+    /// That skips the shutdown of [`App::run`](crate::App::run), so
+    /// requests in progress get no time to finish and the window's
+    /// `localStorage` is not waited for. On macOS the `.app` bundle and on
+    /// Linux the `AppImage` are replaced, and the application keeps running.
     ///
     /// # Errors
     ///
