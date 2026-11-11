@@ -10,6 +10,7 @@
 //! `window.hypersigSmoke` to `"pass"`, or to anything else to fail.
 
 use std::env;
+use std::ffi::OsString;
 use std::fs;
 use std::time::{Duration, Instant};
 
@@ -61,7 +62,9 @@ impl Smoke {
         if cfg!(not(feature = "smoke")) {
             return Ok(None);
         }
-        let script = env::var_os(SCRIPT).map(fs::read_to_string).transpose()?;
+        let script = path(env::var_os(SCRIPT))
+            .map(fs::read_to_string)
+            .transpose()?;
         if script.is_none() && env::var_os(SMOKE).is_none() {
             return Ok(None);
         }
@@ -155,6 +158,12 @@ impl Smoke {
     }
 }
 
+/// The script's path in `value`, which an empty value leaves out, as
+/// shells and CI files write an unset variable.
+fn path(value: Option<OsString>) -> Option<OsString> {
+    value.filter(|value| !value.is_empty())
+}
+
 /// Runs `question` in the page, whose answer arrives as [`Event::Smoke`].
 fn ask(web_view: &WebView, question: &str, proxy: &EventLoopProxy<Event>) -> Result<(), Error> {
     let answers = proxy.clone();
@@ -180,4 +189,21 @@ fn later(proxy: &EventLoopProxy<Event>, runtime: &Runtime) {
 )]
 fn report(what: &str) {
     println!("hypersig_desktop: {what}");
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ffi::OsString;
+
+    use super::path;
+
+    #[test]
+    fn an_empty_script_variable_names_no_script() {
+        assert_eq!(path(Some(OsString::new())), None);
+        assert_eq!(path(None), None);
+        assert_eq!(
+            path(Some(OsString::from("smoke.js"))),
+            Some(OsString::from("smoke.js"))
+        );
+    }
 }

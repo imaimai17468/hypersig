@@ -101,7 +101,8 @@
 //! With `HYPERSIG_DESKTOP_SMOKE_SCRIPT` set to the path of a JavaScript file,
 //! the run then evaluates that file in the first page and closes once it sets
 //! `window.hypersigSmoke` to `"pass"`. Anything else it sets, or nothing
-//! within 20 seconds, ends the run with an error.
+//! within 20 seconds, ends the run with an error. An empty
+//! `HYPERSIG_DESKTOP_SMOKE_SCRIPT` counts as unset.
 
 mod app;
 mod clipboard;
