@@ -64,7 +64,7 @@ fake.cancel_dialog();
 browser.click(OPEN_BUTTON);
 browser.apply(open(state, ()).await);
 assert_eq!(browser.value_of(Viewer::text()), "# Today\n");
-assert_eq!(fake.dialogs_shown(), 2);
+assert_eq!(fake.dialogs().len(), 2);
 # fs::remove_dir_all(dir).unwrap();
 # });
 # }

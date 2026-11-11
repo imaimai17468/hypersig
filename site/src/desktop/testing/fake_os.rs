@@ -62,7 +62,8 @@ fn feature(site: Site) -> Part {
     ])
 }
 
-/// `answer_dialog`, `cancel_dialog`, and the panic of an unanswered dialog.
+/// `answer_dialog`, `cancel_dialog`, the panics of a dialog answered wrongly,
+/// and `dialogs`.
 fn dialogs(site: Site) -> Part {
     parts([
         heading(
@@ -75,7 +76,7 @@ fn dialogs(site: Site) -> Part {
         code::block(
             Lang::Rust,
             None,
-            "impl FakeOs {\n    pub fn answer_dialog(&self, paths: impl IntoIterator<Item = PathBuf>);\n    pub fn cancel_dialog(&self);\n    pub fn dialogs_shown(&self) -> usize;\n}",
+            "impl FakeOs {\n    pub fn answer_dialog(&self, paths: impl IntoIterator<Item = PathBuf>);\n    pub fn cancel_dialog(&self);\n    pub fn dialogs(&self) -> Vec<ShownDialog>;\n}",
         ),
         para(
             site,
@@ -100,34 +101,39 @@ fn dialogs(site: Site) -> Part {
             },
             L {
                 en: &[
-                    &["`open_file`", "The first of `paths`", "`None`"],
-                    &["`open_files`", "All of `paths`", "`None`"],
-                    &["`pick_folder`", "The first of `paths`", "`None`"],
-                    &["`save_file`", "The first of `paths`", "`None`"],
+                    &["`open_file`", "The one path of `paths`", "`None`"],
+                    &[
+                        "`open_files`",
+                        "All of `paths`, which may be none",
+                        "`None`",
+                    ],
+                    &["`pick_folder`", "The one path of `paths`", "`None`"],
+                    &["`save_file`", "The one path of `paths`", "`None`"],
                 ][..],
                 ja: &[
-                    &["`open_file`", "`paths` の最初のパス", "`None`"],
-                    &["`open_files`", "`paths` のすべて", "`None`"],
-                    &["`pick_folder`", "`paths` の最初のパス", "`None`"],
-                    &["`save_file`", "`paths` の最初のパス", "`None`"],
+                    &["`open_file`", "`paths` の 1 つのパス", "`None`"],
+                    &["`open_files`", "`paths` のすべて（0 個でもよい）", "`None`"],
+                    &["`pick_folder`", "`paths` の 1 つのパス", "`None`"],
+                    &["`save_file`", "`paths` の 1 つのパス", "`None`"],
                 ][..],
             },
         ),
         para(
             site,
             L {
-                en: "A dialog shown with no answer left panics, which fails the test instead of hiding a dialog the test did not expect. The message names the dialog by its number, as in `dialog 1 was shown, and the test gave FakeOs no answer for it with answer_dialog or cancel_dialog`:",
-                ja: "答えが残っていないのにダイアログを表示するとパニックします。テストが想定していないダイアログを見逃さず、テストを失敗させるためです。メッセージは `dialog 1 was shown, and the test gave FakeOs no answer for it with answer_dialog or cancel_dialog` のように、何番目のダイアログかを示します。",
+                en: "Two mistakes in the answers panic, so the test fails where the mistake is. A dialog shown with no answer left panics with a message that names it by its number, as in `dialog 1 was shown, and the test gave FakeOs no answer for it with answer_dialog or cancel_dialog`. A dialog other than `open_files` answered with no path or with several panics too, since the person chooses exactly one there:",
+                ja: "次の 2 つの場合はパニックします。テストの誤りを見逃さず、テストを失敗させるためです。答えが残っていないのにダイアログを表示すると、`dialog 1 was shown, and the test gave FakeOs no answer for it with answer_dialog or cancel_dialog` のように、何番目のダイアログかを示すメッセージでパニックします。`open_files` 以外のダイアログに、パスを 1 つも渡さないか 2 つ以上渡した場合もパニックします。利用者がそこで選ぶパスはちょうど 1 つだからです。",
             },
         ),
         show(Snippet::DesktopFakeOsUnanswered),
         para(
             site,
             L {
-                en: "`dialogs_shown` returns how many dialogs the handlers have shown, answered or not, so a test can check that a handler showed none.",
-                ja: "`dialogs_shown` は、答えがあったかどうかにかかわらず、ハンドラが表示したダイアログの数を返します。ハンドラがダイアログを表示しなかったことも、これで確かめられます。",
+                en: "`dialogs` returns a [`ShownDialog`](api:hypersig_desktop/testing/struct.ShownDialog.html) for each dialog the handlers showed and the test answered, in order. Its `kind` is the method that showed it, as a [`DialogKind`](api:hypersig_desktop/testing/enum.DialogKind.html), and its `title`, `filters`, `directory`, and `file_name` are what the handler gave, so a test can check that a handler asked for `.md` files or proposed a file name. An empty `Vec` means the handler showed none:",
+                ja: "`dialogs` は、ハンドラが表示し、テストが答えた各ダイアログの [`ShownDialog`](api:hypersig_desktop/testing/struct.ShownDialog.html) を、表示した順に返します。その `kind` はダイアログを表示したメソッドを [`DialogKind`](api:hypersig_desktop/testing/enum.DialogKind.html) で表し、`title`、`filters`、`directory`、`file_name` はハンドラが指定した値です。そのため、ハンドラが `.md` のファイルを求めたことや、ファイル名を提案したことをテストで確かめられます。空の `Vec` なら、ハンドラはダイアログを表示していません。",
             },
         ),
+        show(Snippet::DesktopFakeOsDialogs),
     ])
 }
 
@@ -144,7 +150,7 @@ fn reads(site: Site) -> Part {
         code::block(
             Lang::Rust,
             None,
-            "impl FakeOs {\n    pub fn clipboard_text(&self) -> Option<String>;\n    pub fn set_clipboard_text(&self, text: impl Into<String>);\n    pub fn open_windows(&self) -> Vec<Url>;\n    pub fn opened_externally(&self) -> Vec<SafeUrl>;\n}",
+            "impl FakeOs {\n    pub fn clipboard_text(&self) -> Option<String>;\n    pub fn set_clipboard_text(&self, text: impl Into<String>);\n    pub fn open_windows(&self) -> Vec<Url>;\n    pub fn focused_window(&self) -> Option<Url>;\n    pub fn opened_externally(&self) -> Vec<SafeUrl>;\n}",
         ),
         table_of(
             site,
@@ -167,6 +173,10 @@ fn reads(site: Site) -> Part {
                         "The `Url` of each window `Windows::open` opened and `Window::close` has not closed, in the order they opened",
                     ],
                     &[
+                        "`focused_window`",
+                        "The `Url` of the window `Windows::open` opened or `Window::focus` focused last, or `None` once it is closed, as a system window comes to the front when it is shown",
+                    ],
+                    &[
                         "`opened_externally`",
                         "Each `SafeUrl` passed to `Os::open_external`, in order. A URL without a scheme still fails with `ErrorKind::NotExternal` and is not listed",
                     ],
@@ -183,6 +193,10 @@ fn reads(site: Site) -> Part {
                     &[
                         "`open_windows`",
                         "`Windows::open` で開き、`Window::close` で閉じていない各ウィンドウの `Url`。開いた順",
+                    ],
+                    &[
+                        "`focused_window`",
+                        "`Windows::open` で最後に開いたか、`Window::focus` で最後にフォーカスしたウィンドウの `Url`。そのウィンドウを閉じたあとは `None`。OS のウィンドウは表示されると前面に出るため、開いたウィンドウも含む",
                     ],
                     &[
                         "`opened_externally`",
@@ -244,16 +258,12 @@ fn unchecked(site: Site) -> Part {
             site,
             &[
                 L {
-                    en: "The setup of a dialog is not recorded. A test cannot read the `title`, `filter`, `directory`, or `file_name` a handler gave, nor which of the four methods showed the dialog, since one queue of answers serves them all.",
-                    ja: "ダイアログの設定は記録されません。ハンドラが指定した `title`、`filter`、`directory`、`file_name` も、4 つのメソッドのどれでダイアログを表示したかも、テストからは読めません。4 つのメソッドが 1 つの答えの列を共有するからです。",
+                    en: "One queue of answers serves the four dialog methods, so an answer is not tied to a kind of dialog. A test checks the kind afterwards with `dialogs`.",
+                    ja: "4 つのダイアログのメソッドが 1 つの答えの列を共有するので、答えはダイアログの種類に結び付きません。種類はあとから `dialogs` で確かめます。",
                 },
                 L {
-                    en: "An `answer_dialog` with no paths makes `open_file`, `pick_folder`, and `save_file` return `None`, the same as a cancel, and `open_files` return `Some` of an empty `Vec`.",
-                    ja: "パスを 1 つも渡さない `answer_dialog` では、`open_file`、`pick_folder`、`save_file` はキャンセルと同じ `None` を返し、`open_files` は空の `Vec` の `Some` を返します。",
-                },
-                L {
-                    en: "`Window::focus` does nothing and is not recorded.",
-                    ja: "`Window::focus` は何もせず、記録もされません。",
+                    en: "Which window is in front once the focused one closes. The system brings another forward, and `focused_window` returns `None`.",
+                    ja: "フォーカスしていたウィンドウを閉じたあと、どのウィンドウが前面に出るか。OS は別のウィンドウを前面に出しますが、`focused_window` は `None` を返します。",
                 },
                 L {
                     en: "The window, the web view, and the HTTP between them are not involved. [Smoke runs in CI](desktop/smoke-runs/) start the real window for that.",

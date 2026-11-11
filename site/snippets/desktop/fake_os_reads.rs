@@ -19,6 +19,7 @@ let os = fake.os();
 
 let window = os.windows().open(&NOTE.url(7)).await?;
 assert_eq!(fake.open_windows(), [NOTE.url(7)]);
+assert_eq!(fake.focused_window(), Some(NOTE.url(7)));
 window.close()?;
 assert_eq!(fake.open_windows(), []);
 
