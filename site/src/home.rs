@@ -101,15 +101,15 @@ pub(crate) fn render(site: Site) -> String {
             titled(
                 site,
                 L {
-                    en: "Styles, components, and translations, too",
-                    ja: "スタイル、コンポーネント、翻訳も",
+                    en: "Styles, components, translations, and desktop windows, too",
+                    ja: "スタイル、コンポーネント、翻訳、デスクトップも",
                 },
                 [
                     para(
                         site,
                         L {
-                            en: "hypersig is the framework. Three crates in the same repository add typed styles, a set of accessible components, and typed translations, each with docs of its own.",
-                            ja: "hypersig はフレームワーク本体です。同じリポジトリにある 3 つのクレートが、型付きのスタイル、アクセシブルなコンポーネント、型で検査する翻訳を追加します。それぞれにドキュメントがあります。",
+                            en: "hypersig is the framework. Four crates in the same repository add typed styles, a set of accessible components, typed translations, and desktop windows, each with docs of its own.",
+                            ja: "hypersig はフレームワーク本体です。同じリポジトリにある 4 つのクレートが、型付きのスタイル、アクセシブルなコンポーネント、型で検査する翻訳、デスクトップのウィンドウを追加します。それぞれにドキュメントがあります。",
                         },
                     ),
                     library_cards(
@@ -137,6 +137,14 @@ pub(crate) fn render(site: Site) -> String {
                                 site.t(L {
                                     en: "Typed translations: a text without one of its translations fails to compile, and the language is part of each page's route.",
                                     ja: "型で検査する翻訳です。どれかの訳が欠けた文はコンパイルエラーになり、言語は各ページのルートの一部です。",
+                                }),
+                            ),
+                            (
+                                Library::Desktop,
+                                "hypersig_desktop",
+                                site.t(L {
+                                    en: "The same application in a desktop window on macOS, Windows, and Linux, with the server in the same process. Only `main` changes.",
+                                    ja: "同じアプリを macOS、Windows、Linux のデスクトップのウィンドウで動かします。サーバーは同じプロセスで動き、書き換えるのは `main` だけです。",
                                 }),
                             ),
                         ],
