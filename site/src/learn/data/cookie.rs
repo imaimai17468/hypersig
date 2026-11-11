@@ -83,8 +83,8 @@ fn attributes(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`HttpOnly` keeps the cookie out of `document.cookie`, so a script on the page cannot read the id. `Secure` keeps the cookie to HTTPS. Chrome also stores it from `http://127.0.0.1`, where the repository's browser tests run, and other browsers were not checked. A browser that drops it lands back on the sign-in page after signing in.",
-                ja: "`HttpOnly` は Cookie を `document.cookie` から隠すので、ページのスクリプトは id を読めません。`Secure` は Cookie を HTTPS に限ります。Chrome は `http://127.0.0.1` からもこの Cookie を保存し、リポジトリのブラウザのテストはそこで動いています。ほかのブラウザでは確かめていません。Cookie を捨てるブラウザでは、サインインしたあともサインインのページに戻ります。",
+                en: "`HttpOnly` keeps the cookie out of `document.cookie`, so a script on the page cannot read the id. `Secure` keeps the cookie to HTTPS. Chrome also stores it from `http://127.0.0.1`, where the repository's browser tests run. WebKit, which Safari uses, stores it from neither `http://127.0.0.1` nor `http://localhost`, and lands back on the sign-in page after signing in, so a sign-in in Safari is tried over HTTPS.",
+                ja: "`HttpOnly` は Cookie を `document.cookie` から隠すので、ページのスクリプトは id を読めません。`Secure` は Cookie を HTTPS に限ります。Chrome は `http://127.0.0.1` からもこの Cookie を保存し、リポジトリのブラウザのテストはそこで動いています。Safari が使う WebKit は `http://127.0.0.1` からも `http://localhost` からも保存しないので、サインインしたあともサインインのページに戻ります。Safari でサインインを試すときは HTTPS を使います。",
             },
         ),
     ])

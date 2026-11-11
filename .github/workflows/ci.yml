@@ -191,6 +191,12 @@ jobs:
       - run: pnpm check
       - run: cargo build --release -p example-counter -p example-todo -p example-todomvc -p example-showcase -p example-style -p example-ui -p example-signup -p example-auth -p example-storefront -p example-prefix -p example-database -p example-postgres -p example-redis -p example-api
       - run: pnpm test
+      # The specs of the examples again in WebKit, the engine of Safari and of
+      # the desktop window on macOS and Linux, which Playwright downloads.
+      - run: pnpm exec playwright install --with-deps webkit
+      - run: pnpm test
+        env:
+          E2E_BROWSER: webkit
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:

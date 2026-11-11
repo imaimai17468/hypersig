@@ -42,6 +42,14 @@ const ports = { ...examples, ...databases, ...postgres, ...redis, ...apis, ...wo
 
 export const url = (example: keyof typeof ports): string => `http://127.0.0.1:${ports[example]}/`;
 
+/**
+ * `E2E_BROWSER=webkit` runs the specs of `examples` in WebKit, the engine of
+ * Safari and of the desktop window on macOS and Linux, after the Chrome run.
+ * Each of those servers keeps the state its spec file leaves, so this run
+ * starts them again, and the specs of the other servers stay with Chrome.
+ */
+const webkit = process.env.E2E_BROWSER === "webkit";
+
 export default defineConfig({
   testDir: "tests",
   globalTeardown: "./teardown.ts",
@@ -51,12 +59,18 @@ export default defineConfig({
   workers: 4,
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI ? "github" : "list",
-  use: {
-    // Drives the Google Chrome already installed, here and on GitHub's
-    // runner image, so neither installs a browser.
-    channel: "chrome",
-    headless: true,
-  },
+  // WebKit stores no `Secure` cookie from `http://127.0.0.1` or
+  // `http://localhost`, and the auth example's session cookie keeps
+  // `Secure`, so its sign-in cannot be tested over plain HTTP there.
+  ...(webkit ? { testMatch: Object.keys(examples).filter((name) => name !== "auth").map((name) => `${name}.spec.ts`) } : {}),
+  use: webkit
+    ? { browserName: "webkit", headless: true }
+    : {
+        // Drives the Google Chrome already installed, here and on GitHub's
+        // runner image, so neither installs a browser.
+        channel: "chrome",
+        headless: true,
+      },
   webServer: [
     ...Object.entries(examples).map(([name, port]) => ({
       command: `cargo run --release --quiet -p example-${name}`,
@@ -66,6 +80,9 @@ export default defineConfig({
       timeout: 600_000,
       reuseExistingServer: false,
     })),
+    ...(webkit
+      ? []
+      : [
     // The tests of a file run in order on one server, so a run that started
     // from the previous run's file would find its todos.
     ...Object.entries(databases).map(([name, port]) => ({
@@ -146,5 +163,6 @@ export default defineConfig({
       timeout: 600_000,
       reuseExistingServer: false,
     },
+        ]),
   ],
 });

@@ -29,11 +29,16 @@ test("dates are written in fixed zones by the server, in the visitor's zone by t
   const format = (at: number, options: Intl.DateTimeFormatOptions, locale = "en") =>
     page.evaluate(([at, options, locale]) => new Intl.DateTimeFormat(locale, options).format(at), [at, options, locale] as const);
 
-  // The first HTML writes the fixed zones as Chrome's Intl does, and leaves the visitor's zone empty.
+  // The first HTML writes the fixed zones and leaves the visitor's zone empty.
+  // The server joins a medium date and time with a comma, as Chrome's Intl
+  // does; WebKit's joins them with " at ", so the date and the time are
+  // asked for apart.
   const served = await (await request.get(url("showcase"))).text();
   const text = (name: string) => new RegExp(`class="${name}"[^>]*>([^<]*)<`).exec(served)?.[1];
   const servedAt = Number(/&quot;rendered&quot;:(\d+)/.exec(served)?.[1]);
-  expect(text("rendered-en")).toBe(await format(servedAt, { dateStyle: "medium", timeStyle: "medium", timeZone: "UTC" }));
+  const day = await format(servedAt, { dateStyle: "medium", timeZone: "UTC" });
+  const time = await format(servedAt, { timeStyle: "medium", timeZone: "UTC" });
+  expect(text("rendered-en")).toBe(`${day}, ${time}`);
   expect(text("rendered-tokyo")).toBe(await format(servedAt, { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Tokyo" }, "ja"));
   expect(text("rendered-local")).toBe("");
 
@@ -282,12 +287,15 @@ test("loading older notes keeps the notes in view where they were", async ({ pag
   // `dispatchEvent` clicks without scrolling the button into view first.
   const older = () => page.locator(".older").dispatchEvent("click");
 
+  // WebKit puts a note back within a pixel of where it was, and Chrome within half of one.
+  const kept = async (id: number, was: number) => expect(Math.abs((await top(id)) - was)).toBeLessThanOrEqual(1);
+
   // Chrome's own scroll anchoring does nothing while the feed is at the very top.
   expect(await scrollTop()).toBe(0);
   const first = await top(41);
   await older();
   await expect(items).toHaveCount(25);
-  expect(await top(41)).toBeCloseTo(first, 0);
+  await kept(41, first);
   expect(await scrollTop()).toBeGreaterThan(0);
 
   // Scrolled partway, Chrome anchors the content itself, and the runtime scrolls no further.
@@ -295,5 +303,5 @@ test("loading older notes keeps the notes in view where they were", async ({ pag
   const partway = await top(36);
   await older();
   await expect(items).toHaveCount(30);
-  expect(await top(36)).toBeCloseTo(partway, 0);
+  await kept(36, partway);
 });

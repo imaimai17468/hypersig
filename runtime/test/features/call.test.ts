@@ -33,6 +33,28 @@ it("sets the indicator during a call and the error after a failed one", async ()
   );
 });
 
+it("reports no failure of a call cut off while the page leaves", async () => {
+  let fail!: (error: Error) => void;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<Fetch>(
+      () =>
+        new Promise<Response>((_, reject) => {
+          fail = reject;
+        }),
+    ),
+  );
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const runtime = mount("timers");
+  $("#save").click();
+  await tick();
+  dispatchEvent(new Event("beforeunload"));
+  fail(new TypeError("Load failed"));
+  await vi.waitFor(() => expect(runtime.store.get("saving")).toBe(false));
+  expect(runtime.store.get("error")).toBe("");
+  expect(console.error).not.toHaveBeenCalled();
+});
+
 it("sets the status signal to the status of a failed answer and back to 0 when the call is sent again", async () => {
   const answers: ((response: Response) => void)[] = [];
   vi.stubGlobal(
