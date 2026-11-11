@@ -751,7 +751,12 @@ test("the progress bar, the slider, and the charts run under a policy that allow
   await page.addInitScript(() => {
     const seen: string[] = [];
     (window as unknown as { violations: string[] }).violations = seen;
-    document.addEventListener("securitypolicyviolation", (event) => seen.push(`${event.violatedDirective} ${event.blockedURI}`));
+    // WebKit refuses an inline style it gives a `<select>` itself, whose own
+    // `style` attribute is unset; `support.ts` leaves that out too.
+    document.addEventListener("securitypolicyviolation", (event) => {
+      const own = event.target instanceof HTMLSelectElement && !event.target.hasAttribute("style");
+      if (!own) seen.push(`${event.violatedDirective} ${event.blockedURI}`);
+    });
   });
   const response = await page.goto(url("ui"));
   expect(response!.headers()["content-security-policy"]).toMatch(/style-src 'nonce-[0-9a-f]{32}'/);
