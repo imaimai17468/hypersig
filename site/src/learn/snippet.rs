@@ -565,6 +565,7 @@ snippets! {
     DesktopFakeOs => "desktop/fake_os.rs";
     DesktopFakeOsReads => "desktop/fake_os_reads.rs";
     DesktopFakeOsUnanswered => "desktop/fake_os_unanswered.rs", "should_panic";
+    DesktopFakeOsDialogs => "desktop/fake_os_dialogs.rs";
 }
 
 /// The lines of `snippet` that the page shows.

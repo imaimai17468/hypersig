@@ -183,7 +183,10 @@ impl Windows<'_> {
             Inner::Fake(fake) => {
                 let mut fake = lock(fake);
                 fake.windows.push(Some(page.clone()));
-                Key::Fake(fake.windows.len() - 1)
+                let index = fake.windows.len() - 1;
+                // A system window comes to the front when it is shown.
+                fake.focused = Some(index);
+                Key::Fake(index)
             }
         };
         Ok(Window {
@@ -242,6 +245,14 @@ impl Window {
     pub fn focus(&self) -> Result<(), Error> {
         match (&self.os.inner, self.key) {
             (Inner::System(proxy), Key::System(id)) => Os::send(proxy, Event::Focus(id)),
+            #[cfg(feature = "testing")]
+            (Inner::Fake(fake), Key::Fake(index)) => {
+                let mut fake = lock(fake);
+                if fake.windows.get(index).is_some_and(Option::is_some) {
+                    fake.focused = Some(index);
+                }
+                Ok(())
+            }
             #[cfg(feature = "testing")]
             _ => Ok(()),
         }
@@ -303,7 +314,7 @@ impl Dialog {
     /// The file the person chose, or `None` when they cancelled.
     pub async fn open_file(self) -> Option<PathBuf> {
         #[cfg(feature = "testing")]
-        if let Some(paths) = self.fake_answer() {
+        if let Some(paths) = self.fake_answer(crate::testing::DialogKind::OpenFile) {
             return paths?.into_iter().next();
         }
         self.system()
@@ -315,7 +326,7 @@ impl Dialog {
     /// The files the person chose, or `None` when they cancelled.
     pub async fn open_files(self) -> Option<Vec<PathBuf>> {
         #[cfg(feature = "testing")]
-        if let Some(paths) = self.fake_answer() {
+        if let Some(paths) = self.fake_answer(crate::testing::DialogKind::OpenFiles) {
             return paths;
         }
         self.system()
@@ -327,7 +338,7 @@ impl Dialog {
     /// The folder the person chose, or `None` when they cancelled.
     pub async fn pick_folder(self) -> Option<PathBuf> {
         #[cfg(feature = "testing")]
-        if let Some(paths) = self.fake_answer() {
+        if let Some(paths) = self.fake_answer(crate::testing::DialogKind::PickFolder) {
             return paths?.into_iter().next();
         }
         self.system()
@@ -340,7 +351,7 @@ impl Dialog {
     /// file is not written.
     pub async fn save_file(self) -> Option<PathBuf> {
         #[cfg(feature = "testing")]
-        if let Some(paths) = self.fake_answer() {
+        if let Some(paths) = self.fake_answer(crate::testing::DialogKind::SaveFile) {
             return paths?.into_iter().next();
         }
         self.system()
@@ -357,10 +368,16 @@ impl Dialog {
         clippy::option_option,
         reason = "the outer layer is who answers and the inner one is the answer"
     )]
-    fn fake_answer(&self) -> Option<Option<Vec<PathBuf>>> {
+    fn fake_answer(&self, kind: crate::testing::DialogKind) -> Option<Option<Vec<PathBuf>>> {
         match &self.os.inner {
             Inner::System(_) => None,
-            Inner::Fake(fake) => Some(lock(fake).answer_dialog()),
+            Inner::Fake(fake) => Some(lock(fake).answer_dialog(crate::testing::ShownDialog {
+                kind,
+                title: self.title.clone(),
+                filters: self.filters.clone(),
+                directory: self.directory.clone(),
+                file_name: self.file_name.clone(),
+            })),
         }
     }
 

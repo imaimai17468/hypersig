@@ -69,7 +69,7 @@ async fn export(state: AppState, text: String) -> Patches<Library> {
 # assert_eq!(fs::read_to_string(dir.join("photos.txt")).unwrap(), "a.png\n");
 # fake.cancel_dialog();
 # let _ = export(state, String::new()).await;
-# assert_eq!(fake.dialogs_shown(), 4);
+# assert_eq!(fake.dialogs().len(), 4);
 # fs::remove_dir_all(dir).unwrap();
 # });
 # }
