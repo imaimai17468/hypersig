@@ -262,6 +262,7 @@ pub enum I18nPage {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DesktopPage {
     // Get started
+    Why,
     Overview,
     TheApp,
     // Windows
@@ -899,6 +900,7 @@ pub(crate) const DESKTOP: &[Group] = &[
             ja: "はじめに",
         },
         docs: &[
+            Doc::Desktop(DesktopPage::Why),
             Doc::Desktop(DesktopPage::Overview),
             Doc::Desktop(DesktopPage::TheApp),
         ],
@@ -1162,6 +1164,7 @@ impl Doc {
         Self::I18n(I18nPage::Redirect),
         Self::DesktopHome,
         // Desktop: Get started
+        Self::Desktop(DesktopPage::Why),
         Self::Desktop(DesktopPage::Overview),
         Self::Desktop(DesktopPage::TheApp),
         // Desktop: Windows
@@ -1217,6 +1220,7 @@ impl Doc {
             Self::StyleHome => ("hypersig style", "hypersig style"),
             Self::DesktopHome => ("hypersig desktop", "hypersig desktop"),
             Self::Desktop(page) => match page {
+                DesktopPage::Why => ("Why hypersig_desktop", "hypersig_desktop を使う理由"),
                 DesktopPage::Overview => ("Overview", "概要"),
                 DesktopPage::TheApp => ("The application", "アプリの設定"),
                 DesktopPage::Windows => ("Opening windows", "ウィンドウを開く"),
@@ -1871,6 +1875,10 @@ impl Doc {
                 },
             },
             Self::Desktop(page) => match page {
+                DesktopPage::Why => L {
+                    en: "`hypersig_desktop` suits a hypersig application that is also to ship as a desktop application: both share every route, page, and action.",
+                    ja: "`hypersig_desktop` は、hypersig のアプリをデスクトップのアプリとしても配りたいときに向いています。Web 版とデスクトップ版は、ルート、ページ、アクションをすべて共有します。",
+                },
                 DesktopPage::Overview => L {
                     en: "`hypersig_desktop` serves an application's `Router` in the same process and shows its pages in the system's web view. Only `main` changes.",
                     ja: "`hypersig_desktop` はアプリの `Router` を同じプロセスで配信し、そのページを OS の Web ビューで表示します。書き換えるのは `main` だけです。",
@@ -2285,6 +2293,7 @@ impl Doc {
 impl DesktopPage {
     fn slug(self) -> &'static str {
         match self {
+            Self::Why => "why",
             Self::Overview => "overview",
             Self::TheApp => "app",
             Self::Windows => "windows",

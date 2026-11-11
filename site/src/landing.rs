@@ -429,6 +429,14 @@ pub(crate) fn desktop(site: Site) -> String {
                         "desktop/overview/",
                         ButtonVariant::Default,
                     ),
+                    (
+                        site.t(L {
+                            en: "Why hypersig_desktop",
+                            ja: "使う理由",
+                        }),
+                        "desktop/why/",
+                        ButtonVariant::Outline,
+                    ),
                     ("API", "api:hypersig_desktop/index.html", ButtonVariant::Outline),
                 ],
             ),
@@ -465,6 +473,23 @@ pub(crate) fn desktop(site: Site) -> String {
                             ja: "`FakeOs` はテストが決めた答えをダイアログに返し、ハンドラが開いたウィンドウを記録します。そのため、往復のすべてを `cargo test` で確かめられます。",
                         }),
                     ),
+                ],
+            ),
+            titled(
+                site,
+                L {
+                    en: "Start-up and size",
+                    ja: "起動時間とサイズ",
+                },
+                [
+                    para(
+                        site,
+                        L {
+                            en: "The same todo list in `hypersig_desktop`, Tauri, and Electron, each started 20 times on an Apple M4 Max with macOS 26. [Why hypersig_desktop](desktop/why/) covers how it was measured and what is not measured yet.",
+                            ja: "同じ ToDo リストを `hypersig_desktop`、Tauri、Electron で、macOS 26 の Apple M4 Max でそれぞれ 20 回起動しました。測り方と、まだ測っていないものは [hypersig_desktop を使う理由](desktop/why/) にあります。",
+                        },
+                    ),
+                    crate::desktop::benchmark(site),
                 ],
             ),
             titled(
