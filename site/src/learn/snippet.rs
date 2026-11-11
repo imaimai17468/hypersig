@@ -554,6 +554,7 @@ snippets! {
     DesktopSecuritySessions => "desktop/security_sessions.rs", "no_run";
     DesktopPersistedSignalsTheme => "desktop/persisted_signals_theme.rs", "no_run";
     DesktopPersistedSignalsAlreadyRunning => "desktop/persisted_signals_already_running.rs", "no_run";
+    DesktopLaunches => "desktop/launches.rs", "no_run";
     // Desktop: system, testing
     DesktopDialogOpen => "desktop/dialogs_open.rs", "no_run";
     DesktopDialogKinds => "desktop/dialogs_kinds.rs";

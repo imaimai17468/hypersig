@@ -248,6 +248,25 @@ jobs:
             target/release/example-notes "$note"
           fi
           grep -q 'Saved by the smoke run.' "$note"
+      # examples/notes/handoff.js waits in the list window for the file that a
+      # second start of notes names, which that start hands to this copy and
+      # exits. The second start makes no window, so it needs no display.
+      - name: A second start of notes opens its file in the copy running
+        shell: bash
+        env:
+          HYPERSIG_DESKTOP_SMOKE_SCRIPT: examples/notes/handoff.js
+        run: |
+          printf '# Handoff\n' > "$RUNNER_TEMP/handoff.md"
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a target/release/example-notes &
+          else
+            target/release/example-notes &
+          fi
+          first=$!
+          sleep 3
+          notes="$PWD/target/release/example-notes"
+          (cd "$RUNNER_TEMP" && "$notes" handoff.md)
+          wait "$first"
       # The packages each system installs from, built from the
       # `[package.metadata.packager]` table of examples/notes/Cargo.toml.
       - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2

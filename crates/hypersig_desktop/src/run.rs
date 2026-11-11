@@ -21,7 +21,7 @@ use crate::error::Error;
 use crate::guard::{self, Guard};
 use crate::os::Os;
 use crate::smoke::{Smoke, Step};
-use crate::{instance, port, window};
+use crate::{handoff, instance, port, window};
 
 /// How long the server is given to finish the requests it is answering
 /// once the last window closes, the same as `hypersig::serve` gives.
@@ -62,6 +62,8 @@ pub(crate) enum Event {
     Left(WindowId),
     /// Ctrl-C was pressed in the terminal, or Quit was chosen in the menu.
     Quit,
+    /// A second copy handed its command line over.
+    Raise,
     /// The first page's answer to what a smoke run asked, or `None` when
     /// it is time to ask again.
     Smoke(Option<String>),
@@ -108,6 +110,11 @@ impl App {
     /// starts, while the first window and its web view are made, and the
     /// window is shown once its page has loaded.
     ///
+    /// When another copy of the application runs, this start opens no
+    /// window: it hands its command line to that copy, which hears of it
+    /// through [`Os::launches`] and brings a window forward, and returns
+    /// `Ok(())`.
+    ///
     /// Closing the last window, Quit in the menu, or Ctrl-C in the terminal
     /// stops the server, which is given five seconds to finish the requests
     /// it is answering, and the method returns once it has stopped.
@@ -121,8 +128,9 @@ impl App {
     /// Fails with [`ErrorKind::InRuntime`](crate::ErrorKind::InRuntime) when
     /// called inside a Tokio runtime, as from a `#[tokio::main]` function.
     /// Fails too when the application's directory cannot be made, when another
-    /// copy of the application runs, when the setup returns an error, and
-    /// when a window, a web view, or the server fails.
+    /// copy of the application runs and does not take this start's command
+    /// line, when the setup returns an error, and when a window, a web view,
+    /// or the server fails.
     ///
     /// # Panics
     ///
@@ -140,19 +148,34 @@ impl App {
         let started = Instant::now();
         let own = self.data_dir()?.join("hypersig_desktop");
         fs::create_dir_all(&own)?;
-        let lock = instance::lock(&own)?;
+        let lock = match instance::lock(&own) {
+            // The copy already running takes this start's command line, and
+            // brings a window forward.
+            Err(error) if error.kind() == crate::ErrorKind::AlreadyRunning => {
+                return if handoff::hand_over(&own) {
+                    Ok(())
+                } else {
+                    Err(error)
+                };
+            }
+            locked => locked?,
+        };
 
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()?;
         let listener = runtime.block_on(port::listen(&own))?;
         let port = listener.local_addr()?.port();
-        let (guard, start) = Guard::new(port)?;
+        let launches = handoff::channel();
+        let (guard, tokens) = Guard::new(port, launches.clone())?;
+        handoff::write_token(&own, &tokens.handoff)?;
+        let start = tokens.start;
 
         let mut event_loop = EventLoopBuilder::<Event>::with_user_event().build();
         let proxy = event_loop.create_proxy();
         let (stop, stopped) = oneshot::channel();
-        let setup = setup(Os::new(proxy.clone()));
+        let setup = setup(Os::new(proxy.clone(), launches.clone()));
+        runtime.spawn(raise_on_launch(launches.subscribe(), proxy.clone()));
         let server = runtime.spawn(serve(listener, guard, setup, proxy.clone(), stopped));
         runtime.spawn(quit_on_ctrl_c(proxy.clone()));
 
@@ -278,6 +301,7 @@ impl Lifecycle<'_> {
                 return self.windows.is_empty();
             }
             TaoEvent::UserEvent(Event::Quit) => self.quit(),
+            TaoEvent::UserEvent(Event::Raise) => self.raise(),
             TaoEvent::UserEvent(Event::Smoke(answer)) => self.smoke(answer.as_deref()),
             _ => {}
         }
@@ -438,6 +462,19 @@ impl Lifecycle<'_> {
         }
     }
 
+    /// Brings a shown window forward, the first one while it is open.
+    fn raise(&self) {
+        let shown = |open: &&Open| open.shown && !open.leaving;
+        let window = self
+            .first
+            .and_then(|id| self.windows.get(&id))
+            .filter(shown)
+            .or_else(|| self.windows.values().find(shown));
+        if let Some(open) = window {
+            open.window.set_focus();
+        }
+    }
+
     /// Takes the smoke run's next step in the first window, if this is one.
     fn smoke(&mut self, answer: Option<&str>) {
         let Some(smoke) = &mut self.smoke else {
@@ -504,6 +541,24 @@ impl Lifecycle<'_> {
             tokio::time::sleep(LEAVE).await;
             let _ = left.send_event(Event::Left(id));
         });
+    }
+}
+
+/// Brings a window forward each time a second copy hands its command line over.
+async fn raise_on_launch(
+    mut launches: tokio::sync::broadcast::Receiver<handoff::Launch>,
+    proxy: EventLoopProxy<Event>,
+) {
+    use tokio::sync::broadcast::error::RecvError;
+    loop {
+        match launches.recv().await {
+            Ok(_) | Err(RecvError::Lagged(_)) => {
+                if proxy.send_event(Event::Raise).is_err() {
+                    return;
+                }
+            }
+            Err(RecvError::Closed) => return,
+        }
     }
 }
 

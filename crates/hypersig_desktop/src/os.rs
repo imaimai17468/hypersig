@@ -8,10 +8,11 @@ use std::sync::{Arc, Mutex, PoisonError};
 use hypersig::{SafeUrl, Url};
 use tao::event_loop::EventLoopProxy;
 use tao::window::WindowId;
-use tokio::sync::oneshot;
+use tokio::sync::{broadcast, oneshot};
 
 use crate::clipboard;
 use crate::error::Error;
+use crate::handoff::{Launch, Launches};
 use crate::run::Event;
 #[cfg(feature = "testing")]
 use crate::testing::Fake;
@@ -25,6 +26,7 @@ use crate::testing::Fake;
 #[derive(Clone)]
 pub struct Os {
     inner: Inner,
+    launches: broadcast::Sender<Launch>,
 }
 
 #[derive(Clone)]
@@ -41,17 +43,32 @@ impl fmt::Debug for Os {
 }
 
 impl Os {
-    pub(crate) fn new(proxy: EventLoopProxy<Event>) -> Self {
+    pub(crate) fn new(proxy: EventLoopProxy<Event>, launches: broadcast::Sender<Launch>) -> Self {
         Self {
             inner: Inner::System(proxy),
+            launches,
         }
     }
 
     #[cfg(feature = "testing")]
     pub(crate) fn fake(fake: Arc<Mutex<Fake>>) -> Self {
+        let launches = lock(&fake).launches.clone();
         Self {
             inner: Inner::Fake(fake),
+            launches,
         }
+    }
+
+    /// The launches of the application that start while it runs.
+    ///
+    /// A start of the application while this copy runs hands its command
+    /// line and working directory over and exits, and the copy that runs
+    /// brings a window forward. Each [`Launches`] gets the launches handed
+    /// over after it was made, so a setup that takes one before it returns
+    /// the router misses none.
+    #[must_use]
+    pub fn launches(&self) -> Launches {
+        Launches::new(self.launches.subscribe())
     }
 
     /// The application's windows.

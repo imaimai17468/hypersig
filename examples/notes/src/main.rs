@@ -1,7 +1,8 @@
 //! A notepad that opens text files from disk, each in a window of its own.
 //!
 //! Run with `cargo run -p example-notes`, or `cargo run -p example-notes --
-//! today.md` to open that file at the start. The first window lists the open
+//! today.md` to open that file at the start. Started again while it runs,
+//! it opens the files of that start in the copy already running. The first window lists the open
 //! notes; "Open…" picks a file in the system's dialog and opens it in a new
 //! window, where it is edited, saved, saved under another name, or copied to
 //! the clipboard. A save reaches the list over a stream, so the list window
@@ -19,7 +20,7 @@ use axum::Router;
 use futures::{Stream, StreamExt as _, stream};
 use hypersig::html::{Stylesheet, button, div, each_keyed, h1, li, p, span, textarea, ul};
 use hypersig::{Action, Page, Patches, Route, RouterExt, Signals, StreamAction};
-use hypersig_desktop::{App, Os};
+use hypersig_desktop::{App, Launches, Os};
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::BroadcastStream;
@@ -382,12 +383,29 @@ async fn show_all(os: &Os, notes: Vec<Note>) {
     }
 }
 
+/// Opens a window for each file that a later start of notes names, in the
+/// copy already running.
+async fn open_launched(state: AppState, mut launches: Launches) {
+    while let Some(launch) = launches.next().await {
+        let mut notes = Vec::new();
+        for arg in launch.args() {
+            // A file that cannot be read opens no window; the running copy
+            // has no terminal to say so in.
+            if let Ok(note) = state.keep(launch.current_dir().join(arg)) {
+                notes.push(note);
+            }
+        }
+        show_all(&state.os, notes).await;
+    }
+}
+
 /// Opens the notes list, and a window for each file named on the command line.
 fn main() -> Result<(), hypersig_desktop::Error> {
     const APP: App = App::new("dev.hypersig.example-notes");
     let files: Vec<PathBuf> = std::env::args_os().skip(1).map(PathBuf::from).collect();
     APP.size(560, 640).run(&INDEX.url(()), |os| async move {
         let state = AppState::new(os.clone());
+        tokio::spawn(open_launched(state.clone(), os.launches()));
         let mut notes = Vec::new();
         for path in files {
             notes.push(state.keep(path)?);
@@ -436,6 +454,22 @@ mod tests {
         let browser = page.simulate();
         assert_eq!(browser.value_of(EditPage::text()), "# Today\n");
         assert_eq!(browser.value_of(EditPage::name()), "today.md");
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn a_later_start_opens_its_files_here() {
+        let dir = folder("launch");
+        let fake = FakeOs::new();
+        let state = AppState::new(fake.os());
+        tokio::spawn(open_launched(state.clone(), fake.os().launches()));
+
+        fake.launch(&dir, ["today.md".into()]);
+        while fake.open_windows().is_empty() {
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(fake.open_windows(), [NOTE.url(1)]);
+        assert_eq!(state.rows().len(), 1);
         fs::remove_dir_all(dir).unwrap();
     }
 

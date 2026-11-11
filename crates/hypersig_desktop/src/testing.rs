@@ -19,6 +19,7 @@
 //! ```
 
 use std::collections::VecDeque;
+use std::ffi::OsString;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -33,7 +34,7 @@ pub struct FakeOs {
 }
 
 /// What a [`FakeOs`] holds.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct Fake {
     pub(crate) answers: VecDeque<Option<Vec<PathBuf>>>,
     pub(crate) dialogs: Vec<ShownDialog>,
@@ -43,6 +44,21 @@ pub(crate) struct Fake {
     /// The index in `windows` of the window opened or focused last.
     pub(crate) focused: Option<usize>,
     pub(crate) external: Vec<SafeUrl>,
+    pub(crate) launches: tokio::sync::broadcast::Sender<crate::Launch>,
+}
+
+impl Default for Fake {
+    fn default() -> Self {
+        Self {
+            answers: VecDeque::new(),
+            dialogs: Vec::new(),
+            clipboard: None,
+            windows: Vec::new(),
+            focused: None,
+            external: Vec::new(),
+            launches: crate::handoff::channel(),
+        }
+    }
 }
 
 impl Fake {
@@ -171,6 +187,15 @@ impl FakeOs {
     #[must_use]
     pub fn updater(&self) -> crate::Updater {
         crate::Updater::fake()
+    }
+
+    /// Hands `args`, started in `dir`, to the [`Launches`](crate::Launches)
+    /// taken from this fake's `Os`, as a second start of the application
+    /// would.
+    pub fn launch(&self, dir: impl Into<PathBuf>, args: impl IntoIterator<Item = OsString>) {
+        let launch = crate::Launch::new(dir.into(), args.into_iter().collect());
+        // With no `Launches` taken, nobody hears it, as in the application.
+        let _ = self.lock().launches.send(launch);
     }
 
     /// The URLs the handlers opened in another program.

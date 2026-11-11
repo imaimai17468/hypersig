@@ -21,7 +21,7 @@ pub struct Error {
 pub enum ErrorKind {
     /// The environment does not say where the application's directory is.
     NoDataDir,
-    /// Another copy of the application holds its directory's lock.
+    /// Another copy of the application runs and did not take this start's command line.
     AlreadyRunning,
     /// The future given to [`App::run`](crate::App::run) returned an error.
     Setup,

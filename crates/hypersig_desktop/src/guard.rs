@@ -9,6 +9,10 @@
 //! - a request without the session cookie, which only the application's
 //!   first window receives, by loading its first page with the start token
 //!   in a header, once.
+//!
+//! It answers one request itself: a second copy's launch, posted to
+//! [`handoff::PATH`] with the handoff token, which this run wrote next to
+//! its lock.
 
 use std::fmt::Write as _;
 use std::io;
@@ -16,9 +20,12 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use axum::Router;
 use axum::extract::{Request, State};
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
+use tokio::sync::broadcast;
+
+use crate::handoff::{self, Launch};
 
 /// The header the first window's first request carries the start token in,
 /// which the answer trades for the session cookie.
@@ -33,25 +40,43 @@ pub(crate) struct Guard {
     host: HeaderValue,
     start: Mutex<Option<Secret>>,
     session: Secret,
+    handoff: Secret,
+    launches: broadcast::Sender<Launch>,
+}
+
+/// The tokens a new [`Guard`] gives out: the start token for the first
+/// window's first request, and the handoff token for a second copy.
+pub(crate) struct Tokens {
+    pub(crate) start: HeaderValue,
+    pub(crate) handoff: String,
 }
 
 impl Guard {
-    /// The guard of a server on `port`, and the start token the first
-    /// window sends in [`START_HEADER`].
+    /// The guard of a server on `port`, which sends each launch a second
+    /// copy hands over to `launches`, and the tokens it accepts.
     ///
     /// # Errors
     ///
     /// Fails when the system gives no random bytes.
-    pub(crate) fn new(port: u16) -> io::Result<(Arc<Self>, HeaderValue)> {
+    pub(crate) fn new(
+        port: u16,
+        launches: broadcast::Sender<Launch>,
+    ) -> io::Result<(Arc<Self>, Tokens)> {
         let start = Secret::new()?;
-        let token = HeaderValue::try_from(start.hex()).expect("hex digits are header text");
+        let handoff = Secret::new()?;
+        let tokens = Tokens {
+            start: HeaderValue::try_from(start.hex()).expect("hex digits are header text"),
+            handoff: handoff.hex(),
+        };
         let guard = Self {
             host: HeaderValue::try_from(format!("127.0.0.1:{port}"))
                 .expect("an address and a port are header text"),
             start: Mutex::new(Some(start)),
             session: Secret::new()?,
+            handoff,
+            launches,
         };
-        Ok((Arc::new(guard), token))
+        Ok((Arc::new(guard), tokens))
     }
 }
 
@@ -66,6 +91,16 @@ pub(crate) fn wrap(router: Router, guard: Arc<Guard>) -> Router {
 async fn check(State(guard): State<Arc<Guard>>, request: Request, next: Next) -> Response {
     if request.headers().get(header::HOST) != Some(&guard.host) {
         return StatusCode::FORBIDDEN.into_response();
+    }
+    if request.method() == Method::POST
+        && request.uri().path() == handoff::PATH
+        && request
+            .headers()
+            .get(handoff::HEADER)
+            .and_then(|offered| offered.to_str().ok())
+            .is_some_and(|offered| guard.handoff.matches(offered))
+    {
+        return guard.take_launch(request).await;
     }
     // A reload may send the first request's headers again, after the token
     // is spent, so a token that does not match leaves the cookie to decide.
@@ -91,6 +126,19 @@ async fn check(State(guard): State<Arc<Guard>>, request: Request, next: Next) ->
 }
 
 impl Guard {
+    /// Reads the launch a second copy posted, and sends it on.
+    async fn take_launch(&self, request: Request) -> Response {
+        let Ok(body) = axum::body::to_bytes(request.into_body(), handoff::LIMIT).await else {
+            return StatusCode::PAYLOAD_TOO_LARGE.into_response();
+        };
+        let Some(launch) = Launch::decode(&body) else {
+            return StatusCode::BAD_REQUEST.into_response();
+        };
+        // With no `Launches` taken, the launch only brings a window forward.
+        let _ = self.launches.send(launch);
+        StatusCode::NO_CONTENT.into_response()
+    }
+
     /// Whether `offered` is the start token, which works once.
     fn take_start(&self, offered: &HeaderValue) -> bool {
         let mut start = self.start.lock().unwrap_or_else(PoisonError::into_inner);
@@ -162,7 +210,8 @@ mod tests {
     const HOST: &str = "127.0.0.1:4321";
 
     fn app() -> (Router, HeaderValue) {
-        let (guard, start) = Guard::new(PORT).unwrap();
+        let (guard, tokens) = Guard::new(PORT, crate::handoff::channel()).unwrap();
+        let start = tokens.start;
         let router = Router::new().route("/home", get(|| async { "home" }));
         (wrap(router, guard), start)
     }
@@ -266,5 +315,34 @@ mod tests {
             .unwrap();
         assert_eq!(reload.status(), StatusCode::OK);
         assert!(!reload.headers().contains_key(header::SET_COOKIE));
+    }
+
+    #[tokio::test]
+    async fn a_launch_with_the_handoff_token_is_taken_and_one_without_is_refused() {
+        use std::ffi::OsString;
+        use std::path::PathBuf;
+
+        use crate::handoff::{self, Launch};
+
+        let launches = handoff::channel();
+        let mut heard = launches.subscribe();
+        let (guard, tokens) = Guard::new(PORT, launches).unwrap();
+        let app = wrap(Router::new(), guard);
+        let launch = Launch::new(PathBuf::from("/home/me"), vec![OsString::from("today.md")]);
+        let post = |token: &str| {
+            Request::post(handoff::PATH)
+                .header(header::HOST, HOST)
+                .header(handoff::HEADER, token)
+                .body(Body::from(launch.encode()))
+                .unwrap()
+        };
+
+        let answer = app.clone().oneshot(post(&"0".repeat(64))).await.unwrap();
+        assert_eq!(answer.status(), StatusCode::FORBIDDEN);
+        heard.try_recv().unwrap_err();
+
+        let answer = app.oneshot(post(&tokens.handoff)).await.unwrap();
+        assert_eq!(answer.status(), StatusCode::NO_CONTENT);
+        assert_eq!(heard.try_recv().unwrap(), launch);
     }
 }
