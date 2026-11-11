@@ -13,6 +13,7 @@
 mod code;
 mod components;
 mod demo;
+mod desktop;
 mod doc;
 mod home;
 mod i18n;
@@ -314,8 +315,8 @@ fn sitemap(site: Site) -> Option<String> {
 /// fetches them from the file alone, and start at the site's base otherwise.
 ///
 /// The Learn section comes first, then the use cases page, which has no
-/// sidebar. The reference, the components, the styles, and the i18n pages go
-/// under `Optional`, which an agent may skip.
+/// sidebar. The reference, the components, the styles, the i18n, and the
+/// desktop pages go under `Optional`, which an agent may skip.
 fn llms(site: Site) -> String {
     let mut text = format!(
         "# hypersig\n\n> {}\n\n{}\n",
@@ -342,7 +343,7 @@ fn llms(site: Site) -> String {
     let _ = write!(text, "\n## {}\n\n", Doc::UseCases.title(site));
     list(&mut text, &[Doc::UseCases]);
     text.push_str("\n## Optional\n\n");
-    for groups in [doc::REFERENCE, doc::COMPONENTS, doc::STYLE, doc::I18N] {
+    for groups in [doc::REFERENCE, doc::COMPONENTS, doc::STYLE, doc::I18N, doc::DESKTOP] {
         for group in groups {
             list(&mut text, group.docs);
         }

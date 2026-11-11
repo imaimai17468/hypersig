@@ -11,6 +11,7 @@ hypersig is a [hypermedia](https://imaimai17468.github.io/hypersig/learn/why/#hy
 - `cargo build` builds the whole application, with no Node or wasm step.
 - The first HTML already holds the page's state, so the page needs no hydration, and an action answers with only the values that changed ([Why hypersig](https://imaimai17468.github.io/hypersig/learn/why/)).
 - A form's rules, CSS, and translations are checked by the compiler as well, and a component set styled after shadcn/ui comes with it ([Forms](https://imaimai17468.github.io/hypersig/learn/forms/), [Styling](https://imaimai17468.github.io/hypersig/style/), [Translations](https://imaimai17468.github.io/hypersig/i18n/), [Components](https://imaimai17468.github.io/hypersig/components/)).
+- The same application runs in a desktop window on macOS, Windows, and Linux, with its server in the same process; only `main` changes ([Desktop](https://imaimai17468.github.io/hypersig/desktop/)).
 
 ## Quick start
 

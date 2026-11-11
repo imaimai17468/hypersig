@@ -3,7 +3,6 @@
 
 pub(super) mod cloudflare;
 pub(super) mod container;
-pub(super) mod desktop;
 pub(super) mod vercel;
 
 use crate::Site;
@@ -74,6 +73,13 @@ pub(super) fn deploying(site: Site) -> Part {
             L {
                 en: "`cargo install --locked hypersig_cli` installs `cargo hypersig`, which holds the three templates. They hold the same pages, actions, and streams. What differs is the code that hands a request to the axum `Router`, the files around it, and what the host keeps between requests, so each page also covers turning a server project you already have into that template's shape with `cargo hypersig add`.",
                 ja: "`cargo install --locked hypersig_cli` で、3 つのテンプレートを持つ `cargo hypersig` をインストールできます。3 つのテンプレートのページ、アクション、ストリームのコードは同じです。違うのは、リクエストを axum の `Router` に渡すコードと、その周りのファイルと、ホストがリクエストのあいだに何を保持するかです。そのため、どのページにも既存のサーバーのプロジェクトを `cargo hypersig add` でそのテンプレートの形に移す方法を載せています。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "To ship the application as a desktop program instead, with the server inside it, see [Desktop](desktop/).",
+                ja: "サーバーを内蔵したデスクトップのプログラムとして配る方法は、[デスクトップ](desktop/) で説明します。",
             },
         ),
         para(

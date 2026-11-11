@@ -400,6 +400,105 @@ pub(crate) fn i18n(site: Site) -> String {
     )
 }
 
+/// The landing page of the Desktop docs.
+pub(crate) fn desktop(site: Site) -> String {
+    page(
+        site,
+        Doc::DesktopHome,
+        [
+            hero(
+                site,
+                site.t(L {
+                    en: "The `hypersig_desktop` crate",
+                    ja: "`hypersig_desktop` クレート",
+                }),
+                site.t(L {
+                    en: "The same application, in a desktop window",
+                    ja: "同じアプリを、デスクトップのウィンドウで",
+                }),
+                site.t(L {
+                    en: "The application's `Router` runs in the same process, and its pages open in the system's web view on macOS, Windows, and Linux. Only `main` changes, and the handlers reach files, the clipboard, and other windows through one value.",
+                    ja: "アプリの `Router` は同じプロセスで動き、そのページを macOS、Windows、Linux の OS の Web ビューで開きます。書き換えるのは `main` だけで、ハンドラはファイル、クリップボード、ほかのウィンドウを 1 つの値から使います。",
+                }),
+                &[
+                    (
+                        site.t(L {
+                            en: "Get started",
+                            ja: "はじめる",
+                        }),
+                        "desktop/overview/",
+                        ButtonVariant::Default,
+                    ),
+                    ("API", "api:hypersig_desktop/index.html", ButtonVariant::Outline),
+                ],
+            ),
+            features(
+                site,
+                &[
+                    (
+                        site.t(L {
+                            en: "Only `main` changes",
+                            ja: "書き換えるのは `main` だけ",
+                        }),
+                        site.t(L {
+                            en: "The pages, actions, and streams are the ones the application serves on the web, so their links and signal names are checked the same way.",
+                            ja: "ページ、アクション、ストリームは Web で配信するものと同じなので、リンクやシグナル名も同じように検査されます。",
+                        }),
+                    ),
+                    (
+                        site.t(L {
+                            en: "No list of commands",
+                            ja: "コマンドの一覧は不要",
+                        }),
+                        site.t(L {
+                            en: "A page calls only the actions the router declares, and a handler reaches the system through `Os`, so there is no second list of what a page may call.",
+                            ja: "ページが呼べるのはルーターが宣言したアクションだけで、ハンドラは `Os` を通して OS の機能を使います。そのため、ページが呼べるものの一覧を別に持つ必要はありません。",
+                        }),
+                    ),
+                    (
+                        site.t(L {
+                            en: "Tested without a window",
+                            ja: "ウィンドウを開かずにテスト",
+                        }),
+                        site.t(L {
+                            en: "`FakeOs` answers the dialogs a test chooses and records the windows the handlers open, so `cargo test` covers the whole round trip.",
+                            ja: "`FakeOs` はテストが決めた答えをダイアログに返し、ハンドラが開いたウィンドウを記録します。そのため、往復のすべてを `cargo test` で確かめられます。",
+                        }),
+                    ),
+                ],
+            ),
+            titled(
+                site,
+                L {
+                    en: "Part of hypersig",
+                    ja: "hypersig の一部",
+                },
+                [two_cards(
+                    site,
+                    [
+                        (
+                            Library::Framework,
+                            "hypersig",
+                            site.t(L {
+                                en: "The framework that provides the routes and pages the window shows.",
+                                ja: "ウィンドウが表示するルートとページを提供するフレームワーク本体です。",
+                            }),
+                        ),
+                        (
+                            Library::Components,
+                            "hypersig_ui",
+                            site.t(L {
+                                en: "Accessible components, which render the same in the window.",
+                                ja: "アクセシブルなコンポーネントです。ウィンドウでも同じように表示されます。",
+                            }),
+                        ),
+                    ],
+                )],
+            ),
+        ],
+    )
+}
+
 /// The landing page of the Components docs.
 pub(crate) fn components(site: Site) -> String {
     page(
