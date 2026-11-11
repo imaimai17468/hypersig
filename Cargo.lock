@@ -1667,9 +1667,12 @@ name = "example-meter"
 version = "0.0.0"
 dependencies = [
  "axum",
+ "futures",
  "hypersig",
  "hypersig_desktop",
  "serde",
+ "tokio",
+ "tokio-stream",
 ]
 
 [[package]]
@@ -2271,6 +2274,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
 
 [[package]]
+name = "global-hotkey"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96daa86bdc1413406daee362a835e52c430c2193e5a5c328d1e522be140d1764"
+dependencies = [
+ "crossbeam-channel",
+ "keyboard-types",
+ "objc2",
+ "objc2-app-kit",
+ "once_cell",
+ "thiserror 2.0.21",
+ "windows-sys 0.59.0",
+ "x11rb",
+ "xkeysym",
+]
+
+[[package]]
 name = "gobject-sys"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2678,6 +2698,7 @@ dependencies = [
  "base64 0.22.1",
  "cargo-packager-updater",
  "getrandom 0.4.3",
+ "global-hotkey",
  "hypersig",
  "minisign",
  "muda",
@@ -6410,6 +6431,15 @@ dependencies = [
 
 [[package]]
 name = "windows-sys"
+version = "0.59.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
+dependencies = [
+ "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "windows-sys"
 version = "0.61.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae137229bcbd6cdf0f7b80a31df61766145077ddf49416a728b02cb3921ff3fc"
@@ -6727,6 +6757,12 @@ dependencies = [
  "libc",
  "rustix",
 ]
+
+[[package]]
+name = "xkeysym"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9cc00251562a284751c9973bace760d86c0276c471b4be569fe6b068ee97a56"
 
 [[package]]
 name = "xmlparser"

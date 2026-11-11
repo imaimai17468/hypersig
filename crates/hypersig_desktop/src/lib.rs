@@ -62,6 +62,9 @@
 //! when [`App::allow`] names that [`Device`], and the web view refuses the
 //! others without asking the person.
 //!
+//! [`Os::shortcut`] registers a [`Shortcut`] the application hears while
+//! another application has focus, as push-to-talk needs.
+//!
 //! With the `updater` feature, `App::updates` names where new versions are
 //! announced and the key that signs them, and the `Updater` that `App::run`
 //! then hands the setup finds a newer version, downloads it, checks its signature, and installs it, in the
@@ -125,6 +128,7 @@ mod notification;
 mod os;
 mod port;
 mod run;
+mod shortcut;
 mod smoke;
 #[cfg(feature = "testing")]
 pub mod testing;
@@ -139,6 +143,7 @@ pub use error::{Error, ErrorKind};
 pub use handoff::{Launch, Launches};
 pub use notification::{Notification, Notified};
 pub use os::{Clipboard, Dialog, Os, Window, Windows};
+pub use shortcut::{Key, Modifiers, Press, Presses, Shortcut};
 pub use tray::{Clicks, Tray, TrayItem};
 #[cfg(feature = "updater")]
 pub use updates::{Downloaded, Update, Updater, Updates};

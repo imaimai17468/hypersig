@@ -39,6 +39,9 @@ pub enum ErrorKind {
     Notification,
     /// The tray icon could not be made, or its PNG could not be read.
     Tray,
+    /// The system did not register a global shortcut, as when another
+    /// application holds it.
+    Shortcut,
     /// [`Os::open_external`](crate::Os::open_external) got a URL without a scheme.
     ///
     /// The system would open such a URL as a file.
@@ -96,6 +99,13 @@ impl Error {
     pub(crate) fn clipboard(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
         Self {
             kind: ErrorKind::Clipboard,
+            source: Some(why.into()),
+        }
+    }
+
+    pub(crate) fn shortcut(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
+        Self {
+            kind: ErrorKind::Shortcut,
             source: Some(why.into()),
         }
     }
@@ -171,6 +181,7 @@ impl fmt::Display for Error {
             ErrorKind::Clipboard => "the clipboard could not be used",
             ErrorKind::Notification => "the notification could not be shown",
             ErrorKind::Tray => "the tray icon could not be shown",
+            ErrorKind::Shortcut => "the global shortcut could not be registered",
             ErrorKind::Update => "the new version could not be found or installed",
             ErrorKind::NotExternal => {
                 "the URL names no scheme, so it is not opened in another program"

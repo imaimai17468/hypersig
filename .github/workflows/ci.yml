@@ -223,7 +223,7 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       # xvfb gives the window a display on a runner that has none.
       - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev xvfb
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev xvfb xdotool
       - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes -p example-meter --features hypersig_desktop/testing,hypersig_desktop/updater,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
       - run: cargo test -p hypersig_desktop -p example-notes --features hypersig_desktop/testing,hypersig_desktop/updater
       - run: cargo build --release -p example-todo -p example-notes -p example-meter --features example-todo/desktop,hypersig_desktop/smoke
@@ -288,6 +288,29 @@ jobs:
           else
             target/release/example-meter
           fi
+      # examples/meter/talk.js waits for the page to say "Talking" and then
+      # stop, while xdotool presses and releases the push-to-talk key on the
+      # X server once a second, so a press before the page's stream opens is
+      # followed by another. Xvfb runs no window manager, and the X server
+      # delivers a grabbed key whatever has focus.
+      - name: The meter example hears its global push-to-talk key
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          HYPERSIG_DESKTOP_SMOKE_SCRIPT: examples/meter/talk.js
+        run: |
+          Xvfb :99 &
+          export DISPLAY=:99
+          sleep 1
+          target/release/example-meter &
+          app=$!
+          while kill -0 "$app" 2>/dev/null; do
+            sleep 1
+            xdotool keydown ctrl+shift+space
+            sleep 0.3
+            xdotool keyup ctrl+shift+space
+          done
+          wait "$app"
       # The packages each system installs from, built from the
       # `[package.metadata.packager]` table of examples/notes/Cargo.toml.
       - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2

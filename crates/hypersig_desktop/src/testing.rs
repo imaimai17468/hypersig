@@ -47,6 +47,9 @@ pub(crate) struct Fake {
     pub(crate) launches: tokio::sync::broadcast::Sender<crate::Launch>,
     pub(crate) badge: u32,
     pub(crate) tray: Option<crate::Tray>,
+    /// Each global shortcut registered, with where its presses go.
+    pub(crate) shortcuts:
+        std::collections::HashMap<crate::Shortcut, tokio::sync::broadcast::Sender<crate::Press>>,
     /// Each notification shown, with where to say it was clicked.
     pub(crate) notifications: Vec<(
         crate::Notification,
@@ -66,6 +69,7 @@ impl Default for Fake {
             launches: crate::handoff::channel(),
             badge: 0,
             tray: None,
+            shortcuts: std::collections::HashMap::new(),
             notifications: Vec::new(),
         }
     }
@@ -244,6 +248,27 @@ impl FakeOs {
         let _ = clicked.send(true);
     }
 
+    /// Whether the handlers registered `shortcut`.
+    #[must_use]
+    pub fn has_shortcut(&self, shortcut: crate::Shortcut) -> bool {
+        self.lock().shortcuts.contains_key(&shortcut)
+    }
+
+    /// Sends `press` of `shortcut`, as the person would, to every
+    /// [`Presses`](crate::Presses) of it.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the handlers did not register `shortcut`.
+    pub fn press_shortcut(&self, shortcut: crate::Shortcut, press: crate::Press) {
+        let fake = self.lock();
+        let presses = fake
+            .shortcuts
+            .get(&shortcut)
+            .unwrap_or_else(|| panic!("no handler registered the shortcut {shortcut:?}"));
+        let _ = presses.send(press);
+    }
+
     /// The tray the handlers showed last, if any.
     #[must_use]
     pub fn tray(&self) -> Option<crate::Tray> {
@@ -387,6 +412,23 @@ mod tests {
         ok(fake.os().badge(0));
         ok(fake.os().badge(5));
         assert_eq!(fake.badge(), 5);
+    }
+
+    #[test]
+    fn a_shortcut_is_registered_and_pressed_by_the_test() {
+        use crate::{Key, Modifiers, Press, Shortcut};
+        const TALK: Shortcut = Shortcut::new(Modifiers::CONTROL, Key::Space);
+        let fake = FakeOs::new();
+        let os = fake.os();
+        assert!(!fake.has_shortcut(TALK));
+        let mut first = ok(block_on(os.shortcut(TALK)));
+        let mut second = ok(block_on(os.shortcut(TALK)));
+        assert!(fake.has_shortcut(TALK));
+        fake.press_shortcut(TALK, Press::Pressed);
+        fake.press_shortcut(TALK, Press::Released);
+        assert_eq!(block_on(first.next()), Some(Press::Pressed));
+        assert_eq!(block_on(first.next()), Some(Press::Released));
+        assert_eq!(block_on(second.next()), Some(Press::Pressed));
     }
 
     #[test]

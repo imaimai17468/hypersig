@@ -15,6 +15,7 @@ use crate::error::Error;
 use crate::handoff::{Launch, Launches};
 use crate::notification::{Notification, Notified};
 use crate::run::Event;
+use crate::shortcut::{Presses, Shortcut};
 #[cfg(feature = "testing")]
 use crate::testing::Fake;
 use crate::tray::Tray;
@@ -98,6 +99,38 @@ impl Os {
                 lock(fake).notifications.push((notification, Some(clicked)));
                 Ok(Notified { clicked: heard })
             }
+        }
+    }
+
+    /// Registers `shortcut` for the rest of the run, so the application
+    /// hears it while another application has focus.
+    ///
+    /// Each call returns its own [`Presses`] of the presses and releases
+    /// after it, and a shortcut asked for again is not registered twice. On
+    /// Linux, the shortcut is grabbed from the X server, so a Wayland session
+    /// delivers it only while an X11 window has focus, and none at all
+    /// without Xwayland, where registering still returns `Ok`.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ErrorKind::Shortcut`](crate::ErrorKind::Shortcut) when
+    /// the system does not register it, as when another application holds
+    /// it, and when the application is closing.
+    pub async fn shortcut(&self, shortcut: Shortcut) -> Result<Presses, Error> {
+        match &self.inner {
+            Inner::System(proxy) => {
+                let (answer, answered) = oneshot::channel();
+                Os::send(proxy, Event::Shortcut { shortcut, answer })?;
+                answered.await.map_err(|_closed| Error::closed())?
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => Ok(Presses::new(
+                lock(fake)
+                    .shortcuts
+                    .entry(shortcut)
+                    .or_insert_with(crate::shortcut::channel)
+                    .subscribe(),
+            )),
         }
     }
 
