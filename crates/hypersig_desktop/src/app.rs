@@ -11,7 +11,9 @@ use crate::error::Error;
 /// A desktop application, named by a reverse domain name.
 ///
 /// The identifier decides where [`App::data_dir`] is, and so where the
-/// application keeps its port, its lock, and its web view's data.
+/// application keeps its port and its lock. On Windows and Linux the web
+/// views keep their cookies and `localStorage` there too; on macOS,
+/// `WKWebView` keeps them in `~/Library/WebKit`.
 #[derive(Debug, Clone, Copy)]
 pub struct App {
     pub(crate) id: &'static str,
