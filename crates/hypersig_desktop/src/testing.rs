@@ -46,6 +46,7 @@ pub(crate) struct Fake {
     pub(crate) external: Vec<SafeUrl>,
     pub(crate) launches: tokio::sync::broadcast::Sender<crate::Launch>,
     pub(crate) badge: u32,
+    pub(crate) tray: Option<crate::Tray>,
     /// Each notification shown, with where to say it was clicked.
     pub(crate) notifications: Vec<(
         crate::Notification,
@@ -64,6 +65,7 @@ impl Default for Fake {
             external: Vec::new(),
             launches: crate::handoff::channel(),
             badge: 0,
+            tray: None,
             notifications: Vec::new(),
         }
     }
@@ -240,6 +242,27 @@ impl FakeOs {
             .and_then(|(_, clicked)| clicked.take())
             .unwrap_or_else(|| panic!("no notification {index} is waiting to be clicked"));
         let _ = clicked.send(true);
+    }
+
+    /// The tray the handlers showed last, if any.
+    #[must_use]
+    pub fn tray(&self) -> Option<crate::Tray> {
+        self.lock().tray.clone()
+    }
+
+    /// Clicks `item` in the tray's menu, as the person would.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the tray shown, if any, has no such item.
+    pub fn click_tray_item(&self, item: &crate::TrayItem) {
+        let shown = self
+            .lock()
+            .tray
+            .as_ref()
+            .is_some_and(|tray| tray.items.iter().any(|shown| shown.id == item.id));
+        assert!(shown, "the tray shown has no item labeled {:?}", item.label);
+        let _ = item.clicked.send(());
     }
 
     /// The URLs the handlers opened in another program.

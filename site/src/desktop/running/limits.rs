@@ -99,8 +99,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
                     ja: "`App::run` は、呼び出したスレッドをウィンドウとそのイベントループに使います。macOS では、それがメインスレッドでなければパニックします。`App::run` は `#[tokio::main]` を付けない `main` から呼びます。Tokio のランタイムは `App::run` が自分で起動します。",
                 },
                 L {
-                    en: "Closing the last window closes the application, on macOS as well. The server is then given five seconds to finish the requests it is answering, and `App::run` returns once it has stopped.",
-                    ja: "最後のウィンドウを閉じるとアプリが終了します。macOS でも同じです。そのあとサーバーには応答中のリクエストを終えるために 5 秒が与えられ、サーバーが止まると `App::run` が戻ります。",
+                    en: "Closing the last window closes the application, on macOS as well, unless a tray icon is shown. The server is then given five seconds to finish the requests it is answering, and `App::run` returns once it has stopped.",
+                    ja: "最後のウィンドウを閉じるとアプリが終了します。macOS でも同じです。ただし、トレイのアイコンを表示している間は終了しません。そのあとサーバーには応答中のリクエストを終えるために 5 秒が与えられ、サーバーが止まると `App::run` が戻ります。",
                 },
                 L {
                     en: "A window is shown once its page has loaded. A page that has not loaded in 10 seconds is shown anyway, and an error is logged.",

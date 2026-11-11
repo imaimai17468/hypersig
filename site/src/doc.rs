@@ -273,6 +273,7 @@ pub enum DesktopPage {
     ExternalLinks,
     Notifications,
     Badge,
+    Tray,
     // Testing
     Testing,
     SmokeRuns,
@@ -925,6 +926,7 @@ pub(crate) const DESKTOP: &[Group] = &[
             Doc::Desktop(DesktopPage::ExternalLinks),
             Doc::Desktop(DesktopPage::Notifications),
             Doc::Desktop(DesktopPage::Badge),
+            Doc::Desktop(DesktopPage::Tray),
         ],
     },
     Group {
@@ -1179,6 +1181,7 @@ impl Doc {
         Self::Desktop(DesktopPage::ExternalLinks),
         Self::Desktop(DesktopPage::Notifications),
         Self::Desktop(DesktopPage::Badge),
+        Self::Desktop(DesktopPage::Tray),
         // Desktop: Testing
         Self::Desktop(DesktopPage::Testing),
         Self::Desktop(DesktopPage::SmokeRuns),
@@ -1235,6 +1238,7 @@ impl Doc {
                 DesktopPage::ExternalLinks => ("Links to other sites", "ほかのサイトへのリンク"),
                 DesktopPage::Badge => ("The count on the icon", "アイコンの数"),
                 DesktopPage::Notifications => ("Notifications", "通知"),
+                DesktopPage::Tray => ("The tray icon", "トレイのアイコン"),
                 DesktopPage::Testing => ("Testing without a window", "ウィンドウなしのテスト"),
                 DesktopPage::SmokeRuns => ("Smoke runs in CI", "CI でのスモークテスト"),
                 DesktopPage::Packaging => ("Packaging", "パッケージの作成"),
@@ -1911,6 +1915,10 @@ impl Doc {
                     en: "`Os::notify` shows a notification among the system's, and tells whether the person clicked it.",
                     ja: "`Os::notify` は OS の通知を表示し、利用者がクリックしたかどうかを知らせます。",
                 },
+                DesktopPage::Tray => L {
+                    en: "`Os::tray` puts an icon with a menu in the system tray, which keeps the application running with no window.",
+                    ja: "`Os::tray` は、メニュー付きのアイコンを OS のトレイに置きます。トレイがあれば、ウィンドウがなくてもアプリは動き続けます。",
+                },
                 DesktopPage::Badge => L {
                     en: "`Os::badge` puts a count, such as the number of unread messages, on the application's icon.",
                     ja: "`Os::badge` は、未読のメッセージの数のような数を、アプリのアイコンに表示します。",
@@ -2318,6 +2326,7 @@ impl DesktopPage {
             Self::ExternalLinks => "external-links",
             Self::Badge => "badge",
             Self::Notifications => "notifications",
+            Self::Tray => "tray",
             Self::Testing => "testing",
             Self::SmokeRuns => "smoke-runs",
             Self::Packaging => "packaging",

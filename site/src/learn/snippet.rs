@@ -561,6 +561,7 @@ snippets! {
     DesktopClipboard => "desktop/clipboard.rs";
     DesktopBadge => "desktop/badge.rs";
     DesktopNotify => "desktop/notify.rs";
+    DesktopTray => "desktop/tray.rs", "no_run";
     DesktopOpenExternal => "desktop/external_open.rs";
     DesktopExternalScheme => "desktop/external_scheme.rs", "compile_fail,E0080";
     DesktopExternalStr => "desktop/external_str.rs", "compile_fail,E0308";

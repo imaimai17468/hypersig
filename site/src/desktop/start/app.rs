@@ -290,8 +290,8 @@ fn lifetime(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`run` returns after one of three things happens: the last window closes, the person chooses Quit in the macOS menu, or Ctrl-C is pressed in the terminal that started the application. The last window's closing ends the application on macOS as well as on Windows and Linux. The server then stops taking requests and is given five seconds to finish the ones it is answering, and `run` returns once it has stopped.",
-                ja: "`run` が戻るのは、最後のウィンドウが閉じたとき、macOS のメニューで「Quit」が選ばれたとき、アプリを起動したターミナルで Ctrl-C が押されたときのいずれかです。最後のウィンドウを閉じるとアプリが終了するのは、Windows と Linux だけでなく macOS でも同じです。そのあとサーバーは新しい要求を受け付けなくなり、応答中の要求を終えるために 5 秒の猶予が与えられます。サーバーが止まると `run` が戻ります。",
+                en: "`run` returns after one of three things happens: the last window closes while no tray icon is shown, the person chooses Quit in the macOS menu or in the tray's menu, or Ctrl-C is pressed in the terminal that started the application. The last window's closing ends the application on macOS as well as on Windows and Linux. The server then stops taking requests and is given five seconds to finish the ones it is answering, and `run` returns once it has stopped.",
+                ja: "`run` が戻るのは、トレイのアイコンがない状態で最後のウィンドウが閉じたとき、macOS のメニューかトレイのメニューで終了が選ばれたとき、アプリを起動したターミナルで Ctrl-C が押されたときのいずれかです。最後のウィンドウを閉じるとアプリが終了するのは、Windows と Linux だけでなく macOS でも同じです。そのあとサーバーは新しい要求を受け付けなくなり、応答中の要求を終えるために 5 秒の猶予が与えられます。サーバーが止まると `run` が戻ります。",
             },
         ),
         para(

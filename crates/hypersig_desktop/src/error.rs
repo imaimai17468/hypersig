@@ -37,6 +37,8 @@ pub enum ErrorKind {
     Clipboard,
     /// The system did not show a notification.
     Notification,
+    /// The tray icon could not be made, or its PNG could not be read.
+    Tray,
     /// [`Os::open_external`](crate::Os::open_external) got a URL without a scheme.
     ///
     /// The system would open such a URL as a file.
@@ -94,6 +96,13 @@ impl Error {
     pub(crate) fn clipboard(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
         Self {
             kind: ErrorKind::Clipboard,
+            source: Some(why.into()),
+        }
+    }
+
+    pub(crate) fn tray(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
+        Self {
+            kind: ErrorKind::Tray,
             source: Some(why.into()),
         }
     }
@@ -161,6 +170,7 @@ impl fmt::Display for Error {
             ErrorKind::Smoke => "the smoke run failed",
             ErrorKind::Clipboard => "the clipboard could not be used",
             ErrorKind::Notification => "the notification could not be shown",
+            ErrorKind::Tray => "the tray icon could not be shown",
             ErrorKind::Update => "the new version could not be found or installed",
             ErrorKind::NotExternal => {
                 "the URL names no scheme, so it is not opened in another program"
