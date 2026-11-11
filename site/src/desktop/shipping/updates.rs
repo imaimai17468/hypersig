@@ -170,12 +170,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
             site,
             &[
                 L {
-                    en: "`os.updates()` fails when the application gave no `Updates` to `App::updates`, when `version` or `endpoint` does not parse, when the endpoint cannot be reached, and when it answers something other than `204` or the JSON above.",
-                    ja: "`os.updates()` が失敗するのは、`App::updates` に `Updates` を渡していないとき、`version` か `endpoint` を解析できないとき、エンドポイントに接続できないとき、`204` と上の JSON 以外の応答が返ったときです。",
-                },
-                L {
-                    en: "The endpoint must be `https`. Plain `http` is accepted only to `127.0.0.1` or `localhost`, for a test on the same machine; `http://updates.example/...` fails before any request is sent.",
-                    ja: "エンドポイントは `https` でなければなりません。暗号化しない `http` は同じマシンでのテストのために `127.0.0.1` と `localhost` に限って使えます。`http://updates.example/...` はリクエストを送る前に失敗します。",
+                    en: "`os.updates()` fails when the application gave no `Updates` to `App::updates`, when the endpoint cannot be reached, and when it answers something other than `204` or the JSON above.",
+                    ja: "`os.updates()` が失敗するのは、`App::updates` に `Updates` を渡していないとき、エンドポイントに接続できないとき、`204` と上の JSON 以外の応答が返ったときです。",
                 },
                 L {
                     en: "`download` fails when the package cannot be downloaded, and when the public key does not verify its signature. A refused package is never installed, since only a `Downloaded` has `install`.",
@@ -190,8 +186,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "`Updates::new` checks none of its arguments, so a version that is not semver, an `http` endpoint on another host, or a wrong public key compiles and fails at the first `os.updates()` or `download`. Under `testing::FakeOs`, `os.updates()` returns `Ok(None)`, so a test of the handler sees the newest-version branch.",
-                ja: "`Updates::new` は引数をどれも検査しません。semver でないバージョン、別のホストを指す `http` のエンドポイント、誤った公開鍵はコンパイルを通り、最初の `os.updates()` か `download` で失敗します。`testing::FakeOs` では `os.updates()` が `Ok(None)` を返すので、ハンドラのテストでは最新版のときの分岐を通ります。",
+                en: "`Updates::new` checks its arguments, and in a `const` a wrong one is a compile error. `version` is a semantic version such as `1.2.3`. `endpoint` starts with `https://` and a host; plain `http` is accepted only to `127.0.0.1` or `localhost`, for a test on the same machine. `public_key` is the base64 of a minisign public key: an `untrusted comment:` line, then the key. A key of that shape that does not verify the package still fails, at `download`. Under `testing::FakeOs`, `os.updates()` returns `Ok(None)`, so a test of the handler sees the newest-version branch.",
+                ja: "`Updates::new` は引数を検査し、`const` の中では誤った引数がコンパイルエラーになります。`version` は `1.2.3` のようなセマンティック バージョンです。`endpoint` は `https://` とホストで始まります。暗号化しない `http` は、同じマシンでのテストのために `127.0.0.1` と `localhost` に限って使えます。`public_key` は minisign の公開鍵を base64 にしたもので、`untrusted comment:` の行と鍵の行から成ります。形が正しくても、その鍵でパッケージの署名を確かめられなければ、`download` で失敗します。`testing::FakeOs` では `os.updates()` が `Ok(None)` を返すので、ハンドラのテストでは最新版のときの分岐を通ります。",
             },
         ),
         heading(

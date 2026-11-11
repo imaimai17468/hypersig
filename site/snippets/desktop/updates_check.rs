@@ -5,7 +5,7 @@ use hypersig_desktop::{App, Os, Updates};
 # use serde::{Deserialize, Serialize};
 
 /// The public key `cargo packager signer generate` printed.
-const PUBLIC_KEY: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXkK";
+const PUBLIC_KEY: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJFQjNFNjBDMjc0NTYxQTUKUldTbFlVVW5ET2F6dnJscS9QcVdGbVlLMTB6VWEzSzhndUlxbEtlL2NITk9ZVFV3dnk0TmpYaXQK";
 
 const APP: App = App::new("dev.example.notes").updates(Updates::new(
     env!("CARGO_PKG_VERSION"),
