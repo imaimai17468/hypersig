@@ -300,6 +300,10 @@ fn map(site: Site) -> Part {
             L {
                 en: &[
                     &[
+                        "[Why hypersig_desktop](desktop/why/)",
+                        "The applications it suits, what it gives them, and its start-up and size beside Tauri and Electron",
+                    ],
+                    &[
                         "[The application](desktop/app/)",
                         "`App::new`, the window's size, `App::data_dir`, `App::run`, and its errors",
                     ],
@@ -349,6 +353,10 @@ fn map(site: Site) -> Part {
                     ],
                 ],
                 ja: &[
+                    &[
+                        "[hypersig_desktop を使う理由](desktop/why/)",
+                        "向いているアプリ、アプリにとっての利点、Tauri や Electron と比べた起動時間とサイズ",
+                    ],
                     &[
                         "[アプリの設定](desktop/app/)",
                         "`App::new`、ウィンドウの大きさ、`App::data_dir`、`App::run` とそのエラー",

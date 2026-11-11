@@ -11,10 +11,16 @@ use crate::Site;
 use crate::doc::{DesktopPage, Doc};
 use crate::prose::{Part, title};
 
+/// The start-up and size of `hypersig_desktop` beside Tauri and Electron.
+pub(crate) fn benchmark(site: Site) -> Part {
+    start::why::results(site)
+}
+
 /// The article of `page`.
 pub(crate) fn content(site: Site, page: DesktopPage) -> Part {
     let head = title(Doc::Desktop(page).title(site));
     match page {
+        DesktopPage::Why => start::why::page(site, head),
         DesktopPage::Overview => start::overview::page(site, head),
         DesktopPage::TheApp => start::app::page(site, head),
         DesktopPage::Windows => windows::page(site, head),
