@@ -201,6 +201,9 @@ export class Calls {
       if (!this.#rt.navigation.leaving) call.options.succeeded?.();
       return true;
     }
+    // A page that is leaving has its requests cut off, which WebKit reports
+    // as a failed `fetch`, and nothing on the page is shown again.
+    if (this.#rt.navigation.leaving) return false;
     this.#fail(call, failure);
     call.options.failed?.(failure.message);
     const again =

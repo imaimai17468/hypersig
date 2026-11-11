@@ -12,6 +12,13 @@ export class Navigation {
   /** The path and query of the URL the page shows, which `history` changes without loading a page. */
   #shown = location.pathname + location.search;
 
+  constructor() {
+    // A link the browser follows itself leaves too. WebKit fails the page's
+    // open `fetch` calls as it goes, before `pagehide`, and a failure seen
+    // while `leaving` is not reported.
+    addEventListener("beforeunload", () => this.#leave());
+  }
+
   /** Loads the page at `url`, as following a link to it would. */
   navigate(url: string): void {
     this.#leave();
