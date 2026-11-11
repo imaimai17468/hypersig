@@ -54,10 +54,10 @@ enum Stage {
 
 /// Whether the environment asks for a smoke run, in a build that can make one.
 #[cfg_attr(
-    not(target_os = "linux"),
+    target_os = "macos",
     expect(
         dead_code,
-        reason = "only WebKitGTK is given fake devices for a smoke run"
+        reason = "WKWebView is given no fake devices for a smoke run"
     )
 )]
 pub(crate) fn requested() -> bool {

@@ -103,6 +103,18 @@ pub(crate) fn web_view(
                 let _ = loads.send_event(Event::Loaded(id));
             }
         });
+    // A smoke run has no device of its own, so WebView2 stands in a fake
+    // microphone and camera. The other flags are the ones wry passes when
+    // it is given none, which this list replaces.
+    #[cfg(target_os = "windows")]
+    let builder = if app.devices.any() && crate::smoke::requested() {
+        use wry::WebViewBuilderExtWindows as _;
+        builder.with_additional_browser_args(
+            "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required --use-fake-device-for-media-stream",
+        )
+    } else {
+        builder
+    };
     #[cfg(not(target_os = "linux"))]
     let web_view = builder.build(window);
     // tao puts a box in the GTK window, which holds one child, so the web

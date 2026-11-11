@@ -38,8 +38,11 @@ impl Devices {
 
     /// Whether any device is allowed.
     #[cfg_attr(
-        not(any(target_os = "linux", test)),
-        expect(dead_code, reason = "only WebKitGTK turns media streams on")
+        all(target_os = "macos", not(test)),
+        expect(
+            dead_code,
+            reason = "only WebKitGTK and a smoke run's WebView2 read it"
+        )
     )]
     pub(crate) const fn any(self) -> bool {
         self.microphone || self.camera

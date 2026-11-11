@@ -275,14 +275,13 @@ jobs:
           wait "$first"
       # examples/meter/smoke.js waits for the meter to open the microphone,
       # which the example allows, and checks that the camera is refused.
-      # WebKitGTK is given fake devices in a smoke build, and WebView2 by the
-      # flag below. The macOS runner has no device and would ask the person.
+      # A smoke build gives WebKitGTK and WebView2 fake devices. The macOS
+      # runner has no device and would ask the person.
       - name: The meter example is granted the microphone and refused the camera
         if: runner.os != 'macOS'
         shell: bash
         env:
           HYPERSIG_DESKTOP_SMOKE_SCRIPT: examples/meter/smoke.js
-          WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: --use-fake-device-for-media-stream
         run: |
           if [ "$RUNNER_OS" = Linux ]; then
             xvfb-run -a target/release/example-meter
