@@ -55,8 +55,8 @@ fn feature(site: Site) -> Part {
         para(
             site,
             L {
-                en: "`FakeOs::new` makes a fake system with no answers, no clipboard text, and no windows. `os()` returns an `Os` to put in the router's state where `App::run` would give the real one, so the handlers are the same functions in the application and in the test. Every `Os` from one `FakeOs`, and every clone of either, shares the same answers and records. Nothing on screen changes: no dialog, window, or browser opens, and the system clipboard is left alone.",
-                ja: "`FakeOs::new` は、答えもクリップボードのテキストもウィンドウもない偽の OS を作ります。`os()` が返す `Os` を、`App::run` が本物を渡すのと同じ場所、つまりルーターの状態に入れます。そのため、アプリとテストで同じハンドラの関数を使えます。1 つの `FakeOs` から得たどの `Os` も、そのどちらのクローンも、同じ答えと記録を共有します。画面には何も起きません。ダイアログもウィンドウもブラウザも開かず、OS のクリップボードにも触れません。",
+                en: "[`FakeOs::new`](api:hypersig_desktop/testing/struct.FakeOs.html#method.new) makes a fake system with no answers, no clipboard text, and no windows. `os()` returns an `Os` to put in the router's state where `App::run` would give the real one, so the handlers are the same functions in the application and in the test. Every `Os` from one `FakeOs`, and every clone of either, shares the same answers and records. Nothing on screen changes: no dialog, window, or browser opens, and the system clipboard is left alone.",
+                ja: "[`FakeOs::new`](api:hypersig_desktop/testing/struct.FakeOs.html#method.new) は、答えもクリップボードのテキストもウィンドウもない偽の OS を作ります。`os()` が返す `Os` を、`App::run` が本物を渡すのと同じ場所、つまりルーターの状態に入れます。そのため、アプリとテストで同じハンドラの関数を使えます。1 つの `FakeOs` から得たどの `Os` も、そのどちらのクローンも、同じ答えと記録を共有します。画面には何も起きません。ダイアログもウィンドウもブラウザも開かず、OS のクリップボードにも触れません。",
             },
         ),
     ])
