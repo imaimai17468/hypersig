@@ -10,7 +10,7 @@ use hypersig::style::value::{
 };
 use hypersig::style::{Element, Global, Media, PseudoClass, Style};
 use hypersig::{OpenGraph, OpenGraphType, Page, SafeUrl, Stmt, if_else};
-use hypersig_ui::{ButtonVariant, icon_button, token};
+use hypersig_ui::{ButtonSize, ButtonVariant, Popover, icon_button, token};
 
 use crate::doc::{Doc, Library};
 use crate::lang::{L, Lang};
@@ -330,42 +330,76 @@ fn brand(site: Site, library: Library) -> Part {
         }))
 }
 
-/// Links to the three libraries, the current one marked, in a bordered
-/// group.
+/// The panel that lists the libraries, opened from the header.
+const LIBRARIES: Popover<Docs> = Popover::new(LIBRARY_PANEL);
+
+hypersig::node_ref!(const LIBRARY_PANEL: NodeRef<Docs>);
+
+/// A button named after the current library that opens a list of every
+/// library, the current one marked, each with the path a program imports it
+/// from.
 fn switcher(site: Site, current: Library) -> Part {
-    nav()
-        .attr(
-            attr::ARIA_LABEL,
-            site.t(L {
-                en: "Libraries",
-                ja: "ライブラリ",
-            }),
+    let label = site.t(L {
+        en: "Libraries",
+        ja: "ライブラリ",
+    });
+    div()
+        .child(
+            LIBRARIES
+                .trigger(ButtonVariant::Outline, ButtonSize::Sm)
+                // The name keeps the visible library name and says what the
+                // button opens.
+                .attr(attr::ARIA_LABEL, format!("{label}: {}", current.name(site)))
+                .css(Style::new().gap(rem(0.375)).font_size(rem(0.8125)))
+                .text(current.name(site))
+                .child(chevron()),
         )
-        .css(
-            hstack(px(2))
-                .padding(px(2))
-                .border_width(px(1))
-                .border_style(BorderStyle::Solid)
-                .border_color(token::border().var())
-                .border_radius(px(8)),
+        .child(
+            LIBRARIES
+                .popover()
+                .css(Style::new().width(rem(15)).padding(rem(0.25)))
+                .child(
+                    nav()
+                        .attr(attr::ARIA_LABEL, label)
+                        .css(stack(px(2)))
+                        .children(Library::ALL.into_iter().map(|library| {
+                            let here = Place::current_if(library == current);
+                            mark_section(a().href(own(library.home().url(site))), here)
+                                .css(sidebar_link_style(here))
+                                .child(
+                                    span()
+                                        .css(Style::new().display(Display::Block))
+                                        .text(library.name(site)),
+                                )
+                                .child(
+                                    span()
+                                        .css(
+                                            Style::new()
+                                                .display(Display::Block)
+                                                .font_size(rem(0.75))
+                                                .font_weight(FontWeight::Number(400.0))
+                                                .color(token::muted_foreground().var()),
+                                        )
+                                        .text(library.path()),
+                                )
+                        })),
+                ),
         )
-        .children(Library::ALL.into_iter().map(|library| {
-            let here = Place::current_if(library == current);
-            let link = a().href(own(library.home().url(site))).css(
-                Style::new()
-                    .padding_block(rem(0.25))
-                    .padding_inline(rem(0.625))
-                    .border_radius(px(6))
-                    .font_size(rem(0.8125))
-                    .merge(nav_link_style(here))
-                    .merge(if here == Place::Current {
-                        Style::new().background_color(token::accent().var())
-                    } else {
-                        Style::new()
-                    }),
-            );
-            mark_section(link, here).text(library.name(site))
-        }))
+}
+
+/// The arrow after the library's name, which says that the button opens a
+/// list.
+fn chevron() -> Part {
+    el(hypersig::tag!("svg"))
+        .attr(attr::VIEW_BOX, "0 0 24 24")
+        .attr(attr::FILL, "none")
+        .attr(attr::STROKE, "currentColor")
+        .attr(attr::STROKE_WIDTH, "2")
+        .attr(attr::STROKE_LINECAP, "round")
+        .attr(attr::STROKE_LINEJOIN, "round")
+        .attr(attr::ARIA_HIDDEN, "true")
+        .css(Style::new().width(rem(0.875)).height(rem(0.875)))
+        .child(el(hypersig::tag!("path")).attr(attr::D, "m6 9 6 6 6-6"))
 }
 
 /// Links to `doc` in each language, the current one marked, for the header.
