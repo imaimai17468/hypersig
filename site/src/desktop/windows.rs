@@ -132,8 +132,8 @@ fn at_start(site: Site) -> Part {
         para(
             site,
             L {
-                en: "A window asked for before the first window's page has loaded opens after it has, because the later windows need what the first one receives. The first page in turn waits for the setup's future to return the router, so the future spawns a task that opens the windows instead of awaiting `open` itself, as `examples/notes` does for the files named on its command line:",
-                ja: "最初のウィンドウのページが読み込まれる前に要求したウィンドウは、読み込みが終わってから開きます。あとのウィンドウには、最初のウィンドウが受け取るものが必要だからです。一方、最初のページはセットアップの future がルーターを返すのを待っています。そのため future の中では `open` を await せず、ウィンドウを開くタスクを spawn します。`examples/notes` はコマンドラインで渡されたファイルをこの方法で開きます。",
+                en: "The setup's future can await `open` before it returns the router. A window asked for before the first window's page has loaded is made at once, and loads its page once the first page has, because the later windows need what the first one receives. `examples/notes` opens the files named on its command line this way:",
+                ja: "セットアップの future は、ルーターを返す前に `open` を await できます。最初のウィンドウのページが読み込まれる前に要求したウィンドウはすぐに作られ、最初のページが読み込まれたあとで自分のページを読み込みます。あとのウィンドウには、最初のウィンドウが受け取るものが必要だからです。`examples/notes` はコマンドラインで渡されたファイルをこの方法で開きます。",
             },
         ),
         show(Snippet::DesktopAtStart),
