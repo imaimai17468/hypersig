@@ -554,6 +554,17 @@ snippets! {
     DesktopSecuritySessions => "desktop/security_sessions.rs", "no_run";
     DesktopPersistedSignalsTheme => "desktop/persisted_signals_theme.rs", "no_run";
     DesktopPersistedSignalsAlreadyRunning => "desktop/persisted_signals_already_running.rs", "no_run";
+    // Desktop: system, testing
+    DesktopDialogOpen => "desktop/dialogs_open.rs", "no_run";
+    DesktopDialogKinds => "desktop/dialogs_kinds.rs";
+    DesktopClipboard => "desktop/clipboard.rs";
+    DesktopOpenExternal => "desktop/external_open.rs";
+    DesktopExternalScheme => "desktop/external_scheme.rs", "compile_fail,E0080";
+    DesktopExternalStr => "desktop/external_str.rs", "compile_fail,E0308";
+    DesktopExternalRelative => "desktop/external_relative.rs";
+    DesktopFakeOs => "desktop/fake_os.rs";
+    DesktopFakeOsReads => "desktop/fake_os_reads.rs";
+    DesktopFakeOsUnanswered => "desktop/fake_os_unanswered.rs", "should_panic";
 }
 
 /// The lines of `snippet` that the page shows.
