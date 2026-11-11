@@ -93,7 +93,8 @@ impl std::fmt::Debug for Update {
 }
 
 impl Update {
-    /// The version, as the endpoint wrote it.
+    /// The version the endpoint announced, written as a semantic version
+    /// such as `1.1.0`.
     #[must_use]
     pub fn version(&self) -> &str {
         &self.inner.version

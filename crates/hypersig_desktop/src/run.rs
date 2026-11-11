@@ -289,16 +289,28 @@ impl Lifecycle<'_> {
         let Some(open) = self.windows.get_mut(&id) else {
             return;
         };
-        if open.shown || open.leaving {
+        if open.leaving {
             return;
         }
-        open.shown = true;
-        open.window.set_visible(true);
-        open.window.set_focus();
+        // `slow` shows a window whose page is late, and the page can still
+        // load after that.
+        let late = open.shown;
+        if !late {
+            open.shown = true;
+            open.window.set_visible(true);
+            open.window.set_focus();
+        }
         if self.first == Some(id) {
-            self.smoke(None);
-            self.started(target);
-        } else if let Some(smoke) = &self.smoke
+            if !late {
+                self.smoke(None);
+            }
+            // The first page brings the cookie the other windows need, so
+            // they open once it has loaded, late or not.
+            if !self.started {
+                self.started(target);
+            }
+        } else if !late
+            && let Some(smoke) = &self.smoke
             && let Err(error) = smoke.other_window(&open.web_view)
         {
             self.fail(error);
