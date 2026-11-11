@@ -274,6 +274,7 @@ pub enum DesktopPage {
     Notifications,
     Badge,
     Tray,
+    Devices,
     // Testing
     Testing,
     SmokeRuns,
@@ -927,6 +928,7 @@ pub(crate) const DESKTOP: &[Group] = &[
             Doc::Desktop(DesktopPage::Notifications),
             Doc::Desktop(DesktopPage::Badge),
             Doc::Desktop(DesktopPage::Tray),
+            Doc::Desktop(DesktopPage::Devices),
         ],
     },
     Group {
@@ -1182,6 +1184,7 @@ impl Doc {
         Self::Desktop(DesktopPage::Notifications),
         Self::Desktop(DesktopPage::Badge),
         Self::Desktop(DesktopPage::Tray),
+        Self::Desktop(DesktopPage::Devices),
         // Desktop: Testing
         Self::Desktop(DesktopPage::Testing),
         Self::Desktop(DesktopPage::SmokeRuns),
@@ -1239,6 +1242,7 @@ impl Doc {
                 DesktopPage::Badge => ("The count on the icon", "アイコンの数"),
                 DesktopPage::Notifications => ("Notifications", "通知"),
                 DesktopPage::Tray => ("The tray icon", "トレイのアイコン"),
+                DesktopPage::Devices => ("The microphone and the camera", "マイクとカメラ"),
                 DesktopPage::Testing => ("Testing without a window", "ウィンドウなしのテスト"),
                 DesktopPage::SmokeRuns => ("Smoke runs in CI", "CI でのスモークテスト"),
                 DesktopPage::Packaging => ("Packaging", "パッケージの作成"),
@@ -1919,6 +1923,10 @@ impl Doc {
                     en: "`Os::tray` puts an icon with a menu in the system tray, which keeps the application running with no window.",
                     ja: "`Os::tray` は、メニュー付きのアイコンを OS のトレイに置きます。トレイがあれば、ウィンドウがなくてもアプリは動き続けます。",
                 },
+                DesktopPage::Devices => L {
+                    en: "`App::allow` names the devices, such as the microphone, that the pages may use through `getUserMedia`.",
+                    ja: "`App::allow` は、マイクのように、ページが `getUserMedia` で使えるデバイスを指定します。",
+                },
                 DesktopPage::Badge => L {
                     en: "`Os::badge` puts a count, such as the number of unread messages, on the application's icon.",
                     ja: "`Os::badge` は、未読のメッセージの数のような数を、アプリのアイコンに表示します。",
@@ -2327,6 +2335,7 @@ impl DesktopPage {
             Self::Badge => "badge",
             Self::Notifications => "notifications",
             Self::Tray => "tray",
+            Self::Devices => "devices",
             Self::Testing => "testing",
             Self::SmokeRuns => "smoke-runs",
             Self::Packaging => "packaging",

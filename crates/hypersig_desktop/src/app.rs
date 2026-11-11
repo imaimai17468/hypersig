@@ -24,6 +24,7 @@ pub struct App<U = ()> {
     pub(crate) size: (u32, u32),
     pub(crate) min_size: Option<(u32, u32)>,
     pub(crate) resizable: bool,
+    pub(crate) devices: crate::device::Devices,
     #[cfg_attr(
         not(feature = "updater"),
         expect(dead_code, reason = "only the `run` of `App<Updates>` reads it")
@@ -49,6 +50,7 @@ impl App {
             size: (1024, 768),
             min_size: None,
             resizable: true,
+            devices: crate::device::Devices::NONE,
             updates: (),
         }
     }
@@ -63,6 +65,7 @@ impl App {
             size: self.size,
             min_size: self.min_size,
             resizable: self.resizable,
+            devices: self.devices,
             updates,
         }
     }
@@ -116,6 +119,25 @@ impl<U> App<U> {
     #[must_use]
     pub const fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
+        self
+    }
+
+    /// Lets the pages use `device` through `getUserMedia`.
+    ///
+    /// The web view grants a page only the devices named here, without
+    /// asking the person, and refuses the others. The system still asks the
+    /// person once whether the application may use the device. On macOS, the
+    /// web view offers no `navigator.mediaDevices` unless the bundle's
+    /// `Info.plist` has `NSMicrophoneUsageDescription` for the microphone and
+    /// `NSCameraUsageDescription` for the camera, which a run outside a
+    /// bundle lacks.
+    ///
+    /// `WebView2`, on Windows, keeps a grant in the web view's data, so a
+    /// later version that no longer names the device is still granted it
+    /// until that data is removed.
+    #[must_use]
+    pub const fn allow(mut self, device: crate::Device) -> Self {
+        self.devices = self.devices.with(device);
         self
     }
 

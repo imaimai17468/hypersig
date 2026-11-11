@@ -56,6 +56,7 @@ fn leave_for(url: &str) {
 /// show opens in the system's program for it. It loads nothing until it is
 /// given a URL.
 pub(crate) fn web_view(
+    app: &App,
     window: &Window,
     context: &mut WebContext,
     origin: &str,
@@ -70,6 +71,10 @@ pub(crate) fn web_view(
     let open_origin = origin.to_owned();
     let builder = WebViewBuilder::new_with_web_context(context)
         .with_devtools(cfg!(debug_assertions))
+        .with_permission_handler({
+            let devices = app.devices;
+            move |kind| devices.answer(kind)
+        })
         // Before its first URL, the web view may show `about:blank`.
         .with_navigation_handler(move |url| {
             let stays = url.starts_with(&navigation_origin) || url == "about:blank";
@@ -98,6 +103,18 @@ pub(crate) fn web_view(
                 let _ = loads.send_event(Event::Loaded(id));
             }
         });
+    // A smoke run has no device of its own, so WebView2 stands in a fake
+    // microphone and camera. The other flags are the ones wry passes when
+    // it is given none, which this list replaces.
+    #[cfg(target_os = "windows")]
+    let builder = if app.devices.any() && crate::smoke::requested() {
+        use wry::WebViewBuilderExtWindows as _;
+        builder.with_additional_browser_args(
+            "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required --use-fake-device-for-media-stream",
+        )
+    } else {
+        builder
+    };
     #[cfg(not(target_os = "linux"))]
     let web_view = builder.build(window);
     // tao puts a box in the GTK window, which holds one child, so the web
@@ -118,6 +135,17 @@ pub(crate) fn web_view(
             // it asks the new-window handler, which WKWebView and WebView2 ask.
             if let Some(settings) = web_view.webview().settings() {
                 settings.set_javascript_can_open_windows_automatically(true);
+                // WebKitGTK offers no `navigator.mediaDevices`, and asks no
+                // permission, unless media streams are enabled.
+                if app.devices.any() {
+                    settings.set_enable_media_stream(true);
+                    settings.set_enable_webrtc(true);
+                    // A smoke run has no device of its own, so WebKitGTK
+                    // stands in a fake microphone and camera.
+                    if crate::smoke::requested() {
+                        settings.set_enable_mock_capture_devices(true);
+                    }
+                }
             }
         })
     };

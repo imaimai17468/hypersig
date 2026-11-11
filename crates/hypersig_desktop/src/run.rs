@@ -105,6 +105,7 @@ impl App<crate::Updates> {
             size: self.size,
             min_size: self.min_size,
             resizable: self.resizable,
+            devices: self.devices,
             updates: (),
         };
         app.run(first_page, move |os| setup(os, updater))
@@ -364,7 +365,8 @@ impl Lifecycle<'_> {
         #[cfg(windows)]
         crate::badge::on_taskbar(&window, self.badge);
         let origin = format!("{}/", self.base);
-        let web_view = window::web_view(&window, &mut self.context, &origin, self.proxy)?;
+        let web_view =
+            window::web_view(&self.app, &window, &mut self.context, &origin, self.proxy)?;
         let id = window.id();
         if let Some((url, headers)) = page {
             self.load(id, &web_view, url, headers)?;

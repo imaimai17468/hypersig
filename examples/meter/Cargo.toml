@@ -1,0 +1,33 @@
+[package]
+name = "example-meter"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The binary has no tests, and `cargo test` would still build and run an
+# empty test harness for it.
+[[bin]]
+name = "example-meter"
+path = "src/main.rs"
+test = false
+
+[dependencies]
+axum.workspace = true
+hypersig.workspace = true
+hypersig_desktop.workspace = true
+serde.workspace = true
+
+[package.metadata.packager]
+product-name = "hypersig meter"
+identifier = "dev.hypersig.example-meter"
+before-packaging-command = "cargo build --release -p example-meter"
+binaries = [{ path = "example-meter", main = true }]
+
+# The keys macOS needs before the web view offers the microphone, which
+# cargo-packager adds to the bundle's Info.plist.
+[package.metadata.packager.macos]
+info-plist-path = "Info.plist"
+
+[lints]
+workspace = true

@@ -58,6 +58,10 @@
 //! the pages with [`Page::simulate`](hypersig::Page::simulate), without a
 //! window. `examples/notes` is written and tested this way.
 //!
+//! A page uses the microphone or the camera through `getUserMedia` only
+//! when [`App::allow`] names that [`Device`], and the web view refuses the
+//! others without asking the person.
+//!
 //! With the `updater` feature, `App::updates` names where new versions are
 //! announced and the key that signs them, and the `Updater` that `App::run`
 //! then hands the setup finds a newer version, downloads it, checks its signature, and installs it, in the
@@ -108,6 +112,7 @@
 mod app;
 mod badge;
 mod clipboard;
+mod device;
 mod error;
 #[cfg(target_os = "linux")]
 mod framing;
@@ -129,6 +134,7 @@ mod updates;
 mod window;
 
 pub use app::{App, IntoRouter};
+pub use device::Device;
 pub use error::{Error, ErrorKind};
 pub use handoff::{Launch, Launches};
 pub use notification::{Notification, Notified};

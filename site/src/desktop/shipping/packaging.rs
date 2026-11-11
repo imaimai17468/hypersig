@@ -157,6 +157,32 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         heading(
             site,
             L {
+                en: "Keys of the macOS Info.plist",
+                ja: "macOS の Info.plist のキー",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "cargo-packager writes the `.app`'s `Info.plist` and adds every key of the file `[package.metadata.packager.macos]` names as `info-plist-path`, read from the crate's directory. A page that uses [the microphone or the camera](desktop/devices/) needs `NSMicrophoneUsageDescription` or `NSCameraUsageDescription` there, and `examples/meter` adds the first:",
+                ja: "cargo-packager は `.app` の `Info.plist` を書き出し、`[package.metadata.packager.macos]` の `info-plist-path` で指定したファイルのキーをすべて加えます。このファイルはクレートのディレクトリから読みます。[マイクやカメラ](desktop/devices/)を使うページには、ここに `NSMicrophoneUsageDescription` か `NSCameraUsageDescription` が必要です。`examples/meter` は前者を加えています。",
+            },
+        ),
+        code::block(
+            Lang::Toml,
+            Some("examples/meter/Cargo.toml"),
+            "[package.metadata.packager.macos]\ninfo-plist-path = \"Info.plist\"",
+        ),
+        para(
+            site,
+            L {
+                en: "CI packages the meter on macOS and checks that its `.app` has the key.",
+                ja: "CI は macOS で meter の例のパッケージを作り、その `.app` にキーがあることを確かめています。",
+            },
+        ),
+        heading(
+            site,
+            L {
                 en: "What each system gets",
                 ja: "OS ごとにできるパッケージ",
             },

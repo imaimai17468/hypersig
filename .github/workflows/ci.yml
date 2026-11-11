@@ -224,9 +224,9 @@ jobs:
       # xvfb gives the window a display on a runner that has none.
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev xvfb
-      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes --features hypersig_desktop/testing,hypersig_desktop/updater,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
+      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes -p example-meter --features hypersig_desktop/testing,hypersig_desktop/updater,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
       - run: cargo test -p hypersig_desktop -p example-notes --features hypersig_desktop/testing,hypersig_desktop/updater
-      - run: cargo build --release -p example-todo -p example-notes --features example-todo/desktop,hypersig_desktop/smoke
+      - run: cargo build --release -p example-todo -p example-notes -p example-meter --features example-todo/desktop,hypersig_desktop/smoke
       # examples/todo/smoke.js adds a todo in the window, waits for it to come
       # back over the page's stream, and does the same from a second window.
       - name: The todo example works in two windows
@@ -273,6 +273,21 @@ jobs:
           notes="$PWD/target/release/example-notes"
           (cd "$RUNNER_TEMP" && "$notes" handoff.md)
           wait "$first"
+      # examples/meter/smoke.js waits for the meter to open the microphone,
+      # which the example allows, and checks that the camera is refused.
+      # A smoke build gives WebKitGTK and WebView2 fake devices. The macOS
+      # runner has no device and would ask the person.
+      - name: The meter example is granted the microphone and refused the camera
+        if: runner.os != 'macOS'
+        shell: bash
+        env:
+          HYPERSIG_DESKTOP_SMOKE_SCRIPT: examples/meter/smoke.js
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a target/release/example-meter
+          else
+            target/release/example-meter
+          fi
       # The packages each system installs from, built from the
       # `[package.metadata.packager]` table of examples/notes/Cargo.toml.
       - uses: taiki-e/install-action@5488ac5a951645ce95062214902ac4b6bc1a1037 # v2
@@ -285,6 +300,13 @@ jobs:
       - name: The notes example's macOS bundle names its identifier
         if: runner.os == 'macOS'
         run: test "$(plutil -extract CFBundleIdentifier raw "target/release/hypersig notes.app/Contents/Info.plist")" = dev.hypersig.example-notes
+      # The web view offers the microphone only to a bundle that says why it
+      # uses it, which examples/meter/Info.plist adds.
+      - name: The meter example's macOS bundle says why it uses the microphone
+        if: runner.os == 'macOS'
+        run: |
+          cargo packager -p example-meter --release --formats app
+          plutil -extract NSMicrophoneUsageDescription raw "target/release/hypersig meter.app/Contents/Info.plist"
 
 
   nightly:
