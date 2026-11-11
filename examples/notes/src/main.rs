@@ -372,7 +372,7 @@ fn app(state: AppState) -> Router {
 }
 
 /// Opens the note window of each of `notes`.
-async fn show_all(os: Os, notes: Vec<Note>) {
+async fn show_all(os: &Os, notes: Vec<Note>) {
     // hypersig_desktop logs a window it could not open, and a closing
     // application opens none, so the first failure ends the loop.
     for note in notes {
@@ -392,9 +392,7 @@ fn main() -> Result<(), hypersig_desktop::Error> {
         for path in files {
             notes.push(state.keep(path)?);
         }
-        // The windows open once the list's page has loaded, which waits
-        // for this setup to return the router.
-        tokio::spawn(show_all(os, notes));
+        show_all(&os, notes).await;
         Ok::<_, std::io::Error>(app(state))
     })
 }

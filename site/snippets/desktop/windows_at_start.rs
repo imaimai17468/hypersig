@@ -19,7 +19,7 @@ use hypersig_desktop::{App, Os};
 const APP: App = App::new("dev.example.notes");
 
 /// Opens a window for each of `ids`, until one fails to open.
-async fn show_all(os: Os, ids: Vec<u64>) {
+async fn show_all(os: &Os, ids: Vec<u64>) {
     for id in ids {
         if os.windows().open(&NOTE.url(id)).await.is_err() {
             break;
@@ -29,10 +29,7 @@ async fn show_all(os: Os, ids: Vec<u64>) {
 
 fn main() -> Result<(), hypersig_desktop::Error> {
     APP.run(&INDEX.url(()), |os| async move {
-        // Awaited here, `show_all` would open no window: the windows open
-        // after the first page has loaded, and the first page waits for
-        // this future to return the router.
-        tokio::spawn(show_all(os.clone(), vec![1, 2]));
+        show_all(&os, vec![1, 2]).await;
         pages(Router::new()).hypersig_runtime().with_state(AppState { os })
     })
 }

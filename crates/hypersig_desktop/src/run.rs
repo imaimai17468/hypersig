@@ -226,9 +226,10 @@ struct Lifecycle<'a> {
     /// The first window, whose first page trades the start token for the
     /// session cookie.
     first: Option<WindowId>,
-    /// The windows asked for before the first page loaded, which opens them
-    /// once it has, since a page needs the cookie the first one receives.
-    waiting: Vec<Asked>,
+    /// The windows made before the first page loaded, with the page each
+    /// loads once it has, since a page needs the cookie the first one
+    /// receives.
+    waiting: Vec<(WindowId, String)>,
     /// Whether the first page has loaded.
     started: bool,
     smoke: Option<Smoke>,
@@ -250,13 +251,13 @@ impl Lifecycle<'_> {
                     open.window.set_title(&title);
                 }
             }
-            TaoEvent::UserEvent(Event::Loaded(id)) => self.loaded(id, target),
+            TaoEvent::UserEvent(Event::Loaded(id)) => self.loaded(id),
             TaoEvent::UserEvent(Event::Slow(id)) => self.slow(id),
             TaoEvent::UserEvent(Event::Open { url, answer }) => {
                 if self.started {
                     self.answer(target, Asked { url, answer });
                 } else {
-                    self.waiting.push(Asked { url, answer });
+                    self.wait(target, Asked { url, answer });
                 }
             }
             TaoEvent::UserEvent(Event::Close(id))
@@ -296,22 +297,10 @@ impl Lifecycle<'_> {
         let window = window::window(&self.app, target)?;
         let origin = format!("{}/", self.base);
         let web_view = window::web_view(&window, &mut self.context, &origin, self.proxy)?;
-        if let Some((url, headers)) = page {
-            let absolute = if url.starts_with('/') {
-                format!("{}{url}", self.base)
-            } else {
-                url.to_owned()
-            };
-            web_view
-                .load_url_with_headers(&absolute, headers)
-                .map_err(Error::window)?;
-        }
         let id = window.id();
-        let slow = self.proxy.clone();
-        self.runtime.spawn(async move {
-            tokio::time::sleep(FIRST_LOAD).await;
-            let _ = slow.send_event(Event::Slow(id));
-        });
+        if let Some((url, headers)) = page {
+            self.load(id, &web_view, url, headers)?;
+        }
         self.windows.insert(
             id,
             Open {
@@ -324,7 +313,48 @@ impl Lifecycle<'_> {
         Ok(id)
     }
 
-    fn loaded(&mut self, id: WindowId, target: &EventLoopWindowTarget<Event>) {
+    /// Has `web_view`, of the window `id`, load `url`, a path of the
+    /// application or a URL of its origin, and shows the window without its
+    /// page if the page has not loaded after [`FIRST_LOAD`].
+    fn load(
+        &self,
+        id: WindowId,
+        web_view: &WebView,
+        url: &str,
+        headers: HeaderMap,
+    ) -> Result<(), Error> {
+        let absolute = if url.starts_with('/') {
+            format!("{}{url}", self.base)
+        } else {
+            url.to_owned()
+        };
+        web_view
+            .load_url_with_headers(&absolute, headers)
+            .map_err(Error::window)?;
+        let slow = self.proxy.clone();
+        self.runtime.spawn(async move {
+            tokio::time::sleep(FIRST_LOAD).await;
+            let _ = slow.send_event(Event::Slow(id));
+        });
+        Ok(())
+    }
+
+    /// Makes the window `asked` for before the first page has loaded and
+    /// tells whoever asked, so a setup that awaits the window can return
+    /// the router the first page waits for. Its page loads once the first
+    /// page has.
+    fn wait(&mut self, target: &EventLoopWindowTarget<Event>, Asked { url, answer }: Asked) {
+        let made = self.open(target, None);
+        match &made {
+            Ok(id) => self.waiting.push((*id, url)),
+            Err(error) => tracing::error!(%error, %url, "a window could not be opened"),
+        }
+        if let Some(answer) = answer {
+            let _ = answer.send(made);
+        }
+    }
+
+    fn loaded(&mut self, id: WindowId) {
         let Some(open) = self.windows.get_mut(&id) else {
             return;
         };
@@ -346,7 +376,7 @@ impl Lifecycle<'_> {
             // The first page brings the cookie the other windows need, so
             // they open once it has loaded, late or not.
             if !self.started {
-                self.started(target);
+                self.started();
             }
         } else if !late
             && let Some(smoke) = &self.smoke
@@ -356,12 +386,18 @@ impl Lifecycle<'_> {
         }
     }
 
-    /// Opens the windows asked for while the first page loaded, now that
-    /// the cookie they need is there.
-    fn started(&mut self, target: &EventLoopWindowTarget<Event>) {
+    /// Loads the pages of the windows made while the first page loaded,
+    /// now that the cookie they need is there.
+    fn started(&mut self) {
         self.started = true;
-        for asked in std::mem::take(&mut self.waiting) {
-            self.answer(target, asked);
+        for (id, url) in std::mem::take(&mut self.waiting) {
+            let Some(open) = self.windows.get(&id).filter(|open| !open.leaving) else {
+                continue;
+            };
+            if let Err(error) = self.load(id, &open.web_view, &url, HeaderMap::new()) {
+                tracing::error!(%error, %url, "a window could not load its page");
+                self.leave(id);
+            }
         }
     }
 
@@ -389,16 +425,12 @@ impl Lifecycle<'_> {
         );
         open.shown = true;
         open.window.set_visible(true);
-        // The windows asked for meanwhile would have no cookie, so whoever
-        // asked hears that none opened rather than waiting on.
+        // The windows made meanwhile would load their pages without the
+        // cookie, so they close instead.
         if self.first == Some(id) {
-            for Asked { url, answer } in std::mem::take(&mut self.waiting) {
-                tracing::error!(%url, "a window was not opened, since the first page did not load");
-                if let Some(answer) = answer {
-                    let _ = answer.send(Err(Error::window(
-                        "the first page did not load, so no other window opens",
-                    )));
-                }
+            for (waiting, url) in std::mem::take(&mut self.waiting) {
+                tracing::error!(%url, "a window was closed, since the first page did not load");
+                self.leave(waiting);
             }
         }
         if self.smoke.is_some() {
