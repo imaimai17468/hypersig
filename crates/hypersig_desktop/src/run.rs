@@ -86,7 +86,9 @@ impl App {
     ///
     /// # Errors
     ///
-    /// Fails when the application's directory cannot be made, when another
+    /// Fails with [`ErrorKind::InRuntime`](crate::ErrorKind::InRuntime) when
+    /// called inside a Tokio runtime, as from a `#[tokio::main]` function.
+    /// Fails too when the application's directory cannot be made, when another
     /// copy of the application runs, when the setup returns an error, and
     /// when a window, a web view, or the server fails.
     ///
@@ -98,6 +100,11 @@ impl App {
         S: FnOnce(Os) -> F,
         F: Future<Output: IntoRouter> + Send + 'static,
     {
+        // Inside a runtime, `block_on` below would panic with a message
+        // that names neither `run` nor `#[tokio::main]`.
+        if tokio::runtime::Handle::try_current().is_ok() {
+            return Err(Error::in_runtime());
+        }
         let started = Instant::now();
         let own = self.data_dir()?.join("hypersig_desktop");
         fs::create_dir_all(&own)?;

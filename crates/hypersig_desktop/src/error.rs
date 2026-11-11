@@ -41,6 +41,10 @@ pub enum ErrorKind {
     NotExternal,
     /// Finding, downloading, verifying, or installing a new version failed.
     Update,
+    /// [`App::run`](crate::App::run) was called inside a Tokio runtime.
+    ///
+    /// `run` starts a runtime of its own, so `main` is not `#[tokio::main]`.
+    InRuntime,
 }
 
 impl Error {
@@ -60,6 +64,13 @@ impl Error {
     pub(crate) fn already_running() -> Self {
         Self {
             kind: ErrorKind::AlreadyRunning,
+            source: None,
+        }
+    }
+
+    pub(crate) fn in_runtime() -> Self {
+        Self {
+            kind: ErrorKind::InRuntime,
             source: None,
         }
     }
@@ -135,6 +146,9 @@ impl fmt::Display for Error {
             ErrorKind::Window => "the window could not be shown",
             ErrorKind::Io => "the application's files or server failed",
             ErrorKind::Closed => "the application is closing",
+            ErrorKind::InRuntime => {
+                "`App::run` was called inside a Tokio runtime; call it from a `main` without `#[tokio::main]`"
+            }
             ErrorKind::Smoke => "the smoke run failed",
             ErrorKind::Clipboard => "the clipboard could not be used",
             ErrorKind::Update => "the new version could not be found or installed",

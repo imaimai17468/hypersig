@@ -137,8 +137,8 @@ fn no_tokio_main(site: Site) -> Part {
         note(
             site,
             L {
-                en: "A `main` with `#[tokio::main]` that calls `App::run` compiles, and panics as it starts with `Cannot start a runtime from within a runtime`, because `run` blocks on its runtime from inside the one `#[tokio::main]` started.",
-                ja: "`#[tokio::main]` を付けた `main` から `App::run` を呼ぶコードはコンパイルできますが、起動するとすぐに `Cannot start a runtime from within a runtime` でパニックします。`#[tokio::main]` が起動したランタイムの中で、`run` が自分のランタイムをブロックして待つからです。",
+                en: "A `main` with `#[tokio::main]` that calls `App::run` compiles, and `run` returns an error of the kind `ErrorKind::InRuntime` as it starts, without opening a window.",
+                ja: "`#[tokio::main]` を付けた `main` から `App::run` を呼ぶコードはコンパイルできますが、起動するとすぐに `run` が `ErrorKind::InRuntime` のエラーを返し、ウィンドウは開きません。",
             },
         ),
     ])
