@@ -13,6 +13,13 @@ use crate::run::Event;
 /// after the program, which Unity's launcher API reads and GNOME without an
 /// extension does not. Windows has no number on a taskbar button, so each
 /// window gets a red dot while the count is above 0.
+#[cfg_attr(
+    target_os = "linux",
+    expect(
+        clippy::needless_pass_by_value,
+        reason = "Linux sets the count on the launcher entry, and no window takes it"
+    )
+)]
 pub(crate) fn show<'a>(
     count: u32,
     windows: impl IntoIterator<Item = &'a Window>,
@@ -70,7 +77,7 @@ fn dot() -> Option<tao::window::Icon> {
 }
 
 /// `<program>.desktop`, the name cargo-packager gives the desktop file of
-/// a Debian package and an AppImage.
+/// a Debian package and an `AppImage`.
 #[cfg(target_os = "linux")]
 fn desktop_file() -> Option<String> {
     let program = std::env::current_exe().ok()?;
