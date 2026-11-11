@@ -28,6 +28,11 @@ updater = ["dep:cargo-packager-updater"]
 # A build without it ignores both, since the script can call every action.
 smoke = []
 
+# docs.rs builds on Linux, where its image has GTK, WebKitGTK, and D-Bus, as
+# wry's and tao's builds there show.
+[package.metadata.docs.rs]
+features = ["testing", "updater"]
+
 [dependencies]
 arboard.workspace = true
 axum.workspace = true

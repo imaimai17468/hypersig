@@ -89,7 +89,7 @@ if touches '^site/'; then
   if [[ -d target/doc ]]; then
     check site-links cargo run -p site -- --out target/site --rustdoc target/doc
   else
-    check site-links bash -c 'RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps && cargo run -p site -- --out target/site --rustdoc target/doc'
+    check site-links bash -c 'RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --features hypersig_desktop/testing,hypersig_desktop/updater && cargo run -p site -- --out target/site --rustdoc target/doc'
   fi
 fi
 

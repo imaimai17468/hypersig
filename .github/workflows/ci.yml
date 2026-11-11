@@ -79,7 +79,8 @@ jobs:
           until docker exec postgres pg_isready -h 127.0.0.1 -U postgres; do sleep 1; done
           cargo sqlx migrate run --source examples/postgres/migrations
           cd examples/postgres && cargo sqlx prepare --check
-      - run: cargo doc --workspace --no-deps
+      # With the features docs.rs documents hypersig_desktop with.
+      - run: cargo doc --workspace --no-deps --features hypersig_desktop/testing,hypersig_desktop/updater
         env:
           RUSTDOCFLAGS: -D warnings
       # Renders the documentation site and checks its links into the rustdoc
