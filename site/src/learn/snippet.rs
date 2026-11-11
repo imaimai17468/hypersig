@@ -561,6 +561,7 @@ snippets! {
     DesktopClipboard => "desktop/clipboard.rs";
     DesktopBadge => "desktop/badge.rs";
     DesktopDevices => "desktop/devices.rs";
+    DesktopShortcut => "desktop/shortcut.rs";
     DesktopNotify => "desktop/notify.rs";
     DesktopTray => "desktop/tray.rs", "no_run";
     DesktopOpenExternal => "desktop/external_open.rs";

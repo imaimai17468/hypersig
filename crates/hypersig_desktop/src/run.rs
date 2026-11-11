@@ -59,6 +59,13 @@ pub(crate) enum Event {
         tray: crate::Tray,
         answer: oneshot::Sender<Result<(), Error>>,
     },
+    /// [`Os`] registers a global shortcut, or listens to one registered.
+    Shortcut {
+        shortcut: crate::Shortcut,
+        answer: oneshot::Sender<Result<crate::Presses, Error>>,
+    },
+    /// A global shortcut went down or came up.
+    Pressed(u32, crate::Press),
     /// An item of the menu bar or of the tray's menu was chosen.
     Menu(tray_icon::menu::MenuId),
     /// [`Os`] closes a window.
@@ -201,6 +208,12 @@ impl App {
                 let _ = chosen.send_event(Event::Menu(event.id));
             },
         ));
+        let pressed = proxy.clone();
+        global_hotkey::GlobalHotKeyEvent::set_event_handler(Some(
+            move |event: global_hotkey::GlobalHotKeyEvent| {
+                let _ = pressed.send_event(Event::Pressed(event.id(), event.state().into()));
+            },
+        ));
         let mut run = Lifecycle {
             app: self,
             proxy: &proxy,
@@ -214,6 +227,8 @@ impl App {
             smoke: Smoke::from_env(started)?,
             badge: 0,
             tray: None,
+            hotkeys: None,
+            shortcuts: HashMap::new(),
             items: HashMap::new(),
             quitting: false,
             failure: None,
@@ -281,6 +296,11 @@ struct Lifecycle<'a> {
     smoke: Option<Smoke>,
     /// The tray icon shown, which keeps the application running with no window.
     tray: Option<tray_icon::TrayIcon>,
+    /// What registers the global shortcuts, made on this thread when the
+    /// first one is asked for, as macOS and Windows need.
+    hotkeys: Option<global_hotkey::GlobalHotKeyManager>,
+    /// Where each global shortcut, by its id, reports its presses.
+    shortcuts: HashMap<u32, tokio::sync::broadcast::Sender<crate::Press>>,
     /// Where each item of the tray's menu reports its clicks.
     items: HashMap<tray_icon::menu::MenuId, tokio::sync::broadcast::Sender<()>>,
     /// The count on the application's icon, which a window opened later
@@ -344,6 +364,14 @@ impl Lifecycle<'_> {
                 let _ = answer.send(self.tray(&tray));
             }
             TaoEvent::UserEvent(Event::Menu(id)) => self.chosen(&id),
+            TaoEvent::UserEvent(Event::Shortcut { shortcut, answer }) => {
+                let _ = answer.send(self.shortcut(shortcut));
+            }
+            TaoEvent::UserEvent(Event::Pressed(id, press)) => {
+                if let Some(presses) = self.shortcuts.get(&id) {
+                    let _ = presses.send(press);
+                }
+            }
             TaoEvent::UserEvent(Event::Raise) => self.raise(),
             TaoEvent::UserEvent(Event::Smoke(answer)) => self.smoke(answer.as_deref()),
             _ => {}
@@ -581,6 +609,26 @@ impl Lifecycle<'_> {
             .collect();
         self.tray = Some(icon);
         Ok(())
+    }
+
+    /// Registers `shortcut` for the rest of the run, or listens to it again
+    /// when it is registered already.
+    fn shortcut(&mut self, shortcut: crate::Shortcut) -> Result<crate::Presses, Error> {
+        let hotkey = shortcut.hotkey();
+        if let Some(presses) = self.shortcuts.get(&hotkey.id()) {
+            return Ok(crate::Presses::new(presses.subscribe()));
+        }
+        let hotkeys = match &mut self.hotkeys {
+            Some(hotkeys) => hotkeys,
+            empty => {
+                empty.insert(global_hotkey::GlobalHotKeyManager::new().map_err(Error::shortcut)?)
+            }
+        };
+        hotkeys.register(hotkey).map_err(Error::shortcut)?;
+        let presses = crate::shortcut::channel();
+        let heard = presses.subscribe();
+        self.shortcuts.insert(hotkey.id(), presses);
+        Ok(crate::Presses::new(heard))
     }
 
     /// Answers the item `id` of the menu bar or of the tray's menu.
