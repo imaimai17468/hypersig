@@ -52,6 +52,18 @@ enum Stage {
     Scripting { deadline: Instant },
 }
 
+/// Whether the environment asks for a smoke run, in a build that can make one.
+#[cfg_attr(
+    not(target_os = "linux"),
+    expect(
+        dead_code,
+        reason = "only WebKitGTK is given fake devices for a smoke run"
+    )
+)]
+pub(crate) fn requested() -> bool {
+    cfg!(feature = "smoke") && (env::var_os(SMOKE).is_some() || path(env::var_os(SCRIPT)).is_some())
+}
+
 impl Smoke {
     /// The smoke run the environment asks for, if any.
     ///

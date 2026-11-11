@@ -2,6 +2,7 @@
 
 pub(super) mod badge;
 pub(super) mod clipboard;
+pub(super) mod devices;
 pub(super) mod dialogs;
 pub(super) mod external_links;
 pub(super) mod notifications;

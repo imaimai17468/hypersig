@@ -1663,6 +1663,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-meter"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "hypersig",
+ "hypersig_desktop",
+ "serde",
+]
+
+[[package]]
 name = "example-notes"
 version = "0.0.0"
 dependencies = [

@@ -560,6 +560,7 @@ snippets! {
     DesktopDialogKinds => "desktop/dialogs_kinds.rs";
     DesktopClipboard => "desktop/clipboard.rs";
     DesktopBadge => "desktop/badge.rs";
+    DesktopDevices => "desktop/devices.rs";
     DesktopNotify => "desktop/notify.rs";
     DesktopTray => "desktop/tray.rs", "no_run";
     DesktopOpenExternal => "desktop/external_open.rs";
