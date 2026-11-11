@@ -537,6 +537,18 @@ snippets! {
     I18nNegotiateHandler => "i18n/choosing/handler.rs";
     I18nRedirect => "i18n/choosing/redirect.rs";
     I18nRedirectRoute => "i18n/choosing/redirect_route.rs", "compile_fail,E0277";
+    // Desktop: start, windows
+    DesktopMain => "desktop/overview_main.rs", "no_run";
+    DesktopIdConst => "desktop/app_id_const.rs", "compile_fail,E0080";
+    DesktopIdPanic => "desktop/app_id_panic.rs", "should_panic";
+    DesktopDataDir => "desktop/app_data_dir.rs";
+    DesktopSetup => "desktop/app_setup.rs", "no_run";
+    DesktopNoState => "desktop/app_no_state.rs", "compile_fail,E0277";
+    DesktopErrors => "desktop/app_errors.rs", "no_run";
+    DesktopOpen => "desktop/windows_open.rs";
+    DesktopClose => "desktop/windows_close.rs";
+    DesktopBlank => "desktop/windows_blank.rs";
+    DesktopAtStart => "desktop/windows_at_start.rs", "no_run";
 }
 
 /// The lines of `snippet` that the page shows.

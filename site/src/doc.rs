@@ -1876,8 +1876,8 @@ impl Doc {
                     ja: "`hypersig_desktop` はアプリの `Router` を同じプロセスで配信し、そのページを OS の Web ビューで表示します。書き換えるのは `main` だけです。",
                 },
                 DesktopPage::TheApp => L {
-                    en: "`App` names the application with a reverse domain name, sets the size of its windows, and decides where it keeps its files.",
-                    ja: "`App` は逆ドメイン形式の名前でアプリを識別し、ウィンドウの大きさと、アプリのファイルを置く場所を決めます。",
+                    en: "`App` names the application with a reverse domain name, sets the size of its windows, and decides where it keeps its files. `App::run` serves the router and opens the first window.",
+                    ja: "`App` は逆ドメイン形式の名前でアプリを識別し、ウィンドウの大きさと、アプリのファイルを置く場所を決めます。`App::run` はルーターを配信し、最初のウィンドウを開きます。",
                 },
                 DesktopPage::Windows => L {
                     en: "A handler opens another window with `Windows::open`, and a page opens one with `window.open` or a link with `target=\"_blank\"`. Every window shows a page of the same server.",
