@@ -17,7 +17,12 @@ use cargo_packager_updater::semver::Version;
 use cargo_packager_updater::url::Url;
 use cargo_packager_updater::{Config, UpdaterBuilder};
 
+use std::sync::{Mutex, PoisonError};
+
+use tao::event_loop::EventLoopProxy;
+
 use crate::error::Error;
+use crate::run::Event;
 
 /// Where an application finds its new versions, and the key that signs them.
 ///
@@ -216,24 +221,61 @@ impl std::fmt::Debug for Downloaded {
 impl Downloaded {
     /// Installs the package over the running application.
     ///
-    /// The new version runs once the application starts again.
+    /// The new version runs once the application starts again. On macOS
+    /// the `.app` bundle and on Linux the `AppImage` are replaced, and the
+    /// application keeps running.
     ///
-    /// On Windows it does not return: cargo-packager-updater 0.2.3 starts
-    /// the installer and ends the process with `std::process::exit(0)`.
-    /// That skips the shutdown of [`App::run`](crate::App::run), so
-    /// requests in progress get no time to finish and the window's
-    /// `localStorage` is not waited for. On macOS the `.app` bundle and on
-    /// Linux the `AppImage` are replaced, and the application keeps running.
+    /// On Windows the installer replaces the running program, and
+    /// cargo-packager-updater 0.2.3 ends the process with
+    /// `std::process::exit(0)` once it has started it. So the application
+    /// closes first, as Quit closes it: this returns `Ok(())` at once, the
+    /// windows close, the server is given its time to finish the requests
+    /// it is answering, and the installer starts after that, as the last
+    /// thing [`App::run`](crate::App::run) does. When the installer cannot
+    /// start, `App::run` returns the error.
     ///
     /// # Errors
     ///
-    /// Fails when the package cannot be installed.
+    /// Fails when the package cannot be installed, and on Windows when no
+    /// application is running or its event loop has ended.
     pub async fn install(self) -> Result<(), Error> {
-        tokio::task::spawn_blocking(move || self.update.install(self.bytes))
+        if cfg!(target_os = "windows") {
+            return install_on_exit(self);
+        }
+        tokio::task::spawn_blocking(move || self.install_now())
             .await
             .map_err(Error::update)?
-            .map_err(Error::update)
     }
+
+    /// Installs the package on this thread, which on Windows starts the
+    /// installer and ends the process.
+    pub(crate) fn install_now(self) -> Result<(), Error> {
+        self.update.install(self.bytes).map_err(Error::update)
+    }
+}
+
+/// The event loop of the [`App::run`](crate::App::run) running, which
+/// installs a package on Windows once the server has stopped. A process
+/// runs one application, so one place holds it.
+static EVENT_LOOP: Mutex<Option<EventLoopProxy<Event>>> = Mutex::new(None);
+
+/// Hands `proxy` to [`Downloaded::install`] for the run, or takes it back
+/// with `None` once the run is over.
+pub(crate) fn event_loop(proxy: Option<EventLoopProxy<Event>>) {
+    *EVENT_LOOP.lock().unwrap_or_else(PoisonError::into_inner) = proxy;
+}
+
+/// Has the event loop close the application, as Quit does, and install
+/// `downloaded` once the server has stopped.
+fn install_on_exit(downloaded: Downloaded) -> Result<(), Error> {
+    let proxy = EVENT_LOOP
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .clone()
+        .ok_or_else(Error::closed)?;
+    proxy
+        .send_event(Event::Install(Box::new(downloaded)))
+        .map_err(|_closed| Error::closed())
 }
 
 /// Whether `text` is `MAJOR.MINOR.PATCH`, each a number without a leading

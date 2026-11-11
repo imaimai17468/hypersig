@@ -77,6 +77,10 @@ pub(crate) enum Event {
     /// [`LEAVE`] has passed since a window began to close, or, with no
     /// window, the application is quitting.
     Left(Option<WindowId>),
+    /// An update closes the application and installs its package after
+    /// the server has stopped.
+    #[cfg(feature = "updater")]
+    Install(Box<crate::Downloaded>),
     /// Ctrl-C was pressed in the terminal, or Quit was chosen in the menu.
     Quit,
     /// A second copy handed its command line over.
@@ -214,6 +218,8 @@ impl App {
                 let _ = pressed.send_event(Event::Pressed(event.id(), event.state().into()));
             },
         ));
+        #[cfg(feature = "updater")]
+        crate::updates::event_loop(Some(proxy.clone()));
         let mut run = Lifecycle {
             app: self,
             proxy: &proxy,
@@ -228,6 +234,8 @@ impl App {
             badge: 0,
             tray: None,
             hotkeys: None,
+            #[cfg(feature = "updater")]
+            install: None,
             shortcuts: HashMap::new(),
             items: HashMap::new(),
             quitting: false,
@@ -248,6 +256,10 @@ impl App {
             };
         });
         let failure = run.failure.take();
+        #[cfg(feature = "updater")]
+        let install = run.install.take();
+        #[cfg(feature = "updater")]
+        crate::updates::event_loop(None);
         drop(run);
 
         let _ = stop.send(());
@@ -256,7 +268,10 @@ impl App {
         });
         runtime.shutdown_timeout(GRACE);
         drop(lock);
-        failure.map_or(Ok(()), Err)
+        failure.map_or(Ok(()), Err)?;
+        #[cfg(feature = "updater")]
+        install_after_stop(install)?;
+        Ok(())
     }
 }
 
@@ -296,6 +311,9 @@ struct Lifecycle<'a> {
     smoke: Option<Smoke>,
     /// The tray icon shown, which keeps the application running with no window.
     tray: Option<tray_icon::TrayIcon>,
+    /// The package an update installs once the server has stopped.
+    #[cfg(feature = "updater")]
+    install: Option<crate::Downloaded>,
     /// What registers the global shortcuts, made on this thread when the
     /// first one is asked for, as macOS and Windows need.
     hotkeys: Option<global_hotkey::GlobalHotKeyManager>,
@@ -360,6 +378,11 @@ impl Lifecycle<'_> {
                 return self.windows.is_empty() && (self.tray.is_none() || self.quitting);
             }
             TaoEvent::UserEvent(Event::Quit) => self.quit(),
+            #[cfg(feature = "updater")]
+            TaoEvent::UserEvent(Event::Install(downloaded)) => {
+                self.install = Some(*downloaded);
+                self.quit();
+            }
             TaoEvent::UserEvent(Event::Tray { tray, answer }) => {
                 let _ = answer.send(self.tray(&tray));
             }
@@ -662,6 +685,14 @@ impl Lifecycle<'_> {
             let _ = left.send_event(Event::Left(Some(id)));
         });
     }
+}
+
+/// Installs the package an update left for the end of the run. The
+/// installer replaces this program and, on Windows, ends the process, so it
+/// starts only after the server has stopped.
+#[cfg(feature = "updater")]
+fn install_after_stop(install: Option<crate::Downloaded>) -> Result<(), Error> {
+    install.map_or(Ok(()), crate::Downloaded::install_now)
 }
 
 /// Whether `id` is the Quit item of the macOS menu bar.
