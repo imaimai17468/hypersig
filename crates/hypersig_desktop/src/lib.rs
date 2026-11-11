@@ -106,6 +106,7 @@
 //! `HYPERSIG_DESKTOP_SMOKE_SCRIPT` counts as unset.
 
 mod app;
+mod badge;
 mod clipboard;
 mod error;
 #[cfg(target_os = "linux")]

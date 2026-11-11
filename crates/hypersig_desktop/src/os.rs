@@ -71,6 +71,28 @@ impl Os {
         Launches::new(self.launches.subscribe())
     }
 
+    /// Shows `count` on the application's icon, or clears it at 0.
+    ///
+    /// macOS writes the number on the Dock icon. Linux sets it on the
+    /// launcher entry of `<program>.desktop`, the desktop file of the
+    /// packages cargo-packager builds, which Ubuntu's dock shows. Windows
+    /// puts a red dot on each window's taskbar button, since a button has
+    /// no room for a number.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing.
+    pub fn badge(&self, count: u32) -> Result<(), Error> {
+        match &self.inner {
+            Inner::System(proxy) => Os::send(proxy, Event::Badge(count)),
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                lock(fake).badge = count;
+                Ok(())
+            }
+        }
+    }
+
     /// The application's windows.
     #[must_use]
     pub fn windows(&self) -> Windows<'_> {

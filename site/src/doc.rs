@@ -271,6 +271,7 @@ pub enum DesktopPage {
     Dialogs,
     Clipboard,
     ExternalLinks,
+    Badge,
     // Testing
     Testing,
     SmokeRuns,
@@ -921,6 +922,7 @@ pub(crate) const DESKTOP: &[Group] = &[
             Doc::Desktop(DesktopPage::Dialogs),
             Doc::Desktop(DesktopPage::Clipboard),
             Doc::Desktop(DesktopPage::ExternalLinks),
+            Doc::Desktop(DesktopPage::Badge),
         ],
     },
     Group {
@@ -1173,6 +1175,7 @@ impl Doc {
         Self::Desktop(DesktopPage::Dialogs),
         Self::Desktop(DesktopPage::Clipboard),
         Self::Desktop(DesktopPage::ExternalLinks),
+        Self::Desktop(DesktopPage::Badge),
         // Desktop: Testing
         Self::Desktop(DesktopPage::Testing),
         Self::Desktop(DesktopPage::SmokeRuns),
@@ -1227,6 +1230,7 @@ impl Doc {
                 DesktopPage::Dialogs => ("File dialogs", "ファイルのダイアログ"),
                 DesktopPage::Clipboard => ("The clipboard", "クリップボード"),
                 DesktopPage::ExternalLinks => ("Links to other sites", "ほかのサイトへのリンク"),
+                DesktopPage::Badge => ("The count on the icon", "アイコンの数"),
                 DesktopPage::Testing => ("Testing without a window", "ウィンドウなしのテスト"),
                 DesktopPage::SmokeRuns => ("Smoke runs in CI", "CI でのスモークテスト"),
                 DesktopPage::Packaging => ("Packaging", "パッケージの作成"),
@@ -1899,6 +1903,10 @@ impl Doc {
                     en: "`Os::clipboard` reads and writes the text on the system clipboard from a handler.",
                     ja: "`Os::clipboard` を使うと、ハンドラから OS のクリップボードのテキストを読み書きできます。",
                 },
+                DesktopPage::Badge => L {
+                    en: "`Os::badge` puts a count, such as the number of unread messages, on the application's icon.",
+                    ja: "`Os::badge` は、未読のメッセージの数のような数を、アプリのアイコンに表示します。",
+                },
                 DesktopPage::ExternalLinks => L {
                     en: "A link to another site opens in the person's browser, and a handler opens a URL there with `Os::open_external`.",
                     ja: "ほかのサイトへのリンクは利用者のブラウザで開きます。ハンドラからは `Os::open_external` で URL をブラウザで開けます。",
@@ -2300,6 +2308,7 @@ impl DesktopPage {
             Self::Dialogs => "dialogs",
             Self::Clipboard => "clipboard",
             Self::ExternalLinks => "external-links",
+            Self::Badge => "badge",
             Self::Testing => "testing",
             Self::SmokeRuns => "smoke-runs",
             Self::Packaging => "packaging",

@@ -26,6 +26,7 @@ pub(crate) fn content(site: Site, page: DesktopPage) -> Part {
         DesktopPage::Windows => windows::page(site, head),
         DesktopPage::Dialogs => system::dialogs::page(site, head),
         DesktopPage::Clipboard => system::clipboard::page(site, head),
+        DesktopPage::Badge => system::badge::page(site, head),
         DesktopPage::ExternalLinks => system::external_links::page(site, head),
         DesktopPage::Testing => testing::fake_os::page(site, head),
         DesktopPage::SmokeRuns => testing::smoke_runs::page(site, head),

@@ -58,6 +58,8 @@ pub(crate) enum Event {
     Close(WindowId),
     /// [`Os`] brings a window to the front.
     Focus(WindowId),
+    /// The count to show on the application's icon.
+    Badge(u32),
     /// [`LEAVE`] has passed since a window began to close.
     Left(WindowId),
     /// Ctrl-C was pressed in the terminal, or Quit was chosen in the menu.
@@ -192,6 +194,7 @@ impl App {
             waiting: Vec::new(),
             started: false,
             smoke: Smoke::from_env(started)?,
+            badge: 0,
             quitting: false,
             failure: None,
         };
@@ -256,6 +259,9 @@ struct Lifecycle<'a> {
     /// Whether the first page has loaded.
     started: bool,
     smoke: Option<Smoke>,
+    /// The count on the application's icon, which a window opened later
+    /// shows too on Windows.
+    badge: u32,
     quitting: bool,
     failure: Option<Error>,
 }
@@ -289,6 +295,11 @@ impl Lifecycle<'_> {
                 event: WindowEvent::CloseRequested,
                 ..
             } => self.leave(id),
+            TaoEvent::UserEvent(Event::Badge(count)) => {
+                self.badge = count;
+                let windows = self.windows.values().filter(|open| !open.leaving);
+                crate::badge::show(count, windows.map(|open| &open.window), target);
+            }
             TaoEvent::UserEvent(Event::Focus(id)) => {
                 if let Some(open) = self.windows.get(&id) {
                     open.window.set_focus();
@@ -319,6 +330,8 @@ impl Lifecycle<'_> {
             return Err(Error::closed());
         }
         let window = window::window(&self.app, target)?;
+        #[cfg(windows)]
+        crate::badge::on_taskbar(&window, self.badge);
         let origin = format!("{}/", self.base);
         let web_view = window::web_view(&window, &mut self.context, &origin, self.proxy)?;
         let id = window.id();
