@@ -109,8 +109,8 @@ fn feature(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Either variable alone starts a run. `HYPERSIG_DESKTOP_SMOKE` may have any value, an empty one included, and `HYPERSIG_DESKTOP_SMOKE_SCRIPT` must name a file the application can read. A build without the feature ignores both, because the script runs in the page and can call every action the router declares. A release built without `smoke` therefore runs no file an environment variable names. CI builds with the feature as a separate build, and examples/notes ships its packages without it.",
-                ja: "どちらの変数も、それだけでスモークテストが始まります。`HYPERSIG_DESKTOP_SMOKE` の値は何でもよく、空でもかまいません。`HYPERSIG_DESKTOP_SMOKE_SCRIPT` には、アプリが読めるファイルを指定します。feature を有効にしていないビルドは、どちらの変数も無視します。スクリプトはページの中で動き、ルーターが宣言したすべてのアクションを呼べるからです。そのため、`smoke` なしでビルドしたリリース版は、環境変数で指定されたファイルを実行しません。CI では feature を有効にしたビルドを別に作り、examples/notes のパッケージは feature なしでビルドしています。",
+                en: "Either variable alone starts a run. `HYPERSIG_DESKTOP_SMOKE` may have any value, an empty one included, and `HYPERSIG_DESKTOP_SMOKE_SCRIPT` must name a file the application can read; set to an empty value, it counts as unset. A build without the feature ignores both, because the script runs in the page and can call every action the router declares. A release built without `smoke` therefore runs no file an environment variable names. CI builds with the feature as a separate build, and examples/notes ships its packages without it.",
+                ja: "どちらの変数も、それだけでスモークテストが始まります。`HYPERSIG_DESKTOP_SMOKE` の値は何でもよく、空でもかまいません。`HYPERSIG_DESKTOP_SMOKE_SCRIPT` には、アプリが読めるファイルを指定します。値が空のときは、設定していないものとして扱います。feature を有効にしていないビルドは、どちらの変数も無視します。スクリプトはページの中で動き、ルーターが宣言したすべてのアクションを呼べるからです。そのため、`smoke` なしでビルドしたリリース版は、環境変数で指定されたファイルを実行しません。CI では feature を有効にしたビルドを別に作り、examples/notes のパッケージは feature なしでビルドしています。",
             },
         ),
     ])
@@ -198,8 +198,8 @@ fn script(site: Site) -> Part {
         para(
             site,
             L {
-                en: "With `HYPERSIG_DESKTOP_SMOKE_SCRIPT`, the run evaluates the file in the first page once the check passes, and in the page of each window that loads after that. It then reads `window.hypersigSmoke` in the first page every 200 milliseconds, as a string:",
-                ja: "`HYPERSIG_DESKTOP_SMOKE_SCRIPT` を設定すると、確認が通ったあとにそのファイルを最初のページで評価し、それ以降に読み込まれた各ウィンドウのページでも評価します。そのあと 200 ミリ秒ごとに、最初のページの `window.hypersigSmoke` を文字列として読みます。",
+                en: "With `HYPERSIG_DESKTOP_SMOKE_SCRIPT`, the run evaluates the file in the first page once the check passes, and in the page of every other window, whether it loaded before then or loads later. It then reads `window.hypersigSmoke` in the first page every 200 milliseconds, as a string:",
+                ja: "`HYPERSIG_DESKTOP_SMOKE_SCRIPT` を設定すると、確認が通ったあとにそのファイルを最初のページで評価します。ほかのウィンドウのページでも、確認より前に読み込まれたか、あとから読み込まれたかにかかわらず評価します。そのあと 200 ミリ秒ごとに、最初のページの `window.hypersigSmoke` を文字列として読みます。",
             },
         ),
         bullets(
