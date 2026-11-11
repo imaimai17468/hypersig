@@ -417,8 +417,8 @@ pub(crate) fn desktop(site: Site) -> String {
                     ja: "同じアプリを、デスクトップのウィンドウで",
                 }),
                 site.t(L {
-                    en: "The application's `Router` runs in the same process, and its pages open in the system's web view on macOS, Windows, and Linux. Only `main` changes, and the handlers reach files, the clipboard, and other windows through one value.",
-                    ja: "アプリの `Router` は同じプロセスで動き、そのページを macOS、Windows、Linux の OS の Web ビューで開きます。書き換えるのは `main` だけで、ハンドラはファイル、クリップボード、ほかのウィンドウを 1 つの値から使います。",
+                    en: "The application's `Router` runs in the same process, and its pages open in the system's web view on macOS, Windows, and Linux. Only `main` changes. The handlers reach files, the clipboard, and other windows through one value, `Os`.",
+                    ja: "アプリの `Router` は同じプロセスで動き、そのページを macOS、Windows、Linux の Web ビューで開きます。書き換えるのは `main` だけです。ハンドラはファイル、クリップボード、ほかのウィンドウを `Os` という 1 つの値から使います。",
                 }),
                 &[
                     (
@@ -461,7 +461,7 @@ pub(crate) fn desktop(site: Site) -> String {
                             ja: "ウィンドウを開かずにテスト",
                         }),
                         site.t(L {
-                            en: "`FakeOs` answers the dialogs a test chooses and records the windows the handlers open, so `cargo test` covers the whole round trip.",
+                            en: "`FakeOs` answers each dialog with the paths a test chose and records the windows the handlers open, so `cargo test` covers the whole round trip.",
                             ja: "`FakeOs` はテストが決めた答えをダイアログに返し、ハンドラが開いたウィンドウを記録します。そのため、往復のすべてを `cargo test` で確かめられます。",
                         }),
                     ),

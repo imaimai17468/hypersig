@@ -1920,8 +1920,8 @@ impl Doc {
                     ja: "サーバーはアプリを起動するたびに同じポートで待ち受けるので、ページがブラウザに保存したシグナルは次の起動でも読み出せます。",
                 },
                 DesktopPage::Limits => L {
-                    en: "What the windows share, and what each system needs before the application runs.",
-                    ja: "ウィンドウが共有するものと、アプリを動かす前に各 OS で必要なものです。",
+                    en: "The windows share six connections to the server, and each system needs its web view installed before the application runs.",
+                    ja: "すべてのウィンドウはサーバーへの 6 本の接続を共有します。また、アプリを動かす前に、各 OS に Web ビューが入っている必要があります。",
                 },
             },
             Self::I18n(page) => match page {
