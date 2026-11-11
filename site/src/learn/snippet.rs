@@ -549,6 +549,11 @@ snippets! {
     DesktopClose => "desktop/windows_close.rs";
     DesktopBlank => "desktop/windows_blank.rs";
     DesktopAtStart => "desktop/windows_at_start.rs", "no_run";
+    // Desktop: shipping, running
+    DesktopUpdatesCheck => "desktop/updates_check.rs", "no_run";
+    DesktopSecuritySessions => "desktop/security_sessions.rs", "no_run";
+    DesktopPersistedSignalsTheme => "desktop/persisted_signals_theme.rs", "no_run";
+    DesktopPersistedSignalsAlreadyRunning => "desktop/persisted_signals_already_running.rs", "no_run";
 }
 
 /// The lines of `snippet` that the page shows.
