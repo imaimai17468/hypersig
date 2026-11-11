@@ -62,8 +62,8 @@ fn identifier(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The check covers only the form of the name. Two applications with the same identifier share one directory, so the second to start stops with `ErrorKind::AlreadyRunning` while the first runs. [Packaging](desktop/packaging/) uses the same identifier for the package.",
-                ja: "検査するのは名前の形式だけです。同じ識別子のアプリが 2 つあると 1 つのディレクトリを共有するので、一方が動いている間に起動したもう一方は `ErrorKind::AlreadyRunning` で止まります。[パッケージの作成](desktop/packaging/) でも、パッケージに同じ識別子を使います。",
+                en: "The check covers only the form of the name. Two applications with the same identifier share one directory, so the second to start hands its command line to the first while the first runs. [Packaging](desktop/packaging/) uses the same identifier for the package.",
+                ja: "検査するのは名前の形式だけです。同じ識別子のアプリが 2 つあると 1 つのディレクトリを共有するので、一方が動いている間に起動したもう一方は、コマンドラインを先に動いている方に渡して終了します。[パッケージの作成](desktop/packaging/) でも、パッケージに同じ識別子を使います。",
             },
         ),
     ])
@@ -222,8 +222,8 @@ fn run(site: Site) -> Part {
                     ja: "データのディレクトリを作ります。作れなければ `ErrorKind::NoDataDir` か `ErrorKind::Io` を返します。",
                 },
                 L {
-                    en: "Returns `ErrorKind::AlreadyRunning` if another copy of the application is running.",
-                    ja: "アプリの別のコピーが動いていれば `ErrorKind::AlreadyRunning` を返します。",
+                    en: "If another copy of the application is running, hands it this start's command line and returns `Ok(())`, or returns `ErrorKind::AlreadyRunning` when that copy does not take it.",
+                    ja: "アプリの別のコピーが動いていれば、この起動のコマンドラインをそのコピーに渡して `Ok(())` を返します。そのコピーが受け取らなければ `ErrorKind::AlreadyRunning` を返します。",
                 },
                 L {
                     en: "Starts a multi-threaded Tokio runtime, and the server's listener on `127.0.0.1`.",
@@ -334,7 +334,7 @@ fn errors(site: Site) -> Part {
                     ],
                     &[
                         "`AlreadyRunning`",
-                        "Another copy of the application is running; this one opened no window",
+                        "Another copy of the application is running and did not take this start's command line; this one opened no window",
                     ],
                     &["`Setup`", "The setup's future returned an `Err`"],
                     &[
@@ -354,7 +354,7 @@ fn errors(site: Site) -> Part {
                     ],
                     &[
                         "`AlreadyRunning`",
-                        "アプリの別のコピーが動いている。こちらはウィンドウを開いていない",
+                        "アプリの別のコピーが動いていて、この起動のコマンドラインを受け取らなかった。こちらはウィンドウを開いていない",
                     ],
                     &["`Setup`", "セットアップの future が `Err` を返した"],
                     &[

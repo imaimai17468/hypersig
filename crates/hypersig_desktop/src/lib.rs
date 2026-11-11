@@ -111,6 +111,7 @@ mod error;
 #[cfg(target_os = "linux")]
 mod framing;
 mod guard;
+mod handoff;
 mod instance;
 #[cfg(target_os = "macos")]
 mod menu;
@@ -126,6 +127,7 @@ mod window;
 
 pub use app::{App, IntoRouter};
 pub use error::{Error, ErrorKind};
+pub use handoff::{Launch, Launches};
 pub use os::{Clipboard, Dialog, Os, Window, Windows};
 #[cfg(feature = "updater")]
 pub use updates::{Downloaded, Update, Updater, Updates};

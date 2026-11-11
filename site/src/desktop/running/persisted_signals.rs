@@ -76,16 +76,24 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "A second copy of the application started while the first runs stops before it opens a window or starts a server: `App::run` returns an [`Error`](api:hypersig_desktop/struct.Error.html) whose `kind()` is [`ErrorKind::AlreadyRunning`](api:hypersig_desktop/enum.ErrorKind.html#variant.AlreadyRunning). A `main` that returns that error prints `Error: another copy of this application is running` and exits with a failure. To exit quietly, match the kind:",
-                ja: "1 つめが動いている間に起動した 2 つめのアプリは、ウィンドウを開く前、サーバーを起動する前に止まります。`App::run` は、`kind()` が [`ErrorKind::AlreadyRunning`](api:hypersig_desktop/enum.ErrorKind.html#variant.AlreadyRunning) の [`Error`](api:hypersig_desktop/struct.Error.html) を返します。このエラーを返す `main` は `Error: another copy of this application is running` と表示し、失敗として終了します。何も表示せずに終了させるには、エラーの種類で分岐します。",
+                en: "A second copy of the application started while the first runs opens no window and starts no server. It hands its command-line arguments and its working directory to the first copy, which brings a window to the front, and its `App::run` returns `Ok(())`. The first copy hears of each start through [`Os::launches`](api:hypersig_desktop/struct.Os.html#method.launches): a [`Launch`](api:hypersig_desktop/struct.Launch.html) has `args()`, the arguments after the program's name, and `current_dir()`, which a relative path is joined to. A `Launches` gets the starts handed over after it was made, so the setup takes it before it returns the router. `examples/notes` opens the files a later start names this way:",
+                ja: "1 つめが動いている間に起動した 2 つめのアプリは、ウィンドウを開かず、サーバーも起動しません。コマンドライン引数と作業ディレクトリを 1 つめに渡し、1 つめはウィンドウを前面に出します。2 つめの `App::run` は `Ok(())` を返します。1 つめは [`Os::launches`](api:hypersig_desktop/struct.Os.html#method.launches) で起動を 1 つずつ受け取ります。[`Launch`](api:hypersig_desktop/struct.Launch.html) の `args()` はプログラム名のあとの引数を、`current_dir()` は相対パスの基準になる作業ディレクトリを返します。`Launches` が受け取るのは作られたあとに渡された起動だけなので、setup はルーターを返す前にこれを作ります。`examples/notes` はこの方法で、あとの起動で指定したファイルを開きます。",
+            },
+        ),
+        show(Snippet::DesktopLaunches),
+        para(
+            site,
+            L {
+                en: "The second copy sends a token the first writes next to its lock, which shows that the same person started it: on macOS and Linux, only that person can read the file. When the first copy does not take the arguments within three seconds, as while it is still starting, `App::run` returns an [`Error`](api:hypersig_desktop/struct.Error.html) whose `kind()` is [`ErrorKind::AlreadyRunning`](api:hypersig_desktop/enum.ErrorKind.html#variant.AlreadyRunning). A `main` that returns that error prints `Error: another copy of this application is running` and exits with a failure. To exit quietly, match the kind:",
+                ja: "2 つめは、1 つめがロックの隣に書き出したトークンを送って、自分が同じ利用者の起動であることを示します。macOS と Linux では、このファイルは利用者本人しか読めません。1 つめが 3 秒以内に引数を受け取らなかったとき（まだ起動している途中など）は、`App::run` は、`kind()` が [`ErrorKind::AlreadyRunning`](api:hypersig_desktop/enum.ErrorKind.html#variant.AlreadyRunning) の [`Error`](api:hypersig_desktop/struct.Error.html) を返します。このエラーを返す `main` は `Error: another copy of this application is running` と表示し、失敗として終了します。何も表示せずに終了させるには、エラーの種類で分岐します。",
             },
         ),
         show(Snippet::DesktopPersistedSignalsAlreadyRunning),
         para(
             site,
             L {
-                en: "The check is per identifier, so applications with different identifiers run side by side. The first copy holds the check until its process ends, and the next start after that runs. The second copy does not bring the first one's window to the front and does not pass it its command-line arguments; a file named on the second copy's command line is not opened.",
-                ja: "この確認は識別子ごとに行うので、識別子の違うアプリは同時に動かせます。1 つめのプロセスが終了すれば、そのあとの起動は通常どおり動きます。2 つめは 1 つめのウィンドウを前面に出さず、自分のコマンドライン引数も 1 つめに渡しません。2 つめのコマンドラインで指定したファイルは開かれません。",
+                en: "The check is per identifier, so applications with different identifiers run side by side. The first copy holds the check until its process ends, and the next start after that runs. In a test, `testing::FakeOs::launch` hands a `Launch` to the `Launches` of the fake `Os`, as a second start would.",
+                ja: "この確認は識別子ごとに行うので、識別子の違うアプリは同時に動かせます。1 つめのプロセスが終了すれば、そのあとの起動は通常どおり動きます。テストでは、`testing::FakeOs::launch` が 2 つめの起動と同じように、偽の `Os` の `Launches` に `Launch` を渡します。",
             },
         ),
         heading(
