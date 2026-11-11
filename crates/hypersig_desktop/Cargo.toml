@@ -11,10 +11,6 @@ keywords = ["hypermedia", "desktop", "webview", "hypersig"]
 categories = ["gui", "web-programming"]
 readme = "../../README.md"
 include = ["src/**/*.rs", "LICENSE"]
-# The publish job of ci.yml can publish only a crate that crates.io already
-# has with this repository as its trusted publisher, which takes a first
-# release by hand.
-publish = false
 
 [features]
 # `testing::FakeOs`, an `Os` whose dialogs, clipboard, and windows a test
