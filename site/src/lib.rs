@@ -343,7 +343,13 @@ fn llms(site: Site) -> String {
     let _ = write!(text, "\n## {}\n\n", Doc::UseCases.title(site));
     list(&mut text, &[Doc::UseCases]);
     text.push_str("\n## Optional\n\n");
-    for groups in [doc::REFERENCE, doc::COMPONENTS, doc::STYLE, doc::I18N, doc::DESKTOP] {
+    for groups in [
+        doc::REFERENCE,
+        doc::COMPONENTS,
+        doc::STYLE,
+        doc::I18N,
+        doc::DESKTOP,
+    ] {
         for group in groups {
             list(&mut text, group.docs);
         }
