@@ -14,14 +14,21 @@ use crate::error::Error;
 /// application keeps its port and its lock. On Windows and Linux the web
 /// views keep their cookies and `localStorage` there too; on macOS,
 /// `WKWebView` keeps them in `~/Library/WebKit`.
+///
+/// `U` is `()`, or [`Updates`](crate::Updates) once
+/// [`App::updates`] has named where new versions are found, and then
+/// [`App::run`] hands the setup an [`Updater`](crate::Updater) too.
 #[derive(Debug, Clone, Copy)]
-pub struct App {
+pub struct App<U = ()> {
     pub(crate) id: &'static str,
     pub(crate) size: (u32, u32),
     pub(crate) min_size: Option<(u32, u32)>,
     pub(crate) resizable: bool,
-    #[cfg(feature = "updater")]
-    pub(crate) updates: Option<crate::Updates>,
+    #[cfg_attr(
+        not(feature = "updater"),
+        expect(dead_code, reason = "only the `run` of `App<Updates>` reads it")
+    )]
+    pub(crate) updates: U,
 }
 
 impl App {
@@ -42,11 +49,26 @@ impl App {
             size: (1024, 768),
             min_size: None,
             resizable: true,
-            #[cfg(feature = "updater")]
-            updates: None,
+            updates: (),
         }
     }
 
+    /// Finds the application's new versions where `updates` says, with the
+    /// [`Updater`](crate::Updater) [`App::run`] hands the setup.
+    #[cfg(feature = "updater")]
+    #[must_use]
+    pub const fn updates(self, updates: crate::Updates) -> App<crate::Updates> {
+        App {
+            id: self.id,
+            size: self.size,
+            min_size: self.min_size,
+            resizable: self.resizable,
+            updates,
+        }
+    }
+}
+
+impl<U> App<U> {
     /// Opens the window `width` by `height` logical pixels large.
     ///
     /// # Panics
@@ -94,15 +116,6 @@ impl App {
     #[must_use]
     pub const fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
-        self
-    }
-
-    /// Finds the application's new versions where `updates` says, for
-    /// [`Os::updates`](crate::Os::updates).
-    #[cfg(feature = "updater")]
-    #[must_use]
-    pub const fn updates(mut self, updates: crate::Updates) -> Self {
-        self.updates = Some(updates);
         self
     }
 

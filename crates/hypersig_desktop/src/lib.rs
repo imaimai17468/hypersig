@@ -59,8 +59,8 @@
 //! window. `examples/notes` is written and tested this way.
 //!
 //! With the `updater` feature, `App::updates` names where new versions are
-//! announced and the key that signs them, and `Os::updates` finds a newer
-//! version, downloads it, checks its signature, and installs it, in the
+//! announced and the key that signs them, and the `Updater` that `App::run`
+//! then hands the setup finds a newer version, downloads it, checks its signature, and installs it, in the
 //! format `cargo-packager` builds and signs packages in.
 //!
 //! The server answers only the application's own windows. It listens on
@@ -128,4 +128,4 @@ pub use app::{App, IntoRouter};
 pub use error::{Error, ErrorKind};
 pub use os::{Clipboard, Dialog, Os, Window, Windows};
 #[cfg(feature = "updater")]
-pub use updates::{Downloaded, Update, Updates};
+pub use updates::{Downloaded, Update, Updater, Updates};

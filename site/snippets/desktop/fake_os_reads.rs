@@ -29,8 +29,8 @@ assert_eq!(os.clipboard().read_text().await?.as_deref(), Some("from another prog
 os.open_external(&SOURCE)?;
 assert_eq!(fake.opened_externally(), [SOURCE]);
 
-// With the `updater` feature: a fake system finds no newer version.
-assert!(os.updates().await?.is_none());
+// With the `updater` feature: the fake updater finds no newer version.
+assert!(fake.updater().check().await?.is_none());
 # Ok(())
 # })
 # }

@@ -1916,8 +1916,8 @@ impl Doc {
                     ja: "`cargo packager` は、`Cargo.toml` の設定から OS ごとのインストーラーやパッケージを作ります。",
                 },
                 DesktopPage::Updates => L {
-                    en: "With the `updater` feature, `Os::updates` finds a newer version, downloads it, checks its signature, and installs it.",
-                    ja: "`updater` feature を有効にすると、`Os::updates` で新しいバージョンを探し、ダウンロードして署名を確かめ、インストールできます。",
+                    en: "With the `updater` feature, an `Updater` finds a newer version, downloads it, checks its signature, and installs it.",
+                    ja: "`updater` feature を有効にすると、`Updater` で新しいバージョンを探し、ダウンロードして署名を確かめ、インストールできます。",
                 },
                 DesktopPage::Security => L {
                     en: "The server listens on `127.0.0.1` and answers only the application's own windows.",

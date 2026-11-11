@@ -150,7 +150,7 @@ fn reads(site: Site) -> Part {
         code::block(
             Lang::Rust,
             None,
-            "impl FakeOs {\n    pub fn clipboard_text(&self) -> Option<String>;\n    pub fn set_clipboard_text(&self, text: impl Into<String>);\n    pub fn open_windows(&self) -> Vec<Url>;\n    pub fn focused_window(&self) -> Option<Url>;\n    pub fn opened_externally(&self) -> Vec<SafeUrl>;\n}",
+            "impl FakeOs {\n    pub fn clipboard_text(&self) -> Option<String>;\n    pub fn set_clipboard_text(&self, text: impl Into<String>);\n    pub fn open_windows(&self) -> Vec<Url>;\n    pub fn focused_window(&self) -> Option<Url>;\n    pub fn opened_externally(&self) -> Vec<SafeUrl>;\n    pub fn updater(&self) -> Updater;\n}",
         ),
         table_of(
             site,
@@ -208,8 +208,8 @@ fn reads(site: Site) -> Part {
         para(
             site,
             L {
-                en: "With the `updater` feature as well, `Os::updates` on a fake system returns `Ok(None)`: it finds no newer version and makes no request. The test below goes through each of these:",
-                ja: "`updater` feature も有効にしている場合、偽の OS の `Os::updates` は `Ok(None)` を返します。新しいバージョンは見つからず、リクエストも送りません。下のテストはこれらを 1 つずつ試します。",
+                en: "With the `updater` feature as well, `FakeOs::updater` returns an `Updater` for the handlers' state whose `check` returns `Ok(None)`: it finds no newer version and makes no request. The test below goes through each of these:",
+                ja: "`updater` feature も有効にしている場合、`FakeOs::updater` はハンドラの状態に入れる `Updater` を返します。その `check` は `Ok(None)` を返し、新しいバージョンは見つからず、リクエストも送りません。下のテストはこれらを 1 つずつ試します。",
             },
         ),
         show(Snippet::DesktopFakeOsReads),

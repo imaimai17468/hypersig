@@ -20,6 +20,9 @@ use cargo_packager_updater::{Config, UpdaterBuilder};
 use crate::error::Error;
 
 /// Where an application finds its new versions, and the key that signs them.
+///
+/// [`App::updates`](crate::App::updates) takes it, and
+/// [`App::run`](crate::App::run) then hands the setup an [`Updater`].
 #[derive(Debug, Clone, Copy)]
 pub struct Updates {
     version: &'static str,
@@ -97,7 +100,58 @@ impl Updates {
     }
 }
 
-/// A newer version, from [`Os::updates`](crate::Os::updates).
+/// What finds the application's new versions, from the setup of
+/// [`App::run`](crate::App::run).
+///
+/// The setup puts it in the router's state beside the [`Os`](crate::Os),
+/// so a handler reaches it as `state.updater`. A test gives the handlers
+/// `testing::FakeOs::updater` instead, which finds no newer version.
+#[derive(Debug, Clone, Copy)]
+pub struct Updater {
+    source: Source,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Source {
+    System(Updates),
+    #[cfg(feature = "testing")]
+    Fake,
+}
+
+impl Updater {
+    pub(crate) const fn system(updates: Updates) -> Self {
+        Self {
+            source: Source::System(updates),
+        }
+    }
+
+    #[cfg(feature = "testing")]
+    pub(crate) const fn fake() -> Self {
+        Self {
+            source: Source::Fake,
+        }
+    }
+
+    /// The newer version the update endpoint announces, or `None`.
+    ///
+    /// The endpoint is the one [`Updates`] names, and the [`Update`] this
+    /// returns downloads and installs the version. A fake updater finds
+    /// none.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the endpoint does not parse as a URL, and when it cannot
+    /// be reached or answers with something else.
+    pub async fn check(&self) -> Result<Option<Update>, Error> {
+        match self.source {
+            Source::System(updates) => updates.check().await,
+            #[cfg(feature = "testing")]
+            Source::Fake => Ok(None),
+        }
+    }
+}
+
+/// A newer version, from [`Updater::check`].
 pub struct Update {
     inner: cargo_packager_updater::Update,
 }

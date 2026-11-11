@@ -16,8 +16,8 @@ include = ["src/**/*.rs", "LICENSE"]
 # `testing::FakeOs`, an `Os` whose dialogs, clipboard, and windows a test
 # scripts and reads.
 testing = []
-# `Os::updates`, which finds, downloads, verifies, and installs a new
-# version with cargo-packager-updater.
+# `App::updates` and `Updater`, which find, download, verify, and install
+# a new version with cargo-packager-updater.
 updater = ["dep:cargo-packager-updater"]
 # Smoke runs, which `HYPERSIG_DESKTOP_SMOKE` and
 # `HYPERSIG_DESKTOP_SMOKE_SCRIPT` start, for CI and the start-up benchmark.

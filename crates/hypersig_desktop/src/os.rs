@@ -15,8 +15,6 @@ use crate::error::Error;
 use crate::run::Event;
 #[cfg(feature = "testing")]
 use crate::testing::Fake;
-#[cfg(feature = "updater")]
-use crate::updates::{Update, Updates};
 
 /// The operating system's windows and services, for the application's handlers.
 ///
@@ -27,8 +25,6 @@ use crate::updates::{Update, Updates};
 #[derive(Clone)]
 pub struct Os {
     inner: Inner,
-    #[cfg(feature = "updater")]
-    updates: Option<Updates>,
 }
 
 #[derive(Clone)]
@@ -45,13 +41,9 @@ impl fmt::Debug for Os {
 }
 
 impl Os {
-    pub(crate) fn new(proxy: EventLoopProxy<Event>, app: &crate::App) -> Self {
-        #[cfg(not(feature = "updater"))]
-        let _ = app;
+    pub(crate) fn new(proxy: EventLoopProxy<Event>) -> Self {
         Self {
             inner: Inner::System(proxy),
-            #[cfg(feature = "updater")]
-            updates: app.updates,
         }
     }
 
@@ -59,8 +51,6 @@ impl Os {
     pub(crate) fn fake(fake: Arc<Mutex<Fake>>) -> Self {
         Self {
             inner: Inner::Fake(fake),
-            #[cfg(feature = "updater")]
-            updates: None,
         }
     }
 
@@ -107,28 +97,6 @@ impl Os {
                 lock(fake).external.push(url.clone());
                 Ok(())
             }
-        }
-    }
-
-    /// The newer version the update endpoint announces, or `None`.
-    ///
-    /// The endpoint is the one given to [`App::updates`](crate::App::updates),
-    /// and the [`Update`] that returns downloads and installs the version. A
-    /// fake system finds none.
-    ///
-    /// # Errors
-    ///
-    /// Fails when the application gave no [`Updates`] to `App::updates`, and
-    /// where [`Updates`] lists.
-    #[cfg(feature = "updater")]
-    pub async fn updates(&self) -> Result<Option<Update>, Error> {
-        match (&self.inner, self.updates) {
-            (Inner::System(_), Some(updates)) => updates.check().await,
-            (Inner::System(_), None) => Err(Error::update(
-                "the application gave no Updates to App::updates",
-            )),
-            #[cfg(feature = "testing")]
-            (Inner::Fake(_), _) => Ok(None),
         }
     }
 

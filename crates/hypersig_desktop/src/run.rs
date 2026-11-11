@@ -67,6 +67,38 @@ pub(crate) enum Event {
     Smoke(Option<String>),
 }
 
+#[cfg(feature = "updater")]
+impl App<crate::Updates> {
+    /// Serves the router `setup` builds and shows `first_page` in a window,
+    /// as [`App::run`](App::<()>::run) does.
+    ///
+    /// `setup` receives the [`Os`] and the [`Updater`](crate::Updater) that
+    /// finds new versions where [`App::updates`] says.
+    ///
+    /// # Errors
+    ///
+    /// Fails where [`App::run`](App::<()>::run) fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics on macOS when it is not called on the main thread.
+    pub fn run<S, F>(self, first_page: &Url, setup: S) -> Result<(), Error>
+    where
+        S: FnOnce(Os, crate::Updater) -> F,
+        F: Future<Output: IntoRouter> + Send + 'static,
+    {
+        let updater = crate::Updater::system(self.updates);
+        let app = App {
+            id: self.id,
+            size: self.size,
+            min_size: self.min_size,
+            resizable: self.resizable,
+            updates: (),
+        };
+        app.run(first_page, move |os| setup(os, updater))
+    }
+}
+
 impl App {
     /// Serves the router `setup` builds and shows `first_page` in a window.
     ///
@@ -120,7 +152,7 @@ impl App {
         let mut event_loop = EventLoopBuilder::<Event>::with_user_event().build();
         let proxy = event_loop.create_proxy();
         let (stop, stopped) = oneshot::channel();
-        let setup = setup(Os::new(proxy.clone(), &self));
+        let setup = setup(Os::new(proxy.clone()));
         let server = runtime.spawn(serve(listener, guard, setup, proxy.clone(), stopped));
         runtime.spawn(quit_on_ctrl_c(proxy.clone()));
 

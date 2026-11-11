@@ -236,7 +236,7 @@ fn features(site: Site) -> Part {
                     ],
                     &[
                         "`updater`",
-                        "`App::updates` and `Os::updates`, which find, download, verify, and install a new version",
+                        "`App::updates` and `Updater`, which find, download, verify, and install a new version",
                         "[Updates](desktop/updates/)",
                     ],
                     &[
@@ -253,7 +253,7 @@ fn features(site: Site) -> Part {
                     ],
                     &[
                         "`updater`",
-                        "新しいバージョンを探し、ダウンロードし、署名を確かめてインストールする `App::updates` と `Os::updates`",
+                        "新しいバージョンを探し、ダウンロードし、署名を確かめてインストールする `App::updates` と `Updater`",
                         "[更新の配布](desktop/updates/)",
                     ],
                     &[
@@ -337,7 +337,7 @@ fn map(site: Site) -> Part {
                     ],
                     &[
                         "[Updates](desktop/updates/)",
-                        "The `updater` feature, `App::updates`, and `Os::updates`",
+                        "The `updater` feature, `App::updates`, and `Updater`",
                     ],
                     &[
                         "[Who the server answers](desktop/security/)",
@@ -391,7 +391,7 @@ fn map(site: Site) -> Part {
                     ],
                     &[
                         "[更新の配布](desktop/updates/)",
-                        "`updater` の feature、`App::updates`、`Os::updates`",
+                        "`updater` の feature、`App::updates`、`Updater`",
                     ],
                     &[
                         "[サーバーが応答する相手](desktop/security/)",

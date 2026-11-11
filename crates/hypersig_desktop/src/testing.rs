@@ -164,6 +164,15 @@ impl FakeOs {
         fake.windows.get(fake.focused?)?.clone()
     }
 
+    /// An [`Updater`](crate::Updater) that finds no newer version and makes
+    /// no request, for the handlers' state in place of the one
+    /// [`App::run`](crate::App::run) gives.
+    #[cfg(feature = "updater")]
+    #[must_use]
+    pub fn updater(&self) -> crate::Updater {
+        crate::Updater::fake()
+    }
+
     /// The URLs the handlers opened in another program.
     #[must_use]
     pub fn opened_externally(&self) -> Vec<SafeUrl> {
