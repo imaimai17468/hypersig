@@ -211,8 +211,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "[`Os::updates`](desktop/updates/) installs only a package whose signature its public key verifies. `cargo packager signer generate` makes the key pair: with `--path`, it writes the private key to that file and the public key to the same path with `.pub` added. With `CARGO_PACKAGER_SIGN_PRIVATE_KEY` set to the private key, or to the path of its file, and `CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD` to its password, `cargo packager` signs each package it builds:",
-                ja: "[`Os::updates`](desktop/updates/) がインストールするのは、公開鍵で署名を確かめられたパッケージだけです。鍵のペアは `cargo packager signer generate` で作ります。`--path` を付けると、そのファイルに秘密鍵を、同じパスの末尾に `.pub` を付けたファイルに公開鍵を書き出します。`CARGO_PACKAGER_SIGN_PRIVATE_KEY` に秘密鍵そのものかそのファイルのパスを、`CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD` にそのパスワードを設定すると、`cargo packager` は作った各パッケージに署名します。",
+                en: "[An `Updater`](desktop/updates/) installs only a package whose signature its public key verifies. `cargo packager signer generate` makes the key pair: with `--path`, it writes the private key to that file and the public key to the same path with `.pub` added. With `CARGO_PACKAGER_SIGN_PRIVATE_KEY` set to the private key, or to the path of its file, and `CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD` to its password, `cargo packager` signs each package it builds:",
+                ja: "[`Updater`](desktop/updates/) がインストールするのは、公開鍵で署名を確かめられたパッケージだけです。鍵のペアは `cargo packager signer generate` で作ります。`--path` を付けると、そのファイルに秘密鍵を、同じパスの末尾に `.pub` を付けたファイルに公開鍵を書き出します。`CARGO_PACKAGER_SIGN_PRIVATE_KEY` に秘密鍵そのものかそのファイルのパスを、`CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD` にそのパスワードを設定すると、`cargo packager` は作った各パッケージに署名します。",
             },
         ),
         code::block(Lang::Shell, None, SIGN),

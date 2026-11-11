@@ -34,8 +34,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "Updates are behind the `updater` feature of hypersig_desktop, which adds [`Updates`](api:hypersig_desktop/struct.Updates.html), [`App::updates`](api:hypersig_desktop/struct.App.html#method.updates), and [`Os::updates`](api:hypersig_desktop/struct.Os.html#method.updates). `Updates::new` is `pub const fn new(version: &'static str, endpoint: &'static str, public_key: &'static str) -> Updates`:",
-                ja: "更新の機能は hypersig_desktop の `updater` feature で有効になり、[`Updates`](api:hypersig_desktop/struct.Updates.html)、[`App::updates`](api:hypersig_desktop/struct.App.html#method.updates)、[`Os::updates`](api:hypersig_desktop/struct.Os.html#method.updates) が使えるようになります。`Updates::new` のシグネチャは `pub const fn new(version: &'static str, endpoint: &'static str, public_key: &'static str) -> Updates` です。",
+                en: "Updates are behind the `updater` feature of hypersig_desktop, which adds [`Updates`](api:hypersig_desktop/struct.Updates.html), [`App::updates`](api:hypersig_desktop/struct.App.html#method.updates), and [`Updater`](api:hypersig_desktop/struct.Updater.html). `Updates::new` is `pub const fn new(version: &'static str, endpoint: &'static str, public_key: &'static str) -> Updates`:",
+                ja: "更新の機能は hypersig_desktop の `updater` feature で有効になり、[`Updates`](api:hypersig_desktop/struct.Updates.html)、[`App::updates`](api:hypersig_desktop/struct.App.html#method.updates)、[`Updater`](api:hypersig_desktop/struct.Updater.html) が使えるようになります。`Updates::new` のシグネチャは `pub const fn new(version: &'static str, endpoint: &'static str, public_key: &'static str) -> Updates` です。",
             },
         ),
         table_of(
@@ -92,16 +92,16 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "A handler asks with `os.updates()`, `async fn updates(&self) -> Result<Option<Update>, Error>`. It answers `Ok(None)` when the endpoint announces nothing newer than `version`. An [`Update`](api:hypersig_desktop/struct.Update.html) gives `version()`, the announced version, and `notes()`, the release notes when the endpoint sent some. `Update::download` consumes it and returns a [`Downloaded`](api:hypersig_desktop/struct.Downloaded.html) once the package is downloaded and its signature verified, and `Downloaded::install` installs it. In the example below, one action runs all three steps when the button is clicked, and reports the result in a signal:",
-                ja: "ハンドラは `os.updates()`（`async fn updates(&self) -> Result<Option<Update>, Error>`）で問い合わせます。エンドポイントが `version` より新しいバージョンを知らせていなければ `Ok(None)` が返ります。[`Update`](api:hypersig_desktop/struct.Update.html) の `version()` は知らされたバージョンを、`notes()` はエンドポイントがリリースノートを送ったときにその内容を返します。`Update::download` は `Update` を消費し、パッケージをダウンロードして署名を確かめたあとで [`Downloaded`](api:hypersig_desktop/struct.Downloaded.html) を返します。`Downloaded::install` はそれをインストールします。次の例では、ボタンを押すと 1 つのアクションがこの 3 つを実行し、結果をシグナルに表示します。",
+                en: "`App::updates` turns the `App` into an `App<Updates>`, whose `run` hands the setup an `Updater` beside the `Os`, so only an application that named its updates has one to call. The setup puts it in the router's state, and a handler asks with `updater.check()`, `async fn check(&self) -> Result<Option<Update>, Error>`. It answers `Ok(None)` when the endpoint announces nothing newer than `version`. An [`Update`](api:hypersig_desktop/struct.Update.html) gives `version()`, the announced version, and `notes()`, the release notes when the endpoint sent some. `Update::download` consumes it and returns a [`Downloaded`](api:hypersig_desktop/struct.Downloaded.html) once the package is downloaded and its signature verified, and `Downloaded::install` installs it. In the example below, one action runs all three steps when the button is clicked, and reports the result in a signal:",
+                ja: "`App::updates` は `App` を `App<Updates>` に変え、その `run` は setup に `Os` と並べて `Updater` を渡します。そのため、更新の取得先を指定したアプリだけが、呼び出せる `Updater` を持ちます。setup はそれをルーターの状態に入れ、ハンドラは `updater.check()`（`async fn check(&self) -> Result<Option<Update>, Error>`）で問い合わせます。エンドポイントが `version` より新しいバージョンを知らせていなければ `Ok(None)` が返ります。[`Update`](api:hypersig_desktop/struct.Update.html) の `version()` は知らされたバージョンを、`notes()` はエンドポイントがリリースノートを送ったときにその内容を返します。`Update::download` は `Update` を消費し、パッケージをダウンロードして署名を確かめたあとで [`Downloaded`](api:hypersig_desktop/struct.Downloaded.html) を返します。`Downloaded::install` はそれをインストールします。次の例では、ボタンを押すと 1 つのアクションがこの 3 つを実行し、結果をシグナルに表示します。",
             },
         ),
         show(Snippet::DesktopUpdatesCheck),
         para(
             site,
             L {
-                en: "The new version runs once the application starts again. On Windows, `install` starts the NSIS installer and ends the process at once, so it does not return and the patch after it never reaches the page. On macOS the `.app` bundle, and on Linux the AppImage, are replaced on disk, and `install` returns while the application keeps running. In cargo-packager-updater 0.2.3's source, a `.app` in a folder the person cannot write to is moved into place after macOS asks for an administrator's password.",
-                ja: "新しいバージョンはアプリを次に起動したときから動きます。Windows では、`install` が NSIS のインストーラーを起動してすぐにプロセスを終了します。`install` は戻らず、そのあとの patch はページに届きません。macOS では `.app` バンドルが、Linux では AppImage がディスク上で置き換わり、`install` が戻ったあともアプリは動き続けます。cargo-packager-updater 0.2.3 のソースでは、利用者が書き込めないフォルダにある `.app` は、macOS が管理者のパスワードを求めたあとで置き換えられます。",
+                en: "The new version runs once the application starts again. On Windows, `install` starts the NSIS installer and ends the process at once, so it does not return and the patch after it never reaches the page. The exit skips the shutdown of `App::run`: requests in progress get no time to finish, and the window's `localStorage` is not waited for. On macOS the `.app` bundle, and on Linux the AppImage, are replaced on disk, and `install` returns while the application keeps running. In cargo-packager-updater 0.2.3's source, a `.app` in a folder the person cannot write to is moved into place after macOS asks for an administrator's password.",
+                ja: "新しいバージョンはアプリを次に起動したときから動きます。Windows では、`install` が NSIS のインストーラーを起動してすぐにプロセスを終了します。`install` は戻らず、そのあとの patch はページに届きません。このようにプロセスが終わると `App::run` の終了処理は実行されないので、処理中のリクエストが終わるのも、ウィンドウの `localStorage` がディスクに書き込まれるのも待ちません。macOS では `.app` バンドルが、Linux では AppImage がディスク上で置き換わり、`install` が戻ったあともアプリは動き続けます。cargo-packager-updater 0.2.3 のソースでは、利用者が書き込めないフォルダにある `.app` は、macOS が管理者のパスワードを求めたあとで置き換えられます。",
             },
         ),
         note(
@@ -121,8 +121,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "The endpoint answers `204 No Content` when there is no newer version, which `os.updates()` returns as `Ok(None)`. Otherwise it answers `200 OK` with JSON naming the version and, for the system and architecture in the request's URL, the package's URL, the contents of its `.sig` file, and its format. This is the answer hypersig_desktop's tests serve to a version before 1.1.0, with the URL and the signature written out:",
-                ja: "新しいバージョンがなければ、エンドポイントは `204 No Content` を返し、`os.updates()` はそれを `Ok(None)` として返します。新しいバージョンがあれば `200 OK` と JSON を返します。JSON にはバージョンと、リクエストの URL が示す OS とアーキテクチャ向けのパッケージの URL、その `.sig` ファイルの中身、形式を書きます。次は hypersig_desktop のテストが 1.1.0 より前のバージョンに返す応答で、URL と署名だけを具体的な値に書き換えています。",
+                en: "The endpoint answers `204 No Content` when there is no newer version, which `check` returns as `Ok(None)`. Otherwise it answers `200 OK` with JSON naming the version and, for the system and architecture in the request's URL, the package's URL, the contents of its `.sig` file, and its format. This is the answer hypersig_desktop's tests serve to a version before 1.1.0, with the URL and the signature written out:",
+                ja: "新しいバージョンがなければ、エンドポイントは `204 No Content` を返し、`check` はそれを `Ok(None)` として返します。新しいバージョンがあれば `200 OK` と JSON を返します。JSON にはバージョンと、リクエストの URL が示す OS とアーキテクチャ向けのパッケージの URL、その `.sig` ファイルの中身、形式を書きます。次は hypersig_desktop のテストが 1.1.0 より前のバージョンに返す応答で、URL と署名だけを具体的な値に書き換えています。",
             },
         ),
         code::block(Lang::JavaScript, None, ANSWER),
@@ -162,20 +162,16 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "Every failure of `os.updates()`, `download`, and `install` is an [`Error`](api:hypersig_desktop/struct.Error.html) whose `kind()` is [`ErrorKind::Update`](api:hypersig_desktop/enum.ErrorKind.html#variant.Update), and its `Display` says what failed:",
-                ja: "`os.updates()`、`download`、`install` の失敗は、どれも `kind()` が [`ErrorKind::Update`](api:hypersig_desktop/enum.ErrorKind.html#variant.Update) の [`Error`](api:hypersig_desktop/struct.Error.html) になり、その `Display` が何に失敗したかを示します。",
+                en: "Every failure of `check`, `download`, and `install` is an [`Error`](api:hypersig_desktop/struct.Error.html) whose `kind()` is [`ErrorKind::Update`](api:hypersig_desktop/enum.ErrorKind.html#variant.Update), and its `Display` says what failed:",
+                ja: "`check`、`download`、`install` の失敗は、どれも `kind()` が [`ErrorKind::Update`](api:hypersig_desktop/enum.ErrorKind.html#variant.Update) の [`Error`](api:hypersig_desktop/struct.Error.html) になり、その `Display` が何に失敗したかを示します。",
             },
         ),
         bullets(
             site,
             &[
                 L {
-                    en: "`os.updates()` fails when the application gave no `Updates` to `App::updates`, when `version` or `endpoint` does not parse, when the endpoint cannot be reached, and when it answers something other than `204` or the JSON above.",
-                    ja: "`os.updates()` が失敗するのは、`App::updates` に `Updates` を渡していないとき、`version` か `endpoint` を解析できないとき、エンドポイントに接続できないとき、`204` と上の JSON 以外の応答が返ったときです。",
-                },
-                L {
-                    en: "The endpoint must be `https`. Plain `http` is accepted only to `127.0.0.1` or `localhost`, for a test on the same machine; `http://updates.example/...` fails before any request is sent.",
-                    ja: "エンドポイントは `https` でなければなりません。暗号化しない `http` は同じマシンでのテストのために `127.0.0.1` と `localhost` に限って使えます。`http://updates.example/...` はリクエストを送る前に失敗します。",
+                    en: "`check` fails when the endpoint cannot be reached, and when it answers something other than `204` or the JSON above.",
+                    ja: "`check` が失敗するのは、エンドポイントに接続できないとき、`204` と上の JSON 以外の応答が返ったときです。",
                 },
                 L {
                     en: "`download` fails when the package cannot be downloaded, and when the public key does not verify its signature. A refused package is never installed, since only a `Downloaded` has `install`.",
@@ -190,8 +186,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         para(
             site,
             L {
-                en: "`Updates::new` checks none of its arguments, so a version that is not semver, an `http` endpoint on another host, or a wrong public key compiles and fails at the first `os.updates()` or `download`. Under `testing::FakeOs`, `os.updates()` returns `Ok(None)`, so a test of the handler sees the newest-version branch.",
-                ja: "`Updates::new` は引数をどれも検査しません。semver でないバージョン、別のホストを指す `http` のエンドポイント、誤った公開鍵はコンパイルを通り、最初の `os.updates()` か `download` で失敗します。`testing::FakeOs` では `os.updates()` が `Ok(None)` を返すので、ハンドラのテストでは最新版のときの分岐を通ります。",
+                en: "`Updates::new` checks its arguments, and in a `const` a wrong one is a compile error. `version` is a semantic version such as `1.2.3`. `endpoint` starts with `https://` and a host; plain `http` is accepted only to `127.0.0.1` or `localhost`, for a test on the same machine. `public_key` is the base64 of a minisign public key: an `untrusted comment:` line, then the key. A key of that shape that does not verify the package still fails, at `download`. A test puts `testing::FakeOs::updater` in the state, whose `check` returns `Ok(None)`, so a test of the handler sees the newest-version branch.",
+                ja: "`Updates::new` は引数を検査し、`const` の中では誤った引数がコンパイルエラーになります。`version` は `1.2.3` のようなセマンティック バージョンです。`endpoint` は `https://` とホストで始まります。暗号化しない `http` は、同じマシンでのテストのために `127.0.0.1` と `localhost` に限って使えます。`public_key` は minisign の公開鍵を base64 にしたもので、`untrusted comment:` の行と鍵の行から成ります。形が正しくても、その鍵でパッケージの署名を確かめられなければ、`download` で失敗します。テストでは `testing::FakeOs::updater` を状態に入れます。その `check` は `Ok(None)` を返すので、ハンドラのテストでは最新版のときの分岐を通ります。",
             },
         ),
         heading(
