@@ -46,6 +46,11 @@ pub(crate) struct Fake {
     pub(crate) external: Vec<SafeUrl>,
     pub(crate) launches: tokio::sync::broadcast::Sender<crate::Launch>,
     pub(crate) badge: u32,
+    /// Each notification shown, with where to say it was clicked.
+    pub(crate) notifications: Vec<(
+        crate::Notification,
+        Option<tokio::sync::oneshot::Sender<bool>>,
+    )>,
 }
 
 impl Default for Fake {
@@ -59,6 +64,7 @@ impl Default for Fake {
             external: Vec::new(),
             launches: crate::handoff::channel(),
             badge: 0,
+            notifications: Vec::new(),
         }
     }
 }
@@ -207,6 +213,35 @@ impl FakeOs {
         self.lock().badge
     }
 
+    /// The notifications the handlers showed, in order.
+    #[must_use]
+    pub fn notifications(&self) -> Vec<crate::Notification> {
+        self.lock()
+            .notifications
+            .iter()
+            .map(|(shown, _)| shown.clone())
+            .collect()
+    }
+
+    /// Clicks the notification shown `index`th from 0, so its
+    /// [`Notified::clicked`](crate::Notified::clicked) returns `true`. A
+    /// notification the test does not click returns `false` once the
+    /// `FakeOs` and every `Os` from it are dropped.
+    ///
+    /// # Panics
+    ///
+    /// Panics when no notification was shown at `index`, or it was clicked
+    /// already.
+    pub fn click_notification(&self, index: usize) {
+        let mut fake = self.lock();
+        let clicked = fake
+            .notifications
+            .get_mut(index)
+            .and_then(|(_, clicked)| clicked.take())
+            .unwrap_or_else(|| panic!("no notification {index} is waiting to be clicked"));
+        let _ = clicked.send(true);
+    }
+
     /// The URLs the handlers opened in another program.
     #[must_use]
     pub fn opened_externally(&self) -> Vec<SafeUrl> {
@@ -329,5 +364,25 @@ mod tests {
         ok(fake.os().badge(0));
         ok(fake.os().badge(5));
         assert_eq!(fake.badge(), 5);
+    }
+
+    #[test]
+    fn a_notification_is_recorded_and_clicked_by_the_test() {
+        let fake = FakeOs::new();
+        let os = fake.os();
+        let (clicked, left) = block_on(async {
+            let first = ok(os
+                .notify(crate::Notification::new("Ada").body("Lunch?"))
+                .await);
+            let second = ok(os.notify(crate::Notification::new("Grace")).await);
+            fake.click_notification(0);
+            (first, second)
+        });
+        assert_eq!(fake.notifications()[0].title(), "Ada");
+        assert_eq!(fake.notifications()[0].text(), Some("Lunch?"));
+        assert_eq!(fake.notifications()[1].text(), None);
+        assert!(block_on(clicked.clicked()));
+        drop((fake, os));
+        assert!(!block_on(left.clicked()));
     }
 }

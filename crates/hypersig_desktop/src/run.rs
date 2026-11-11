@@ -148,6 +148,8 @@ impl App {
             return Err(Error::in_runtime());
         }
         let started = Instant::now();
+        #[cfg(target_os = "macos")]
+        crate::notification::name_application(self.id);
         let own = self.data_dir()?.join("hypersig_desktop");
         fs::create_dir_all(&own)?;
         let lock = match instance::lock(&own) {

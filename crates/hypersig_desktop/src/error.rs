@@ -35,6 +35,8 @@ pub enum ErrorKind {
     Smoke,
     /// The system clipboard could not be read or written.
     Clipboard,
+    /// The system did not show a notification.
+    Notification,
     /// [`Os::open_external`](crate::Os::open_external) got a URL without a scheme.
     ///
     /// The system would open such a URL as a file.
@@ -96,6 +98,13 @@ impl Error {
         }
     }
 
+    pub(crate) fn notification(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
+        Self {
+            kind: ErrorKind::Notification,
+            source: Some(why.into()),
+        }
+    }
+
     #[cfg(feature = "updater")]
     pub(crate) fn update(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
         Self {
@@ -151,6 +160,7 @@ impl fmt::Display for Error {
             }
             ErrorKind::Smoke => "the smoke run failed",
             ErrorKind::Clipboard => "the clipboard could not be used",
+            ErrorKind::Notification => "the notification could not be shown",
             ErrorKind::Update => "the new version could not be found or installed",
             ErrorKind::NotExternal => {
                 "the URL names no scheme, so it is not opened in another program"

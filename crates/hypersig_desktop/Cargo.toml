@@ -35,6 +35,7 @@ axum.workspace = true
 cargo-packager-updater = { workspace = true, optional = true }
 getrandom.workspace = true
 hypersig.workspace = true
+notify-rust.workspace = true
 open.workspace = true
 rfd.workspace = true
 tao.workspace = true
