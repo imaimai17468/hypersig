@@ -4,7 +4,12 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::io;
 
-/// Why [`App::run`](crate::App::run) or [`App::data_dir`](crate::App::data_dir) failed.
+/// Why an operation of this crate failed.
+///
+/// [`App::run`](crate::App::run), [`App::data_dir`](crate::App::data_dir), and
+/// the methods of [`Os`](crate::Os), [`Windows`](crate::Windows),
+/// [`Window`](crate::Window), [`Clipboard`](crate::Clipboard), and the
+/// updater return it.
 pub struct Error {
     kind: ErrorKind,
     source: Option<Box<dyn StdError + Send + Sync>>,

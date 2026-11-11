@@ -210,6 +210,9 @@ enum Key {
 impl Window {
     /// Closes the window, as its close button does.
     ///
+    /// On a window that is already closed, it does nothing and returns
+    /// `Ok(())`.
+    ///
     /// # Errors
     ///
     /// Fails when the application is closing.
@@ -229,6 +232,9 @@ impl Window {
     }
 
     /// Brings the window to the front and gives it the keyboard.
+    ///
+    /// On a window that is already closed, it does nothing and returns
+    /// `Ok(())`.
     ///
     /// # Errors
     ///
