@@ -116,6 +116,7 @@ mod handoff;
 mod instance;
 #[cfg(target_os = "macos")]
 mod menu;
+mod notification;
 mod os;
 mod port;
 mod run;
@@ -129,6 +130,7 @@ mod window;
 pub use app::{App, IntoRouter};
 pub use error::{Error, ErrorKind};
 pub use handoff::{Launch, Launches};
+pub use notification::{Notification, Notified};
 pub use os::{Clipboard, Dialog, Os, Window, Windows};
 #[cfg(feature = "updater")]
 pub use updates::{Downloaded, Update, Updater, Updates};

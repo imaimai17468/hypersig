@@ -13,6 +13,7 @@ use tokio::sync::{broadcast, oneshot};
 use crate::clipboard;
 use crate::error::Error;
 use crate::handoff::{Launch, Launches};
+use crate::notification::{Notification, Notified};
 use crate::run::Event;
 #[cfg(feature = "testing")]
 use crate::testing::Fake;
@@ -69,6 +70,34 @@ impl Os {
     #[must_use]
     pub fn launches(&self) -> Launches {
         Launches::new(self.launches.subscribe())
+    }
+
+    /// Shows `notification` among the system's notifications.
+    ///
+    /// The returned [`Notified`] tells whether the person clicked it. On
+    /// macOS, the notification comes from the application installed with
+    /// the identifier [`App::new`](crate::App::new) names; a run outside
+    /// such a bundle shows it under another application's name.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ErrorKind::Notification`](crate::ErrorKind::Notification)
+    /// when the system does not show it, as on Linux without a notification
+    /// server.
+    pub async fn notify(&self, notification: Notification) -> Result<Notified, Error> {
+        match &self.inner {
+            Inner::System(_) => {
+                tokio::task::spawn_blocking(move || crate::notification::show(&notification))
+                    .await
+                    .map_err(Error::notification)?
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                let (clicked, heard) = oneshot::channel();
+                lock(fake).notifications.push((notification, Some(clicked)));
+                Ok(Notified { clicked: heard })
+            }
+        }
     }
 
     /// Shows `count` on the application's icon, or clears it at 0.

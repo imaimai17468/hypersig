@@ -271,6 +271,7 @@ pub enum DesktopPage {
     Dialogs,
     Clipboard,
     ExternalLinks,
+    Notifications,
     Badge,
     // Testing
     Testing,
@@ -922,6 +923,7 @@ pub(crate) const DESKTOP: &[Group] = &[
             Doc::Desktop(DesktopPage::Dialogs),
             Doc::Desktop(DesktopPage::Clipboard),
             Doc::Desktop(DesktopPage::ExternalLinks),
+            Doc::Desktop(DesktopPage::Notifications),
             Doc::Desktop(DesktopPage::Badge),
         ],
     },
@@ -1175,6 +1177,7 @@ impl Doc {
         Self::Desktop(DesktopPage::Dialogs),
         Self::Desktop(DesktopPage::Clipboard),
         Self::Desktop(DesktopPage::ExternalLinks),
+        Self::Desktop(DesktopPage::Notifications),
         Self::Desktop(DesktopPage::Badge),
         // Desktop: Testing
         Self::Desktop(DesktopPage::Testing),
@@ -1231,6 +1234,7 @@ impl Doc {
                 DesktopPage::Clipboard => ("The clipboard", "クリップボード"),
                 DesktopPage::ExternalLinks => ("Links to other sites", "ほかのサイトへのリンク"),
                 DesktopPage::Badge => ("The count on the icon", "アイコンの数"),
+                DesktopPage::Notifications => ("Notifications", "通知"),
                 DesktopPage::Testing => ("Testing without a window", "ウィンドウなしのテスト"),
                 DesktopPage::SmokeRuns => ("Smoke runs in CI", "CI でのスモークテスト"),
                 DesktopPage::Packaging => ("Packaging", "パッケージの作成"),
@@ -1903,6 +1907,10 @@ impl Doc {
                     en: "`Os::clipboard` reads and writes the text on the system clipboard from a handler.",
                     ja: "`Os::clipboard` を使うと、ハンドラから OS のクリップボードのテキストを読み書きできます。",
                 },
+                DesktopPage::Notifications => L {
+                    en: "`Os::notify` shows a notification among the system's, and tells whether the person clicked it.",
+                    ja: "`Os::notify` は OS の通知を表示し、利用者がクリックしたかどうかを知らせます。",
+                },
                 DesktopPage::Badge => L {
                     en: "`Os::badge` puts a count, such as the number of unread messages, on the application's icon.",
                     ja: "`Os::badge` は、未読のメッセージの数のような数を、アプリのアイコンに表示します。",
@@ -2309,6 +2317,7 @@ impl DesktopPage {
             Self::Clipboard => "clipboard",
             Self::ExternalLinks => "external-links",
             Self::Badge => "badge",
+            Self::Notifications => "notifications",
             Self::Testing => "testing",
             Self::SmokeRuns => "smoke-runs",
             Self::Packaging => "packaging",
