@@ -559,6 +559,7 @@ snippets! {
     DesktopDialogOpen => "desktop/dialogs_open.rs", "no_run";
     DesktopDialogKinds => "desktop/dialogs_kinds.rs";
     DesktopClipboard => "desktop/clipboard.rs";
+    DesktopBadge => "desktop/badge.rs";
     DesktopOpenExternal => "desktop/external_open.rs";
     DesktopExternalScheme => "desktop/external_scheme.rs", "compile_fail,E0080";
     DesktopExternalStr => "desktop/external_str.rs", "compile_fail,E0308";

@@ -45,6 +45,7 @@ pub(crate) struct Fake {
     pub(crate) focused: Option<usize>,
     pub(crate) external: Vec<SafeUrl>,
     pub(crate) launches: tokio::sync::broadcast::Sender<crate::Launch>,
+    pub(crate) badge: u32,
 }
 
 impl Default for Fake {
@@ -57,6 +58,7 @@ impl Default for Fake {
             focused: None,
             external: Vec::new(),
             launches: crate::handoff::channel(),
+            badge: 0,
         }
     }
 }
@@ -198,6 +200,13 @@ impl FakeOs {
         let _ = self.lock().launches.send(launch);
     }
 
+    /// The count the handlers last put on the application's icon, 0 when
+    /// none is shown.
+    #[must_use]
+    pub fn badge(&self) -> u32 {
+        self.lock().badge
+    }
+
     /// The URLs the handlers opened in another program.
     #[must_use]
     pub fn opened_externally(&self) -> Vec<SafeUrl> {
@@ -310,5 +319,15 @@ mod tests {
         ok(second.focus());
         ok(first.focus());
         assert_eq!(fake.focused_window(), Some(NOTE.url(2)));
+    }
+
+    #[test]
+    fn the_badge_keeps_the_count_set_last() {
+        let fake = FakeOs::new();
+        assert_eq!(fake.badge(), 0);
+        ok(fake.os().badge(3));
+        ok(fake.os().badge(0));
+        ok(fake.os().badge(5));
+        assert_eq!(fake.badge(), 5);
     }
 }
