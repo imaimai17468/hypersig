@@ -198,8 +198,8 @@ fn script(site: Site) -> Part {
         para(
             site,
             L {
-                en: "With `HYPERSIG_DESKTOP_SMOKE_SCRIPT`, the run evaluates the file in the first page once the check passes, and in the page of each window that loads after that. It then reads `window.hypersigSmoke` in the first page every 200 milliseconds, as a string:",
-                ja: "`HYPERSIG_DESKTOP_SMOKE_SCRIPT` を設定すると、確認が通ったあとにそのファイルを最初のページで評価し、それ以降に読み込まれた各ウィンドウのページでも評価します。そのあと 200 ミリ秒ごとに、最初のページの `window.hypersigSmoke` を文字列として読みます。",
+                en: "With `HYPERSIG_DESKTOP_SMOKE_SCRIPT`, the run evaluates the file in the first page once the check passes, and in the page of every other window, whether it loaded before then or loads later. It then reads `window.hypersigSmoke` in the first page every 200 milliseconds, as a string:",
+                ja: "`HYPERSIG_DESKTOP_SMOKE_SCRIPT` を設定すると、確認が通ったあとにそのファイルを最初のページで評価します。ほかのウィンドウのページでも、確認より前に読み込まれたか、あとから読み込まれたかにかかわらず評価します。そのあと 200 ミリ秒ごとに、最初のページの `window.hypersigSmoke` を文字列として読みます。",
             },
         ),
         bullets(

@@ -99,7 +99,8 @@
 //! the window, or does not load within 10 seconds.
 //!
 //! With `HYPERSIG_DESKTOP_SMOKE_SCRIPT` set to the path of a JavaScript file,
-//! the run then evaluates that file in the first page and closes once it sets
+//! the run then evaluates that file in the first page and in the page of
+//! every other window, and closes once the first page sets
 //! `window.hypersigSmoke` to `"pass"`. Anything else it sets, or nothing
 //! within 20 seconds, ends the run with an error. An empty
 //! `HYPERSIG_DESKTOP_SMOKE_SCRIPT` counts as unset.

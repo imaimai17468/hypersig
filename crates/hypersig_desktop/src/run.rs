@@ -20,7 +20,7 @@ use crate::app::{App, IntoRouter};
 use crate::error::Error;
 use crate::guard::{self, Guard};
 use crate::os::Os;
-use crate::smoke::Smoke;
+use crate::smoke::{Smoke, Step};
 use crate::{instance, port, window};
 
 /// How long the server is given to finish the requests it is answering
@@ -379,8 +379,21 @@ impl Lifecycle<'_> {
             return;
         }
         match smoke.step(answer, &open.web_view, self.proxy, self.runtime) {
-            Ok(false) => {}
-            Ok(true) => self.quit(),
+            Ok(Step::Waiting) => {}
+            // A window opened at start can load its page before the first
+            // page has answered, and `loaded` ran the script in none then.
+            Ok(Step::Scripting) => {
+                let first = self.first;
+                let ran = self
+                    .windows
+                    .iter()
+                    .filter(|(id, open)| Some(**id) != first && open.shown && !open.leaving)
+                    .try_for_each(|(_, open)| smoke.other_window(&open.web_view));
+                if let Err(error) = ran {
+                    self.fail(error);
+                }
+            }
+            Ok(Step::Done) => self.quit(),
             Err(error) => self.fail(error),
         }
     }

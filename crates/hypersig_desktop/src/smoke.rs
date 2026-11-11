@@ -5,8 +5,8 @@
 //! [`App::run`](crate::App::run) the first page was shown, checks that it is
 //! one hypersig rendered, and closes the application. With
 //! `HYPERSIG_DESKTOP_SMOKE_SCRIPT` set to the path of a JavaScript file, it
-//! then runs that file in the first page, and in the page of each window
-//! opened after it, and waits for the first page to set
+//! then runs that file in the first page and in the page of every other
+//! window, open then or later, and waits for the first page to set
 //! `window.hypersigSmoke` to `"pass"`, or to anything else to fail.
 
 use std::env;
@@ -77,7 +77,7 @@ impl Smoke {
 
     /// Takes the next step, with `answer` being the page's answer to the
     /// last question, or `None` when it is time to ask. The answer to a
-    /// question arrives as [`Event::Smoke`]. Returns whether the run is done.
+    /// question arrives as [`Event::Smoke`].
     ///
     /// # Errors
     ///
@@ -90,7 +90,7 @@ impl Smoke {
         web_view: &WebView,
         proxy: &EventLoopProxy<Event>,
         runtime: &Runtime,
-    ) -> Result<bool, Error> {
+    ) -> Result<Step, Error> {
         match (&self.stage, answer) {
             // The time is written when the window is shown, as other
             // frameworks' measurements write it, and the check follows; a
@@ -109,13 +109,14 @@ impl Smoke {
                     ));
                 }
                 let Some(script) = &self.script else {
-                    return Ok(true);
+                    return Ok(Step::Done);
                 };
                 web_view.evaluate_script(script).map_err(Error::window)?;
                 self.stage = Stage::Scripting {
                     deadline: Instant::now() + SCRIPT_TIME,
                 };
                 later(proxy, runtime);
+                return Ok(Step::Scripting);
             }
             (Stage::Scripting { .. }, None) => ask(web_view, VERDICT, proxy)?,
             (Stage::Scripting { deadline }, Some(answer)) => {
@@ -123,7 +124,7 @@ impl Smoke {
                 let verdict = answer.trim_matches('"');
                 if verdict == "pass" {
                     report("smoke script passed");
-                    return Ok(true);
+                    return Ok(Step::Done);
                 }
                 if !verdict.is_empty() {
                     return Err(Error::smoke(format!("the script set {verdict}")));
@@ -137,13 +138,32 @@ impl Smoke {
                 later(proxy, runtime);
             }
         }
-        Ok(false)
+        Ok(Step::Waiting)
     }
+}
+
+/// Where a smoke run stands after [`Smoke::step`].
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum Step {
+    /// The run waits for the page's next answer.
+    Waiting,
+    /// The script has just started in the first page, so it is to run in
+    /// the pages of the windows already open too.
+    Scripting,
+    /// The run passed.
+    Done,
+}
+
+/// The script's path in `value`, which an empty value leaves out, as
+/// shells and CI files write an unset variable.
+fn path(value: Option<OsString>) -> Option<OsString> {
+    value.filter(|value| !value.is_empty())
 }
 
 impl Smoke {
     /// Runs the script in the page of a window other than the first, once
-    /// the first page runs it.
+    /// the first page runs it, and does nothing before that, since
+    /// [`Step::Scripting`] then covers the window.
     ///
     /// # Errors
     ///
@@ -156,12 +176,6 @@ impl Smoke {
             _ => Ok(()),
         }
     }
-}
-
-/// The script's path in `value`, which an empty value leaves out, as
-/// shells and CI files write an unset variable.
-fn path(value: Option<OsString>) -> Option<OsString> {
-    value.filter(|value| !value.is_empty())
 }
 
 /// Runs `question` in the page, whose answer arrives as [`Event::Smoke`].
