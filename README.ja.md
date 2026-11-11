@@ -11,6 +11,7 @@ Rust だけで書く[ハイパーメディア](https://imaimai17468.github.io/hy
 - `cargo build` だけでビルドでき、Node も wasm も必要ありません。
 - 最初の HTML にページの状態が入っているので、ハイドレーションはありません。アクションは変わった値だけを返します（[hypersig を選ぶ理由](https://imaimai17468.github.io/hypersig/ja/learn/why/)）。
 - フォームの検証規則、CSS、翻訳もコンパイラが検査します。shadcn/ui の見た目のコンポーネント集も付いています（[フォーム](https://imaimai17468.github.io/hypersig/ja/learn/forms/)、[スタイル](https://imaimai17468.github.io/hypersig/ja/style/)、[多言語化](https://imaimai17468.github.io/hypersig/ja/i18n/)、[コンポーネント](https://imaimai17468.github.io/hypersig/ja/components/)）。
+- 同じアプリを macOS、Windows、Linux のデスクトップのウィンドウでも動かせます。サーバーは同じプロセスで動き、書き換えるのは `main` だけです（[デスクトップ](https://imaimai17468.github.io/hypersig/ja/desktop/)）。
 
 ## クイックスタート
 

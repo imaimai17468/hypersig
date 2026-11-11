@@ -21,7 +21,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: dtolnay/rust-toolchain@d124f86f28ff42855784ff3319f48ac182c248f8 # 1.99
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
-      - run: cargo doc -p hypersig -p hypersig_style -p hypersig_proc -p hypersig_ui -p hypersig_i18n --no-deps
+      # hypersig_desktop builds against WebKitGTK on Linux.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev
+      - run: cargo doc -p hypersig -p hypersig_style -p hypersig_proc -p hypersig_ui -p hypersig_i18n -p hypersig_desktop --features hypersig_desktop/testing,hypersig_desktop/updater --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
       # Fails on a link inside the site, or into the rustdoc output, that

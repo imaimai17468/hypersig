@@ -537,6 +537,34 @@ snippets! {
     I18nNegotiateHandler => "i18n/choosing/handler.rs";
     I18nRedirect => "i18n/choosing/redirect.rs";
     I18nRedirectRoute => "i18n/choosing/redirect_route.rs", "compile_fail,E0277";
+    // Desktop: start, windows
+    DesktopMain => "desktop/overview_main.rs", "no_run";
+    DesktopIdConst => "desktop/app_id_const.rs", "compile_fail,E0080";
+    DesktopIdPanic => "desktop/app_id_panic.rs", "should_panic";
+    DesktopDataDir => "desktop/app_data_dir.rs";
+    DesktopSetup => "desktop/app_setup.rs", "no_run";
+    DesktopNoState => "desktop/app_no_state.rs", "compile_fail,E0277";
+    DesktopErrors => "desktop/app_errors.rs", "no_run";
+    DesktopOpen => "desktop/windows_open.rs";
+    DesktopClose => "desktop/windows_close.rs";
+    DesktopBlank => "desktop/windows_blank.rs";
+    DesktopAtStart => "desktop/windows_at_start.rs", "no_run";
+    // Desktop: shipping, running
+    DesktopUpdatesCheck => "desktop/updates_check.rs", "no_run";
+    DesktopSecuritySessions => "desktop/security_sessions.rs", "no_run";
+    DesktopPersistedSignalsTheme => "desktop/persisted_signals_theme.rs", "no_run";
+    DesktopPersistedSignalsAlreadyRunning => "desktop/persisted_signals_already_running.rs", "no_run";
+    // Desktop: system, testing
+    DesktopDialogOpen => "desktop/dialogs_open.rs", "no_run";
+    DesktopDialogKinds => "desktop/dialogs_kinds.rs";
+    DesktopClipboard => "desktop/clipboard.rs";
+    DesktopOpenExternal => "desktop/external_open.rs";
+    DesktopExternalScheme => "desktop/external_scheme.rs", "compile_fail,E0080";
+    DesktopExternalStr => "desktop/external_str.rs", "compile_fail,E0308";
+    DesktopExternalRelative => "desktop/external_relative.rs";
+    DesktopFakeOs => "desktop/fake_os.rs";
+    DesktopFakeOsReads => "desktop/fake_os_reads.rs";
+    DesktopFakeOsUnanswered => "desktop/fake_os_unanswered.rs", "should_panic";
 }
 
 /// The lines of `snippet` that the page shows.

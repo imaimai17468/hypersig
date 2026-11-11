@@ -31,6 +31,7 @@ axum.workspace = true
 futures.workspace = true
 getrandom.workspace = true
 http-body-util.workspace = true
+hypersig_desktop = { workspace = true, features = ["testing", "updater"] }
 reqwest = { workspace = true, features = ["json", "rustls"] }
 rusqlite = { workspace = true, features = ["bundled"] }
 serde_json.workspace = true
@@ -45,8 +46,9 @@ tracing-subscriber.workspace = true
 [lints]
 workspace = true
 
-# The samples under `snippets/data/`, `quality/testing_sessions.rs`,
-# `quality/csp.rs`, `requests/logging.rs`, and `browser/static_files.rs` are
+# The samples under `snippets/desktop/` and `snippets/data/`,
+# `quality/testing_sessions.rs`, `quality/csp.rs`, `requests/logging.rs`, and
+# `browser/static_files.rs` are
 # the only users of these crates, and cargo-udeps does not see a crate that
 # only doctests use.
 [package.metadata.cargo-udeps.ignore]
@@ -54,6 +56,7 @@ development = [
     "aws-config",
     "aws-sdk-dynamodb",
     "getrandom",
+    "hypersig_desktop",
     "reqwest",
     "rusqlite",
     "sqlx",

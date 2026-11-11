@@ -434,6 +434,7 @@ fn in_section(doc: Doc, first: Doc) -> bool {
             | (Doc::Style(_), Doc::Style(_))
             | (Doc::Components(_), Doc::Components(_))
             | (Doc::I18n(_), Doc::I18n(_))
+            | (Doc::Desktop(_), Doc::Desktop(_))
     )
 }
 
@@ -833,8 +834,8 @@ pub(crate) fn page_footer(site: Site) -> Part {
         .child(p().children(crate::prose::inline(
             site,
             site.t(L {
-                en: "[Framework](), [Style](style/), [Components](components/), [i18n](i18n/), [GitHub](https://github.com/imaimai17468/hypersig), MIT License",
-                ja: "[フレームワーク](), [スタイル](style/), [コンポーネント](components/), [多言語化](i18n/), [GitHub](https://github.com/imaimai17468/hypersig), MIT License",
+                en: "[Framework](), [Style](style/), [Components](components/), [i18n](i18n/), [Desktop](desktop/), [GitHub](https://github.com/imaimai17468/hypersig), MIT License",
+                ja: "[フレームワーク](), [スタイル](style/), [コンポーネント](components/), [多言語化](i18n/), [デスクトップ](desktop/), [GitHub](https://github.com/imaimai17468/hypersig), MIT License",
             }),
         )))
 }

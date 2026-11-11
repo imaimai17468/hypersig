@@ -93,7 +93,6 @@ pub(crate) fn content(site: Site, page: Learn) -> Part {
         Learn::DeployContainer => deploying::container::page(site),
         Learn::DeployCloudflare => deploying::cloudflare::page(site),
         Learn::DeployVercel => deploying::vercel::page(site),
-        Learn::DeployDesktop => deploying::desktop::page(site),
     }
 }
 

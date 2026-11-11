@@ -1,7 +1,9 @@
 //! The pages of the site, their paths, and the order the sidebar lists them in.
 
 use crate::lang::L;
-use crate::{Site, components, home, i18n, landing, layout, learn, reference, style, use_cases};
+use crate::{
+    Site, components, desktop, home, i18n, landing, layout, learn, reference, style, use_cases,
+};
 
 /// One page of the site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -27,6 +29,10 @@ pub enum Doc {
     I18nHome,
     /// A page of the i18n section, about `hypersig_i18n`.
     I18n(I18nPage),
+    /// The landing page of the Desktop docs.
+    DesktopHome,
+    /// A page of the Desktop section, about `hypersig_desktop`.
+    Desktop(DesktopPage),
 }
 
 /// The pages of the Learn section, a guide read from top to bottom.
@@ -105,7 +111,6 @@ pub enum Learn {
     DeployContainer,
     DeployCloudflare,
     DeployVercel,
-    DeployDesktop,
 }
 
 /// The pages of the Reference section, one per group of items.
@@ -253,6 +258,30 @@ pub enum I18nPage {
     Redirect,
 }
 
+/// The pages of the Desktop section.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DesktopPage {
+    // Get started
+    Overview,
+    TheApp,
+    // Windows
+    Windows,
+    // The system
+    Dialogs,
+    Clipboard,
+    ExternalLinks,
+    // Testing
+    Testing,
+    SmokeRuns,
+    // Shipping
+    Packaging,
+    Updates,
+    // How the window runs
+    Security,
+    PersistedSignals,
+    Limits,
+}
+
 /// One of the sets of docs, each with its own header and landing
 /// page, as the libraries of `TanStack` share one site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -265,11 +294,19 @@ pub(crate) enum Library {
     Components,
     /// The `hypersig_i18n` crate.
     I18n,
+    /// The `hypersig_desktop` crate.
+    Desktop,
 }
 
 impl Library {
     /// Every library, in the order the switcher lists them.
-    pub(crate) const ALL: [Self; 4] = [Self::Framework, Self::Style, Self::Components, Self::I18n];
+    pub(crate) const ALL: [Self; 5] = [
+        Self::Framework,
+        Self::Style,
+        Self::Components,
+        Self::I18n,
+        Self::Desktop,
+    ];
 
     /// The name the header and the switcher show.
     pub(crate) fn name(self, site: Site) -> &'static str {
@@ -290,6 +327,10 @@ impl Library {
                 en: "i18n",
                 ja: "多言語化",
             },
+            Self::Desktop => L {
+                en: "Desktop",
+                ja: "デスクトップ",
+            },
         })
     }
 
@@ -300,6 +341,7 @@ impl Library {
             Self::Style => "hypersig::style",
             Self::Components => "hypersig_ui",
             Self::I18n => "hypersig_i18n",
+            Self::Desktop => "hypersig_desktop",
         }
     }
 
@@ -323,6 +365,10 @@ impl Library {
                 en: "Typed translations for hypersig, with the language picked from Accept-Language.",
                 ja: "hypersig の型付きの翻訳です。言語は Accept-Language から選びます。",
             },
+            Self::Desktop => L {
+                en: "Runs a hypersig application in a desktop window on macOS, Windows, and Linux, with the same pages, actions, and streams it serves on the web.",
+                ja: "hypersig のアプリを macOS、Windows、Linux のデスクトップのウィンドウで動かします。ページ、アクション、ストリームは Web で配信するものと同じです。",
+            },
         }
     }
 
@@ -333,6 +379,7 @@ impl Library {
             Self::Style => Doc::StyleHome,
             Self::Components => Doc::ComponentsHome,
             Self::I18n => Doc::I18nHome,
+            Self::Desktop => Doc::DesktopHome,
         }
     }
 
@@ -363,6 +410,7 @@ impl Library {
             Self::Style => &[(DOCS, Doc::Style(StylePage::Overview))],
             Self::Components => &[(DOCS, Doc::Components(Component::Installation))],
             Self::I18n => &[(DOCS, Doc::I18n(I18nPage::Overview))],
+            Self::Desktop => &[(DOCS, Doc::Desktop(DesktopPage::Overview))],
         }
     }
 
@@ -373,6 +421,7 @@ impl Library {
             Self::Style => "api:hypersig_style/index.html",
             Self::Components => "api:hypersig_ui/index.html",
             Self::I18n => "api:hypersig_i18n/index.html",
+            Self::Desktop => "api:hypersig_desktop/index.html",
         }
     }
 }
@@ -842,6 +891,69 @@ pub(crate) const I18N: &[Group] = &[
     },
 ];
 
+/// The sidebar of the Desktop section.
+pub(crate) const DESKTOP: &[Group] = &[
+    Group {
+        title: L {
+            en: "Get started",
+            ja: "はじめに",
+        },
+        docs: &[
+            Doc::Desktop(DesktopPage::Overview),
+            Doc::Desktop(DesktopPage::TheApp),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Windows",
+            ja: "ウィンドウ",
+        },
+        docs: &[Doc::Desktop(DesktopPage::Windows)],
+    },
+    Group {
+        title: L {
+            en: "The system",
+            ja: "OS の機能",
+        },
+        docs: &[
+            Doc::Desktop(DesktopPage::Dialogs),
+            Doc::Desktop(DesktopPage::Clipboard),
+            Doc::Desktop(DesktopPage::ExternalLinks),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Testing",
+            ja: "テスト",
+        },
+        docs: &[
+            Doc::Desktop(DesktopPage::Testing),
+            Doc::Desktop(DesktopPage::SmokeRuns),
+        ],
+    },
+    Group {
+        title: L {
+            en: "Shipping",
+            ja: "配布",
+        },
+        docs: &[
+            Doc::Desktop(DesktopPage::Packaging),
+            Doc::Desktop(DesktopPage::Updates),
+        ],
+    },
+    Group {
+        title: L {
+            en: "How the window runs",
+            ja: "ウィンドウの仕組み",
+        },
+        docs: &[
+            Doc::Desktop(DesktopPage::Security),
+            Doc::Desktop(DesktopPage::PersistedSignals),
+            Doc::Desktop(DesktopPage::Limits),
+        ],
+    },
+];
+
 impl Doc {
     /// Every page, in the order the site lists them.
     pub const ALL: &[Self] = &[
@@ -1048,6 +1160,26 @@ impl Doc {
         // i18n: Choosing the language
         Self::I18n(I18nPage::Negotiation),
         Self::I18n(I18nPage::Redirect),
+        Self::DesktopHome,
+        // Desktop: Get started
+        Self::Desktop(DesktopPage::Overview),
+        Self::Desktop(DesktopPage::TheApp),
+        // Desktop: Windows
+        Self::Desktop(DesktopPage::Windows),
+        // Desktop: The system
+        Self::Desktop(DesktopPage::Dialogs),
+        Self::Desktop(DesktopPage::Clipboard),
+        Self::Desktop(DesktopPage::ExternalLinks),
+        // Desktop: Testing
+        Self::Desktop(DesktopPage::Testing),
+        Self::Desktop(DesktopPage::SmokeRuns),
+        // Desktop: Shipping
+        Self::Desktop(DesktopPage::Packaging),
+        Self::Desktop(DesktopPage::Updates),
+        // Desktop: How the window runs
+        Self::Desktop(DesktopPage::Security),
+        Self::Desktop(DesktopPage::PersistedSignals),
+        Self::Desktop(DesktopPage::Limits),
     ];
 
     /// The page's directory inside the site, ending in `/`, or `""` for the
@@ -1067,6 +1199,8 @@ impl Doc {
             Self::Style(page) => format!("style/{}/", page.slug()),
             Self::I18nHome => "i18n/".to_owned(),
             Self::I18n(page) => format!("i18n/{}/", page.slug()),
+            Self::DesktopHome => "desktop/".to_owned(),
+            Self::Desktop(page) => format!("desktop/{}/", page.slug()),
         }
     }
 
@@ -1081,6 +1215,24 @@ impl Doc {
         let (en, ja) = match self {
             Self::Home => ("hypersig", "hypersig"),
             Self::StyleHome => ("hypersig style", "hypersig style"),
+            Self::DesktopHome => ("hypersig desktop", "hypersig desktop"),
+            Self::Desktop(page) => match page {
+                DesktopPage::Overview => ("Overview", "概要"),
+                DesktopPage::TheApp => ("The application", "アプリの設定"),
+                DesktopPage::Windows => ("Opening windows", "ウィンドウを開く"),
+                DesktopPage::Dialogs => ("File dialogs", "ファイルのダイアログ"),
+                DesktopPage::Clipboard => ("The clipboard", "クリップボード"),
+                DesktopPage::ExternalLinks => ("Links to other sites", "ほかのサイトへのリンク"),
+                DesktopPage::Testing => ("Testing without a window", "ウィンドウなしのテスト"),
+                DesktopPage::SmokeRuns => ("Smoke runs in CI", "CI でのスモークテスト"),
+                DesktopPage::Packaging => ("Packaging", "パッケージの作成"),
+                DesktopPage::Updates => ("Updates", "更新の配布"),
+                DesktopPage::Security => ("Who the server answers", "サーバーが応答する相手"),
+                DesktopPage::PersistedSignals => {
+                    ("Signals kept between runs", "起動をまたいで残るシグナル")
+                }
+                DesktopPage::Limits => ("Limits", "制約"),
+            },
             Self::I18nHome => ("hypersig i18n", "hypersig i18n"),
             Self::UseCases => ("Use cases", "ユースケース"),
             Self::I18n(page) => match page {
@@ -1195,7 +1347,6 @@ impl Doc {
                 Learn::DeployContainer => ("In a container", "コンテナ"),
                 Learn::DeployCloudflare => ("Cloudflare Workers", "Cloudflare Workers"),
                 Learn::DeployVercel => ("Vercel", "Vercel"),
-                Learn::DeployDesktop => ("A desktop window", "デスクトップのウィンドウ"),
             },
             Self::Reference(page) => match page {
                 Reference::Overview => ("API reference", "API リファレンス"),
@@ -1328,9 +1479,11 @@ impl Doc {
     /// description.
     pub(crate) fn leads(self) -> L<&'static str> {
         match self {
-            Self::Home | Self::StyleHome | Self::ComponentsHome | Self::I18nHome => {
-                self.library().descriptions()
-            }
+            Self::Home
+            | Self::StyleHome
+            | Self::ComponentsHome
+            | Self::I18nHome
+            | Self::DesktopHome => self.library().descriptions(),
             Self::UseCases => L {
                 en: "Applications that hypersig suits. For each feature added to one of them, the page shows the change in hypersig and in Next.js.",
                 ja: "hypersig に向くアプリと、そのアプリに仕様を 1 つ追加するごとに、hypersig と Next.js でコードがどう変わるかを並べます。",
@@ -1598,10 +1751,6 @@ impl Doc {
                     en: "The Vercel template runs the same pages, actions, and streams as a Vercel Function, where `VercelLayer` hands each request to the axum `Router`.",
                     ja: "Vercel のテンプレートは同じページ、アクション、ストリームを Vercel の関数として動かし、`VercelLayer` が受け取ったリクエストを axum の `Router` に渡します。",
                 },
-                Learn::DeployDesktop => L {
-                    en: "`hypersig_desktop` shows the same pages, actions, and streams in a desktop window, with the server in the same process, and changes only `main`.",
-                    ja: "`hypersig_desktop` は同じページ、アクション、ストリームをデスクトップのウィンドウに表示します。サーバーは同じプロセスで動き、書き換えるのは `main` だけです。",
-                },
             },
             Self::Style(page) => match page {
                 // Get started
@@ -1719,6 +1868,60 @@ impl Doc {
                 StylePage::Unchecked => L {
                     en: "A few forms reach the browser without a check. Each has its own name, so searching for that name finds every place that uses an unchecked value.",
                     ja: "いくつかの書き方は検査を受けずにブラウザへ渡ります。どの書き方にも決まった名前があるので、その名前で検索すれば、検査なしの値を使う箇所をすべて見つけられます。",
+                },
+            },
+            Self::Desktop(page) => match page {
+                DesktopPage::Overview => L {
+                    en: "`hypersig_desktop` serves an application's `Router` in the same process and shows its pages in the system's web view. Only `main` changes.",
+                    ja: "`hypersig_desktop` はアプリの `Router` を同じプロセスで配信し、そのページを OS の Web ビューで表示します。書き換えるのは `main` だけです。",
+                },
+                DesktopPage::TheApp => L {
+                    en: "`App` names the application with a reverse domain name, sets the size of its windows, and decides where it keeps its files. `App::run` serves the router and opens the first window.",
+                    ja: "`App` は逆ドメイン形式の名前でアプリを識別し、ウィンドウの大きさと、アプリのファイルを置く場所を決めます。`App::run` はルーターを配信し、最初のウィンドウを開きます。",
+                },
+                DesktopPage::Windows => L {
+                    en: "A handler opens another window with `Windows::open`, and a page opens one with `window.open` or a link with `target=\"_blank\"`. Every window shows a page of the same server.",
+                    ja: "ハンドラは `Windows::open` で別のウィンドウを開き、ページは `window.open` か `target=\"_blank\"` のリンクで開きます。どのウィンドウも同じサーバーのページを表示します。",
+                },
+                DesktopPage::Dialogs => L {
+                    en: "`Os::dialog` shows the system's dialog for opening a file, several files, or a folder, or for choosing where to save one.",
+                    ja: "`Os::dialog` は、ファイル、複数のファイル、フォルダを開くときや、保存先を選ぶときの OS のダイアログを表示します。",
+                },
+                DesktopPage::Clipboard => L {
+                    en: "`Os::clipboard` reads and writes the text on the system clipboard from a handler.",
+                    ja: "`Os::clipboard` を使うと、ハンドラから OS のクリップボードのテキストを読み書きできます。",
+                },
+                DesktopPage::ExternalLinks => L {
+                    en: "A link to another site opens in the person's browser, and a handler opens a URL there with `Os::open_external`.",
+                    ja: "ほかのサイトへのリンクは利用者のブラウザで開きます。ハンドラからは `Os::open_external` で URL をブラウザで開けます。",
+                },
+                DesktopPage::Testing => L {
+                    en: "With the `testing` feature, `FakeOs` stands in for the system, so `cargo test` calls the handlers and clicks through the pages without a window.",
+                    ja: "`testing` feature を有効にすると `FakeOs` が OS の代わりになり、`cargo test` の中でウィンドウを開かずにハンドラを呼び、ページをクリックできます。",
+                },
+                DesktopPage::SmokeRuns => L {
+                    en: "A build with the `smoke` feature opens the real window, checks that the first page loaded, runs a script in it, and exits, for CI.",
+                    ja: "`smoke` feature を有効にしたビルドは本物のウィンドウを開き、最初のページが読み込まれたことを確かめ、スクリプトを実行して終了します。CI で使います。",
+                },
+                DesktopPage::Packaging => L {
+                    en: "`cargo packager` builds an installer or package for each system from a table in `Cargo.toml`.",
+                    ja: "`cargo packager` は、`Cargo.toml` の設定から OS ごとのインストーラーやパッケージを作ります。",
+                },
+                DesktopPage::Updates => L {
+                    en: "With the `updater` feature, `Os::updates` finds a newer version, downloads it, checks its signature, and installs it.",
+                    ja: "`updater` feature を有効にすると、`Os::updates` で新しいバージョンを探し、ダウンロードして署名を確かめ、インストールできます。",
+                },
+                DesktopPage::Security => L {
+                    en: "The server listens on `127.0.0.1` and answers only the application's own windows.",
+                    ja: "サーバーは `127.0.0.1` で待ち受け、アプリ自身のウィンドウにだけ応答します。",
+                },
+                DesktopPage::PersistedSignals => L {
+                    en: "The server listens on the same port each time the application runs, so the signals a page keeps in the browser are found again.",
+                    ja: "サーバーはアプリを起動するたびに同じポートで待ち受けるので、ページがブラウザに保存したシグナルは次の起動でも読み出せます。",
+                },
+                DesktopPage::Limits => L {
+                    en: "The windows share six connections to the server, and each system needs its web view installed before the application runs.",
+                    ja: "すべてのウィンドウはサーバーへの 6 本の接続を共有します。また、アプリを動かす前に、各 OS に Web ビューが入っている必要があります。",
                 },
             },
             Self::I18n(page) => match page {
@@ -2007,6 +2210,7 @@ impl Doc {
             Self::Home | Self::UseCases | Self::Learn(_) | Self::Reference(_) => Library::Framework,
             Self::StyleHome | Self::Style(_) => Library::Style,
             Self::I18nHome | Self::I18n(_) => Library::I18n,
+            Self::DesktopHome | Self::Desktop(_) => Library::Desktop,
             Self::ComponentsHome | Self::Components(_) => Library::Components,
         }
     }
@@ -2033,12 +2237,14 @@ impl Doc {
             | Self::StyleHome
             | Self::ComponentsHome
             | Self::I18nHome
+            | Self::DesktopHome
             | Self::UseCases => &[],
             Self::Learn(_) => LEARN,
             Self::Reference(_) => REFERENCE,
             Self::Components(_) => COMPONENTS,
             Self::Style(_) => STYLE,
             Self::I18n(_) => I18N,
+            Self::Desktop(_) => DESKTOP,
         }
     }
 
@@ -2064,12 +2270,34 @@ impl Doc {
             Self::StyleHome => landing::style(site),
             Self::ComponentsHome => landing::components(site),
             Self::I18nHome => landing::i18n(site),
+            Self::DesktopHome => landing::desktop(site),
             Self::UseCases => use_cases::render(site),
             Self::Learn(page) => layout::article(site, self, learn::content(site, page)),
             Self::Reference(page) => layout::article(site, self, reference::content(site, page)),
             Self::Components(page) => layout::article(site, self, components::content(site, page)),
             Self::Style(page) => layout::article(site, self, style::content(site, page)),
             Self::I18n(page) => layout::article(site, self, i18n::content(site, page)),
+            Self::Desktop(page) => layout::article(site, self, desktop::content(site, page)),
+        }
+    }
+}
+
+impl DesktopPage {
+    fn slug(self) -> &'static str {
+        match self {
+            Self::Overview => "overview",
+            Self::TheApp => "app",
+            Self::Windows => "windows",
+            Self::Dialogs => "dialogs",
+            Self::Clipboard => "clipboard",
+            Self::ExternalLinks => "external-links",
+            Self::Testing => "testing",
+            Self::SmokeRuns => "smoke-runs",
+            Self::Packaging => "packaging",
+            Self::Updates => "updates",
+            Self::Security => "security",
+            Self::PersistedSignals => "persisted-signals",
+            Self::Limits => "limits",
         }
     }
 }
@@ -2172,7 +2400,6 @@ impl Learn {
             Self::DeployContainer => "deploying/container",
             Self::DeployCloudflare => "deploying/cloudflare",
             Self::DeployVercel => "deploying/vercel",
-            Self::DeployDesktop => "deploying/desktop",
         }
     }
 }
