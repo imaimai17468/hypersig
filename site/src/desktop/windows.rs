@@ -276,8 +276,8 @@ fn closing(site: Site) -> Part {
         para(
             site,
             L {
-                en: "Closing a window, with its close button or with `Window::close`, ends its page and its streams. Closing the last one closes the application, on macOS as well, where an application often stays open without windows. The server is then given five seconds to finish the requests it is answering, and `App::run` returns; [The application](desktop/app/) covers what it returns.",
-                ja: "閉じるボタンや `Window::close` でウィンドウを閉じると、そのページとストリームも終わります。最後のウィンドウを閉じるとアプリが終了します。ウィンドウがなくてもアプリが動き続けることの多い macOS でも同じです。そのあとサーバーには応答中の要求を終えるための 5 秒の猶予が与えられ、`App::run` が戻ります。`run` が返す値は [アプリの設定](desktop/app/) で説明します。",
+                en: "Closing a window, with its close button or with `Window::close`, ends its page and its streams. Closing the last one closes the application, on macOS as well, where an application often stays open without windows, unless a [tray icon](desktop/tray/) is shown. The server is then given five seconds to finish the requests it is answering, and `App::run` returns; [The application](desktop/app/) covers what it returns.",
+                ja: "閉じるボタンや `Window::close` でウィンドウを閉じると、そのページとストリームも終わります。最後のウィンドウを閉じるとアプリが終了します。ウィンドウがなくてもアプリが動き続けることの多い macOS でも同じです。ただし、[トレイのアイコン](desktop/tray/) を表示している間は終了しません。そのあとサーバーには応答中の要求を終えるための 5 秒の猶予が与えられ、`App::run` が戻ります。`run` が返す値は [アプリの設定](desktop/app/) で説明します。",
             },
         ),
         para(

@@ -45,6 +45,8 @@ muda = { version = "0.21.2", default-features = false }
 # ShellExecute on Windows, rather than `cmd /c start`, which reads `&` in a URL as a second command.
 notify-rust = { version = "4.19.0", default-features = false, features = ["z"] }
 open = { version = "5.4.5", features = ["shellexecute-on-windows"] }
+png = "0.18.1"
+tray-icon = { version = "0.26.1", default-features = false, features = ["ksni"] }
 password-auth = "1.0.0"
 prettyplease = "0.3.0"
 proc-macro2 = "1.0.107"

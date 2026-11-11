@@ -6,14 +6,12 @@
 //! pasted text. Windows and Linux hand those keys to the web view themselves.
 
 use muda::accelerator::Accelerator;
-use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
-use tao::event_loop::EventLoopProxy;
+use muda::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 
 use crate::error::Error;
-use crate::run::Event;
 
-/// The id of the item that quits through [`Event::Quit`].
-const QUIT: &str = "hypersig-desktop-quit";
+/// The id of the item that quits, which the event loop answers.
+pub(crate) const QUIT: &str = "hypersig-desktop-quit";
 
 /// Puts the application, Edit, and Window menus in the menu bar. The menu
 /// lasts as long as the returned value.
@@ -21,7 +19,7 @@ const QUIT: &str = "hypersig-desktop-quit";
 /// Quitting is an item of its own instead of the one macOS provides, which
 /// ends the process at once, so that it stops the server as closing the
 /// window does.
-pub(crate) fn install(proxy: EventLoopProxy<Event>) -> Result<Menu, Error> {
+pub(crate) fn install() -> Result<Menu, Error> {
     let quit = MenuItem::with_id(
         QUIT,
         "Quit",
@@ -69,10 +67,5 @@ pub(crate) fn install(proxy: EventLoopProxy<Event>) -> Result<Menu, Error> {
     .map_err(Error::window)?;
     let menu = Menu::with_items(&[&application, &edit, &window]).map_err(Error::window)?;
     menu.init_for_nsapp();
-    MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
-        if event.id() == QUIT {
-            let _ = proxy.send_event(Event::Quit);
-        }
-    }));
     Ok(menu)
 }

@@ -54,14 +54,22 @@ pub(crate) enum Event {
         url: String,
         answer: Option<oneshot::Sender<Result<WindowId, Error>>>,
     },
+    /// [`Os`] shows a tray icon, or replaces the one shown.
+    Tray {
+        tray: crate::Tray,
+        answer: oneshot::Sender<Result<(), Error>>,
+    },
+    /// An item of the menu bar or of the tray's menu was chosen.
+    Menu(tray_icon::menu::MenuId),
     /// [`Os`] closes a window.
     Close(WindowId),
     /// [`Os`] brings a window to the front.
     Focus(WindowId),
     /// The count to show on the application's icon.
     Badge(u32),
-    /// [`LEAVE`] has passed since a window began to close.
-    Left(WindowId),
+    /// [`LEAVE`] has passed since a window began to close, or, with no
+    /// window, the application is quitting.
+    Left(Option<WindowId>),
     /// Ctrl-C was pressed in the terminal, or Quit was chosen in the menu.
     Quit,
     /// A second copy handed its command line over.
@@ -117,9 +125,10 @@ impl App {
     /// through [`Os::launches`] and brings a window forward, and returns
     /// `Ok(())`.
     ///
-    /// Closing the last window, Quit in the menu, or Ctrl-C in the terminal
-    /// stops the server, which is given five seconds to finish the requests
-    /// it is answering, and the method returns once it has stopped.
+    /// Closing the last window while no tray is shown, Quit in the menu or
+    /// in the tray's menu, or Ctrl-C in the terminal stops the server,
+    /// which is given five seconds to finish the requests it is answering,
+    /// and the method returns once it has stopped.
     ///
     /// The windows and their event loop take the thread that calls this,
     /// which on macOS must be the main thread, so `main` is not
@@ -184,7 +193,13 @@ impl App {
         runtime.spawn(quit_on_ctrl_c(proxy.clone()));
 
         #[cfg(target_os = "macos")]
-        let _menu = crate::menu::install(proxy.clone())?;
+        let _menu = crate::menu::install()?;
+        let chosen = proxy.clone();
+        tray_icon::menu::MenuEvent::set_event_handler(Some(
+            move |event: tray_icon::menu::MenuEvent| {
+                let _ = chosen.send_event(Event::Menu(event.id));
+            },
+        ));
         let mut run = Lifecycle {
             app: self,
             proxy: &proxy,
@@ -197,6 +212,8 @@ impl App {
             started: false,
             smoke: Smoke::from_env(started)?,
             badge: 0,
+            tray: None,
+            items: HashMap::new(),
             quitting: false,
             failure: None,
         };
@@ -261,6 +278,10 @@ struct Lifecycle<'a> {
     /// Whether the first page has loaded.
     started: bool,
     smoke: Option<Smoke>,
+    /// The tray icon shown, which keeps the application running with no window.
+    tray: Option<tray_icon::TrayIcon>,
+    /// Where each item of the tray's menu reports its clicks.
+    items: HashMap<tray_icon::menu::MenuId, tokio::sync::broadcast::Sender<()>>,
     /// The count on the application's icon, which a window opened later
     /// shows too on Windows.
     badge: u32,
@@ -308,12 +329,20 @@ impl Lifecycle<'_> {
                 }
             }
             TaoEvent::UserEvent(Event::Left(id)) => {
-                if self.windows.get(&id).is_some_and(|open| open.leaving) {
+                if let Some(id) = id
+                    && self.windows.get(&id).is_some_and(|open| open.leaving)
+                {
                     self.windows.remove(&id);
                 }
-                return self.windows.is_empty();
+                // A tray keeps the application running with no window,
+                // until its Quit item or another way to quit is chosen.
+                return self.windows.is_empty() && (self.tray.is_none() || self.quitting);
             }
             TaoEvent::UserEvent(Event::Quit) => self.quit(),
+            TaoEvent::UserEvent(Event::Tray { tray, answer }) => {
+                let _ = answer.send(self.tray(&tray));
+            }
+            TaoEvent::UserEvent(Event::Menu(id)) => self.chosen(&id),
             TaoEvent::UserEvent(Event::Raise) => self.raise(),
             TaoEvent::UserEvent(Event::Smoke(answer)) => self.smoke(answer.as_deref()),
             _ => {}
@@ -530,8 +559,34 @@ impl Lifecycle<'_> {
     fn quit(&mut self) {
         self.quitting = true;
         let ids: Vec<WindowId> = self.windows.keys().copied().collect();
+        if ids.is_empty() {
+            // Only a tray kept the application running, so no window's
+            // `Left` will end the event loop.
+            let _ = self.proxy.send_event(Event::Left(None));
+        }
         for id in ids {
             self.leave(id);
+        }
+    }
+
+    /// Shows `tray`, in place of the tray shown before.
+    fn tray(&mut self, tray: &crate::Tray) -> Result<(), Error> {
+        let icon = crate::tray::show(tray)?;
+        self.items = tray
+            .items
+            .iter()
+            .map(|item| (item.id.clone(), item.clicked.clone()))
+            .collect();
+        self.tray = Some(icon);
+        Ok(())
+    }
+
+    /// Answers the item `id` of the menu bar or of the tray's menu.
+    fn chosen(&mut self, id: &tray_icon::menu::MenuId) {
+        if id.0 == crate::tray::QUIT || is_menu_quit(id) {
+            self.quit();
+        } else if let Some(clicked) = self.items.get(id) {
+            let _ = clicked.send(());
         }
     }
 
@@ -554,9 +609,21 @@ impl Lifecycle<'_> {
         let left = self.proxy.clone();
         self.runtime.spawn(async move {
             tokio::time::sleep(LEAVE).await;
-            let _ = left.send_event(Event::Left(id));
+            let _ = left.send_event(Event::Left(Some(id)));
         });
     }
+}
+
+/// Whether `id` is the Quit item of the macOS menu bar.
+#[cfg(target_os = "macos")]
+fn is_menu_quit(id: &tray_icon::menu::MenuId) -> bool {
+    id.0 == crate::menu::QUIT
+}
+
+/// Whether `id` is the Quit item of the macOS menu bar, which this system has none of.
+#[cfg(not(target_os = "macos"))]
+fn is_menu_quit(_id: &tray_icon::menu::MenuId) -> bool {
+    false
 }
 
 /// Brings a window forward each time a second copy hands its command line over.

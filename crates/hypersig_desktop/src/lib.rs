@@ -39,7 +39,7 @@
 //! opens another window with [`Windows::open`], through the [`Os`] that
 //! [`App::run`] gives the setup, and a page's `window.open`, or a link with
 //! `target="_blank"`, opens one too. Closing the last window closes the
-//! application, on macOS as well.
+//! application, on macOS as well, unless `Os::tray` shows a tray icon.
 //!
 //! The windows reach the server over HTTP/1.1, and a web view keeps at most
 //! six connections to one host for all its windows together. A stream holds
@@ -123,6 +123,7 @@ mod run;
 mod smoke;
 #[cfg(feature = "testing")]
 pub mod testing;
+mod tray;
 #[cfg(feature = "updater")]
 mod updates;
 mod window;
@@ -132,5 +133,6 @@ pub use error::{Error, ErrorKind};
 pub use handoff::{Launch, Launches};
 pub use notification::{Notification, Notified};
 pub use os::{Clipboard, Dialog, Os, Window, Windows};
+pub use tray::{Clicks, Tray, TrayItem};
 #[cfg(feature = "updater")]
 pub use updates::{Downloaded, Update, Updater, Updates};

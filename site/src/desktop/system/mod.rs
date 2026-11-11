@@ -5,3 +5,4 @@ pub(super) mod clipboard;
 pub(super) mod dialogs;
 pub(super) mod external_links;
 pub(super) mod notifications;
+pub(super) mod tray;

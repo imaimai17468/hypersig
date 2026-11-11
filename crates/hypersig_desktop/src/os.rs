@@ -17,6 +17,7 @@ use crate::notification::{Notification, Notified};
 use crate::run::Event;
 #[cfg(feature = "testing")]
 use crate::testing::Fake;
+use crate::tray::Tray;
 
 /// The operating system's windows and services, for the application's handlers.
 ///
@@ -96,6 +97,31 @@ impl Os {
                 let (clicked, heard) = oneshot::channel();
                 lock(fake).notifications.push((notification, Some(clicked)));
                 Ok(Notified { clicked: heard })
+            }
+        }
+    }
+
+    /// Shows `tray` in the system tray, in place of the tray shown before.
+    ///
+    /// While a tray is shown, closing the last window leaves the
+    /// application running, and the tray's Quit item ends it.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ErrorKind::Tray`](crate::ErrorKind::Tray) when the
+    /// tray's icon is not a PNG or the system has no tray, and when the
+    /// application is closing.
+    pub async fn tray(&self, tray: Tray) -> Result<(), Error> {
+        match &self.inner {
+            Inner::System(proxy) => {
+                let (answer, answered) = oneshot::channel();
+                Os::send(proxy, Event::Tray { tray, answer })?;
+                answered.await.map_err(|_closed| Error::closed())?
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                lock(fake).tray = Some(tray);
+                Ok(())
             }
         }
     }
