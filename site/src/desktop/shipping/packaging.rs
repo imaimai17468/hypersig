@@ -4,7 +4,7 @@ use crate::Site;
 use crate::code::{self, Lang};
 use crate::doc::{DesktopPage, Doc};
 use crate::lang::L;
-use crate::prose::{Part, heading, lead, note, para, parts, table_of};
+use crate::prose::{Part, bullets, heading, lead, note, para, parts, table_of};
 
 /// The commands that install cargo-packager and package examples/notes.
 const PACKAGE: &str = "cargo install cargo-packager --version 0.11.8 --locked
@@ -220,11 +220,46 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
                 ja: "パッケージには、作った OS とアーキテクチャのバイナリが入ります。そのため、各 OS のパッケージはその OS で作ります。バイナリは `before-packaging-command` で指定した feature でビルドされます。[CI でのスモークテスト](desktop/smoke-runs/) の `smoke` feature は、リリースのビルドには入れません。",
             },
         ),
+        heading(
+            site,
+            L {
+                en: "Code signing",
+                ja: "コード署名",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Without a code signature, macOS refuses to open the downloaded `.app`, and Windows warns before it runs the installer. cargo-packager signs while it packages. These are the settings and variables its 0.11.8 source reads:",
+                ja: "コード署名がなければ、macOS はダウンロードした `.app` を開かず、Windows はインストーラーを実行する前に警告を出します。cargo-packager はパッケージを作りながら署名します。次は、0.11.8 のソースが読む設定と環境変数です。",
+            },
+        ),
+        bullets(
+            site,
+            &[
+                L {
+                    en: "macOS: `signing-identity` in `[package.metadata.packager.macos]`, such as `Developer ID Application: NAME (TEAM_ID)`, turns signing on. `APPLE_CERTIFICATE`, the base64 of the `.p12` file, and `APPLE_CERTIFICATE_PASSWORD` import the certificate into a keychain of its own, as CI needs. The binary is signed with the hardened runtime (`--options runtime`), and `entitlements` names the file of entitlements it is signed with.",
+                    ja: "macOS: `[package.metadata.packager.macos]` の `signing-identity`（`Developer ID Application: NAME (TEAM_ID)` のような値）を指定すると署名します。`APPLE_CERTIFICATE`（`.p12` ファイルを base64 にしたもの）と `APPLE_CERTIFICATE_PASSWORD` を渡すと、CI で必要なように、証明書を専用のキーチェーンに読み込みます。バイナリは Hardened Runtime（`--options runtime`）で署名され、`entitlements` で指定したファイルのエンタイトルメントが付きます。",
+                },
+                L {
+                    en: "macOS notarization follows signing when `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password), and `APPLE_TEAM_ID` are set, or `APPLE_API_KEY`, `APPLE_API_ISSUER`, and `APPLE_API_KEY_PATH`, or `APPLE_KEYCHAIN_PROFILE`. It sends the `.app` to `notarytool` and staples the ticket. Without any of them, it warns and skips notarization.",
+                    ja: "macOS の公証は `APPLE_ID`、`APPLE_PASSWORD`（App 用パスワード）、`APPLE_TEAM_ID` の組か、`APPLE_API_KEY`、`APPLE_API_ISSUER`、`APPLE_API_KEY_PATH` の組か、`APPLE_KEYCHAIN_PROFILE` があるときに、署名に続けて行われます。`.app` を `notarytool` に送り、チケットをステープルします。どれもなければ、警告を出して公証を飛ばします。",
+                },
+                L {
+                    en: "The hardened runtime blocks the microphone and the camera unless the entitlements hold `com.apple.security.device.audio-input` or `com.apple.security.device.camera` as `true`. `examples/meter` names `Entitlements.plist`, which holds the first, for an application that [allows the microphone](desktop/devices/).",
+                    ja: "Hardened Runtime では、エンタイトルメントに `com.apple.security.device.audio-input` か `com.apple.security.device.camera` を `true` で入れないと、マイクやカメラを使えません。`examples/meter` は、[マイクを許可した](desktop/devices/)アプリのために、前者を入れた `Entitlements.plist` を指定しています。",
+                },
+                L {
+                    en: "Windows: `certificate-thumbprint` and `digest-algorithm` (SHA-256 is recommended) in `[package.metadata.packager.windows]` sign with `signtool.exe` from a certificate in the Windows store, with `timestamp-url` for the timestamp. `sign-command`, a command with `%1` for the file, signs some other way, such as with `osslsigncode`.",
+                    ja: "Windows: `[package.metadata.packager.windows]` の `certificate-thumbprint` と `digest-algorithm`（SHA-256 を推奨）を指定すると、Windows の証明書ストアの証明書で `signtool.exe` が署名します。タイムスタンプには `timestamp-url` を使います。`sign-command`（ファイルの場所に `%1` を書いたコマンド）を指定すると、`osslsigncode` のような別の方法で署名できます。",
+                },
+            ],
+        ),
         note(
             site,
             L {
-                en: "These steps do not code-sign the packages or notarize them for macOS.",
-                ja: "この手順では、パッケージへのコード署名と macOS の公証は行いません。",
+                en: "No run in this repository has signed or notarized a package, since it needs the owner's Apple Developer account and Windows certificate. [Issue #226](https://github.com/imaimai17468/hypersig/issues/226) tracks it.",
+                ja: "持ち主の Apple Developer アカウントと Windows の証明書が必要なので、このリポジトリでは、まだどの実行でもパッケージに署名したり公証したりしていません。[issue #226](https://github.com/imaimai17468/hypersig/issues/226) で扱っています。",
             },
         ),
         heading(
