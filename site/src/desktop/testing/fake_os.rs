@@ -11,10 +11,10 @@ use crate::prose::{Part, bullets, heading, lead, para, parts, subheading, table_
 
 /// The dev-dependency that turns the `testing` feature on.
 const DEV_DEPENDENCY: &str = r#"[dependencies]
-hypersig_desktop = "0.15"
+hypersig_desktop = "0.16"
 
 [dev-dependencies]
-hypersig_desktop = { version = "0.15", features = ["testing"] }"#;
+hypersig_desktop = { version = "0.16", features = ["testing"] }"#;
 
 pub(crate) fn page(site: Site, head: Part) -> Part {
     parts([

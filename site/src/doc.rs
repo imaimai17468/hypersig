@@ -1755,8 +1755,8 @@ impl Doc {
                     ja: "型で防げない間違いを、動いているページがどこに報告するかを扱います。ページを組み立てるときのサーバーでのパニック、ブラウザのコンソールの行、ページに表示できる失敗した呼び出しの 3 つです。",
                 },
                 Learn::Upgrading => L {
-                    en: "Each change of a public signature from 0.5 to 0.15, shown as the code after it, with the line it replaces.",
-                    ja: "0.5 から 0.15 までに公開のシグネチャが変わった箇所を、変更後のコードと、それが置き換える行で示します。",
+                    en: "Each change of a public signature from 0.5 to 0.16, shown as the code after it, with the line it replaces.",
+                    ja: "0.5 から 0.16 までに公開のシグネチャが変わった箇所を、変更後のコードと、それが置き換える行で示します。",
                 },
                 // Deploy
                 Learn::Deploying => L {

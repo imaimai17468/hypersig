@@ -14,10 +14,11 @@ pub(crate) fn page(site: Site) -> Part {
         para(
             site,
             L {
-                en: "The releases that changed a public signature, 0.5 through 0.15, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
-                ja: "公開しているシグネチャを変えた 0.5 から 0.15 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
+                en: "The releases that changed a public signature, 0.5 through 0.16, each raised the minor version, so `hypersig = \"0.7\"` in `Cargo.toml` stays on 0.7 until you change it. Every crate of the workspace is released at one version, so raise `hypersig`, `hypersig_ui`, `hypersig_i18n`, `hypersig_desktop`, and `cargo install hypersig_cli` together. The samples below are the code after each change: a line marked `-` is what the older release accepted, and the line marked `+` replaces it. The compiler stops at each line that still has the old form, so work through its errors from the top. [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) lists every change of every release, including the ones that need nothing from you.",
+                ja: "公開しているシグネチャを変えた 0.5 から 0.16 までのリリースでは、そのたびにマイナーバージョンを上げています。そのため、`Cargo.toml` に `hypersig = \"0.7\"` と書いたプロジェクトは、書き換えるまで 0.7 のままです。ワークスペースのクレートはすべて同じバージョンで公開するので、`hypersig`、`hypersig_ui`、`hypersig_i18n`、`hypersig_desktop` と `cargo install hypersig_cli` は一緒に上げてください。下のサンプルは変更後のコードです。`-` の付いた行は前のリリースで書けた形で、`+` の付いた行がそれに置き換わります。古い形が残る行ではコンパイルが止まるので、エラーを上から順に直してください。リリースごとの変更は、手を入れなくてよいものも含めて [CHANGELOG.md](https://github.com/imaimai17468/hypersig/blob/main/CHANGELOG.md) に載っています。",
             },
         ),
+        to_0_16(site),
         to_0_15(site),
         to_0_14(site),
         to_0_13(site),
@@ -29,6 +30,33 @@ pub(crate) fn page(site: Site) -> Part {
         to_0_7(site),
         to_0_6(site),
         to_0_5(site),
+    ])
+}
+
+fn to_0_16(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "From 0.15 to 0.16",
+                ja: "0.15 から 0.16 へ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "Only `hypersig_desktop` changed a signature. `App::updates` turns the `App` into an `App<Updates>`, whose `run` hands the setup the `Updater` beside the `Os`, and `Updater::check` replaces `Os::updates`, which an application without updates had too and which failed when it was called. Name the constant's type `App<Updates>`, take the second argument in the setup, and call `check` on the `Updater`:",
+                ja: "シグネチャが変わったのは `hypersig_desktop` だけです。`App::updates` は `App` を `App<Updates>` に変え、その `run` は setup に `Os` と並べて `Updater` を渡します。`Updater::check` が `Os::updates` に置き換わります。`Os::updates` は更新のないアプリにもあり、呼ぶと失敗していました。定数の型を `App<Updates>` にし、setup で 2 つ目の引数を受け取り、`Updater` の `check` を呼んでください。",
+            },
+        ),
+        show_change(Snippet::Upgrade016),
+        para(
+            site,
+            L {
+                en: "`FakeOs::dialogs` replaces `FakeOs::dialogs_shown` and returns a `ShownDialog` for each dialog the test answered, so `dialogs_shown()` becomes `dialogs().len()`. `open_file`, `pick_folder`, and `save_file` under `FakeOs` panic when the test answers with no path or with several, where they returned `None` or took the first path. On Windows, `Downloaded::install` returns `Ok(())` and the installer starts after `App::run` has stopped the server, where the process ended inside `install`.",
+                ja: "`FakeOs::dialogs` が `FakeOs::dialogs_shown` に置き換わり、テストが答えたダイアログごとに `ShownDialog` を返します。そのため `dialogs_shown()` は `dialogs().len()` になります。`FakeOs` の `open_file`、`pick_folder`、`save_file` は、テストがパスを 1 つも返さないときや複数返したときにパニックします。これまでは `None` を返すか、最初のパスを使っていました。Windows では、`Downloaded::install` が `Ok(())` を返し、`App::run` がサーバーを止めたあとでインストーラーが起動します。これまでは `install` の中でプロセスが終わっていました。",
+            },
+        ),
     ])
 }
 
