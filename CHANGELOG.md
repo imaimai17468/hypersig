@@ -6,6 +6,8 @@ The release notes on GitHub list the titles of the merged pull requests. This fi
 
 ### Added
 
+- `hypersig`: `El::on_context_menu` runs a statement where the person right-clicks, in place of the browser's menu, and hands it the position as an `Expr<S, Point>`. `NodeRef::show_popover_at` opens a popover there, kept inside the viewport.
+- `hypersig_ui`: `ContextMenu` opens a menu of `MenuItem`s at that position, with the keys of `Menu`.
 - `hypersig_desktop`: `Os::autostart` returns an `Autostart`, whose `enable` and `disable` start the application when the person logs in, or stop doing so, and `is_enabled` says which.
 
 ## [0.16.0] - 2026-11-12

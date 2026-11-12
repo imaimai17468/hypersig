@@ -96,6 +96,7 @@ demos! {
     Collapsible => collapsible, "ui/collapsible.rs", "10rem";
     Dialog => dialog, "ui/dialog.rs", "24rem";
     Menu => menu, "ui/menu.rs", "17rem";
+    ContextMenu => context_menu, "ui/context_menu.rs", "16rem";
     Tooltip => tooltip, "ui/tooltip.rs", "8rem";
     Popover => popover, "ui/popover.rs", "18rem";
     Toast => toast, "ui/toast.rs", "20rem";

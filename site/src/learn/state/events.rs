@@ -339,6 +339,13 @@ pub(crate) fn page(site: Site) -> Part {
                 ja: "文は、タイマー、シグナルの変化、スクリプトが発行するイベントでも実行できます。`on_interval`、`on_timeout`、`effect`、`on_signal_change` は [タイマーと変化への反応](learn/timers/) で、`CustomEvent` を使う `on_custom` は [JavaScript のライブラリ](learn/javascript/) で説明します。",
             },
         ),
+        para(
+            site,
+            L {
+                en: "[`on_context_menu`](api:hypersig/html/struct.El.html#method.on_context_menu) runs a statement where the visitor right-clicks, in place of the browser's own menu, and hands it the position as an `Expr<S, Point>`. [Context menu](components/context-menu/) opens a menu of actions there.",
+                ja: "[`on_context_menu`](api:hypersig/html/struct.El.html#method.on_context_menu) は訪問者が右クリックした要素で、ブラウザ自身のメニューの代わりに文を実行し、その位置を `Expr<S, Point>` として文に渡します。その位置に操作のメニューを開くには [コンテキストメニュー](components/context-menu/) を使います。",
+            },
+        ),
         heading(
             site,
             L {

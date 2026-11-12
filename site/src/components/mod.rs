@@ -69,6 +69,7 @@ pub(crate) fn content(site: Site, page: Component) -> Part {
         Component::AlertDialog => overlays::alert_dialog::page(site, head),
         Component::Sheet => overlays::sheet::page(site, head),
         Component::Menu => overlays::menu::page(site, head),
+        Component::ContextMenu => overlays::context_menu::page(site, head),
         Component::Tooltip => overlays::tooltip::page(site, head),
         Component::Popover => overlays::popover::page(site, head),
         Component::Toast => overlays::toast::page(site, head),
