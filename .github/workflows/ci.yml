@@ -288,14 +288,35 @@ jobs:
           else
             target/release/example-meter
           fi
-      # examples/meter/screen.js clicks "Share the screen", which the meter
-      # allows, and waits for WebKitGTK's mock screen to be shared.
+      # examples/meter/screen.js stretches "Share the screen", which the
+      # meter allows, over the window and waits for WebKitGTK's mock screen to
+      # be shared. WebKit shares it only from a person's click, so xdotool
+      # clicks the middle of the window once a second until the meter exits.
       - name: The meter example is granted the screen
         if: runner.os == 'Linux'
         shell: bash
         env:
           HYPERSIG_DESKTOP_SMOKE_SCRIPT: examples/meter/screen.js
-        run: xvfb-run -a target/release/example-meter
+        run: |
+          Xvfb :98 &
+          export DISPLAY=:98
+          sleep 1
+          target/release/example-meter &
+          app=$!
+          while kill -0 "$app" 2>/dev/null; do
+            sleep 1
+            window=$(xdotool search --name "hypersig meter" | head -1) || continue
+            xdotool mousemove --window "$window" 280 180 click 1 || true
+          done
+          wait "$app"
+      # TEMPORARY: what WebView2 answers getDisplayMedia with.
+      - name: Probe getDisplayMedia on Windows
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: bash
+        env:
+          HYPERSIG_DESKTOP_SMOKE_SCRIPT: examples/meter/probe.js
+        run: target/release/example-meter
       # examples/meter/talk.js waits for the page to say "Talking" and then
       # stop, while xdotool presses and releases the push-to-talk key on the
       # X server once a second, so a press before the page's stream opens is
