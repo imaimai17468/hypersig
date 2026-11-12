@@ -123,7 +123,7 @@ mod framing;
 mod guard;
 mod handoff;
 mod instance;
-#[cfg(target_os = "macos")]
+mod item;
 mod menu;
 mod message;
 mod notification;
@@ -144,10 +144,12 @@ pub use arrange::{Layer, Placement};
 pub use device::Device;
 pub use error::{Error, ErrorKind};
 pub use handoff::{Launch, Launches};
+pub use item::{Clicks, MenuItem};
+pub use menu::Menu;
 pub use message::{Answer, Level, Message};
 pub use notification::{Notification, Notified};
 pub use os::{Clipboard, Dialog, Os, Window, Windows};
 pub use shortcut::{Key, Modifiers, Press, Presses, Shortcut};
-pub use tray::{Clicks, Tray, TrayItem};
+pub use tray::{Tray, TrayItem};
 #[cfg(feature = "updater")]
 pub use updates::{Downloaded, Update, Updater, Updates};

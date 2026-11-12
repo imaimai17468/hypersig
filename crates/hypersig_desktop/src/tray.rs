@@ -5,11 +5,11 @@
 use std::fmt;
 use std::sync::Arc;
 
-use tokio::sync::broadcast;
-use tray_icon::menu::{Menu, MenuId, MenuItem, PredefinedMenuItem};
+use tray_icon::menu::{Menu, MenuItem as SystemItem, PredefinedMenuItem};
 use tray_icon::{Icon, TrayIcon, TrayIconBuilder};
 
 use crate::error::Error;
+use crate::item::MenuItem;
 
 /// An icon in the system tray with a menu, for [`Os::tray`](crate::Os::tray).
 ///
@@ -21,7 +21,7 @@ pub struct Tray {
     pub(crate) icon: Arc<[u8]>,
     pub(crate) quit: String,
     pub(crate) tooltip: Option<String>,
-    pub(crate) items: Vec<TrayItem>,
+    pub(crate) items: Vec<MenuItem>,
 }
 
 impl fmt::Debug for Tray {
@@ -53,7 +53,7 @@ impl Tray {
     }
 
     /// Adds `item` to the menu, above the items added after it.
-    pub fn item(mut self, item: &TrayItem) -> Self {
+    pub fn item(mut self, item: &MenuItem) -> Self {
         self.items.push(item.clone());
         self
     }
@@ -69,66 +69,8 @@ impl Tray {
     }
 }
 
-/// An item of a [`Tray`]'s menu, whose [`clicks`](Self::clicks) the application waits on.
-#[derive(Clone)]
-pub struct TrayItem {
-    pub(crate) id: MenuId,
-    pub(crate) label: String,
-    pub(crate) clicked: broadcast::Sender<()>,
-}
-
-impl fmt::Debug for TrayItem {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("TrayItem")
-            .field("label", &self.label)
-            .finish_non_exhaustive()
-    }
-}
-
-impl TrayItem {
-    /// An item labeled `label`.
-    pub fn new(label: impl Into<String>) -> Self {
-        Self {
-            id: MenuId::new(format!("hypersig-desktop-tray-{}", next_id())),
-            label: label.into(),
-            clicked: broadcast::channel(16).0,
-        }
-    }
-
-    /// The clicks on this item that come after this call.
-    #[must_use]
-    pub fn clicks(&self) -> Clicks {
-        Clicks {
-            receiver: self.clicked.subscribe(),
-        }
-    }
-}
-
-/// The clicks on a [`TrayItem`], from [`TrayItem::clicks`].
-#[derive(Debug)]
-pub struct Clicks {
-    receiver: broadcast::Receiver<()>,
-}
-
-impl Clicks {
-    /// Waits for the next click, and returns `false` once the item is gone.
-    pub async fn next(&mut self) -> bool {
-        loop {
-            match self.receiver.recv().await {
-                Ok(()) => return true,
-                Err(broadcast::error::RecvError::Lagged(_)) => {}
-                Err(broadcast::error::RecvError::Closed) => return false,
-            }
-        }
-    }
-}
-
-/// A number no other item of this run has, for its menu id.
-fn next_id() -> u64 {
-    use std::sync::atomic::{AtomicU64, Ordering};
-    static NEXT: AtomicU64 = AtomicU64::new(0);
-    NEXT.fetch_add(1, Ordering::Relaxed)
-}
+/// An item of a [`Tray`]'s menu, the same type as a [`MenuItem`] of the menu bar.
+pub type TrayItem = MenuItem;
 
 /// The id of the Quit item of every tray.
 pub(crate) const QUIT: &str = "hypersig-desktop-tray-quit";
@@ -144,14 +86,19 @@ pub(crate) fn show(tray: &Tray) -> Result<TrayIcon, Error> {
     let icon = decode(&tray.icon)?;
     let menu = Menu::new();
     for item in &tray.items {
-        menu.append(&MenuItem::with_id(item.id.clone(), &item.label, true, None))
-            .map_err(Error::tray)?;
+        menu.append(&SystemItem::with_id(
+            item.id.clone(),
+            &item.label,
+            true,
+            None,
+        ))
+        .map_err(Error::tray)?;
     }
     if !tray.items.is_empty() {
         menu.append(&PredefinedMenuItem::separator())
             .map_err(Error::tray)?;
     }
-    menu.append(&MenuItem::with_id(QUIT, &tray.quit, true, None))
+    menu.append(&SystemItem::with_id(QUIT, &tray.quit, true, None))
         .map_err(Error::tray)?;
     let mut builder = TrayIconBuilder::new()
         .with_icon(icon)
