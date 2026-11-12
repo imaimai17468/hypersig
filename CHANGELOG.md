@@ -23,6 +23,7 @@ The release notes on GitHub list the titles of the merged pull requests. This fi
 - `hypersig_desktop`: `FakeOs::focused_window` returns the window opened or focused last.
 - `hypersig_desktop`: `Window::place` maximizes, minimizes, or makes a window fullscreen, `Window::layer` keeps it above other applications' windows, and `Window::move_to` and `Window::resize` set its position and size in logical pixels. `Windows::focused` returns the window that had the keyboard last, so a handler finds the window its click came from. `FakeOs::window` returns what the handlers gave a window.
 - `hypersig_desktop`: `Os::tell`, `Os::confirm`, and `Os::ask` show a `Message` in the system's message box, with OK, OK and Cancel, or Yes, No, and Cancel. `FakeOs::choose` answers them and `FakeOs::messages` returns each shown.
+- `hypersig_desktop`: `Os::menus` puts `Menu`s of `MenuItem`s in the menu bar, on macOS between Edit and Window and on Linux at the top of every window; Windows shows none. `TrayItem` is an alias of `MenuItem`. `FakeOs::menus` and `FakeOs::click_menu_item` stand in for the system.
 - `hypersig_desktop`: on macOS, a file or a link the person opens with the application reaches `Os::launches`, as a second start's command line does on Windows and Linux. `examples/notes` opens `.md` files.
 
 ### Changed
