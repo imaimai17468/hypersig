@@ -19,7 +19,7 @@ Rust だけで書く[ハイパーメディア](https://imaimai17468.github.io/hy
 
 ```toml
 [dependencies]
-hypersig = "0.16"
+hypersig = "0.17"
 axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
