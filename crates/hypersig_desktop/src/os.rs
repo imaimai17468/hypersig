@@ -10,6 +10,7 @@ use tao::event_loop::EventLoopProxy;
 use tao::window::WindowId;
 use tokio::sync::{broadcast, oneshot};
 
+use crate::arrange::{Arrange, Layer, Placement};
 use crate::clipboard;
 use crate::error::Error;
 use crate::handoff::{Launch, Launches};
@@ -289,6 +290,40 @@ impl Windows<'_> {
             os: self.os.clone(),
         })
     }
+
+    /// The window that had the keyboard last, while it is open.
+    ///
+    /// A window has the keyboard while the person types or clicks in it,
+    /// so a handler of a click in a page finds that page's window here,
+    /// and it stays the one found while another application has focus.
+    /// The first window counts as soon as it is shown.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing.
+    pub async fn focused(&self) -> Result<Option<Window>, Error> {
+        let key = match &self.os.inner {
+            Inner::System(proxy) => {
+                let (answer, answered) = oneshot::channel();
+                Os::send(proxy, Event::Focused(answer))?;
+                answered
+                    .await
+                    .map_err(|_closed| Error::closed())?
+                    .map(Key::System)
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                let fake = lock(fake);
+                fake.focused
+                    .filter(|&index| fake.windows.get(index).is_some_and(Option::is_some))
+                    .map(Key::Fake)
+            }
+        };
+        Ok(key.map(|key| Window {
+            key,
+            os: self.os.clone(),
+        }))
+    }
 }
 
 /// A window [`Windows::open`] opened.
@@ -350,6 +385,76 @@ impl Window {
             }
             #[cfg(feature = "testing")]
             _ => Ok(()),
+        }
+    }
+}
+
+impl Window {
+    /// Maximizes, minimizes, or makes the window fullscreen, or returns it
+    /// to [`Placement::Normal`].
+    ///
+    /// On a window that is already closed, it does nothing and returns
+    /// `Ok(())`, as each method below does.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing, as each method below does.
+    pub fn place(&self, placement: Placement) -> Result<(), Error> {
+        self.arrange(Arrange::Place(placement))
+    }
+
+    /// Keeps the window above the windows of every other application, or
+    /// returns it among them.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing.
+    pub fn layer(&self, layer: Layer) -> Result<(), Error> {
+        self.arrange(Arrange::Layer(layer))
+    }
+
+    /// Moves the window's top-left corner to `x`, `y` logical pixels from
+    /// the top left of the primary screen.
+    ///
+    /// Wayland lets no application place its windows, so on Linux under
+    /// Wayland the window stays where the compositor put it.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing.
+    pub fn move_to(&self, x: i32, y: i32) -> Result<(), Error> {
+        self.arrange(Arrange::Move(x, y))
+    }
+
+    /// Makes the window's page area `width` by `height` logical pixels,
+    /// within [`App::min_size`](crate::App::min_size).
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing.
+    pub fn resize(&self, width: u32, height: u32) -> Result<(), Error> {
+        self.arrange(Arrange::Resize(width, height))
+    }
+
+    fn arrange(&self, change: Arrange) -> Result<(), Error> {
+        match (&self.os.inner, self.key) {
+            (Inner::System(proxy), Key::System(id)) => Os::send(proxy, Event::Arrange(id, change)),
+            #[cfg(feature = "testing")]
+            (Inner::Fake(fake), Key::Fake(index)) => {
+                lock(fake).arrange(index, change);
+                Ok(())
+            }
+            #[cfg(feature = "testing")]
+            _ => Ok(()),
+        }
+    }
+
+    /// Which window of a fake system this is, for `FakeOs`.
+    #[cfg(feature = "testing")]
+    pub(crate) fn fake_index(&self) -> Option<usize> {
+        match self.key {
+            Key::Fake(index) => Some(index),
+            Key::System(_) => None,
         }
     }
 }

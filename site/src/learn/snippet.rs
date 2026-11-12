@@ -548,6 +548,7 @@ snippets! {
     DesktopErrors => "desktop/app_errors.rs", "no_run";
     DesktopOpen => "desktop/windows_open.rs";
     DesktopClose => "desktop/windows_close.rs";
+    DesktopArrange => "desktop/windows_arrange.rs";
     DesktopBlank => "desktop/windows_blank.rs";
     DesktopAtStart => "desktop/windows_at_start.rs", "no_run";
     // Desktop: shipping, running

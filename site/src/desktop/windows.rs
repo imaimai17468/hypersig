@@ -13,6 +13,7 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         lead(site, Doc::Desktop(DesktopPage::Windows).leads()),
         from_handler(site),
         window(site),
+        arrange(site),
         at_start(site),
         from_page(site),
         title(site),
@@ -118,6 +119,52 @@ fn window(site: Site) -> Part {
 const WINDOW_SIGNATURES: &str = "impl Window {
     pub fn close(&self) -> Result<(), Error>
     pub fn focus(&self) -> Result<(), Error>
+}";
+
+fn arrange(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Place, move, and size a window",
+                ja: "ウィンドウの配置、位置、大きさを変える",
+            },
+        ),
+        code::block(Lang::Rust, None, ARRANGE_SIGNATURES),
+        para(
+            site,
+            L {
+                en: "[`place`](api:hypersig_desktop/struct.Window.html#method.place) maximizes, minimizes, or makes the window fullscreen, and `Placement::Normal` returns it. [`layer`](api:hypersig_desktop/struct.Window.html#method.layer) with `Layer::AlwaysOnTop` keeps it above the windows of every other application, as a call's small window does. `move_to` puts its top-left corner at a point in logical pixels from the top left of the primary screen, and `resize` sizes its page area, within `App::min_size`. Each returns `Ok(())` on a window already closed and fails only while the application is closing, as `close` does.",
+                ja: "[`place`](api:hypersig_desktop/struct.Window.html#method.place) はウィンドウを最大化、最小化、全画面にし、`Placement::Normal` で元に戻します。[`layer`](api:hypersig_desktop/struct.Window.html#method.layer) に `Layer::AlwaysOnTop` を渡すと、通話の小さなウィンドウのように、ほかのすべてのアプリのウィンドウより上に置きます。`move_to` は左上の角を主画面の左上からの論理ピクセルの位置に動かし、`resize` はページの領域の大きさを `App::min_size` の範囲で変えます。どれも、閉じたウィンドウでは `Ok(())` を返し、`close` と同じくアプリの終了中だけ失敗します。",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "[`Windows::focused`](api:hypersig_desktop/struct.Windows.html#method.focused) returns the window that had the keyboard last, while it is open, so the handler of a button in a page finds that page's window there, and a global shortcut finds the window the person used last. In a test, `FakeOs::window` returns the `Arranged` record of what the handlers gave a window:",
+                ja: "[`Windows::focused`](api:hypersig_desktop/struct.Windows.html#method.focused) は、最後にキーボードの入力を受けていたウィンドウを、そのウィンドウが開いている間返します。そのため、ページのボタンのハンドラはそのページのウィンドウを、グローバルショートカットは利用者が最後に使ったウィンドウを、ここで見つけられます。テストでは、`FakeOs::window` が、ハンドラがウィンドウに与えた内容を `Arranged` として返します。",
+            },
+        ),
+        show(Snippet::DesktopArrange),
+        para(
+            site,
+            L {
+                en: "On macOS, a run saw `resize`, `move_to`, each placement, and the return to `Placement::Normal` reach the window. `layer` has not been looked at on any system yet. Wayland lets no application place its windows, so on Linux under Wayland `move_to` leaves the window where the compositor put it.",
+                ja: "macOS では、`resize`、`move_to`、それぞれの配置、`Placement::Normal` への戻りがウィンドウに届くことを実行して確かめました。`layer` はまだどの OS でも見ていません。Wayland ではアプリがウィンドウの位置を決められないので、Linux の Wayland では `move_to` を呼んでもウィンドウはコンポジターが置いた場所のままです。",
+            },
+        ),
+    ])
+}
+
+const ARRANGE_SIGNATURES: &str = "impl Window {
+    pub fn place(&self, placement: Placement) -> Result<(), Error>
+    pub fn layer(&self, layer: Layer) -> Result<(), Error>
+    pub fn move_to(&self, x: i32, y: i32) -> Result<(), Error>
+    pub fn resize(&self, width: u32, height: u32) -> Result<(), Error>
+}
+
+impl Windows<'_> {
+    pub async fn focused(&self) -> Result<Option<Window>, Error>
 }";
 
 fn at_start(site: Site) -> Part {

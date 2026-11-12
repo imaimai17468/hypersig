@@ -113,6 +113,7 @@
 //! `HYPERSIG_DESKTOP_SMOKE_SCRIPT` counts as unset.
 
 mod app;
+mod arrange;
 mod badge;
 mod clipboard;
 mod device;
@@ -138,6 +139,7 @@ mod updates;
 mod window;
 
 pub use app::{App, IntoRouter};
+pub use arrange::{Layer, Placement};
 pub use device::Device;
 pub use error::{Error, ErrorKind};
 pub use handoff::{Launch, Launches};
