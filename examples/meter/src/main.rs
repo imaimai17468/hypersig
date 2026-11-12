@@ -1,7 +1,8 @@
-//! A microphone level meter in a desktop window, with a push-to-talk key.
+//! A microphone level meter in a desktop window, with a push-to-talk key
+//! and a button that shares the screen.
 //!
-//! The page may use the microphone because the application allows it with
-//! `App::allow`, and it shows "Talking" while the person holds
+//! The page may use the microphone and share the screen because the
+//! application allows both with `App::allow`, and it shows "Talking" while the person holds
 //! Control+Shift+Space (Command+Shift+Space on macOS), which the application
 //! hears through `Os::shortcut` even while another application has focus.
 //!
@@ -59,6 +60,7 @@ const STYLE: Stylesheet = Stylesheet::new(
 body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; padding: 0 1rem; }
 mic-level { display: block; block-size: 1.5rem; border: 1px solid #888; }
 mic-level .bar { block-size: 100%; inline-size: 0; background: seagreen; }
+screen-share video { display: block; inline-size: 100%; margin-block-start: .5rem; }
 ",
 );
 
@@ -81,7 +83,8 @@ async fn index(app: AppState, (): ()) -> Page<Meter> {
             .child(h1().text("Microphone"))
             .child(el(hypersig::tag!("mic-level")).on_custom(STATE, move |heard| state.set(heard)))
             .child(p().bind_text(state))
-            .child(p().bind_text(if_else(talking, "Talking", Meter::hint()))),
+            .child(p().bind_text(if_else(talking, "Talking", Meter::hint())))
+            .child(el(hypersig::tag!("screen-share"))),
     )
 }
 
@@ -90,7 +93,9 @@ fn talking(state: AppState, (): ()) -> impl Stream<Item = Patches<Meter>> {
     WatchStream::new(state.talking).map(|held| Meter::talking().patch(held).into())
 }
 
-const APP: App = App::new("dev.hypersig.example-meter").allow(Device::Microphone);
+const APP: App = App::new("dev.hypersig.example-meter")
+    .allow(Device::Microphone)
+    .allow(Device::Screen);
 
 fn main() -> Result<(), hypersig_desktop::Error> {
     APP.size(560, 360).run(&INDEX.url(()), |os| async move {

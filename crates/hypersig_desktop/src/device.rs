@@ -1,4 +1,5 @@
-//! The capture devices a page may use through `getUserMedia`, which the
+//! The capture devices a page may use through `getUserMedia` and
+//! `getDisplayMedia`, which the
 //! application names with [`App::allow`](crate::App::allow).
 
 use wry::{PermissionKind, PermissionResponse};
@@ -11,6 +12,14 @@ pub enum Device {
     Microphone,
     /// The camera, for `getUserMedia({ video: true })`.
     Camera,
+    /// The screen, for `getDisplayMedia`, as sharing it in a call does.
+    ///
+    /// Only `WebKitGTK`, on Linux, asks the application about it, and shares
+    /// the screen from a click of the person's alone. `WebView2`, on Windows,
+    /// answers `getDisplayMedia` on its own, whether or not the application
+    /// names the screen. `WKWebView`, on macOS, has no `getDisplayMedia`, so
+    /// a page there cannot share the screen.
+    Screen,
 }
 
 /// The devices an application allows, none by default.
@@ -18,6 +27,7 @@ pub enum Device {
 pub(crate) struct Devices {
     microphone: bool,
     camera: bool,
+    screen: bool,
 }
 
 impl Devices {
@@ -25,6 +35,7 @@ impl Devices {
     pub(crate) const NONE: Self = Self {
         microphone: false,
         camera: false,
+        screen: false,
     };
 
     /// These devices and `device`.
@@ -32,6 +43,7 @@ impl Devices {
         match device {
             Device::Microphone => self.microphone = true,
             Device::Camera => self.camera = true,
+            Device::Screen => self.screen = true,
         }
         self
     }
@@ -45,7 +57,7 @@ impl Devices {
         )
     )]
     pub(crate) const fn any(self) -> bool {
-        self.microphone || self.camera
+        self.microphone || self.camera || self.screen
     }
 
     /// The web view's answer to a page asking for `kind`. A device the
@@ -55,6 +67,7 @@ impl Devices {
         let allowed = match kind {
             PermissionKind::Microphone => self.microphone,
             PermissionKind::Camera => self.camera,
+            PermissionKind::DisplayCapture => self.screen,
             _ => return PermissionResponse::Default,
         };
         if allowed {
@@ -83,6 +96,16 @@ mod tests {
         assert_eq!(
             devices.answer(PermissionKind::Camera),
             PermissionResponse::Deny
+        );
+        assert_eq!(
+            devices.answer(PermissionKind::DisplayCapture),
+            PermissionResponse::Deny
+        );
+        assert_eq!(
+            Devices::NONE
+                .with(Device::Screen)
+                .answer(PermissionKind::DisplayCapture),
+            PermissionResponse::Allow
         );
         assert_eq!(
             devices.answer(PermissionKind::Geolocation),

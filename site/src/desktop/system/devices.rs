@@ -30,7 +30,7 @@ fn api(site: Site) -> Part {
         code::block(
             Lang::Rust,
             None,
-            "impl<U> App<U> {\n    pub const fn allow(self, device: Device) -> Self;\n}\n\npub enum Device {\n    Microphone,\n    Camera,\n}",
+            "impl<U> App<U> {\n    pub const fn allow(self, device: Device) -> Self;\n}\n\npub enum Device {\n    Microphone,\n    Camera,\n    Screen,\n}",
         ),
         para(
             site,
@@ -74,6 +74,10 @@ fn systems(site: Site) -> Part {
                 L {
                     en: "On Windows, WebView2 keeps a grant in the web view's data, so a later version that no longer names the device is still granted it until that data is removed.",
                     ja: "Windows の WebView2 は許可を Web ビューのデータに保存します。そのため、あとのバージョンでデバイスの指定を外しても、そのデータを消すまではデバイスが許可されたままになります。",
+                },
+                L {
+                    en: "`Device::Screen` answers `getDisplayMedia`, as sharing the screen in a call does. Only WebKitGTK, on Linux, asks the application about it, and it shares the screen only from a click of the person's, not from a script's `click()`. CI checks there that a click on the meter's button shares the mock screen. WebView2, on Windows, answers `getDisplayMedia` on its own, whether or not the application names the screen; called from a script, it neither shared nor refused within 10 seconds. WKWebView, on macOS, has no `getDisplayMedia`, so a page there cannot share the screen.",
+                    ja: "`Device::Screen` は、通話で画面を共有するときの `getDisplayMedia` に答えます。アプリに確かめるのは Linux の WebKitGTK だけです。WebKitGTK が画面を共有するのは人がクリックしたときだけで、スクリプトの `click()` では共有しません。CI はそこで、meter の例のボタンをクリックすると模擬の画面を共有できることを確かめています。Windows の WebView2 は、アプリが画面を指定したかどうかにかかわらず `getDisplayMedia` に自分で答えます。スクリプトから呼んだときは、10 秒たっても共有も拒否もしませんでした。macOS の WKWebView には `getDisplayMedia` がないため、ページから画面を共有できません。",
                 },
                 L {
                     en: "On Linux, WebKitGTK turns its media streams on only for an application that allows a device.",
