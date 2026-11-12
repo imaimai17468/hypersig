@@ -224,7 +224,7 @@ jobs:
       # xvfb gives the window a display on a runner that has none.
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev xvfb xdotool
-      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes -p example-meter --features hypersig_desktop/testing,hypersig_desktop/updater,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
+      - run: cargo clippy -p hypersig_desktop -p example-counter -p example-todo -p example-notes -p example-meter -p example-update --features hypersig_desktop/testing,hypersig_desktop/updater,example-counter/desktop,example-todo/desktop --all-targets -- -D warnings
       - run: cargo test -p hypersig_desktop -p example-notes --features hypersig_desktop/testing,hypersig_desktop/updater
       - run: cargo build --release -p example-todo -p example-notes -p example-meter --features example-todo/desktop,hypersig_desktop/smoke
       # examples/todo/smoke.js adds a todo in the window, waits for it to come
@@ -323,6 +323,34 @@ jobs:
       - name: The notes example's macOS bundle names its identifier
         if: runner.os == 'macOS'
         run: test "$(plutil -extract CFBundleIdentifier raw "target/release/hypersig notes.app/Contents/Info.plist")" = dev.hypersig.example-notes
+      # A signed 0.2.0 AppImage of examples/update, served on 127.0.0.1, is
+      # installed by a 0.1.0 build over the file `APPIMAGE` names, which
+      # stands for the AppImage the person installed; examples/update/smoke.js
+      # clicks "Check for updates" and waits for the install. The key is made
+      # here and thrown away with the runner.
+      - name: The update example installs a newer signed version over itself
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          key="$RUNNER_TEMP/update.key"
+          cargo packager signer generate --ci --path "$key"
+          export HYPERSIG_UPDATE_PUBLIC_KEY="$(cat "$key.pub")"
+          export HYPERSIG_UPDATE_ENDPOINT='http://127.0.0.1:8765/{{current_version}}'
+          sed -i 's/^version = "0.1.0"$/version = "0.2.0"/' examples/update/Cargo.toml
+          CARGO_PACKAGER_SIGN_PRIVATE_KEY="$key" CARGO_PACKAGER_SIGN_PRIVATE_KEY_PASSWORD="" \
+            cargo packager -p example-update --release --formats appimage
+          git checkout examples/update/Cargo.toml Cargo.lock
+          served="$RUNNER_TEMP/served"
+          mkdir -p "$served"
+          cp target/release/*_0.2.0_*.AppImage "$served/app.AppImage"
+          signature="$(cat target/release/*_0.2.0_*.AppImage.sig)"
+          printf '{"version":"0.2.0","url":"http://127.0.0.1:8765/app.AppImage","signature":"%s","format":"appimage"}' "$signature" > "$served/0.1.0"
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory "$served" &
+          cargo build --release -p example-update --features hypersig_desktop/smoke
+          cp target/release/example-update "$RUNNER_TEMP/installed.AppImage"
+          APPIMAGE="$RUNNER_TEMP/installed.AppImage" HYPERSIG_DESKTOP_SMOKE_SCRIPT=examples/update/smoke.js \
+            xvfb-run -a target/release/example-update
+          cmp "$RUNNER_TEMP/installed.AppImage" "$served/app.AppImage"
       # The web view offers the microphone only to a bundle that says why it
       # uses it, which examples/meter/Info.plist adds.
       - name: The meter example's macOS bundle says why it uses the microphone

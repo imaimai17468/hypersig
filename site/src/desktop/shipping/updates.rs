@@ -107,8 +107,8 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         note(
             site,
             L {
-                en: "hypersig_desktop's tests cover finding a version, downloading it, and refusing a package whose signature does not match. Installing over an installed package has not been run end to end in this repository.",
-                ja: "hypersig_desktop のテストで確かめているのは、バージョンを見つけること、ダウンロードすること、署名の合わないパッケージを拒否することです。インストール済みのパッケージの上に更新をインストールする一連の流れは、このリポジトリではまだ通しで実行していません。",
+                en: "hypersig_desktop's tests cover finding a version, downloading it, and refusing a package whose signature does not match. On Linux, CI also runs the whole update: `examples/update` built as 0.1.0 finds a 0.2.0 AppImage that cargo-packager signed with a key made in the job, served on `127.0.0.1`, and installs it over the file `APPIMAGE` names. On macOS and Windows, an update has not been installed by any run.",
+                ja: "hypersig_desktop のテストで確かめているのは、バージョンを見つけること、ダウンロードすること、署名の合わないパッケージを拒否することです。Linux では、CI が更新の流れを通しでも実行しています。0.1.0 としてビルドした `examples/update` が、ジョブの中で作った鍵で cargo-packager が署名した 0.2.0 の AppImage を `127.0.0.1` で見つけ、`APPIMAGE` が指すファイルの上にインストールします。macOS と Windows では、まだどの実行でも更新をインストールしていません。",
             },
         ),
         heading(
