@@ -1,0 +1,30 @@
+[package]
+name = "example-update"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# The binary has no tests, and `cargo test` would still build and run an
+# empty test harness for it.
+[[bin]]
+name = "example-update"
+path = "src/main.rs"
+test = false
+
+[dependencies]
+axum.workspace = true
+hypersig.workspace = true
+hypersig_desktop = { workspace = true, features = ["updater"] }
+serde.workspace = true
+
+[package.metadata.packager]
+product-name = "hypersig update"
+identifier = "dev.hypersig.example-update"
+before-packaging-command = "cargo build --release -p example-update"
+binaries = [{ path = "example-update", main = true }]
+# The AppImage needs a square icon; the path is read from this directory.
+icons = ["../notes/icons/icon.png"]
+
+[lints]
+workspace = true
