@@ -28,9 +28,12 @@ before-packaging-command = "cargo build --release -p example-meter"
 binaries = [{ path = "example-meter", main = true }]
 
 # The keys macOS needs before the web view offers the microphone, which
-# cargo-packager adds to the bundle's Info.plist.
+# cargo-packager adds to the bundle's Info.plist, and the entitlement the
+# hardened runtime needs for it, which applies once a signing identity signs
+# the bundle.
 [package.metadata.packager.macos]
 info-plist-path = "Info.plist"
+entitlements = "Entitlements.plist"
 
 [lints]
 workspace = true
