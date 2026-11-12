@@ -205,7 +205,7 @@ impl App {
         let mut event_loop = EventLoopBuilder::<Event>::with_user_event().build();
         let proxy = event_loop.create_proxy();
         let (stop, stopped) = oneshot::channel();
-        let setup = setup(Os::new(proxy.clone(), launches.clone()));
+        let setup = setup(Os::new(proxy.clone(), launches.clone(), self.id));
         runtime.spawn(raise_on_launch(launches.subscribe(), proxy.clone()));
         let server = runtime.spawn(serve(listener, guard, setup, proxy.clone(), stopped));
         runtime.spawn(quit_on_ctrl_c(proxy.clone()));

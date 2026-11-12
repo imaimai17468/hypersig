@@ -114,6 +114,7 @@
 
 mod app;
 mod arrange;
+mod autostart;
 mod badge;
 mod clipboard;
 mod device;
@@ -148,7 +149,7 @@ pub use item::{Clicks, MenuItem};
 pub use menu::Menu;
 pub use message::{Answer, Level, Message};
 pub use notification::{Notification, Notified};
-pub use os::{Clipboard, Dialog, Os, Window, Windows};
+pub use os::{Autostart, Clipboard, Dialog, Os, Window, Windows};
 pub use shortcut::{Key, Modifiers, Press, Presses, Shortcut};
 pub use tray::{Tray, TrayItem};
 #[cfg(feature = "updater")]

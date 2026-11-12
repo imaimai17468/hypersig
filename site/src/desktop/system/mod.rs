@@ -1,5 +1,6 @@
 //! The Desktop pages under The system.
 
+pub(super) mod autostart;
 pub(super) mod badge;
 pub(super) mod clipboard;
 pub(super) mod devices;

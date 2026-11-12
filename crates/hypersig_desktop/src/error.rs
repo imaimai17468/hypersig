@@ -37,6 +37,9 @@ pub enum ErrorKind {
     Clipboard,
     /// The system did not show a notification.
     Notification,
+    /// The entry that starts the application at login could not be read
+    /// or written.
+    Autostart,
     /// The tray icon could not be made, or its PNG could not be read.
     Tray,
     /// The system did not register a global shortcut, as when another
@@ -106,6 +109,13 @@ impl Error {
     pub(crate) fn shortcut(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
         Self {
             kind: ErrorKind::Shortcut,
+            source: Some(why.into()),
+        }
+    }
+
+    pub(crate) fn autostart(why: impl Into<Box<dyn StdError + Send + Sync>>) -> Self {
+        Self {
+            kind: ErrorKind::Autostart,
             source: Some(why.into()),
         }
     }
@@ -181,6 +191,7 @@ impl fmt::Display for Error {
             ErrorKind::Clipboard => "the clipboard could not be used",
             ErrorKind::Notification => "the notification could not be shown",
             ErrorKind::Tray => "the tray icon could not be shown",
+            ErrorKind::Autostart => "the start at login could not be read or changed",
             ErrorKind::Shortcut => "the global shortcut could not be registered",
             ErrorKind::Update => "the new version could not be found or installed",
             ErrorKind::NotExternal => {

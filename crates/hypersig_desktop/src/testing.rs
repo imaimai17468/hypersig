@@ -83,6 +83,8 @@ pub(crate) struct Fake {
     pub(crate) external: Vec<SafeUrl>,
     pub(crate) launches: tokio::sync::broadcast::Sender<crate::Launch>,
     pub(crate) badge: u32,
+    /// Whether the handlers had the application start at login.
+    pub(crate) autostart: bool,
     pub(crate) tray: Option<crate::Tray>,
     /// The menus the handlers put in the menu bar last.
     pub(crate) menus: Vec<crate::Menu>,
@@ -110,6 +112,7 @@ impl Default for Fake {
             external: Vec::new(),
             launches: crate::handoff::channel(),
             badge: 0,
+            autostart: false,
             tray: None,
             menus: Vec::new(),
             shortcuts: std::collections::HashMap::new(),
@@ -639,6 +642,17 @@ mod tests {
         assert_eq!(fake.menus()[0].labels(), ["Open"]);
         fake.click_menu_item(&open);
         assert!(block_on(clicks.next()));
+    }
+
+    #[test]
+    fn the_start_at_login_is_kept_by_the_fake_system() {
+        let fake = FakeOs::new();
+        let os = fake.os();
+        assert!(!ok(block_on(os.autostart().is_enabled())));
+        ok(block_on(os.autostart().enable()));
+        assert!(ok(block_on(os.autostart().is_enabled())));
+        ok(block_on(os.autostart().disable()));
+        assert!(!ok(block_on(os.autostart().is_enabled())));
     }
 
     #[test]
