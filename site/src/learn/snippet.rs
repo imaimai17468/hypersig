@@ -551,6 +551,7 @@ snippets! {
     DesktopOpen => "desktop/windows_open.rs";
     DesktopClose => "desktop/windows_close.rs";
     DesktopArrange => "desktop/windows_arrange.rs";
+    DesktopFrame => "desktop/windows_frame.rs";
     DesktopBlank => "desktop/windows_blank.rs";
     DesktopAtStart => "desktop/windows_at_start.rs", "no_run";
     // Desktop: shipping, running

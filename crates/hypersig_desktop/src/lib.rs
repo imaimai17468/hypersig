@@ -119,6 +119,7 @@ mod badge;
 mod clipboard;
 mod device;
 mod error;
+mod frame;
 #[cfg(target_os = "linux")]
 mod framing;
 mod guard;
@@ -144,6 +145,7 @@ pub use app::{App, IntoRouter};
 pub use arrange::{Layer, Placement};
 pub use device::Device;
 pub use error::{Error, ErrorKind};
+pub use frame::{Frame, MovesWindow};
 pub use handoff::{Launch, Launches};
 pub use item::{Clicks, MenuItem};
 pub use menu::Menu;

@@ -14,6 +14,7 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         from_handler(site),
         window(site),
         arrange(site),
+        frame(site),
         at_start(site),
         from_page(site),
         title(site),
@@ -166,6 +167,33 @@ const ARRANGE_SIGNATURES: &str = "impl Window {
 impl Windows<'_> {
     pub async fn focused(&self) -> Result<Option<Window>, Error>
 }";
+
+fn frame(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "A window without the system's frame",
+                ja: "システムの枠のないウィンドウ",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "[`App::frame`](api:hypersig_desktop/struct.App.html#method.frame) with [`Frame::None`](api:hypersig_desktop/enum.Frame.html) opens each window without the system's title bar and border, and the page draws its own bar. [`moves_window`](api:hypersig_desktop/trait.MovesWindow.html#tymethod.moves_window) marks the element the person drags the window by: pressing it moves the window, and a double click maximizes or restores it. A link, a button, a form control, or an element with `tabindex` inside it keeps its own clicks, so the bar's buttons call actions whose handlers close or place the window through `Windows::focused`:",
+                ja: "[`App::frame`](api:hypersig_desktop/struct.App.html#method.frame) に [`Frame::None`](api:hypersig_desktop/enum.Frame.html) を渡すと、各ウィンドウはシステムのタイトルバーと枠なしで開き、バーはページが描きます。利用者がウィンドウをつかむ要素には [`moves_window`](api:hypersig_desktop/trait.MovesWindow.html#tymethod.moves_window) で印を付けます。その要素を押してドラッグするとウィンドウが動き、ダブルクリックすると最大化と元の大きさを切り替えます。中にあるリンク、ボタン、フォームのコントロール、`tabindex` を持つ要素はクリックをそのまま受けるので、バーのボタンからアクションを呼び、そのハンドラが `Windows::focused` でウィンドウを閉じたり配置したりできます。",
+            },
+        ),
+        show(Snippet::DesktopFrame),
+        para(
+            site,
+            L {
+                en: "On macOS, a run saw the window open without a title bar, a drag on the bar move it, a drag elsewhere on the page leave it, and a double click maximize and restore it. On macOS the window then lacks the system's close, minimize, and zoom buttons. Windows and Linux have not been looked at, and a Linux window manager may draw no shadow around a window without its border.",
+                ja: "macOS では、タイトルバーなしで開くこと、バーのドラッグでウィンドウが動くこと、ページのほかの場所のドラッグでは動かないこと、ダブルクリックで最大化と元の大きさを行き来することを実行して確かめました。macOS ではこのとき、システムの閉じる、最小化、ズームのボタンもなくなります。Windows と Linux ではまだ見ていません。Linux のウィンドウマネージャーは、枠のないウィンドウに影を描かないことがあります。",
+            },
+        ),
+    ])
+}
 
 fn at_start(site: Site) -> Part {
     parts([

@@ -24,6 +24,7 @@ pub struct App<U = ()> {
     pub(crate) size: (u32, u32),
     pub(crate) min_size: Option<(u32, u32)>,
     pub(crate) resizable: bool,
+    pub(crate) frame: crate::Frame,
     pub(crate) devices: crate::device::Devices,
     #[cfg_attr(
         not(feature = "updater"),
@@ -50,6 +51,7 @@ impl App {
             size: (1024, 768),
             min_size: None,
             resizable: true,
+            frame: crate::Frame::System,
             devices: crate::device::Devices::NONE,
             updates: (),
         }
@@ -65,6 +67,7 @@ impl App {
             size: self.size,
             min_size: self.min_size,
             resizable: self.resizable,
+            frame: self.frame,
             devices: self.devices,
             updates,
         }
@@ -119,6 +122,22 @@ impl<U> App<U> {
     #[must_use]
     pub const fn resizable(mut self, resizable: bool) -> Self {
         self.resizable = resizable;
+        self
+    }
+
+    /// Draws `frame` around each window, which is the system's by default.
+    ///
+    /// With [`Frame::None`](crate::Frame::None), the page draws the title
+    /// bar: [`MovesWindow::moves_window`](crate::MovesWindow::moves_window)
+    /// marks the part the person drags the window by, and
+    /// [`Window::close`](crate::Window::close) and
+    /// [`Window::place`](crate::Window::place) answer its buttons. On macOS
+    /// the window then has no close, minimize, and zoom buttons of its own,
+    /// and on Linux no shadow where the window manager draws it with the
+    /// border.
+    #[must_use]
+    pub const fn frame(mut self, frame: crate::Frame) -> Self {
+        self.frame = frame;
         self
     }
 
