@@ -32,6 +32,7 @@ pub(crate) fn content(site: Site, page: DesktopPage) -> Part {
         DesktopPage::Devices => system::devices::page(site, head),
         DesktopPage::Shortcuts => system::shortcuts::page(site, head),
         DesktopPage::Menus => system::menus::page(site, head),
+        DesktopPage::Autostart => system::autostart::page(site, head),
         DesktopPage::ExternalLinks => system::external_links::page(site, head),
         DesktopPage::Testing => testing::fake_os::page(site, head),
         DesktopPage::SmokeRuns => testing::smoke_runs::page(site, head),

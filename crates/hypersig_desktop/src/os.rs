@@ -33,6 +33,8 @@ use crate::tray::Tray;
 pub struct Os {
     inner: Inner,
     launches: broadcast::Sender<Launch>,
+    /// The identifier [`App::new`](crate::App::new) named.
+    id: &'static str,
 }
 
 #[derive(Clone)]
@@ -49,10 +51,15 @@ impl fmt::Debug for Os {
 }
 
 impl Os {
-    pub(crate) fn new(proxy: EventLoopProxy<Event>, launches: broadcast::Sender<Launch>) -> Self {
+    pub(crate) fn new(
+        proxy: EventLoopProxy<Event>,
+        launches: broadcast::Sender<Launch>,
+        id: &'static str,
+    ) -> Self {
         Self {
             inner: Inner::System(proxy),
             launches,
+            id,
         }
     }
 
@@ -62,6 +69,7 @@ impl Os {
         Self {
             inner: Inner::Fake(fake),
             launches,
+            id: "dev.hypersig.fake",
         }
     }
 
@@ -268,6 +276,12 @@ impl Os {
             #[cfg(feature = "testing")]
             Inner::Fake(fake) => lock(fake).ask(message),
         }
+    }
+
+    /// Whether the system starts the application when the person logs in.
+    #[must_use]
+    pub fn autostart(&self) -> Autostart<'_> {
+        Autostart { os: self }
     }
 
     /// The system clipboard.
@@ -666,6 +680,73 @@ impl Dialog {
             dialog = dialog.set_file_name(name);
         }
         dialog
+    }
+}
+
+/// Whether the application starts at login, from [`Os::autostart`].
+///
+/// The entry is written under the identifier [`App::new`](crate::App::new)
+/// names and starts the program running now: on Linux the `AppImage` the
+/// person installed, and elsewhere the running binary, so a run from
+/// `cargo run` writes an entry for the binary under `target`.
+#[derive(Debug, Clone, Copy)]
+pub struct Autostart<'a> {
+    os: &'a Os,
+}
+
+impl Autostart<'_> {
+    /// Has the system start the application each time the person logs in.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ErrorKind::Autostart`](crate::ErrorKind::Autostart)
+    /// when the entry cannot be written.
+    pub async fn enable(&self) -> Result<(), Error> {
+        match &self.os.inner {
+            Inner::System(_) => {
+                crate::autostart::with_entry(self.os.id, auto_launch::AutoLaunch::enable).await
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                lock(fake).autostart = true;
+                Ok(())
+            }
+        }
+    }
+
+    /// Stops the system from starting the application at login.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ErrorKind::Autostart`](crate::ErrorKind::Autostart)
+    /// when the entry cannot be removed.
+    pub async fn disable(&self) -> Result<(), Error> {
+        match &self.os.inner {
+            Inner::System(_) => {
+                crate::autostart::with_entry(self.os.id, auto_launch::AutoLaunch::disable).await
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                lock(fake).autostart = false;
+                Ok(())
+            }
+        }
+    }
+
+    /// Whether the system starts the application at login.
+    ///
+    /// # Errors
+    ///
+    /// Fails with [`ErrorKind::Autostart`](crate::ErrorKind::Autostart)
+    /// when the entry cannot be read.
+    pub async fn is_enabled(&self) -> Result<bool, Error> {
+        match &self.os.inner {
+            Inner::System(_) => {
+                crate::autostart::with_entry(self.os.id, auto_launch::AutoLaunch::is_enabled).await
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => Ok(lock(fake).autostart),
+        }
     }
 }
 

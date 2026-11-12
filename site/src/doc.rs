@@ -277,6 +277,7 @@ pub enum DesktopPage {
     Devices,
     Shortcuts,
     Menus,
+    Autostart,
     // Testing
     Testing,
     SmokeRuns,
@@ -933,6 +934,7 @@ pub(crate) const DESKTOP: &[Group] = &[
             Doc::Desktop(DesktopPage::Devices),
             Doc::Desktop(DesktopPage::Shortcuts),
             Doc::Desktop(DesktopPage::Menus),
+            Doc::Desktop(DesktopPage::Autostart),
         ],
     },
     Group {
@@ -1191,6 +1193,7 @@ impl Doc {
         Self::Desktop(DesktopPage::Devices),
         Self::Desktop(DesktopPage::Shortcuts),
         Self::Desktop(DesktopPage::Menus),
+        Self::Desktop(DesktopPage::Autostart),
         // Desktop: Testing
         Self::Desktop(DesktopPage::Testing),
         Self::Desktop(DesktopPage::SmokeRuns),
@@ -1251,6 +1254,7 @@ impl Doc {
                 DesktopPage::Devices => ("The microphone and the camera", "マイクとカメラ"),
                 DesktopPage::Shortcuts => ("Global shortcuts", "グローバルショートカット"),
                 DesktopPage::Menus => ("The menu bar", "メニューバー"),
+                DesktopPage::Autostart => ("Starting at login", "ログイン時の起動"),
                 DesktopPage::Testing => ("Testing without a window", "ウィンドウなしのテスト"),
                 DesktopPage::SmokeRuns => ("Smoke runs in CI", "CI でのスモークテスト"),
                 DesktopPage::Packaging => ("Packaging", "パッケージの作成"),
@@ -1943,6 +1947,10 @@ impl Doc {
                     en: "`Os::menus` puts menus of `MenuItem`s in the menu bar, whose clicks reach the code that holds each item.",
                     ja: "`Os::menus` は `MenuItem` からなるメニューをメニューバーに置きます。クリックはそれぞれの項目を持つコードに届きます。",
                 },
+                DesktopPage::Autostart => L {
+                    en: "`Os::autostart` has the system start the application when the person logs in, and reads whether it does.",
+                    ja: "`Os::autostart` は、利用者がログインしたときに OS がアプリを起動するようにし、そうなっているかを読み取ります。",
+                },
                 DesktopPage::Badge => L {
                     en: "`Os::badge` puts a count, such as the number of unread messages, on the application's icon.",
                     ja: "`Os::badge` は、未読のメッセージの数のような数を、アプリのアイコンに表示します。",
@@ -2354,6 +2362,7 @@ impl DesktopPage {
             Self::Devices => "devices",
             Self::Shortcuts => "shortcuts",
             Self::Menus => "menus",
+            Self::Autostart => "autostart",
             Self::Testing => "testing",
             Self::SmokeRuns => "smoke-runs",
             Self::Packaging => "packaging",
