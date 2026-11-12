@@ -58,6 +58,11 @@ fn building(site: Site) -> Part {
                         "one `node_ref!`",
                     ],
                     &[
+                        "[`ContextMenu<S>`](api:hypersig_ui/struct.ContextMenu.html)",
+                        "`const fn new(menu: NodeRef<S>) -> Self`",
+                        "one `node_ref!`",
+                    ],
+                    &[
                         "[`Popover<S>`](api:hypersig_ui/struct.Popover.html)",
                         "`const fn new(panel: NodeRef<S>) -> Self`",
                         "one `node_ref!`",
@@ -81,6 +86,11 @@ fn building(site: Site) -> Part {
                     ],
                     &[
                         "[`Menu<S>`](api:hypersig_ui/struct.Menu.html)",
+                        "`const fn new(menu: NodeRef<S>) -> Self`",
+                        "`node_ref!` 1 つ",
+                    ],
+                    &[
+                        "[`ContextMenu<S>`](api:hypersig_ui/struct.ContextMenu.html)",
                         "`const fn new(menu: NodeRef<S>) -> Self`",
                         "`node_ref!` 1 つ",
                     ],

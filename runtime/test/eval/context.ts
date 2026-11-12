@@ -13,6 +13,7 @@ export function host() {
   return {
     call: vi.fn<Host["call"]>(() => Promise.resolve()),
     dom: vi.fn<Host["dom"]>(),
+    domAt: vi.fn<Host["domAt"]>(),
     clearFiles: vi.fn<Host["clearFiles"]>(),
     navigate: vi.fn<Host["navigate"]>(),
     history: vi.fn<Host["history"]>(),

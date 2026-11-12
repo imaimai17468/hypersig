@@ -1,0 +1,19 @@
+{
+  "html": "<main><ul id=\"rows\"><template data-hs-each=\"[&quot;rows&quot;,0]\"><li data-hs-text=\"[&quot;item&quot;,0,&quot;name&quot;]\" data-hs-on-contextmenu=\"[[0,[&quot;seq&quot;,[[&quot;set&quot;,&quot;picked&quot;,[&quot;item&quot;,0,&quot;name&quot;]],[&quot;set&quot;,&quot;at&quot;,[&quot;var&quot;,0]],[&quot;dom-at&quot;,&quot;show-popover&quot;,&quot;fixtures::ROW_MENU&quot;,[&quot;var&quot;,0]]]]]]\"></li></template></ul><div id=\"outer\" data-hs-on-contextmenu=\"[[0,[&quot;set&quot;,&quot;outer&quot;,[&quot;add&quot;,[&quot;sig&quot;,&quot;outer&quot;],[&quot;lit&quot;,1]]]]]\"><span id=\"inner\" data-hs-on-contextmenu=\"[[0,[&quot;set&quot;,&quot;at&quot;,[&quot;var&quot;,0]]]]\"></span></div><p id=\"plain\">No menu</p><div id=\"row-menu\" popover=\"auto\" data-hs-ref=\"fixtures::ROW_MENU\"></div></main>",
+  "signals": {
+    "at": {
+      "x": 0.0,
+      "y": 0.0
+    },
+    "outer": 0,
+    "picked": "",
+    "rows": [
+      {
+        "name": "a"
+      },
+      {
+        "name": "b"
+      }
+    ]
+  }
+}

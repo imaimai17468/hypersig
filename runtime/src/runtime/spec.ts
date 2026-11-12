@@ -31,6 +31,7 @@ const ATTRIBUTES = [
   "on-visible",
   "on-key",
   "on-custom",
+  "on-contextmenu",
   ...BUBBLING.map((type) => `on-${type}`),
   ...DIRECT.map((type) => `on-${type}`),
 ];

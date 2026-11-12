@@ -2,6 +2,7 @@
 //! tooltips, popovers, and toasts.
 
 pub(super) mod alert_dialog;
+pub(super) mod context_menu;
 pub(super) mod dialog;
 pub(super) mod menu;
 pub(super) mod popover;

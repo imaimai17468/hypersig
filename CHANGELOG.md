@@ -2,6 +2,14 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, from 0.3.0 `hypersig_cli`, and from 0.15.0 `hypersig_desktop`) is released at the same version.
 
+## [Unreleased]
+
+### Added
+
+- `hypersig`: `El::on_context_menu` runs a statement where the person right-clicks, in place of the browser's menu, and hands it the position as an `Expr<S, Point>`. `NodeRef::show_popover_at` opens a popover there, kept inside the viewport.
+- `hypersig_ui`: `ContextMenu` opens a menu of `MenuItem`s at that position, with the keys of `Menu`.
+- `hypersig_desktop`: `Os::autostart` returns an `Autostart`, whose `enable` and `disable` start the application when the person logs in, or stop doing so, and `is_enabled` says which.
+
 ## [0.16.0] - 2026-11-12
 
 ### Breaking

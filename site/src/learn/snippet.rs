@@ -479,6 +479,8 @@ snippets! {
     UiSheetSide => "components/overlays/sheet_side.rs", "compile_fail,E0308";
     UiMenu => "components/overlays/menu.rs";
     UiMenuDisabled => "components/overlays/menu_disabled.rs", "compile_fail,E0277";
+    UiContextMenu => "components/overlays/context_menu.rs";
+    UiContextMenuPoint => "components/overlays/context_menu_point.rs", "compile_fail,E0308";
     UiTooltip => "components/overlays/tooltip.rs";
     UiTooltipLabel => "components/overlays/tooltip_label.rs", "compile_fail,E0061";
     UiTooltipRich => "components/overlays/tooltip_rich.rs", "compile_fail,E0277";

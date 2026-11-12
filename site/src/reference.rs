@@ -995,6 +995,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                                 ja: "`event` がこの要素に届くたびに、`handle` が組み立てた文を実行します。",
                             },
                         ),
+                        (
+                            "on_context_menu",
+                            "html/struct.El.html#method.on_context_menu",
+                            L {
+                                en: "Runs the statement `handle` builds when the person asks for a context menu here.",
+                                ja: "この要素で利用者がコンテキストメニューを求めたとき、`handle` が組み立てた文を実行します。",
+                            },
+                        ),
                     ],
                 },
                 Section {
@@ -1215,6 +1223,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "An event that a script, such as a custom element, dispatches on an element.",
                                 ja: "カスタム要素などのスクリプトが要素に送出するイベント",
+                            },
+                        ),
+                        (
+                            "Point",
+                            "html/struct.Point.html",
+                            L {
+                                en: "A position in the viewport, in CSS pixels from its top left corner.",
+                                ja: "ビューポートの中の位置。左上の角からの距離を CSS ピクセルで表します",
                             },
                         ),
                         (
@@ -2326,6 +2342,14 @@ fn page_items(page: Reference) -> (L<&'static str>, &'static [Section]) {
                             L {
                                 en: "A statement that shows the element if it is a closed popover.",
                                 ja: "要素が閉じたポップオーバーなら、それを表示する文",
+                            },
+                        ),
+                        (
+                            "show_popover_at",
+                            "struct.NodeRef.html#method.show_popover_at",
+                            L {
+                                en: "A statement that opens the popover with its top left corner at `at`.",
+                                ja: "ポップオーバーの左上を `at` に合わせて開く文",
                             },
                         ),
                         (

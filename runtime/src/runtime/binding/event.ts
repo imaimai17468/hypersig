@@ -25,6 +25,7 @@ export class Events {
     for (const type of BUBBLING) root.addEventListener(type, (event) => this.#bubbled(type, event));
     for (const type of DIRECT)
       root.addEventListener(type, (event) => this.#direct(type, event), { capture: true });
+    root.addEventListener("contextmenu", (event) => this.#contextMenu(event));
   }
 
   /** The closest element from `element` up whose attribute with the `dataset` name `key` is set, with its value. */
@@ -70,6 +71,39 @@ export class Events {
     }
   }
 
+  /**
+   * Runs the handlers of the closest element with `data-hs-on-contextmenu`,
+   * each entry of which is the depth the position takes among the
+   * statement's variables and the statement, and keeps the browser's menu
+   * from showing. Where no element has a handler, the browser shows its own.
+   */
+  #contextMenu(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    this.#rt.lists.adoption.around(target);
+    const found = this.closest(target, "hsOnContextmenu");
+    if (found === null) return;
+    event.preventDefault();
+    const [element, source] = found;
+    const handlers = parse(source);
+    if (!Array.isArray(handlers)) return;
+    const at = position(target, event);
+    const run = (): void => {
+      const { statements } = this.#rt.bindings;
+      for (const [depth, stmt] of handlers as [number, unknown][]) {
+        const ctx = statements.context(element);
+        statements.run(stmt, { ...ctx, vars: [...(ctx.vars ?? []).slice(0, depth), at] });
+      }
+    };
+    // WebKit, and Chrome on macOS, send the event while the button is still
+    // down. The browser closes an open `popover="auto"` as the button comes
+    // up outside it, before the `pointerup` listeners run, so a menu the
+    // statements open at once would close again.
+    if (event instanceof MouseEvent && event.buttons !== 0)
+      window.addEventListener("pointerup", run, { once: true });
+    else run();
+  }
+
   #bubbled(type: (typeof BUBBLING)[number], event: Event): void {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -105,6 +139,18 @@ export class Events {
     const stmt = attr(target, handlerKey(type));
     if (stmt !== undefined) this.#rt.bindings.statements.runAttribute(stmt, target);
   }
+}
+
+/**
+ * Where the person asked for a context menu: the pointer's position, or for
+ * a key, which a `MouseEvent` reports with `button` -1 and the middle of the
+ * focused element, the bottom left corner of that element.
+ */
+function position(target: Element, event: Event): { x: number; y: number } {
+  if (event instanceof MouseEvent && event.button !== -1)
+    return { x: event.clientX, y: event.clientY };
+  const box = target.getBoundingClientRect();
+  return { x: box.left, y: box.bottom };
 }
 
 /** The entries of `element`'s `data-hs-on-custom`. */
