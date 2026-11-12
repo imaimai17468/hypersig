@@ -232,6 +232,7 @@ impl App {
             base: format!("http://127.0.0.1:{port}"),
             windows: HashMap::new(),
             first: None,
+            launches,
             focused: None,
             waiting: Vec::new(),
             started: false,
@@ -307,6 +308,8 @@ struct Lifecycle<'a> {
     /// The first window, whose first page trades the start token for the
     /// session cookie.
     first: Option<WindowId>,
+    /// Where an opened file or link goes, as a second start's command line does.
+    launches: tokio::sync::broadcast::Sender<handoff::Launch>,
     /// The window that had the keyboard last.
     focused: Option<WindowId>,
     /// The windows made before the first page loaded, with the page each
@@ -419,6 +422,22 @@ impl Lifecycle<'_> {
                 }
             }
             TaoEvent::UserEvent(Event::Raise) => self.raise(),
+            // macOS opens a file or a link as an Apple event to the copy
+            // running, which tao reports here, where Windows and Linux
+            // start the program with it on the command line.
+            // Each file goes in the arguments as its path and each link as
+            // its text, as the command line carries them.
+            TaoEvent::Opened { urls } => {
+                let args = urls
+                    .iter()
+                    .map(|url| match url.to_file_path() {
+                        Ok(path) if url.scheme() == "file" => path.into_os_string(),
+                        _ => url.as_str().into(),
+                    })
+                    .collect();
+                let dir = std::env::current_dir().unwrap_or_default();
+                let _ = self.launches.send(handoff::Launch::new(dir, args));
+            }
             TaoEvent::UserEvent(Event::Smoke(answer)) => self.smoke(answer.as_deref()),
             _ => {}
         }

@@ -34,3 +34,6 @@ before-packaging-command = "cargo build --release -p example-notes"
 binaries = [{ path = "example-notes", main = true }]
 # The AppImage needs a square icon; the path is read from this directory.
 icons = ["icons/icon.png"]
+# Opening a `.md` file in the file manager opens it in notes: macOS hands it
+# to the copy running, and Windows and Linux start notes with its path.
+file-associations = [{ extensions = ["md"], mime-type = "text/markdown", description = "Markdown note" }]

@@ -318,11 +318,15 @@ jobs:
           tool: cargo-packager@0.11.8
       - run: cargo packager -p example-notes --release
       # The bundle names the identifier App::new gives, which macOS keys the
-      # web view's data by. The packaged binary is built without the smoke
-      # feature, as a release is, so it is not started here.
-      - name: The notes example's macOS bundle names its identifier
+      # web view's data by, and the `.md` type its packaging table associates.
+      # The packaged binary is built without the smoke feature, as a release
+      # is, so it is not started here.
+      - name: The notes example's macOS bundle names its identifier and opens .md files
         if: runner.os == 'macOS'
-        run: test "$(plutil -extract CFBundleIdentifier raw "target/release/hypersig notes.app/Contents/Info.plist")" = dev.hypersig.example-notes
+        run: |
+          plist="target/release/hypersig notes.app/Contents/Info.plist"
+          test "$(plutil -extract CFBundleIdentifier raw "$plist")" = dev.hypersig.example-notes
+          test "$(plutil -extract CFBundleDocumentTypes.0.CFBundleTypeExtensions.0 raw "$plist")" = md
       # A signed 0.2.0 AppImage of examples/update, served on 127.0.0.1, is
       # installed by a 0.1.0 build over the file `APPIMAGE` names, which
       # stands for the AppImage the person installed; examples/update/smoke.js

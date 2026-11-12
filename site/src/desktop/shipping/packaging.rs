@@ -157,6 +157,32 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         heading(
             site,
             L {
+                en: "Files and links that open the application",
+                ja: "アプリを開くファイルとリンク",
+            },
+        ),
+        para(
+            site,
+            L {
+                en: "`file-associations` in the packaging table makes the application the one a file manager opens a file type with, and `deep-link-protocols` makes it the one a link of a URL scheme such as `myapp://` opens. In cargo-packager 0.11.8's source, the `.app` lists them in its `Info.plist`, the NSIS installer and the MSI write them to the registry, and the Debian package's desktop entry names their MIME types. `examples/notes` opens `.md` files:",
+                ja: "パッケージの表の `file-associations` を書くと、ファイルマネージャーがその種類のファイルをこのアプリで開くようになり、`deep-link-protocols` を書くと、`myapp://` のような URL スキームのリンクをこのアプリで開くようになります。cargo-packager 0.11.8 のソースでは、`.app` は `Info.plist` に、NSIS のインストーラーと MSI はレジストリに、Debian のパッケージはデスクトップエントリの MIME タイプに、これらを書き込みます。`examples/notes` は `.md` ファイルを開きます。",
+            },
+        ),
+        code::block(
+            Lang::Toml,
+            None,
+            "file-associations = [{ extensions = [\"md\"], mime-type = \"text/markdown\", description = \"Markdown note\" }]\ndeep-link-protocols = [{ schemes = [\"myapp\"] }]",
+        ),
+        para(
+            site,
+            L {
+                en: "Windows and Linux start the program with the file's path or the link on its command line, so a copy already running receives it through [`Os::launches`](api:hypersig_desktop/struct.Os.html#method.launches) as another start's arguments. macOS hands the file or the link to the copy running instead, and hypersig_desktop delivers it the same way: each file as its path and each link as its text in `Launch::args`. The first start is no exception on macOS, so a setup that takes `Os::launches` before it returns the router receives the file that started the application. CI checks that the `.app` of `examples/notes` lists `.md`. On macOS, `open -a` with a `.md` file put the file in the list of a running notes built into a bundle by hand, which the copy without this delivery did not; no run has opened a link yet, nor a file on Windows or Linux. `examples/notes` has no `deep-link-protocols` line, since it opens files only.",
+                ja: "Windows と Linux はファイルのパスやリンクをコマンドラインに付けてプログラムを起動します。そのため、すでに動いているアプリは、それを別の起動の引数として [`Os::launches`](api:hypersig_desktop/struct.Os.html#method.launches) で受け取ります。macOS はファイルやリンクを動いているアプリに直接渡します。hypersig_desktop はこれも同じ形で届け、ファイルはパスとして、リンクはその文字列として `Launch::args` に入れます。macOS では最初の起動も同じなので、ルーターを返す前に `Os::launches` を取っておいた setup は、アプリを起動したファイルを受け取ります。CI は `examples/notes` の `.app` に `.md` が登録されていることを確かめています。macOS では、手で作ったバンドルの notes に `open -a` で `.md` ファイルを渡すと、そのファイルが一覧に入ることを確かめました。この受け渡しを入れる前の hypersig_desktop では入りませんでした。リンクを開いた実行と、Windows と Linux でファイルを開いた実行は、まだありません。`examples/notes` はファイルだけを開くので、`deep-link-protocols` の行はありません。",
+            },
+        ),
+        heading(
+            site,
+            L {
                 en: "Keys of the macOS Info.plist",
                 ja: "macOS の Info.plist のキー",
             },

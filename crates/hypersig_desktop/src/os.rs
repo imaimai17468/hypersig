@@ -68,9 +68,12 @@ impl Os {
     ///
     /// A start of the application while this copy runs hands its command
     /// line and working directory over and exits, and the copy that runs
-    /// brings a window forward. Each [`Launches`] gets the launches handed
-    /// over after it was made, so a setup that takes one before it returns
-    /// the router misses none.
+    /// brings a window forward. On macOS a file or a link the person opens
+    /// with the application, which the system hands the copy running
+    /// rather than starting another, arrives here too, with each file as
+    /// its path and each link as its text in [`Launch::args`]. Each
+    /// [`Launches`] gets the launches handed over after it was made, so a
+    /// setup that takes one before it returns the router misses none.
     #[must_use]
     pub fn launches(&self) -> Launches {
         Launches::new(self.launches.subscribe())
