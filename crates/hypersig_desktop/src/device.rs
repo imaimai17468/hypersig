@@ -14,9 +14,11 @@ pub enum Device {
     Camera,
     /// The screen, for `getDisplayMedia`, as sharing it in a call does.
     ///
-    /// Only `WebKitGTK`, on Linux, asks the application about it. `WebView2`,
-    /// on Windows, and `WKWebView`, on macOS, answer `getDisplayMedia` on
-    /// their own, whether or not the application names it.
+    /// Only `WebKitGTK`, on Linux, asks the application about it, and shares
+    /// the screen from a click of the person's alone. `WebView2`, on Windows,
+    /// answers `getDisplayMedia` on its own, whether or not the application
+    /// names the screen. `WKWebView`, on macOS, has no `getDisplayMedia`, so
+    /// a page there cannot share the screen.
     Screen,
 }
 

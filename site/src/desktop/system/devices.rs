@@ -76,8 +76,8 @@ fn systems(site: Site) -> Part {
                     ja: "Windows の WebView2 は許可を Web ビューのデータに保存します。そのため、あとのバージョンでデバイスの指定を外しても、そのデータを消すまではデバイスが許可されたままになります。",
                 },
                 L {
-                    en: "`Device::Screen` answers `getDisplayMedia`, as sharing the screen in a call does, but only WebKitGTK, on Linux, asks the application about it, and CI checks there that the meter, which allows it, shares the mock screen. WebView2 and WKWebView answer `getDisplayMedia` on their own, whether or not the application names the screen, and no run has shared one there.",
-                    ja: "`Device::Screen` は、通話で画面を共有するときの `getDisplayMedia` に答えます。ただし、アプリに確かめるのは Linux の WebKitGTK だけで、CI はそこで、画面を許可した meter の例が模擬の画面を共有できることを確かめています。WebView2 と WKWebView は、アプリが画面を指定したかどうかにかかわらず `getDisplayMedia` に自分で答えます。そこで画面を共有した実行は、まだありません。",
+                    en: "`Device::Screen` answers `getDisplayMedia`, as sharing the screen in a call does. Only WebKitGTK, on Linux, asks the application about it, and it shares the screen only from a click of the person's, not from a script's `click()`. CI checks there that a click on the meter's button shares the mock screen. WebView2, on Windows, answers `getDisplayMedia` on its own, whether or not the application names the screen; called from a script, it neither shared nor refused within 10 seconds. WKWebView, on macOS, has no `getDisplayMedia`, so a page there cannot share the screen.",
+                    ja: "`Device::Screen` は、通話で画面を共有するときの `getDisplayMedia` に答えます。アプリに確かめるのは Linux の WebKitGTK だけです。WebKitGTK が画面を共有するのは人がクリックしたときだけで、スクリプトの `click()` では共有しません。CI はそこで、meter の例のボタンをクリックすると模擬の画面を共有できることを確かめています。Windows の WebView2 は、アプリが画面を指定したかどうかにかかわらず `getDisplayMedia` に自分で答えます。スクリプトから呼んだときは、10 秒たっても共有も拒否もしませんでした。macOS の WKWebView には `getDisplayMedia` がないため、ページから画面を共有できません。",
                 },
                 L {
                     en: "On Linux, WebKitGTK turns its media streams on only for an application that allows a device.",

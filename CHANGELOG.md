@@ -2,6 +2,12 @@
 
 The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, from 0.3.0 `hypersig_cli`, and from 0.15.0 `hypersig_desktop`) is released at the same version.
 
+## [Unreleased]
+
+### Added
+
+- `hypersig_desktop`: `App::allow(Device::Screen)` lets the pages share the screen through `getDisplayMedia` on Linux, where WebKitGTK asks the application. WebView2 answers on its own, and WKWebView has no `getDisplayMedia`.
+
 ## [0.17.0] - 2026-11-12
 
 ### Added
