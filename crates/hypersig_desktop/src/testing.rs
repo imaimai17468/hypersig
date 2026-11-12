@@ -33,6 +33,37 @@ pub struct FakeOs {
     fake: Arc<Mutex<Fake>>,
 }
 
+/// How the handlers arranged a window, as [`FakeOs::window`] returns it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
+pub struct Arranged {
+    /// The placement [`Window::place`](crate::Window::place) gave last.
+    pub placement: crate::Placement,
+    /// The layer [`Window::layer`](crate::Window::layer) gave last.
+    pub layer: crate::Layer,
+    /// The corner [`Window::move_to`](crate::Window::move_to) gave last.
+    pub position: Option<(i32, i32)>,
+    /// The size [`Window::resize`](crate::Window::resize) gave last.
+    pub size: Option<(u32, u32)>,
+}
+
+impl Fake {
+    /// Records `change` to the open window at `index`.
+    pub(crate) fn arrange(&mut self, index: usize, change: crate::arrange::Arrange) {
+        use crate::arrange::Arrange;
+        if !self.windows.get(index).is_some_and(Option::is_some) {
+            return;
+        }
+        let arranged = self.arranged.entry(index).or_default();
+        match change {
+            Arrange::Place(placement) => arranged.placement = placement,
+            Arrange::Layer(layer) => arranged.layer = layer,
+            Arrange::Move(x, y) => arranged.position = Some((x, y)),
+            Arrange::Resize(width, height) => arranged.size = Some((width, height)),
+        }
+    }
+}
+
 /// What a [`FakeOs`] holds.
 #[derive(Debug)]
 pub(crate) struct Fake {
@@ -43,6 +74,8 @@ pub(crate) struct Fake {
     pub(crate) windows: Vec<Option<Url>>,
     /// The index in `windows` of the window opened or focused last.
     pub(crate) focused: Option<usize>,
+    /// How the handlers arranged each window, by its index in `windows`.
+    pub(crate) arranged: std::collections::HashMap<usize, Arranged>,
     pub(crate) external: Vec<SafeUrl>,
     pub(crate) launches: tokio::sync::broadcast::Sender<crate::Launch>,
     pub(crate) badge: u32,
@@ -65,6 +98,7 @@ impl Default for Fake {
             clipboard: None,
             windows: Vec::new(),
             focused: None,
+            arranged: std::collections::HashMap::new(),
             external: Vec::new(),
             launches: crate::handoff::channel(),
             badge: 0,
@@ -185,6 +219,15 @@ impl FakeOs {
     #[must_use]
     pub fn open_windows(&self) -> Vec<Url> {
         self.lock().windows.iter().flatten().cloned().collect()
+    }
+
+    /// How the handlers arranged `window`, or `None` once it is closed.
+    #[must_use]
+    pub fn window(&self, window: &crate::Window) -> Option<Arranged> {
+        let fake = self.lock();
+        let index = window.fake_index()?;
+        fake.windows.get(index)?.as_ref()?;
+        Some(fake.arranged.get(&index).copied().unwrap_or_default())
     }
 
     /// The page of the window opened or focused last, while it is open.
@@ -412,6 +455,28 @@ mod tests {
         ok(fake.os().badge(0));
         ok(fake.os().badge(5));
         assert_eq!(fake.badge(), 5);
+    }
+
+    #[test]
+    fn a_window_is_found_focused_and_arranged() {
+        use crate::{Layer, Placement};
+        let fake = FakeOs::new();
+        let os = fake.os();
+        let window = ok(block_on(os.windows().open(&NOTE.url(1))));
+        let focused = ok(block_on(os.windows().focused())).expect("the window opened last");
+        assert_eq!(focused, window);
+        ok(window.place(Placement::Maximized));
+        ok(window.layer(Layer::AlwaysOnTop));
+        ok(window.move_to(10, -20));
+        ok(window.resize(800, 600));
+        let arranged = fake.window(&window).expect("the window is open");
+        assert_eq!(arranged.placement, Placement::Maximized);
+        assert_eq!(arranged.layer, Layer::AlwaysOnTop);
+        assert_eq!(arranged.position, Some((10, -20)));
+        assert_eq!(arranged.size, Some((800, 600)));
+        ok(window.close());
+        assert!(fake.window(&window).is_none());
+        assert!(ok(block_on(os.windows().focused())).is_none());
     }
 
     #[test]
