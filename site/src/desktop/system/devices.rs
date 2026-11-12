@@ -30,7 +30,7 @@ fn api(site: Site) -> Part {
         code::block(
             Lang::Rust,
             None,
-            "impl<U> App<U> {\n    pub const fn allow(self, device: Device) -> Self;\n}\n\npub enum Device {\n    Microphone,\n    Camera,\n}",
+            "impl<U> App<U> {\n    pub const fn allow(self, device: Device) -> Self;\n}\n\npub enum Device {\n    Microphone,\n    Camera,\n    Screen,\n}",
         ),
         para(
             site,
@@ -74,6 +74,10 @@ fn systems(site: Site) -> Part {
                 L {
                     en: "On Windows, WebView2 keeps a grant in the web view's data, so a later version that no longer names the device is still granted it until that data is removed.",
                     ja: "Windows の WebView2 は許可を Web ビューのデータに保存します。そのため、あとのバージョンでデバイスの指定を外しても、そのデータを消すまではデバイスが許可されたままになります。",
+                },
+                L {
+                    en: "`Device::Screen` answers `getDisplayMedia`, as sharing the screen in a call does, but only WebKitGTK, on Linux, asks the application about it, and CI checks there that the meter, which allows it, shares the mock screen. WebView2 and WKWebView answer `getDisplayMedia` on their own, whether or not the application names the screen, and no run has shared one there.",
+                    ja: "`Device::Screen` は、通話で画面を共有するときの `getDisplayMedia` に答えます。ただし、アプリに確かめるのは Linux の WebKitGTK だけで、CI はそこで、画面を許可した meter の例が模擬の画面を共有できることを確かめています。WebView2 と WKWebView は、アプリが画面を指定したかどうかにかかわらず `getDisplayMedia` に自分で答えます。そこで画面を共有した実行は、まだありません。",
                 },
                 L {
                     en: "On Linux, WebKitGTK turns its media streams on only for an application that allows a device.",
