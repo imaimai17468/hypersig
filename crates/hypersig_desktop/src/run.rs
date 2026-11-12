@@ -72,6 +72,10 @@ pub(crate) enum Event {
     Close(WindowId),
     /// [`Os`] brings a window to the front.
     Focus(WindowId),
+    /// [`Os`] asks which window had the keyboard last.
+    Focused(oneshot::Sender<Option<WindowId>>),
+    /// [`Os`] moves, sizes, or places a window.
+    Arrange(WindowId, crate::arrange::Arrange),
     /// The count to show on the application's icon.
     Badge(u32),
     /// [`LEAVE`] has passed since a window began to close, or, with no
@@ -228,6 +232,7 @@ impl App {
             base: format!("http://127.0.0.1:{port}"),
             windows: HashMap::new(),
             first: None,
+            focused: None,
             waiting: Vec::new(),
             started: false,
             smoke: Smoke::from_env(started)?,
@@ -302,6 +307,8 @@ struct Lifecycle<'a> {
     /// The first window, whose first page trades the start token for the
     /// session cookie.
     first: Option<WindowId>,
+    /// The window that had the keyboard last.
+    focused: Option<WindowId>,
     /// The windows made before the first page loaded, with the page each
     /// loads once it has, since a page needs the cookie the first one
     /// receives.
@@ -365,6 +372,22 @@ impl Lifecycle<'_> {
             TaoEvent::UserEvent(Event::Focus(id)) => {
                 if let Some(open) = self.windows.get(&id) {
                     open.window.set_focus();
+                }
+            }
+            TaoEvent::WindowEvent {
+                window_id: id,
+                event: WindowEvent::Focused(true),
+                ..
+            } => self.focused = Some(id),
+            TaoEvent::UserEvent(Event::Focused(answer)) => {
+                let open = self
+                    .focused
+                    .filter(|id| self.windows.get(id).is_some_and(|open| !open.leaving));
+                let _ = answer.send(open);
+            }
+            TaoEvent::UserEvent(Event::Arrange(id, change)) => {
+                if let Some(open) = self.windows.get(&id) {
+                    crate::arrange::apply(&open.window, change);
                 }
             }
             TaoEvent::UserEvent(Event::Left(id)) => {
@@ -489,6 +512,9 @@ impl Lifecycle<'_> {
             open.shown = true;
             open.window.set_visible(true);
             open.window.set_focus();
+            // The system may not report the focus of a window shown while
+            // another application is in front.
+            self.focused = Some(id);
         }
         if self.first == Some(id) {
             if !late {
