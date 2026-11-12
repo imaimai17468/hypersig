@@ -31,6 +31,39 @@ function act(op: string, target: Element): void {
   }
 }
 
+/** The coordinates of `at`, a `Point`, or `null` where it holds no finite numbers. */
+function coordinates(at: unknown): [number, number] | null {
+  if (typeof at !== "object" || at === null) return null;
+  const { x, y } = at as { x?: unknown; y?: unknown };
+  return typeof x === "number" && typeof y === "number" && Number.isFinite(x) && Number.isFinite(y)
+    ? [x, y]
+    : null;
+}
+
+/**
+ * Opens `target`, a popover, with its top left corner at `at`, or moves it
+ * there if it is open. A popover that would cross the viewport's right or
+ * bottom edge goes left of `at` or above it instead, and never past the
+ * viewport's left or top edge.
+ */
+function showAt(target: Element, at: unknown): void {
+  const point = coordinates(at);
+  if (!(target instanceof HTMLElement) || !target.hasAttribute("popover") || point === null) return;
+  const [x, y] = point;
+  // The browser's style for a popover, `inset: 0` and `margin: auto`, centers it.
+  target.style.right = "auto";
+  target.style.bottom = "auto";
+  target.style.margin = "0";
+  target.style.left = `${x}px`;
+  target.style.top = `${y}px`;
+  if (!target.matches(":popover-open")) target.showPopover();
+  // The size is known only once the popover is shown.
+  const { width, height } = target.getBoundingClientRect();
+  const view = document.documentElement;
+  if (x + width > view.clientWidth) target.style.left = `${Math.max(0, x - width)}px`;
+  if (y + height > view.clientHeight) target.style.top = `${Math.max(0, y - height)}px`;
+}
+
 /** The elements statements reach by name: node refs, which DOM statements act on, and file inputs. */
 export class Refs {
   readonly #rt: Runtime;
@@ -42,6 +75,13 @@ export class Refs {
   /** Runs a DOM method on the element a node ref names, after the next render. */
   dom(op: string, name: string, origin: Element | undefined): void {
     this.#afterRender(REF, name, origin, (target) => act(op, target));
+  }
+
+  /** Runs a DOM method that places the element a node ref names at `at`, after the next render. */
+  domAt(op: string, name: string, at: unknown, origin: Element | undefined): void {
+    this.#afterRender(REF, name, origin, (target) => {
+      if (op === "show-popover") showAt(target, at);
+    });
   }
 
   /** Empties the file input named `name`, after the next render. */

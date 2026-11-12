@@ -52,6 +52,7 @@
 //! | `stream.call().reconnect()` | `["call","GET",path,args,indicator,error,["reconnect"]]` |
 //! | `upload.call_with(file_input, args)` | `["upload",path,args,indicator,error,name]` |
 //! | `node_ref.focus()` | `["dom","focus",name]` |
+//! | `node_ref.show_popover_at(at)` | `["dom-at","show-popover",name,at]` |
 //! | `file_input.clear()` | `["clear-files",name]` |
 //! | `link.navigate()` | `["navigate",url]` |
 //! | `link.push_url()`, `link.replace_url()` | `["history","push",url]`, `["history","replace",url]` |
@@ -60,6 +61,7 @@
 //! | `a.let_in(\|v\| e)`, and `v` inside `e` | `["let",a,depth,e]`, `["var",depth]` |
 //! | `a.let_in_stmt(\|v\| s)` | `["let",a,depth,s]` |
 //! | `el.on_custom(event, \|detail\| s)`, and `detail` inside `s` | `[name,depth,s]`, one entry of `data-hs-on-custom`, and `["var",depth]` |
+//! | `el.on_context_menu(\|at\| s)`, and `at` inside `s` | `[depth,s]`, one entry of `data-hs-on-contextmenu`, and `["var",depth]` |
 //! | `call.on_error(\|message\| s)`, `call.on_success(t)`, a call inside a `Part` | `["call",...,flags,{"error":[depth,s],"ok":t,"part":"field"}]` |
 //!
 //! A place is `"dotted.path"` for a page signal and `["item",depth,"path"]`

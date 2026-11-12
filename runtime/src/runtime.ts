@@ -58,6 +58,10 @@ export class Runtime implements Host {
     this.bindings.refs.dom(op, name, origin);
   }
 
+  domAt(op: string, name: string, at: unknown, origin: Element | undefined): void {
+    this.bindings.refs.domAt(op, name, at, origin);
+  }
+
   clearFiles(name: string, origin: Element | undefined): void {
     this.bindings.refs.clearFiles(name, origin);
   }

@@ -73,6 +73,8 @@ export interface Host {
     options: CallOptions,
   ): Promise<void>;
   dom(op: string, name: string, origin: Element | undefined): void;
+  /** Runs `op`, a DOM method that places the element, at the position `at`. */
+  domAt(op: string, name: string, at: unknown, origin: Element | undefined): void;
   clearFiles(name: string, origin: Element | undefined): void;
   navigate(url: string): void;
   history(url: string, replace: boolean): void;

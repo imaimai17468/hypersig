@@ -8,7 +8,7 @@ use std::time::Duration;
 use serde_json::{Map, Value, json};
 
 use crate::expr::{Expr, IntoExpr, IntoStmt, Stmt, in_let_scope};
-use crate::html::{El, Id};
+use crate::html::{El, Id, Point};
 use crate::route::Base;
 use crate::signal::{Scopes, Sig, current_part};
 
@@ -1001,6 +1001,21 @@ impl<S> NodeRef<S> {
     #[must_use]
     pub fn show_popover(self) -> Stmt<S> {
         self.dom("show-popover")
+    }
+
+    /// A statement that opens the popover with its top left corner at `at`.
+    ///
+    /// The runtime sets the popover's `left` and `top` and opens it, or moves
+    /// it if it is open. Where the popover would cross the viewport's right
+    /// or bottom edge, it moves left of `at` or above it, and stays inside
+    /// the viewport. The runtime also clears the browser's `inset` and
+    /// `margin`, which center a popover.
+    /// [`El::on_context_menu`](crate::html::El::on_context_menu) has an
+    /// example.
+    #[must_use]
+    pub fn show_popover_at(self, at: impl IntoExpr<S, Point>) -> Stmt<S> {
+        let at = at.into_expr();
+        Stmt::build(|scopes| json!(["dom-at", "show-popover", self.name, at.take(scopes)]))
     }
 }
 

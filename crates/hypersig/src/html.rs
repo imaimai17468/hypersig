@@ -71,9 +71,11 @@ const RESERVED_PREFIX: &str = "data-hs-";
 pub mod attr;
 pub(crate) mod find;
 mod id;
+mod point;
 mod role;
 
 pub use id::Id;
+pub use point::Point;
 pub use role::Role;
 
 /// The name of an attribute that [`El::attr`], [`El::bind_attr`], and
@@ -523,6 +525,7 @@ fn el_trees<S>(
         .chain(el.timeout.iter().map(|(_, stmt)| stmt))
         .chain(el.on.values())
         .chain(el.custom.iter().map(|(_, _, stmt)| stmt))
+        .chain(el.context_menu.iter().map(|(_, stmt)| stmt))
         .chain(el.keys.iter().map(|(_, stmt)| stmt));
     stmts.for_each(|stmt| visit(stmt.as_json(), stmt.scopes(), open));
     for child in &el.children {
@@ -916,6 +919,11 @@ impl<S> El<S> {
                 .into_iter()
                 .map(|(name, depth, stmt)| (name, depth, retype_stmt(stmt)))
                 .collect(),
+            context_menu: self
+                .context_menu
+                .into_iter()
+                .map(|(depth, stmt)| (depth, retype_stmt(stmt)))
+                .collect(),
             keys: retype_stmts(self.keys),
             roving: self.roving,
             active: self.active,
@@ -973,6 +981,7 @@ pub struct El<S> {
     timeout: Option<(u32, Stmt<S>)>,
     on: BTreeMap<Event, Stmt<S>>,
     custom: Vec<(&'static str, u8, Stmt<S>)>,
+    context_menu: Vec<(u8, Stmt<S>)>,
     keys: Vec<(Shortcut, Stmt<S>)>,
     roving: Option<Orientation>,
     active: Option<(&'static str, Value)>,
@@ -1860,6 +1869,7 @@ impl<S> El<S> {
             timeout: None,
             on: BTreeMap::new(),
             custom: Vec::new(),
+            context_menu: Vec::new(),
             keys: Vec::new(),
             roving: None,
             active: None,
@@ -2746,6 +2756,48 @@ impl<S> El<S> {
         self
     }
 
+    /// Runs the statement `handle` builds when the person asks for a context menu here.
+    ///
+    /// The person asks with a right click inside this element, or with a key
+    /// such as Shift+F10 or the menu key in a browser that sends the event
+    /// from one, which Safari does not. `handle` receives where: the
+    /// pointer's position for a click, and the bottom left corner of the
+    /// focused element for a key. The runtime calls `preventDefault`, so the
+    /// browser shows no menu of its own, and only the innermost element with
+    /// this handler runs it. Calling it twice runs both statements in order.
+    ///
+    /// ```
+    /// use hypersig::html::{Point, div, p};
+    /// use hypersig::{NodeRef, Signals};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Signals, Serialize, Deserialize)]
+    /// struct Board {
+    ///     at: Point,
+    /// }
+    ///
+    /// hypersig::node_ref!(const ACTIONS: NodeRef<Board>);
+    ///
+    /// # fn main() {
+    /// let card = div::<Board>()
+    ///     .on_context_menu(|at| Board::at().set(at.clone()).then(ACTIONS.show_popover_at(at)))
+    ///     .child(p().text("Right-click me"));
+    /// assert!(card.render().contains("data-hs-on-contextmenu"));
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn on_context_menu<B: IntoStmt<S>>(
+        mut self,
+        handle: impl FnOnce(Expr<S, Point>) -> B,
+    ) -> Self {
+        let (depth, stmt) = in_let_scope(|depth| {
+            let at = Expr::build(|_| json!(["var", depth]));
+            (depth, handle(at).into_stmt())
+        });
+        self.context_menu.push((depth, stmt));
+        self
+    }
+
     /// Runs `stmt` once when the element is added to the document.
     #[must_use]
     pub fn on_load(self, stmt: impl IntoStmt<S>) -> Self {
@@ -3354,6 +3406,14 @@ impl<S> El<S> {
                 .map(|(name, depth, stmt)| (*name, *depth, stmt.as_json()))
                 .collect();
             write_attr(out, "data-hs-on-custom", &json_text(&custom));
+        }
+        if !self.context_menu.is_empty() {
+            let handlers: Vec<(u8, &Value)> = self
+                .context_menu
+                .iter()
+                .map(|(depth, stmt)| (*depth, stmt.as_json()))
+                .collect();
+            write_attr(out, "data-hs-on-contextmenu", &json_text(&handlers));
         }
         if !self.keys.is_empty() {
             write_attr(out, "data-hs-on-key", &keys_json(&self.keys));

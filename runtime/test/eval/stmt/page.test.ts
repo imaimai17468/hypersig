@@ -22,3 +22,9 @@ it("hands the evaluated URL to the host to push or replace in the address bar", 
     ["/fruit?q=a%20b", true],
   ]);
 });
+
+it("hands the evaluated position to the host to place an element", async () => {
+  const h = host();
+  await run(["dom-at", "show-popover", "menu", ["sig", "at"]], context({ at: { x: 3, y: 4 } }), h);
+  expect(h.domAt).toHaveBeenCalledWith("show-popover", "menu", { x: 3, y: 4 }, undefined);
+});

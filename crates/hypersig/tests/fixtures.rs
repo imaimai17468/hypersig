@@ -1582,6 +1582,72 @@ fn widgets() -> (El<Widgets>, Widgets) {
     (el, signals)
 }
 
+#[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
+struct Card {
+    name: String,
+}
+
+#[derive(Signals, Serialize, Deserialize)]
+struct Board {
+    rows: Vec<Card>,
+    picked: String,
+    at: hypersig::html::Point,
+    outer: i32,
+}
+
+hypersig::node_ref!(const ROW_MENU: NodeRef<Board>);
+
+/// List rows that each open one menu outside the list where the person asks
+/// for a context menu, after naming the row; a box whose inner part has a
+/// handler of its own; and a paragraph with no handler.
+fn board() -> (El<Board>, Board) {
+    let el = main()
+        .child(ul().id(Id::new("rows")).child(each(Board::rows(), |row| {
+            li().bind_text(row.at(Card::name()))
+                .on_context_menu(move |at| {
+                    Board::picked()
+                        .set(row.at(Card::name()))
+                        .then(Board::at().set(at.clone()))
+                        .then(ROW_MENU.show_popover_at(at))
+                })
+        })))
+        .child(
+            div()
+                .id(Id::new("outer"))
+                .on_context_menu(|_| Board::outer().set(Board::outer() + 1))
+                .child(
+                    span()
+                        .id(Id::new("inner"))
+                        .on_context_menu(|at| Board::at().set(at)),
+                ),
+        )
+        .child(p().id(Id::new("plain")).text("No menu"))
+        .child(
+            div()
+                .id(Id::new("row-menu"))
+                .attr(attr::POPOVER, "auto")
+                .node_ref(ROW_MENU),
+        );
+    let signals = Board {
+        rows: ["a", "b"]
+            .into_iter()
+            .map(|name| Card {
+                name: name.to_owned(),
+            })
+            .collect(),
+        picked: String::new(),
+        at: hypersig::html::Point::default(),
+        outer: 0,
+    };
+    (el, signals)
+}
+
+#[test]
+fn the_board_fixture_matches_the_builder() {
+    let (el, signals) = board();
+    check("board", &el, &signals);
+}
+
 #[test]
 fn the_widget_fixtures_match_the_builder() {
     let (el, signals) = widgets();
