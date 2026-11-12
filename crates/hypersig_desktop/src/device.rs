@@ -1,4 +1,5 @@
-//! The capture devices a page may use through `getUserMedia`, which the
+//! The capture devices a page may use through `getUserMedia` and
+//! `getDisplayMedia`, which the
 //! application names with [`App::allow`](crate::App::allow).
 
 use wry::{PermissionKind, PermissionResponse};
