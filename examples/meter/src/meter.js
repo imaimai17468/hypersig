@@ -33,3 +33,29 @@ class MicLevel extends HTMLElement {
 }
 
 customElements.define("mic-level", MicLevel);
+
+// Defines <screen-share>, a button that shares the screen and shows what
+// it shares under it. It sets `data-state` to "sharing" once the screen is
+// shared, or to the name of the error getDisplayMedia threw.
+class ScreenShare extends HTMLElement {
+  connectedCallback() {
+    const button = document.createElement("button");
+    button.textContent = "Share the screen";
+    const video = document.createElement("video");
+    video.muted = true;
+    video.autoplay = true;
+    button.addEventListener("click", () => this.share(video));
+    this.append(button, video);
+  }
+
+  async share(video) {
+    try {
+      video.srcObject = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      this.dataset.state = "sharing";
+    } catch (error) {
+      this.dataset.state = error.name;
+    }
+  }
+}
+
+customElements.define("screen-share", ScreenShare);

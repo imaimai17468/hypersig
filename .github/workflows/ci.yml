@@ -288,6 +288,14 @@ jobs:
           else
             target/release/example-meter
           fi
+      # examples/meter/screen.js clicks "Share the screen", which the meter
+      # allows, and waits for WebKitGTK's mock screen to be shared.
+      - name: The meter example is granted the screen
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          HYPERSIG_DESKTOP_SMOKE_SCRIPT: examples/meter/screen.js
+        run: xvfb-run -a target/release/example-meter
       # examples/meter/talk.js waits for the page to say "Talking" and then
       # stop, while xdotool presses and releases the push-to-talk key on the
       # X server once a second, so a press before the page's stream opens is
