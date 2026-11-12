@@ -84,6 +84,8 @@ pub(crate) struct Fake {
     pub(crate) launches: tokio::sync::broadcast::Sender<crate::Launch>,
     pub(crate) badge: u32,
     pub(crate) tray: Option<crate::Tray>,
+    /// The menus the handlers put in the menu bar last.
+    pub(crate) menus: Vec<crate::Menu>,
     /// Each global shortcut registered, with where its presses go.
     pub(crate) shortcuts:
         std::collections::HashMap<crate::Shortcut, tokio::sync::broadcast::Sender<crate::Press>>,
@@ -109,6 +111,7 @@ impl Default for Fake {
             launches: crate::handoff::channel(),
             badge: 0,
             tray: None,
+            menus: Vec::new(),
             shortcuts: std::collections::HashMap::new(),
             notifications: Vec::new(),
         }
@@ -430,6 +433,31 @@ impl FakeOs {
         let _ = item.clicked.send(());
     }
 
+    /// The menus the handlers put in the menu bar last.
+    #[must_use]
+    pub fn menus(&self) -> Vec<crate::Menu> {
+        self.lock().menus.clone()
+    }
+
+    /// Clicks `item` in the menu bar, as the person would.
+    ///
+    /// # Panics
+    ///
+    /// Panics when no menu of the menu bar holds `item`.
+    pub fn click_menu_item(&self, item: &crate::MenuItem) {
+        let shown = self
+            .lock()
+            .menus
+            .iter()
+            .any(|menu| menu.items().any(|shown| shown.id == item.id));
+        assert!(
+            shown,
+            "no menu of the menu bar has an item labeled {:?}",
+            item.label
+        );
+        let _ = item.clicked.send(());
+    }
+
     /// The URLs the handlers opened in another program.
     #[must_use]
     pub fn opened_externally(&self) -> Vec<SafeUrl> {
@@ -599,6 +627,18 @@ mod tests {
         ok(window.close());
         assert!(fake.window(&window).is_none());
         assert!(ok(block_on(os.windows().focused())).is_none());
+    }
+
+    #[test]
+    fn a_menu_bar_is_recorded_and_its_item_clicked_by_the_test() {
+        use crate::{Menu, MenuItem};
+        let fake = FakeOs::new();
+        let open = MenuItem::new("Open");
+        let mut clicks = open.clicks();
+        ok(fake.os().menus([Menu::new("File").item(&open)]));
+        assert_eq!(fake.menus()[0].labels(), ["Open"]);
+        fake.click_menu_item(&open);
+        assert!(block_on(clicks.next()));
     }
 
     #[test]

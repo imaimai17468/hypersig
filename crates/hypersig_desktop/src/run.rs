@@ -66,6 +66,8 @@ pub(crate) enum Event {
     },
     /// A global shortcut went down or came up.
     Pressed(u32, crate::Press),
+    /// [`Os`] puts these menus in the menu bar.
+    Menus(Vec<crate::Menu>),
     /// An item of the menu bar or of the tray's menu was chosen.
     Menu(tray_icon::menu::MenuId),
     /// [`Os`] closes a window.
@@ -208,20 +210,7 @@ impl App {
         let server = runtime.spawn(serve(listener, guard, setup, proxy.clone(), stopped));
         runtime.spawn(quit_on_ctrl_c(proxy.clone()));
 
-        #[cfg(target_os = "macos")]
-        let _menu = crate::menu::install()?;
-        let chosen = proxy.clone();
-        tray_icon::menu::MenuEvent::set_event_handler(Some(
-            move |event: tray_icon::menu::MenuEvent| {
-                let _ = chosen.send_event(Event::Menu(event.id));
-            },
-        ));
-        let pressed = proxy.clone();
-        global_hotkey::GlobalHotKeyEvent::set_event_handler(Some(
-            move |event: global_hotkey::GlobalHotKeyEvent| {
-                let _ = pressed.send_event(Event::Pressed(event.id(), event.state().into()));
-            },
-        ));
+        forward_system_events(&proxy);
         #[cfg(feature = "updater")]
         crate::updates::event_loop(Some(proxy.clone()));
         let mut run = Lifecycle {
@@ -240,6 +229,9 @@ impl App {
             badge: 0,
             tray: None,
             hotkeys: None,
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            bar: crate::menu::bar(&[])?,
+            menu_items: HashMap::new(),
             #[cfg(feature = "updater")]
             install: None,
             shortcuts: HashMap::new(),
@@ -324,6 +316,12 @@ struct Lifecycle<'a> {
     /// The package an update installs once the server has stopped.
     #[cfg(feature = "updater")]
     install: Option<crate::Downloaded>,
+    /// The menu bar, shown while it lives: on macOS the application's, and
+    /// on Linux one in every window.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    bar: muda::Menu,
+    /// Where each item of the menu bar reports its clicks.
+    menu_items: HashMap<tray_icon::menu::MenuId, tokio::sync::broadcast::Sender<()>>,
     /// What registers the global shortcuts, made on this thread when the
     /// first one is asked for, as macOS and Windows need.
     hotkeys: Option<global_hotkey::GlobalHotKeyManager>,
@@ -413,6 +411,7 @@ impl Lifecycle<'_> {
                 let _ = answer.send(self.tray(&tray));
             }
             TaoEvent::UserEvent(Event::Menu(id)) => self.chosen(&id),
+            TaoEvent::UserEvent(Event::Menus(menus)) => self.menus(&menus),
             TaoEvent::UserEvent(Event::Shortcut { shortcut, answer }) => {
                 let _ = answer.send(self.shortcut(shortcut));
             }
@@ -460,6 +459,8 @@ impl Lifecycle<'_> {
         let origin = format!("{}/", self.base);
         let web_view =
             window::web_view(&self.app, &window, &mut self.context, &origin, self.proxy)?;
+        #[cfg(target_os = "linux")]
+        crate::menu::attach(&self.bar, &window);
         let id = window.id();
         if let Some((url, headers)) = page {
             self.load(id, &web_view, url, headers)?;
@@ -703,8 +704,29 @@ impl Lifecycle<'_> {
     fn chosen(&mut self, id: &tray_icon::menu::MenuId) {
         if id.0 == crate::tray::QUIT || is_menu_quit(id) {
             self.quit();
-        } else if let Some(clicked) = self.items.get(id) {
+        } else if let Some(clicked) = self.items.get(id).or_else(|| self.menu_items.get(id)) {
             let _ = clicked.send(());
+        }
+    }
+
+    /// Puts `menus` in the menu bar, in place of the menus put there before.
+    fn menus(&mut self, menus: &[crate::Menu]) {
+        self.menu_items = menus
+            .iter()
+            .flat_map(crate::Menu::items)
+            .map(|item| (item.id.clone(), item.clicked.clone()))
+            .collect();
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
+        match crate::menu::bar(menus) {
+            Ok(bar) => {
+                #[cfg(target_os = "linux")]
+                for open in self.windows.values() {
+                    crate::menu::detach(&self.bar, &open.window);
+                    crate::menu::attach(&bar, &open.window);
+                }
+                self.bar = bar;
+            }
+            Err(error) => tracing::error!(%error, "the menu bar was not changed"),
         }
     }
 
@@ -750,6 +772,23 @@ fn is_menu_quit(id: &tray_icon::menu::MenuId) -> bool {
 #[cfg(not(target_os = "macos"))]
 fn is_menu_quit(_id: &tray_icon::menu::MenuId) -> bool {
     false
+}
+
+/// Sends the event loop each click on a menu's item and each press of a
+/// global shortcut, which their crates report from a handler of their own.
+fn forward_system_events(proxy: &EventLoopProxy<Event>) {
+    let chosen = proxy.clone();
+    tray_icon::menu::MenuEvent::set_event_handler(Some(
+        move |event: tray_icon::menu::MenuEvent| {
+            let _ = chosen.send_event(Event::Menu(event.id));
+        },
+    ));
+    let pressed = proxy.clone();
+    global_hotkey::GlobalHotKeyEvent::set_event_handler(Some(
+        move |event: global_hotkey::GlobalHotKeyEvent| {
+            let _ = pressed.send_event(Event::Pressed(event.id(), event.state().into()));
+        },
+    ));
 }
 
 /// Brings a window forward each time a second copy hands its command line over.

@@ -47,6 +47,8 @@ tray-icon.workspace = true
 wry.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
+# GTK draws the menu bar inside each window on Linux.
+muda = { workspace = true, features = ["gtk3"] }
 webkit2gtk.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]

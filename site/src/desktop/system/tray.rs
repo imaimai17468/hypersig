@@ -36,8 +36,8 @@ fn api(site: Site) -> Part {
         para(
             site,
             L {
-                en: "[`Tray::new`](api:hypersig_desktop/struct.Tray.html#method.new) takes the icon as the bytes of a PNG and the label of the Quit item, which the menu always ends with. Each [`TrayItem`](api:hypersig_desktop/struct.TrayItem.html) is a value the application keeps: `clicks` returns the clicks on it from then on, and `Clicks::next` waits for the next one. No item is named by a string the application matches, so a click reaches only the code that holds its item. [`Os::tray`](api:hypersig_desktop/struct.Os.html#method.tray) shows the tray, in place of one shown before:",
-                ja: "[`Tray::new`](api:hypersig_desktop/struct.Tray.html#method.new) は、アイコンを PNG のバイト列として受け取り、終了の項目の名前も受け取ります。メニューの最後には必ずこの終了の項目が入ります。[`TrayItem`](api:hypersig_desktop/struct.TrayItem.html) はアプリが持っておく値で、`clicks` はそれ以降の項目のクリックを返し、`Clicks::next` は次のクリックを待ちます。項目を文字列で名付けて照合することはないので、クリックはその項目を持っているコードにだけ届きます。[`Os::tray`](api:hypersig_desktop/struct.Os.html#method.tray) はトレイを表示します。前に表示したトレイがあれば置き換えます。",
+                en: "[`Tray::new`](api:hypersig_desktop/struct.Tray.html#method.new) takes the icon as the bytes of a PNG and the label of the Quit item, which the menu always ends with. Each [`TrayItem`](api:hypersig_desktop/struct.MenuItem.html) is a value the application keeps: `clicks` returns the clicks on it from then on, and `Clicks::next` waits for the next one. No item is named by a string the application matches, so a click reaches only the code that holds its item. [`Os::tray`](api:hypersig_desktop/struct.Os.html#method.tray) shows the tray, in place of one shown before:",
+                ja: "[`Tray::new`](api:hypersig_desktop/struct.Tray.html#method.new) は、アイコンを PNG のバイト列として受け取り、終了の項目の名前も受け取ります。メニューの最後には必ずこの終了の項目が入ります。[`TrayItem`](api:hypersig_desktop/struct.MenuItem.html) はアプリが持っておく値で、`clicks` はそれ以降の項目のクリックを返し、`Clicks::next` は次のクリックを待ちます。項目を文字列で名付けて照合することはないので、クリックはその項目を持っているコードにだけ届きます。[`Os::tray`](api:hypersig_desktop/struct.Os.html#method.tray) はトレイを表示します。前に表示したトレイがあれば置き換えます。",
             },
         ),
         show(Snippet::DesktopTray),

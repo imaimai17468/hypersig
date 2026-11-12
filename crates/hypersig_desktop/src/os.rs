@@ -14,6 +14,7 @@ use crate::arrange::{Arrange, Layer, Placement};
 use crate::clipboard;
 use crate::error::Error;
 use crate::handoff::{Launch, Launches};
+use crate::menu::Menu;
 use crate::message::{Answer, Message};
 use crate::notification::{Notification, Notified};
 use crate::run::Event;
@@ -159,6 +160,30 @@ impl Os {
             #[cfg(feature = "testing")]
             Inner::Fake(fake) => {
                 lock(fake).tray = Some(tray);
+                Ok(())
+            }
+        }
+    }
+
+    /// Puts `menus` in the menu bar, in place of the menus put there before.
+    ///
+    /// On macOS they go between the Edit and Window menus of the
+    /// application's menu bar, and on Linux in a bar at the top of every
+    /// window, opened then or later. Windows shows no menu bar of
+    /// this crate's, since muda puts one in a window only through an
+    /// `unsafe` call, which this crate forbids; there the menus are
+    /// recorded and nothing is shown.
+    ///
+    /// # Errors
+    ///
+    /// Fails when the application is closing.
+    pub fn menus(&self, menus: impl IntoIterator<Item = Menu>) -> Result<(), Error> {
+        let menus = menus.into_iter().collect();
+        match &self.inner {
+            Inner::System(proxy) => Os::send(proxy, Event::Menus(menus)),
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => {
+                lock(fake).menus = menus;
                 Ok(())
             }
         }
