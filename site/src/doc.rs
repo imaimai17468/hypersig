@@ -1912,8 +1912,8 @@ impl Doc {
                     ja: "ハンドラは `Windows::open` で別のウィンドウを開き、ページは `window.open` か `target=\"_blank\"` のリンクで開きます。どのウィンドウも同じサーバーのページを表示します。",
                 },
                 DesktopPage::Dialogs => L {
-                    en: "`Os::dialog` shows the system's dialog for opening a file, several files, or a folder, or for choosing where to save one.",
-                    ja: "`Os::dialog` は、ファイル、複数のファイル、フォルダを開くときや、保存先を選ぶときの OS のダイアログを表示します。",
+                    en: "`Os::dialog` shows the system's dialog for opening a file, several files, or a folder, or for choosing where to save one, and `Os::tell`, `Os::confirm`, and `Os::ask` show its message box.",
+                    ja: "`Os::dialog` は、ファイル、複数のファイル、フォルダを開くときや、保存先を選ぶときの OS のダイアログを表示します。`Os::tell`、`Os::confirm`、`Os::ask` は OS のメッセージボックスを表示します。",
                 },
                 DesktopPage::Clipboard => L {
                     en: "`Os::clipboard` reads and writes the text on the system clipboard from a handler.",

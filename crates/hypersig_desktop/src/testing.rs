@@ -37,6 +37,10 @@ pub struct FakeOs {
 #[derive(Debug)]
 pub(crate) struct Fake {
     pub(crate) answers: VecDeque<Option<Vec<PathBuf>>>,
+    /// The buttons a test chose for the message boxes to come, in order.
+    pub(crate) choices: VecDeque<Choice>,
+    /// Each message box shown, in order.
+    pub(crate) messages: Vec<ShownMessage>,
     pub(crate) dialogs: Vec<ShownDialog>,
     pub(crate) clipboard: Option<String>,
     /// Each window opened, in order, with `None` once it is closed.
@@ -61,6 +65,8 @@ impl Default for Fake {
     fn default() -> Self {
         Self {
             answers: VecDeque::new(),
+            choices: VecDeque::new(),
+            messages: Vec::new(),
             dialogs: Vec::new(),
             clipboard: None,
             windows: Vec::new(),
@@ -76,6 +82,47 @@ impl Default for Fake {
 }
 
 impl Fake {
+    /// Records `message`, shown with an OK button only.
+    pub(crate) fn tell(&mut self, message: crate::Message) {
+        self.messages.push(ShownMessage {
+            kind: MessageKind::Tell,
+            message,
+        });
+    }
+
+    /// Records `message` and returns whether the test chose OK.
+    pub(crate) fn confirm(&mut self, message: crate::Message) -> bool {
+        match self.choice(MessageKind::Confirm, message) {
+            Choice::Ok => true,
+            Choice::Cancel => false,
+            other => panic!("a box of OK and Cancel was answered with Choice::{other:?}"),
+        }
+    }
+
+    /// Records `message` and returns the button the test chose.
+    pub(crate) fn ask(&mut self, message: crate::Message) -> crate::Answer {
+        match self.choice(MessageKind::Ask, message) {
+            Choice::Yes => crate::Answer::Yes,
+            Choice::No => crate::Answer::No,
+            Choice::Cancel => crate::Answer::Cancel,
+            Choice::Ok => panic!("a box of Yes, No, and Cancel was answered with Choice::Ok"),
+        }
+    }
+
+    /// Records `message` and takes the next choice the test gave.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the test gave no choice for it.
+    fn choice(&mut self, kind: MessageKind, message: crate::Message) -> Choice {
+        let number = self.messages.len() + 1;
+        let choice = self.choices.pop_front().unwrap_or_else(|| {
+            panic!("message box {number} was shown, and the test chose no button for it with FakeOs::choose")
+        });
+        self.messages.push(ShownMessage { kind, message });
+        choice
+    }
+
     /// Records `dialog` and returns the next answer a test gave for it.
     ///
     /// # Panics
@@ -121,6 +168,42 @@ pub struct ShownDialog {
     pub file_name: Option<String>,
 }
 
+/// A message box a handler showed, as [`FakeOs::messages`] returns it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct ShownMessage {
+    /// The method that showed it.
+    pub kind: MessageKind,
+    /// What it showed.
+    pub message: crate::Message,
+}
+
+/// Which method of `Os` showed a message box.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum MessageKind {
+    /// [`Os::tell`](crate::Os::tell), with an OK button.
+    Tell,
+    /// [`Os::confirm`](crate::Os::confirm), with OK and Cancel.
+    Confirm,
+    /// [`Os::ask`](crate::Os::ask), with Yes, No, and Cancel.
+    Ask,
+}
+
+/// The button a test chooses in a message box, with [`FakeOs::choose`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Choice {
+    /// OK, which [`Os::confirm`](crate::Os::confirm) shows.
+    Ok,
+    /// Yes, which [`Os::ask`](crate::Os::ask) shows.
+    Yes,
+    /// No, which [`Os::ask`](crate::Os::ask) shows.
+    No,
+    /// Cancel, which both show.
+    Cancel,
+}
+
 /// Which method of [`Dialog`](crate::Dialog) showed a dialog.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -157,6 +240,20 @@ impl FakeOs {
         self.lock()
             .answers
             .push_back(Some(paths.into_iter().collect()));
+    }
+
+    /// Makes the next message box that waits for a choice answer as if the
+    /// person chose `choice`. [`Os::tell`](crate::Os::tell) takes none.
+    ///
+    /// A box panics when its choice is not one of its buttons.
+    pub fn choose(&self, choice: Choice) {
+        self.lock().choices.push_back(choice);
+    }
+
+    /// The message boxes the handlers showed, in order.
+    #[must_use]
+    pub fn messages(&self) -> Vec<ShownMessage> {
+        self.lock().messages.clone()
     }
 
     /// Makes the next dialog answer as if the person cancelled it.
@@ -412,6 +509,31 @@ mod tests {
         ok(fake.os().badge(0));
         ok(fake.os().badge(5));
         assert_eq!(fake.badge(), 5);
+    }
+
+    #[test]
+    fn a_message_box_is_recorded_and_answered_by_the_test() {
+        use super::{Choice, MessageKind};
+        use crate::{Answer, Level, Message};
+        let fake = FakeOs::new();
+        let os = fake.os();
+        block_on(os.tell(Message::new(Level::Info, "Saved")));
+        fake.choose(Choice::Ok);
+        fake.choose(Choice::No);
+        assert!(block_on(os.confirm(Message::new(Level::Warning, "Quit?"))));
+        let answer = block_on(
+            os.ask(Message::new(Level::Warning, "Save?").body("Changes are lost otherwise.")),
+        );
+        assert_eq!(answer, Answer::No);
+        let kinds: Vec<_> = fake.messages().iter().map(|shown| shown.kind).collect();
+        assert_eq!(
+            kinds,
+            [MessageKind::Tell, MessageKind::Confirm, MessageKind::Ask]
+        );
+        assert_eq!(
+            fake.messages()[2].message.text(),
+            Some("Changes are lost otherwise.")
+        );
     }
 
     #[test]
