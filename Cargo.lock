@@ -2674,7 +2674,7 @@ dependencies = [
 
 [[package]]
 name = "hypersig"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "axum",
  "divan",
@@ -2693,7 +2693,7 @@ dependencies = [
 
 [[package]]
 name = "hypersig_cli"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "serde_json",
  "toml_edit 0.25.17+spec-1.1.0",
@@ -2701,7 +2701,7 @@ dependencies = [
 
 [[package]]
 name = "hypersig_desktop"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "arboard",
  "axum",
@@ -2729,7 +2729,7 @@ dependencies = [
 
 [[package]]
 name = "hypersig_i18n"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "axum",
  "http-body-util",
@@ -2742,14 +2742,14 @@ dependencies = [
 
 [[package]]
 name = "hypersig_proc"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "hypersig_proc_impl",
 ]
 
 [[package]]
 name = "hypersig_proc_impl"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "insta",
  "prettyplease",
@@ -2760,14 +2760,14 @@ dependencies = [
 
 [[package]]
 name = "hypersig_style"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "hypersig_ui"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "hypersig",
  "serde",

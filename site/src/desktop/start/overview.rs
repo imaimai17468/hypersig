@@ -58,8 +58,8 @@ fn crate_setup(site: Site) -> Part {
 /// handlers that spawn tasks.
 const CARGO_TOML: &str = r#"[dependencies]
 axum = "0.8"
-hypersig = "0.15"
-hypersig_desktop = "0.15"
+hypersig = "0.16"
+hypersig_desktop = "0.16"
 serde = { version = "1", features = ["derive"] }
 # Only for code that calls Tokio itself, such as `tokio::spawn`.
 tokio = { version = "1", features = ["rt"] }"#;
@@ -277,10 +277,10 @@ fn features(site: Site) -> Part {
 
 /// How examples/notes turns on `testing` for its tests alone.
 const TESTING_TOML: &str = r#"[dependencies]
-hypersig_desktop = "0.15"
+hypersig_desktop = "0.16"
 
 [dev-dependencies]
-hypersig_desktop = { version = "0.15", features = ["testing"] }"#;
+hypersig_desktop = { version = "0.16", features = ["testing"] }"#;
 
 fn map(site: Site) -> Part {
     parts([

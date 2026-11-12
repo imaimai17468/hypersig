@@ -1,6 +1,38 @@
 # Changelog
 
-The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, and from 0.3.0 `hypersig_cli`) is released at the same version.
+The release notes on GitHub list the titles of the merged pull requests. This file groups the changes a user of the crates sees, one section per release, and marks the ones that need a change to existing code under **Breaking**. Every crate of the workspace (`hypersig`, `hypersig_proc`, `hypersig_proc_impl`, `hypersig_style`, `hypersig_i18n`, `hypersig_ui`, from 0.3.0 `hypersig_cli`, and from 0.15.0 `hypersig_desktop`) is released at the same version.
+
+## [0.16.0] - 2026-11-12
+
+### Breaking
+
+- `hypersig_desktop`: `App::updates` turns the `App` into an `App<Updates>`, whose `run` hands the setup an `Updater` beside the `Os`. `Updater::check` replaces `Os::updates`, which every application had and which failed when `App::updates` was not called. `FakeOs::updater` gives a test an `Updater` that finds no newer version.
+- `hypersig_desktop`: `FakeOs::dialogs` replaces `FakeOs::dialogs_shown` and returns a `ShownDialog` (the `DialogKind`, title, filters, directory, and file name) for each dialog the test answered. `open_file`, `pick_folder`, and `save_file` under `FakeOs` panic when answered with no path or with several, where they returned `None` or took the first path.
+- `hypersig_desktop`: `App::size` below `App::min_size` panics, which in a `const` is a compile error. The system picked the window's size before.
+- `hypersig_desktop`: on Windows, `Downloaded::install` returns `Ok(())`, the application closes as Quit closes it, and the installer starts after `App::run` has stopped the server. The process ended inside `install` before, skipping the shutdown.
+
+### Added
+
+- `hypersig`: `Simulation::apply` hands a server's patches to a page simulated with `Page::simulate`, so a test runs a click's whole round trip without a browser.
+- `hypersig_desktop`: `Os::badge` puts a count on the application's icon.
+- `hypersig_desktop`: `Os::notify` shows a notification among the system's, and `Notified::clicked` tells whether the person clicked it. `FakeOs::notifications` and `FakeOs::click_notification` stand in for the system.
+- `hypersig_desktop`: `Os::tray` puts an icon with a menu of `TrayItem`s in the system tray, and closing the last window leaves the application running while it is shown. `FakeOs::tray` and `FakeOs::click_tray_item` stand in for the system.
+- `hypersig_desktop`: `App::allow(Device::Microphone)` and `App::allow(Device::Camera)` let the pages use those devices through `getUserMedia`; the web view refuses the others without asking the person.
+- `hypersig_desktop`: `Os::shortcut` registers a global `Shortcut` of a `Key` and `Modifiers`, and its `Presses` yield each `Press::Pressed` and `Press::Released` while another application has focus. `FakeOs::has_shortcut` and `FakeOs::press_shortcut` stand in for the system.
+- `hypersig_desktop`: a second start hands its arguments and working directory to the copy already running, which `Os::launches` yields as `Launch`es, and the second start's `App::run` returns `Ok(())`. `FakeOs::launch` stands in for a second start.
+- `hypersig_desktop`: `FakeOs::focused_window` returns the window opened or focused last.
+
+### Changed
+
+- `hypersig_desktop`: `App::run` inside a Tokio runtime returns `ErrorKind::InRuntime` before it opens anything, where it panicked with Tokio's message.
+- `hypersig_desktop`: a window the setup opens before the first page has loaded is made at once, so the setup can await `Windows::open` before it returns the router.
+- The runtime reports no failed call of a page that is leaving.
+
+### Fixed
+
+- `hypersig_desktop`: the windows asked for after a late first page loads open, where `Windows::open` never returned.
+- `hypersig_desktop`: a smoke run's script also runs in the windows that loaded before the first page's check, and an empty `HYPERSIG_DESKTOP_SMOKE_SCRIPT` counts as unset.
+- `hypersig_ui`: the dark theme's `border` token shows on a muted fill, so an outline badge in a selected table row keeps its outline, and a data table's sort button stays inside its header cell.
 
 ## [0.15.0] - 2026-11-03
 
