@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use hypersig::html::{El, Id, Key, Orientation, Role, attr, button as button_el, div};
+use hypersig::html::{El, Id, Key, Orientation, Point, Role, attr, button as button_el, div};
 use hypersig::style::value::{
     AlignItems, BorderStyle, Color, Cursor, Display, PositionTryFallbacks, TextAlign, px, raw, rem,
 };
@@ -96,37 +96,156 @@ impl<S> Menu<S> {
     #[must_use]
     pub fn menu(self, items: impl IntoIterator<Item = MenuItem<S>>) -> El<S> {
         let node_ref = self.menu;
-        div()
+        let menu = div()
             .id(self.id())
             .attr(attr::POPOVER, "auto")
             .role(Role::Menu)
             .aria_labelledby(&[&self.trigger_id()])
-            .node_ref(node_ref)
-            .roving_focus(Orientation::Vertical)
-            // Tab and Shift+Tab both leave the menu, which closes it.
-            .on_key(Key::Tab, node_ref.hide_popover())
-            .on_key(Key::Tab.shift(), node_ref.hide_popover())
+            .node_ref(node_ref);
+        keys(menu, node_ref)
             .css(menu_style(self.anchor()))
-            .children(items.into_iter().map(|item| {
-                let mut action = button_el()
-                    .attr(attr::TYPE, "button")
-                    .role(Role::MenuItem)
-                    .attr(attr::TABINDEX, "-1")
-                    .css(item_style(item.destructive))
-                    // The menu closes from the statement rather than from a
-                    // `command`, because a statement that disables this item
-                    // makes the browser skip a disabled button's command.
-                    .on_click(item.run.then(node_ref.hide_popover()))
-                    .text(item.label)
-                    // As the popover opens, the browser focuses the first
-                    // element with `autofocus` that can take focus, which is
-                    // the first action not disabled at that moment.
-                    .attr(attr::AUTOFOCUS, "");
-                if let Some(disabled) = item.disabled {
-                    action = action.disabled(disabled);
-                }
-                action
-            }))
+            .children(actions(node_ref, items))
+    }
+}
+
+/// `menu` with the keys both menus take: the arrow keys, Home, and End move
+/// between actions, and Tab and Shift+Tab, which leave the menu, close it.
+fn keys<S>(menu: El<S>, node_ref: NodeRef<S>) -> El<S> {
+    menu.roving_focus(Orientation::Vertical)
+        .on_key(Key::Tab, node_ref.hide_popover())
+        .on_key(Key::Tab.shift(), node_ref.hide_popover())
+}
+
+/// The buttons of `items`, each of which runs its statement and closes the
+/// menu `node_ref` names.
+fn actions<S>(
+    node_ref: NodeRef<S>,
+    items: impl IntoIterator<Item = MenuItem<S>>,
+) -> impl Iterator<Item = El<S>> {
+    items.into_iter().map(move |item| {
+        let mut action = button_el()
+            .attr(attr::TYPE, "button")
+            .role(Role::MenuItem)
+            .attr(attr::TABINDEX, "-1")
+            .css(item_style(item.destructive))
+            // The menu closes from the statement rather than from a
+            // `command`, because a statement that disables this item
+            // makes the browser skip a disabled button's command.
+            .on_click(item.run.then(node_ref.hide_popover()))
+            .text(item.label)
+            // As the popover opens, the browser focuses the first
+            // element with `autofocus` that can take focus, which is
+            // the first action not disabled at that moment.
+            .attr(attr::AUTOFOCUS, "");
+        if let Some(disabled) = item.disabled {
+            action = action.disabled(disabled);
+        }
+        action
+    })
+}
+
+/// A menu of actions that opens where the person asks for a context menu.
+///
+/// It sits on a page whose signals are `S`.
+///
+/// Declare one as a `const` from a [`NodeRef`] that
+/// [`node_ref!`](hypersig::node_ref) declares, place its
+/// [`menu`](Self::menu) once on the page, and open it from
+/// [`El::on_context_menu`] with [`open_at`](Self::open_at). An element that
+/// opens it, such as a row of a list, sets the signals that tell the actions
+/// which row they act on in the same statement. The menu has `role="menu"`
+/// and its actions `role="menuitem"`, and it is a `popover`, as [`Menu`]'s
+/// is, so it takes the same keys: focus moves to the first action that is
+/// not disabled, the arrow keys, Home, and End move between actions, and
+/// Escape, Tab, or a click outside closes it.
+///
+/// Safari and the web view of macOS send no context menu event from a key,
+/// so on those a person with no pointer cannot open it. Give its actions
+/// another way in as well, such as a [`Menu`] button on the row.
+///
+/// ```
+/// use hypersig::html::{each, li, ul};
+/// use hypersig::{NodeRef, Signals};
+/// use hypersig_ui::{ContextMenu, MenuItem};
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Signals, Serialize, Deserialize, Clone, PartialEq)]
+/// struct Message {
+///     id: i32,
+///     text: String,
+/// }
+///
+/// #[derive(Signals, Serialize, Deserialize)]
+/// struct Chat {
+///     messages: Vec<Message>,
+///     picked: i32,
+/// }
+///
+/// hypersig::node_ref!(const MESSAGE_MENU: NodeRef<Chat>);
+/// const MESSAGE_ACTIONS: ContextMenu<Chat> = ContextMenu::new(MESSAGE_MENU);
+///
+/// # fn main() {
+/// let list = ul::<Chat>().child(each(Chat::messages(), |message| {
+///     li().bind_text(message.at(Message::text())).on_context_menu(move |at| {
+///         Chat::picked().set(message.at(Message::id())).then(MESSAGE_ACTIONS.open_at(at))
+///     })
+/// }));
+/// let menu = MESSAGE_ACTIONS.menu("Message", [MenuItem::new("Delete", Chat::picked().set(0))]);
+/// assert!(list.render().contains("data-hs-on-contextmenu"));
+/// assert!(menu.render().contains(r#"aria-label="Message""#));
+/// # }
+/// ```
+pub struct ContextMenu<S> {
+    menu: NodeRef<S>,
+}
+
+impl<S> ContextMenu<S> {
+    /// A context menu that `menu` names, whose id is the name of `menu`.
+    #[must_use]
+    pub const fn new(menu: NodeRef<S>) -> Self {
+        Self { menu }
+    }
+
+    /// A statement that opens the menu with its top left corner at `at`.
+    ///
+    /// Where the menu would cross the viewport's right or bottom edge, it
+    /// opens left of `at` or above it. Opening it while it is open moves it.
+    #[must_use]
+    pub fn open_at(self, at: impl IntoExpr<S, Point>) -> Stmt<S> {
+        self.menu.show_popover_at(at)
+    }
+
+    /// The menu, named `label` for a screen reader, holding `items` in order.
+    #[must_use]
+    pub fn menu(
+        self,
+        label: impl Into<String>,
+        items: impl IntoIterator<Item = MenuItem<S>>,
+    ) -> El<S> {
+        let node_ref = self.menu;
+        let menu = div()
+            .id(node_ref.id())
+            .attr(attr::POPOVER, "auto")
+            .role(Role::Menu)
+            .attr(attr::ARIA_LABEL, label.into())
+            .node_ref(node_ref);
+        keys(menu, node_ref)
+            .css(panel_style())
+            .children(actions(node_ref, items))
+    }
+}
+
+impl<S> Clone for ContextMenu<S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<S> Copy for ContextMenu<S> {}
+
+impl<S> fmt::Debug for ContextMenu<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ContextMenu").field(&self.menu).finish()
     }
 }
 
@@ -191,6 +310,12 @@ fn menu_style(anchor: String) -> Style {
         .inset(raw("auto"))
         .margin(px(0))
         .margin_top(rem(0.25))
+        .merge(panel_style())
+}
+
+/// The box both menus draw: its border, background, and shadow.
+fn panel_style() -> Style {
+    Style::new()
         .min_width(rem(8))
         .padding(rem(0.25))
         .border_width(px(1))

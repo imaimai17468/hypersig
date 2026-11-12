@@ -27,12 +27,13 @@ use hypersig::{
 };
 use hypersig_ui::{
     Accordion, AlertVariant, Autocomplete, BadgeVariant, Breadcrumb, ButtonSize, ButtonVariant,
-    Chart, Column, Combobox, ComboboxState, ComboboxText, DataTable, DateField, Dialog, DialogText,
-    DonutChart, InputKind, Level, Listbox, Menu, MenuItem, NavList, NumberField, PaginationText,
-    ServerTable, Side, Slider, SortOrder, TableState, Tabs, TextField, Toast, ToastVariant,
-    Toaster, Tooltip, alert, alert_description, alert_title, badge, button, card, card_content,
-    card_description, card_footer, card_header, card_title, checkbox, dialog_footer, pagination,
-    progress, radio_group, select_field, separator, skeleton, submit_button, switch, token,
+    Chart, Column, Combobox, ComboboxState, ComboboxText, ContextMenu, DataTable, DateField,
+    Dialog, DialogText, DonutChart, InputKind, Level, Listbox, Menu, MenuItem, NavList,
+    NumberField, PaginationText, ServerTable, Side, Slider, SortOrder, TableState, Tabs, TextField,
+    Toast, ToastVariant, Toaster, Tooltip, alert, alert_description, alert_title, badge, button,
+    card, card_content, card_description, card_footer, card_header, card_title, checkbox,
+    dialog_footer, pagination, progress, radio_group, select_field, separator, skeleton,
+    submit_button, switch, token,
 };
 use serde::{Deserialize, Serialize};
 
@@ -140,6 +141,8 @@ struct Gallery {
     progress: i32,
     archived: bool,
     status: String,
+    /// The file whose context menu is open.
+    file: String,
     font: Font,
     country: ComboboxState,
     volume: i32,
@@ -238,6 +241,7 @@ hypersig::dialog_ref!(const EDIT_PROFILE: DialogRef<Gallery>);
 hypersig::dialog_ref!(const DELETE_PROJECT: DialogRef<Gallery>);
 hypersig::dialog_ref!(const FILTER_SHEET: DialogRef<Gallery>);
 hypersig::node_ref!(const PROJECT_ACTIONS: NodeRef<Gallery>);
+hypersig::node_ref!(const FILE_ACTIONS: NodeRef<Gallery>);
 hypersig::node_ref!(const ADD_ITEM_TIP: NodeRef<Gallery>);
 hypersig::node_ref!(const COUNTRY_FIELD: NodeRef<Gallery>);
 hypersig::node_ref!(const COUNTRY_OPTIONS: NodeRef<Gallery>);
@@ -245,6 +249,7 @@ const EDIT: Dialog<Gallery> = Dialog::new(EDIT_PROFILE);
 const DELETE: Dialog<Gallery> = Dialog::new(DELETE_PROJECT);
 const FILTERS: Dialog<Gallery> = Dialog::new(FILTER_SHEET);
 const ACTIONS: Menu<Gallery> = Menu::new(PROJECT_ACTIONS);
+const FILE_MENU: ContextMenu<Gallery> = ContextMenu::new(FILE_ACTIONS);
 const FAQ: Id = Id::new("faq");
 const ADD_TIP: Tooltip<Gallery> = Tooltip::new(ADD_ITEM_TIP);
 const COUNTRY: Combobox<Gallery> = Combobox::new(COUNTRY_FIELD, COUNTRY_OPTIONS);
@@ -559,6 +564,27 @@ fn filters() -> El<Gallery> {
     )
 }
 
+/// Files that open one context menu, which acts on the file it opened on.
+fn files() -> El<Gallery> {
+    let file = Gallery::file();
+    let status = Gallery::status();
+    div()
+        .child(
+            ul().id(Id::new("files"))
+                .children(["Report.pdf", "Notes.txt"].map(|name| {
+                    li().text(name)
+                        .on_context_menu(move |at| file.set(name).then(FILE_MENU.open_at(at)))
+                })),
+        )
+        .child(FILE_MENU.menu(
+            "File",
+            [
+                MenuItem::new("Open", status.set(file.concat(" was opened."))),
+                MenuItem::new("Delete", status.set(file.concat(" was deleted."))).destructive(),
+            ],
+        ))
+}
+
 fn overlays() -> El<Gallery> {
     let status = Gallery::status();
     let archived = Gallery::archived();
@@ -601,6 +627,7 @@ fn overlays() -> El<Gallery> {
                     ]),
                 ),
         )
+        .child(files())
         .child(
             p().id(Id::new("status"))
                 .role(Role::Status)
@@ -1050,6 +1077,7 @@ fn gallery() -> Page<Gallery> {
             progress: 40,
             archived: false,
             status: String::new(),
+            file: String::new(),
             font: Font::Sans,
             country: ComboboxState::default(),
             volume: 40,

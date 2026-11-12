@@ -130,7 +130,7 @@ pub use donut::DonutChart;
 pub use field::{Autocomplete, InputKind, InputMode, TextField};
 pub use kbd::kbd;
 pub use listbox::Listbox;
-pub use menu::{Menu, MenuItem};
+pub use menu::{ContextMenu, Menu, MenuItem};
 pub use navigation::{Breadcrumb, NavList, PaginationText, pagination};
 pub use number::{NumberField, Numeric};
 pub use popover::Popover;

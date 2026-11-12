@@ -217,6 +217,35 @@ test("an alert dialog stays open on a click outside and closes with its buttons"
   await expect(page.locator("#status")).toHaveText("Deleted the project.");
 });
 
+test("a right click opens the context menu at the pointer, for the file it was on", async ({ page }) => {
+  const menu = page.getByRole("menu", { name: "File" });
+  const notes = page.locator("#files li", { hasText: "Notes.txt" });
+  await expect(menu).toBeHidden();
+
+  await notes.scrollIntoViewIfNeeded();
+  const row = (await notes.boundingBox())!;
+  await page.mouse.click(row.x + 10, row.y + 5, { button: "right" });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Open" })).toBeFocused();
+  const box = (await menu.boundingBox())!;
+  expect(Math.abs(box.x - (row.x + 10))).toBeLessThan(1);
+  expect(Math.abs(box.y - (row.y + 5))).toBeLessThan(1);
+
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(menu).toBeHidden();
+  await expect(page.locator("#status")).toHaveText("Notes.txt was deleted.");
+
+  const report = page.locator("#files li", { hasText: "Report.pdf" });
+  await report.click({ button: "right" });
+  await expect(menu).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden();
+  await report.click({ button: "right" });
+  await menu.getByRole("menuitem", { name: "Open" }).click();
+  await expect(page.locator("#status")).toHaveText("Report.pdf was opened.");
+});
+
 test("a menu opens under its button, moves with the arrow keys, and closes", async ({ page }) => {
   const trigger = page.getByRole("button", { name: "Project actions" });
   const menu = page.getByRole("menu", { name: "Project actions" });
