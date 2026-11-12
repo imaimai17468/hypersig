@@ -17,6 +17,7 @@ pub(crate) fn page(site: Site, head: Part) -> Part {
         methods(site),
         example(site),
         others(site),
+        messages(site),
         unchecked(site),
         next(site),
     ])
@@ -190,6 +191,39 @@ fn others(site: Site) -> Part {
             },
         ),
         show(Snippet::DesktopDialogKinds),
+    ])
+}
+
+/// The message boxes.
+fn messages(site: Site) -> Part {
+    parts([
+        heading(
+            site,
+            L {
+                en: "Telling the person, and asking them",
+                ja: "利用者に伝える、確かめる",
+            },
+        ),
+        code::block(
+            Lang::Rust,
+            None,
+            "impl Os {\n    pub async fn tell(&self, message: Message);\n    pub async fn confirm(&self, message: Message) -> bool;\n    pub async fn ask(&self, message: Message) -> Answer;\n}\n\nimpl Message {\n    pub fn new(level: Level, title: impl Into<String>) -> Self;\n    pub fn body(self, text: impl Into<String>) -> Self;\n}",
+        ),
+        para(
+            site,
+            L {
+                en: "The system's message box shows a [`Message`](api:hypersig_desktop/struct.Message.html): a title, an optional body, and a [`Level`](api:hypersig_desktop/enum.Level.html) of `Info`, `Warning`, or `Error`, which picks its icon. [`Os::tell`](api:hypersig_desktop/struct.Os.html#method.tell) shows it with an OK button, `Os::confirm` with OK and Cancel and returns `true` for OK, and `Os::ask` with Yes, No, and Cancel and returns the [`Answer`](api:hypersig_desktop/enum.Answer.html). Closing the box counts as Cancel. Each method shows its own buttons, so a handler matches only the answers its box can give, and no button is named by a string:",
+                ja: "OS のメッセージボックスは [`Message`](api:hypersig_desktop/struct.Message.html) を表示します。`Message` は、タイトル、省略できる本文、アイコンを決める [`Level`](api:hypersig_desktop/enum.Level.html)（`Info`、`Warning`、`Error`）からなります。[`Os::tell`](api:hypersig_desktop/struct.Os.html#method.tell) は OK ボタンだけで表示し、`Os::confirm` は OK と Cancel で表示して OK なら `true` を返し、`Os::ask` は Yes、No、Cancel で表示して [`Answer`](api:hypersig_desktop/enum.Answer.html) を返します。ボックスを閉じたときは Cancel として扱います。ボタンはメソッドごとに決まっているので、ハンドラはそのボックスが返しうる答えだけを `match` し、ボタンを文字列で指定することはありません。",
+            },
+        ),
+        show(Snippet::DesktopMessage),
+        para(
+            site,
+            L {
+                en: "In a test, `FakeOs::choose` gives the button the next box that waits for one takes, as `answer_dialog` does for a file dialog, and `FakeOs::messages` returns each box shown. On macOS, a run saw `ask` show the warning icon, the title, the body, and the three buttons, and Return chose Yes. Custom labels for the buttons are not offered, since on Windows they need a manifest that turns on version 6 of the common controls.",
+                ja: "テストでは、ファイルのダイアログの `answer_dialog` と同じように、`FakeOs::choose` で次にボタンを待つボックスの答えを渡し、`FakeOs::messages` で表示したボックスを確かめます。macOS では、`ask` が警告のアイコン、タイトル、本文、3 つのボタンを表示し、Return で Yes が選ばれることを実行して確かめました。ボタンの名前を変えるには Windows でコモンコントロールのバージョン 6 を有効にするマニフェストが必要になるので、その機能は用意していません。",
+            },
+        ),
     ])
 }
 

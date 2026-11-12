@@ -561,6 +561,7 @@ snippets! {
     DesktopDialogOpen => "desktop/dialogs_open.rs", "no_run";
     DesktopDialogKinds => "desktop/dialogs_kinds.rs";
     DesktopClipboard => "desktop/clipboard.rs";
+    DesktopMessage => "desktop/message.rs";
     DesktopBadge => "desktop/badge.rs";
     DesktopDevices => "desktop/devices.rs";
     DesktopShortcut => "desktop/shortcut.rs";

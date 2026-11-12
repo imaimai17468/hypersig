@@ -14,6 +14,7 @@ use crate::arrange::{Arrange, Layer, Placement};
 use crate::clipboard;
 use crate::error::Error;
 use crate::handoff::{Launch, Launches};
+use crate::message::{Answer, Message};
 use crate::notification::{Notification, Notified};
 use crate::run::Event;
 use crate::shortcut::{Presses, Shortcut};
@@ -197,6 +198,47 @@ impl Os {
             filters: Vec::new(),
             directory: None,
             file_name: None,
+        }
+    }
+
+    /// Shows `message` in the system's message box, with an OK button,
+    /// and waits for the person to close it.
+    pub async fn tell(&self, message: Message) {
+        match &self.inner {
+            Inner::System(_) => {
+                message.system(rfd::MessageButtons::Ok).show().await;
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => lock(fake).tell(message),
+        }
+    }
+
+    /// Shows `message` with OK and Cancel buttons, and returns whether the
+    /// person chose OK. Closing the box counts as Cancel.
+    pub async fn confirm(&self, message: Message) -> bool {
+        match &self.inner {
+            Inner::System(_) => {
+                let chosen = message.system(rfd::MessageButtons::OkCancel).show().await;
+                chosen == rfd::MessageDialogResult::Ok
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => lock(fake).confirm(message),
+        }
+    }
+
+    /// Shows `message` with Yes, No, and Cancel buttons, and returns the
+    /// one the person chose. Closing the box counts as Cancel.
+    pub async fn ask(&self, message: Message) -> Answer {
+        match &self.inner {
+            Inner::System(_) => {
+                let chosen = message
+                    .system(rfd::MessageButtons::YesNoCancel)
+                    .show()
+                    .await;
+                Answer::from_system(&chosen)
+            }
+            #[cfg(feature = "testing")]
+            Inner::Fake(fake) => lock(fake).ask(message),
         }
     }
 

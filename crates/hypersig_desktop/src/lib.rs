@@ -125,6 +125,7 @@ mod handoff;
 mod instance;
 #[cfg(target_os = "macos")]
 mod menu;
+mod message;
 mod notification;
 mod os;
 mod port;
@@ -143,6 +144,7 @@ pub use arrange::{Layer, Placement};
 pub use device::Device;
 pub use error::{Error, ErrorKind};
 pub use handoff::{Launch, Launches};
+pub use message::{Answer, Level, Message};
 pub use notification::{Notification, Notified};
 pub use os::{Clipboard, Dialog, Os, Window, Windows};
 pub use shortcut::{Key, Modifiers, Press, Presses, Shortcut};
