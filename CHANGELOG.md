@@ -21,6 +21,9 @@ The release notes on GitHub list the titles of the merged pull requests. This fi
 - `hypersig_desktop`: `Os::shortcut` registers a global `Shortcut` of a `Key` and `Modifiers`, and its `Presses` yield each `Press::Pressed` and `Press::Released` while another application has focus. `FakeOs::has_shortcut` and `FakeOs::press_shortcut` stand in for the system.
 - `hypersig_desktop`: a second start hands its arguments and working directory to the copy already running, which `Os::launches` yields as `Launch`es, and the second start's `App::run` returns `Ok(())`. `FakeOs::launch` stands in for a second start.
 - `hypersig_desktop`: `FakeOs::focused_window` returns the window opened or focused last.
+- `hypersig_desktop`: `Window::place` maximizes, minimizes, or makes a window fullscreen, `Window::layer` keeps it above other applications' windows, and `Window::move_to` and `Window::resize` set its position and size in logical pixels. `Windows::focused` returns the window that had the keyboard last, so a handler finds the window its click came from. `FakeOs::window` returns what the handlers gave a window.
+- `hypersig_desktop`: `Os::tell`, `Os::confirm`, and `Os::ask` show a `Message` in the system's message box, with OK, OK and Cancel, or Yes, No, and Cancel. `FakeOs::choose` answers them and `FakeOs::messages` returns each shown.
+- `hypersig_desktop`: on macOS, a file or a link the person opens with the application reaches `Os::launches`, as a second start's command line does on Windows and Linux. `examples/notes` opens `.md` files.
 
 ### Changed
 
