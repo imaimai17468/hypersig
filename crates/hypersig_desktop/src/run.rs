@@ -78,6 +78,10 @@ pub(crate) enum Event {
     Focused(oneshot::Sender<Option<WindowId>>),
     /// [`Os`] moves, sizes, or places a window.
     Arrange(WindowId, crate::arrange::Arrange),
+    /// The person pressed a part of a window's page that moves the window.
+    Drag(WindowId),
+    /// The person double-clicked such a part.
+    Zoom(WindowId),
     /// The count to show on the application's icon.
     Badge(u32),
     /// [`LEAVE`] has passed since a window began to close, or, with no
@@ -122,6 +126,7 @@ impl App<crate::Updates> {
             size: self.size,
             min_size: self.min_size,
             resizable: self.resizable,
+            frame: self.frame,
             devices: self.devices,
             updates: (),
         };
@@ -338,6 +343,22 @@ struct Lifecycle<'a> {
 
 impl Lifecycle<'_> {
     /// Answers one event, and returns whether the event loop is done.
+    /// Moves the window `id` with the pointer until the button comes up.
+    fn drag(&self, id: WindowId) {
+        if let Some(open) = self.windows.get(&id)
+            && let Err(error) = open.window.drag_window()
+        {
+            tracing::warn!(%error, "the window did not follow the pointer");
+        }
+    }
+
+    /// Maximizes the window `id`, or restores it if it is maximized.
+    fn zoom(&self, id: WindowId) {
+        if let Some(open) = self.windows.get(&id) {
+            open.window.set_maximized(!open.window.is_maximized());
+        }
+    }
+
     fn handle(
         &mut self,
         event: TaoEvent<'_, Event>,
@@ -391,6 +412,8 @@ impl Lifecycle<'_> {
                     crate::arrange::apply(&open.window, change);
                 }
             }
+            TaoEvent::UserEvent(Event::Drag(id)) => self.drag(id),
+            TaoEvent::UserEvent(Event::Zoom(id)) => self.zoom(id),
             TaoEvent::UserEvent(Event::Left(id)) => {
                 if let Some(id) = id
                     && self.windows.get(&id).is_some_and(|open| open.leaving)

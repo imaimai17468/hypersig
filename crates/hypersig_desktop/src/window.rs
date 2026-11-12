@@ -20,7 +20,8 @@ pub(crate) fn window(app: &App, target: &EventLoopWindowTarget<Event>) -> Result
         .with_title("")
         .with_visible(false)
         .with_inner_size(LogicalSize::new(width, height))
-        .with_resizable(app.resizable);
+        .with_resizable(app.resizable)
+        .with_decorations(app.frame == crate::Frame::System);
     if let Some((width, height)) = app.min_size {
         builder = builder.with_min_inner_size(LogicalSize::new(width, height));
     }
@@ -69,6 +70,8 @@ pub(crate) fn web_view(
     let navigation_origin = origin.to_owned();
     let load_origin = origin.to_owned();
     let open_origin = origin.to_owned();
+    let ipc_origin = origin.to_owned();
+    let moves = proxy.clone();
     let builder = WebViewBuilder::new_with_web_context(context)
         .with_devtools(cfg!(debug_assertions))
         .with_permission_handler({
@@ -91,6 +94,19 @@ pub(crate) fn web_view(
                 leave_for(&url);
             }
             NewWindowResponse::Deny
+        })
+        .with_initialization_script(crate::frame::SCRIPT)
+        .with_ipc_handler(move |request| {
+            // Only the application's pages move its windows.
+            if !request.uri().to_string().starts_with(&ipc_origin) {
+                return;
+            }
+            let event = match request.body().as_str() {
+                crate::frame::DRAG => Event::Drag(id),
+                crate::frame::ZOOM => Event::Zoom(id),
+                _ => return,
+            };
+            let _ = moves.send_event(event);
         })
         .with_document_title_changed_handler(move |title| {
             let _ = titles.send_event(Event::Title(id, title));
