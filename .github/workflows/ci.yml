@@ -431,16 +431,16 @@ jobs:
           done < <(cargo metadata --no-deps --format-version 1 \
             | jq -r '.packages[] | select(.publish != []) | "\(.name) \(.version)"')
           echo "args=$args" >> "$GITHUB_OUTPUT"
+      # `cargo publish` builds each package to verify it, and
+      # hypersig_desktop's build links GTK, WebKitGTK, and D-Bus on Linux.
+      - if: steps.pending.outputs.args != ''
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev
       # Trusted publishing: crates.io trades the job's OIDC token for a
       # short-lived one, which works only for a crate that already exists and
       # names this repository and ci.yml as its trusted publisher.
       - id: auth
         if: steps.pending.outputs.args != ''
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1
-      # `cargo publish` builds each package to verify it, and
-      # hypersig_desktop's build links GTK, WebKitGTK, and D-Bus on Linux.
-      - if: steps.pending.outputs.args != ''
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libdbus-1-dev
       - if: steps.pending.outputs.args != ''
         run: cargo publish ${{ steps.pending.outputs.args }}
         env:
