@@ -17,8 +17,8 @@ pub enum Device {
     /// Only `WebKitGTK`, on Linux, asks the application about it, and shares
     /// the screen from a click of the person's alone. `WebView2`, on Windows,
     /// answers `getDisplayMedia` on its own, whether or not the application
-    /// names the screen. `WKWebView`, on macOS, has no `getDisplayMedia`, so
-    /// a page there cannot share the screen.
+    /// names the screen. `WKWebView`, on macOS, does too: a click there shows
+    /// the system's picker of what to share.
     Screen,
 }
 
