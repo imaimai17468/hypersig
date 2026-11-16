@@ -6,7 +6,7 @@ The release notes on GitHub list the titles of the merged pull requests. This fi
 
 ### Added
 
-- `hypersig_desktop`: `App::allow(Device::Screen)` lets the pages share the screen through `getDisplayMedia` on Linux, where WebKitGTK asks the application. WebView2 answers on its own, and WKWebView has no `getDisplayMedia`.
+- `hypersig_desktop`: `App::allow(Device::Screen)` lets the pages share the screen through `getDisplayMedia` on Linux, where WebKitGTK asks the application. WebView2 and WKWebView answer on their own, WKWebView with the system's picker.
 
 ## [0.17.0] - 2026-11-12
 
